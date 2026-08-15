@@ -29,7 +29,6 @@ jobs:
           git clone https://github.com/intgrah/sokonanoda.git a2
           git -C a2 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
           cp -a a2 a3
-          # patch helper expects a2 + e0018; point e0018 at a3 temporarily
           rm -rf e0018
           cp -a a3 e0018
           python3 scripts/patch_a2_e0018.py
@@ -45,7 +44,10 @@ jobs:
           set -euo pipefail
           sudo apt-get update -qq
           sudo apt-get install -y -qq valgrind
-          valgrind --tool=callgrind --callgrind-out-file=results/a3-profile/callgrind.out a3/target/release/sokonanoda a3/config.json < arena-tests/good/perf/grind-ring-5.ndjson >/dev/null 2>/dev/null
+          # Valgrind may reject instructions emitted by target-cpu=native on hosted CPUs.
+          # Build a separate generic x86-64 profiling binary; use only percentages/call structure from it.
+          (cd a3 && CARGO_TARGET_DIR=target-callgrind RUSTFLAGS='-C target-cpu=x86-64' cargo build --release)
+          valgrind --tool=callgrind --callgrind-out-file=results/a3-profile/callgrind.out a3/target-callgrind/release/sokonanoda a3/config.json < arena-tests/good/perf/grind-ring-5.ndjson >/dev/null 2>/dev/null
           callgrind_annotate --auto=yes --inclusive=no --threshold=0.05 results/a3-profile/callgrind.out > results/a3-profile/callgrind-self.txt
           callgrind_annotate --auto=yes --inclusive=yes --threshold=0.05 results/a3-profile/callgrind.out > results/a3-profile/callgrind-inclusive.txt
           head -120 results/a3-profile/callgrind-self.txt
