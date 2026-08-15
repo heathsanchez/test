@@ -1,0 +1,130 @@
+name: Lean Kernel Arena conversion level cache
+on:
+  workflow_dispatch:
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compare level equality cache and spine length obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOKO_REV=0fab8874080e379a774a9a27f7538d8a1ddd786b
+          ARENA_ARTIFACT=8931227426
+          OUT=results/conv-level-cache
+          rm -rf "$OUT" base levelcache spinelen combo arena-tests artifact tests.zip
+          mkdir -p "$OUT" arena-tests artifact
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/${ARENA_ARTIFACT}/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          git clone https://github.com/intgrah/sokonanoda.git base
+          git -C base checkout "$SOKO_REV"
+          for d in levelcache spinelen combo; do cp -a base "$d"; done
+          python3 - <<'PY'
+          from pathlib import Path
+          def patch_levelcache(root):
+              p=Path(root)/'src/util.rs'; s=p.read_text()
+              old="""pub struct ExprCache<'t> {
+    pub(crate) inst_cache: FxHashMap<(ExprPtr<'t>, u16), ExprPtr<'t>>,
+    pub(crate) subst_cache: FxHashMap<(ExprPtr<'t>, LevelsPtr<'t>, LevelsPtr<'t>), ExprPtr<'t>>,
+    pub(crate) dsubst_cache: FxHashMap<(ExprPtr<'t>, LevelsPtr<'t>, LevelsPtr<'t>), ExprPtr<'t>>,
+    pub(crate) simplify_cache: FxHashMap<LevelPtr<'t>, LevelPtr<'t>>,
+}"""
+              new="""pub struct ExprCache<'t> {
+    pub(crate) inst_cache: FxHashMap<(ExprPtr<'t>, u16), ExprPtr<'t>>,
+    pub(crate) subst_cache: FxHashMap<(ExprPtr<'t>, LevelsPtr<'t>, LevelsPtr<'t>), ExprPtr<'t>>,
+    pub(crate) dsubst_cache: FxHashMap<(ExprPtr<'t>, LevelsPtr<'t>, LevelsPtr<'t>), ExprPtr<'t>>,
+    pub(crate) simplify_cache: FxHashMap<LevelPtr<'t>, LevelPtr<'t>>,
+    pub(crate) eq_cache: FxHashMap<(LevelPtr<'t>, LevelPtr<'t>), bool>,
+}"""
+              assert old in s; s=s.replace(old,new,1)
+              old="""        shrink_map(&mut self.dsubst_cache);
+        shrink_map(&mut self.simplify_cache);"""
+              new="""        shrink_map(&mut self.dsubst_cache);
+        shrink_map(&mut self.simplify_cache);
+        shrink_map(&mut self.eq_cache);"""
+              assert old in s; s=s.replace(old,new,1)
+              old="""            dsubst_cache: small_fx_hash_map(),
+            simplify_cache: small_fx_hash_map(),"""
+              new="""            dsubst_cache: small_fx_hash_map(),
+            simplify_cache: small_fx_hash_map(),
+            eq_cache: small_fx_hash_map(),"""
+              assert old in s; s=s.replace(old,new,1)
+              p.write_text(s)
+              p=Path(root)/'src/level.rs'; s=p.read_text()
+              old="""    pub fn eq_antisymm(&mut self, l: LevelPtr<'t>, r: LevelPtr<'t>) -> bool {
+        l == r || (self.leq(l, r) && self.leq(r, l))
+    }"""
+              new="""    pub fn eq_antisymm(&mut self, l: LevelPtr<'t>, r: LevelPtr<'t>) -> bool {
+        if l == r { return true; }
+        let key = if l.get_hash() < r.get_hash() { (l, r) } else { (r, l) };
+        if let Some(cached) = self.expr_cache.eq_cache.get(&key).copied() { return cached; }
+        let eq = self.leq(l, r) && self.leq(r, l);
+        self.expr_cache.eq_cache.insert(key, eq);
+        eq
+    }"""
+              assert old in s; p.write_text(s.replace(old,new,1))
+          def patch_spinelen(root):
+              p=Path(root)/'src/conv.rs'; s=p.read_text()
+              old="""        if std::ptr::eq(sx, sy) {
+            return true;
+        }
+        match (sx, sy) {"""
+              new="""        if std::ptr::eq(sx, sy) {
+            return true;
+        }
+        if sx.len() != sy.len() { return false; }
+        match (sx, sy) {"""
+              assert old in s; p.write_text(s.replace(old,new,1))
+          patch_levelcache('levelcache')
+          patch_spinelen('spinelen')
+          patch_levelcache('combo'); patch_spinelen('combo')
+          PY
+          for d in base levelcache spinelen combo; do
+            cat > "$d/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":2}
+          JSON
+            (cd "$d" && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,time,json,statistics,random,hashlib
+          root=Path.cwd(); out=root/'results/conv-level-cache'; vs=['base','levelcache','spinelen','combo']
+          bins={v:root/v/'target/release/sokonanoda' for v in vs}; cfgs={v:root/v/'config.json' for v in vs}
+          def status(rc): return 'accept' if rc==0 else ('decline' if rc==2 else 'reject')
+          cases=[]
+          for kind,exp in [('good','accept'),('bad','reject')]:
+              for p in (root/'arena-tests'/kind).rglob('*.ndjson'): cases.append((p,exp))
+          correctness={}
+          for v in vs:
+              bad=[]
+              for p,exp in cases:
+                  with p.open('rb') as f:
+                      rc=subprocess.run([str(bins[v]),str(cfgs[v])],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  if status(rc)!=exp: bad.append(str(p.relative_to(root/'arena-tests')))
+              correctness[v]={'correct':len(cases)-len(bad),'total':len(cases),'failures':bad}
+          workload=sorted([p for p,_ in cases],key=lambda p:p.stat().st_size,reverse=True)[:24]
+          workload=sorted(workload,key=lambda p:hashlib.sha256(str(p.relative_to(root/'arena-tests')).encode()).hexdigest())
+          samples={v:[] for v in vs}
+          for seed in range(14):
+              order=vs.copy(); random.Random(seed).shuffle(order)
+              for v in order:
+                  t=time.perf_counter()
+                  for p in workload:
+                      with p.open('rb') as f:
+                          subprocess.run([str(bins[v]),str(cfgs[v])],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+                  samples[v].append(time.perf_counter()-t)
+          med={v:statistics.median(samples[v]) for v in vs}
+          summary={'correctness':correctness,'median_seconds':med,'speedup_vs_base':{v:med['base']/med[v] for v in vs if v!='base'},'samples_seconds':samples}
+          (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)); print(json.dumps(summary,indent=2,sort_keys=True))
+          if any(x['correct']!=x['total'] for x in correctness.values()): raise SystemExit('correctness regression')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-conv-level-cache
+          path: results/conv-level-cache/
