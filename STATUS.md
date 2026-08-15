@@ -1,62 +1,92 @@
 # LIVE STATUS — Triskelion × Lean Kernel Arena
 
-## Purpose
-
-Public execution mirror for the Lean Kernel Arena programme. This repo is intentionally narrower than the private `heathsanchez/triskelion` research repo.
-
 ## Current admitted frontier
 
 A2 remains the current admitted frontier.
 
-A2 reconstruction used here:
+A2 reconstruction:
 - upstream sokonanoda `9b4ea12f4cd437d00b6bcd0e34743065c58dea08`
 - 4 threads
 - session budget 2,621,440 bytes
 
+Public immutable Arena artifact used here: `8931227426` (161 cases). Do not relabel these public results as the later private 178-file corpus.
+
 ## E0012 — symmetric universe-level equality cache
 
-Public revalidation run: `31855875785`
-Artifact: `9239017873`
-Artifact SHA-256: `448c3c17713f21824e56e6a978634bb26741aca09282d4369e1aa197dd20e103`
+Run `31855875785`, artifact `9239017873`, digest `sha256:448c3c17713f21824e56e6a978634bb26741aca09282d4369e1aa197dd20e103`.
 
-Semantic result on immutable Arena artifact `8931227426` (161 cases):
 - A2: 161/161, zero declines
 - E0012: 161/161, zero declines
+- A2 median proxy: 0.917405 s
+- E0012 median proxy: 0.919181 s
+- median paired change: +0.9939%
 
-Paired 24-case proxy, 16 counterbalanced repetitions:
-- A2 median: 0.917405 s
-- E0012 median: 0.919181 s
-- median paired fractional change `(E0012-A2)/A2`: +0.9939%
-
-Decision for the public optimization stream: NOT ADMITTED. The original private exact-Mathlib decision remains formally open because those local fixtures/protocol were not pushed, but E0012 is not stacked into later candidates.
+Decision: NOT ADMITTED in public optimization stream. Private exact-Mathlib decision remains formally open because those local fixtures were not pushed.
 
 ## E0013 — SPINE_LENGTH_FAST_REJECT
 
-Public run: `31856147246`
-Artifact: `9239099644`
-Artifact SHA-256: `f2453a9fae8712039cb03ca53311e6c2f5d2ec5d6f5a66a6b2a4e7c0bf4aa023`
+Run `31856147246`, artifact `9239099644`, digest `sha256:f2453a9fae8712039cb03ca53311e6c2f5d2ec5d6f5a66a6b2a4e7c0bf4aa023`.
 
-Semantic result on the same 161-case immutable corpus:
 - A2: 161/161, zero declines
 - E0013: 161/161, zero declines
+- A2 median proxy: 0.959417 s
+- E0013 median proxy: 0.977648 s
+- median paired change: +2.0898%
 
-Paired 24-case proxy, 16 counterbalanced repetitions:
-- A2 median: 0.959417 s
-- E0013 median: 0.977648 s
-- median paired fractional change `(E0013-A2)/A2`: +2.0898%
-- speed ratio A2/E0013: 0.981353
+Decision: REJECT.
 
-Decision: REJECT for the public optimization stream. The shortcut is semantically safe on this corpus but the resource signal is clearly negative. Do not stack it.
+## Fresh A2 profile
 
-## Negative-law accumulation
+Run `31856330536`, artifact `9239142575`, digest `sha256:ad27ef258922b67d8635b61b41eeaade9daff3a2682728225c5f09934b0b0f03`.
 
-Current public evidence adds:
-- universe-level equality caching: no public proxy win on A2
-- immediate spine-length mismatch reject: no public proxy win on A2
+Largest case by far: `good/perf/grind-ring-5.ndjson` (~0.646 s median in 3-run per-case profiling).
 
-These are search-space deletions, not failures to preserve.
+Callgrind on grind-ring-5 re-ranked the A2 residual. Largest measured self instruction cost:
+- `prune_env_cold`: ~11.55%
+- `spine_snoc_hc`: ~5.46%
+- `mk_rigid_hc`: ~3.82%
+- eval/eval_no_cache paths follow
+- `key_env`: ~0.44% self
+- `fire_recursor`: ~0.21% self
 
-Important corpus correction: the public immutable artifact used here contains 161 cases, not the later 178-file corpus.
+Interpretation: after A2, cold environment pruning is the dominant measured self-cost. Historical iota/recursor candidates are no longer the first target.
+
+## A2 prune diagnostic
+
+Run `31856816866` on grind-ring-5:
+
+`PRUNE_STATS total=3373253 mask0=0 subset=638397 cell_hit=188807 cell_mismatch=368698 dm_hit=82451 dm_occupied_miss=2366604 cold=2463598 cold_cons=1580782 cold_framed=882816`
+
+Approximate rates:
+- subset fast path: 18.93%
+- per-env one-entry hit: 5.60%
+- direct-map hit: 2.44%
+- cold path: 73.03%
+- cold Cons: 64.17% of cold
+- cold Framed: 35.83% of cold
+
+The direct map is frequently occupied by a different key, but occupancy alone does not prove useful associativity/reuse.
+
+## E0014 — two-way prune direct map
+
+Run `31856928587`, artifact `9239338367`, digest `sha256:7907398061db6a38a2cf008645825f8983962de9fb1e90fddb907df104750e9f`.
+
+Intervention: retain a second recent entry for each prune direct-map slot; check both ways before cold pruning.
+
+- A2: 161/161, zero declines
+- E0014: 161/161, zero declines
+- A2 median proxy: 0.799205 s
+- E0014 median proxy: 0.803238 s
+- median paired change: +0.5779%
+
+Decision: REJECT. More associativity does not pay for itself on this workload despite the high occupied-miss count. This joins the older capacity-sweep negative: do not attack `prune_env_cold` by simply adding more direct-map storage/lookups.
+
+## Negative laws
+
+- E0012 universe-level equality cache: no public A2 proxy win.
+- E0013 immediate spine-length mismatch reject: no public A2 proxy win.
+- E0014 two-way prune direct map: no public A2 proxy win.
+- Larger/more associative prune lookup is not currently the route; optimize or avoid cold pruning itself.
 
 ## Execution rules
 
@@ -65,14 +95,8 @@ Important corpus correction: the public immutable artifact used here contains 16
 - Same-runner A2 control for every public performance comparison.
 - Do not stack negative or unresolved candidates.
 - Infrastructure failures are not scientific evidence.
-- Any exact-Mathlib result must use a frozen reconstructed Mathlib fixture/protocol, not the 24-case proxy.
+- Any exact-Mathlib result must use a frozen reconstructed Mathlib fixture/protocol, not this 24-case proxy.
 
 ## Next gate
 
-Fresh A2 profile before inventing another intervention.
-
-Goal: re-measure the admitted A2 substrate rather than continuing to optimize historical A1 residuals. Produce:
-1. per-case wall ranking over the immutable 161-case corpus;
-2. fresh callgrind profile on `good/perf/grind-ring-5.ndjson` if the hosted runner supports it;
-3. top optimized functions / instruction-cost regions;
-4. re-rank candidate families only after this profile.
+Characterize the 2.46M cold prune calls before modifying the algorithm: measure free-variable mask population/count shape and traversal shape on grind-ring-5. Use that evidence to choose a narrow cold-path specialization rather than another cache experiment.
