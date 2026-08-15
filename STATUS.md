@@ -97,7 +97,7 @@ Derived shape:
 - mean span/depth: ~4.28
 - starting Cons: 64.17%; Framed: 35.83%
 
-The residual is therefore overwhelmingly shallow and sparse. This argues for avoiding repeated pruning work or lowering fixed per-call overhead, not building a general large-mask algorithm.
+The residual is overwhelmingly shallow and sparse. This argues for avoiding repeated pruning work or lowering fixed per-call overhead, not building a general large-mask algorithm.
 
 ## E0015 — singleton prune fast path
 
@@ -110,9 +110,22 @@ Intervention: for a one-bit mask, use direct `Env::lookup` and construct the one
 - A2 median proxy: 0.733165 s
 - E0015 median proxy: 0.737547 s
 - median paired change: +0.7837%
-- speed ratio A2/E0015: 0.994059
 
-Decision: REJECT. Even the dominant 30.46% singleton shape is already handled efficiently enough by the generic path; a duplicate specialized traversal adds overhead rather than removing the real cost.
+Decision: REJECT.
+
+## E0016 — infer canonical-env threading
+
+Run `31857516519`, artifact `9239511850`, digest `sha256:11ef702d1dd5b46baff22b33a379077f61d08bd5ef21001bd37f6c431dc9e589`.
+
+Intervention: in `infer_value`, compute `key_env(env,e)` once for the type-cache key and reuse the resulting canonical environment for `Closure::mk_infer` on Lambda cache misses.
+
+- A2: 161/161, zero declines
+- E0016: 161/161, zero declines
+- A2 median proxy: 0.764280 s
+- E0016 median proxy: 0.766739 s
+- median paired change: +0.1246%
+
+Decision: REJECT. The duplicate infer-site canonicalization is real but too small/noisy to provide a public proxy win.
 
 ## Negative laws
 
@@ -120,8 +133,9 @@ Decision: REJECT. Even the dominant 30.46% singleton shape is already handled ef
 - E0013 immediate spine-length mismatch reject: no public A2 proxy win.
 - E0014 two-way prune direct map: no public A2 proxy win.
 - E0015 singleton-mask special case: no public A2 proxy win.
+- E0016 infer duplicate canonical-env threading: no public A2 proxy win.
 - Larger/more associative prune lookup is not currently the route.
-- Shape-specializing the cold loop itself is not sufficient; target repeated calls / duplicate canonicalization or representation-level avoidance.
+- Shape-specializing the cold loop itself is not sufficient; target repeated calls / representation-level avoidance.
 
 ## Execution rules
 
@@ -134,4 +148,4 @@ Decision: REJECT. Even the dominant 30.46% singleton shape is already handled ef
 
 ## Next gate
 
-E0016: canonical-environment threading in inference. `infer_value` currently computes `key_env(env,e)` for the type-cache key and, on the Lambda miss path, computes the same canonical environment again for `Closure::mk_infer`. Reuse the already-computed canonical environment in that path and benchmark it as a single intervention on A2.
+E0017: canonical-environment threading in evaluation. For open structural expressions, `eval` computes `te = key_env(env,e)` and passes that exact canonical environment to `eval_no_cache`. The Lambda and Pi branches inside `eval_no_cache` then call `key_env(env,e)` again. Remove only that duplicate open-path pruning while preserving the closed-expression semantics, and benchmark as a single intervention on A2.
