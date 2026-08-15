@@ -1,7 +1,7 @@
 # LIVE STATUS — Triskelion × Lean Kernel Arena
 
 ## Current internal frontier
-A3 is the admitted internal/public optimization frontier.
+A3 remains the admitted internal/public optimization frontier.
 
 A3 reconstruction:
 - upstream sokonanoda `9b4ea12f4cd437d00b6bcd0e34743065c58dea08`
@@ -67,26 +67,21 @@ Derived:
 - existing canonical-frame reuse: ~40.36%
 - frame constructions/new misses: ~59.64%
 
-Interpretation: a large fraction of cold-prune completions already resolve to an existing canonical frame. This makes a cheap, exact-checked L0 in front of the frame HashTable a high-information candidate, but hit locality must be demonstrated by runtime evidence rather than assumed.
-
 ## E0019 — output-frame direct-map L0
-Status: RUNNING / NOT ADMITTED.
+Run `31859367528`, artifact `9240061642`, digest `sha256:523f4e067cad8cfa2d247862ed25945ab397a5f7090fb3e0a3e8c138f4af1c84`.
 
-Run `31859367528`.
+Intervention: 4096-slot exact-checked direct-mapped accelerator in front of `tc_cache.frames.find` inside `intern_frame`.
 
-Intervention:
-- A3 unchanged as control.
-- E0019 adds a 4096-slot direct-mapped accelerator in front of `tc_cache.frames.find` inside `intern_frame`.
-- A candidate direct-map hit is never accepted by hash alone: it rechecks frame mask, level-substitution identity, slot count, and every slot by pointer equality before returning the stored canonical environment.
-- Direct-map contents are cleared at session boundaries with the rest of the session cache.
+Results:
+- A3: 161/161, zero declines
+- E0019: 161/161, zero declines
+- A3 median proxy: 0.727750 s
+- E0019 median proxy: 0.733530 s
+- median paired change: +0.5518%
+- E0019 won only 9/20 paired repetitions
+- median speed ratio A3/E0019: 0.99212
 
-Gate:
-- full 161 semantic corpus on both arms;
-- same 24 largest-case workload;
-- 20 counterbalanced paired repetitions;
-- same runner and native build flags.
-
-Do not promote unless the paired result is substantial and consistent. If positive, follow with the Arena-style PGO wall/CPU/RSS gate before admission.
+Decision: REJECT. The ~40% existing frame-interner reuse does not imply enough cheap direct-map locality to pay for another lookup/verification layer.
 
 ## Recent rejected/not-admitted experiments
 - E0012 level-equality cache: +0.9939% paired proxy; NOT ADMITTED.
@@ -95,11 +90,13 @@ Do not promote unless the paired result is substantial and consistent. If positi
 - E0015 singleton prune fast path: +0.7837%; REJECT.
 - E0016 infer canonical-env threading: +0.1246%; REJECT.
 - E0017 eval canonical-env threading: -0.0616% paired median; too small/noisy; NOT ADMITTED.
+- E0019 output-frame L0 direct map: +0.5518%; REJECT.
 
 ## Negative laws
 - More input-prune-map capacity/associativity does not pay.
 - Singleton cold-loop specialization does not pay.
 - Isolated duplicate canonicalization at infer/eval closure construction is too small to admit.
+- Frame interning has substantial reuse, but another direct-map lookup layer does not pay on A3.
 - Do not stack rejected candidates.
 
 ## Execution rules
@@ -110,4 +107,4 @@ Do not promote unless the paired result is substantial and consistent. If positi
 - Exact-Mathlib/full-official promotion remains a separate gate before external submission.
 
 ## Next gate
-Finish E0019. If it loses, retain the negative and move to session resource retention or the next freshly measured A3 hotspot. If it wins materially, run protected Arena-style PGO wall/CPU/RSS validation and admit only if that gate also passes.
+E0020: session arena reuse only. Replace `SessionBump::reset()`'s fresh `bumpalo::Bump::new()` with an in-place bump reset, holding table-capacity policy fixed. Benchmark A3 vs E0020. If this wins, test table-capacity retention separately before considering their interaction.
