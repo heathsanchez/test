@@ -15,31 +15,48 @@ A2 reconstruction used here:
 
 ## E0012 — symmetric universe-level equality cache
 
-The original private exact-Mathlib E0012 gate remains formally unresolved because the local immutable Mathlib fixtures/protocol were not pushed.
-
 Public revalidation run: `31855875785`
 Artifact: `9239017873`
 Artifact SHA-256: `448c3c17713f21824e56e6a978634bb26741aca09282d4369e1aa197dd20e103`
 
-The public runner completed end-to-end on the immutable Arena artifact `8931227426`.
-
-Semantic result on the 161-case suite contained in that artifact:
+Semantic result on immutable Arena artifact `8931227426` (161 cases):
 - A2: 161/161, zero declines
 - E0012: 161/161, zero declines
 
 Paired 24-case proxy, 16 counterbalanced repetitions:
 - A2 median: 0.917405 s
 - E0012 median: 0.919181 s
-- speed ratio A2/E0012: 0.998069
 - median paired fractional change `(E0012-A2)/A2`: +0.9939%
 
-Interpretation:
-- semantic safety: supported on this 161-case public corpus
-- public performance signal: negative
-- admission: NO; E0012 is not stacked into the frontier
-- exact private Mathlib decision: still formally open, but this public proxy does not motivate spending the next optimization branch on E0012
+Decision for the public optimization stream: NOT ADMITTED. The original private exact-Mathlib decision remains formally open because those local fixtures/protocol were not pushed, but E0012 is not stacked into later candidates.
 
-Important corpus correction: the public immutable artifact used here contains 161 cases, not the later 178-file corpus. Do not relabel this result as 178/178.
+## E0013 — SPINE_LENGTH_FAST_REJECT
+
+Public run: `31856147246`
+Artifact: `9239099644`
+Artifact SHA-256: `f2453a9fae8712039cb03ca53311e6c2f5d2ec5d6f5a66a6b2a4e7c0bf4aa023`
+
+Semantic result on the same 161-case immutable corpus:
+- A2: 161/161, zero declines
+- E0013: 161/161, zero declines
+
+Paired 24-case proxy, 16 counterbalanced repetitions:
+- A2 median: 0.959417 s
+- E0013 median: 0.977648 s
+- median paired fractional change `(E0013-A2)/A2`: +2.0898%
+- speed ratio A2/E0013: 0.981353
+
+Decision: REJECT for the public optimization stream. The shortcut is semantically safe on this corpus but the resource signal is clearly negative. Do not stack it.
+
+## Negative-law accumulation
+
+Current public evidence adds:
+- universe-level equality caching: no public proxy win on A2
+- immediate spine-length mismatch reject: no public proxy win on A2
+
+These are search-space deletions, not failures to preserve.
+
+Important corpus correction: the public immutable artifact used here contains 161 cases, not the later 178-file corpus.
 
 ## Execution rules
 
@@ -48,17 +65,14 @@ Important corpus correction: the public immutable artifact used here contains 16
 - Same-runner A2 control for every public performance comparison.
 - Do not stack negative or unresolved candidates.
 - Infrastructure failures are not scientific evidence.
-- Any exact-Mathlib result must use a frozen reconstructed Mathlib fixture/protocol, not this 24-case proxy.
+- Any exact-Mathlib result must use a frozen reconstructed Mathlib fixture/protocol, not the 24-case proxy.
 
 ## Next gate
 
-E0013: `SPINE_LENGTH_FAST_REJECT` on A2.
+Fresh A2 profile before inventing another intervention.
 
-Hypothesis: after pointer identity has failed, unequal spine lengths can return false immediately rather than entering deeper spine comparison.
-
-Protocol:
-1. Reconstruct A2.
-2. Add only the length-mismatch fast reject.
-3. Require full correctness and zero declines on the same 161-case immutable corpus.
-4. Compare A2 vs E0013 on the same counterbalanced 24-case public-runner proxy.
-5. If positive, promote only after an appropriately stronger resource gate; if negative, freeze and re-profile A2.
+Goal: re-measure the admitted A2 substrate rather than continuing to optimize historical A1 residuals. Produce:
+1. per-case wall ranking over the immutable 161-case corpus;
+2. fresh callgrind profile on `good/perf/grind-ring-5.ndjson` if the hosted runner supports it;
+3. top optimized functions / instruction-cost regions;
+4. re-rank candidate families only after this profile.
