@@ -1,0 +1,74 @@
+name: Lean Kernel Arena A5 unify Callgrind decomposition
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-kernel-arena-a5-unify-callgrind.yml'
+
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install profiling tools
+        run: sudo apt-get update && sudo apt-get install -y valgrind
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a5-unify-callgrind
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A5
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a5
+          git -C a5 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a5.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a5/config.json
+      - name: Build A5 with debug symbols
+        run: |
+          cd a5
+          RUSTFLAGS='-C debuginfo=1 -C target-cpu=native' cargo build --release
+      - name: Semantic replay
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          root=Path('.')
+          b=root/'a5/target/release/sokonanoda'; cfg=root/'a5/config.json'
+          total=bad=decl=0
+          for kind,exp in [('good',0),('bad',1)]:
+              for p in (root/'arena-tests'/kind).rglob('*.ndjson'):
+                  total+=1
+                  with p.open('rb') as f:
+                      rc=subprocess.run([str(b),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  if rc==2: decl+=1
+                  if rc!=exp: bad+=1; print('MISMATCH',p,rc,exp)
+          print({'total':total,'bad':bad,'declines':decl})
+          if bad or decl: raise SystemExit(1)
+          PY
+      - name: Callgrind grind-ring-5 and decompose conversion
+        run: |
+          set -euo pipefail
+          P=arena-tests/good/perf/grind-ring-5.ndjson
+          valgrind --tool=callgrind --collect-jumps=yes --callgrind-out-file=results/a5-unify-callgrind/callgrind.out \
+            a5/target/release/sokonanoda a5/config.json < "$P" >/dev/null 2>results/a5-unify-callgrind/valgrind.stderr
+          callgrind_annotate --inclusive=yes --threshold=0.05 results/a5-unify-callgrind/callgrind.out > results/a5-unify-callgrind/annotate-inclusive.txt
+          callgrind_annotate --inclusive=no --threshold=0.02 results/a5-unify-callgrind/callgrind.out > results/a5-unify-callgrind/annotate-self.txt
+          {
+            echo '=== SELF MATCHES ==='
+            grep -E 'unify_no_cache|unify_direct|unify_cold|conv_nat|unfold_pair|spine_probe|unify_spine|try_proof_irrel|iota|force_thunk|eq_antisymm' results/a5-unify-callgrind/annotate-self.txt || true
+            echo '=== INCLUSIVE MATCHES ==='
+            grep -E 'unify_no_cache|unify_direct|unify_cold|conv_nat|unfold_pair|spine_probe|unify_spine|try_proof_irrel|iota|force_thunk|eq_antisymm' results/a5-unify-callgrind/annotate-inclusive.txt || true
+          } | tee results/a5-unify-callgrind/unify-matches.txt
+          head -120 results/a5-unify-callgrind/annotate-self.txt > results/a5-unify-callgrind/top-self.txt
+          cat results/a5-unify-callgrind/unify-matches.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-kernel-arena-a5-unify-callgrind
+          path: results/a5-unify-callgrind/
