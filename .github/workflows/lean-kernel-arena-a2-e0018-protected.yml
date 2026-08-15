@@ -36,13 +36,17 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          test -x "$LLVM_PROFDATA"
+          echo "Using $LLVM_PROFDATA"
           TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
           for v in a2 e0018; do
             rm -rf "$v/pgo"
             mkdir -p "$v/pgo"
             (cd "$v" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
             "$v/target/release/sokonanoda" "$v/config.json" < "$TRAIN" >/dev/null
-            llvm-profdata merge -o "$v/pgo/merged.profdata" "$v/pgo"
+            "$LLVM_PROFDATA" merge -o "$v/pgo/merged.profdata" "$v/pgo"
             (cd "$v" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
           done
       - name: Protected semantic plus wall CPU RSS gate
