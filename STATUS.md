@@ -79,6 +79,33 @@ Protected Arena-style PGO run `31859768733`, artifact `9240190729`, digest `sha2
 
 Decision: REJECT. The native proxy gain did not survive the Arena-style PGO resource gate; CPU moved the wrong way. A3 remains frontier.
 
+## E0022 — bypass open Let cache
+Run `31860047529`, artifact `9240278345`, digest `sha256:e17bba3e31daf2e6736ab86a801a8813cce6bc36637e4dd2d23a6cc4df42be91`.
+- both arms 161/161, zero declines
+- A3 median 0.798503 s
+- E0022 median 0.797575 s
+- paired median -0.2050%
+- E0022 wins 11/20
+Decision: NOT ADMITTED. Direction is positive but too small/noisy for promotion.
+
+## A3 open-eval cache diagnostic
+Run `31860481789`, artifact `9240408036`, digest `sha256:28311009f16464d6622b4a879d71b4e5ea3eb76893043061c628d914af36033c`.
+Sampled grind-ring-5 open-eval cache economics by expression class:
+- App: n=1489, hit 32.57%, same-env 14.71%, mean loose=5.564, mean mask-pop=2.764
+- Lambda: n=383, hit 29.50%, same-env 12.79%, mean loose=4.606, mean mask-pop=3.196
+- Pi: n=267, hit 58.05%, same-env 4.12%, mean loose=2.539, mean mask-pop=1.820
+- Proj: n=17, hit 70.59%, same-env 0%
+- Let: n=7, hit 0% in the sample
+
+Interpretation: App and Lambda are the only high-volume classes with moderate hit rates and expensive environment projection. Pi/Proj appear substantially more cache-valuable. This motivates scoped deletion tests before inventing a new representation.
+
+## Current live experiments
+- E0023: bypass open-eval canonicalization/cache for Lambda only. Run `31860855495` launched from commit `46f15b6cb334dfa633f72e70543105a7ed9e84c6`; currently executing.
+- E0024: bypass open-eval canonicalization/cache for App only. Launched from commit `ae2ed5db0cbe6fa80ee9cb7db8fcc7052c7ee766`; independent A3-rebased arm.
+
+## A3 vs current zignodamus diagnostic
+Run `31860374211` compared A3 PGO against zignodamus `111372299e41188a159d05f8df780342e12aff1b` on the same frozen corpus/workload. Both replayed 161/161. The zignodamus benchmark arm repeatedly aborted/core-dumped during resource measurement and therefore is not a clean scientific performance comparison; do not use its large apparent wall/CPU gap as leaderboard evidence. The correctness replay is still useful.
+
 ## Recent rejected/not-admitted experiments
 - E0012 level-equality cache: +0.9939% paired proxy; NOT ADMITTED.
 - E0013 spine-length fast reject: +2.0898%; REJECT.
@@ -89,6 +116,7 @@ Decision: REJECT. The native proxy gain did not survive the Arena-style PGO reso
 - E0019 output-frame L0 direct map: +0.5518%; REJECT.
 - E0020 in-place arena reset: +0.6846%; REJECT.
 - E0021 retain oversized table capacities: protected CPU +1.1111%; REJECT.
+- E0022 bypass open Let cache: -0.2050%; too small/noisy; NOT ADMITTED.
 
 ## Negative laws
 - More input-prune-map capacity/associativity does not pay.
@@ -97,14 +125,15 @@ Decision: REJECT. The native proxy gain did not survive the Arena-style PGO reso
 - Frame interning has substantial reuse, but another direct-map lookup layer does not pay.
 - Retaining allocator chunks alone does not pay.
 - Retaining oversized table capacities can look positive in a non-PGO proxy but does not survive the Arena-style PGO gate.
+- Bypassing a tiny near-zero-hit class (Let) is semantically safe but too small to matter alone.
 - Do not stack rejected candidates.
 
 ## Execution rules
 - Continue from A3 until a later arm clears protected admission.
-- One intervention at a time.
+- One intervention per candidate arm.
 - Same-runner control for every public comparison.
 - Infrastructure failures are not scientific evidence.
 - Exact-Mathlib/full-official promotion remains a separate gate before external submission.
 
 ## Next gate
-Return to the dominant A3 pruning residual. Audit every remaining `key_env` call by lifecycle role and target another transient-composition canonicalization that can be safely deferred, rather than adding more cache layers or shape-specializing `prune_env_cold`.
+Resolve E0023 and E0024. If either shows a clear same-runner proxy win, run the protected Arena-style PGO wall/CPU/RSS gate immediately. If neither wins, retain Pi/Proj caching and move from deletion to a representation-level experiment: avoid fully materializing canonical environments for low-value App/Lambda cache lookups while preserving semantic cache identity.
