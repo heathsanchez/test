@@ -1,0 +1,63 @@
+name: Lean Kernel Arena A2 fresh profile
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lean-kernel-arena-a2-profile.yml'
+      - 'scripts/profile_a2.py'
+
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install profiler
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq valgrind
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a2-profile
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A2
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a2
+          git -C a2 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('a2/src/tc.rs'); s=p.read_text(); old='const SESSION_BUDGET: usize = 1 << 20;'
+          assert old in s
+          p.write_text(s.replace(old,'const SESSION_BUDGET: usize = 2621440;',1))
+          PY
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a2/config.json
+      - name: Build A2
+        run: cd a2 && RUSTFLAGS='-C target-cpu=native -C debuginfo=1' cargo build --release
+      - name: Per-case profile
+        run: python3 scripts/profile_a2.py
+      - name: Callgrind grind-ring-5
+        shell: bash
+        run: |
+          set -euo pipefail
+          valgrind --tool=callgrind --callgrind-out-file=results/a2-profile/callgrind.out --quiet \
+            a2/target/release/sokonanoda a2/config.json \
+            < arena-tests/good/perf/grind-ring-5.ndjson >/dev/null 2>/dev/null
+          callgrind_annotate --auto=yes --inclusive=yes --threshold=0.2 results/a2-profile/callgrind.out \
+            > results/a2-profile/callgrind.txt || true
+          head -n 160 results/a2-profile/callgrind.txt || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-a2-profile
+          path: results/a2-profile/
