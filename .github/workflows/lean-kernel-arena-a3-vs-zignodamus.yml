@@ -1,0 +1,60 @@
+name: Lean Kernel Arena A3 vs current zignodamus
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lean-kernel-arena-a3-vs-zignodamus.yml'
+      - 'scripts/run_a3_vs_zignodamus.py'
+      - 'scripts/patch_a2_e0018.py'
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: mlugg/setup-zig@v2
+        with:
+          version: 0.16.0-dev.1484+5e07d6b0b
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a3-vs-zignodamus
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A3 and current Arena zignodamus
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a2
+          git -C a2 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          cp -a a2 e0018
+          python3 scripts/patch_a2_e0018.py
+          mv e0018 a3
+          rm -rf a2
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a3/config.json
+          git clone https://github.com/intgrah/zignodamus.git zignodamus
+          git -C zignodamus checkout 111372299e41188a159d05f8df780342e12aff1b
+          (cd zignodamus && zig build -Drelease)
+      - name: Arena-style PGO build A3
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
+          mkdir -p a3/pgo
+          (cd a3 && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+          a3/target/release/sokonanoda a3/config.json < "$TRAIN" >/dev/null
+          "$LLVM_PROFDATA" merge -o a3/pgo/merged.profdata a3/pgo
+          (cd a3 && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+      - name: Semantic replay and paired resource benchmark
+        run: python3 scripts/run_a3_vs_zignodamus.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-a3-vs-zignodamus
+          path: results/a3-vs-zignodamus/
