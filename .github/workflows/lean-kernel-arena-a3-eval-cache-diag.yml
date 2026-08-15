@@ -1,0 +1,43 @@
+name: Lean Kernel Arena A3 open eval cache diagnostic
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lean-kernel-arena-a3-eval-cache-diag.yml'
+      - 'scripts/patch_a3_eval_cache_diag.py'
+jobs:
+  diag:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a3-eval-cache-diag
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A3 and instrument
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a3
+          git -C a3 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a3_eval_cache_diag.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a3/config.json
+          (cd a3 && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+      - name: Run grind-ring-5 diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOKONANODA_EVAL_DIAG=1 a3/target/release/sokonanoda a3/config.json < arena-tests/good/perf/grind-ring-5.ndjson > results/a3-eval-cache-diag/stdout.txt 2> results/a3-eval-cache-diag/stderr.txt
+          cat results/a3-eval-cache-diag/stderr.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-a3-eval-cache-diag
+          path: results/a3-eval-cache-diag/
