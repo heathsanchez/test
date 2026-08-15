@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: mlugg/setup-zig@v2
         with:
-          version: 0.16.0-dev.1484+5e07d6b0b
+          version: master
       - name: Fetch frozen Arena corpus
         shell: bash
         run: |
@@ -38,6 +38,7 @@ jobs:
           printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a3/config.json
           git clone https://github.com/intgrah/zignodamus.git zignodamus
           git -C zignodamus checkout 111372299e41188a159d05f8df780342e12aff1b
+          zig version
           (cd zignodamus && zig build -Drelease)
       - name: Arena-style PGO build A3
         shell: bash
