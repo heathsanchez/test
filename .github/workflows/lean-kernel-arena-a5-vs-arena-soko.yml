@@ -1,0 +1,86 @@
+name: Lean Kernel Arena A5 vs Arena-pinned sokonanoda
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-kernel-arena-a5-vs-arena-soko.yml'
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a5-vs-arena-soko
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct both arms
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git arena_soko
+          git -C arena_soko checkout 0fab8874080e379a774a9a27f7538d8a1ddd786b
+          git clone https://github.com/intgrah/sokonanoda.git a5
+          git -C a5 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a5.py
+          for d in arena_soko a5; do
+            printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > "$d/config.json"
+          done
+      - name: Arena-style PGO build both arms
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
+          for d in arena_soko a5; do
+            mkdir -p "$d/pgo"
+            (cd "$d" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+            "$d/target/release/sokonanoda" "$d/config.json" < "$TRAIN" >/dev/null
+            "$LLVM_PROFDATA" merge -o "$d/pgo/merged.profdata" "$d/pgo"
+            (cd "$d" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+          done
+      - name: Semantic replay and paired benchmark
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,time,statistics,random,json,hashlib
+          root=Path('.'); arms=['arena_soko','a5']
+          bins={a:root/a/'target/release/sokonanoda' for a in arms}; cfgs={a:root/a/'config.json' for a in arms}
+          cases=[]
+          for kind,exp in [('good',0),('bad',1)]:
+              for p in (root/'arena-tests'/kind).rglob('*.ndjson'): cases.append((p,exp))
+          correctness={}
+          for a in arms:
+              bad=[]; declines=0
+              for p,exp in cases:
+                  with p.open('rb') as f: rc=subprocess.run([str(bins[a]),str(cfgs[a])],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  declines += rc==2
+                  if rc!=exp: bad.append(str(p.relative_to(root/'arena-tests')))
+              correctness[a]={'correct':len(cases)-len(bad),'total':len(cases),'declines':declines,'failures':bad}
+          if any(v['correct']!=v['total'] or v['declines'] for v in correctness.values()):
+              print(correctness); raise SystemExit(1)
+          workload=sorted([p for p,_ in cases],key=lambda p:p.stat().st_size,reverse=True)[:24]
+          workload=sorted(workload,key=lambda p:hashlib.sha256(str(p.relative_to(root/'arena-tests')).encode()).hexdigest())
+          samples={a:[] for a in arms}
+          for seed in range(16):
+              order=arms.copy(); random.Random(seed).shuffle(order)
+              for a in order:
+                  t=time.perf_counter()
+                  for p in workload:
+                      with p.open('rb') as f: subprocess.run([str(bins[a]),str(cfgs[a])],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+                  samples[a].append(time.perf_counter()-t)
+          med={a:statistics.median(samples[a]) for a in arms}
+          paired=[(n-o)/o for o,n in zip(samples['arena_soko'],samples['a5'])]
+          result={'correctness':correctness,'median_seconds':med,'a5_speedup_vs_arena_soko':med['arena_soko']/med['a5'],'paired_median_a5_minus_arena':statistics.median(paired),'a5_wins':sum(x<0 for x in paired),'pairs':len(paired),'arena_revision':'0fab8874080e379a774a9a27f7538d8a1ddd786b','a5_base_revision':'9b4ea12f4cd437d00b6bcd0e34743065c58dea08'}
+          (root/'results/a5-vs-arena-soko/summary.json').write_text(json.dumps(result,indent=2,sort_keys=True)); print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-kernel-arena-a5-vs-arena-soko
+          path: results/a5-vs-arena-soko/
