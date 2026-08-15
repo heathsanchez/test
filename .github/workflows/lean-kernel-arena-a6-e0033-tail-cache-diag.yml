@@ -1,0 +1,72 @@
+name: Lean Kernel Arena A6 E0033 tail-cache diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-kernel-arena-a6-e0033-tail-cache-diag.yml'
+      - 'scripts/patch_a6_e0033_tail_cache_diag.py'
+      - 'scripts/patch_a6.py'
+      - 'RGRS_E0031_E0032.md'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/e0033
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A6 and diagnostic only
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a6.py
+          python3 scripts/patch_a6_e0033_tail_cache_diag.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a6/config.json
+      - name: Build diagnostic
+        run: |
+          set -euo pipefail
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+      - name: Run frozen dominant case
+        run: |
+          set -euo pipefail
+          CASE=$(find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | head -1)
+          test -n "$CASE"
+          set +e
+          SOKONANODA_E0033_DIAG=1 a6/target/release/sokonanoda a6/config.json < "$CASE" >results/e0033/stdout.txt 2>results/e0033/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > results/e0033/returncode.txt
+          test "$rc" -eq 0
+          grep 'E0033_STATS' results/e0033/stderr.txt | tail -1 | tee results/e0033/stats.txt
+      - name: Derive RGRS tail-reuse metrics
+        run: |
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          vals={k:int(v) for k,v in re.findall(r'(\w+)=(\d+)',Path('results/e0033/stats.txt').read_text())}
+          tail=vals['tail_nonzero']; matches=vals['parent_memo_match']; results=vals['parent_memo_result']
+          out={
+            'raw': vals,
+            'tail_memo_match_rate': matches/tail if tail else 0.0,
+            'tail_memo_result_rate': results/tail if tail else 0.0,
+            'result_given_match': results/matches if matches else 0.0,
+            'rgrs_question':'Can existing parent-level prune knowledge be composed to avoid rebuilding projection tails?'
+          }
+          Path('results/e0033/summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-kernel-arena-a6-e0033-tail-cache-diag
+          path: results/e0033/
