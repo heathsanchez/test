@@ -1,0 +1,92 @@
+name: Lean Kernel Arena A5 eval branch diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-kernel-arena-a5-eval-branch-diag.yml'
+      - 'scripts/patch_a5_eval_branch_diag.py'
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a5-eval-branch-diag
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct diagnostic A5
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a5
+          git -C a5 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a5.py
+          python3 scripts/patch_a5_eval_branch_diag.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a5/config.json
+      - name: Build diagnostic A5
+        run: cd a5 && RUSTFLAGS='-C target-cpu=native' cargo build --release
+      - name: Full semantic sanity
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess
+          root=Path('.'); b=root/'a5/target/release/sokonanoda'; cfg=root/'a5/config.json'
+          total=bad=decl=0
+          for kind,exp in [('good',0),('bad',1)]:
+              for p in (root/'arena-tests'/kind).rglob('*.ndjson'):
+                  total += 1
+                  with p.open('rb') as f:
+                      rc=subprocess.run([str(b),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  decl += (rc==2)
+                  if rc != exp: bad += 1
+          print({'total':total,'bad':bad,'declines':decl})
+          if bad or decl: raise SystemExit(1)
+          PY
+      - name: Sample eval_no_cache on grind-ring-5
+        run: |
+          set -euo pipefail
+          a5/target/release/sokonanoda a5/config.json \
+            < arena-tests/good/perf/grind-ring-5.ndjson \
+            >/dev/null 2>results/a5-eval-branch-diag/samples.txt
+          grep '^A5_EVAL_SAMPLE ' results/a5-eval-branch-diag/samples.txt > results/a5-eval-branch-diag/eval-samples.txt || true
+          python3 - <<'PY'
+          from collections import Counter
+          from pathlib import Path
+          import json
+          lines=Path('results/a5-eval-branch-diag/eval-samples.txt').read_text().splitlines()
+          kinds=Counter(); nested=same=0
+          for line in lines:
+              fields=dict(x.split('=',1) for x in line.split()[1:])
+              kinds[fields['kind']] += 1
+              nested += fields['nested_app']=='true'
+              same += fields['same_fun']=='true'
+          apps=kinds['App']
+          out={
+              'samples':len(lines),
+              'kinds':dict(kinds),
+              'fractions':{k:v/len(lines) for k,v in kinds.items()} if lines else {},
+              'app_nested_samples':nested,
+              'app_same_fun_samples':same,
+              'nested_fraction_of_app':nested/apps if apps else None,
+              'same_fun_fraction_of_app':same/apps if apps else None,
+              'same_fun_fraction_of_nested':same/nested if nested else None,
+              'sampling_period':4096,
+          }
+          Path('results/a5-eval-branch-diag/summary.json').write_text(json.dumps(out,indent=2,sort_keys=True))
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-a5-eval-branch-diag
+          path: results/a5-eval-branch-diag/
