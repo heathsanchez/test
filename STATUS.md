@@ -65,8 +65,6 @@ Approximate rates:
 - cold Cons: 64.17% of cold
 - cold Framed: 35.83% of cold
 
-The direct map is frequently occupied by a different key, but occupancy alone does not prove useful associativity/reuse.
-
 ## E0014 — two-way prune direct map
 
 Run `31856928587`, artifact `9239338367`, digest `sha256:7907398061db6a38a2cf008645825f8983962de9fb1e90fddb907df104750e9f`.
@@ -79,14 +77,51 @@ Intervention: retain a second recent entry for each prune direct-map slot; check
 - E0014 median proxy: 0.803238 s
 - median paired change: +0.5779%
 
-Decision: REJECT. More associativity does not pay for itself on this workload despite the high occupied-miss count. This joins the older capacity-sweep negative: do not attack `prune_env_cold` by simply adding more direct-map storage/lookups.
+Decision: REJECT. More associativity does not pay for itself.
+
+## Cold-prune shape diagnostic
+
+Run `31857113683`, artifact `9239385370`, digest `sha256:49491a9efc0e76df15b60b3fa157fd4eaedf16fda1206d9714fc3eea57ce4ecb`.
+
+On grind-ring-5:
+
+`PRUNE_SHAPE cold=2480824 pc1=755617 pc2=652431 pc3=443965 pc4p=628811 popsum=6437142 spansum=10606157 span8=2203970 span16=263781 span32=12090 span64=983 cons=1591908 framed=888916`
+
+Derived shape:
+- singleton masks: 30.46% of cold calls
+- population <=2: 56.75%
+- population <=3: 74.64%
+- span <=8: 88.84%
+- span <=16: 99.47%
+- mean selected population: ~2.59
+- mean span/depth: ~4.28
+- starting Cons: 64.17%; Framed: 35.83%
+
+The residual is therefore overwhelmingly shallow and sparse. This argues for avoiding repeated pruning work or lowering fixed per-call overhead, not building a general large-mask algorithm.
+
+## E0015 — singleton prune fast path
+
+Run `31857364894`, artifact `9239467287`, digest `sha256:ec31912f51275f7de9dec295dd803a5c56b8c44a390108c7adc7f0b4600083e8`.
+
+Intervention: for a one-bit mask, use direct `Env::lookup` and construct the one-slot canonical frame without the generic cold-prune loop.
+
+- A2: 161/161, zero declines
+- E0015: 161/161, zero declines
+- A2 median proxy: 0.733165 s
+- E0015 median proxy: 0.737547 s
+- median paired change: +0.7837%
+- speed ratio A2/E0015: 0.994059
+
+Decision: REJECT. Even the dominant 30.46% singleton shape is already handled efficiently enough by the generic path; a duplicate specialized traversal adds overhead rather than removing the real cost.
 
 ## Negative laws
 
 - E0012 universe-level equality cache: no public A2 proxy win.
 - E0013 immediate spine-length mismatch reject: no public A2 proxy win.
 - E0014 two-way prune direct map: no public A2 proxy win.
-- Larger/more associative prune lookup is not currently the route; optimize or avoid cold pruning itself.
+- E0015 singleton-mask special case: no public A2 proxy win.
+- Larger/more associative prune lookup is not currently the route.
+- Shape-specializing the cold loop itself is not sufficient; target repeated calls / duplicate canonicalization or representation-level avoidance.
 
 ## Execution rules
 
@@ -99,4 +134,4 @@ Decision: REJECT. More associativity does not pay for itself on this workload de
 
 ## Next gate
 
-Characterize the 2.46M cold prune calls before modifying the algorithm: measure free-variable mask population/count shape and traversal shape on grind-ring-5. Use that evidence to choose a narrow cold-path specialization rather than another cache experiment.
+E0016: canonical-environment threading in inference. `infer_value` currently computes `key_env(env,e)` for the type-cache key and, on the Lambda miss path, computes the same canonical environment again for `Closure::mk_infer`. Reuse the already-computed canonical environment in that path and benchmark it as a single intervention on A2.
