@@ -52,34 +52,32 @@ Decision: REJECT.
 
 ## E0020 — session arena reuse only
 Run `31859502887`, artifact `9240106578`, digest `sha256:c00f8593e2aab0f34ad5e144af723e9cb8952ce00f5adb0b2bb24ccc30216909`.
-
-Intervention: replace `SessionBump::reset()` fresh `Bump::new()` with in-place `Bump::reset()`, retaining allocator chunks while leaving table policy unchanged.
-
-Results:
 - both arms 161/161, zero declines
 - A3 median 0.754090 s
 - E0020 median 0.758541 s
 - median paired +0.6846%
 - E0020 wins 6/20
-
-Decision: REJECT. Arena reuse alone does not pay on this workload.
+Decision: REJECT.
 
 ## E0021 — table capacity retention
-Initial proxy run `31859635982`, artifact `9240145420`, digest `sha256:4ded8c1d7bb08d39fe7e45271486baf55367f8a9aa5b821c26291e1b37486902`.
-
-Intervention: preserve hash-table allocation/resource shape across session boundaries by clearing in place regardless of capacity (`KEEP_CAP = usize::MAX`), while still deleting entries and leaving the arena reset policy unchanged.
-
-Initial results:
-- both arms 161/161, zero declines
+Initial proxy run `31859635982`, artifact `9240145420`, digest `sha256:4ded8c1d7bb08d39fe7e45271486baf55367f8a9aa5b821c26291e1b37486902`:
+- both 161/161, zero declines
 - A3 median 0.831512 s
 - E0021 median 0.820946 s
-- median paired change -1.4633%
+- paired median -1.4633%
 - E0021 wins 16/20
-- median speed ratio A3/E0021 = 1.01287
 
-Status: PROMISING, NOT YET ADMITTED.
+Protected Arena-style PGO run `31859768733`, artifact `9240190729`, digest `sha256:28c59c2ae0a6c6388e98655ff774ad3b72465ebed911b4c4e654b430ca933b5d`:
+- both arms 161/161, zero declines
+- median wall: 0.70 s vs 0.70 s
+- median CPU: 0.90 s vs 0.90 s
+- median RSS: 515800 vs 513734 KiB
+- paired median wall: 0.0%
+- paired median CPU: +1.1111% (worse)
+- paired median RSS: -0.5288%
+- wins: wall 3/12, CPU 2/12, RSS 6/12
 
-Protected Arena-style PGO wall/CPU/RSS gate is running as run `31859768733`. Admission requires semantic preservation plus convincing resource improvement without unacceptable RSS growth.
+Decision: REJECT. The native proxy gain did not survive the Arena-style PGO resource gate; CPU moved the wrong way. A3 remains frontier.
 
 ## Recent rejected/not-admitted experiments
 - E0012 level-equality cache: +0.9939% paired proxy; NOT ADMITTED.
@@ -90,6 +88,7 @@ Protected Arena-style PGO wall/CPU/RSS gate is running as run `31859768733`. Adm
 - E0017 eval canonical-env threading: -0.0616% paired median; too small/noisy; NOT ADMITTED.
 - E0019 output-frame L0 direct map: +0.5518%; REJECT.
 - E0020 in-place arena reset: +0.6846%; REJECT.
+- E0021 retain oversized table capacities: protected CPU +1.1111%; REJECT.
 
 ## Negative laws
 - More input-prune-map capacity/associativity does not pay.
@@ -97,6 +96,7 @@ Protected Arena-style PGO wall/CPU/RSS gate is running as run `31859768733`. Adm
 - Isolated duplicate canonicalization at infer/eval closure construction is too small to admit.
 - Frame interning has substantial reuse, but another direct-map lookup layer does not pay.
 - Retaining allocator chunks alone does not pay.
+- Retaining oversized table capacities can look positive in a non-PGO proxy but does not survive the Arena-style PGO gate.
 - Do not stack rejected candidates.
 
 ## Execution rules
@@ -107,4 +107,4 @@ Protected Arena-style PGO wall/CPU/RSS gate is running as run `31859768733`. Adm
 - Exact-Mathlib/full-official promotion remains a separate gate before external submission.
 
 ## Next gate
-Finish protected E0021. If it passes, admit as A4 and re-profile. If it fails on CPU/RSS or consistency, reject and return to the fresh A3 hotspot ranking.
+Return to the dominant A3 pruning residual. Audit every remaining `key_env` call by lifecycle role and target another transient-composition canonicalization that can be safely deferred, rather than adding more cache layers or shape-specializing `prune_env_cold`.
