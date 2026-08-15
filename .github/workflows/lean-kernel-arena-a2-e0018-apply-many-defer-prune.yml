@@ -1,0 +1,47 @@
+name: Lean Kernel Arena A2 + E0018 apply_many defer prune
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/lean-kernel-arena-a2-e0018-apply-many-defer-prune.yml'
+      - 'scripts/patch_a2_e0018.py'
+      - 'scripts/run_a2_e0018.py'
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/a2-e0018-public
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct A2 and E0018
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/intgrah/sokonanoda.git a2
+          git -C a2 checkout 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          cp -a a2 e0018
+          python3 scripts/patch_a2_e0018.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a2/config.json
+          cp a2/config.json e0018/config.json
+      - name: Build both arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd a2 && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+          (cd e0018 && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+      - name: Semantic and paired proxy gate
+        run: python3 scripts/run_a2_e0018.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-a2-e0018-public
+          path: results/a2-e0018-public/
