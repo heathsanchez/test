@@ -1,0 +1,95 @@
+name: Lean Kernel Arena session search
+
+on:
+  workflow_dispatch:
+
+jobs:
+  session-search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Sweep session allocation budget
+        shell: bash
+        run: |
+          set -euo pipefail
+          SOKO_REV=0fab8874080e379a774a9a27f7538d8a1ddd786b
+          ARENA_ARTIFACT=8931227426
+          OUT=results/session-search
+          rm -rf "$OUT" soko arena-tests artifact tests.zip
+          mkdir -p "$OUT" arena-tests artifact
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/${ARENA_ARTIFACT}/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          git clone https://github.com/intgrah/sokonanoda.git soko
+          git -C soko checkout "$SOKO_REV"
+          cat > soko/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib,json
+          root=Path('arena-tests')
+          fs=list((root/'good').rglob('*.ndjson'))+list((root/'bad').rglob('*.ndjson'))
+          largest=sorted(fs,key=lambda p:p.stat().st_size,reverse=True)[:24]
+          largest=sorted(largest,key=lambda p:hashlib.sha256(str(p.relative_to(root)).encode()).hexdigest())
+          Path('results/session-search/workload.txt').write_text('\n'.join(str(p) for p in largest)+'\n')
+          Path('results/session-search/workload.json').write_text(json.dumps([{'path':str(p.relative_to(root)),'bytes':p.stat().st_size,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()} for p in largest],indent=2))
+          PY
+          cp soko/src/tc.rs /tmp/tc.rs.orig
+          mkdir -p "$OUT/bin"
+          for n in 262144 524288 1048576 2097152 4194304; do
+            cp /tmp/tc.rs.orig soko/src/tc.rs
+            python3 - "$n" <<'PY'
+          from pathlib import Path
+          import sys
+          n=sys.argv[1]
+          p=Path('soko/src/tc.rs'); s=p.read_text(); old='const SESSION_BUDGET: usize = 1 << 20;'; assert old in s
+          p.write_text(s.replace(old,f'const SESSION_BUDGET: usize = {n};',1))
+          PY
+            (cd soko && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+            cp soko/target/release/sokonanoda "$OUT/bin/budget-${n}"
+          done
+          cp /tmp/tc.rs.orig soko/src/tc.rs
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,time,json,statistics,random
+          root=Path.cwd(); out=root/'results/session-search'; cfg=root/'soko/config.json'
+          variants=['262144','524288','1048576','2097152','4194304']
+          bins={n:out/'bin'/f'budget-{n}' for n in variants}
+          workload=[Path(x) for x in (out/'workload.txt').read_text().splitlines()]
+          def status(rc): return 'accept' if rc==0 else ('decline' if rc==2 else 'reject')
+          cases=[]
+          for kind,exp in [('good','accept'),('bad','reject')]:
+              for p in (root/'arena-tests'/kind).rglob('*.ndjson'): cases.append((p,exp))
+          correctness={}
+          for n,exe in bins.items():
+              bad=[]
+              for p,exp in cases:
+                  with p.open('rb') as f:
+                      rc=subprocess.run([str(exe),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  if status(rc)!=exp: bad.append({'file':str(p.relative_to(root/'arena-tests')),'expected':exp,'got':status(rc),'rc':rc})
+              correctness[n]={'correct':len(cases)-len(bad),'total':len(cases),'failures':bad}
+          samples={n:[] for n in variants}
+          orders=[]
+          for seed in range(8):
+              order=variants.copy(); random.Random(seed).shuffle(order); orders.append(order)
+          for order in orders:
+              for n in order:
+                  t=time.perf_counter()
+                  for p in workload:
+                      with p.open('rb') as f:
+                          subprocess.run([str(bins[n]),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,check=False)
+                  samples[n].append(time.perf_counter()-t)
+          med={n:statistics.median(v) for n,v in samples.items()}; base=med['1048576']; winner=min(med,key=med.get)
+          summary={'correctness':correctness,'samples_seconds':samples,'median_seconds':med,'speedup_vs_budget1m':{n:base/v for n,v in med.items()},'winner':winner,'winner_speedup_vs_budget1m':base/med[winner]}
+          (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)); print(json.dumps(summary,indent=2,sort_keys=True))
+          if any(v['correct']!=v['total'] for v in correctness.values()): raise SystemExit('correctness regression')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-arena-session-search
+          path: results/session-search/
