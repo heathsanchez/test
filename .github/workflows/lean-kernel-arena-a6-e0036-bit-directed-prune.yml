@@ -1,0 +1,86 @@
+name: Lean Kernel Arena A6 E0036 bit-directed prune
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-kernel-arena-a6-e0036-bit-directed-prune.yml'
+      - 'scripts/patch_a6_e0036_bit_directed_prune.py'
+      - 'scripts/patch_a6.py'
+  workflow_dispatch:
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/e0036
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct arms
+        run: |
+          set -euo pipefail
+          for arm in a0 bitdirect; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            if [ "$arm" = bitdirect ]; then python3 scripts/patch_a6_e0036_bit_directed_prune.py; fi
+            rm -rf "$arm" && mv a6 "$arm"
+            printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > "$arm/config.json"
+          done
+      - name: Build identically
+        run: |
+          set -euo pipefail
+          for arm in a0 bitdirect; do (cd "$arm" && RUSTFLAGS="-C target-cpu=native" cargo build --release -q); done
+      - name: Frozen semantic gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, subprocess, json
+          arms=['a0','bitdirect']; good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson')); bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson')); out={}
+          for arm in arms:
+              exe=f'{arm}/target/release/sokonanoda'; cfg=f'{arm}/config.json'; gp=bp=0
+              for p in good:
+                  with p.open('rb') as f: r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  gp += (r.returncode==0)
+              for p in bad:
+                  with p.open('rb') as f: r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  bp += (r.returncode!=0)
+              out[arm]={'good_pass':gp,'good_total':len(good),'bad_reject':bp,'bad_total':len(bad)}
+              if gp!=len(good) or bp!=len(bad):
+                  print(json.dumps(out,indent=2)); raise SystemExit(1)
+          pathlib.Path('results/e0036/semantics.json').write_text(json.dumps(out,indent=2)+'\n'); print(json.dumps(out,indent=2))
+          PY
+      - name: Paired resource separator
+        run: |
+          set -euo pipefail
+          CASE=$(find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | head -1)
+          test -n "$CASE"
+          python3 - "$CASE" <<'PY'
+          import subprocess,sys,json,time,resource,pathlib,statistics
+          case=sys.argv[1]; arms=['a0','bitdirect']; rows=[]
+          for rep in range(11):
+              order=arms if rep%2==0 else list(reversed(arms))
+              for arm in order:
+                  before=resource.getrusage(resource.RUSAGE_CHILDREN); t=time.perf_counter()
+                  with open(case,'rb') as f: r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  wall=time.perf_counter()-t; after=resource.getrusage(resource.RUSAGE_CHILDREN)
+                  cpu=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+                  if r.returncode!=0: raise SystemExit(f'{arm} failed')
+                  rows.append({'rep':rep,'arm':arm,'wall_s':wall,'cpu_s':cpu})
+          summary={a:{'median_wall_s':statistics.median(x['wall_s'] for x in rows if x['arm']==a),'median_cpu_s':statistics.median(x['cpu_s'] for x in rows if x['arm']==a)} for a in arms}
+          b=summary['a0']['median_cpu_s']; summary['bitdirect_cpu_delta_pct']=100*(summary['bitdirect']['median_cpu_s']/b-1)
+          pathlib.Path('results/e0036/resource_rows.json').write_text(json.dumps(rows,indent=2)+'\n'); pathlib.Path('results/e0036/summary.json').write_text(json.dumps(summary,indent=2)+'\n'); print(json.dumps(summary,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lean-kernel-arena-a6-e0036-bit-directed-prune
+          path: results/e0036/
