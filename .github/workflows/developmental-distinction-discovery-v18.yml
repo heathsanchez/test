@@ -3,6 +3,8 @@ name: Developmental Distinction Discovery V18
 on:
   push:
     branches: [agent/developmental-distinction-discovery-v18]
+  pull_request:
+    branches: [agent/developmental-distinction-discovery-v17]
   workflow_dispatch:
 
 jobs:
