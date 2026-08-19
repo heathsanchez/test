@@ -66,4 +66,15 @@ if old not in s:
 s = s.replace(old, new, 1)
 p.write_text(s)
 
+# Universal panic source-location trace. This exposes only checker source file/line,
+# never the panic payload, expression, declaration name, or suggested repair.
+p = root / 'src' / 'main.rs'
+s = p.read_text()
+old = '''fn main() {\n    let mut args = std::env::args();'''
+new = '''fn main() {\n    std::panic::set_hook(Box::new(|info| {\n        if let Some(loc) = info.location() {\n            eprintln!("[MGTRACE] kind=panic site={}:{}:{}", loc.file(), loc.line(), loc.column());\n        } else {\n            eprintln!("[MGTRACE] kind=panic site=unknown");\n        }\n    }));\n    let mut args = std::env::args();'''
+if old not in s:
+    raise SystemExit('main panic-hook anchor not found')
+s = s.replace(old, new, 1)
+p.write_text(s)
+
 print('applied semantics-preserving developmental trace instrumentation')
