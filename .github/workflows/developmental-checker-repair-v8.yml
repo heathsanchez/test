@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/developmental-checker-repair-v8.yml'
       - 'scripts/run_developmental_checker_span_v8.py'
+      - 'scripts/patch_v8a_runner.py'
       - 'scripts/patch_developmental_checker_trace.py'
   workflow_dispatch:
 
@@ -48,6 +49,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/patch_v8a_runner.py
           python3 scripts/run_developmental_checker_span_v8.py
       - uses: actions/upload-artifact@v4
         if: always()
