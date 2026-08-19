@@ -1,6 +1,12 @@
 name: Developmental Checker Causal Quotient V13
 
 on:
+  push:
+    branches: [agent/causal-quotient-v13-cross-family]
+    paths:
+      - '.github/workflows/developmental-checker-causal-quotient-v13.yml'
+      - 'scripts/run_causal_quotient_v13_cross_family.py'
+      - 'scripts/patch_developmental_checker_trace.py'
   pull_request:
     branches: [agent/causal-quotient-v12]
     paths:
