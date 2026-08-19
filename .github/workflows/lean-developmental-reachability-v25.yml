@@ -3,6 +3,8 @@ name: Lean Developmental Reachability V25
 on:
   push:
     branches: [agent/lean-developmental-reachability-v25]
+  pull_request:
+    branches: [agent/developmental-distinction-mathlib-gold-v24]
   workflow_dispatch:
 
 jobs:
