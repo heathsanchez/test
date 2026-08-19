@@ -52,7 +52,7 @@ jobs:
           git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
           git clone --branch v4.29.1 https://github.com/leanprover-community/mathlib4.git arena-src/_v24_mathlib
           git -C arena-src/_v24_mathlib checkout 5e932f97dd25535344f80f9dd8da3aab83df0fe6
-          (cd arena-src/_v24_mathlib && lake exe cache get)
+          (cd arena-src && nix develop -c bash -lc 'cd _v24_mathlib && lake exe cache get')
           git -C arena-src/_v24_mathlib rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24/mathlib_commit.txt
           mkdir -p arena-tests/good
           i=0
