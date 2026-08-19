@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
 import collections
-import hashlib
 import json
 import re
 import subprocess
@@ -67,12 +66,10 @@ for idx,(p,kind,expected) in enumerate(cases,1):
     if idx % 25 == 0:
         print(f'checked {idx}/{len(cases)}')
 
-# Analyze only genuine rejects for information content.
 reject_rows=[r for r in rows if r['binary']['status']=='reject']
 nonempty=[r for r in reject_rows if r['trace']['events']]
 
 def signature(events):
-    # no theorem/case identity; only structural event kind/site and failing booleans
     xs=[]
     for e in events:
         xs.append((e.get('kind'),e.get('site'),e.get('ok'),e.get('heads_match')))
@@ -86,25 +83,34 @@ for r in nonempty:
         kind_counts[e.get('kind','?')]+=1
         site_counts[e.get('site','?')]+=1
 
-# Frozen weak routing model: estimate candidate-family narrowing without claiming repair.
-# This is a live information-value diagnostic, not the repair-rate endpoint.
+# Frozen information-value router. This is not a repair-rate claim.
 UNIVERSE=8
 def routed_size(events):
     kinds={e.get('kind') for e in events}
-    sites={e.get('site') for e in events}
     if 'resource' in kinds: return 1
     if 'projection' in kinds: return 1
     if 'iota' in kinds: return 2
     if 'defeq' in kinds and 'unfold' in kinds: return 3
     if 'defeq' in kinds: return 4
     if 'unfold' in kinds: return 3
+    panic_sites=[e.get('site','') for e in events if e.get('kind')=='panic']
+    if panic_sites:
+        site=panic_sites[-1]
+        if 'inductive.rs' in site: return 1
+        if 'infer.rs' in site: return 2
+        if 'conv.rs' in site: return 2
+        if 'eval.rs' in site: return 3
+        if 'level.rs' in site: return 1
+        if 'quot.rs' in site: return 1
+        if 'parser.rs' in site: return 1
+        if 'tc.rs' in site: return 3
     return UNIVERSE
 
 routing=[{'case':r['case'],'binary_candidates':UNIVERSE,'trace_candidates':routed_size(r['trace']['events'])} for r in reject_rows]
 mean_trace=sum(x['trace_candidates'] for x in routing)/len(routing) if routing else None
 
 summary={
-    'status':'LIVE_TRACE_GATE',
+    'status':'LIVE_TRACE_GATE_V1B',
     'kernel_source':'metalogiclabs/mathgraph-lean-kernel master at workflow execution',
     'cases_total':len(rows),
     'good_cases':sum(r['kind']=='good' for r in rows),
