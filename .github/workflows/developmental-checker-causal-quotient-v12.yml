@@ -5,8 +5,7 @@ on:
     branches: [agent/developmental-checker-frame-lineage-v11]
     paths:
       - '.github/workflows/developmental-checker-causal-quotient-v12.yml'
-      - 'scripts/patch_v12_operand_role_v2.py'
-      - 'scripts/patch_v10_lineage.py'
+      - 'scripts/patch_v12_operand_role_v3.py'
       - 'scripts/run_developmental_checker_span_v8.py'
       - 'scripts/patch_v8a_runner.py'
       - 'scripts/patch_v9_runner.py'
@@ -52,14 +51,13 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          cp scripts/run_developmental_checker_span_v8.py scripts/run_developmental_checker_span_v10.py
+          cp scripts/run_developmental_checker_span_v8.py scripts/run_developmental_checker_span_v9.py
           python3 scripts/patch_v8a_runner.py
+          # patch_v8a updates the V8 source; refresh the V9 copy before applying V9.
           cp scripts/run_developmental_checker_span_v8.py scripts/run_developmental_checker_span_v9.py
           python3 scripts/patch_v9_runner.py
-          cp scripts/run_developmental_checker_span_v9.py scripts/run_developmental_checker_span_v10.py
-          python3 scripts/patch_v10_lineage.py
-          python3 scripts/patch_v12_operand_role_v2.py
-          python3 scripts/run_developmental_checker_span_v10.py
+          python3 scripts/patch_v12_operand_role_v3.py
+          python3 scripts/run_developmental_checker_span_v9.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
