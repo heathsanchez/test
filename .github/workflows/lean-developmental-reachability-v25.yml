@@ -50,12 +50,14 @@ jobs:
           set -euo pipefail
           git clone https://github.com/leanprover/lean-kernel-arena.git arena-src
           git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
-          mkdir -p arena-tests/good
+          mkdir -p arena-tests/good results/developmental-distinction-mathlib-gold-v24/export_logs
+          : > results/developmental-distinction-mathlib-gold-v24/export_status.tsv
           i=0
           while IFS= read -r module; do
             [ -n "$module" ] || continue
             i=$((i+1))
             name=$(printf 'v24_mathlib_%02d' "$i")
+            log="../results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log"
             cat > "arena-src/tests/${name}.yaml" <<EOF
           description: V25 protected V24 Mathlib module case
           url: https://github.com/leanprover-community/mathlib4
@@ -65,11 +67,19 @@ jobs:
           module: ${module}
           outcome: accept
           EOF
-            (cd arena-src && nix develop -c ./lka.py build-test "$name")
+            set +e
+            (cd arena-src && nix develop -c ./lka.py build-test "$name") >"results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" 2>&1
+            rc=$?
+            set -e
+            printf '%s\t%s\t%s\n' "$name" "$module" "$rc" | tee -a results/developmental-distinction-mathlib-gold-v24/export_status.tsv
+            if [ "$rc" -ne 0 ]; then
+              tail -n 200 "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" || true
+              exit "$rc"
+            fi
             found=$(find arena-src/_build -type f -name "${name}.ndjson" | head -n1)
             if [ -z "$found" ]; then
-              echo "missing export for $module" >&2
-              exit 1
+              echo "missing export for $module" | tee -a "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" >&2
+              exit 97
             fi
             cp "$found" "arena-tests/good/${name}.ndjson"
           done < results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt
