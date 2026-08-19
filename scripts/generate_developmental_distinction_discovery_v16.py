@@ -1,0 +1,16 @@
+#!/usr/bin/env python3
+from pathlib import Path
+src=Path('scripts/run_developmental_distinction_discovery_v15.py')
+dst=Path('scripts/run_developmental_distinction_discovery_v16.py')
+s=src.read_text()
+s=s.replace('developmental-distinction-discovery-v15','developmental-distinction-discovery-v16')
+s=s.replace('fault-v15-','fault-v16-')
+s=s.replace("'last_kind':last.get('kind','NONE'),", "'last_kind':'MATCHED_KIND',\n      'raw_last_kind':last.get('kind','NONE'),")
+s=s.replace("'destroyed_shortcut':'event_count_bucket',", "'destroyed_shortcuts':['event_count_bucket','last_kind'],")
+s=s.replace("'status':'LIVE_SHORTCUT_DESTROYED_DISTINCTION_V15'", "'status':'LIVE_TWO_SHORTCUTS_DESTROYED_DISTINCTION_V16'")
+s=s.replace("if {r['features']['event_count_bucket'] for r in rows}!={'MATCHED'}: raise SystemExit('event-count matching intervention failed')", "if {r['features']['event_count_bucket'] for r in rows}!={'MATCHED'}: raise SystemExit('event-count matching intervention failed')\nif {r['features']['last_kind'] for r in rows}!={'MATCHED_KIND'}: raise SystemExit('last-kind matching intervention failed')")
+s=s.replace("if 'event_count_bucket' in selected_features: raise SystemExit('destroyed shortcut was selected')", "if 'event_count_bucket' in selected_features or 'last_kind' in selected_features: raise SystemExit('destroyed shortcut was selected')")
+s=s.replace("if train_error!=0: raise SystemExit('split phase failed after shortcut destruction')", "if train_error!=0: raise SystemExit('split phase failed after cumulative shortcut destruction')")
+s=s.replace("if hold_acc!=1.0: raise SystemExit('learned quotient failed source-distinct transfer after shortcut destruction')", "if hold_acc!=1.0: raise SystemExit('learned quotient failed source-distinct transfer after cumulative shortcut destruction')")
+dst.write_text(s)
+print('generated V16 with event_count_bucket and last_kind both matched')
