@@ -6,14 +6,14 @@ on:
     paths:
       - '.github/workflows/developmental-distinction-discovery-v15.yml'
       - 'scripts/run_developmental_distinction_discovery_v15.py'
-      - 'scripts/patch_v14_structured_panic.py'
+      - 'scripts/patch_v15_structured_panic.py'
       - 'scripts/patch_developmental_checker_trace.py'
   pull_request:
     branches: [agent/developmental-distinction-discovery-v14]
     paths:
       - '.github/workflows/developmental-distinction-discovery-v15.yml'
       - 'scripts/run_developmental_distinction_discovery_v15.py'
-      - 'scripts/patch_v14_structured_panic.py'
+      - 'scripts/patch_v15_structured_panic.py'
       - 'scripts/patch_developmental_checker_trace.py'
   workflow_dispatch:
 
@@ -57,7 +57,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/patch_v14_structured_panic.py
+          python3 scripts/patch_v15_structured_panic.py
           python3 scripts/run_developmental_distinction_discovery_v15.py
       - uses: actions/upload-artifact@v4
         if: always()
