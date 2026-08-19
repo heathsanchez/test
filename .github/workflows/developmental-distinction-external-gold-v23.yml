@@ -42,8 +42,7 @@ jobs:
       - name: Evaluate frozen V21 rule zero-shot
         run: |
           set -euo pipefail
-          python3 scripts/generate_developmental_distinction_external_gold_v23.py
-          python3 scripts/run_developmental_distinction_external_gold_v23.py
+          python3 scripts/run_developmental_distinction_external_gold_v23_direct.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:
