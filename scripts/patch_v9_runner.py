@@ -8,8 +8,9 @@ s=s.replace("results/developmental-checker-repair-v8","results/developmental-che
 s=s.replace("FAMILIES=['IOTA','UNFOLD','PROJECTION']","FAMILIES=['EVAL','PROJECTION']")
 s=s.replace("EXCLUDE={'good/tutorial/081_And.right.ndjson','good/tutorial/084_PSigma.snd.ndjson','good/perf/app-lam.ndjson'}",
             "EXCLUDE={'good/tutorial/081_And.right.ndjson','good/tutorial/084_PSigma.snd.ndjson','good/perf/app-lam.ndjson','good/perf/grind-ring-5.ndjson','good/undecidability/alg-conv-trans-acc-right.ndjson'}")
-old='''        let declared = self.eval(0, empty_env, d.info().ty);\n        let mg_decl_ok = self.def_eq_at(0, val_ty, declared);'''
-new='''        let declared = self.eval(0, empty_env, d.info().ty);\n        eprintln!("[MGTRACE] kind=eval site=infer.declared_type depth=0 value={:p}", declared);\n        let mg_decl_ok = self.def_eq_at(0, val_ty, declared);'''
+# We are patching source code of a Python runner whose embedded Rust string uses literal \\n sequences.
+old=r'''        let declared = self.eval(0, empty_env, d.info().ty);\n        let mg_decl_ok = self.def_eq_at(0, val_ty, declared);'''
+new=r'''        let declared = self.eval(0, empty_env, d.info().ty);\n        eprintln!("[MGTRACE] kind=eval site=infer.declared_type depth=0 value={:p}", declared);\n        let mg_decl_ok = self.def_eq_at(0, val_ty, declared);'''
 if old not in s: raise SystemExit('declared-type eval anchor missing')
 s=s.replace(old,new,1)
 pat=re.compile(r'def mechanism\(e\):\n.*?\n(?=def route_nearest_mechanism)',re.S)
