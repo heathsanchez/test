@@ -1,0 +1,105 @@
+name: Lean Developmental Reachability V25
+
+on:
+  push:
+    branches: [agent/lean-developmental-reachability-v25]
+  workflow_dispatch:
+
+jobs:
+  lean-developmental-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Freeze predeclared external module set
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results/developmental-distinction-mathlib-gold-v24
+          cat > results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt <<'EOF'
+          Mathlib.Data.List.Basic
+          Mathlib.Data.Nat.Basic
+          Mathlib.Data.Fin.Basic
+          Mathlib.Data.Option.Basic
+          Mathlib.Data.Sum.Basic
+          Mathlib.Data.Vector.Basic
+          Mathlib.Algebra.Group.Basic
+          Mathlib.Algebra.Ring.Basic
+          Mathlib.Algebra.Order.Ring.Basic
+          Mathlib.Order.Basic
+          Mathlib.Order.Lattice
+          Mathlib.Logic.Basic
+          Mathlib.SetTheory.Cardinal.Basic
+          Mathlib.Data.Multiset.Basic
+          Mathlib.Data.Fintype.Basic
+          Mathlib.Tactic
+          EOF
+          sha256sum results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt | tee results/developmental-distinction-mathlib-gold-v24/module_manifest_sha256.txt
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+
+      - name: Export predeclared Mathlib modules with Arena machinery
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone https://github.com/leanprover/lean-kernel-arena.git arena-src
+          git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
+          mkdir -p arena-tests/good
+          i=0
+          while IFS= read -r module; do
+            [ -n "$module" ] || continue
+            i=$((i+1))
+            name=$(printf 'v24_mathlib_%02d' "$i")
+            cat > "arena-src/tests/${name}.yaml" <<EOF
+          description: V25 protected V24 Mathlib module case
+          url: https://github.com/leanprover-community/mathlib4
+          ref: v4.29.1
+          rev: 5e932f97dd25535344f80f9dd8da3aab83df0fe6
+          pre-build: lake exe cache get
+          module: ${module}
+          outcome: accept
+          EOF
+            (cd arena-src && nix develop -c ./lka.py build-test "$name")
+            found=$(find arena-src/_build -type f -name "${name}.ndjson" | head -n1)
+            if [ -z "$found" ]; then
+              echo "missing export for $module" >&2
+              exit 1
+            fi
+            cp "$found" "arena-tests/good/${name}.ndjson"
+          done < results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt
+          find arena-tests/good -type f -name '*.ndjson' -print0 | sort -z | xargs -0 sha256sum > results/developmental-distinction-mathlib-gold-v24/export_sha256.txt
+
+      - name: Reconstruct baseline and trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git base
+          cp -a base trace
+          python3 scripts/patch_developmental_checker_trace.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
+          cp base/config.json trace/config.json
+          git -C base rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24/kernel_commit.txt
+
+      - name: Build baseline and trace checker
+        run: |
+          set -euo pipefail
+          (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+          (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+
+      - name: Run frozen V25 causal reachability experiment
+        run: |
+          set -euo pipefail
+          python3 scripts/run_lean_developmental_reachability_v25.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-developmental-reachability-v25
+          path: |
+            results/developmental-distinction-mathlib-gold-v24/
+            results/developmental-distinction-external-gold-v23/
+            results/lean-developmental-reachability-v25/
