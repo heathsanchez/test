@@ -6,12 +6,14 @@ on:
     paths:
       - '.github/workflows/developmental-checker-causal-quotient-v13.yml'
       - 'scripts/run_causal_quotient_v13_cross_family.py'
+      - 'scripts/patch_v13_no_expr_ptr.py'
       - 'scripts/patch_developmental_checker_trace.py'
   pull_request:
     branches: [agent/causal-quotient-v12]
     paths:
       - '.github/workflows/developmental-checker-causal-quotient-v13.yml'
       - 'scripts/run_causal_quotient_v13_cross_family.py'
+      - 'scripts/patch_v13_no_expr_ptr.py'
       - 'scripts/patch_developmental_checker_trace.py'
   workflow_dispatch:
 
@@ -54,6 +56,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/patch_v13_no_expr_ptr.py
           python3 scripts/run_causal_quotient_v13_cross_family.py
       - uses: actions/upload-artifact@v4
         if: always()
