@@ -1,29 +1,44 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 root = Path('trace')
 
 # Instrument inference failure boundaries without changing control flow.
 p = root / 'src' / 'infer.rs'
 s = p.read_text()
-repls = [
-    (
-        '                    let arg_ty = self.infer_value(flag, depth, env, ctx, arg);\n                    assert!(self.conv_types_at(depth, domain, arg_ty), "app arg def_eq failed");',
-        '                    let arg_ty = self.infer_value(flag, depth, env, ctx, arg);\n                    let mg_ok = self.conv_types_at(depth, domain, arg_ty);\n                    eprintln!("[MGTRACE] kind=defeq site=infer.app_arg depth={} ok={}", depth, mg_ok);\n                    assert!(mg_ok, "app arg def_eq failed");'
-    ),
-    (
-        '                    let val_ty = self.infer_value(flag, depth, env, ctx, val);\n                    assert!(self.conv_types_at(depth, dom, val_ty), "let def_eq failed");',
-        '                    let val_ty = self.infer_value(flag, depth, env, ctx, val);\n                    let mg_ok = self.conv_types_at(depth, dom, val_ty);\n                    eprintln!("[MGTRACE] kind=defeq site=infer.let depth={} ok={}", depth, mg_ok);\n                    assert!(mg_ok, "let def_eq failed");'
-    ),
-    (
-        '        let struct_ty = self.infer_value(flag, depth, env, ctx, structure);',
-        '        eprintln!("[MGTRACE] kind=projection site=infer.proj depth={}", depth);\n        let struct_ty = self.infer_value(flag, depth, env, ctx, structure);'
-    ),
-]
-for old, new in repls:
-    if old not in s:
-        raise SystemExit(f'infer anchor not found: {old[:70]!r}')
-    s = s.replace(old, new, 1)
+
+pat = re.compile(r'(?m)^(\s*)let arg_ty = self\.infer_value\(flag, depth, env, ctx, arg\);\n\1assert!\(self\.conv_types_at\(depth, domain, arg_ty\), "app arg def_eq failed"\);')
+m = pat.search(s)
+if not m:
+    raise SystemExit('infer app-arg anchor not found')
+i = m.group(1)
+rep = (
+    f'{i}let arg_ty = self.infer_value(flag, depth, env, ctx, arg);\n'
+    f'{i}let mg_ok = self.conv_types_at(depth, domain, arg_ty);\n'
+    f'{i}eprintln!("[MGTRACE] kind=defeq site=infer.app_arg depth={{}} ok={{}}", depth, mg_ok);\n'
+    f'{i}assert!(mg_ok, "app arg def_eq failed");'
+)
+s = pat.sub(rep, s, count=1)
+
+pat = re.compile(r'(?m)^(\s*)let val_ty = self\.infer_value\(flag, depth, env, ctx, val\);\n\1assert!\(self\.conv_types_at\(depth, dom, val_ty\), "let def_eq failed"\);')
+m = pat.search(s)
+if not m:
+    raise SystemExit('infer let anchor not found')
+i = m.group(1)
+rep = (
+    f'{i}let val_ty = self.infer_value(flag, depth, env, ctx, val);\n'
+    f'{i}let mg_ok = self.conv_types_at(depth, dom, val_ty);\n'
+    f'{i}eprintln!("[MGTRACE] kind=defeq site=infer.let depth={{}} ok={{}}", depth, mg_ok);\n'
+    f'{i}assert!(mg_ok, "let def_eq failed");'
+)
+s = pat.sub(rep, s, count=1)
+
+old = '        let struct_ty = self.infer_value(flag, depth, env, ctx, structure);'
+new = '        eprintln!("[MGTRACE] kind=projection site=infer.proj depth={}", depth);\n' + old
+if old not in s:
+    raise SystemExit('infer projection anchor not found')
+s = s.replace(old, new, 1)
 p.write_text(s)
 
 # Instrument conversion/reduction decisions. No raw expressions or theorem names are emitted.
@@ -36,9 +51,10 @@ if old not in s:
 s = s.replace(old, new, 1)
 
 old = '                self.unify_iota::<RIGID>(depth, t, t2, heads_match, nx, lx, sx, sy)'
+count = s.count(old)
+if count < 2:
+    raise SystemExit(f'expected two iota anchors, found {count}')
 new = '''                eprintln!("[MGTRACE] kind=iota site=conv.recursor depth={} heads_match={}", depth, heads_match);\n                let mg_r = self.unify_iota::<RIGID>(depth, t, t2, heads_match, nx, lx, sx, sy);\n                eprintln!("[MGTRACE] kind=iota_result site=conv.recursor depth={} ok={}", depth, mg_r);\n                mg_r'''
-if s.count(old) < 2:
-    raise SystemExit(f'expected two iota anchors, found {s.count(old)}')
 s = s.replace(old, new, 1)
 new2 = '''                eprintln!("[MGTRACE] kind=iota site=conv.quot depth={} heads_match={}", depth, heads_match);\n                let mg_r = self.unify_iota::<RIGID>(depth, t, t2, heads_match, nx, lx, sx, sy);\n                eprintln!("[MGTRACE] kind=iota_result site=conv.quot depth={} ok={}", depth, mg_r);\n                mg_r'''
 s = s.replace(old, new2, 1)
