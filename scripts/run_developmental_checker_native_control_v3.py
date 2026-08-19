@@ -37,6 +37,10 @@ def module(site):
     if site.startswith('conv.'): return 'conv'
     return site.split('.')[0]
 
+def safe_counter(values):
+    c=collections.Counter(values)
+    return {('<none>' if k is None else str(k)):v for k,v in c.items()}
+
 rows=[]
 for p in sorted((ARENA/'bad').rglob('*.ndjson')):
     nrc,nerr=run('native',p)
@@ -74,8 +78,8 @@ summary={
  'structured_distinct_failure_locations':len(set(r['trace_panic_location'] for r in rows if r['trace_panic_location'])),
  'terminal_structural_coverage':sum(bool(r['terminal_structural_site']) for r in rows)/n,
  'terminal_module_matches_native_failure_module':sum(r['terminal_structural_module']==r['native_module'] for r in rows if r['native_module'])/sum(bool(r['native_module']) for r in rows),
- 'native_module_counts':dict(collections.Counter(r['native_module'] for r in rows)),
- 'terminal_kind_counts':dict(collections.Counter(r['terminal_structural_kind'] for r in rows)),
+ 'native_module_counts':safe_counter(r['native_module'] for r in rows),
+ 'terminal_kind_counts':safe_counter(r['terminal_structural_kind'] for r in rows),
 }
 (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True))
 (out/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True))
