@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# rerun marker: fixed trace patch anchors
 from pathlib import Path
 import collections
 import hashlib
@@ -67,12 +68,10 @@ for idx,(p,kind,expected) in enumerate(cases,1):
     if idx % 25 == 0:
         print(f'checked {idx}/{len(cases)}')
 
-# Analyze only genuine rejects for information content.
 reject_rows=[r for r in rows if r['binary']['status']=='reject']
 nonempty=[r for r in reject_rows if r['trace']['events']]
 
 def signature(events):
-    # no theorem/case identity; only structural event kind/site and failing booleans
     xs=[]
     for e in events:
         xs.append((e.get('kind'),e.get('site'),e.get('ok'),e.get('heads_match')))
@@ -86,12 +85,9 @@ for r in nonempty:
         kind_counts[e.get('kind','?')]+=1
         site_counts[e.get('site','?')]+=1
 
-# Frozen weak routing model: estimate candidate-family narrowing without claiming repair.
-# This is a live information-value diagnostic, not the repair-rate endpoint.
 UNIVERSE=8
 def routed_size(events):
     kinds={e.get('kind') for e in events}
-    sites={e.get('site') for e in events}
     if 'resource' in kinds: return 1
     if 'projection' in kinds: return 1
     if 'iota' in kinds: return 2
