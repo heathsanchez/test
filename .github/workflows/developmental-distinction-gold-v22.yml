@@ -45,7 +45,6 @@ jobs:
         run: |
           set -euo pipefail
           python3 scripts/generate_developmental_distinction_gold_v22.py
-          python3 scripts/patch_v22_structured_panic.py
           python3 scripts/run_developmental_distinction_gold_v22.py
       - uses: actions/upload-artifact@v4
         if: always()
