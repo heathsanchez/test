@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/developmental-checker-repair-v7.yml'
       - 'scripts/run_developmental_checker_provenance_v7.py'
+      - 'scripts/patch_v7a_runner.py'
       - 'scripts/patch_developmental_checker_trace.py'
   workflow_dispatch:
 
@@ -44,10 +45,11 @@ jobs:
         run: |
           set -euo pipefail
           (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
-      - name: Run provenance causal ablation
+      - name: Run declaration-consumer provenance ablation
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/patch_v7a_runner.py
           python3 scripts/run_developmental_checker_provenance_v7.py
       - uses: actions/upload-artifact@v4
         if: always()
