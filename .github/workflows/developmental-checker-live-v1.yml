@@ -8,6 +8,12 @@ on:
       - '.github/workflows/developmental-checker-live-v1.yml'
       - 'scripts/patch_developmental_checker_trace.py'
       - 'scripts/run_developmental_checker_trace.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/developmental-checker-live-v1.yml'
+      - 'scripts/patch_developmental_checker_trace.py'
+      - 'scripts/run_developmental_checker_trace.py'
 
 jobs:
   live-trace-gate:
