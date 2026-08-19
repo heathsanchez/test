@@ -12,6 +12,16 @@ s=s.replace('HOLDOUT_PER_FAMILY=1','HOLDOUT_PER_FAMILY=GOLD_PER_FAMILY')
 s=s.replace("need=DEV_PER_FAMILY+HOLDOUT_PER_FAMILY", "need=SEEN_PER_FAMILY+GOLD_PER_FAMILY")
 s=s.replace("selected[fam]=[r for _,r in pool[:need]]", "selected[fam]=[r for _,r in pool[SEEN_PER_FAMILY:SEEN_PER_FAMILY+GOLD_PER_FAMILY]]")
 s=s.replace("rows.append({'family':fam,'case':rel,'split':'dev' if j<DEV_PER_FAMILY else 'holdout','features':feature_row(ferr)})", "rows.append({'family':fam,'case':rel,'split':'gold','features':feature_row(ferr)})")
+# Bake the already-validated structured panic boundary directly into the generated runner.
+# This is harness-only and does not touch the frozen V21 rule or gold case selection.
+fn_start=s.find('def native_fault_location(stderr):')
+fn_end=s.find('\ndef bucket_count', fn_start)
+if fn_start < 0 or fn_end < 0:
+    raise SystemExit('V22 generator could not locate native_fault_location boundary')
+s=s[:fn_start]+"""def native_fault_location(stderr):
+    ps=[e.get('site') for e in events(stderr) if e.get('kind')=='panic' and e.get('site')]
+    return ps[-1] if ps else None
+"""+s[fn_end:]
 start=s.find("dev=[r for r in rows")
 if start<0: raise SystemExit('V22 evaluation tail anchor missing')
 new_tail=r'''# V22 sealed gold evaluation: no fitting, no quotient search, no adaptation.
@@ -64,4 +74,4 @@ if mean_l>=mean_b: raise SystemExit('frozen quotient did not reduce verifier sea
 s=s[:start]+new_tail
 s=s.replace("'status':'LIVE_MINIMAL_RELATIONAL_QUOTIENT_V21'", "'status':'SEALED_GOLD_V22'")
 dst.write_text(s)
-print('generated V22 sealed gold evaluation: frozen V21 rule, 5 unseen cases per family')
+print('generated V22 sealed gold evaluation: frozen V21 rule, 5 unseen cases per family; structured boundary baked in')
