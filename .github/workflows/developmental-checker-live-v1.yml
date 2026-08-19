@@ -3,7 +3,7 @@ name: Developmental Checker Live V1
 on:
   workflow_dispatch:
   push:
-    branches: [agent/developmental-checker-live-v1]
+    branches: [main, agent/developmental-checker-live-v1]
     paths:
       - '.github/workflows/developmental-checker-live-v1.yml'
       - 'scripts/patch_developmental_checker_trace.py'
