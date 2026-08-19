@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import json,os,shutil,subprocess
+import json,os,re,shutil,subprocess
 root=Path.cwd(); out=root/'results/developmental-checker-compact-repair-v8'; out.mkdir(parents=True,exist_ok=True)
 BASE=root/'base'; TRACE=root/'trace'; ARENA=root/'arena-tests'; CFG='{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}\n'
 FAMILIES=['INFER_APP','PROJECTION','IOTA','UNFOLD']
@@ -26,7 +26,6 @@ def events(err):
   xs.append(d)
  return xs
 def route_compact(ev):
- # Preserve semantic failures/mechanisms; source-location fallback only if no semantic event survives.
  for e in reversed(ev):
   k=e.get('kind'); s=e.get('site','')
   if k=='panic': continue
@@ -39,8 +38,12 @@ def route_compact(ev):
  return None
 def inject(src,fam):
  if fam=='INFER_APP':
-  p=src/'src/infer.rs'; s=p.read_text(); anchor='                    assert!(mg_ok, "app arg def_eq failed");'; repl='                    panic!("MGFAULT_INFER_APP");\n'+anchor
- elif fam=='PROJECTION':
+  p=src/'src/infer.rs'; s=p.read_text()
+  pat=re.compile(r'(?m)^(\s*)assert!\(mg_ok, "app arg def_eq failed"\);')
+  m=pat.search(s)
+  if not m: raise RuntimeError('anchor missing INFER_APP')
+  i=m.group(1); s=pat.sub(i+'panic!("MGFAULT_INFER_APP");\n'+i+'assert!(mg_ok, "app arg def_eq failed");',s,count=1); p.write_text(s); return
+ if fam=='PROJECTION':
   p=src/'src/infer.rs'; s=p.read_text(); anchor='        eprintln!("[MGTRACE] kind=projection site=infer.proj depth={}", depth);'; repl=anchor+'\n        panic!("MGFAULT_PROJECTION");'
  elif fam=='IOTA':
   p=src/'src/conv.rs'; s=p.read_text(); anchor='                eprintln!("[MGTRACE] kind=iota site=conv.recursor depth={} heads_match={}", depth, heads_match);'; repl=anchor+'\n                panic!("MGFAULT_IOTA");'
@@ -50,7 +53,6 @@ def inject(src,fam):
  if anchor not in s: raise RuntimeError(f'anchor missing {fam}')
  p.write_text(s.replace(anchor,repl,1))
 base=BASE/'target/release/sokonanoda'; trace=TRACE/'target/release/sokonanoda'
-# Semantic identity gate on frozen Arena corpus.
 for kind,expected in [('good','accept'),('bad','reject')]:
  for c in sorted((ARENA/kind).rglob('*.ndjson')):
   rb,_=run(base,c); rt,_=run(trace,c)
