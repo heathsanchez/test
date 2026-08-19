@@ -44,12 +44,16 @@ jobs:
       - name: Install Nix
         uses: cachix/install-nix-action@v31
 
-      - name: Export predeclared Mathlib modules with Arena machinery
+      - name: Export predeclared Mathlib modules with one pinned checkout
         shell: bash
         run: |
           set -euo pipefail
           git clone https://github.com/leanprover/lean-kernel-arena.git arena-src
           git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
+          git clone --branch v4.29.1 https://github.com/leanprover-community/mathlib4.git arena-src/_v24_mathlib
+          git -C arena-src/_v24_mathlib checkout 5e932f97dd25535344f80f9dd8da3aab83df0fe6
+          (cd arena-src/_v24_mathlib && lake exe cache get)
+          git -C arena-src/_v24_mathlib rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24/mathlib_commit.txt
           mkdir -p arena-tests/good
           i=0
           while IFS= read -r module; do
@@ -58,20 +62,19 @@ jobs:
             name=$(printf 'v24_mathlib_%02d' "$i")
             cat > "arena-src/tests/${name}.yaml" <<EOF
           description: V24 predeclared external Mathlib module gold case
-          url: https://github.com/leanprover-community/mathlib4
-          ref: v4.29.1
-          rev: 5e932f97dd25535344f80f9dd8da3aab83df0fe6
-          pre-build: lake exe cache get
+          dir: _v24_mathlib
           module: ${module}
           outcome: accept
           EOF
             (cd arena-src && nix develop -c ./lka.py build-test "$name")
-            found=$(find arena-src/_build -type f -name "${name}.ndjson" | head -n1)
+            found=$(find arena-src/_build -type f -name "${name}.ndjson" -print -quit)
             if [ -z "$found" ]; then
               echo "missing export for $module" >&2
+              find arena-src/_build -maxdepth 4 -type f | sort | tail -100 >&2 || true
               exit 1
             fi
             cp "$found" "arena-tests/good/${name}.ndjson"
+            printf '%02d\t%s\t%s\n' "$i" "$module" "$found" | tee -a results/developmental-distinction-mathlib-gold-v24/export_map.tsv
           done < results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt
           find arena-tests/good -type f -name '*.ndjson' -print0 | sort -z | xargs -0 sha256sum > results/developmental-distinction-mathlib-gold-v24/export_sha256.txt
 
