@@ -1,0 +1,58 @@
+name: Distinction Cycle V9
+
+on:
+  pull_request:
+    branches:
+      - main
+      - agent/developmental-checker-compact-repair-v8
+    paths:
+      - '.github/workflows/distinction-cycle-v9.yml'
+      - 'scripts/run_distinction_cycle_v9.py'
+      - 'scripts/patch_developmental_checker_trace.py'
+      - 'scripts/compact_developmental_checker_trace.py'
+  workflow_dispatch:
+
+jobs:
+  distinction-cycle:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/distinction-cycle-v9
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct compact structured checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git trace
+          python3 scripts/patch_developmental_checker_trace.py
+          python3 scripts/compact_developmental_checker_trace.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > trace/config.json
+          git -C trace rev-parse HEAD | tee results/distinction-cycle-v9/kernel_commit.txt
+      - name: Build trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+      - name: Run split-then-quotient cycle
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/run_distinction_cycle_v9.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: distinction-cycle-v9
+          path: results/distinction-cycle-v9/
