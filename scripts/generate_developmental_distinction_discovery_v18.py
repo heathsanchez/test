@@ -1,0 +1,21 @@
+#!/usr/bin/env python3
+from pathlib import Path
+src=Path('scripts/run_developmental_distinction_discovery_v15.py')
+dst=Path('scripts/run_developmental_distinction_discovery_v18.py')
+s=src.read_text()
+s=s.replace('developmental-distinction-discovery-v15','developmental-distinction-discovery-v18')
+s=s.replace('fault-v15-','fault-v18-')
+# Remove the whole direct identity/location/morphology family from the learner at once.
+s=s.replace("FEATURES=['event_count_bucket','has_false_result','last_depth_bucket','last_kind','last_module','last_site','semantic_site_count']", "FEATURES=['has_false_result','last_depth_bucket']")
+s=s.replace("'last_kind':last.get('kind','NONE'),", "'last_kind':'MATCHED_KIND',\n      'raw_last_kind':last.get('kind','NONE'),")
+s=s.replace("'last_module':last.get('site','NONE').split('.',1)[0] if last.get('site') else 'NONE',", "'last_module':'MATCHED_MODULE',\n      'raw_last_module':last.get('site','NONE').split('.',1)[0] if last.get('site') else 'NONE',")
+s=s.replace("'last_site':last.get('site','NONE'),", "'last_site':'MATCHED_SITE',\n      'raw_last_site':last.get('site','NONE'),")
+s=s.replace("'semantic_site_count':str(len(sites)),", "'semantic_site_count':'MATCHED_SITE_COUNT',\n      'raw_semantic_site_count':str(len(sites)),")
+s=s.replace("if {r['features']['event_count_bucket'] for r in rows}!={'MATCHED'}: raise SystemExit('event-count matching intervention failed')", "if {r['features']['event_count_bucket'] for r in rows}!={'MATCHED'}: raise SystemExit('event-count matching intervention failed')\nif {r['features']['last_kind'] for r in rows}!={'MATCHED_KIND'}: raise SystemExit('last-kind matching intervention failed')\nif {r['features']['last_module'] for r in rows}!={'MATCHED_MODULE'}: raise SystemExit('last-module matching intervention failed')\nif {r['features']['last_site'] for r in rows}!={'MATCHED_SITE'}: raise SystemExit('last-site matching intervention failed')\nif {r['features']['semantic_site_count'] for r in rows}!={'MATCHED_SITE_COUNT'}: raise SystemExit('site-count matching intervention failed')")
+s=s.replace("'destroyed_shortcut':'event_count_bucket',", "'destroyed_feature_family':['event_count_bucket','last_kind','last_module','last_site','semantic_site_count'],")
+s=s.replace("'status':'LIVE_SHORTCUT_DESTROYED_DISTINCTION_V15'", "'status':'LIVE_REPRESENTATION_FAMILY_ABLATION_V18'")
+s=s.replace("if 'event_count_bucket' in selected_features: raise SystemExit('destroyed shortcut was selected')", "if any(f in selected_features for f in ['event_count_bucket','last_kind','last_module','last_site','semantic_site_count']): raise SystemExit('destroyed feature family was selected')")
+s=s.replace("if train_error!=0: raise SystemExit('split phase failed after shortcut destruction')", "if train_error!=0: raise SystemExit('structural-only vocabulary insufficient under V18 family ablation')")
+s=s.replace("if hold_acc!=1.0: raise SystemExit('learned quotient failed source-distinct transfer after shortcut destruction')", "if hold_acc!=1.0: raise SystemExit('structural-only quotient failed source-distinct transfer')")
+dst.write_text(s)
+print('generated V18 with direct identity/location/morphology feature family destroyed')
