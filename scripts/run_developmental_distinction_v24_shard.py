@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# V24 sharded evaluator: one immutable Mathlib module per worker.
 from pathlib import Path
 import hashlib,json,os,shutil,subprocess,sys,time
 
