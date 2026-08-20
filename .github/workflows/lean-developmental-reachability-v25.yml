@@ -10,101 +10,22 @@ on:
 jobs:
   lean-developmental-reachability:
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 180
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
 
-      - name: Freeze predeclared external module set
+      - name: Fetch proven sealed Arena corpus
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p results/developmental-distinction-mathlib-gold-v24
-          cat > results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt <<'EOF'
-          Mathlib.Data.List.Basic
-          Mathlib.Data.Nat.Basic
-          Mathlib.Data.Fin.Basic
-          Mathlib.Data.Option.Basic
-          Mathlib.Data.Sum.Basic
-          Mathlib.Data.Vector.Basic
-          Mathlib.Algebra.Group.Basic
-          Mathlib.Algebra.Ring.Basic
-          Mathlib.Algebra.Order.Ring.Basic
-          Mathlib.Order.Basic
-          Mathlib.Order.Lattice
-          Mathlib.Logic.Basic
-          Mathlib.SetTheory.Cardinal.Basic
-          Mathlib.Data.Multiset.Basic
-          Mathlib.Data.Fintype.Basic
-          Mathlib.Tactic
-          EOF
-          sha256sum results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt | tee results/developmental-distinction-mathlib-gold-v24/module_manifest_sha256.txt
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-
-      - name: Export predeclared Mathlib modules with Arena machinery
-        shell: bash
-        run: |
-          set -euo pipefail
-          git clone https://github.com/leanprover/lean-kernel-arena.git arena-src
-          git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
-          mkdir -p arena-tests/good results/developmental-distinction-mathlib-gold-v24/export_logs
-          : > results/developmental-distinction-mathlib-gold-v24/export_status.tsv
-          rm -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
-          i=0
-          while IFS= read -r module; do
-            [ -n "$module" ] || continue
-            i=$((i+1))
-            name=$(printf 'v24_mathlib_%02d' "$i")
-            cat > "arena-src/tests/${name}.yaml" <<EOF
-          description: V25 protected V24 Mathlib module case
-          url: https://github.com/leanprover-community/mathlib4
-          ref: v4.29.1
-          rev: 5e932f97dd25535344f80f9dd8da3aab83df0fe6
-          pre-build: lake exe cache get
-          module: ${module}
-          outcome: accept
-          EOF
-            set +e
-            (cd arena-src && nix develop -c ./lka.py build-test "$name") >"results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" 2>&1
-            rc=$?
-            set -e
-            printf '%s\t%s\t%s\n' "$name" "$module" "$rc" | tee -a results/developmental-distinction-mathlib-gold-v24/export_status.tsv
-            if [ "$rc" -ne 0 ]; then
-              printf '%s\t%s\t%s\n' "$name" "$module" "$rc" > results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
-              tail -n 200 "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" || true
-              break
-            fi
-            found="arena-src/_build/tests/${name}.ndjson"
-            if [ ! -f "$found" ]; then
-              echo "missing Arena export at $found for $module" | tee -a "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" >&2
-              printf '%s\t%s\t97\n' "$name" "$module" > results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
-              break
-            fi
-            cp "$found" "arena-tests/good/${name}.ndjson"
-          done < results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt
-          if [ ! -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED ]; then
-            find arena-tests/good -type f -name '*.ndjson' -print0 | sort -z | xargs -0 sha256sum > results/developmental-distinction-mathlib-gold-v24/export_sha256.txt
-          fi
-
-      - name: Upload export diagnostics
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: v25-export-diagnostics
-          path: results/developmental-distinction-mathlib-gold-v24/
-
-      - name: Gate export apparatus
-        shell: bash
-        run: |
-          set -euo pipefail
-          if [ -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED ]; then
-            echo "V25 apparatus failure:" >&2
-            cat results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED >&2
-            exit 97
-          fi
+          mkdir -p arena-tests results/developmental-distinction-external-gold-v23 results/lean-developmental-reachability-v25
+          curl -fL https://arena.lean-lang.org/lean-arena-tests.tar.gz -o arena-current.tar.gz
+          sha256sum arena-current.tar.gz | tee results/developmental-distinction-external-gold-v23/corpus_sha256.txt
+          tar -xzf arena-current.tar.gz -C arena-tests
+          find arena-tests -type f -name '*.ndjson' | sort > results/developmental-distinction-external-gold-v23/corpus_files.txt
+          printf '%s\n' 'sealed Arena corpus materialization; V25 intervention unchanged' > results/lean-developmental-reachability-v25/apparatus_note.txt
 
       - name: Reconstruct baseline and trace checker
         shell: bash
@@ -115,7 +36,7 @@ jobs:
           python3 scripts/patch_developmental_checker_trace.py
           printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
           cp base/config.json trace/config.json
-          git -C base rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24/kernel_commit.txt
+          git -C base rev-parse HEAD | tee results/developmental-distinction-external-gold-v23/kernel_commit.txt
 
       - name: Build baseline and trace checker
         run: |
