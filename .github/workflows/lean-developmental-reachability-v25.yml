@@ -77,9 +77,9 @@ jobs:
               tail -n 200 "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" || true
               break
             fi
-            found=$(find arena-src/_build -type f -name "${name}.ndjson" | head -n1)
-            if [ -z "$found" ]; then
-              echo "missing export for $module" | tee -a "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" >&2
+            found="arena-src/_build/tests/${name}.ndjson"
+            if [ ! -f "$found" ]; then
+              echo "missing Arena export at $found for $module" | tee -a "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" >&2
               printf '%s\t%s\t97\n' "$name" "$module" > results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
               break
             fi
