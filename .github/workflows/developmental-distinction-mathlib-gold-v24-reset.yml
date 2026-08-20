@@ -1,0 +1,230 @@
+name: Developmental Distinction Mathlib Gold V24 Sharded
+
+on:
+  pull_request:
+    branches:
+      - agent/developmental-distinction-external-gold-v23
+  workflow_dispatch:
+
+jobs:
+  shard-frozen-corpus:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download already-frozen V24 corpus
+        uses: actions/download-artifact@v4
+        with:
+          name: v24-frozen-mathlib-corpus
+          path: frozen-source
+          repository: heathsanchez/test
+          run-id: 32336900956
+          github-token: ${{ github.token }}
+
+      - name: Restore and verify frozen corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          cd frozen-source
+          tar -xzf v24-frozen-corpus.tgz
+          test "$(find arena-tests/good -name '*.ndjson' | wc -l)" -eq 16
+          sha256sum -c results/developmental-distinction-mathlib-gold-v24-reset/export_sha256.txt
+          test "$(sha256sum results/developmental-distinction-mathlib-gold-v24-reset/predeclared_modules.txt | cut -d' ' -f1)" = "6bd94324fdcbb427db4b98557a4bb969913d0d8e80d3c2a34e18e1b4e4c81de1"
+          test "$(sha256sum results/developmental-distinction-mathlib-gold-v24-reset/protocol.json | cut -d' ' -f1)" = "70c521a8e6770dc4dddb058c95c584e8342c25211870dba193f4f001866e3d1d"
+          cd ..
+          mkdir -p module-packs
+          for f in frozen-source/arena-tests/good/*.ndjson; do
+            b=$(basename "$f" .ndjson)
+            mkdir -p "module-packs/$b/arena-tests/good"
+            cp "$f" "module-packs/$b/arena-tests/good/"
+          done
+
+      - name: Upload module 01
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-01
+          path: module-packs/v24_mathlib_01/
+          compression-level: 0
+      - name: Upload module 02
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-02
+          path: module-packs/v24_mathlib_02/
+          compression-level: 0
+      - name: Upload module 03
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-03
+          path: module-packs/v24_mathlib_03/
+          compression-level: 0
+      - name: Upload module 04
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-04
+          path: module-packs/v24_mathlib_04/
+          compression-level: 0
+      - name: Upload module 05
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-05
+          path: module-packs/v24_mathlib_05/
+          compression-level: 0
+      - name: Upload module 06
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-06
+          path: module-packs/v24_mathlib_06/
+          compression-level: 0
+      - name: Upload module 07
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-07
+          path: module-packs/v24_mathlib_07/
+          compression-level: 0
+      - name: Upload module 08
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-08
+          path: module-packs/v24_mathlib_08/
+          compression-level: 0
+      - name: Upload module 09
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-09
+          path: module-packs/v24_mathlib_09/
+          compression-level: 0
+      - name: Upload module 10
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-10
+          path: module-packs/v24_mathlib_10/
+          compression-level: 0
+      - name: Upload module 11
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-11
+          path: module-packs/v24_mathlib_11/
+          compression-level: 0
+      - name: Upload module 12
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-12
+          path: module-packs/v24_mathlib_12/
+          compression-level: 0
+      - name: Upload module 13
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-13
+          path: module-packs/v24_mathlib_13/
+          compression-level: 0
+      - name: Upload module 14
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-14
+          path: module-packs/v24_mathlib_14/
+          compression-level: 0
+      - name: Upload module 15
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-15
+          path: module-packs/v24_mathlib_15/
+          compression-level: 0
+      - name: Upload module 16
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-module-16
+          path: module-packs/v24_mathlib_16/
+          compression-level: 0
+
+  observe-shards:
+    needs: shard-frozen-corpus
+    strategy:
+      fail-fast: false
+      matrix:
+        idx: ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v24-module-${{ matrix.idx }}
+          path: .
+      - name: Observe one frozen module
+        env:
+          V24_IDX: ${{ matrix.idx }}
+        run: python3 scripts/run_developmental_distinction_v24_shard.py observe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v24-observation-${{ matrix.idx }}
+          path: results/v24-shards/observe-${{ matrix.idx }}.json
+
+  select-gold:
+    needs: observe-shards
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: v24-observation-*
+          path: observations
+          merge-multiple: true
+      - id: select
+        run: python3 scripts/run_developmental_distinction_v24_shard.py select observations
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v24-selected-pre-feature
+          path: results/v24-shards/selected.json
+
+  gold-shards:
+    needs: select-gold
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select-gold.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: v24-module-${{ matrix.idx }}
+          path: .
+      - name: Build trace and family fault checker
+        env:
+          V24_FAMILY: ${{ matrix.family }}
+        run: python3 scripts/run_developmental_distinction_v24_shard.py build
+      - name: Evaluate one frozen gold episode
+        env:
+          V24_IDX: ${{ matrix.idx }}
+          V24_FAMILY: ${{ matrix.family }}
+        run: python3 scripts/run_developmental_distinction_v24_shard.py gold
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v24-gold-${{ matrix.family }}-${{ matrix.idx }}
+          path: results/v24-shards/gold-${{ matrix.family }}-${{ matrix.idx }}.json
+
+  aggregate-gold:
+    needs: gold-shards
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: v24-gold-*
+          path: gold
+          merge-multiple: true
+      - run: python3 scripts/run_developmental_distinction_v24_shard.py aggregate gold
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v24-gold-final
+          path: results/v24-shards/final-summary.json
