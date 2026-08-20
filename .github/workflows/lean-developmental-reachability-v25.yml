@@ -1,0 +1,59 @@
+name: Lean Developmental Reachability V25
+
+on:
+  push:
+    branches: [agent/lean-developmental-reachability-v25]
+  pull_request:
+    branches: [agent/developmental-distinction-mathlib-gold-v24]
+  workflow_dispatch:
+
+jobs:
+  lean-developmental-reachability:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch proven sealed Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests results/developmental-distinction-external-gold-v23 results/lean-developmental-reachability-v25
+          curl -fL https://arena.lean-lang.org/lean-arena-tests.tar.gz -o arena-current.tar.gz
+          sha256sum arena-current.tar.gz | tee results/developmental-distinction-external-gold-v23/corpus_sha256.txt
+          tar -xzf arena-current.tar.gz -C arena-tests
+          find arena-tests -type f -name '*.ndjson' | sort > results/developmental-distinction-external-gold-v23/corpus_files.txt
+          printf '%s\n' 'sealed Arena corpus materialization; V25 intervention unchanged' > results/lean-developmental-reachability-v25/apparatus_note.txt
+
+      - name: Reconstruct baseline and trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git base
+          cp -a base trace
+          python3 scripts/patch_developmental_checker_trace.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
+          cp base/config.json trace/config.json
+          git -C base rev-parse HEAD | tee results/developmental-distinction-external-gold-v23/kernel_commit.txt
+
+      - name: Build baseline and trace checker
+        run: |
+          set -euo pipefail
+          (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+          (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+
+      - name: Run frozen V25 causal reachability experiment
+        run: |
+          set -euo pipefail
+          python3 scripts/run_lean_developmental_reachability_v25.py
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-developmental-reachability-v25
+          path: |
+            results/developmental-distinction-mathlib-gold-v24/
+            results/developmental-distinction-external-gold-v23/
+            results/lean-developmental-reachability-v25/
