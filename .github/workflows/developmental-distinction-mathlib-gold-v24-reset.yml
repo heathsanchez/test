@@ -71,31 +71,23 @@ jobs:
             cd arena-src
             nix develop -c python3 - <<'PY'
           from pathlib import Path
-          import hashlib, json, sys
+          import hashlib, json
           import lka
-
-          root = Path.cwd()
-          work = root / '_v24_mathlib'
-          out = root.parent / 'arena-tests' / 'good'
-          out.mkdir(parents=True, exist_ok=True)
-          modules = [x.strip() for x in (root / 'v24_modules.txt').read_text().splitlines() if x.strip()]
-          toolchain = lka.get_lean_toolchain(work)
-          if not toolchain:
-              raise SystemExit('no lean-toolchain in pinned Mathlib checkout')
-          print('toolchain=', toolchain, flush=True)
-          exporter = lka.setup_lean4export(toolchain)
-          if exporter is None:
-              raise SystemExit('lean4export setup failed')
+          root=Path.cwd(); work=root/'_v24_mathlib'; out=root.parent/'arena-tests'/'good'; out.mkdir(parents=True,exist_ok=True)
+          modules=[x.strip() for x in (root/'v24_modules.txt').read_text().splitlines() if x.strip()]
+          toolchain=lka.get_lean_toolchain(work)
+          if not toolchain: raise SystemExit('no lean-toolchain in pinned Mathlib checkout')
+          print('toolchain=',toolchain,flush=True)
+          exporter=lka.setup_lean4export(toolchain)
+          if exporter is None: raise SystemExit('lean4export setup failed')
           records=[]
           for i,module in enumerate(modules,1):
               name=f'v24_mathlib_{i:02d}'
-              print(f'V24_EXPORT {i:02d}/{len(modules)} {module}', flush=True)
-              r=lka.run_cmd(['lake','build',module], cwd=work, print_on_failure=True)
-              if r.returncode != 0:
-                  raise SystemExit(f'lake build failed: {module}')
+              print(f'V24_EXPORT {i:02d}/{len(modules)} {module}',flush=True)
+              r=lka.run_cmd(['lake','build',module],cwd=work,print_on_failure=True)
+              if r.returncode!=0: raise SystemExit(f'lake build failed: {module}')
               dest=out/f'{name}.ndjson'
-              if not lka.run_lean4export(exporter,module,None,cwd=work,out_file=dest):
-                  raise SystemExit(f'lean4export failed: {module}')
+              if not lka.run_lean4export(exporter,module,None,cwd=work,out_file=dest): raise SystemExit(f'lean4export failed: {module}')
               records.append({'index':i,'module':module,'file':dest.name,'sha256':hashlib.sha256(dest.read_bytes()).hexdigest(),'bytes':dest.stat().st_size})
           (root.parent/'results/developmental-distinction-mathlib-gold-v24-reset/export_manifest.json').write_text(json.dumps(records,indent=2,sort_keys=True))
           PY
@@ -121,13 +113,12 @@ jobs:
           (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
           (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
 
-      - name: Run unchanged V23 frozen evaluator on V24 corpus
+      - name: Run cached checkpointed V24 evaluator
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf results/developmental-distinction-external-gold-v23
-          python3 scripts/run_developmental_distinction_external_gold_v23_direct.py
-          cp -a results/developmental-distinction-external-gold-v23 results/developmental-distinction-mathlib-gold-v24-reset/evaluator
+          python3 scripts/run_developmental_distinction_mathlib_gold_v24_cached.py
+          test -f results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
           cat results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
 
       - uses: actions/upload-artifact@v4
