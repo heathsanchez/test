@@ -52,12 +52,12 @@ jobs:
           git -C arena-src checkout ac93af578a3152dc973f3871885f580a39841f7a
           mkdir -p arena-tests/good results/developmental-distinction-mathlib-gold-v24/export_logs
           : > results/developmental-distinction-mathlib-gold-v24/export_status.tsv
+          rm -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
           i=0
           while IFS= read -r module; do
             [ -n "$module" ] || continue
             i=$((i+1))
             name=$(printf 'v24_mathlib_%02d' "$i")
-            log="../results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log"
             cat > "arena-src/tests/${name}.yaml" <<EOF
           description: V25 protected V24 Mathlib module case
           url: https://github.com/leanprover-community/mathlib4
@@ -73,17 +73,38 @@ jobs:
             set -e
             printf '%s\t%s\t%s\n' "$name" "$module" "$rc" | tee -a results/developmental-distinction-mathlib-gold-v24/export_status.tsv
             if [ "$rc" -ne 0 ]; then
+              printf '%s\t%s\t%s\n' "$name" "$module" "$rc" > results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
               tail -n 200 "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" || true
-              exit "$rc"
+              break
             fi
             found=$(find arena-src/_build -type f -name "${name}.ndjson" | head -n1)
             if [ -z "$found" ]; then
               echo "missing export for $module" | tee -a "results/developmental-distinction-mathlib-gold-v24/export_logs/${name}.log" >&2
-              exit 97
+              printf '%s\t%s\t97\n' "$name" "$module" > results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED
+              break
             fi
             cp "$found" "arena-tests/good/${name}.ndjson"
           done < results/developmental-distinction-mathlib-gold-v24/predeclared_modules.txt
-          find arena-tests/good -type f -name '*.ndjson' -print0 | sort -z | xargs -0 sha256sum > results/developmental-distinction-mathlib-gold-v24/export_sha256.txt
+          if [ ! -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED ]; then
+            find arena-tests/good -type f -name '*.ndjson' -print0 | sort -z | xargs -0 sha256sum > results/developmental-distinction-mathlib-gold-v24/export_sha256.txt
+          fi
+
+      - name: Upload export diagnostics
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v25-export-diagnostics
+          path: results/developmental-distinction-mathlib-gold-v24/
+
+      - name: Gate export apparatus
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -f results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED ]; then
+            echo "V25 apparatus failure:" >&2
+            cat results/developmental-distinction-mathlib-gold-v24/EXPORT_FAILED >&2
+            exit 97
+          fi
 
       - name: Reconstruct baseline and trace checker
         shell: bash
