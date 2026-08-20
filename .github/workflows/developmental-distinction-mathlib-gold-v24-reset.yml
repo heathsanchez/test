@@ -10,12 +10,11 @@ on:
 jobs:
   export-frozen-corpus:
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
+    timeout-minutes: 360
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v4
-
       - name: Freeze V24 protocol
         shell: bash
         run: |
@@ -52,10 +51,7 @@ jobs:
           }
           EOF
           sha256sum results/developmental-distinction-mathlib-gold-v24-reset/protocol.json | tee results/developmental-distinction-mathlib-gold-v24-reset/protocol_sha256.txt
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v31
-
+      - uses: cachix/install-nix-action@v31
       - name: Export frozen Mathlib modules once
         shell: bash
         run: |
@@ -67,103 +63,156 @@ jobs:
           git -C arena-src/_v24_mathlib rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24-reset/mathlib_commit.txt
           cp results/developmental-distinction-mathlib-gold-v24-reset/predeclared_modules.txt arena-src/v24_modules.txt
           mkdir -p arena-tests/good
-          (
-            cd arena-src
-            nix develop -c python3 - <<'PY'
+          (cd arena-src && nix develop -c python3 - <<'PY'
           from pathlib import Path
-          import hashlib, json
-          import lka
+          import hashlib,json,lka
           root=Path.cwd(); work=root/'_v24_mathlib'; out=root.parent/'arena-tests'/'good'; out.mkdir(parents=True,exist_ok=True)
           modules=[x.strip() for x in (root/'v24_modules.txt').read_text().splitlines() if x.strip()]
           toolchain=lka.get_lean_toolchain(work)
-          if not toolchain: raise SystemExit('no lean-toolchain in pinned Mathlib checkout')
-          print('toolchain=',toolchain,flush=True)
+          if not toolchain: raise SystemExit('no lean-toolchain')
           exporter=lka.setup_lean4export(toolchain)
           if exporter is None: raise SystemExit('lean4export setup failed')
-          records=[]
+          rec=[]
           for i,module in enumerate(modules,1):
-              name=f'v24_mathlib_{i:02d}'
-              print(f'V24_EXPORT {i:02d}/{len(modules)} {module}',flush=True)
+              name=f'v24_mathlib_{i:02d}'; print(f'V24_EXPORT {i:02d}/16 {module}',flush=True)
               r=lka.run_cmd(['lake','build',module],cwd=work,print_on_failure=True)
-              if r.returncode!=0: raise SystemExit(f'lake build failed: {module}')
+              if r.returncode: raise SystemExit(f'lake build failed {module}')
               dest=out/f'{name}.ndjson'
-              if not lka.run_lean4export(exporter,module,None,cwd=work,out_file=dest): raise SystemExit(f'lean4export failed: {module}')
-              records.append({'index':i,'module':module,'file':dest.name,'sha256':hashlib.sha256(dest.read_bytes()).hexdigest(),'bytes':dest.stat().st_size})
-          (root.parent/'results/developmental-distinction-mathlib-gold-v24-reset/export_manifest.json').write_text(json.dumps(records,indent=2,sort_keys=True))
+              if not lka.run_lean4export(exporter,module,None,cwd=work,out_file=dest): raise SystemExit(f'export failed {module}')
+              rec.append({'index':i,'module':module,'file':dest.name,'sha256':hashlib.sha256(dest.read_bytes()).hexdigest(),'bytes':dest.stat().st_size})
+          (root.parent/'results/developmental-distinction-mathlib-gold-v24-reset/export_manifest.json').write_text(json.dumps(rec,indent=2,sort_keys=True))
           PY
           )
           test "$(find arena-tests/good -name '*.ndjson' | wc -l)" -eq 16
           sha256sum arena-tests/good/*.ndjson > results/developmental-distinction-mathlib-gold-v24-reset/export_sha256.txt
-
-      - name: Package frozen corpus
-        shell: bash
-        run: |
-          set -euo pipefail
-          tar -czf v24-frozen-corpus.tgz arena-tests results/developmental-distinction-mathlib-gold-v24-reset
-          sha256sum v24-frozen-corpus.tgz
-
-      - name: Upload frozen corpus artifact
+          mkdir -p module-packs
+          for f in arena-tests/good/*.ndjson; do
+            b=$(basename "$f" .ndjson); mkdir -p "module-packs/$b/arena-tests/good"; cp "$f" "module-packs/$b/arena-tests/good/"; cp results/developmental-distinction-mathlib-gold-v24-reset/{protocol.json,protocol_sha256.txt,predeclared_modules.txt,module_manifest_sha256.txt,export_manifest.json,export_sha256.txt,mathlib_commit.txt} "module-packs/$b/";
+          done
+      - name: Upload module 01
         uses: actions/upload-artifact@v4
-        with:
-          name: v24-frozen-mathlib-corpus
-          path: v24-frozen-corpus.tgz
-          retention-days: 7
+        with: {name: v24-module-01, path: module-packs/v24_mathlib_01/, compression-level: 0}
+      - name: Upload module 02
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-02, path: module-packs/v24_mathlib_02/, compression-level: 0}
+      - name: Upload module 03
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-03, path: module-packs/v24_mathlib_03/, compression-level: 0}
+      - name: Upload module 04
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-04, path: module-packs/v24_mathlib_04/, compression-level: 0}
+      - name: Upload module 05
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-05, path: module-packs/v24_mathlib_05/, compression-level: 0}
+      - name: Upload module 06
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-06, path: module-packs/v24_mathlib_06/, compression-level: 0}
+      - name: Upload module 07
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-07, path: module-packs/v24_mathlib_07/, compression-level: 0}
+      - name: Upload module 08
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-08, path: module-packs/v24_mathlib_08/, compression-level: 0}
+      - name: Upload module 09
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-09, path: module-packs/v24_mathlib_09/, compression-level: 0}
+      - name: Upload module 10
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-10, path: module-packs/v24_mathlib_10/, compression-level: 0}
+      - name: Upload module 11
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-11, path: module-packs/v24_mathlib_11/, compression-level: 0}
+      - name: Upload module 12
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-12, path: module-packs/v24_mathlib_12/, compression-level: 0}
+      - name: Upload module 13
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-13, path: module-packs/v24_mathlib_13/, compression-level: 0}
+      - name: Upload module 14
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-14, path: module-packs/v24_mathlib_14/, compression-level: 0}
+      - name: Upload module 15
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-15, path: module-packs/v24_mathlib_15/, compression-level: 0}
+      - name: Upload module 16
+        uses: actions/upload-artifact@v4
+        with: {name: v24-module-16, path: module-packs/v24_mathlib_16/, compression-level: 0}
 
-  evaluate-frozen-gold:
+  observe-shards:
     needs: export-frozen-corpus
+    strategy:
+      fail-fast: false
+      matrix:
+        idx: ['01','02','03','04','05','06','07','08','09','10','11','12','13','14','15','16']
     runs-on: ubuntu-24.04
-    timeout-minutes: 240
-    permissions:
-      contents: read
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
-
-      - name: Download frozen corpus artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: v24-frozen-mathlib-corpus
-          path: .
-
-      - name: Restore and verify frozen corpus
+      - uses: actions/download-artifact@v4
+        with: {name: v24-module-${{ matrix.idx }}, path: .}
+      - name: Reconstruct checker pair
         shell: bash
         run: |
-          set -euo pipefail
-          tar -xzf v24-frozen-corpus.tgz
-          test "$(find arena-tests/good -name '*.ndjson' | wc -l)" -eq 16
-          sha256sum -c results/developmental-distinction-mathlib-gold-v24-reset/export_sha256.txt
-          cat results/developmental-distinction-mathlib-gold-v24-reset/module_manifest_sha256.txt
-          cat results/developmental-distinction-mathlib-gold-v24-reset/protocol_sha256.txt
-
-      - name: Reconstruct frozen checker pair
-        shell: bash
-        run: |
-          set -euo pipefail
           git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git base
           cp -a base trace
           python3 scripts/patch_developmental_checker_trace.py
           printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
           cp base/config.json trace/config.json
-          git -C base rev-parse HEAD | tee results/developmental-distinction-mathlib-gold-v24-reset/kernel_commit.txt
-
-      - name: Build frozen checker pair
-        shell: bash
-        run: |
-          set -euo pipefail
           (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
           (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
-
-      - name: Run cached checkpointed V24 evaluator
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 scripts/run_developmental_distinction_mathlib_gold_v24_cached.py
-          test -f results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
-          cat results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
-
-      - name: Upload V24 evaluation evidence
-        uses: actions/upload-artifact@v4
+      - name: Observe one frozen module
+        env: {V24_IDX: '${{ matrix.idx }}'}
+        run: python3 scripts/run_developmental_distinction_v24_shard.py observe
+      - uses: actions/upload-artifact@v4
         if: always()
-        with:
-          name: developmental-distinction-mathlib-gold-v24-evaluation
-          path: results/developmental-distinction-mathlib-gold-v24-reset/
-          retention-days: 7
+        with: {name: v24-observation-${{ matrix.idx }}, path: results/v24-shards/observe-${{ matrix.idx }}.json}
+
+  select-gold:
+    needs: observe-shards
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {pattern: v24-observation-*, path: observations, merge-multiple: true}
+      - id: select
+        run: python3 scripts/run_developmental_distinction_v24_shard.py select observations
+      - uses: actions/upload-artifact@v4
+        with: {name: v24-selected-pre-feature, path: results/v24-shards/selected.json}
+
+  gold-shards:
+    needs: select-gold
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.select-gold.outputs.matrix) }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {name: v24-module-${{ matrix.idx }}, path: .}
+      - name: Build trace and family fault checker
+        env: {V24_FAMILY: '${{ matrix.family }}'}
+        run: python3 scripts/run_developmental_distinction_v24_shard.py build
+      - name: Evaluate one frozen gold episode
+        env:
+          V24_IDX: '${{ matrix.idx }}'
+          V24_FAMILY: '${{ matrix.family }}'
+        run: python3 scripts/run_developmental_distinction_v24_shard.py gold
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: v24-gold-${{ matrix.family }}-${{ matrix.idx }}, path: results/v24-shards/gold-${{ matrix.family }}-${{ matrix.idx }}.json}
+
+  aggregate-gold:
+    needs: gold-shards
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with: {pattern: v24-gold-*, path: gold, merge-multiple: true}
+      - run: python3 scripts/run_developmental_distinction_v24_shard.py aggregate gold
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: v24-gold-final, path: results/v24-shards/final-summary.json}
