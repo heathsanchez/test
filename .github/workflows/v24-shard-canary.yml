@@ -1,0 +1,15 @@
+name: V24 Shard Canary
+
+on:
+  push:
+    branches:
+      - agent/developmental-distinction-mathlib-gold-v24-reset
+  pull_request:
+    branches:
+      - agent/developmental-distinction-external-gold-v23
+
+jobs:
+  canary:
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo V24_CANARY_OK
