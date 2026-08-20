@@ -8,9 +8,9 @@ on:
   workflow_dispatch:
 
 jobs:
-  mathlib-module-gold-reset:
+  export-frozen-corpus:
     runs-on: ubuntu-24.04
-    timeout-minutes: 360
+    timeout-minutes: 240
     permissions:
       contents: read
     steps:
@@ -95,6 +95,45 @@ jobs:
           test "$(find arena-tests/good -name '*.ndjson' | wc -l)" -eq 16
           sha256sum arena-tests/good/*.ndjson > results/developmental-distinction-mathlib-gold-v24-reset/export_sha256.txt
 
+      - name: Package frozen corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -czf v24-frozen-corpus.tgz arena-tests results/developmental-distinction-mathlib-gold-v24-reset
+          sha256sum v24-frozen-corpus.tgz
+
+      - name: Upload frozen corpus artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: v24-frozen-mathlib-corpus
+          path: v24-frozen-corpus.tgz
+          retention-days: 7
+
+  evaluate-frozen-gold:
+    needs: export-frozen-corpus
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download frozen corpus artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: v24-frozen-mathlib-corpus
+          path: .
+
+      - name: Restore and verify frozen corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          tar -xzf v24-frozen-corpus.tgz
+          test "$(find arena-tests/good -name '*.ndjson' | wc -l)" -eq 16
+          sha256sum -c results/developmental-distinction-mathlib-gold-v24-reset/export_sha256.txt
+          cat results/developmental-distinction-mathlib-gold-v24-reset/module_manifest_sha256.txt
+          cat results/developmental-distinction-mathlib-gold-v24-reset/protocol_sha256.txt
+
       - name: Reconstruct frozen checker pair
         shell: bash
         run: |
@@ -121,8 +160,10 @@ jobs:
           test -f results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
           cat results/developmental-distinction-mathlib-gold-v24-reset/evaluator/summary.json
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload V24 evaluation evidence
+        uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: developmental-distinction-mathlib-gold-v24-reset
+          name: developmental-distinction-mathlib-gold-v24-evaluation
           path: results/developmental-distinction-mathlib-gold-v24-reset/
+          retention-days: 7
