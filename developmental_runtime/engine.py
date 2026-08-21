@@ -29,10 +29,8 @@ class DevelopmentalRuntime:
             pid = self.synthesis.synthesize_probe_extension(self.domain, state)
             if pid is None:
                 return state.evolve(obstructions=state.obstructions + ("PROBE_LANGUAGE_OBSTRUCTION",)), events
-            state = state.evolve(
-                probe_language=frozenset(set(state.probe_language) | {pid}),
-                metadata={**state.metadata, "decision_probe_id": pid},
-            )
+            hook = getattr(self.domain, "prepare_probe_extension", None)
+            state = hook(state, pid) if hook is not None else state.evolve(probe_language=frozenset(set(state.probe_language) | {pid}))
             events.append(EngineEvent("SYNTHESIZE_PROBE", pid, {"added": pid}))
             decision = route(self.domain, state)
             events.append(EngineEvent(decision.route.name, None, decision.reason))
@@ -43,13 +41,11 @@ class DevelopmentalRuntime:
         if decision.route is not Route.PROBE or decision.policy is None or decision.policy.tree.probe_id is None:
             raise RuntimeError(f"probe not licensed: {decision}")
         pid = decision.policy.tree.probe_id
-        intervention = self.domain.intervention(pid)
-        record = self.domain.execute(state, actual_world, intervention)
+        record = self.domain.execute(state, actual_world, self.domain.intervention(pid))
         if not lawful(record):
             raise RuntimeError("unlawful probe transition")
         observed = record.effect["observation"]
-        parts = split_cell(self.domain, state, state.hypotheses, pid)
-        survivors = parts[observed]
+        survivors = split_cell(self.domain, state, state.hypotheses, pid)[observed]
         successor = record.successor.evolve(
             hypotheses=survivors,
             quotient={"probe": pid, "outcome": observed, "cell": tuple(sorted(survivors))},
