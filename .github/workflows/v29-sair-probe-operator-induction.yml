@@ -1,0 +1,32 @@
+name: V29 SAIR Probe Operator Induction
+
+on:
+  pull_request:
+    branches: [v28-sair-probe-program-synthesis]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v29-probe-operator-induction:
+    if: github.event_name != 'pull_request' || github.head_ref == 'v29-sair-probe-operator-induction'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official external SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V29 natural probe-operator induction
+        run: |
+          rm -rf results/v29-sair-probe-operator-induction
+          python scripts/sair_probe_operator_induction_v29.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v29-sair-probe-operator-induction
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v29-sair-probe-operator-induction
+          path: results/v29-sair-probe-operator-induction/
