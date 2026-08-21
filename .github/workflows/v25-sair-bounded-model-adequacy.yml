@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   v27-commitment-router:
-    if: github.event_name == 'pull_request' && github.base_ref == 'v25-sair-bounded-model-adequacy'
+    if: github.event_name == 'pull_request' && github.head_ref == 'v27-sair-commitment-router'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
@@ -31,7 +31,7 @@ jobs:
           path: results/v27-sair-commitment-router/
 
   bounded-model-adequacy:
-    if: github.event_name != 'pull_request' || github.base_ref != 'v25-sair-bounded-model-adequacy'
+    if: github.event_name != 'pull_request' || github.head_ref != 'v27-sair-commitment-router'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
