@@ -53,13 +53,13 @@ class SAIRRuntimeAdapter:
                 cost=intervention.cost,
             )
 
-        last = state.metadata.get("last_probe")
-        outcome = state.metadata.get("last_probe_outcome")
-        if not last:
+        decision_probe = state.metadata.get("decision_probe_id")
+        if not decision_probe:
             return TransitionRecord(intervention, {}, {"VERIFIED": no(), "ADMISSIBLE": no()}, state)
+        world_outcome = self.probe_outcome(state, world_id, decision_probe)
 
         if intervention.id == "ACCEPT_COUNTERMODEL_WITNESS":
-            ok = bool(outcome == 1 and self.probe_outcome(state, world_id, last) == 1)
+            ok = bool(world_outcome == 1)
             obligations = {
                 "VERIFIED": yes("independently-rechecked-model") if ok else no(),
                 "ADMISSIBLE": yes() if ok else no(),
@@ -71,13 +71,13 @@ class SAIRRuntimeAdapter:
                 obligations,
                 state,
                 terminal=Terminal.REFUTED if ok else Terminal.NONE,
-                certificate={"world": row["id"], "probe": last} if ok else None,
+                certificate={"world": row["id"], "probe": decision_probe} if ok else None,
             )
 
         if intervention.id == "ADVANCE_PROOF_SEARCH_FRONTIER":
-            # This is intentionally nonterminal. Its lawful effect is to move from
-            # an unresolved state into a certified no-small-countermodel successor.
-            ok = bool(outcome == 0 and self.probe_outcome(state, world_id, last) == 0)
+            # Nonterminal continuation: exact absence of a small countermodel
+            # licenses advancement to a successor proof-search state.
+            ok = bool(world_outcome == 0)
             successor = state.evolve(
                 problem_state={"source": row["id"], "order3_countermodel_exhausted": True},
                 metadata={**state.metadata, "proof_frontier_advanced": ok},
