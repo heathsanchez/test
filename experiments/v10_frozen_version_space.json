@@ -1,0 +1,60 @@
+{
+  "protocol": "DEVELOPMENTAL_CONTROLLER_PILOT_V10_FROZEN_VERSION_SPACE",
+  "checkpoint_token": "3713a4a0a8e3da67fc41c953861a06fcc3439e3c",
+  "prediction_frozen_before_stage2_reveal": true,
+  "single_story_baseline": "scheduler_priority_refinement",
+  "ranked_version_space": [
+    {
+      "rank": 1,
+      "id": "scheduler_priority_refinement",
+      "hypothesis": "The immediate frontier is improving which already-available SAIR motifs/reasons are selected and scheduled, building on clean motif scheduling, persistent Reason Atlas scale evaluation, and spectral H-Tilt.",
+      "required_evidence": "Matched candidate-generation runs should change success/search cost when only scheduling or priority changes.",
+      "separator": "Freeze the candidate/operator pool and budget; compare current scheduler against an alternative priority/tilt policy on the same residual set.",
+      "promote_if": "routing/scheduling changes alter reachability or cost without introducing a new operator/representation family.",
+      "keywords": ["schedule", "scheduler", "priority", "tilt", "routing"]
+    },
+    {
+      "rank": 2,
+      "id": "atlas_conditioned_operator_construction",
+      "hypothesis": "The loop is ready to make Reason-Atlas structure condition root-operator/constructor induction, so failures change what solving machinery is generated rather than only what is scheduled.",
+      "required_evidence": "A residual/Reason-Atlas-conditioned constructor must create reachability unavailable to the frozen existing operator pool.",
+      "separator": "Freeze routing and budget; compare generic root-operator induction with Reason-Atlas-conditioned construction on the same unresolved residuals.",
+      "promote_if": "conditioned construction produces a new verified operator/schema family and targeted ablation restores failure.",
+      "keywords": ["constructor", "operator", "induction", "synth", "grammar", "schema"]
+    },
+    {
+      "rank": 3,
+      "id": "persistent_multi_episode_compounding",
+      "hypothesis": "The next gain comes from making the persistent Reason Atlas compound across source-distinct SAIR episodes rather than from another local scheduler or constructor change.",
+      "required_evidence": "Warm persistent state should outperform cold replay on held-out episodes under matched search and operator language.",
+      "separator": "Run source-held-out warm-versus-cold episodes with identical solver/search budgets and no new operator family.",
+      "promote_if": "persistent cross-episode state causally reduces search or creates later reachability, with ablation removing the gain.",
+      "keywords": ["persist", "compounding", "multi-episode", "memory", "lawbook"]
+    },
+    {
+      "rank": 4,
+      "id": "representation_or_continuation_abstraction",
+      "hypothesis": "The scheduler is exposing a representation bottleneck: the system needs a new quotient/continuation/relation-level abstraction that unifies motifs or evidence before further scheduling pays off.",
+      "required_evidence": "A representation change should preserve semantics while changing cross-case reuse or reachability under matched routing.",
+      "separator": "Hold scheduler and constructors fixed; introduce one candidate quotient/continuation abstraction and test transfer plus inverse ablation.",
+      "promote_if": "the new representation transports capability or exposes a previously unavailable continuation without extra search budget.",
+      "keywords": ["quotient", "continuation", "representation", "relation", "abstraction", " ir"]
+    },
+    {
+      "rank": 5,
+      "id": "verification_promotion_hardening",
+      "hypothesis": "The breakthrough loop still needs stronger closed-loop validation/promotion rather than a new solving regime.",
+      "required_evidence": "Candidate capabilities already exist but fail trustworthy replay/admission or protected-behaviour gates.",
+      "separator": "Replay the same candidate set through stricter admission/verification with solving machinery frozen.",
+      "promote_if": "the dominant change is verification/trust/promotion reliability rather than new reachability machinery.",
+      "keywords": ["verification", "verify", "validation", "gate", "replay", "trust", "promotion"]
+    }
+  ],
+  "highest_information_separator": {
+    "name": "matched_four_arm_regime_separator",
+    "design": "On one frozen residual pool and fixed total budget, run: A routing/scheduler-only change; B Reason-Atlas-conditioned construction with routing frozen; C warm persistent state with both routing and operator language frozen; D representation/quotient change with routing and constructors frozen. Keep a fifth replay/admission-only control. Score new reachability, search cost, transfer, and targeted ablation.",
+    "decision_rule": "Promote the smallest arm that changes protected reachability or cost causally; preserve multiple hypotheses if more than one arm changes a distinct residual basin."
+  },
+  "short_horizon": 5,
+  "claim_boundary": "Historical next-commit family coverage is only a proxy for whether the version-space controller preserved the eventual developmental direction; it is not proof that the proposed separator would have caused the historical breakthrough."
+}
