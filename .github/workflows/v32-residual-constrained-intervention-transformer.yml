@@ -1,0 +1,42 @@
+name: V32 Residual-Constrained Intervention Transformer
+
+on:
+  pull_request:
+    branches: [v31-runtime-probe-operator-recursion]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v32-residual-constrained-intervention-transformer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Freeze source hashes
+        run: |
+          mkdir -p results/v32-residual-constrained-intervention-transformer
+          sha256sum \
+            V32_RESIDUAL_CONSTRAINED_INTERVENTION_TRANSFORMER_PRECOMMIT.md \
+            domains/sair/raw_transformer.py \
+            experiments/sair_residual_constrained_transformer_v32.py \
+            developmental_runtime/*.py \
+            | tee results/v32-residual-constrained-intervention-transformer/SOURCE_SHA256.txt
+      - name: Run V32
+        run: |
+          python experiments/sair_residual_constrained_transformer_v32.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v32-residual-constrained-intervention-transformer
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v32-residual-constrained-intervention-transformer
+          path: results/v32-residual-constrained-intervention-transformer/
