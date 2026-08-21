@@ -3,6 +3,8 @@ name: V31 Natural Representation Gap Discovery
 on:
   push:
     branches: [v31-natural-representation-gap-discovery]
+  pull_request:
+    branches: [v30-developmental-runtime-integration]
   workflow_dispatch:
 
 permissions:
