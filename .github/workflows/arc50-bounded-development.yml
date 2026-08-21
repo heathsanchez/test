@@ -6,11 +6,13 @@ on:
     paths:
       - '.github/workflows/arc50-bounded-development.yml'
       - 'scripts/arc50_bounded_development.py'
+      - 'scripts/arc50_developmental_v3.py'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/arc50-bounded-development.yml'
       - 'scripts/arc50_bounded_development.py'
+      - 'scripts/arc50_developmental_v3.py'
   workflow_dispatch:
 
 jobs:
@@ -21,10 +23,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fetch ARC-AGI
         run: git clone --depth 1 https://github.com/fchollet/ARC-AGI.git ARC-AGI
-      - name: Run frozen vs developmental 50-task protocol
+      - name: Run smoke-gated frozen vs developmental 50-task protocol
         run: |
+          rm -rf results/arc50-bounded-development
           mkdir -p results/arc50-bounded-development
-          python3 scripts/arc50_bounded_development.py \
+          python3 scripts/arc50_developmental_v3.py \
             --arc-root ARC-AGI \
             --out-dir results/arc50-bounded-development \
             --n 50 --seed 1729
