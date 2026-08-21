@@ -8,6 +8,14 @@ on:
       - '.github/workflows/lean-kernel-arena-semantic-handoff-census-v1.yml'
       - 'scripts/parse_callgrind_handoffs.py'
       - 'ARENA_SEMANTIC_HANDOFF_CENSUS_V1.md'
+  pull_request:
+    branches:
+      - main
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/lean-kernel-arena-semantic-handoff-census-v1.yml'
+      - 'scripts/parse_callgrind_handoffs.py'
+      - 'ARENA_SEMANTIC_HANDOFF_CENSUS_V1.md'
   workflow_dispatch:
 
 jobs:
@@ -104,7 +112,7 @@ jobs:
           d=json.loads(p.read_text())
           edges=d['aggregated_edges']
           cross=[e for e in edges if e['workload_count']>=2]
-          top=edge=None
+          top=None
           if cross: top=cross[0]
           elif edges: top=edges[0]
           verdict='NO_HIGH_MASS_SEMANTIC_EDGE'
