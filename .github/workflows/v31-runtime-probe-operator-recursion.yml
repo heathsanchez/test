@@ -1,0 +1,31 @@
+name: V31 Runtime Probe Operator Recursion
+
+on:
+  pull_request:
+    branches: [v30-developmental-runtime-integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v31-runtime-probe-operator-recursion:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V31 recursive operator integration
+        run: |
+          rm -rf results/v31-runtime-probe-operator-recursion
+          python experiments/sair_runtime_probe_operator_recursion_v31.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v31-runtime-probe-operator-recursion
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v31-runtime-probe-operator-recursion
+          path: results/v31-runtime-probe-operator-recursion/
