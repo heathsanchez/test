@@ -1,0 +1,38 @@
+name: Developmental controller pilot v1 adversarial audit
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run adversarial audit
+        run: |
+          python experiments/developmental_controller_pilot_v1_adversarial.py \
+            --worlds 256 \
+            --seed 20260821 \
+            --out developmental_controller_pilot_v1_adversarial_result.json
+      - name: Print verdict
+        run: |
+          python - <<'PY'
+          import json
+          p = json.load(open('developmental_controller_pilot_v1_adversarial_result.json'))
+          print(json.dumps(p['summary'], indent=2, sort_keys=True))
+          print('VERDICT:', p['verdict'])
+          print('JOIN_SPECIFIC_EFFECT_ESTABLISHED:', p['join_specific_effect_established'])
+          if p['verdict'] == 'FAIL_OR_INCONCLUSIVE':
+              raise SystemExit('adversarial audit inconclusive or failed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-pilot-v1-adversarial
+          path: developmental_controller_pilot_v1_adversarial_result.json
