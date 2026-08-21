@@ -196,7 +196,7 @@ def main():
       'literal_trigger_patch_does_not_transfer':not literal_patch_transfers,
       'operator_ablation_restores_epistemic_obstruction':ablation_restores,
       'wrong_numeric_edit_control_fails':wrong_edit_fails,
-      'all_sat_witnesses_rechecked_and_no_unknowns':bad==0 and unknown==0,
+      'all_sat_witnesses_rechecked_and_no_unknowns':b==0 and u==0,
     }
     gates['SAIR_PROBE_OPERATOR_INDUCTION_GATE']=all(gates.values())
     result={
