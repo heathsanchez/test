@@ -51,3 +51,5 @@ The umbrella gate is `SAIR_RAW_ADEQUACY_BRIDGE_GATE`.
 ## Boundary
 
 This does not yet discover an unrestricted adequacy map, run the Lean judge for every held-out action, or prove cross-domain developmental identity. It tests the first raw natural-domain bridge using exact finite verifier-visible behavior plus generic raw syntax.
+
+Run trigger is frozen after this precommit; no scientific criterion changes are permitted after observing V24 output.
