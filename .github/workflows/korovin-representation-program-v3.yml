@@ -6,6 +6,11 @@ on:
     paths:
       - '.github/workflows/korovin-representation-program-v3.yml'
       - 'experiments/korovin_full_v3/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/korovin-representation-program-v3.yml'
+      - 'experiments/korovin_full_v3/**'
 jobs:
   frozen-gate:
     runs-on: ubuntu-24.04
