@@ -16,6 +16,7 @@ true four-property regime plus three nearest Hamming alternatives.
 """
 from __future__ import annotations
 import json, random
+import numpy as np
 from pathlib import Path
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
@@ -53,7 +54,10 @@ def candidates(eid,truth):
 def lexical(texts,cands):
     docs=texts+[c['text'] for c in cands]
     X=TfidfVectorizer(ngram_range=(1,2),stop_words='english').fit_transform(docs)
-    q=X[:len(texts)].sum(axis=0)
+    # scipy sparse .sum(axis=0) returns numpy.matrix under the current runner;
+    # convert only the lexical-control query representation. This does not
+    # change evidence, frozen K, candidates, labels, or any scientific gate.
+    q=np.asarray(X[:len(texts)].sum(axis=0)).reshape(1,-1)
     sims=cosine_similarity(q,X[len(texts):]).ravel()
     return cands[int(sims.argmax())]['sig']
 
