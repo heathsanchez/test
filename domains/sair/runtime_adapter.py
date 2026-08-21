@@ -81,7 +81,7 @@ class SAIRRuntimeAdapter:
             )
 
         if intervention.id == "ADVANCE_PROOF_SEARCH_FRONTIER":
-            ok = bool(world_outcome == 0)
+            ok = bool(world_outcome == 0 and not state.metadata.get("proof_frontier_advanced", False))
             successor = state.evolve(
                 problem_state={"source": row["id"], "order3_countermodel_exhausted": True},
                 metadata={**state.metadata, "proof_frontier_advanced": ok},
