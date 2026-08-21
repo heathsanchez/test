@@ -1,0 +1,30 @@
+name: V25 SAIR Bounded Model Adequacy
+
+on:
+  pull_request:
+    branches: [ v24-sair-raw-adequacy ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  bounded-model-adequacy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install z3-solver
+      - name: Clone official external SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair-stage2
+      - name: Run V25
+        run: |
+          rm -rf results/v25-sair-bounded-model-adequacy
+          mkdir -p results/v25-sair-bounded-model-adequacy
+          git -C /tmp/sair-stage2 rev-parse HEAD > results/v25-sair-bounded-model-adequacy/SAIR_COMMIT.txt
+          python3 scripts/sair_bounded_model_adequacy_v25.py --sair-root /tmp/sair-stage2 --out-dir results/v25-sair-bounded-model-adequacy
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v25-sair-bounded-model-adequacy
+          path: results/v25-sair-bounded-model-adequacy/
