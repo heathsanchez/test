@@ -2,14 +2,36 @@ name: V25 SAIR Bounded Model Adequacy
 
 on:
   pull_request:
-    branches: [ v24-sair-raw-adequacy ]
+    branches: [ v24-sair-raw-adequacy, v25-sair-bounded-model-adequacy ]
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
+  v27-commitment-router:
+    if: github.event_name == 'pull_request' && github.base_ref == 'v25-sair-bounded-model-adequacy'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - run: pip install z3-solver
+      - name: Clone official external SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair-stage2
+      - name: Run V27 commitment router
+        run: |
+          rm -rf results/v27-sair-commitment-router
+          mkdir -p results/v27-sair-commitment-router
+          git -C /tmp/sair-stage2 rev-parse HEAD > results/v27-sair-commitment-router/SAIR_COMMIT.txt
+          python3 scripts/sair_commitment_router_v27.py --sair-root /tmp/sair-stage2 --out-dir results/v27-sair-commitment-router
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v27-sair-commitment-router
+          path: results/v27-sair-commitment-router/
+
   bounded-model-adequacy:
+    if: github.event_name != 'pull_request' || github.base_ref != 'v25-sair-bounded-model-adequacy'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
