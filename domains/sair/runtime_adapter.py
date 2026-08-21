@@ -41,6 +41,12 @@ class SAIRRuntimeAdapter:
             return row["atom_values"][probe_id]
         return tuple(row["atom_values"][child] for child in p["children"])
 
+    def probe_order(self, probe_id: str) -> int | None:
+        p = self.programs.get(probe_id)
+        if not p or p.get("kind") != "atom":
+            return None
+        return int(p.get("order")) if p.get("order") is not None else None
+
     def execute(self, state: DevelopmentalState, world_id: int, intervention: Intervention) -> TransitionRecord:
         row = self.rows[world_id]
         yes = lambda cert=None: ObligationEvidence(True, cert)
@@ -63,6 +69,7 @@ class SAIRRuntimeAdapter:
         if not decision_probe:
             return TransitionRecord(intervention, {}, {"VERIFIED": no(), "ADMISSIBLE": no()}, state)
         world_outcome = self.probe_outcome(state, world_id, decision_probe)
+        order = self.probe_order(decision_probe)
 
         if intervention.id == "ACCEPT_COUNTERMODEL_WITNESS":
             ok = bool(world_outcome == 1)
@@ -73,31 +80,35 @@ class SAIRRuntimeAdapter:
             }
             return TransitionRecord(
                 intervention,
-                {"accepted_countermodel": ok},
+                {"accepted_countermodel": ok, "order": order},
                 obligations,
                 state,
                 terminal=Terminal.REFUTED if ok else Terminal.NONE,
-                certificate={"world": row["id"], "probe": decision_probe} if ok else None,
+                certificate={"world": row["id"], "probe": decision_probe, "order": order} if ok else None,
             )
 
         if intervention.id == "ADVANCE_PROOF_SEARCH_FRONTIER":
-            ok = bool(world_outcome == 0 and not state.metadata.get("proof_frontier_advanced", False))
+            exhausted = int(state.problem_state.get("countermodel_exhausted_through_order", 0)) if isinstance(state.problem_state, dict) else 0
+            ok = bool(world_outcome == 0 and order is not None and order > exhausted)
             successor = state.evolve(
-                problem_state={"source": row["id"], "order3_countermodel_exhausted": True},
-                metadata={**state.metadata, "proof_frontier_advanced": ok},
+                problem_state={
+                    "source": row["id"],
+                    "countermodel_exhausted_through_order": order if ok else exhausted,
+                },
+                metadata={**state.metadata, "proof_frontier_advanced_to": order if ok else exhausted},
             )
             obligations = {
-                "VERIFIED": yes("order3-exhaustion") if ok else no(),
+                "VERIFIED": yes(f"order{order}-exhaustion") if ok else no(),
                 "ADMISSIBLE": yes() if ok else no(),
-                "SEARCH_COVERAGE_INCREASED": yes("no-order3-countermodel successor") if ok else no(),
+                "SEARCH_COVERAGE_INCREASED": yes(f"no-order{order}-countermodel successor") if ok else no(),
             }
             return TransitionRecord(
                 intervention,
-                {"search_frontier": "proof-after-order3"},
+                {"search_frontier": f"proof-after-order{order}", "order": order},
                 obligations,
                 successor,
                 terminal=Terminal.NONE,
-                certificate={"world": row["id"], "order3_absence": True} if ok else None,
+                certificate={"world": row["id"], "countermodel_absent_through_order": order} if ok else None,
             )
 
         raise KeyError(intervention.id)
