@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # V24 sharded evaluator: one immutable Mathlib module per worker.
 from pathlib import Path
-import hashlib,json,os,shutil,subprocess,sys,time
+from collections import deque
+import hashlib,json,os,shutil,subprocess,sys,tempfile,time
 
 ROOT=Path.cwd(); OUT=ROOT/'results'/'v24-shards'; OUT.mkdir(parents=True,exist_ok=True)
 FAMILIES=['INFER_APP','PROJECTION','IOTA']; FIXED_ORDER=FAMILIES[:]
@@ -10,15 +11,50 @@ RULE={'NONE':'INFER_APP','U':'PROJECTION','F':'IOTA'}; GOLD_PER_FAMILY=5
 CFG='{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}\n'
 
 def status(rc): return 'accept' if rc==0 else ('decline' if rc==2 else ('timeout' if rc==124 else 'reject'))
+
+def _trace_dict(line):
+    if not line.startswith('[MGTRACE] '): return None
+    d={}
+    for tok in line[10:].split():
+        if '=' in tok:
+            k,v=tok.split('=',1); d[k]=v
+    return d
+
+def compress_stderr(path):
+    """Keep only the trace facts consumed downstream, never the full telemetry stream."""
+    site_lines={}; depth_tail=deque(maxlen=2); panic_line=None; other_tail=deque(maxlen=50)
+    with Path(path).open('r',encoding='utf-8',errors='replace') as f:
+        for raw in f:
+            line=raw.rstrip('\n')
+            d=_trace_dict(line)
+            if d is None:
+                other_tail.append(line); continue
+            site=d.get('site')
+            if site and site not in site_lines: site_lines[site]=line
+            if d.get('kind')=='panic': panic_line=line
+            elif 'depth' in d: depth_tail.append(line)
+    kept=list(site_lines.values())+list(depth_tail)
+    if panic_line is not None: kept.append(panic_line)
+    kept.extend(other_tail)
+    # De-duplicate without disturbing chronology needed only inside depth_tail.
+    out=[]
+    for line in kept:
+        if line not in out: out.append(line)
+    return '\n'.join(out)
+
 def run(bin_path,case,timeout=1200):
     cfg=bin_path.parent.parent.parent/'config.json'; t=time.time()
-    with case.open('rb') as f:
-        try:
-            cp=subprocess.run([str(bin_path),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout)
-            return cp.returncode,cp.stderr.decode('utf-8','replace'),time.time()-t
-        except subprocess.TimeoutExpired as e:
-            err=(e.stderr or b'').decode('utf-8','replace') if isinstance(e.stderr,(bytes,bytearray)) else str(e.stderr or '')
-            return 124,err,time.time()-t
+    fd,tmp=tempfile.mkstemp(prefix='mgtrace-',suffix='.stderr'); os.close(fd)
+    try:
+        with case.open('rb') as f, open(tmp,'wb') as ef:
+            try:
+                cp=subprocess.run([str(bin_path),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=ef,timeout=timeout)
+                return cp.returncode,compress_stderr(tmp),time.time()-t
+            except subprocess.TimeoutExpired:
+                return 124,compress_stderr(tmp),time.time()-t
+    finally:
+        try: os.unlink(tmp)
+        except FileNotFoundError: pass
 
 def events(stderr):
     xs=[]
