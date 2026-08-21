@@ -12,7 +12,15 @@ def parse_sniff(path):
             k,v = line.split(' ',1)[1].split('=',1)
             c[k] = int(v)
         elif line.startswith('MG_UNIFY_PAIR '):
-            _,_,i,j,n = line.split()
+            parts = line.split()
+            # Current instrumentation emits: MG_UNIFY_PAIR <i> <j> <n>.
+            # Accept the older five-field form too so archived artifacts remain readable.
+            if len(parts) == 4:
+                _, i, j, n = parts
+            elif len(parts) == 5:
+                _, _, i, j, n = parts
+            else:
+                continue
             pairs.append((int(n), int(i), int(j)))
     return c, pairs
 
@@ -53,7 +61,8 @@ for sniff in sorted(root.glob('sniff.*.stderr')):
     cache_hits=counters.get('uf_hit',0)+counters.get('neg_hit',0)+counters.get('neg_probe_hit',0)
     pair_top=[]
     for n,i,j in sorted(pairs, reverse=True)[:12]:
-        pair_top.append({'left':kind_names[i],'right':kind_names[j],'count':n,'fraction_no_cache':n/nc})
+        if 0 <= i < len(kind_names) and 0 <= j < len(kind_names):
+            pair_top.append({'left':kind_names[i],'right':kind_names[j],'count':n,'fraction_no_cache':n/nc})
     rec={
         'workload':tag,'total_instructions':total,'counters':counters,
         'shares':{
@@ -74,7 +83,6 @@ for sniff in sorted(root.glob('sniff.*.stderr')):
         },
         'top_pairs':pair_top,
     }
-    # Sniff-test verdicts: these are discovery thresholds, not admission thresholds.
     tests={}
     tests['S1_hot_self'] = bool(no_cache_self and no_cache_self['percent'] >= 3.0)
     tests['S2_cold_dominant'] = rec['shares']['cold_enter_of_no_cache'] >= 0.25
@@ -85,7 +93,6 @@ for sniff in sorted(root.glob('sniff.*.stderr')):
     rec['sniff_tests']=tests
     work.append(rec)
 
-# Cross-workload tests.
 for rec in work:
     rec['sniff_tests']['S7_source_distinct_recurrence'] = False
 for i,a in enumerate(work):
@@ -96,7 +103,6 @@ for i,a in enumerate(work):
             a['sniff_tests']['S7_source_distinct_recurrence']=True
             b['sniff_tests']['S7_source_distinct_recurrence']=True
 
-# Rank candidate abstraction changes by actual inclusive route mass when available.
 candidates=[]
 for r in work:
     for name,key in [('NAT_SPECIALIZE','nat_route_inclusive'),('DIRECT_SPECIALIZE','direct_route_inclusive'),('COLD_REWRITE','cold_route_inclusive')]:
@@ -108,7 +114,6 @@ for r in work:
         candidates.append({'workload':r['workload'],'candidate':'NO_CACHE_DISPATCH_OVERHEAD','inclusive_percent':row['percent'],'instructions':row['instructions']})
 candidates.sort(key=lambda x:x['inclusive_percent'],reverse=True)
 
-# Rewrite license: high route mass + concentrated semantic phenotype OR high mass recurring across workloads.
 rewrite=[]
 for r in work:
     pm=max([x['percent'] for x in r['profile'].values() if x] or [0.0])
