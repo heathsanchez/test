@@ -1,0 +1,42 @@
+name: V29 SAIR Empirical Commitment Complex
+
+on:
+  pull_request:
+    branches: [v27-sair-commitment-router]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v29-empirical-commitment:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python/Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Build Vampire 5.x proof route
+        run: |
+          git clone --depth 1 --recurse-submodules --shallow-submodules https://github.com/vprover/vampire.git /tmp/vampire-src
+          cmake -S /tmp/vampire-src -B /tmp/vampire-build -DCMAKE_BUILD_TYPE=Release -DCMAKE_DISABLE_FIND_PACKAGE_Z3=ON
+          cmake --build /tmp/vampire-build -j2
+          VAMPIRE=$(find /tmp/vampire-build -type f -name vampire -perm -111 | head -1)
+          test -n "$VAMPIRE"
+          echo "VAMPIRE=$VAMPIRE" >> "$GITHUB_ENV"
+          "$VAMPIRE" --version || true
+      - name: Run frozen V29
+        run: |
+          rm -rf results/v29-sair-empirical-commitment-complex
+          mkdir -p results/v29-sair-empirical-commitment-complex
+          python3 scripts/sair_empirical_commitment_complex_v29.py \
+            --sair-root /tmp/sair \
+            --vampire "$VAMPIRE" \
+            --out-dir results/v29-sair-empirical-commitment-complex
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v29-sair-empirical-commitment-complex
+          path: results/v29-sair-empirical-commitment-complex/
