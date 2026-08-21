@@ -51,7 +51,13 @@ class DevelopmentalRuntime:
             quotient={"probe": pid, "outcome": observed, "cell": tuple(sorted(survivors))},
             certificates=state.certificates + (record.certificate,),
         )
-        return successor, EngineEvent("EXECUTE_PROBE", pid, {"outcome": observed, "survivors": sorted(survivors)})
+        successor = self.synthesis.observe_verified_probe_transition(self.domain, state, successor, pid, record)
+        learned = successor.metadata.get("learned_probe_operators", ())
+        return successor, EngineEvent(
+            "EXECUTE_PROBE",
+            pid,
+            {"outcome": observed, "survivors": sorted(survivors), "learned_probe_operators": list(learned)},
+        )
 
     def execute_common_continuation(self, state: DevelopmentalState, actual_world: Any) -> tuple[DevelopmentalState, EngineEvent]:
         decision = route(self.domain, state)
