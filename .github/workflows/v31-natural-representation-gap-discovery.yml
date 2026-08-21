@@ -1,0 +1,33 @@
+name: V31 Natural Representation Gap Discovery
+
+on:
+  push:
+    branches: [v31-natural-representation-gap-discovery]
+  pull_request:
+    branches: [v30-developmental-runtime-integration]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v31-natural-representation-gap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V31 natural representation-gap discovery
+        run: |
+          rm -rf results/v31-natural-representation-gap-discovery
+          python experiments/sair_natural_representation_gap_v31.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v31-natural-representation-gap-discovery
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v31-natural-representation-gap-discovery
+          path: results/v31-natural-representation-gap-discovery/
