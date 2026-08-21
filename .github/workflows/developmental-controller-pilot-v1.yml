@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - developmental-controller-pilot-v1
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 jobs:
