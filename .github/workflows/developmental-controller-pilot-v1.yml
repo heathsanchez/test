@@ -1,0 +1,37 @@
+name: Developmental controller pilot v1
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  workflow_dispatch:
+
+jobs:
+  pilot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run bounded controller comparison
+        run: |
+          python experiments/developmental_controller_pilot_v1.py \
+            --worlds 256 \
+            --seed 20260821 \
+            --out developmental_controller_pilot_v1_result.json
+      - name: Gate
+        run: |
+          python - <<'PY'
+          import json
+          p = json.load(open('developmental_controller_pilot_v1_result.json'))
+          print(json.dumps(p['summary'], indent=2, sort_keys=True))
+          print(json.dumps(p['verdict'], indent=2, sort_keys=True))
+          if not p['all_gates_pass']:
+              raise SystemExit('controller pilot gates failed')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-pilot-v1
+          path: developmental_controller_pilot_v1_result.json
