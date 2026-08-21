@@ -32,6 +32,16 @@ class DevelopmentalRuntime:
             hook = getattr(self.domain, "prepare_probe_extension", None)
             state = hook(state, pid) if hook is not None else state.evolve(probe_language=frozenset(set(state.probe_language) | {pid}))
             events.append(EngineEvent("SYNTHESIZE_PROBE", pid, {"added": pid}))
+
+            # Optional generic retention hook. The runtime, not the experiment,
+            # decides whether a synthesized probe induces a reusable law.
+            retain_hook = getattr(self.domain, "induce_retained_law", None)
+            if retain_hook is not None:
+                law = retain_hook(state, pid)
+                if law is not None and law not in state.lawbook:
+                    state = state.evolve(lawbook=state.lawbook + (law,))
+                    events.append(EngineEvent("RETAIN_LAW", law, {"source_probe": pid}))
+
             decision = route(self.domain, state)
             events.append(EngineEvent(decision.route.name, None, decision.reason))
         return state, events
