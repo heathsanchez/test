@@ -30,7 +30,7 @@ jobs:
             git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel.git "kernel-$mode"
             git -C "kernel-$mode" checkout -q "$KERNEL_REV"
             printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > "kernel-$mode/config.json"
-            if [ "$mode" != baseline ]; then cp scripts/patch_preforce_pi_ab.py "kernel-$mode/../patch.tmp.py"; MG_AB_MODE="$mode" python3 patch.tmp.py 2>/dev/null || (cd "kernel-$mode/.." && MG_AB_MODE="$mode" python3 scripts/patch_preforce_pi_ab.py); fi
+            if [ "$mode" != baseline ]; then MG_AB_MODE="$mode" KERNEL_DIR="kernel-$mode" python3 scripts/patch_preforce_pi_ab.py; fi
             (cd "kernel-$mode" && RUSTFLAGS='-C target-cpu=native' cargo build --release -q)
           done
       - name: Semantic gate all arms
