@@ -18,6 +18,12 @@ class SAIRRuntimeAdapter:
     rows: list[dict[str, Any]]
     programs: Mapping[str, dict[str, Any]]
 
+    def prepare_probe_extension(self, state: DevelopmentalState, probe_id: str) -> DevelopmentalState:
+        return state.evolve(
+            probe_language=frozenset(set(state.probe_language) | {probe_id}),
+            metadata={**state.metadata, "decision_probe_id": probe_id},
+        )
+
     def intervention(self, intervention_id: str) -> Intervention:
         if intervention_id in self.programs:
             p = self.programs[intervention_id]
@@ -75,8 +81,6 @@ class SAIRRuntimeAdapter:
             )
 
         if intervention.id == "ADVANCE_PROOF_SEARCH_FRONTIER":
-            # Nonterminal continuation: exact absence of a small countermodel
-            # licenses advancement to a successor proof-search state.
             ok = bool(world_outcome == 0)
             successor = state.evolve(
                 problem_state={"source": row["id"], "order3_countermodel_exhausted": True},
