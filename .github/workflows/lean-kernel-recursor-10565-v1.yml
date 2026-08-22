@@ -106,10 +106,10 @@ jobs:
             rows={'baseline':[],'direct':[]}
             for rep in range(7):
               for mode in (['baseline','direct'] if rep%2==0 else ['direct','baseline']):
-                b=Path(f'{mode}-native'); cfg=Path(f'kernel-{mode}/config.json')
+                b=f'./{mode}-native'; cfg=Path(f'kernel-{mode}/config.json')
                 before=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
                 t=time.perf_counter()
-                with p.open('rb') as f:r=subprocess.run([str(b),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                with p.open('rb') as f:r=subprocess.run([b,str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                 dt=time.perf_counter()-t
                 after=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
                 if r.returncode!=0: raise SystemExit((p,mode,r.returncode))
@@ -161,7 +161,7 @@ jobs:
             ds=[v['delta_pct'] for v in ins.values()]
             verdict='RETAIN_FOR_PROTECTED_ABLATION' if max(ds)<0 and min(ds)<-0.25 else ('WEAK_POSITIVE' if sum(x<0 for x in ds)>sum(x>0 for x in ds) else 'REJECT_NO_GAIN')
           decision['verdict']=verdict
-          Path('results/recursor-10565-v1/decision.json').write_text(json.dumps(decision,indent=2)); print(json.dumps({'verdict':verdict,'instructions':ins,'census':cen},indent=2))
+          Path('results/recursor-10565-v1/decision.json').write_text(json.dumps(decision,indent=2)); print(json.dumps({'verdict':verdict,'instructions':ins,'census':cen,'timing':tim},indent=2))
           PY
       - uses: actions/upload-artifact@v4
         if: always()
