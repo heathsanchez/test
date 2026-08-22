@@ -38,7 +38,7 @@ fn pb_shape(v: &Value<'_>) -> u8 {
 }
 
 #[inline]
-fn pb_note_pair(x: &Value<'_>, y: &Value<'_>) {
+fn pb_note_pair<'a>(x: &Value<'a>, y: &Value<'a>) {
     PB_ENTER.fetch_add(1, Relaxed);
     if std::ptr::eq(x, y) { PB_CLOSURE_PTR_EQ.fetch_add(1, Relaxed); }
     match (pb_shape(x), pb_shape(y)) {
@@ -49,8 +49,8 @@ fn pb_note_pair(x: &Value<'_>, y: &Value<'_>) {
         (1,1) => { PB_UNFOLD_UNFOLD.fetch_add(1, Relaxed); },
         _ => { PB_MIXED.fetch_add(1, Relaxed); },
     }
-    let xa = x as *const Value<'_> as usize;
-    let ya = y as *const Value<'_> as usize;
+    let xa = x as *const Value<'a> as usize;
+    let ya = y as *const Value<'a> as usize;
     let k = if xa <= ya { (xa,ya) } else { (ya,xa) };
     let seen = PB_SEEN.get_or_init(|| Mutex::new(HashSet::new()));
     let mut g = seen.lock().unwrap();
