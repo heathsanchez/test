@@ -1,0 +1,88 @@
+name: Lean kernel Pi-body pre-materialization identity v1
+on:
+  workflow_dispatch:
+  push:
+    branches: [arena-pi-body-premat-identity-v1]
+  pull_request:
+    branches: [arena-pi-body-obligation-census-v1]
+    paths:
+      - 'scripts/patch_pi_body_premat_identity.py'
+      - '.github/workflows/lean-kernel-pi-body-premat-v1.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  premat:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      KERNEL_REV: 3d7585c21242f29fdaa48ae9a16e16c6afe42238
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/pi-body-premat-v1
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Clone and instrument frozen checker
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel.git kernel
+          git -C kernel checkout -q "$KERNEL_REV"
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > kernel/config.json
+          python3 scripts/patch_pi_body_premat_identity.py
+          (cd kernel && RUSTFLAGS='-C target-cpu=native' cargo build --release -q)
+      - name: Full semantic gate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,json
+          b=Path('kernel/target/release/sokonanoda'); cfg=Path('kernel/config.json'); total=bad=decl=0; details=[]
+          for kind,exp in [('good',0),('bad',1)]:
+            for p in sorted(Path('arena-tests',kind).rglob('*.ndjson')):
+              total+=1
+              with p.open('rb') as f:r=subprocess.run([str(b),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              decl += r.returncode==2
+              if r.returncode!=exp: bad+=1; details.append((str(p),r.returncode,exp))
+          out={'total':total,'bad':bad,'declines':decl,'mismatches':details[:20]}
+          Path('results/pi-body-premat-v1/semantic.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          if bad or decl: raise SystemExit(1)
+          PY
+      - name: Run pre-materialization census
+        run: |
+          set -euo pipefail
+          for test in arena-tests/good/perf/*.ndjson; do
+            tag=$(basename "$test" .ndjson)
+            MG_PI_BODY_PREMAT=1 kernel/target/release/sokonanoda kernel/config.json < "$test" >/dev/null 2> "results/pi-body-premat-v1/$tag.stderr"
+          done
+      - name: Analyze predictive quotients
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json,re
+          out={}
+          for p in sorted(Path('results/pi-body-premat-v1').glob('*.stderr')):
+            d={}
+            for line in p.read_text().splitlines():
+              m=re.match(r'MG_PI_PREMAT ([a-z_]+)=(\d+)',line)
+              if m:d[m.group(1)]=int(m.group(2))
+            n=d.get('enter',0); post=d.get('post_ptr_eq',0); nonptr=d.get('post_nonptr_unify_true',0)
+            for k in ['body_same','env_ptr_same','env_sem_same','domain_ptr_same','body_env_sem_same','body_env_ptr_same','post_ptr_eq','post_nonptr_unify_true','body_same_post_nonptr_true','body_diff_post_nonptr_true']:
+              d[k+'_pct']=100*d.get(k,0)/n if n else 0
+            bes=d.get('body_env_sem_same',0); bep=d.get('body_env_ptr_same',0); bs=d.get('body_same',0)
+            d['post_ptr_precision_body_same']=100*d.get('post_ptr_eq_given_body_same',0)/bs if bs else 0
+            d['post_ptr_precision_body_env_sem']=100*d.get('post_ptr_eq_given_body_env_sem',0)/bes if bes else 0
+            d['post_ptr_precision_body_env_ptr']=100*d.get('post_ptr_eq_given_body_env_ptr',0)/bep if bep else 0
+            d['unexplained_success_pct']=100*nonptr/n if n else 0
+            out[p.stem]=d
+          Path('results/pi-body-premat-v1/decision.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-pi-body-premat-v1
+          path: results/pi-body-premat-v1/
