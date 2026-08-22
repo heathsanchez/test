@@ -21,7 +21,13 @@ class SAIRRuntimeAdapter:
     def prepare_probe_extension(self, state: DevelopmentalState, probe_id: str) -> DevelopmentalState:
         return state.evolve(
             probe_language=frozenset(set(state.probe_language) | {probe_id}),
-            metadata={**state.metadata, "decision_probe_id": probe_id},
+            metadata={**state.metadata, "candidate_probe_id": probe_id},
+        )
+
+    def assume_probe_outcome(self, state: DevelopmentalState, probe_id: str, outcome: Any, cell) -> DevelopmentalState:
+        return state.evolve(
+            hypotheses=frozenset(cell),
+            metadata={**state.metadata, "decision_probe_id": probe_id, "assumed_probe_outcome": outcome},
         )
 
     def intervention(self, intervention_id: str) -> Intervention:
@@ -54,7 +60,12 @@ class SAIRRuntimeAdapter:
 
         if intervention.kind is InterventionKind.PROBE:
             outcome = self.probe_outcome(state, world_id, intervention.id)
-            successor = state.evolve(metadata={**state.metadata, "last_probe": intervention.id, "last_probe_outcome": outcome})
+            successor = state.evolve(metadata={
+                **state.metadata,
+                "decision_probe_id": intervention.id,
+                "last_probe": intervention.id,
+                "last_probe_outcome": outcome,
+            })
             return TransitionRecord(
                 intervention=intervention,
                 effect={"observation": outcome},
