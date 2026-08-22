@@ -28,11 +28,12 @@ jobs:
             V32_RESIDUAL_CONSTRAINED_INTERVENTION_TRANSFORMER_PRECOMMIT.md \
             domains/sair/raw_transformer.py \
             experiments/sair_residual_constrained_transformer_v32.py \
+            experiments/sair_residual_constrained_transformer_v32_exec.py \
             developmental_runtime/*.py \
             | tee results/v32-residual-constrained-intervention-transformer/SOURCE_SHA256.txt
       - name: Run V32
         run: |
-          python experiments/sair_residual_constrained_transformer_v32.py \
+          python experiments/sair_residual_constrained_transformer_v32_exec.py \
             --sair-root /tmp/sair \
             --out-dir results/v32-residual-constrained-intervention-transformer
       - uses: actions/upload-artifact@v4
