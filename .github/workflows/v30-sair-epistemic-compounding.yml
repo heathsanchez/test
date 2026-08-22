@@ -1,6 +1,8 @@
 name: V30 SAIR Epistemic Compounding
 
 on:
+  push:
+    branches: [v30-sair-epistemic-compounding]
   pull_request:
     branches: [v29-sair-probe-operator-induction]
   workflow_dispatch:
