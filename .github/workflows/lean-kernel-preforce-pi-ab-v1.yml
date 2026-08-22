@@ -3,6 +3,11 @@ on:
   workflow_dispatch:
   push:
     branches: [arena-preforce-pi-ab-v1]
+  pull_request:
+    branches: [arena-preforce-pi-v1]
+    paths:
+      - 'scripts/patch_preforce_pi_ab.py'
+      - '.github/workflows/lean-kernel-preforce-pi-ab-v1.yml'
 permissions:
   contents: read
   actions: read
