@@ -1,0 +1,31 @@
+name: V33 Corrected Raw Transformer Basis
+
+on:
+  pull_request:
+    branches:
+      - v32-residual-constrained-intervention-transformer
+
+jobs:
+  v33-corrected-raw-transformer-basis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V33
+        run: |
+          rm -rf results/v33-corrected-raw-transformer-basis
+          python experiments/sair_corrected_raw_transformer_basis_v33.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v33-corrected-raw-transformer-basis
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v33-corrected-raw-transformer-basis
+          path: results/v33-corrected-raw-transformer-basis/
