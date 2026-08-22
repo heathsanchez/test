@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# Execution marker: branch push rerun after the result-free 60m cancellation.
+# Scientific protocol is unchanged; only the cheapest-first runtime schedule below differs from run #1.
+
 import argparse, json
 from pathlib import Path
 
