@@ -1,0 +1,170 @@
+name: Lean kernel recursor direct-instantiation V1
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [arena-pi-body-premat-identity-v1]
+    paths:
+      - 'scripts/patch_recursor_10565_census.py'
+      - 'scripts/patch_recursor_10565_direct.py'
+      - '.github/workflows/lean-kernel-recursor-10565-v1.yml'
+permissions:
+  contents: read
+  actions: read
+jobs:
+  recursor10565:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      KERNEL_REV: 3d7585c21242f29fdaa48ae9a16e16c6afe42238
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch newest Arena test artifact and record provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/recursor-10565-v1
+          ARENA_HEAD=$(curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" https://api.github.com/repos/leanprover/lean-kernel-arena/branches/master | jq -r .commit.sha)
+          curl -fsSL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" 'https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts?per_page=100' > artifacts.json
+          ART_ID=$(jq -r '[.artifacts[] | select(.expired==false and .name=="lean-arena-tests")][0].id // empty' artifacts.json)
+          ART_HEAD=$(jq -r '[.artifacts[] | select(.expired==false and .name=="lean-arena-tests")][0].workflow_run.head_sha // empty' artifacts.json)
+          if [ -z "$ART_ID" ]; then
+            ART_ID=8931227426
+            ART_HEAD=unknown-fallback
+          fi
+          printf '{"arena_master":"%s","artifact_id":"%s","artifact_head":"%s","kernel_rev":"%s"}\n' "$ARENA_HEAD" "$ART_ID" "$ART_HEAD" "$KERNEL_REV" | tee results/recursor-10565-v1/provenance.json
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ART_ID/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          echo "good=$(find arena-tests/good -name '*.ndjson' | wc -l) bad=$(find arena-tests/bad -name '*.ndjson' | wc -l) either=$(find arena-tests/either -name '*.ndjson' 2>/dev/null | wc -l || true)"
+      - name: Build exact baseline, census, and direct candidate
+        run: |
+          set -euo pipefail
+          for d in kernel-baseline kernel-census kernel-direct; do
+            git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel.git "$d"
+            git -C "$d" checkout -q "$KERNEL_REV"
+            printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > "$d/config.json"
+          done
+          python3 scripts/patch_recursor_10565_census.py
+          KERNEL_DIR=kernel-direct python3 scripts/patch_recursor_10565_direct.py
+          (cd kernel-baseline && cargo test --locked -q && RUSTFLAGS='-C target-cpu=native' cargo build --release -q)
+          (cd kernel-census && cargo test --locked -q && RUSTFLAGS='-C target-cpu=native' cargo build --release -q)
+          (cd kernel-direct && cargo test --locked -q && RUSTFLAGS='-C target-cpu=native' cargo build --release -q)
+          cp kernel-baseline/target/release/sokonanoda baseline-native
+          cp kernel-direct/target/release/sokonanoda direct-native
+      - name: Full semantic and soundness gate candidate vs submitted baseline
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,json
+          out={}
+          for mode in ['baseline','direct']:
+            b=Path(f'kernel-{mode}/target/release/sokonanoda'); cfg=Path(f'kernel-{mode}/config.json')
+            total=bad=decl=0; mism=[]
+            for kind,exp in [('good',0),('bad',1)]:
+              for p in sorted(Path('arena-tests',kind).rglob('*.ndjson')):
+                total+=1
+                with p.open('rb') as f:r=subprocess.run([str(b),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=90)
+                decl += r.returncode==2
+                if r.returncode!=exp: bad+=1; mism.append((str(p),r.returncode,exp))
+            out[mode]={'total':total,'mismatches':bad,'declines':decl,'details':mism[:30]}
+          Path('results/recursor-10565-v1/semantic.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          if out['baseline']['mismatches'] or out['baseline']['declines']: raise SystemExit('baseline does not match current corpus')
+          if out['direct']['mismatches'] or out['direct']['declines']: raise SystemExit('candidate semantic regression')
+          PY
+      - name: Baseline recursor detour census on all perf workloads
+        run: |
+          set -euo pipefail
+          for test in arena-tests/good/perf/*.ndjson; do
+            tag=$(basename "$test" .ndjson)
+            MG_REC_CENSUS=1 kernel-census/target/release/sokonanoda kernel-census/config.json < "$test" >/dev/null 2> "results/recursor-10565-v1/census.$tag.stderr"
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import re,json
+          out={}
+          for p in sorted(Path('results/recursor-10565-v1').glob('census.*.stderr')):
+            tag=p.name[len('census.'):-len('.stderr')]; d={}
+            for line in p.read_text().splitlines():
+              m=re.match(r'MG_REC10565 ([a-z_]+)=(\d+)',line)
+              if m:d[m.group(1)]=int(m.group(2))
+            fire=d.get('fire',0); exp=d.get('expected_binders',0); syn=d.get('syntactic_binders',0)
+            d['cache_hit_pct']=100*d.get('cache_hit',0)/(d.get('cache_hit',0)+d.get('cache_miss',0)) if d.get('cache_hit',0)+d.get('cache_miss',0) else 0
+            d['avg_known_binders_per_fire']=exp/fire if fire else 0
+            d['binder_invariant_coverage_pct']=100*syn/exp if exp else 0
+            out[tag]=d
+          Path('results/recursor-10565-v1/census.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          PY
+      - name: Native repeated timing and RSS
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import subprocess,time,resource,json,statistics
+          tests=sorted(Path('arena-tests/good/perf').glob('*.ndjson'))
+          out={}
+          for p in tests:
+            rows={'baseline':[],'direct':[]}
+            for rep in range(7):
+              for mode in (['baseline','direct'] if rep%2==0 else ['direct','baseline']):
+                b=f'./{mode}-native'; cfg=Path(f'kernel-{mode}/config.json')
+                before=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+                t=time.perf_counter()
+                with p.open('rb') as f:r=subprocess.run([b,str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                dt=time.perf_counter()-t
+                after=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss
+                if r.returncode!=0: raise SystemExit((p,mode,r.returncode))
+                rows[mode].append({'wall_s':dt,'rss_kb_process_highwater_delta_hint':max(0,after-before)})
+            bm=statistics.median(x['wall_s'] for x in rows['baseline']); dm=statistics.median(x['wall_s'] for x in rows['direct'])
+            out[p.stem]={'baseline_median_wall_s':bm,'direct_median_wall_s':dm,'wall_delta_pct':100*(dm-bm)/bm,'raw':rows}
+          Path('results/recursor-10565-v1/timing.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          PY
+      - name: Deterministic instruction comparison
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq && sudo apt-get install -y -qq valgrind >/dev/null
+          for mode in baseline direct; do
+            (cd "kernel-$mode" && cargo clean -q && RUSTFLAGS='-C target-cpu=x86-64' cargo build --release -q)
+          done
+          for test in arena-tests/good/perf/*.ndjson; do
+            tag=$(basename "$test" .ndjson)
+            for mode in baseline direct; do
+              valgrind --tool=callgrind --callgrind-out-file="results/recursor-10565-v1/cg.$tag.$mode" "kernel-$mode/target/release/sokonanoda" "kernel-$mode/config.json" < "$test" >/dev/null 2>/dev/null
+              grep '^summary:' "results/recursor-10565-v1/cg.$tag.$mode" | awk '{print $2}' > "results/recursor-10565-v1/instr.$tag.$mode"
+            done
+          done
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          out={}
+          for p in sorted(Path('arena-tests/good/perf').glob('*.ndjson')):
+            tag=p.stem
+            b=int(Path(f'results/recursor-10565-v1/instr.{tag}.baseline').read_text())
+            d=int(Path(f'results/recursor-10565-v1/instr.{tag}.direct').read_text())
+            out[tag]={'baseline_instructions':b,'direct_instructions':d,'delta_pct':100*(d-b)/b}
+          Path('results/recursor-10565-v1/instructions.json').write_text(json.dumps(out,indent=2)); print(json.dumps(out,indent=2))
+          PY
+      - name: Synthesize decision
+        if: always()
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          def load(n):
+            p=Path('results/recursor-10565-v1')/n
+            return json.loads(p.read_text()) if p.exists() else None
+          sem=load('semantic.json'); cen=load('census.json'); ins=load('instructions.json'); tim=load('timing.json'); prov=load('provenance.json')
+          decision={'provenance':prov,'semantic':sem,'census':cen,'instructions':ins,'timing':tim}
+          if not sem: verdict='UNRESOLVED_INFRA'
+          elif sem.get('direct',{}).get('mismatches',1) or sem.get('direct',{}).get('declines',1): verdict='REJECT_SEMANTIC'
+          elif not ins: verdict='UNRESOLVED_PERF'
+          else:
+            ds=[v['delta_pct'] for v in ins.values()]
+            verdict='RETAIN_FOR_PROTECTED_ABLATION' if max(ds)<0 and min(ds)<-0.25 else ('WEAK_POSITIVE' if sum(x<0 for x in ds)>sum(x>0 for x in ds) else 'REJECT_NO_GAIN')
+          decision['verdict']=verdict
+          Path('results/recursor-10565-v1/decision.json').write_text(json.dumps(decision,indent=2)); print(json.dumps({'verdict':verdict,'instructions':ins,'census':cen,'timing':tim},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-kernel-recursor-10565-v1
+          path: results/recursor-10565-v1/
