@@ -17,7 +17,6 @@ LAW_ID = "NUMERIC_LITERAL_SHIFT:+1"
 
 
 def parse_probe_id(pid: str) -> tuple[int, str]:
-    # MODEL_EXISTS(3,FORWARD)
     if not (pid.startswith("MODEL_EXISTS(") and pid.endswith(")")):
         raise ValueError(pid)
     body = pid[len("MODEL_EXISTS("):-1]
@@ -33,16 +32,25 @@ class V31SAIRRuntimeAdapter:
     witness_stats: dict[str, int] = field(default_factory=lambda: {"rechecked": 0, "bad": 0, "unknown": 0})
 
     def prepare_probe_extension(self, state: DevelopmentalState, probe_id: str) -> DevelopmentalState:
+        # Language extension alone does not license any downstream action.
         return state.evolve(
             probe_language=frozenset(set(state.probe_language) | {probe_id}),
-            metadata={**state.metadata, "decision_probe_id": probe_id},
+            metadata={**state.metadata, "candidate_probe_id": probe_id},
+        )
+
+    def assume_probe_outcome(self, state: DevelopmentalState, probe_id: str, outcome: Any, cell) -> DevelopmentalState:
+        # Planning-only counterfactual used by J(E): what would be lawful if this
+        # verified outcome were observed? This state is never committed to runtime.
+        return state.evolve(
+            hypotheses=frozenset(cell),
+            metadata={
+                **state.metadata,
+                "decision_probe_id": probe_id,
+                "assumed_probe_outcome": outcome,
+            },
         )
 
     def induce_retained_law(self, state: DevelopmentalState, probe_id: str) -> str | None:
-        # Learn the reusable operator from the first verified structural delta.
-        # The runtime has only order-2 seeds initially; MODEL_EXISTS(3,*) therefore
-        # witnesses an integer-literal +1 transformation. Once retained, no new law
-        # is induced on later applications.
         if LAW_ID in state.lawbook:
             return None
         try:
@@ -87,7 +95,12 @@ class V31SAIRRuntimeAdapter:
         if intervention.kind is InterventionKind.PROBE:
             outcome = self.probe_outcome(state, world_id, intervention.id)
             successor = state.evolve(
-                metadata={**state.metadata, "last_probe": intervention.id, "last_probe_outcome": outcome}
+                metadata={
+                    **state.metadata,
+                    "decision_probe_id": intervention.id,
+                    "last_probe": intervention.id,
+                    "last_probe_outcome": outcome,
+                }
             )
             return TransitionRecord(
                 intervention=intervention,
