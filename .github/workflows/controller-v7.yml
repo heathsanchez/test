@@ -1,0 +1,19 @@
+name: Research Controller V7
+
+on:
+  push:
+    paths:
+      - 'experiments/controller_v7/**'
+      - '.github/workflows/controller-v7.yml'
+  workflow_dispatch:
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V7 controller invariants
+        run: python experiments/controller_v7/test_controller.py
