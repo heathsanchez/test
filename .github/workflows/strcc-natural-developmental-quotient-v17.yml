@@ -1,0 +1,22 @@
+name: StrCC Natural Developmental Quotient V17
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/strcc_natural_developmental_quotient_v17.py'
+      - '.github/workflows/strcc-natural-developmental-quotient-v17.yml'
+
+jobs:
+  strcc-natural-developmental-quotient:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run StrCC natural developmental quotient benchmark
+        run: |
+          rm -rf results/strcc-natural-developmental-quotient-v17
+          mkdir -p results/strcc-natural-developmental-quotient-v17
+          python3 scripts/strcc_natural_developmental_quotient_v17.py --out-dir results/strcc-natural-developmental-quotient-v17
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strcc-natural-developmental-quotient-v17
+          path: results/strcc-natural-developmental-quotient-v17/
