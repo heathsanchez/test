@@ -1,0 +1,94 @@
+{
+  "schema": "uvrm.graph.cross-domain.v1",
+  "claim_boundary": "Retrospective prequential benchmark. Expected moves were reconstructed from source histories and must not be used as model inputs.",
+  "cases": [
+    {
+      "id": "lean_e0031",
+      "domain": "lean_kernel",
+      "cutoff": 1,
+      "source": "heathsanchez/test@04acadb044c8141b9fe749f20a1bbe2ed2f2233e",
+      "evidence": [
+        "59.40% of cold projections terminate in an already-existing canonical frame after projection",
+        "exact raw (env,mask) repetition is only 1.42%"
+      ],
+      "relations": [
+        ["late canonical convergence","REFUTES","raw-pair-cache-is-main-fix"],
+        ["late canonical convergence","SUPPORTS","canonical identity discovered too late"]
+      ],
+      "expected_mode": "MAP",
+      "expected_move_concepts": ["projection cost", "selected work", "scan"],
+      "avoid": ["larger raw cache", "new representation immediately"]
+    },
+    {
+      "id": "lean_e0032",
+      "domain": "lean_kernel",
+      "cutoff": 2,
+      "source": "heathsanchez/test@04acadb044c8141b9fe749f20a1bbe2ed2f2233e",
+      "evidence": [
+        "mean Cons scan depth is 2.387 despite 45.97% skips",
+        "late canonical identity remains the stronger residual"
+      ],
+      "relations": [
+        ["shallow mean scan depth","WEAKENS","heavy indexed DAG environment"],
+        ["existing Env parents carry prune memo state","MOTIVATES","inspect shared-tail closure"]
+      ],
+      "expected_mode": "MAP",
+      "expected_move_concepts": ["tail", "shared", "existing", "reuse"],
+      "avoid": ["heavy DAG", "ontology change"]
+    },
+    {
+      "id": "sair_five_residual_after_restart",
+      "domain": "sair",
+      "cutoff": 1,
+      "source": "heathsanchez/equational-theories-lean-stage2@c29cdff22f5e7e8c23533d10228ba5d87c18dd4b",
+      "evidence": [
+        "five residual TRUE cases remained after restoring competition-equivalent budgets",
+        "matched ordinary restart and retro-demodulated restart were defined under the same 10-second total budget",
+        "retro-demodulation revisits earlier consequences after later simplifiers/rules become available"
+      ],
+      "relations": [
+        ["persistent residuals under restored budget","WEAKENS","mere underbudget search failure"],
+        ["later rules can simplify earlier clauses","MOTIVATES","measure inference effects across residuals"]
+      ],
+      "expected_mode": "MAP",
+      "expected_move_concepts": ["atlas", "effect", "inference", "which operator"],
+      "avoid": ["invent representation", "increase budget only"]
+    },
+    {
+      "id": "triskelion_rapid_sniff",
+      "domain": "triskelion",
+      "cutoff": 1,
+      "source": "heathsanchez/triskelion@d93bf589a3959dc1c4cddef8cbe531191cb0a8e7",
+      "evidence": [
+        "square and reduce show substantial learnable structure in the mapped support band",
+        "squaremod remains weak across the same rapid phase-map diagnostic",
+        "the result is explicitly a cheap CPU sniff, not a competition-performance comparison"
+      ],
+      "relations": [
+        ["task-family phase split","SUPPORTS","composition or interface mechanism"],
+        ["cheap sniff boundary","BLOCKS","performance conclusion"]
+      ],
+      "expected_mode": "DISCRIMINATE",
+      "expected_move_concepts": ["separator", "composition", "interface", "matched"],
+      "avoid": ["scale model", "claim performance win"]
+    },
+    {
+      "id": "mathgraph_v4_to_v5",
+      "domain": "mathgraph",
+      "cutoff": 1,
+      "source": "metalogiclabs/mathgraph@9b43530fe9d204f60d5f614a6fd1377b774eb43b",
+      "evidence": [
+        "V4 produced a reusable repair law in a generic relational DSL",
+        "literal syntax may be presentation-dependent",
+        "DSL B removes set difference while preserving a generic relational basis"
+      ],
+      "relations": [
+        ["same claimed repair across distinct DSL presentations","MOTIVATES","behavioral capability identity test"],
+        ["literal syntax changes","WEAKENS","syntactic identity as capability identity"]
+      ],
+      "expected_mode": "TRANSFER",
+      "expected_move_concepts": ["cross-DSL", "behavior", "identity", "held-out"],
+      "avoid": ["retain syntax as identity", "new law before transfer"]
+    }
+  ]
+}
