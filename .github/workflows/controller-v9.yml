@@ -1,0 +1,19 @@
+name: Research Controller V9
+
+on:
+  push:
+    paths:
+      - 'experiments/controller_v9/**'
+      - '.github/workflows/controller-v9.yml'
+  workflow_dispatch:
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V9 equivalence invariants
+        run: python experiments/controller_v9/test_equivalence.py
