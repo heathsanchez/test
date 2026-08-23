@@ -8,22 +8,44 @@ on:
       - 'scripts/patch_a6.py'
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   separator:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
+
       - name: Fetch frozen Arena corpus
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mkdir -p arena-tests artifact results/e0036
-          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
-            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          mkdir -p arena-tests artifact results/e0036 diagnostics/e0036
+          echo 'frozen_artifact_id=8931227426' | tee diagnostics/e0036/provenance.txt
+          curl --fail --location --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" \
+            -o tests.zip
+          unzip -t tests.zip | tee diagnostics/e0036/artifact_zip_test.txt
           unzip -q tests.zip -d artifact
+          test -f artifact/lean-arena-tests.tar.gz
+          tar -tzf artifact/lean-arena-tests.tar.gz | head -100 > diagnostics/e0036/corpus_listing_head.txt
           tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          find arena-tests/good -type f -name '*.ndjson' | sort > diagnostics/e0036/good_manifest.txt
+          find arena-tests/bad -type f -name '*.ndjson' | sort > diagnostics/e0036/bad_manifest.txt
+          test -s diagnostics/e0036/good_manifest.txt
+          test -s diagnostics/e0036/bad_manifest.txt
+          printf 'good=%s\nbad=%s\n' \
+            "$(wc -l < diagnostics/e0036/good_manifest.txt)" \
+            "$(wc -l < diagnostics/e0036/bad_manifest.txt)" \
+            | tee -a diagnostics/e0036/provenance.txt
+
       - name: Reconstruct arms
         run: |
           set -euo pipefail
@@ -32,38 +54,77 @@ jobs:
             git -C "$arm" checkout -q 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
             rm -rf a6 && cp -a "$arm" a6
             python3 scripts/patch_a6.py
-            if [ "$arm" = bitdirect ]; then python3 scripts/patch_a6_e0036_bit_directed_prune.py; fi
+            if [ "$arm" = bitdirect ]; then
+              python3 scripts/patch_a6_e0036_bit_directed_prune.py
+            fi
+            git -C a6 diff --check
+            git -C a6 diff -- src/eval.rs > "diagnostics/e0036/${arm}_eval.patch"
+            test -s "diagnostics/e0036/${arm}_eval.patch"
             rm -rf "$arm" && mv a6 "$arm"
             printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > "$arm/config.json"
           done
+          cmp --silent a0/config.json bitdirect/config.json
+          grep -q 'while rem != 0' bitdirect/src/eval.rs
+          grep -q 'e.lookup(i)' bitdirect/src/eval.rs
+
       - name: Build identically
         run: |
           set -euo pipefail
-          for arm in a0 bitdirect; do (cd "$arm" && RUSTFLAGS="-C target-cpu=native" cargo build --release -q); done
+          for arm in a0 bitdirect; do
+            echo "=== BUILD $arm ===" | tee "diagnostics/e0036/${arm}_build.log"
+            (
+              cd "$arm"
+              RUSTFLAGS="-C target-cpu=native" cargo build --release
+            ) 2>&1 | tee -a "diagnostics/e0036/${arm}_build.log"
+            test -x "$arm/target/release/sokonanoda"
+          done
+
       - name: Frozen semantic gate
         run: |
           set -euo pipefail
           python3 - <<'PY'
           import pathlib, subprocess, json
-          arms=['a0','bitdirect']; good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson')); bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson')); out={}
+          arms=['a0','bitdirect']
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if not good or not bad:
+              raise SystemExit(f'non-vacuity failure: good={len(good)} bad={len(bad)}')
+          out={}
           for arm in arms:
               exe=f'{arm}/target/release/sokonanoda'; cfg=f'{arm}/config.json'; gp=bp=0
+              failures=[]
               for p in good:
-                  with p.open('rb') as f: r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  with p.open('rb') as f:
+                      r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
                   gp += (r.returncode==0)
+                  if r.returncode != 0 and len(failures) < 10:
+                      failures.append({'kind':'good_rejected','path':str(p),'returncode':r.returncode,'stderr':r.stderr.decode(errors='replace')[-2000:]})
               for p in bad:
-                  with p.open('rb') as f: r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  with p.open('rb') as f:
+                      r=subprocess.run([exe,cfg],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
                   bp += (r.returncode!=0)
-              out[arm]={'good_pass':gp,'good_total':len(good),'bad_reject':bp,'bad_total':len(bad)}
-              if gp!=len(good) or bp!=len(bad):
-                  print(json.dumps(out,indent=2)); raise SystemExit(1)
-          pathlib.Path('results/e0036/semantics.json').write_text(json.dumps(out,indent=2)+'\n'); print(json.dumps(out,indent=2))
+                  if r.returncode == 0 and len(failures) < 10:
+                      failures.append({'kind':'bad_accepted','path':str(p),'returncode':r.returncode})
+              out[arm]={'good_pass':gp,'good_total':len(good),'bad_reject':bp,'bad_total':len(bad),'failures_sample':failures}
+          pathlib.Path('results/e0036/semantics.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          for arm in arms:
+              x=out[arm]
+              if x['good_pass']!=x['good_total'] or x['bad_reject']!=x['bad_total']:
+                  raise SystemExit(f'semantic gate failed for {arm}')
           PY
+
+      - name: Locate frozen separator case
+        run: |
+          set -euo pipefail
+          find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | sort | tee diagnostics/e0036/grind_ring_5_candidates.txt
+          test "$(wc -l < diagnostics/e0036/grind_ring_5_candidates.txt)" -eq 1
+          cp diagnostics/e0036/grind_ring_5_candidates.txt diagnostics/e0036/separator_case.txt
+
       - name: Paired resource separator
         run: |
           set -euo pipefail
-          CASE=$(find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | head -1)
-          test -n "$CASE"
+          CASE=$(cat diagnostics/e0036/separator_case.txt)
           python3 - "$CASE" <<'PY'
           import subprocess,sys,json,time,resource,pathlib,statistics
           case=sys.argv[1]; arms=['a0','bitdirect']; rows=[]
@@ -71,16 +132,30 @@ jobs:
               order=arms if rep%2==0 else list(reversed(arms))
               for arm in order:
                   before=resource.getrusage(resource.RUSAGE_CHILDREN); t=time.perf_counter()
-                  with open(case,'rb') as f: r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  with open(case,'rb') as f:
+                      r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
                   wall=time.perf_counter()-t; after=resource.getrusage(resource.RUSAGE_CHILDREN)
                   cpu=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
-                  if r.returncode!=0: raise SystemExit(f'{arm} failed')
+                  if r.returncode!=0:
+                      pathlib.Path('diagnostics/e0036/resource_failure_stderr.txt').write_bytes(r.stderr)
+                      raise SystemExit(f'{arm} failed on rep {rep}: rc={r.returncode}')
                   rows.append({'rep':rep,'arm':arm,'wall_s':wall,'cpu_s':cpu})
-          summary={a:{'median_wall_s':statistics.median(x['wall_s'] for x in rows if x['arm']==a),'median_cpu_s':statistics.median(x['cpu_s'] for x in rows if x['arm']==a)} for a in arms}
-          b=summary['a0']['median_cpu_s']; summary['bitdirect_cpu_delta_pct']=100*(summary['bitdirect']['median_cpu_s']/b-1)
-          pathlib.Path('results/e0036/resource_rows.json').write_text(json.dumps(rows,indent=2)+'\n'); pathlib.Path('results/e0036/summary.json').write_text(json.dumps(summary,indent=2)+'\n'); print(json.dumps(summary,indent=2))
+          summary={a:{
+              'median_wall_s':statistics.median(x['wall_s'] for x in rows if x['arm']==a),
+              'median_cpu_s':statistics.median(x['cpu_s'] for x in rows if x['arm']==a)
+          } for a in arms}
+          b=summary['a0']['median_cpu_s']
+          summary['bitdirect_cpu_delta_pct']=100*(summary['bitdirect']['median_cpu_s']/b-1)
+          pathlib.Path('results/e0036/resource_rows.json').write_text(json.dumps(rows,indent=2)+'\n')
+          pathlib.Path('results/e0036/summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          print(json.dumps(summary,indent=2))
           PY
-      - uses: actions/upload-artifact@v4
+
+      - name: Upload E0036 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
           name: lean-kernel-arena-a6-e0036-bit-directed-prune
-          path: results/e0036/
+          path: |
+            results/e0036/
+            diagnostics/e0036/
