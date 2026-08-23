@@ -1,0 +1,19 @@
+name: Research Controller V8
+
+on:
+  push:
+    paths:
+      - 'experiments/controller_v8/**'
+      - '.github/workflows/controller-v8.yml'
+  workflow_dispatch:
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V8 tournament invariants
+        run: python experiments/controller_v8/test_tournament.py
