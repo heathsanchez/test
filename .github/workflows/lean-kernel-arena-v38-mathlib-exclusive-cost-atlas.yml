@@ -1,0 +1,151 @@
+name: V38 Mathlib exclusive cost atlas
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ARENA_REV: aaa6aedd3a4f4de88bf825319a8a050e572c9cce
+      KERNEL_REV: 3d7585c21242f29fdaa48ae9a16e16c6afe42238
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix and perf
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install perf
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y linux-tools-common linux-tools-generic || true
+          command -v perf || true
+
+      - name: Fetch frozen Arena
+        run: |
+          git clone https://github.com/leanprover/lean-kernel-arena.git arena
+          git -C arena checkout "$ARENA_REV"
+          grep -n -A20 -B2 'name: mathgraph' arena/checkers/mathgraph.yaml || true
+          grep -q "$KERNEL_REV" arena/checkers/mathgraph.yaml
+
+      - name: Build exact submitted MathGraph checker
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py build-checker mathgraph
+
+      - name: Build Mathlib workload
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py build-test mathlib
+
+      - name: Locate checker and Mathlib input
+        run: |
+          set -euxo pipefail
+          find arena/_build -maxdepth 4 -type f | sed -n '1,120p'
+          find arena/_build/tests -type f -iname '*mathlib*' -o -path '*/mathlib/*' | sed -n '1,80p'
+          test -f arena/_build/tests/mathlib.ndjson || { echo 'expected mathlib.ndjson missing'; find arena/_build/tests -type f | head -100; exit 1; }
+
+      - name: Semantic smoke gate on Mathlib
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          ./lka.py run --checker mathgraph --test mathlib
+
+      - name: Check software perf event
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        working-directory: arena
+        run: |
+          perf --version
+          perf stat -e task-clock -- true 2>&1 || true
+
+      - name: Profile Mathlib self cost
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        working-directory: arena
+        run: |
+          set -euxo pipefail
+          mkdir -p ../results/v38
+          CHECKER_DIR="_build/checkers/mathgraph"
+          BIN="$CHECKER_DIR/target/release/sokonanoda"
+          CFG="$CHECKER_DIR/config.json"
+          IN="_build/tests/mathlib.ndjson"
+          test -x "$BIN"
+          test -f "$CFG"
+          test -f "$IN"
+          perf record -q -e cpu-clock:u -F 199 --call-graph dwarf -o ../results/v38/perf.data -- "$BIN" "$CFG" < "$IN" > /dev/null
+          perf report --stdio --no-children --percent-limit 0.01 -i ../results/v38/perf.data > ../results/v38/perf-self.txt
+          perf report --stdio --children --percent-limit 0.05 -i ../results/v38/perf.data > ../results/v38/perf-inclusive.txt
+          head -120 ../results/v38/perf-self.txt
+
+      - name: Derive frozen family atlas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          p=Path('results/v38/perf-self.txt')
+          txt=p.read_text(errors='replace')
+          # Parse normal perf report rows: self% command shared-object symbol
+          rows=[]
+          for line in txt.splitlines():
+              m=re.match(r'^\s*([0-9]+(?:\.[0-9]+)?)%\s+\S+\s+\S+\s+\[?\.?\]?\s*(.*)$', line)
+              if not m:
+                  # alternate output often has percent then command/object/symbol; keep final token region
+                  m=re.match(r'^\s*([0-9]+(?:\.[0-9]+)?)%\s+.*?\s{2,}(\S.*)$', line)
+              if m:
+                  rows.append((float(m.group(1)), m.group(2).strip()))
+          families={k:0.0 for k in ['ENV','CONV','IOTA','INFER','MEMORY','PARSE','OTHER']}
+          pats={
+            'ENV': re.compile(r'prune_env|key_env|env_|Env|Closure|apply_closure',re.I),
+            'CONV': re.compile(r'unify|whnf|force_thunk|unfold|spine_probe|unify_spine|defeq|convert',re.I),
+            'IOTA': re.compile(r'iota|recursor|recursors|projection|proj_',re.I),
+            'INFER': re.compile(r'infer|check_declar|check_type|check_value',re.I),
+            'MEMORY': re.compile(r'hash|intern|alloc|mimalloc|malloc|free|swiss|hashbrown|arena',re.I),
+            'PARSE': re.compile(r'parse|serde|json|ndjson|ExportFile',re.I),
+          }
+          classified=[]
+          for pct,sym in rows:
+              fam='OTHER'
+              for k,r in pats.items():
+                  if r.search(sym): fam=k; break
+              families[fam]+=pct
+              classified.append({'self_pct':pct,'family':fam,'symbol':sym})
+          ranked=sorted(families.items(),key=lambda kv:kv[1],reverse=True)
+          # A family is only a live >=5% mass hypothesis; removable fraction is not guessed here.
+          mass=[k for k,v in ranked if k!='OTHER' and v>=5.0]
+          verdict='MASS_FAMILY_FOUND' if mass else 'DIFFUSE_COST'
+          out={'verdict':verdict,'families_self_pct':dict(ranked),'families_ge_5pct':mass,'parsed_symbol_rows':len(rows),'top_symbols':classified[:80]}
+          Path('results/v38/atlas.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - name: Record provenance and decision constraints
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          atlas=json.loads(Path('results/v38/atlas.json').read_text())
+          out={
+            'arena_rev':'aaa6aedd3a4f4de88bf825319a8a050e572c9cce',
+            'kernel_rev':'3d7585c21242f29fdaa48ae9a16e16c6afe42238',
+            'primary_objective':'mathlib exclusive CPU cost',
+            'semantic_gate':'mathlib accepted before profiling',
+            'decision_rule':'next intervention requires >=5% measured family self mass AND concrete mechanism plausibly removing >=20% of that family; profile alone cannot admit an optimization',
+            'atlas_verdict':atlas['verdict'],
+            'next':'split winning family before intervention' if atlas['verdict']=='MASS_FAMILY_FOUND' else 'zoom out to whole-machine architecture; reject one-hot subsystem hypothesis'
+          }
+          Path('results/v38/decision.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v38-mathlib-exclusive-cost-atlas
+          path: results/v38/
+          if-no-files-found: error
