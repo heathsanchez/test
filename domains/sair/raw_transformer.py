@@ -3,6 +3,13 @@ from __future__ import annotations
 from typing import Any, Iterable, Mapping
 
 
+# Program-table records contain both executable probe syntax and runtime metadata.
+# Raw transformer synthesis is defined over syntax only.  In particular, `cost`
+# is an execution/planning annotation, and `ast` is the external program id/string;
+# neither is an editable AST coordinate nor part of structural materialization.
+_NON_SYNTAX_FIELDS = frozenset({"ast", "cost"})
+
+
 def _atom(domain, pid: str):
     p = domain.programs.get(pid)
     if not p or p.get("kind") != "atom":
@@ -10,20 +17,32 @@ def _atom(domain, pid: str):
     return p
 
 
-def enumerate_raw_literal_rewrites(domain, state, literal_carrier=(1, 2, 3, 4)) -> Iterable[tuple[str, Mapping[str, Any]]]:
-    """Enumerate generic one-literal AST rewrites over installed atomic probes.
+def _syntax_fields(program: Mapping[str, Any]) -> tuple[str, ...]:
+    return tuple(sorted(k for k in program if k not in _NON_SYNTAX_FIELDS))
 
-    The carrier has no semantic operator names. It simply selects an integer-valued
-    AST field, replaces its value by another literal from the frozen carrier, and
-    copies all other fields unchanged. Candidate program IDs must already exist in
-    the domain's raw executable program table so the verifier can evaluate them.
+
+def _same_probe_syntax(a: Mapping[str, Any], b: Mapping[str, Any]) -> bool:
+    keys = (set(a) | set(b)) - _NON_SYNTAX_FIELDS
+    return all(a.get(k) == b.get(k) for k in keys)
+
+
+def enumerate_raw_literal_rewrites(domain, state, literal_carrier=(1, 2, 3, 4)) -> Iterable[tuple[str, Mapping[str, Any]]]:
+    """Enumerate generic one-literal syntax rewrites over installed atomic probes.
+
+    The carrier has no semantic operator names. It selects an integer-valued probe
+    syntax field, replaces its value by another literal from the frozen carrier,
+    and copies all other syntax unchanged. Runtime metadata such as execution cost
+    is deliberately outside the transformer language.
     """
     out = []
     for source_id in sorted(state.probe_language):
         src = _atom(domain, source_id)
         if src is None:
             continue
-        int_paths = sorted(k for k, v in src.items() if isinstance(v, int) and not isinstance(v, bool))
+        int_paths = sorted(
+            k for k in _syntax_fields(src)
+            if isinstance(src.get(k), int) and not isinstance(src.get(k), bool)
+        )
         for path in int_paths:
             old = int(src[path])
             for new in literal_carrier:
@@ -34,9 +53,7 @@ def enumerate_raw_literal_rewrites(domain, state, literal_carrier=(1, 2, 3, 4)) 
                 for pid, p in domain.programs.items():
                     if p.get("kind") != "atom":
                         continue
-                    # Generic structural equality after the single raw edit.
-                    keys = set(candidate) | set(p)
-                    if all(candidate.get(k) == p.get(k) for k in keys if k != "ast"):
+                    if _same_probe_syntax(candidate, p):
                         rec = {
                             "kind": "RAW_LITERAL_REWRITE",
                             "path": path,
@@ -48,7 +65,6 @@ def enumerate_raw_literal_rewrites(domain, state, literal_carrier=(1, 2, 3, 4)) 
                             "cost": 1,
                         }
                         out.append((pid, rec))
-    # Stable unique carrier.
     seen = set()
     for pid, rec in sorted(out, key=lambda x: (x[1]["cost"], x[1]["path"], x[1]["from_literal"], x[1]["to_literal"], x[0])):
         key = (pid, rec["path"], rec["from_literal"], rec["to_literal"])
@@ -59,11 +75,7 @@ def enumerate_raw_literal_rewrites(domain, state, literal_carrier=(1, 2, 3, 4)) 
 
 
 def induce_verified_raw_literal_rewrite(domain, before, after, probe_id: str, record: Any) -> Iterable[Mapping[str, Any]]:
-    """Type a verified raw edit only after it has been selected and executed.
-
-    This does not infer arithmetic meaning. It stores the literal substitution and
-    AST path that relate a prior installed probe to the verified new probe.
-    """
+    """Type a verified raw syntax edit only after selection and execution."""
     target = _atom(domain, probe_id)
     if target is None:
         return ()
@@ -74,9 +86,8 @@ def induce_verified_raw_literal_rewrite(domain, before, after, probe_id: str, re
             continue
         differing = []
         compatible = True
-        for k in set(src) | set(target):
-            if k == "ast":
-                continue
+        keys = (set(src) | set(target)) - _NON_SYNTAX_FIELDS
+        for k in keys:
             a, b = src.get(k), target.get(k)
             if a == b:
                 continue
@@ -120,7 +131,6 @@ def expand_raw_literal_rewrite(domain, state, operator: Mapping[str, Any]) -> It
         for pid, p in domain.programs.items():
             if p.get("kind") != "atom":
                 continue
-            keys = set(candidate) | set(p)
-            if all(candidate.get(k) == p.get(k) for k in keys if k != "ast"):
+            if _same_probe_syntax(candidate, p):
                 out.append(pid)
     return tuple(sorted(set(out)))
