@@ -1,0 +1,38 @@
+{
+  "nodes": [
+    {
+      "id":"E0031","order":1,"type":"EVIDENCE",
+      "facts":{"cold_calls":369293,"existing_frame_hit_rate":0.5940,"raw_pair_repeat_rate":0.0142,"slot_work_on_frame_hits":0.4704},
+      "text":"Cold projections often terminate in an already-existing canonical frame, while exact raw (env,mask) repeats are rare. Different raw histories converge to the same projected identity.",
+      "provenance":"run:31894982350"
+    },
+    {
+      "id":"E0032","order":2,"type":"EVIDENCE",
+      "facts":{"cons_scanned":889027,"cons_selected":480371,"skip_fraction":0.4597,"mean_scan_depth":2.387,"max_scan":64},
+      "text":"Irrelevant Cons walking exists, but mean scan depth is only about 2.39. A heavyweight indexed/DAG environment is not yet justified by total-cost evidence.",
+      "provenance":"run:31895136323"
+    },
+    {
+      "id":"E0033","order":3,"type":"EVIDENCE",
+      "facts":{"nonzero_cons_tails":707979,"exact_parent_tail_matches":137548,"exact_match_rate":0.1943,"usable_fraction":1.0},
+      "text":"A substantial fraction of nonzero Cons tails encounter an exact usable cached parent projection for the remaining mask, exposing same-frame suffix knowledge that may be composed before inventing new identity machinery.",
+      "provenance":"diagnostic frozen before E0034"
+    }
+  ],
+  "typed_edges": [
+    {"order":1,"from":"E0031","to":"R_LATE_QUOTIENT","type":"DERIVES","text":"late canonical identity is the sharp residual"},
+    {"order":1,"from":"E0031","to":"H_RAW_CACHE","type":"REFUTES","text":"raw repetition only 1.42%"},
+    {"order":1,"from":"E0031","to":"H_LATE_IDENTITY","type":"SUPPORTS","text":"59.4% end in an existing canonical frame"},
+    {"order":2,"from":"E0032","to":"H_HEAVY_DAG","type":"WEAKENS","text":"mean scan depth only 2.387"},
+    {"order":2,"from":"R_LATE_QUOTIENT","to":"R_SUFFIX_REUSE","type":"SHARPENS","text":"inspect existing closure before ontology expansion"},
+    {"order":3,"from":"E0033","to":"H_TAIL_COMPOSE","type":"SUPPORTS","text":"19.43% exact usable parent-tail opportunities"},
+    {"order":3,"from":"H_TAIL_COMPOSE","to":"H_QUOTIENT_INDEX","type":"RIVAL_OF","text":"same-frame composition versus new index"}
+  ],
+  "hypotheses": [
+    {"id":"H_RAW_CACHE","text":"A larger raw (env,mask) cache is the adequate repair."},
+    {"id":"H_LATE_IDENTITY","text":"Canonical identity is discovered too late after projection work."},
+    {"id":"H_HEAVY_DAG","text":"Replace Cons chains with a heavyweight indexed/DAG representation."},
+    {"id":"H_TAIL_COMPOSE","text":"Existing parent-tail projection knowledge can be composed to avoid suffix reconstruction."},
+    {"id":"H_QUOTIENT_INDEX","text":"Existing composition is insufficient and a quotient fingerprint/index is needed."}
+  ]
+}
