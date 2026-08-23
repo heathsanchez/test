@@ -60,11 +60,17 @@ def main():
     if induction is None:
         raise SystemExit("No V34-style natural induction successor found")
 
+    # Execution-boundary repair only: make every atomic probe reachable from the
+    # already-frozen repaired raw carrier evaluable before exhaustive synthesis.
+    # This does not change the carrier, quotient rule, contexts, or signatures.
     verifier_audit = {"bad": 0, "unknown": 0, "witnesses": 0}
-    for direction in v32.DIRECTIONS:
-        a = v32.ensure_exact_order_values(root, rows, induction["after_action"].hypotheses, 4, direction)
-        for k in verifier_audit:
-            verifier_audit[k] += int(a[k])
+    for order in v32.ORDERS:
+        for direction in v32.DIRECTIONS:
+            a = v32.ensure_exact_order_values(
+                root, rows, induction["after_action"].hypotheses, order, direction
+            )
+            for k in verifier_audit:
+                verifier_audit[k] += int(a[k])
 
     carrier = v32.exhaustive_raw_carrier(adapter, induction["after_action"])
     _, carrier_audit, _ = v32.select_min_resolving_raw_transformer(adapter, induction["after_action"], carrier)
@@ -85,6 +91,8 @@ def main():
         raise SystemExit("Insufficient natural evaluation cells")
 
     eval_worlds = sorted(set().union(*(c for _, c in eval_cells)))
+    # The V34 minima are order-4 probes. Populate both orientations on the frozen
+    # evaluation set using the same exact verifier and witness recheck.
     for direction in v32.DIRECTIONS:
         a = v32.ensure_exact_order_values(root, rows, eval_worlds, 4, direction)
         for k in verifier_audit:
