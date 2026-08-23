@@ -1,0 +1,31 @@
+name: V35 Transformer Developmental Equivalence
+on:
+  pull_request:
+    branches:
+      - v34-ast-metadata-separation
+  workflow_dispatch:
+
+jobs:
+  v35-transformer-developmental-equivalence:
+    if: startsWith(github.head_ref, 'v35-transformer-developmental-equivalence')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V35
+        run: |
+          rm -rf results/v35-transformer-developmental-equivalence
+          python experiments/sair_transformer_developmental_equivalence_v35.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v35-transformer-developmental-equivalence
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v35-transformer-developmental-equivalence
+          path: results/v35-transformer-developmental-equivalence/
