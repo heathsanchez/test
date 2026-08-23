@@ -1,0 +1,31 @@
+name: V36 Probe Obligation Orientation
+on:
+  pull_request:
+    branches:
+      - v35-transformer-developmental-equivalence-run
+  workflow_dispatch:
+
+jobs:
+  v36-probe-obligation-orientation:
+    if: startsWith(github.head_ref, 'v36-probe-obligation-orientation')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V36
+        run: |
+          rm -rf results/v36-probe-obligation-orientation
+          python experiments/sair_probe_obligation_orientation_v36.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v36-probe-obligation-orientation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v36-probe-obligation-orientation
+          path: results/v36-probe-obligation-orientation/
