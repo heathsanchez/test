@@ -1,0 +1,39 @@
+{
+  "graph_version": "UVRM_GRAPH_V1",
+  "lineage": "Lean-kernel canonical environment projection, E0031-E0034",
+  "target": "Reduce protected Lean checker resource cost without semantic regression",
+  "nodes": [
+    {"id":"E0031","type":"EVIDENCE","verdict":"OBSERVED","facts":{"cold_calls":369293,"existing_frame_hit_rate":0.5940,"raw_pair_repeat_rate":0.0142,"slot_work_on_frame_hits":0.4704},"provenance":"run:31894982350"},
+    {"id":"R_LATE_QUOTIENT","type":"RESIDUAL","primary":"R8_ACCESS","secondary":["R3_REDUNDANCY"],"statement":"Canonical projection identity is often discovered only after projection work."},
+    {"id":"H_RAW_CACHE","type":"HYPOTHESIS","statement":"A larger cache keyed by raw (env,mask) is the adequate repair.","status":"REFUTED"},
+    {"id":"H_LATE_IDENTITY","type":"HYPOTHESIS","statement":"Different raw histories converge to already-existing projected frames; access to canonical identity is late.","status":"LIVE"},
+
+    {"id":"E0032","type":"EVIDENCE","verdict":"OBSERVED","facts":{"cons_scanned":889027,"cons_selected":480371,"skip_fraction":0.4597,"mean_scan_depth":2.387,"max_scan":64},"provenance":"run:31895136323"},
+    {"id":"H_HEAVY_DAG","type":"HYPOTHESIS","statement":"Replace Cons chains immediately with a heavyweight indexed/DAG environment.","status":"REFUTED"},
+    {"id":"R_SUFFIX_REUSE","type":"RESIDUAL","primary":"R8_ACCESS","secondary":["R7_COMPOSITION","R3_REDUNDANCY"],"statement":"Before inventing new identity machinery, determine whether existing shared tails already contain reusable exact projection knowledge."},
+
+    {"id":"E0033","type":"EVIDENCE","verdict":"OBSERVED","facts":{"nonzero_cons_tails":707979,"exact_parent_tail_matches":137548,"exact_match_rate":0.1943,"usable_fraction":1.0},"provenance":"diagnostic frozen before E0034"},
+    {"id":"H_TAIL_COMPOSE","type":"HYPOTHESIS","statement":"Existing parent suffix projection knowledge can be composed to avoid reconstructing the tail.","status":"LIVE"},
+    {"id":"H_QUOTIENT_INDEX","type":"HYPOTHESIS","statement":"Existing composition is insufficient; introduce quotient fingerprint/index machinery.","status":"LIVE"},
+
+    {"id":"A_RAW_CACHE","type":"CANDIDATE_ACTION","name":"enlarge raw (env,mask) cache","complexity":2,"changes_representation":false,"composition_before_invention":false},
+    {"id":"A_HEAVY_DAG","type":"CANDIDATE_ACTION","name":"replace environment with indexed/DAG representation","complexity":5,"changes_representation":true,"composition_before_invention":false},
+    {"id":"A_TAIL_SPLICE","type":"CANDIDATE_ACTION","name":"splice exact cached parent-tail projection after consuming current head","complexity":1,"changes_representation":false,"composition_before_invention":true,"expected_separator":"If CPU improves with semantics intact and ablation loses gain, admit composition candidate; if null, advance to quotient-level index."},
+    {"id":"A_QUOTIENT_INDEX","type":"CANDIDATE_ACTION","name":"add quotient fingerprint/index for projected environment identity","complexity":4,"changes_representation":true,"composition_before_invention":false}
+  ],
+  "edges": [
+    {"from":"E0031","to":"R_LATE_QUOTIENT","type":"DERIVED_FROM"},
+    {"from":"E0031","to":"H_RAW_CACHE","type":"REFUTES","reason":"raw repeats only 1.42%"},
+    {"from":"E0031","to":"H_LATE_IDENTITY","type":"SUPPORTS","reason":"59.4% end in existing canonical frame"},
+    {"from":"E0032","to":"H_HEAVY_DAG","type":"REFUTES","reason":"mean scan depth only 2.387; total-cost case not established"},
+    {"from":"R_LATE_QUOTIENT","to":"R_SUFFIX_REUSE","type":"SHARPENS"},
+    {"from":"E0033","to":"H_TAIL_COMPOSE","type":"SUPPORTS","reason":"19.43% exact usable parent-tail opportunities"},
+    {"from":"H_TAIL_COMPOSE","to":"H_QUOTIENT_INDEX","type":"RIVAL_OF"},
+    {"from":"H_RAW_CACHE","to":"A_RAW_CACHE","type":"MOTIVATES"},
+    {"from":"H_HEAVY_DAG","to":"A_HEAVY_DAG","type":"MOTIVATES"},
+    {"from":"H_TAIL_COMPOSE","to":"A_TAIL_SPLICE","type":"DISCRIMINATES"},
+    {"from":"H_QUOTIENT_INDEX","to":"A_QUOTIENT_INDEX","type":"MOTIVATES"},
+    {"from":"A_TAIL_SPLICE","to":"A_QUOTIENT_INDEX","type":"PRECEDES_IF_NULL","reason":"closure/composition before representation invention"}
+  ],
+  "frozen_expected_next_action": "A_TAIL_SPLICE"
+}
