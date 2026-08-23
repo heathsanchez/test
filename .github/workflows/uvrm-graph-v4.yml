@@ -1,0 +1,23 @@
+name: UVRM Graph V4
+
+on:
+  push:
+    paths:
+      - 'experiments/uvrm_graph_v4/**'
+      - '.github/workflows/uvrm-graph-v4.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen cross-domain cases
+        run: python experiments/uvrm_graph_v4/validate.py
+      - name: Render all matched arms
+        run: python experiments/uvrm_graph_v4/render.py
+      - name: Check rendered prompt count
+        run: test "$(find experiments/uvrm_graph_v4/rendered -type f | wc -l)" -eq 20
