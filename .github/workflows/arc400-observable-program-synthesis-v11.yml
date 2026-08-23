@@ -1,0 +1,25 @@
+name: ARC400 Observable Program Synthesis V11
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  observable-program-synthesis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ARC-AGI
+        run: git clone --depth 1 https://github.com/fchollet/ARC-AGI.git ARC-AGI
+      - name: Run paradigm-shift experiment
+        run: |
+          rm -rf results/arc400-observable-program-synthesis-v11
+          mkdir -p results/arc400-observable-program-synthesis-v11
+          python3 scripts/arc400_observable_program_synthesis_v11.py \
+            --arc-root ARC-AGI \
+            --out-dir results/arc400-observable-program-synthesis-v11 \
+            --seed 1729
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc400-observable-program-synthesis-v11
+          path: results/arc400-observable-program-synthesis-v11/
