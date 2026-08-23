@@ -12,35 +12,38 @@ def index(g):
 def incoming(g, node_id, edge_type=None):
     return [e for e in g['edges'] if e['to']==node_id and (edge_type is None or e['type']==edge_type)]
 
-def outgoing(g, node_id, edge_type=None):
-    return [e for e in g['edges'] if e['from']==node_id and (edge_type is None or e['type']==edge_type)]
-
 def refuted_hypotheses(g):
     idx=index(g)
-    ref=set()
-    for e in g['edges']:
-        if e['type']=='REFUTES' and idx.get(e['to'],{}).get('type')=='HYPOTHESIS':
-            ref.add(e['to'])
-    return ref
+    return {e['to'] for e in g['edges']
+            if e['type']=='REFUTES' and idx.get(e['to'],{}).get('type')=='HYPOTHESIS'}
+
+def supported_hypotheses(g):
+    idx=index(g)
+    return {e['to'] for e in g['edges']
+            if e['type']=='SUPPORTS' and idx.get(e['to'],{}).get('type')=='HYPOTHESIS'}
 
 def live_hypotheses(g):
     ref=refuted_hypotheses(g)
+    # A rival may remain live without positive evidence, but 'supported' is tracked separately.
     return [n for n in g['nodes'] if n['type']=='HYPOTHESIS' and n['id'] not in ref]
 
 def candidate_score(g, a):
-    idx=index(g)
     ref=refuted_hypotheses(g)
-    # A candidate whose motivating hypothesis is refuted should be dominated.
+    sup=supported_hypotheses(g)
+    live={h['id'] for h in live_hypotheses(g)}
     motives=incoming(g,a['id'],'MOTIVATES')
-    dead_motive=any(e['from'] in ref for e in motives)
-    # Actions that directly discriminate a live hypothesis get priority.
     discr=incoming(g,a['id'],'DISCRIMINATES')
-    live=set(h['id'] for h in live_hypotheses(g))
+    sources={e['from'] for e in motives+discr}
+    dead_motive=bool(sources) and all(s in ref for s in sources)
+    discriminates_supported=any(e['from'] in sup for e in discr)
     discriminates_live=any(e['from'] in live for e in discr)
-    # Closure/composition before invention is a hard methodological preference
-    # when a live same-frame candidate exists.
+    has_supported_source=any(s in sup for s in sources)
+    # Prefer directly evidence-supported separators, then live discriminators,
+    # then composition-before-invention, before representation expansion.
     return (
         1 if dead_motive else 0,
+        0 if discriminates_supported else 1,
+        0 if has_supported_source else 1,
         0 if discriminates_live else 1,
         0 if a.get('composition_before_invention') else 1,
         1 if a.get('changes_representation') else 0,
@@ -50,18 +53,18 @@ def candidate_score(g, a):
 
 def choose_next(g):
     candidates=[n for n in g['nodes'] if n['type']=='CANDIDATE_ACTION']
-    if not candidates:
-        return None
-    return min(candidates,key=lambda a:candidate_score(g,a))
+    return min(candidates,key=lambda a:candidate_score(g,a)) if candidates else None
 
 def reconstruct_state(g):
     ref=refuted_hypotheses(g)
+    sup=supported_hypotheses(g)
     live=[h['id'] for h in live_hypotheses(g)]
     residuals=[n['id'] for n in g['nodes'] if n['type']=='RESIDUAL']
     choice=choose_next(g)
     return {
         'residual_frontier': residuals[-1] if residuals else None,
         'live_hypotheses': live,
+        'supported_hypotheses': sorted(sup),
         'refuted_hypotheses': sorted(ref),
         'next_action': choice['id'] if choice else None,
         'next_action_name': choice.get('name') if choice else None,
@@ -69,5 +72,4 @@ def reconstruct_state(g):
     }
 
 if __name__=='__main__':
-    s=reconstruct_state(load_graph())
-    print(json.dumps(s,indent=2))
+    print(json.dumps(reconstruct_state(load_graph()),indent=2))
