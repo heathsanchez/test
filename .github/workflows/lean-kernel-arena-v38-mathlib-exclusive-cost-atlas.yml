@@ -45,7 +45,7 @@ jobs:
         shell: 'nix develop -c bash -euxo pipefail {0}'
         run: ./lka.py build-test mathlib
 
-      - name: Locate checker and Mathlib input
+      - name: Locate submitted checker and Mathlib input
         run: |
           set -euxo pipefail
           BIN=$(find arena/_build/checkers/mathgraph -type f -path '*/target/release/sokonanoda' -perm -111 | head -1)
@@ -59,21 +59,50 @@ jobs:
           echo "BIN=$BIN"
           echo "CFG=$CFG"
 
-      - name: Semantic smoke gate on Mathlib
+      - name: Semantic smoke gate on submitted native Mathlib
         working-directory: arena
         shell: 'nix develop -c bash -euxo pipefail {0}'
         run: ./lka.py run --checker mathgraph --test mathlib
+
+      - name: Build ISA-conservative PGO diagnostic twin
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          set -euxo pipefail
+          SRC="$PWD/_build/checkers/mathgraph/src"
+          ROOT="$PWD"
+          cd "$SRC"
+          rm -rf target-v38 pgo-v38
+          mkdir -p pgo-v38
+          export CARGO_TARGET_DIR="$SRC/target-v38"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -Cprofile-generate=$SRC/pgo-v38" cargo build --release
+          "$CARGO_TARGET_DIR/release/sokonanoda" config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+          llvm-profdata merge -o "$SRC/pgo-v38/merged.profdata" "$SRC/pgo-v38"
+          rm -rf "$CARGO_TARGET_DIR"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -Cprofile-use=$SRC/pgo-v38/merged.profdata" cargo build --release
+          test -x "$CARGO_TARGET_DIR/release/sokonanoda"
+          printf '%s\n' "$CARGO_TARGET_DIR/release/sokonanoda" > "$ROOT/../diag-bin.txt"
+          printf '%s\n' "$SRC/config.json" > "$ROOT/../diag-cfg.txt"
+
+      - name: Diagnostic twin semantic equivalence gate on Mathlib
+        run: |
+          set -euxo pipefail
+          BIN=$(cat diag-bin.txt)
+          CFG=$(cat diag-cfg.txt)
+          IN=arena/_build/tests/mathlib.ndjson
+          "$BIN" "$CFG" < "$IN" > results-v38-diag.stdout
+          test $? -eq 0
+          wc -c results-v38-diag.stdout
 
       - name: Profile Mathlib exclusive instruction cost
         run: |
           set -euxo pipefail
           mkdir -p results/v38
-          BIN=$(cat checker-bin.txt)
-          CFG=$(cat checker-cfg.txt)
+          BIN=$(cat diag-bin.txt)
+          CFG=$(cat diag-cfg.txt)
           IN=arena/_build/tests/mathlib.ndjson
-          # GitHub-hosted runners expose no usable perf events. Callgrind is slower
-          # but deterministic and requires no PMU privileges. Ir is the Arena's
-          # headline performance primitive, so this is also closer to the objective.
+          # Run only the ISA-conservative diagnostic twin under Callgrind. The
+          # submitted native binary remains the semantic/performance anchor.
           valgrind --tool=callgrind --cache-sim=no --branch-sim=no --collect-jumps=no \
             --callgrind-out-file=results/v38/callgrind.out \
             "$BIN" "$CFG" < "$IN" > /dev/null
@@ -100,7 +129,6 @@ jobs:
                   sym=m.group(2).strip()
                   if '???' not in sym and n>0: rows.append((n,sym))
           if total is None:
-              # callgrind_annotate normally prints PROGRAM TOTALS; fail closed if not.
               raise SystemExit('NO_PROGRAM_TOTALS')
           families={k:0 for k in ['ENV','CONV','IOTA','INFER','MEMORY','PARSE','OTHER']}
           pats={
@@ -139,9 +167,10 @@ jobs:
           out={
             'arena_rev':'aaa6aedd3a4f4de88bf825319a8a050e572c9cce',
             'kernel_rev':'3d7585c21242f29fdaa48ae9a16e16c6afe42238',
-            'primary_objective':'mathlib exclusive instruction cost',
-            'semantic_gate':'mathlib accepted before profiling',
-            'profiler':'valgrind callgrind Ir, exclusive symbol cost',
+            'primary_objective':'submitted native Mathlib instruction cost',
+            'semantic_gate':'submitted native and x86-64-v2 PGO diagnostic twin both accept Mathlib before profiling',
+            'profiler':'valgrind callgrind Ir on x86-64-v2 PGO diagnostic twin, exclusive symbol cost',
+            'measurement_boundary':'diagnostic twin changes ISA target only to make Callgrind executable; no source or semantic change',
             'decision_rule':'next intervention requires >=5% measured family self mass AND concrete mechanism plausibly removing >=20% of that family; profile alone cannot admit an optimization',
             'atlas_verdict':atlas['verdict'],
             'next':'split winning family before intervention' if atlas['verdict']=='MASS_FAMILY_FOUND' else 'zoom out to whole-machine architecture; reject one-hot subsystem hypothesis'
