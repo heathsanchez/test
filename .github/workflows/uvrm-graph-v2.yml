@@ -1,0 +1,19 @@
+name: UVRM Research Graph V2
+
+on:
+  push:
+    paths:
+      - 'experiments/uvrm_graph_v2/**'
+      - '.github/workflows/uvrm-graph-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  graph-v2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run prequential graph tests
+        run: python experiments/uvrm_graph_v2/test_controller.py
