@@ -1,0 +1,19 @@
+name: UVRM Research Graph V1
+
+on:
+  push:
+    paths:
+      - 'experiments/uvrm_graph_v1/**'
+      - '.github/workflows/uvrm-graph-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reconstruct frontier from typed graph
+        run: python experiments/uvrm_graph_v1/test_reconstruction.py
