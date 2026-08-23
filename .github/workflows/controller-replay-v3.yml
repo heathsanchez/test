@@ -1,0 +1,19 @@
+name: Controller Replay V3
+
+on:
+  push:
+    paths:
+      - 'experiments/controller_replay_v3/**'
+      - '.github/workflows/controller-replay-v3.yml'
+  workflow_dispatch:
+
+jobs:
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run V3 adversarial controller invariants
+        run: python experiments/controller_replay_v3/test_controller.py
