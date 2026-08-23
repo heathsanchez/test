@@ -1,0 +1,31 @@
+name: V37 Natural Continuation
+on:
+  pull_request:
+    branches:
+      - v36-probe-obligation-orientation
+  workflow_dispatch:
+
+jobs:
+  v37-natural-continuation:
+    if: startsWith(github.head_ref, 'v37-natural-continuation')
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V37
+        run: |
+          rm -rf results/v37-natural-continuation
+          python experiments/sair_natural_continuation_v37.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v37-natural-continuation
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v37-natural-continuation
+          path: results/v37-natural-continuation/
