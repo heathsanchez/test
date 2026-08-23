@@ -1,0 +1,43 @@
+{
+  "version": "UVRM_GRAPH_V3",
+  "lineage": "Lean-kernel canonical environment projection E0031-E0034",
+  "protected_future_rule": "A case may contain only evidence with order <= cutoff_order. Historical next actions and later outcomes are scorer-only fields.",
+  "cases": [
+    {
+      "id": "after_E0031",
+      "cutoff_order": 1,
+      "target": "Reduce protected Lean checker resource cost without semantic regression",
+      "expected": {
+        "mode": "MAP",
+        "primary_diagnosis": "R8_ACCESS",
+        "must_include_concepts": ["late canonical identity", "projection cost"],
+        "must_not_promote": ["raw cache enlargement", "heavy DAG replacement"],
+        "preferred_next_move": "measure whether cost is dominated by scanning or selected/projection work"
+      }
+    },
+    {
+      "id": "after_E0032",
+      "cutoff_order": 2,
+      "target": "Reduce protected Lean checker resource cost without semantic regression",
+      "expected": {
+        "mode": "MAP",
+        "primary_diagnosis": "R8_ACCESS",
+        "must_include_concepts": ["late canonical identity", "shared tails", "closure before invention"],
+        "must_not_promote": ["heavy DAG replacement"],
+        "preferred_next_move": "measure whether existing parent/shared-tail projection knowledge can be reused"
+      }
+    },
+    {
+      "id": "after_E0033",
+      "cutoff_order": 3,
+      "target": "Reduce protected Lean checker resource cost without semantic regression",
+      "expected": {
+        "mode": "DISCRIMINATE",
+        "primary_diagnosis": "R8_ACCESS+R7_COMPOSITION",
+        "must_include_concepts": ["parent-tail reuse", "composition before invention", "causal ablation"],
+        "must_not_promote": ["quotient index before same-frame test"],
+        "preferred_next_move": "test exact cached parent-tail splice against baseline and ablation before quotient-index invention"
+      }
+    }
+  ]
+}
