@@ -1,0 +1,21 @@
+name: UVRM Method
+
+on:
+  push:
+    paths:
+      - 'METHOD.md'
+      - 'templates/UVRM_STATE_TEMPLATE.md'
+      - 'experiments/method_on_method_v1/**'
+      - '.github/workflows/uvrm-method.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate canonical UVRM state template
+        run: python experiments/method_on_method_v1/validate_state.py templates/UVRM_STATE_TEMPLATE.md
