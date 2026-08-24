@@ -1,0 +1,28 @@
+{
+  "schema": "verified.decision.certificate.v1.precommit",
+  "date": "2026-08-25",
+  "question": "Can verifier-guided repair of the smallest decision-sufficient representation outperform one-shot synthesis and raw query selection?",
+  "frozen": {
+    "model": "gpt-4.1-mini",
+    "temperature": 0,
+    "families": [2, 3, 5],
+    "tasks_per_family": 16,
+    "max_verified_proposals": 4,
+    "external_verifier": "exact finite enumeration of all hidden laws consistent with observations",
+    "certificate": "selected query plus target-support set for each possible query outcome"
+  },
+  "arms": ["RAW_DIRECT", "ONE_SHOT_CERTIFICATE", "VERIFIED_CERTIFICATE", "HAND_CERTIFICATE", "OPTIMAL_QUERY"],
+  "primary": {
+    "verified_accuracy_gt_one_shot": true,
+    "verified_decision_complete_gt_one_shot": true,
+    "verified_accuracy_ge": 0.90,
+    "verified_decision_complete_rate_ge": 0.80
+  },
+  "interpretation": {
+    "strong_positive": "verified certificate reaches both strong thresholds and beats one-shot",
+    "partial_positive": "verified repair beats one-shot but misses one or both strong thresholds",
+    "negative": "verified repair does not beat one-shot",
+    "next_if_positive": "test reuse/transfer of retained certificate-construction policy without task-specific verifier hints",
+    "next_if_negative": "inspect whether failures are query search, support construction, or verifier-feedback assimilation"
+  }
+}
