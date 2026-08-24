@@ -1,0 +1,92 @@
+{
+  "schema": "residual.oocr.v1",
+  "claim_boundary": "Retrospective prequential hidden-abstraction benchmark. Protected targets are never rendered into prompts.",
+  "shuffle_map": {
+    "lean_parent_projection_reuse": "sair_boundary_exhaustion",
+    "lean_observed_env_identity": "mathgraph_nonunique_repair",
+    "sair_boundary_exhaustion": "triskelion_cross_component",
+    "triskelion_cross_component": "etp_future_quotient",
+    "mathgraph_nonunique_repair": "lean_observed_env_identity",
+    "etp_future_quotient": "lean_parent_projection_reuse"
+  },
+  "cases": [
+    {
+      "id": "lean_parent_projection_reuse",
+      "domain": "lean_kernel",
+      "evidence": [
+        "Cold projection work is real, but the mean scan depth is shallow rather than large.",
+        "A substantial fraction of one-entry projection requests produce exactly the same projected result already obtainable from the immediately preceding environment state.",
+        "Those preceding environment states already carry memoized projection information.",
+        "A larger indexed environment representation is therefore not yet forced by the measured scan-cost profile."
+      ],
+      "abstraction_required": [["parent","predecessor"],["reuse","memo","cache"],["tail","splice","compose"]],
+      "experiment_required": [["matched","ablation","control"],["paired","cpu","runtime"]],
+      "forbidden": [["heavy dag"],["new representation first"]]
+    },
+    {
+      "id": "lean_observed_env_identity",
+      "domain": "lean_kernel",
+      "evidence": [
+        "Across 369293 cold projection calls, 59.40 percent reached a canonical frame that already existed after projection.",
+        "Exact repetition of the raw input identity paired with the mask was only 1.42 percent.",
+        "Different operational histories therefore frequently converge only after irrelevant bindings are removed.",
+        "Downstream caches already use canonical frame identity once the projected frame has been materialized."
+      ],
+      "abstraction_required": [["canonical","projected"],["environment","frame"],["identity","equivalence","same future"]],
+      "experiment_required": [["persistence boundary","after projection","post-projection"],["avoid","raw cache","before projection"]],
+      "forbidden": [["cache raw pair"],["new ontology"]]
+    },
+    {
+      "id": "sair_boundary_exhaustion",
+      "domain": "sair",
+      "evidence": [
+        "The preregistered bounded family was exhausted without truncation: 16820 instantiations were attempted.",
+        "Twenty interfaces matched and 75 unique candidates survived scoring.",
+        "None reduced the frozen separation below 8.",
+        "The same boundary invariant persisted across 1202 plateau states and 1546 signatures."
+      ],
+      "abstraction_required": [["constructor","grammar","language"],["family","operator","extension"],["inadequacy","outside closure","not expressible"]],
+      "experiment_required": [["new family","new operator","extension"],["freeze","ablation","old family exhausted"]],
+      "forbidden": [["more attempts same family"],["search harder same family"]]
+    },
+    {
+      "id": "triskelion_cross_component",
+      "domain": "triskelion",
+      "evidence": [
+        "Component-level predictors are accurate on cases whose effects stay local to one decomposed part.",
+        "The remaining failures concentrate where the result of one part changes the valid interpretation of the next part.",
+        "This residual replicates on matched examples even when the local component predictions are correct.",
+        "Independent composition of locally correct outputs therefore remains insufficient."
+      ],
+      "abstraction_required": [["carry","carry-like"],["interface","cross-component","between components"],["state","dependency","interaction"]],
+      "experiment_required": [["explicit","repair","separator"],["matched","control","ablation"]],
+      "forbidden": [["scale model"],["more data only"]]
+    },
+    {
+      "id": "mathgraph_nonunique_repair",
+      "domain": "mathgraph",
+      "evidence": [
+        "Across 32768 finite worlds, only 6203 residuals have a unique minimum repair.",
+        "The remaining 26565 residuals have multiple minimal repairs, with as many as 27 in a single case.",
+        "All of these alternatives satisfy the same verifier-level minimality criterion.",
+        "Selecting one arbitrary minimum would erase verifier-supported alternatives that may diverge under later evidence."
+      ],
+      "abstraction_required": [["version space","set of repairs","repair set"],["multiple","nonunique","alternatives"],["preserve","retain","set-valued"]],
+      "experiment_required": [["later evidence","future context","new context"],["split","distinguish","collapse"]],
+      "forbidden": [["choose arbitrary single"],["force uniqueness"]]
+    },
+    {
+      "id": "etp_future_quotient",
+      "domain": "equational_theories",
+      "evidence": [
+        "The implication relation is reflexive and transitive over 4694 equations.",
+        "Many syntactically different rows of the implication matrix have exactly identical consequence profiles.",
+        "Treating all 22033636 ordered pairs as unrelated labels hides repeated behaviour forced by the implication interface.",
+        "Once identical behaviour is grouped, the effective state space becomes much smaller and the remaining dominance structure becomes sparse."
+      ],
+      "abstraction_required": [["future set","future behavior","consequence profile"],["quotient","equivalence class","behavioral class"],["same futures","identical futures","same consequences"]],
+      "experiment_required": [["containment","subset"],["missing future","witness","counterexample"]],
+      "forbidden": [["learn transitivity"],["pairwise classifier first"]]
+    }
+  ]
+}
