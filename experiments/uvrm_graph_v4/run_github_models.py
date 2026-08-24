@@ -3,9 +3,9 @@ from pathlib import Path
 from render import render, DATA
 
 HERE=Path(__file__).parent
-MODEL=os.environ.get('UVRM_MODEL','openai/gpt-4.1-mini')
-TOKEN=os.environ['GITHUB_TOKEN']
-URL='https://models.github.ai/inference/chat/completions'
+MODEL=os.environ.get('UVRM_MODEL','gpt-4.1-mini')
+TOKEN=os.environ['OPENAI_API_KEY']
+URL='https://api.openai.com/v1/chat/completions'
 ARMS=('TRANSCRIPT','GRAPH_ABL','GRAPH','GRAPH_RULES')
 
 def call_model(prompt):
@@ -32,11 +32,10 @@ def call_model(prompt):
     raise RuntimeError(f'model call failed after retries: {last}')
 
 def main():
-    # Fixed seed changes only call ordering, never prompt contents or scoring.
     jobs=[(c,a) for c in DATA['cases'] for a in ARMS]
     random.Random(20260824).shuffle(jobs)
     answers={}
-    metadata={'model':MODEL,'temperature':0,'max_tokens':220,'seed_order':20260824,'n_expected':len(jobs),'calls':[]}
+    metadata={'model':MODEL,'provider':'openai','temperature':0,'max_tokens':220,'seed_order':20260824,'n_expected':len(jobs),'calls':[]}
     for i,(case,arm) in enumerate(jobs,1):
         key=f"{case['id']}__{arm}"
         prompt=render(case,arm)
