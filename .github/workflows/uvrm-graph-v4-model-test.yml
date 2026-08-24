@@ -5,9 +5,11 @@ on:
     paths:
       - 'experiments/uvrm_graph_v4/run_github_models.py'
       - '.github/workflows/uvrm-graph-v4-model-test.yml'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: uvrm-graph-v4-model-test
+  cancel-in-progress: true
 
 permissions:
   contents: read
