@@ -1,0 +1,78 @@
+{
+  "schema": "uvrm.graph.v5.heldout.v1",
+  "claim_boundary": "Retrospective prequential held-out benchmark. These cases and semantic rubrics are frozen before protected model outputs.",
+  "cases": [
+    {
+      "id": "lean_parent_tail_reuse",
+      "domain": "lean_kernel",
+      "evidence": ["cold projection scan work remains measurable but mean scan depth is shallow", "exact parent one-entry prune matches occur frequently enough to be operationally material", "existing parent Env frames already carry prune memo state"],
+      "relations": [["shallow scan depth","WEAKENS","heavy indexed environment"],["parent prune matches","SUPPORTS","reuse existing parent-tail closure"]],
+      "expected_mode": "DISCRIMINATE",
+      "required": [["parent","tail"],["reuse","splice","compose"],["matched","ablation","control"]],
+      "forbidden": [["new representation"],["heavy dag"]]
+    },
+    {
+      "id": "lean_lambda_cache_bypass",
+      "domain": "lean_kernel",
+      "evidence": ["a narrowly targeted Lambda cache bypass passed the full semantic gate", "paired runtime moved modestly but consistently in the favorable direction", "the effect is local and smaller than earlier broad optimization narratives"],
+      "relations": [["semantic pass","SUPPORTS","candidate is sound under frozen gate"],["small paired gain","MOTIVATES","protected reconstruction and attribution"]],
+      "expected_mode": "VERIFY",
+      "required": [["paired","protected","arena"],["reconstruct","reconstruction"],["causal","ablation","attribution"]],
+      "forbidden": [["new representation"],["claim large win"]]
+    },
+    {
+      "id": "sair_operator_attribution",
+      "domain": "sair",
+      "evidence": ["a matched solver restart changed residual behavior without increasing the frozen total budget", "later simplifiers can revisit earlier consequences", "several residual cases remain and aggregate success alone does not identify which inference operator matters"],
+      "relations": [["matched restart delta","SUPPORTS","some inference effect is real"],["aggregate residual delta","BLOCKS","operator-level causal attribution"]],
+      "expected_mode": "MAP",
+      "required": [["operator","inference"],["atlas","effect","profile"],["case","residual","per-case"]],
+      "forbidden": [["increase budget"],["invent representation"]]
+    },
+    {
+      "id": "sair_boundary_context_exhaustion",
+      "domain": "sair",
+      "evidence": ["a frozen bounded boundary-context lift search exhausted all preregistered instantiations", "matched interfaces and unique scored lifts were observed", "no strict contractor reduced the separation below the plateau"],
+      "relations": [["complete bounded exhaustion","REFUTES","this context-lift family closes the plateau"],["stable boundary invariant","MOTIVATES","diagnose language or constructor inadequacy"]],
+      "expected_mode": "REFRAME",
+      "required": [["exhaust","closure","bounded family"],["grammar","constructor","language"],["next family","new operator","extension"]],
+      "forbidden": [["search harder same family"],["more attempts same family"]]
+    },
+    {
+      "id": "triskelion_carry_obstruction",
+      "domain": "triskelion",
+      "evidence": ["phase mapping localizes failure to cases requiring carry-like interaction across decomposed parts", "component predictors work away from that interface", "the residual replicates across matched examples"],
+      "relations": [["localized carry residual","REFUTES","independent component composition is sufficient"],["replicated interface failure","MOTIVATES","explicit carry repair separator"]],
+      "expected_mode": "DISCRIMINATE",
+      "required": [["carry"],["interface","composition"],["explicit","repair","separator"]],
+      "forbidden": [["scale model"],["more data only"]]
+    },
+    {
+      "id": "triskelion_accumulator_topology",
+      "domain": "triskelion",
+      "evidence": ["pair decomposition fixes some local interactions but multi-term aggregation still fails", "an oracle-product control separates local pair quality from accumulator behavior", "the remaining error depends on how intermediate state is composed"],
+      "relations": [["oracle pair success","WEAKENS","pair predictor is primary residual"],["aggregation-only failure","SUPPORTS","accumulator topology or internal state is missing"]],
+      "expected_mode": "MAP",
+      "required": [["accumulator","aggregation"],["topology","state"],["probe","intervention","map"]],
+      "forbidden": [["retrain pair predictor"],["scale model"]]
+    },
+    {
+      "id": "mathgraph_resource_retention",
+      "domain": "mathgraph",
+      "evidence": ["a retained relational macro makes a later target reachable within horizon H", "cold construction requires a larger minimum program than the frozen horizon permits", "removing the retained macro restores the cold limitation"],
+      "relations": [["warm reachability","SUPPORTS","retained structure changes budget-relative capability"],["ablation restores failure","SUPPORTS","retained macro is causal"]],
+      "expected_mode": "TRANSFER",
+      "required": [["held-out","transfer","later task"],["same budget","matched budget","horizon"],["retention","macro","reuse"]],
+      "forbidden": [["current task only"],["syntax identity"]]
+    },
+    {
+      "id": "mathgraph_nonunique_repair",
+      "domain": "mathgraph",
+      "evidence": ["many residual instances admit multiple minimal repairs rather than one unique repair", "the number of minimal repairs varies substantially across cases", "forcing a single repair would erase real verifier-supported alternatives"],
+      "relations": [["multiple minimal repairs","REFUTES","residual maps to unique repair"],["verified alternatives","MOTIVATES","represent residual by a version space"]],
+      "expected_mode": "REFRAME",
+      "required": [["version space","set of repairs","multiple repairs"],["preserve alternatives","nonunique","non-unique"],["representation","state"]],
+      "forbidden": [["choose arbitrary single repair"],["more search for uniqueness"]]
+    }
+  ]
+}
