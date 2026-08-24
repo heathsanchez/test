@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/arena-v40-eval-case-boundaries.yml'
+      - 'experiments/lean_kernel_arena/v40_patch.py'
+      - 'experiments/lean_kernel_arena/v40_verdict.py'
   workflow_dispatch:
 
 concurrency:
@@ -88,6 +90,11 @@ jobs:
 
       - name: Apply frozen diagnostic case-boundary intervention
         run: python3 experiments/lean_kernel_arena/v40_patch.py
+
+      - name: Compile preflight for patched diagnostic source
+        working-directory: arena/_build/checkers/mathgraph/src
+        shell: nix develop ../../../../ -c bash -euxo pipefail {0}
+        run: cargo check --release
 
       - name: Build x86-64-v2 PGO diagnostic twin
         working-directory: arena
