@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   ARENA_REV: aaa6aedd3a4f4de88bf825319a8a050e572c9cce
@@ -25,6 +25,21 @@ jobs:
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
+      - name: Publish run locator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="repos/${GITHUB_REPOSITORY}/contents/.run-status/v40.json"
+          DATA=$(printf '{"run_id":%s,"job":"atlas","sha":"%s","ref":"%s","url":"https://github.com/%s/actions/runs/%s"}' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REF" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          CONTENT=$(printf '%s' "$DATA" | base64 -w0)
+          OLD_SHA=$(gh api "$API" --jq .sha 2>/dev/null || true)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API" -f message="Record V40 run $GITHUB_RUN_ID" -f content="$CONTENT" -f sha="$OLD_SHA" >/dev/null
+          else
+            gh api --method PUT "$API" -f message="Record V40 run $GITHUB_RUN_ID" -f content="$CONTENT" >/dev/null
+          fi
+          echo "$DATA"
       - name: Install Nix
         uses: cachix/install-nix-action@v31
         with:
@@ -68,7 +83,6 @@ jobs:
           from pathlib import Path
           p=Path('arena/_build/checkers/mathgraph/src/src/eval.rs')
           s=p.read_text()
-
           anchor="const FAIL_DEPTH: u8 = 7;\n"
           wrappers=r'''
 
