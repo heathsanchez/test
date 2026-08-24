@@ -1,0 +1,27 @@
+{
+  "schema": "v37_natural_continuation_certificate_v1",
+  "source_repo": "heathsanchez/test",
+  "source_run_id": 32676591950,
+  "source_head_sha": "5981253e2531b3d5049a09226f793812b15de79e",
+  "source_artifact_id": 9504034182,
+  "source_artifact_sha256": "570c4b8264a8112efb740f8d5de09daaff1043060c23c1ef51d96b1604a88a9d",
+  "v37_gate": true,
+  "induction_base": [0, 0, 0, 0, 0, 1],
+  "actual_world": "normal_0001",
+  "probe3": "MODEL_EXISTS(SUCC(ORDER2),FORWARD)",
+  "probe3_outcome_on_live_cell": 0,
+  "probe4": "MODEL_EXISTS(4,FORWARD)",
+  "probe4_outcome": 0,
+  "pre_probe4_world_count": 153,
+  "post_probe4_survivor_count": 151,
+  "continuation": "ADVANCE_PROOF_SEARCH_FRONTIER",
+  "continuation_terminal": "NONE",
+  "successor_problem_state": {
+    "countermodel_exhausted_through_order": 4,
+    "source": "normal_0001"
+  },
+  "successor_route": "DEVELOP_PROBES",
+  "successor_reason": "Commitment-incoherent and J_P(E)=infinity",
+  "verifier_audit": {"witnesses": 10, "bad": 0, "unknown": 0},
+  "survivor_indices": [0,3,17,30,33,34,36,39,49,61,62,82,88,102,103,104,109,121,123,131,133,135,144,145,151,152,153,168,169,179,180,194,201,204,210,213,221,222,226,230,231,249,258,263,267,269,272,274,280,287,302,312,318,321,322,328,329,330,333,340,360,381,382,383,384,386,401,403,444,446,448,462,464,473,476,483,501,507,509,510,525,550,554,558,596,599,612,614,624,625,645,647,658,664,665,676,680,705,713,714,734,737,741,749,753,761,764,766,771,773,778,790,797,804,810,812,826,841,842,862,863,880,898,905,910,924,925,928,931,937,945,948,950,952,967,977,983,987,1072,1079,1099,1106,1129,1140,1159,1174,1182,1205,1227,1254,1262]
+}
