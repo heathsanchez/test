@@ -1,0 +1,33 @@
+name: Actions Control Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/actions-control.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish control run locator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="repos/${GITHUB_REPOSITORY}/contents/.run-status/control.json"
+          DATA=$(printf '{"run_id":%s,"url":"https://github.com/%s/actions/runs/%s","sha":"%s"}' "$GITHUB_RUN_ID" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" "$GITHUB_SHA")
+          CONTENT=$(printf '%s' "$DATA" | base64 -w0)
+          OLD_SHA=$(gh api "$API" --jq .sha 2>/dev/null || true)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API" -f message="Record control run $GITHUB_RUN_ID" -f content="$CONTENT" -f sha="$OLD_SHA" >/dev/null
+          else
+            gh api --method PUT "$API" -f message="Record control run $GITHUB_RUN_ID" -f content="$CONTENT" >/dev/null
+          fi
+          echo "$DATA"
+      - run: echo ACTIONS_CONTROL_OK
