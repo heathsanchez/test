@@ -1,0 +1,40 @@
+name: Law Induction V1c
+on:
+  push:
+    paths:
+      - experiments/law_induction_v1c/TRIGGER
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: law-induction-v1c
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/law_induction_v1c/validate.py
+      - name: Run oracle-gated protected law-induction benchmark
+        run: python experiments/law_induction_v1c/run_openai.py
+      - name: Score held-out capability
+        run: python experiments/law_induction_v1c/score.py experiments/law_induction_v1c/answers.json | tee experiments/law_induction_v1c/score_output.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: law-induction-v1c-protected
+          path: |
+            experiments/law_induction_v1c/answers.json
+            experiments/law_induction_v1c/run_metadata.json
+            experiments/law_induction_v1c/scores.json
+            experiments/law_induction_v1c/score_output.txt
+            experiments/law_induction_v1c/measurement_invalid.json
+          if-no-files-found: ignore
+          retention-days: 30
