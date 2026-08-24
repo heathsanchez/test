@@ -8,6 +8,9 @@ on:
       - 'developmental_runtime/**'
       - 'domains/sair/**'
       - '.github/workflows/v38-natural-retained-operator-order5.yml'
+concurrency:
+  group: v38-natural-retained-operator-order5
+  cancel-in-progress: true
 jobs:
   v38-natural-retained-operator-order5:
     runs-on: ubuntu-24.04
