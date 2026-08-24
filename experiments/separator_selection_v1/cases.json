@@ -1,0 +1,65 @@
+{
+  "schema": "separator.selection.v1",
+  "cases": [
+    {
+      "id": "lean_parent_projection_reuse",
+      "domain": "lean_kernel",
+      "evidence": ["Cold projection work is measurable but mean scan depth is shallow.", "Many one-entry projections reproduce a result already available from the immediately preceding environment state.", "Those parent states already carry memoized projection information."],
+      "latent": "Reuse/splice the existing parent-tail projection closure rather than introduce a heavy new environment representation.",
+      "rival": "The improvement comes from a new indexed environment representation rather than reuse of the existing parent tail.",
+      "experiment_required": [["matched","paired"],["reuse","splice","parent"],["runtime","cpu"]],
+      "separation_required": [["reuse on","reuse off","ablation"],["same workload","same cases","matched control"]],
+      "discipline_required": [["freeze","fixed budget","same budget"],["if","outcome","then"]]
+    },
+    {
+      "id": "lean_observed_env_identity",
+      "domain": "lean_kernel",
+      "evidence": ["59.40 percent of cold projection calls reached a canonical frame that already existed after projection.", "Exact repetition of raw input identity plus mask was only 1.42 percent.", "Different operational histories frequently converge only after irrelevant bindings are removed."],
+      "latent": "Decision-relevant identity is the canonical post-projection environment/frame, not raw pre-projection history.",
+      "rival": "Caching the raw input identity and mask is sufficient; canonical post-projection identity adds no causal value.",
+      "experiment_required": [["post-projection","after projection","canonical frame"],["raw pair","pre-projection","raw identity"],["cache","memo"]],
+      "separation_required": [["compare","versus","matched"],["hit rate","runtime","reuse"]],
+      "discipline_required": [["freeze","same workload","same budget"],["if","outcome","then"]]
+    },
+    {
+      "id": "sair_boundary_exhaustion",
+      "domain": "sair",
+      "evidence": ["A preregistered family exhausted 16820 instantiations without truncation.", "Twenty interfaces matched and 75 unique candidates survived scoring.", "None reduced the frozen separation below 8."],
+      "latent": "The current context-lift constructor family is inadequate; progress requires an extension of the grammar/operator family rather than more search within the exhausted closure.",
+      "rival": "The family is adequate and the failure is merely insufficient search within the same family.",
+      "experiment_required": [["new family","new operator","grammar extension"],["old family","exhausted","same family"],["protected residual","separation","plateau"]],
+      "separation_required": [["same budget","matched budget"],["new versus old","extension versus old","control"]],
+      "discipline_required": [["freeze","precommit","fixed"],["if","outcome","then"]]
+    },
+    {
+      "id": "triskelion_cross_component",
+      "domain": "triskelion",
+      "evidence": ["Local component predictors are accurate when effects stay local.", "Remaining failures occur where one part changes the valid interpretation of the next.", "The residual replicates even when local predictions are correct."],
+      "latent": "A carry-like cross-component interface state is missing from independent composition.",
+      "rival": "Local component prediction quality is still the primary cause; no explicit cross-component state is needed.",
+      "experiment_required": [["carry","cross-component","interface"],["explicit state","repair","stateful"],["local predictor","component predictor"]],
+      "separation_required": [["matched cases","matched control"],["interface on","interface off","ablation"]],
+      "discipline_required": [["freeze","same budget","fixed"],["if","outcome","then"]]
+    },
+    {
+      "id": "mathgraph_nonunique_repair",
+      "domain": "mathgraph",
+      "evidence": ["26565 of 32768 residual worlds have multiple minimal repairs.", "As many as 27 alternatives can satisfy the same verifier-level minimality criterion.", "Selecting one arbitrary minimum discards alternatives that may diverge under later evidence."],
+      "latent": "The residual should retain a version space/set of minimal repairs until later evidence distinguishes them.",
+      "rival": "Choosing any single minimal repair is sufficient because the alternatives are operationally interchangeable.",
+      "experiment_required": [["later evidence","future context","new context"],["multiple repairs","version space","alternatives"],["single repair","arbitrary minimum"]],
+      "separation_required": [["diverge","split","distinguish"],["same current verifier","later verifier","future outcome"]],
+      "discipline_required": [["freeze","held-out","protected"],["if","outcome","then"]]
+    },
+    {
+      "id": "etp_future_quotient",
+      "domain": "equational_theories",
+      "evidence": ["Implication is reflexive and transitive over 4694 equations.", "Many syntactically distinct equations have identical consequence profiles.", "Grouping identical behaviour sharply reduces the effective state space."],
+      "latent": "Quotient equations by identical future/consequence sets and reason on the induced dominance order.",
+      "rival": "Pairwise implication labels should be learned independently; the future-set quotient adds no structural leverage.",
+      "experiment_required": [["future set","consequence profile"],["containment","subset"],["missing future","witness","counterexample"]],
+      "separation_required": [["quotient","pairwise"],["exact equivalence","audit","all pairs"]],
+      "discipline_required": [["freeze","full matrix","global audit"],["if","outcome","then"]]
+    }
+  ]
+}
