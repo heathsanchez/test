@@ -92,20 +92,14 @@ fn v40_diag_literal<R>(f: impl FnOnce() -> R) -> R { f() }
 '''
           assert s.count(anchor)==1
           s=s.replace(anchor,anchor+wrappers)
-
-          # Keep eval_no_cache itself out of line, matching the V39 sham boundary.
           needle="    fn eval_no_cache(&mut self, depth: u32, env: E<'t>, e: ExprPtr<'t>) -> V<'t> {"
           assert s.count(needle)==1
           s=s.replace(needle,"    #[inline(never)]\n"+needle)
-
-          # Wrap the complete App branch. Internal early returns now return from the
-          # closure; the outer eval_no_cache returns the wrapper result.
           start="        if let Expr::App { fun, arg, .. } = first {\n"
           end="            return self.apply(depth, f, a);\n        }\n        match first {\n"
           assert s.count(start)==1 and s.count(end)==1
           s=s.replace(start,start+"            return v40_diag_app(|| {\n",1)
           s=s.replace(end,"            self.apply(depth, f, a)\n            });\n        }\n        match first {\n",1)
-
           reps={
           '''            Expr::Var { dbj_idx, .. } => {\n                let v = env.lookup(dbj_idx).expect("eval: loose bvar");\n                self.force_thunk(depth, v)\n            }''': '''            Expr::Var { dbj_idx, .. } => v40_diag_var(|| {\n                let v = env.lookup(dbj_idx).expect("eval: loose bvar");\n                self.force_thunk(depth, v)\n            })''',
           '''            Expr::Sort { level, .. } => {\n                let level = match env.lsub() {\n                    Some(ls) => self.ctx.subst_level(level, ls.ks, ls.vs),\n                    None => level,\n                };\n                value::mk_sort(self.arena, self.ctx.simplify(level))\n            }''': '''            Expr::Sort { level, .. } => v40_diag_sort(|| {\n                let level = match env.lsub() {\n                    Some(ls) => self.ctx.subst_level(level, ls.ks, ls.vs),\n                    None => level,\n                };\n                value::mk_sort(self.arena, self.ctx.simplify(level))\n            })''',
@@ -203,3 +197,5 @@ fn v40_diag_literal<R>(f: impl FnOnce() -> R) -> R { f() }
           name: v40-eval-case-boundaries
           path: results/v40/
           if-no-files-found: error
+
+# sync trigger after PR creation
