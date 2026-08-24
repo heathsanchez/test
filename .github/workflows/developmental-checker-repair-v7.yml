@@ -1,0 +1,58 @@
+name: Developmental Checker Repair V7
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/developmental-checker-repair-v7.yml'
+      - 'scripts/run_developmental_checker_provenance_v7.py'
+      - 'scripts/patch_v7a_runner.py'
+      - 'scripts/patch_developmental_checker_trace.py'
+  workflow_dispatch:
+
+jobs:
+  provenance-causal-game:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/developmental-checker-repair-v7
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct baseline and trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git base
+          cp -a base trace
+          python3 scripts/patch_developmental_checker_trace.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
+          cp base/config.json trace/config.json
+          git -C base rev-parse HEAD | tee results/developmental-checker-repair-v7/kernel_commit.txt
+      - name: Build baseline checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+      - name: Run declaration-consumer provenance ablation
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 scripts/patch_v7a_runner.py
+          python3 scripts/run_developmental_checker_provenance_v7.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: developmental-checker-repair-v7
+          path: results/developmental-checker-repair-v7/
