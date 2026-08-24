@@ -1,0 +1,38 @@
+name: Representation Change V1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/representation_change_v1/TRIGGER'
+
+concurrency:
+  group: representation-change-v1
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/representation_change_v1/validate.py
+      - name: Run protected 24-call representation benchmark
+        run: python experiments/representation_change_v1/run_openai.py
+      - name: Score exact later decisions
+        run: python experiments/representation_change_v1/score.py experiments/representation_change_v1/answers.json | tee experiments/representation_change_v1/score_output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: representation-change-v1-protected
+          path: |
+            experiments/representation_change_v1/answers.json
+            experiments/representation_change_v1/run_metadata.json
+            experiments/representation_change_v1/scores.json
+            experiments/representation_change_v1/score_output.txt
+          retention-days: 30
