@@ -1,0 +1,101 @@
+{
+  "schema": "representation.change.v1",
+  "cases": [
+    {
+      "id": "lean_parent_reuse_future",
+      "domain": "lean_kernel",
+      "separator_outcome": "A matched runtime test showed that reusing the predecessor's projected tail preserved semantics and beat recomputing the cold projection; disabling the splice removed the gain.",
+      "prose_memory": "Verified lesson: when a projection request extends an immediately preceding environment state whose projected tail is already memoized, predecessor-tail reuse is the preferred mechanism before inventing a heavier environment representation.",
+      "structured_state": "TYPE=projection_reuse; RELATION=preceding_env --memoized_projected_tail--> current_projection; SCOPE=matched predecessor-extension cases; ACTION=compose/splice predecessor tail before new representation",
+      "ablated_state": "TYPE=projection_reuse; RELATION=preceding_env --related_to--> current_projection; SCOPE=matched predecessor-extension cases; ACTION=choose a plausible implementation after inspection",
+      "later_problem": "A new projection hotspot appears on two-entry masks. Scan depth is still shallow. In 46% of cases the first selected binding and the remaining tail are exactly those already present in the predecessor's cached projection, while raw env+mask repetition remains under 2%. Which next move best exploits the learned structure without widening the representation prematurely?",
+      "options": {
+        "A": "Add a larger cache keyed by raw environment pointer plus two-entry mask.",
+        "B": "Compose the cached predecessor projection for the shared tail and compute only the unmatched selected binding, with an ablation back to full cold projection.",
+        "C": "Replace environments with a global indexed DAG before further measurement.",
+        "D": "Increase scan depth so the hotspot becomes easier to measure."
+      },
+      "correct": "B"
+    },
+    {
+      "id": "lean_observed_identity_future",
+      "domain": "lean_kernel",
+      "separator_outcome": "Post-projection canonical frame identity predicted reuse while raw operational-history identity did not; a raw-pair cache captured little repetition.",
+      "prose_memory": "Verified lesson: histories that collapse to the same canonical projected frame should share persistence identity; cache only after irrelevant bindings have been removed.",
+      "structured_state": "TYPE=future_identity; RELATION=operational_histories --quotient_by_projection--> canonical_frame; SCOPE=persistence/caching boundary; ACTION=key reuse by post-projection canonical identity",
+      "ablated_state": "TYPE=future_identity; RELATION=operational_histories --associated_with--> canonical_frame; SCOPE=persistence/caching boundary; ACTION=retain whichever identifier is convenient",
+      "later_problem": "A second cache is being added for downstream level-normalization results. Several syntactically different environment histories reach the same projected canonical frame before normalization, but their raw history hashes differ. What should identify the cache state?",
+      "options": {
+        "A": "The complete raw history hash, to avoid accidental aliasing.",
+        "B": "A concatenation of raw history hash and canonical frame ID.",
+        "C": "The canonical post-projection frame ID, provided the semantic gate confirms equal downstream behavior.",
+        "D": "A random session-local integer allocated before projection."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "sair_constructor_exhaustion_future",
+      "domain": "sair",
+      "separator_outcome": "The frozen boundary-context lift family was exhaustively searched with no strict contractor, while the plateau invariant persisted; same-family search was therefore closed under the stated boundary.",
+      "prose_memory": "Verified lesson: exhaustive failure of a frozen constructor family is evidence to change the constructor/operator language, not to spend more budget on the same family.",
+      "structured_state": "TYPE=constructor_inadequacy; RELATION=frozen_family --exhausted_without_contractor--> plateau_residual; SCOPE=preregistered family/budget; ACTION=test genuinely new operator family with old-family ablation",
+      "ablated_state": "TYPE=constructor_inadequacy; RELATION=frozen_family --tested_against--> plateau_residual; SCOPE=preregistered family/budget; ACTION=continue with a reasonable next search",
+      "later_problem": "A different plateau is now reached after exhaustive testing of every member of another preregistered context-substitution family. The boundary signature is unchanged across all surviving states and no candidate contracts it. What is the next scientifically justified move?",
+      "options": {
+        "A": "Double the number of random instantiations from the already exhausted family.",
+        "B": "Lower the contraction threshold until one existing candidate counts as success.",
+        "C": "Freeze the negative result and test a new constructor/operator family whose added expressive feature targets the invariant, with the old family as an ablation control.",
+        "D": "Shuffle the same candidates and rerun them."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "triskelion_interface_future",
+      "domain": "triskelion",
+      "separator_outcome": "Matched examples showed that adding explicit carry/interface state fixed failures where locally correct component outputs changed the interpretation of the next component; removing the interface restored the error.",
+      "prose_memory": "Verified lesson: when local predictors are correct but composition fails at a boundary, retain the cross-component state that changes the next component's interpretation rather than improving the local predictors again.",
+      "structured_state": "TYPE=interface_state; RELATION=component_i_output --changes_interpretation_of--> component_i+1; SCOPE=boundary/carry cases; ACTION=propagate explicit cross-component state and ablate it",
+      "ablated_state": "TYPE=interface_state; RELATION=component_i_output --adjacent_to--> component_i+1; SCOPE=boundary/carry cases; ACTION=improve the weakest component or interface as appropriate",
+      "later_problem": "A new decomposed task has 98% accurate local predictors. Nearly all remaining errors occur only when an upstream component flips the valid decoding rule for the following component. Which intervention best follows the retained lesson?",
+      "options": {
+        "A": "Train each local predictor longer on independent examples.",
+        "B": "Average the two component predictions at the end.",
+        "C": "Represent and pass the upstream decoding-state change explicitly across the interface, then compare matched cases with that state ablated.",
+        "D": "Increase model size while keeping independent composition unchanged."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "mathgraph_version_space_future",
+      "domain": "mathgraph",
+      "separator_outcome": "Later contexts distinguished different equally minimal repairs, confirming that collapsing the initial non-unique repair set to one arbitrary element would have destroyed future-relevant alternatives.",
+      "prose_memory": "Verified lesson: when several repairs are equally minimal under the current verifier, retain the version space until future evidence proves alternatives equivalent or separates them.",
+      "structured_state": "TYPE=version_space; RELATION=residual --admits_multiple_minimal--> repairs_set; SCOPE=current verifier contexts; ACTION=retain alternatives until future context splits/quotients them",
+      "ablated_state": "TYPE=version_space; RELATION=residual --has_candidates--> repairs_set; SCOPE=current verifier contexts; ACTION=pick a convenient representative for downstream use",
+      "later_problem": "A new residual has four repairs with identical current verifier score and equal minimal complexity. Two untested future contexts are known to exercise features on which the repairs may differ. What should the developmental state retain now?",
+      "options": {
+        "A": "Only the lexicographically first repair.",
+        "B": "Only the repair produced earliest by the solver.",
+        "C": "All four currently minimal repairs, then use the future contexts to split or quotient them based on verified behavior.",
+        "D": "Discard the residual because the repair is not unique."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "etp_future_quotient_future",
+      "domain": "equational_theories",
+      "separator_outcome": "Equations with identical implication consequence sets behaved interchangeably under the tested implication interface; missing-future witnesses correctly separated non-contained classes.",
+      "prose_memory": "Verified lesson: quotient equations by identical lawful future/consequence sets; compare quotient classes by containment and use a missing future as a witness when containment fails.",
+      "structured_state": "TYPE=future_quotient; RELATION=equations --equivalent_iff_same_consequences--> quotient_class; SCOPE=implication interface; ACTION=order classes by future-set containment and witness failure by missing future",
+      "ablated_state": "TYPE=future_quotient; RELATION=equations --similar_when_related--> quotient_class; SCOPE=implication interface; ACTION=compare classes using an available similarity criterion",
+      "later_problem": "A newly added batch contains many syntactically novel equations. Two candidates have different syntax and proof traces but exactly the same verified consequence set over the expanded interface. A third candidate lacks one consequence present in both. How should the state be updated?",
+      "options": {
+        "A": "Keep all three as distinct states because their syntax differs.",
+        "B": "Merge all three because their proof traces are structurally similar.",
+        "C": "Merge the first two into one future-equivalence class and keep the third separate, recording the missing consequence as a witness.",
+        "D": "Cluster all three using embedding similarity and defer verification."
+      },
+      "correct": "C"
+    }
+  ]
+}
