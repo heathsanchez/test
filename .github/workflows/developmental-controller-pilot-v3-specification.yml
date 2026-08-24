@@ -1,0 +1,28 @@
+name: Developmental controller pilot v3 specification
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  specification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install baseline dependencies
+        run: python -m pip install -q scikit-learn
+      - name: Run ontology-free specification pilot
+        run: python experiments/developmental_controller_pilot_v3_specification.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-pilot-v3-specification
+          path: developmental_controller_pilot_v3_result.json
