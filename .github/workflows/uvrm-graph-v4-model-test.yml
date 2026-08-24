@@ -5,21 +5,22 @@ on:
     paths:
       - 'experiments/uvrm_graph_v4/run_github_models.py'
       - '.github/workflows/uvrm-graph-v4-model-test.yml'
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+
+concurrency:
+  group: uvrm-graph-v4-model-test
+  cancel-in-progress: true
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      UVRM_MODEL: openai/gpt-4.1-mini
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
