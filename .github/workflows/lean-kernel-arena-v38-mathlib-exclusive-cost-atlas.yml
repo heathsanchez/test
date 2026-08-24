@@ -5,12 +5,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+concurrency:
+  group: v38-mathlib-exclusive-cost-atlas-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
 jobs:
   atlas:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
     timeout-minutes: 360
     env:
       ARENA_REV: aaa6aedd3a4f4de88bf825319a8a050e572c9cce
