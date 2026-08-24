@@ -56,15 +56,13 @@ jobs:
           test -f "$IN"
           printf '%s\n' "$BIN" > checker-bin.txt
           printf '%s\n' "$CFG" > checker-cfg.txt
-          echo "BIN=$BIN"
-          echo "CFG=$CFG"
 
       - name: Semantic smoke gate on submitted native Mathlib
         working-directory: arena
         shell: 'nix develop -c bash -euxo pipefail {0}'
         run: ./lka.py run --checker mathgraph --test mathlib
 
-      - name: Build ISA-conservative PGO diagnostic twin
+      - name: Build ISA-conservative PGO diagnostic twin with line info
         working-directory: arena
         shell: 'nix develop -c bash -euxo pipefail {0}'
         run: |
@@ -75,11 +73,11 @@ jobs:
           rm -rf target-v38 pgo-v38
           mkdir -p pgo-v38
           export CARGO_TARGET_DIR="$SRC/target-v38"
-          RUSTFLAGS="-C target-cpu=x86-64-v2 -Cprofile-generate=$SRC/pgo-v38" cargo build --release
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=1 -Cprofile-generate=$SRC/pgo-v38" cargo build --release
           "$CARGO_TARGET_DIR/release/sokonanoda" config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
           llvm-profdata merge -o "$SRC/pgo-v38/merged.profdata" "$SRC/pgo-v38"
           rm -rf "$CARGO_TARGET_DIR"
-          RUSTFLAGS="-C target-cpu=x86-64-v2 -Cprofile-use=$SRC/pgo-v38/merged.profdata" cargo build --release
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=1 -Cprofile-use=$SRC/pgo-v38/merged.profdata" cargo build --release
           test -x "$CARGO_TARGET_DIR/release/sokonanoda"
           printf '%s\n' "$CARGO_TARGET_DIR/release/sokonanoda" > "$ROOT/../diag-bin.txt"
           printf '%s\n' "$SRC/config.json" > "$ROOT/../diag-cfg.txt"
@@ -92,17 +90,15 @@ jobs:
           IN=arena/_build/tests/mathlib.ndjson
           "$BIN" "$CFG" < "$IN" > results-v38-diag.stdout
           test $? -eq 0
-          wc -c results-v38-diag.stdout
+          test ! -s results-v38-diag.stdout
 
-      - name: Profile Mathlib exclusive instruction cost
+      - name: Profile Mathlib exclusive instruction cost and evaluator lines
         run: |
           set -euxo pipefail
           mkdir -p results/v38
           BIN=$(cat diag-bin.txt)
           CFG=$(cat diag-cfg.txt)
           IN=arena/_build/tests/mathlib.ndjson
-          # Run only the ISA-conservative diagnostic twin under Callgrind. The
-          # submitted native binary remains the semantic/performance anchor.
           valgrind --tool=callgrind --cache-sim=no --branch-sim=no --collect-jumps=no \
             --callgrind-out-file=results/v38/callgrind.out \
             "$BIN" "$CFG" < "$IN" > /dev/null
@@ -110,9 +106,13 @@ jobs:
             > results/v38/callgrind-self.txt
           callgrind_annotate --inclusive=yes --threshold=0.05 results/v38/callgrind.out \
             > results/v38/callgrind-inclusive.txt
-          head -160 results/v38/callgrind-self.txt
+          callgrind_annotate --inclusive=no --threshold=0.00 --auto=yes results/v38/callgrind.out \
+            > results/v38/callgrind-source.txt
+          grep -n -A220 -B20 'TypeChecker.*eval' results/v38/callgrind-source.txt | head -500 \
+            > results/v38/eval-source-split.txt || true
+          head -120 results/v38/callgrind-self.txt
 
-      - name: Derive frozen family atlas
+      - name: Derive frozen family and evaluator atlas
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -121,17 +121,21 @@ jobs:
           rows=[]
           total=None
           for line in txt.splitlines():
-              m=re.match(r'^\s*([0-9,]+)\s+PROGRAM TOTALS', line)
-              if m: total=int(m.group(1).replace(',',''))
-              m=re.match(r'^\s*([0-9,]+)\s+(.+)$', line)
-              if m and 'PROGRAM TOTALS' not in line:
+              m=re.match(r'^\s*([0-9,]+)\s+\(100\.0%\)\s+PROGRAM TOTALS', line)
+              if m:
+                  total=int(m.group(1).replace(',',''))
+                  continue
+              m=re.match(r'^\s*([0-9,]+)\s+\([^)]*%\)\s+(.+)$', line)
+              if m:
                   n=int(m.group(1).replace(',',''))
                   sym=m.group(2).strip()
-                  if '???' not in sym and n>0: rows.append((n,sym))
+                  if n>0: rows.append((n,sym))
           if total is None:
               raise SystemExit('NO_PROGRAM_TOTALS')
-          families={k:0 for k in ['ENV','CONV','IOTA','INFER','MEMORY','PARSE','OTHER']}
+
+          families={k:0 for k in ['EVAL','ENV','CONV','IOTA','INFER','MEMORY','PARSE','OTHER']}
           pats={
+            'EVAL': re.compile(r'TypeChecker>::eval|::eval(?:\b|\')',re.I),
             'ENV': re.compile(r'prune_env|key_env|env_|Env|Closure|apply_closure',re.I),
             'CONV': re.compile(r'unify|whnf|force_thunk|unfold|spine_probe|unify_spine|defeq|convert',re.I),
             'IOTA': re.compile(r'iota|recursor|recursors|projection|proj_',re.I),
@@ -149,11 +153,27 @@ jobs:
           fpct={k:100*v/total for k,v in families.items()}
           ranked=sorted(fpct.items(),key=lambda kv:kv[1],reverse=True)
           mass=[k for k,v in ranked if k!='OTHER' and v>=5.0]
-          verdict='MASS_FAMILY_FOUND' if mass else 'DIFFUSE_COST'
-          out={'verdict':verdict,'program_total_instructions':total,
-               'families_self_pct':dict(ranked),'families_ge_5pct':mass,
-               'parsed_symbol_rows':len(rows),
-               'top_symbols':sorted(classified,key=lambda r:r['instructions'],reverse=True)[:100]}
+
+          src=Path('results/v38/callgrind-source.txt').read_text(errors='replace')
+          eval_lines=[]
+          in_eval=False
+          for line in src.splitlines():
+              if re.search(r'TypeChecker.*eval', line): in_eval=True
+              if in_eval:
+                  m=re.match(r'^\s*([0-9,]+)\s+(.+)$', line)
+                  if m:
+                      n=int(m.group(1).replace(',',''))
+                      tail=m.group(2).strip()
+                      if n>0: eval_lines.append({'instructions':n,'whole_program_pct':100*n/total,'text':tail})
+              if in_eval and len(eval_lines)>500: break
+          out={
+            'verdict':'EVAL_MASS_SPLIT' if fpct.get('EVAL',0)>=5.0 else ('MASS_FAMILY_FOUND' if mass else 'DIFFUSE_COST'),
+            'program_total_instructions':total,
+            'families_self_pct':dict(ranked),
+            'families_ge_5pct':mass,
+            'top_symbols':sorted(classified,key=lambda r:r['instructions'],reverse=True)[:100],
+            'eval_top_source_lines':sorted(eval_lines,key=lambda r:r['instructions'],reverse=True)[:100]
+          }
           Path('results/v38/atlas.json').write_text(json.dumps(out,indent=2))
           print(json.dumps(out,indent=2))
           PY
@@ -169,11 +189,12 @@ jobs:
             'kernel_rev':'3d7585c21242f29fdaa48ae9a16e16c6afe42238',
             'primary_objective':'submitted native Mathlib instruction cost',
             'semantic_gate':'submitted native and x86-64-v2 PGO diagnostic twin both accept Mathlib before profiling',
-            'profiler':'valgrind callgrind Ir on x86-64-v2 PGO diagnostic twin, exclusive symbol cost',
-            'measurement_boundary':'diagnostic twin changes ISA target only to make Callgrind executable; no source or semantic change',
-            'decision_rule':'next intervention requires >=5% measured family self mass AND concrete mechanism plausibly removing >=20% of that family; profile alone cannot admit an optimization',
+            'profiler':'Callgrind Ir on x86-64-v2 PGO diagnostic twin with source-line attribution',
+            'measurement_boundary':'diagnostic twin changes ISA target and adds line debug info only; source and semantics unchanged',
+            'frozen_residual':'prior V38 profile found TypeChecker::eval at about one third of total Mathlib instructions; this run splits that mass before intervention',
+            'decision_rule':'no optimization admitted from heat alone; next intervention requires a concrete evaluator operation with material whole-Mathlib mass and a plausible removable mechanism, then a separate A/B semantic and economic test',
             'atlas_verdict':atlas['verdict'],
-            'next':'split winning family before intervention' if atlas['verdict']=='MASS_FAMILY_FOUND' else 'zoom out to whole-machine architecture; reject one-hot subsystem hypothesis'
+            'next':'freeze smallest evaluator-operation separator from the source-line split'
           }
           Path('results/v38/decision.json').write_text(json.dumps(out,indent=2))
           print(json.dumps(out,indent=2))
