@@ -1,0 +1,143 @@
+name: V42 Projection lineage differential separator
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arena-v42-projection-lineage.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: v42-projection-lineage-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  ARENA_REF: master
+
+jobs:
+  diff:
+    name: 'projection: ${{ matrix.checker }}'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        checker: [mathgraph, sokonanoda, official, lean4lean, nanoda, nanoclo, nanobruijn, ind-models]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish run locator
+        if: matrix.checker == 'mathgraph'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="repos/${GITHUB_REPOSITORY}/contents/.run-status/v42.json"
+          DATA=$(printf '{"run_id":%s,"workflow":"V42 Projection lineage differential separator","sha":"%s","url":"https://github.com/%s/actions/runs/%s"}' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          CONTENT=$(printf '%s' "$DATA" | base64 -w0)
+          OLD_SHA=$(gh api "$API" --jq .sha 2>/dev/null || true)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API" -f message="Record V42 run $GITHUB_RUN_ID" -f content="$CONTENT" -f sha="$OLD_SHA" >/dev/null
+          else
+            gh api --method PUT "$API" -f message="Record V42 run $GITHUB_RUN_ID" -f content="$CONTENT" >/dev/null
+          fi
+          echo "$DATA"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone current Arena
+        run: |
+          set -euxo pipefail
+          git clone --depth=1 --branch "$ARENA_REF" https://github.com/leanprover/lean-kernel-arena.git arena
+          test -f arena/flake.nix
+
+      - name: Build tutorial corpus
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py build-test tutorial
+
+      - name: Build checker
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py build-checker "${{ matrix.checker }}"
+
+      - name: Run projection neighborhood
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py run --checker "${{ matrix.checker }}" --test 'tutorial/08[7-9]*' && ./lka.py run --checker "${{ matrix.checker }}" --test 'tutorial/09[0-9]*'
+
+      - name: Pack projection results
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py ci-pack --outdir "/tmp/v42-${{ matrix.checker }}" --results
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v42-${{ matrix.checker }}
+          path: /tmp/v42-${{ matrix.checker }}
+          if-no-files-found: error
+
+  atlas:
+    name: projection lineage atlas
+    needs: diff
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: v42-*
+          path: artifacts
+
+      - name: Build projection atlas
+        run: |
+          python3 - <<'PY'
+          import json, pathlib, re
+          root=pathlib.Path('artifacts')
+          rows={}
+          for checker_dir in sorted(root.glob('v42-*')):
+              checker=checker_dir.name[4:]
+              for p in checker_dir.rglob('*.json'):
+                  try: d=json.loads(p.read_text())
+                  except Exception: continue
+                  s=json.dumps(d)
+                  m=re.search(r'tutorial/(0(?:8[7-9]|9[0-9])_[^"/\\]+)', s)
+                  if not m: continue
+                  test=m.group(1)
+                  # Arena result objects vary; retain raw compact object and classify from common fields.
+                  outcome=None
+                  for k in ('outcome','result','status','actual_outcome'):
+                      v=d.get(k) if isinstance(d,dict) else None
+                      if isinstance(v,str): outcome=v; break
+                  if outcome is None:
+                      rc=d.get('returncode') if isinstance(d,dict) else None
+                      if rc is not None: outcome=f'rc={rc}'
+                  rows.setdefault(test,{})[checker]=outcome or d
+          checkers=['mathgraph','sokonanoda','official','lean4lean','nanoda','nanoclo','nanobruijn','ind-models']
+          out={'checkers':checkers,'tests':rows}
+          pathlib.Path('v42-projection-atlas.json').write_text(json.dumps(out,indent=2,sort_keys=True))
+          md=['# V42 projection lineage atlas','', '| Test | '+' | '.join(checkers)+' |','|---|'+'|'.join(['---']*len(checkers))+'|']
+          for t in sorted(rows):
+              vals=[]
+              for c in checkers:
+                  v=rows[t].get(c,'—')
+                  if isinstance(v,(dict,list)): v='raw'
+                  vals.append(str(v).replace('|','/'))
+              md.append('| '+t+' | '+' | '.join(vals)+' |')
+          md += ['', 'Primary separator: whether sokonanoda agrees with MathGraph on 094/095. If yes, acceptance predates MathGraph V2; if no, inspect the MathGraph delta as the causal lineage boundary.']
+          pathlib.Path('v42-projection-atlas.md').write_text('\n'.join(md))
+          print('\n'.join(md))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v42-projection-lineage-atlas
+          path: |
+            v42-projection-atlas.json
+            v42-projection-atlas.md
