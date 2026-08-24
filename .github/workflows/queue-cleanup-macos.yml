@@ -18,6 +18,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
+          echo 'cleanup trigger v2'
           for id in 32683638017 32684042667 32684188783 32683633274; do
             echo "Cancelling $id"
             code=$(curl -sS -o /tmp/resp -w '%{http_code}' \
