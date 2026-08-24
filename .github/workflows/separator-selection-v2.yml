@@ -1,0 +1,38 @@
+name: Separator Selection V2
+on:
+  push:
+    paths:
+      - 'experiments/separator_selection_v2/TRIGGER'
+  workflow_dispatch:
+concurrency:
+  group: separator-selection-v2
+  cancel-in-progress: true
+permissions:
+  contents: read
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/separator_selection_v2/validate.py
+      - name: Run protected 24-call benchmark
+        run: python experiments/separator_selection_v2/run_openai.py
+      - name: Score exact choices
+        run: python experiments/separator_selection_v2/score.py experiments/separator_selection_v2/answers.json | tee experiments/separator_selection_v2/score_output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: separator-selection-v2-protected
+          path: |
+            experiments/separator_selection_v2/answers.json
+            experiments/separator_selection_v2/run_metadata.json
+            experiments/separator_selection_v2/scores.json
+            experiments/separator_selection_v2/score_output.txt
+          retention-days: 30
