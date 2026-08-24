@@ -8,6 +8,8 @@ TOKEN=os.environ['GITHUB_TOKEN']
 URL='https://models.github.ai/inference/chat/completions'
 ARMS=('TRANSCRIPT','GRAPH_ABL','GRAPH','GRAPH_RULES')
 
+# Trigger marker: fresh frozen benchmark execution; no protocol change.
+
 def call_model(prompt):
     payload=json.dumps({
         'model':MODEL,
