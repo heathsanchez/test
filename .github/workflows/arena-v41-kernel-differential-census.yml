@@ -1,0 +1,157 @@
+name: V41 Kernel differential census
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arena-v41-kernel-differential-census.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: v41-kernel-differential-census-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  ARENA_REF: master
+
+jobs:
+  census:
+    name: 'diff: ${{ matrix.checker }}'
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        checker: [mathgraph, official, lean4lean, nanoda, nanoclo, nanobruijn]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Publish run locator
+        if: matrix.checker == 'mathgraph'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="repos/${GITHUB_REPOSITORY}/contents/.run-status/v41.json"
+          DATA=$(printf '{"run_id":%s,"workflow":"V41 Kernel differential census","sha":"%s","url":"https://github.com/%s/actions/runs/%s"}' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          CONTENT=$(printf '%s' "$DATA" | base64 -w0)
+          OLD_SHA=$(gh api "$API" --jq .sha 2>/dev/null || true)
+          if [ -n "$OLD_SHA" ]; then
+            gh api --method PUT "$API" -f message="Record V41 run $GITHUB_RUN_ID" -f content="$CONTENT" -f sha="$OLD_SHA" >/dev/null
+          else
+            gh api --method PUT "$API" -f message="Record V41 run $GITHUB_RUN_ID" -f content="$CONTENT" >/dev/null
+          fi
+          echo "$DATA"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Clone current Arena
+        run: |
+          set -euxo pipefail
+          git clone --depth=1 --branch "$ARENA_REF" https://github.com/leanprover/lean-kernel-arena.git arena
+          test -f arena/flake.nix
+
+      - name: Build tutorial corpus
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py build-test tutorial
+
+      - name: Build checker
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py build-checker "${{ matrix.checker }}"
+
+      - name: Run checker on tutorial corpus
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py run --checker "${{ matrix.checker }}" --test 'tutorial/*'
+
+      - name: Pack result files
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: ./lka.py ci-pack --outdir /tmp/v41-${{ matrix.checker }} --results
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v41-${{ matrix.checker }}
+          path: /tmp/v41-${{ matrix.checker }}
+          if-no-files-found: error
+
+  aggregate:
+    name: disagreement atlas
+    needs: census
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: v41-*
+          path: gathered
+          merge-multiple: false
+
+      - name: Build disagreement atlas
+        run: |
+          set -euxo pipefail
+          mkdir -p results/v41
+          python3 - <<'PY'
+          import json, pathlib, re
+          root = pathlib.Path('gathered')
+          records = []
+          for f in root.rglob('*.json'):
+              try:
+                  data = json.loads(f.read_text())
+              except Exception:
+                  continue
+              checker = next((p.name.removeprefix('v41-') for p in f.parents if p.name.startswith('v41-')), None)
+              if checker is None:
+                  continue
+              def walk(x, path=()):
+                  if isinstance(x, dict):
+                      keys = set(x)
+                      outcome = x.get('outcome') or x.get('result') or x.get('status')
+                      test = x.get('test') or x.get('test_name') or x.get('name')
+                      if outcome is not None and test is not None:
+                          records.append({'checker': checker, 'test': str(test), 'outcome': str(outcome), 'source': str(f)})
+                      for k,v in x.items(): walk(v, path+(str(k),))
+                  elif isinstance(x, list):
+                      for i,v in enumerate(x): walk(v, path+(str(i),))
+              walk(data)
+          # De-duplicate by checker/test, preferring last observed record.
+          by = {}
+          for r in records:
+              by[(r['checker'], r['test'])] = r
+          table = {}
+          for (checker,test),r in by.items():
+              table.setdefault(test,{})[checker] = r['outcome']
+          disagreements = []
+          for test, outcomes in sorted(table.items()):
+              vals = set(outcomes.values())
+              if len(vals) > 1:
+                  disagreements.append({'test': test, 'outcomes': outcomes, 'classes': sorted(vals)})
+          out = {
+              'record_count': len(by),
+              'test_count': len(table),
+              'disagreement_count': len(disagreements),
+              'disagreements': disagreements,
+              'all_outcomes': table,
+          }
+          pathlib.Path('results/v41/disagreement_atlas.json').write_text(json.dumps(out, indent=2, sort_keys=True))
+          with open('results/v41/summary.md','w') as h:
+              h.write(f"# V41 kernel differential census\n\nRecords: {len(by)}  \nTests: {len(table)}  \nDisagreements: {len(disagreements)}\n\n")
+              for d in disagreements[:200]:
+                  h.write(f"- `{d['test']}`: " + ', '.join(f"{k}={v}" for k,v in sorted(d['outcomes'].items())) + "\n")
+          print(json.dumps({'records':len(by),'tests':len(table),'disagreements':len(disagreements)}, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v41-disagreement-atlas
+          path: results/v41/
+          if-no-files-found: error
