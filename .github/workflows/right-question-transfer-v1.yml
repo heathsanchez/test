@@ -1,0 +1,34 @@
+name: Right Question Transfer V1
+on:
+  push:
+    paths:
+      - 'experiments/right_question_transfer_v1/**'
+      - '.github/workflows/right-question-transfer-v1.yml'
+  workflow_dispatch:
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/right_question_transfer_v1/validate.py
+      - name: Run protected transfer benchmark
+        run: python experiments/right_question_transfer_v1/run_openai.py
+      - name: Score externally
+        run: python experiments/right_question_transfer_v1/score.py experiments/right_question_transfer_v1/answers.json | tee experiments/right_question_transfer_v1/score_output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: right-question-transfer-v1-protected
+          path: |
+            experiments/right_question_transfer_v1/tasks.json
+            experiments/right_question_transfer_v1/answers.json
+            experiments/right_question_transfer_v1/run_metadata.json
+            experiments/right_question_transfer_v1/scores.json
+            experiments/right_question_transfer_v1/score_output.txt
+          retention-days: 30
