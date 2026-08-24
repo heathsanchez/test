@@ -1,13 +1,14 @@
 name: V40 Eval case-boundary separator
 
 on:
-  pull_request:
+  push:
+    branches: [main]
     paths:
       - '.github/workflows/arena-v40-eval-case-boundaries.yml'
   workflow_dispatch:
 
 concurrency:
-  group: v40-eval-case-boundaries-${{ github.head_ref || github.ref }}
+  group: v40-eval-case-boundaries-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -197,5 +198,3 @@ fn v40_diag_literal<R>(f: impl FnOnce() -> R) -> R { f() }
           name: v40-eval-case-boundaries
           path: results/v40/
           if-no-files-found: error
-
-# sync trigger after PR creation
