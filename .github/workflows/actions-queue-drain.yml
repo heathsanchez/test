@@ -29,7 +29,7 @@ jobs:
           THIS_RUN_ID: ${{ github.run_id }}
         run: |
           python3 - <<'PY'
-          import json, os, time, urllib.request
+          import json, os, time, urllib.request, urllib.error
 
           repo=os.environ['REPO']
           token=os.environ['GH_TOKEN']
@@ -53,7 +53,6 @@ jobs:
                   with urllib.request.urlopen(req,timeout=30) as r:
                       return r.status
               except urllib.error.HTTPError as e:
-                  # 409 means it changed state between listing and cancellation.
                   if e.code in (409,422): return e.code
                   raise
 
@@ -70,7 +69,6 @@ jobs:
                   else:
                       victims.append(row)
 
-          # Deduplicate because a changing run can appear across status queries.
           seen=set()
           victims=[r for r in victims if not (r[0] in seen or seen.add(r[0]))]
           print(f'queue_drain this={this_id} keep={keep_id} victims={len(victims)}')
@@ -84,3 +82,5 @@ jobs:
           for row in survivors:
               print(row)
           PY
+
+# trigger: 2026-08-24T16:06+12:00
