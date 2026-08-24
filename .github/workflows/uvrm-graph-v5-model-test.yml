@@ -1,0 +1,43 @@
+name: UVRM Graph V5 Protected Test
+
+on:
+  push:
+    paths:
+      - 'experiments/uvrm_graph_v5/TRIGGER'
+  workflow_dispatch:
+
+concurrency:
+  group: uvrm-graph-v5-model-test
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/uvrm_graph_v5/validate.py
+      - name: Run protected 32-call model benchmark
+        run: python experiments/uvrm_graph_v5/run_openai.py
+      - name: Score protected answers
+        run: python experiments/uvrm_graph_v5/score.py experiments/uvrm_graph_v5/answers.json | tee experiments/uvrm_graph_v5/score_output.txt
+      - name: Upload protected artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: uvrm-graph-v5-protected
+          path: |
+            experiments/uvrm_graph_v5/answers.json
+            experiments/uvrm_graph_v5/run_metadata.json
+            experiments/uvrm_graph_v5/score_output.txt
+          if-no-files-found: error
+          retention-days: 30
