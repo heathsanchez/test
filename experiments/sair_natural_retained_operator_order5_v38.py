@@ -20,6 +20,7 @@ from domains.sair.probe_operator import induce_numeric_literal_shift, expand_num
 from domains.sair.runtime_adapter import SAIRRuntimeAdapter
 
 ORDER3 = "MODEL_EXISTS(SUCC(ORDER2),FORWARD)"
+ORDER3R = "MODEL_EXISTS(SUCC(ORDER2),REVERSE)"
 ORDER4 = "MODEL_EXISTS(4,FORWARD)"
 ORDER5 = "MODEL_EXISTS(5,FORWARD)"
 CERT_PATH = ROOT / "experiments" / "fixtures" / "v37_natural_continuation_certificate.json"
@@ -105,7 +106,7 @@ def main():
     if not certificate_valid:
         raise SystemExit("Frozen V37 certificate does not match the natural corpus/runtime boundary")
 
-    # Restore only verifier-certified historical observations on the certified live cell.
+    # Restore verifier-certified historical forward observations on the certified live cell.
     for i in survivors:
         rows[i]["atom_values"][ORDER3] = int(cert["probe3_outcome_on_live_cell"])
         rows[i]["atom_values"][ORDER4] = int(cert["probe4_outcome"])
@@ -159,7 +160,11 @@ def main():
     static_carrier = {p["ast"] for p in expanded}
     absent_initial = ORDER5 not in after_action4.probe_language and ORDER5 not in static_carrier
 
-    # This is the only new expensive verifier work in V38: exact order-5 on the certified post-order4 live cell.
+    # Generic retained-operator synthesis is allowed to compare the existing order-3 reverse atom.
+    # Restore that exact verifier-visible historical observation rather than pruning the candidate set.
+    a3r = v32.ensure_exact_order_values(root, rows, after_action4.hypotheses, 3, "REVERSE")
+
+    # The genuinely new expensive verifier work in V38: exact order-5 on the certified post-order4 live cell.
     a5 = ensure_order5_parallel(rows, raw_map, after_action4.hypotheses)
 
     candidate5 = registry.synthesize_probe_extension(adapter, after_action4)
@@ -194,6 +199,7 @@ def main():
         "v37_successor_routes_develop_probes": succ4.route is Route.DEVELOP_PROBES,
         "plus_one_operator_induced_and_retained": plus1 and any("NUMERIC_LITERAL_SHIFT" in x for x in after_probe4.lawbook),
         "order5_absent_from_starting_carrier": absent_initial,
+        "historical_order3_reverse_exact_zero_bad_zero_unknown": int(a3r["bad"]) == 0 and int(a3r["unknown"]) == 0,
         "retained_operator_selects_order5_forward": candidate5 == ORDER5 and probe5 == ORDER5,
         "operator_ablation_blocks_order5_extension": ablated_candidate is None,
         "order5_exact_verifier_zero_bad_zero_unknown": int(a5["bad"]) == 0 and int(a5["unknown"]) == 0 and int(a5["queries"]) == expected_survivors,
@@ -215,6 +221,7 @@ def main():
         "live_world_count": len(survivors),
         "learned_operators": list(learned),
         "successor4_route": succ4.route.name,
+        "historical_order3_reverse_audit": a3r,
         "candidate5": candidate5,
         "ablated_candidate": ablated_candidate,
         "order5_verifier_audit": a5,
