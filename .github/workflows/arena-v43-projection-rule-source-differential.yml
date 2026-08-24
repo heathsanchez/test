@@ -1,0 +1,136 @@
+name: V43 Projection rule source differential
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/arena-v43-projection-rule-source-differential.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: v43-projection-rule-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  ARENA_REF: master
+
+jobs:
+  source-map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publish run locator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          API="repos/${GITHUB_REPOSITORY}/contents/.run-status/v43.json"
+          DATA=$(printf '{"run_id":%s,"workflow":"V43 Projection rule source differential","sha":"%s","url":"https://github.com/%s/actions/runs/%s"}' "$GITHUB_RUN_ID" "$GITHUB_SHA" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID")
+          CONTENT=$(printf '%s' "$DATA" | base64 -w0)
+          OLD_SHA=$(gh api "$API" --jq .sha 2>/dev/null || true)
+          if [ -n "$OLD_SHA" ]; then gh api --method PUT "$API" -f message="Record V43 run $GITHUB_RUN_ID" -f content="$CONTENT" -f sha="$OLD_SHA" >/dev/null; else gh api --method PUT "$API" -f message="Record V43 run $GITHUB_RUN_ID" -f content="$CONTENT" >/dev/null; fi
+      - name: Clone implementations
+        run: |
+          set -euxo pipefail
+          git clone --depth=1 --branch "$ARENA_REF" https://github.com/leanprover/lean-kernel-arena.git arena
+          for c in mathgraph sokonanoda nanoda nanoclo lean4lean nanobruijn ind-models official; do
+            y="arena/checkers/$c.yaml"
+            [ -f "$y" ] || continue
+            url=$(sed -n 's/^url: //p' "$y" | head -1)
+            rev=$(sed -n 's/^rev: //p' "$y" | head -1)
+            [ -n "$url" ] || continue
+            git clone --filter=blob:none "$url" "src-$c"
+            if [ -n "$rev" ]; then git -C "src-$c" checkout "$rev"; fi
+          done
+      - name: Extract projection semantic neighborhoods
+        run: |
+          python3 - <<'PY'
+          import pathlib,re,json
+          needles=re.compile(r'proj|projection|structure|is_prop|isProp|proof|field.*univ|univ.*field|Sort|Prop',re.I)
+          out={}
+          for d in sorted(pathlib.Path('.').glob('src-*')):
+            hits=[]
+            for p in d.rglob('*'):
+              if not p.is_file() or p.suffix.lower() not in {'.rs','.lean','.cpp','.h','.hpp','.cc','.zig','.ml','.mli'}: continue
+              try: lines=p.read_text(errors='ignore').splitlines()
+              except: continue
+              for i,line in enumerate(lines):
+                if needles.search(line):
+                  lo=max(0,i-3); hi=min(len(lines),i+4)
+                  hits.append({'file':str(p.relative_to(d)),'line':i+1,'context':'\n'.join(lines[lo:hi])})
+            out[d.name[4:]]=hits[:1200]
+          pathlib.Path('v43-source-map.json').write_text(json.dumps(out,indent=2))
+          for c,h in out.items(): print(c,len(h))
+          PY
+      - name: Extract authoritative MaybeProp witness
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('arena/tutorial/Tutorial.lean')
+          s=p.read_text()
+          a=s.index('good_decl (.inductDecl [`u] 0 [\n  { name := `MaybeProp')
+          b=s.index('inductive ProjDataIndex',a)
+          Path('v43-maybeprop-witness.lean.txt').write_text(s[a:b])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v43-projection-source-map
+          path: |
+            v43-source-map.json
+            v43-maybeprop-witness.lean.txt
+
+  boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        checker: [mathgraph, sokonanoda, official, lean4lean, nanoda, nanoclo, nanobruijn, ind-models]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Clone Arena
+        run: git clone --depth=1 --branch "$ARENA_REF" https://github.com/leanprover/lean-kernel-arena.git arena
+      - name: Build tutorial and checker
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: |
+          ./lka.py build-test tutorial
+          ./lka.py build-checker "${{ matrix.checker }}"
+      - name: Run exact projection separator family
+        working-directory: arena
+        shell: nix develop -c bash -euxo pipefail {0}
+        run: |
+          ./lka.py run --checker "${{ matrix.checker }}" --test 'tutorial/09[0-9]*'
+          ./lka.py ci-pack --outdir "/tmp/v43-${{ matrix.checker }}" --results
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v43-${{ matrix.checker }}
+          path: /tmp/v43-${{ matrix.checker }}
+
+  verdict:
+    needs: [source-map, boundary]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+      - name: Freeze V43 evidence bundle
+        run: |
+          python3 - <<'PY'
+          import pathlib,json
+          files=[str(p) for p in pathlib.Path('artifacts').rglob('*') if p.is_file()]
+          pathlib.Path('v43-verdict.json').write_text(json.dumps({'status':'EVIDENCE_CAPTURED','files':files},indent=2))
+          print('V43_EVIDENCE_CAPTURED',len(files))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v43-verdict
+          path: v43-verdict.json
