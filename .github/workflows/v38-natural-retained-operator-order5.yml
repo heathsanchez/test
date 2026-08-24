@@ -1,0 +1,34 @@
+name: V38 Natural Retained Operator Order5
+on:
+  pull_request:
+    branches: [v37-natural-continuation-from-v36]
+    paths:
+      - 'experiments/sair_natural_retained_operator_order5_v38.py'
+      - 'experiments/V38_NATURAL_RETAINED_OPERATOR_ORDER5_PRECOMMIT.md'
+      - 'developmental_runtime/**'
+      - 'domains/sair/**'
+      - '.github/workflows/v38-natural-retained-operator-order5.yml'
+jobs:
+  v38-natural-retained-operator-order5:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Z3
+        run: pip install z3-solver
+      - name: Clone official SAIR corpus
+        run: git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair
+      - name: Run V38
+        run: |
+          rm -rf results/v38-natural-retained-operator-order5
+          python experiments/sair_natural_retained_operator_order5_v38.py \
+            --sair-root /tmp/sair \
+            --out-dir results/v38-natural-retained-operator-order5
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v38-natural-retained-operator-order5
+          path: results/v38-natural-retained-operator-order5/
