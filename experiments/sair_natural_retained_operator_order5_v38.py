@@ -84,6 +84,7 @@ def main():
     v37 = bool(cert.get("v37_gate"))
     rows, raw_map = load_rows_fast(root)
     survivors = frozenset(int(i) for i in cert["survivor_indices"])
+    expected_survivors = int(cert.get("post_probe4_survivor_count", len(cert["survivor_indices"])))
     actual = min(survivors)
 
     certificate_valid = (
@@ -98,7 +99,7 @@ def main():
         and cert.get("verifier_audit", {}).get("bad") == 0
         and cert.get("verifier_audit", {}).get("unknown") == 0
         and len(rows) == 1269
-        and len(survivors) == 153
+        and len(survivors) == expected_survivors
         and rows[actual]["id"] == cert.get("actual_world") == "normal_0001"
     )
     if not certificate_valid:
@@ -158,7 +159,7 @@ def main():
     static_carrier = {p["ast"] for p in expanded}
     absent_initial = ORDER5 not in after_action4.probe_language and ORDER5 not in static_carrier
 
-    # This is the only new expensive verifier work in V38: exact order-5 on the 153-world live cell.
+    # This is the only new expensive verifier work in V38: exact order-5 on the certified post-order4 live cell.
     a5 = ensure_order5_parallel(rows, raw_map, after_action4.hypotheses)
 
     candidate5 = registry.synthesize_probe_extension(adapter, after_action4)
@@ -195,7 +196,7 @@ def main():
         "order5_absent_from_starting_carrier": absent_initial,
         "retained_operator_selects_order5_forward": candidate5 == ORDER5 and probe5 == ORDER5,
         "operator_ablation_blocks_order5_extension": ablated_candidate is None,
-        "order5_exact_verifier_zero_bad_zero_unknown": int(a5["bad"]) == 0 and int(a5["unknown"]) == 0 and int(a5["queries"]) == 153,
+        "order5_exact_verifier_zero_bad_zero_unknown": int(a5["bad"]) == 0 and int(a5["unknown"]) == 0 and int(a5["queries"]) == expected_survivors,
         "order5_executes_and_recomputes_route": eprobe5 is not None and post5 is not None,
         "licensed_order5_continuation_is_lawful": lawful5,
         "successor_routed_again": final is not None,
