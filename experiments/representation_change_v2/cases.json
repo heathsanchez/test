@@ -1,0 +1,101 @@
+{
+  "schema": "representation.change.v2",
+  "cases": [
+    {
+      "id": "transfer_predecessor_reuse",
+      "domain": "lean_kernel",
+      "raw_outcome": "Episode K17: intervention J beat control Q under the semantic gate; removing J removed the measured gain.",
+      "prose_memory": "When a new derived object mostly extends a predecessor whose relevant derived tail already exists, reuse the predecessor result and compute only the unmatched delta before inventing a heavier representation.",
+      "structured_state": "TYPE=delta_reuse; RELATION=predecessor_derived_tail --reusable_in--> successor_derivation; CONDITION=large_overlap+verified_equivalence; ACTION=reuse_tail_then_compute_delta",
+      "ablated_state": "TYPE=delta_reuse; RELATION=predecessor_derived_tail --associated_with--> successor_derivation; CONDITION=large_overlap; ACTION=choose_any_reasonable_implementation",
+      "later_problem": "A document-normalization service builds immutable normalized snapshots. Snapshot S2 differs from S1 by one newly selected field; 88% of S2's normalized suffix is byte-identical to S1's already-verified normalized suffix. Raw request IDs almost never repeat. What should be tested first?",
+      "options": {
+        "A": "Cache complete raw request IDs before normalization.",
+        "B": "Reuse S1's verified normalized suffix and normalize only the new unmatched field, with a control that recomputes S2 from scratch.",
+        "C": "Replace all snapshots with a global graph index before another measurement.",
+        "D": "Increase the number of fields processed per request to amplify runtime differences."
+      },
+      "correct": "B"
+    },
+    {
+      "id": "transfer_future_identity",
+      "domain": "lean_kernel",
+      "raw_outcome": "Episode K22: identifier P predicted downstream reuse; identifier R did not. Equal-P cases passed the protected semantic check.",
+      "prose_memory": "Use the canonical state after irrelevant distinctions are removed as persistence identity when verified downstream behavior is identical; do not key persistence by raw construction history.",
+      "structured_state": "TYPE=behavioral_identity; RELATION=construction_histories --quotient_to--> canonical_observed_state; CONDITION=same_verified_futures; ACTION=key_persistence_by_canonical_state",
+      "ablated_state": "TYPE=behavioral_identity; RELATION=construction_histories --related_to--> canonical_observed_state; CONDITION=similar_outputs; ACTION=retain_convenient_identifier",
+      "later_problem": "A compiler has many different optimization traces that all end in exactly the same canonical intermediate representation. A memoized downstream analysis has been verified to return the same result for all such traces. What should its cache key be?",
+      "options": {
+        "A": "The full optimization trace.",
+        "B": "The trace concatenated with a random nonce.",
+        "C": "The canonical intermediate representation reached after the trace, subject to the verified equivalence boundary.",
+        "D": "The first optimization pass encountered."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "transfer_constructor_exhaustion",
+      "domain": "sair",
+      "raw_outcome": "Episode S31: all 18,640 members of family F were checked under frozen boundary B; none crossed threshold T; no truncation occurred.",
+      "prose_memory": "Exhaustive failure of a frozen candidate family closes that family under the stated boundary; the next justified move is to change the candidate language in a way targeted at the surviving invariant, not spend more budget on the same family.",
+      "structured_state": "TYPE=family_exhaustion; RELATION=frozen_family --complete_no_hit--> residual_invariant; CONDITION=no_truncation; ACTION=introduce_targeted_new_constructor_with_old_family_ablation",
+      "ablated_state": "TYPE=family_exhaustion; RELATION=frozen_family --tested_on--> residual_invariant; CONDITION=many_trials; ACTION=continue_search_or_modify_as_convenient",
+      "later_problem": "A routing optimizer has exhaustively enumerated every policy expressible by its frozen pairwise-swap grammar. None reduces a persistent three-way congestion invariant, and enumeration is certified complete. What is the next scientifically justified intervention?",
+      "options": {
+        "A": "Repeat the same grammar with twice as many random seeds.",
+        "B": "Lower the success threshold until a pairwise swap qualifies.",
+        "C": "Add a genuinely three-way routing constructor aimed at the invariant and compare it against the exhausted pairwise grammar.",
+        "D": "Shuffle the enumeration order and rerun."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "transfer_interface_state",
+      "domain": "triskelion",
+      "raw_outcome": "Episode T09: mechanism U fixed matched failures; disabling U restored them while component accuracies away from boundaries were unchanged.",
+      "prose_memory": "When local components are already correct and failures occur only because one component changes how the next must be interpreted, represent and transmit that cross-component state explicitly.",
+      "structured_state": "TYPE=interface_context; RELATION=upstream_output --changes_decode_rule_of--> downstream_component; CONDITION=local_correct+boundary_failure; ACTION=propagate_interface_state",
+      "ablated_state": "TYPE=interface_context; RELATION=upstream_output --adjacent_to--> downstream_component; CONDITION=boundary_failure; ACTION=tune_component_or_interface",
+      "later_problem": "A two-stage sensor pipeline has 99% accurate stages in isolation. Remaining failures happen only when stage one switches the unit convention that stage two must use; stage two receives no explicit unit flag. What should be changed first?",
+      "options": {
+        "A": "Train stage two longer on its original isolated examples.",
+        "B": "Average both stages' outputs after inference.",
+        "C": "Pass the unit-convention state explicitly from stage one to stage two and ablate that channel on matched cases.",
+        "D": "Increase both stages' parameter counts while leaving the interface unchanged."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "transfer_version_space",
+      "domain": "mathgraph",
+      "raw_outcome": "Episode M14: candidates p,q,r were tied at the current decision boundary; a later probe separated q from p and r.",
+      "prose_memory": "When several minimal candidates are indistinguishable under current verified contexts, retain the whole version space until future contexts split them or prove them equivalent; choosing one early destroys future-relevant alternatives.",
+      "structured_state": "TYPE=version_space; RELATION=current_contexts --cannot_distinguish--> minimal_candidate_set; ACTION=retain_set_until_future_split_or_quotient",
+      "ablated_state": "TYPE=version_space; RELATION=current_contexts --has_candidates--> minimal_candidate_set; ACTION=select_convenient_representative",
+      "later_problem": "A configuration learner has three equally simple hypotheses that make identical predictions on every certified observation so far. Two scheduled stress tests probe dimensions on which the hypotheses may differ. What should the learner persist now?",
+      "options": {
+        "A": "Only the alphabetically first hypothesis.",
+        "B": "Only the hypothesis generated fastest.",
+        "C": "All three tied hypotheses until the stress tests either separate or justify quotienting them.",
+        "D": "No hypothesis, because non-uniqueness invalidates the observation."
+      },
+      "correct": "C"
+    },
+    {
+      "id": "transfer_future_quotient",
+      "domain": "equational_theories",
+      "raw_outcome": "Episode E08: objects a and b matched on every certified continuation query; object c differed on one query w. The protected checker confirmed all three results.",
+      "prose_memory": "Treat objects as the same state when their verified lawful continuation sets are identical; when containment fails, preserve a missing continuation as a witness of the distinction.",
+      "structured_state": "TYPE=future_equivalence; RELATION=objects --equivalent_iff_same_verified_continuations--> quotient_state; ACTION=merge_equal_futures_and_record_missing_future_witness",
+      "ablated_state": "TYPE=future_equivalence; RELATION=objects --similar_if_many_matches--> quotient_state; ACTION=cluster_by_overall_similarity",
+      "later_problem": "In a workflow system, procedures X and Y have different source code and histories but permit exactly the same certified next actions. Procedure Z permits all but one of those actions. How should the state model represent them?",
+      "options": {
+        "A": "Keep X, Y, and Z separate because their source histories differ.",
+        "B": "Merge all three because their behavior is mostly similar.",
+        "C": "Merge X and Y into one continuation-equivalence state; keep Z separate and record its missing next action as a witness.",
+        "D": "Cluster them by textual embedding similarity."
+      },
+      "correct": "C"
+    }
+  ]
+}
