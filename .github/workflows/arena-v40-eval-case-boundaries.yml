@@ -53,11 +53,13 @@ jobs:
           sudo apt-get install -y valgrind
           valgrind --version
 
-      - name: Fetch frozen Arena and MathGraph source
-        shell: nix develop -c bash -euxo pipefail {0}
+      - name: Fetch frozen Arena and verify MathGraph pin
+        shell: bash
         run: |
+          set -euxo pipefail
           git clone https://github.com/leanprover/lean-kernel-arena.git arena
           git -C arena checkout "$ARENA_REV"
+          test -f arena/flake.nix
           grep -q "$KERNEL_REV" arena/checkers/mathgraph.yaml
 
       - name: Build Mathlib workload
