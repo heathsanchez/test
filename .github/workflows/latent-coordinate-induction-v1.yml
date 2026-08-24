@@ -1,0 +1,37 @@
+name: Latent Coordinate Induction V1
+on:
+  push:
+    paths:
+      - experiments/latent_coordinate_induction_v1/TRIGGER
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: latent-coordinate-induction-v1
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/latent_coordinate_induction_v1/validate.py
+      - name: Run protected latent-coordinate benchmark
+        run: python experiments/latent_coordinate_induction_v1/run_openai.py
+      - name: Score induced laws externally
+        run: python experiments/latent_coordinate_induction_v1/score.py experiments/latent_coordinate_induction_v1/answers.json | tee experiments/latent_coordinate_induction_v1/score_output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: latent-coordinate-induction-v1-protected
+          path: |
+            experiments/latent_coordinate_induction_v1/answers.json
+            experiments/latent_coordinate_induction_v1/run_metadata.json
+            experiments/latent_coordinate_induction_v1/scores.json
+            experiments/latent_coordinate_induction_v1/score_output.txt
+          retention-days: 30
