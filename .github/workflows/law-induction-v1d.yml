@@ -1,0 +1,37 @@
+name: Law Induction V1d
+on:
+  push:
+    paths:
+      - experiments/law_induction_v1d/TRIGGER
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: law-induction-v1d
+  cancel-in-progress: false
+jobs:
+  benchmark:
+    runs-on: ubuntu-24.04
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Validate frozen benchmark
+        run: python experiments/law_induction_v1d/validate.py
+      - name: Run protected deterministic-law benchmark
+        run: python experiments/law_induction_v1d/run_openai.py
+      - name: Score induced laws externally
+        run: python experiments/law_induction_v1d/score.py experiments/law_induction_v1d/answers.json | tee experiments/law_induction_v1d/score_output.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: law-induction-v1d-protected
+          path: |
+            experiments/law_induction_v1d/answers.json
+            experiments/law_induction_v1d/run_metadata.json
+            experiments/law_induction_v1d/scores.json
+            experiments/law_induction_v1d/score_output.txt
+          retention-days: 30
