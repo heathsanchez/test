@@ -1,0 +1,10 @@
+{"schema":"law.induction.v1","cases":[
+{"id":"w01","observations":["AX->J","AY->L","BX->K","BY->M","CX->M","CY->K","DX->L"],"query":"DY","oracle":"Encode actions J=0,K=1,L=2,M=3. Shape bases A=0,B=1,C=3,D=2; suffix offsets X=0,Y=2; action=(base+offset) mod 4.","correct":"J"},
+{"id":"w02","observations":["AX->M","AY->J","BX->L","BY->M","CX->J","CY->K","DX->K"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=3,B=2,C=0,D=1; suffix offsets X=0,Y=1; action=(base+offset) mod 4.","correct":"L"},
+{"id":"w03","observations":["AX->K","AY->M","BX->J","BY->L","CX->L","CY->J","DX->M"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=1,B=0,C=2,D=3; suffix offsets X=0,Y=2; action=(base+offset) mod 4.","correct":"K"},
+{"id":"w04","observations":["AX->L","AY->M","BX->M","BY->J","CX->K","CY->L","DX->J"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=2,B=3,C=1,D=0; suffix offsets X=0,Y=1; action=(base+offset) mod 4.","correct":"K"},
+{"id":"w05","observations":["AX->J","AY->M","BX->M","BY->L","CX->K","CY->J","DX->L"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=0,B=3,C=1,D=2; suffix offsets X=0,Y=3; action=(base+offset) mod 4.","correct":"K"},
+{"id":"w06","observations":["AX->M","AY->L","BX->J","BY->M","CX->K","CY->J","DX->L"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=3,B=0,C=1,D=2; suffix offsets X=0,Y=3; action=(base+offset) mod 4.","correct":"K"},
+{"id":"w07","observations":["AX->K","AY->J","BX->L","BY->K","CX->M","CY->L","DX->J"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=1,B=2,C=3,D=0; suffix offsets X=0,Y=3; action=(base+offset) mod 4.","correct":"M"},
+{"id":"w08","observations":["AX->L","AY->J","BX->K","BY->M","CX->J","CY->L","DX->M"],"query":"DY","oracle":"Encode J=0,K=1,L=2,M=3. Shape bases A=2,B=1,C=0,D=3; suffix offsets X=0,Y=2; action=(base+offset) mod 4.","correct":"K"}
+]}
