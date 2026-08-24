@@ -1,0 +1,42 @@
+import json,os,random,time,urllib.request
+from pathlib import Path
+from render import final_prompt,reconstruction_prompt,DATA
+HERE=Path(__file__).parent
+MODEL=os.environ.get('UVRM_MODEL','gpt-4.1-mini')
+TOKEN=os.environ['OPENAI_API_KEY']
+URL='https://api.openai.com/v1/chat/completions'
+ARMS=('RAW','RECONSTRUCT_1','RECONSTRUCT_2','GRAPH','GRAPH_PERMUTED')
+
+def call_model(prompt,max_tokens):
+    payload=json.dumps({'model':MODEL,'messages':[{'role':'user','content':prompt}],'temperature':0,'max_tokens':max_tokens}).encode()
+    req=urllib.request.Request(URL,data=payload,headers={'Authorization':f'Bearer {TOKEN}','Content-Type':'application/json','Accept':'application/json'})
+    last=None
+    for attempt in range(4):
+        try:
+            with urllib.request.urlopen(req,timeout=90) as r: obj=json.loads(r.read().decode())
+            return obj['choices'][0]['message']['content'].strip()
+        except Exception as e:
+            last=e; time.sleep(2**attempt)
+    raise RuntimeError(f'model call failed after retries: {last}')
+
+def main():
+    jobs=[(c,a) for c in DATA['cases'] for a in ARMS]
+    random.Random(2026082403).shuffle(jobs)
+    answers={}; reconstructions={}
+    meta={'model':MODEL,'provider':'openai','temperature':0,'seed_order':2026082403,'arms':{},'calls':[]}
+    for arm in ARMS:
+        meta['arms'][arm]={'final_max_tokens':220,'reconstruction_max_tokens':180 if arm=='RECONSTRUCT_2' else 0,'invocations_per_case':2 if arm=='RECONSTRUCT_2' else 1}
+    for i,(case,arm) in enumerate(jobs,1):
+        key=f"{case['id']}__{arm}"; reconstruction=None; stage_a_s=0
+        if arm=='RECONSTRUCT_2':
+            rp=reconstruction_prompt(case); t=time.time(); reconstruction=call_model(rp,180); stage_a_s=time.time()-t
+            reconstructions[case['id']]=reconstruction
+            meta['calls'].append({'key':key,'stage':'reconstruct','seconds':round(stage_a_s,3),'prompt_chars':len(rp),'answer_chars':len(reconstruction),'max_tokens':180})
+        prompt=final_prompt(case,arm,reconstruction); t=time.time(); text=call_model(prompt,220); dt=time.time()-t
+        answers[key]=text
+        meta['calls'].append({'key':key,'stage':'final','seconds':round(dt,3),'prompt_chars':len(prompt),'answer_chars':len(text),'max_tokens':220})
+        print(f'[{i}/{len(jobs)}] {key} calls={2 if arm=="RECONSTRUCT_2" else 1} {stage_a_s+dt:.2f}s :: {text.replace(chr(10)," | ")}',flush=True)
+    (HERE/'answers.json').write_text(json.dumps(answers,indent=2,sort_keys=True)+'\n')
+    (HERE/'reconstructions.json').write_text(json.dumps(reconstructions,indent=2,sort_keys=True)+'\n')
+    (HERE/'run_metadata.json').write_text(json.dumps(meta,indent=2,sort_keys=True)+'\n')
+if __name__=='__main__': main()
