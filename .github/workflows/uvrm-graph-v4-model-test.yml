@@ -11,15 +11,14 @@ on:
 
 permissions:
   contents: read
-  models: read
 
 jobs:
   benchmark:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      UVRM_MODEL: openai/gpt-4.1-mini
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
