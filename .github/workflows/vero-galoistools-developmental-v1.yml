@@ -9,7 +9,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 10
     permissions:
       actions: read
       contents: read
@@ -29,7 +29,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for seeded Nat.ModEq probe
+      - name: Patch Vero for local modular congruence primitive probe
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL Nat.ModEq separator probe\n\nYou begin from the materialized independently Vero-verified 15/48 artifact. Preserve it exactly unless the new capability compiles. This is a capability-construction probe, NOT a benchmark-score attempt.\n\nThe previous bounded run established a sharper residual: proving the recursive Horner/zipAddPad bridge by literal Nat equality is the wrong relation because nested `% p` reductions obscure distributivity. The proposed separator is modular congruence.\n\nTarget exactly ONE thing:\nConstruct the smallest reusable `Nat.ModEq p` lemma (or equivalent modular-congruence lemma already in Lean) showing that little-endian Horner evaluation respects `zipAddPad`. It should express that evaluating `zipAddPad p xs ys` is congruent modulo `p` to the sum of the evaluations of `xs` and `ys`. Carry only the minimal positivity/nonzero hypothesis on `p` actually needed.\n\nRules:\n1. Confirm the seeded Ring helpers are present. Inspect only definitions/theorems needed for `refPolyEvalRevAux`, `zipAddPad`, and `Nat.ModEq` API usage.\n2. Do NOT attempt `add_assoc_eval`, `mul_eval_hom`, or any other benchmark proof in this run. We are testing whether the missing capability itself is expressible and compilable.\n3. Prefer existing `Nat.ModEq` lemmas for addition, multiplication, and remainder over manual `%` normalization.\n4. Put the candidate in an editable Ring proof auxiliary/global auxiliary slot so it will survive artifact extraction.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most two focused repairs.\n6. If it compiles, stop. Do not spend tokens transferring it yet. Write `RESIDUAL_REPORT.md` naming the exact theorem constructed and the cheapest benchmark theorem to test next.\n7. If it does not compile after two repairs, revert completely to the 15/48 seed and record the smallest remaining obstruction.\n8. Do not run full `lake build` unless needed to validate artifact integrity after a successful focused compile.\n\nSuccess for this run is NOT 16/48. Success is a compiled reusable modular-congruence evaluation bridge while preserving the existing 15 verified specs.\n\nBe extremely economical with context reads and tool calls.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL local modular-congruence primitive probe\n\nYou begin from the materialized independently Vero-verified 15/48 artifact. Preserve it. This run is NOT a benchmark-score attempt and NOT a Horner/zipAddPad proof attempt.\n\nVerified residual from the prior probe:\n- `Nat.ModEq` is unavailable in this benchmark dependency set.\n- Replacing it by `NatModEq p a b := a % p = b % p` is viable in principle, but naïve simp-based closure expands back into nested `%` arithmetic.\n- Therefore the missing constructor language is a tiny local congruence algebra with carefully oriented closure lemmas.\n\nTarget exactly THREE primitives in the editable Ring `global_aux` slot:\n1. a local modular congruence relation (reuse the prior `%`-equality definition or an equally small equivalent),\n2. reflexivity / remainder-normalization support sufficient to introduce reduced terms,\n3. `add` and `mul` congruence closure lemmas.\n\nThe essential success criterion is that the closure lemmas COMPILE without using broad `simp` that recursively expands `Nat.add_mod` / `Nat.mul_mod`. Prefer short directed `rw`, `calc`, `trans`, and explicitly oriented equalities. Prove each primitive in isolation before composing anything.\n\nRules:\n1. Inspect only `Galoistools/Proof/Ring.lean` around `global_aux` and the exact core Nat remainder lemmas needed. Do not read the whole repo.\n2. Do NOT attempt `refPolyEvalRevAux`, `zipAddPad`, `add_assoc_eval`, `mul_eval_hom`, or any benchmark theorem.\n3. Do NOT invent additional abstractions. We are testing whether the minimal congruence algebra itself is expressible.\n4. Compile `Galoistools/Proof/Ring.lean` after the first candidate. Allow at most one focused repair.\n5. If the primitives compile, stop immediately and write `RESIDUAL_REPORT.md` with their exact theorem names and the single cheapest next composition test.\n6. If they do not compile after one repair, revert completely to the 15/48 seed and record the exact remaining arithmetic identity.\n7. Never leave any previously verified proof slot modified or broken.\n8. Do not run a full `lake build`; focused Ring compilation is sufficient for this capability probe.\n\nBe extremely economical. Success is compiled reusable congruence primitives, not a score increase.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/iter-2/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/iter-2/source/artifact.json)"
 
-      - name: Run economical Nat.ModEq separator probe
+      - name: Run economical modular congruence primitive probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=180 \
+            agent.timeout_seconds=120 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools Nat.ModEq separator probe' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero galoistools local modular-congruence primitive probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
