@@ -9,7 +9,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 100
+    timeout-minutes: 20
     permissions:
       actions: read
       contents: read
@@ -29,7 +29,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for monotone verified retention and residual controller
+      - name: Patch Vero for economical residual probe
         working-directory: vero
         shell: bash
         run: |
@@ -38,17 +38,10 @@ jobs:
 
           p = Path('src/vero/cli_iterate.py')
           s = p.read_text()
-
-          anchor = '    launched_any = False  # has any chunk run yet this run?\n\n'
-          helper = '''    launched_any = False  # has any chunk run yet this run?\n\n    def _best_verified_seed() -> str | None:\n        \"\"\"Monotone retention: never seed from a regression.\n\n        The externally verified initial checkpoint is 15/48 with zero failures.\n        A generated artifact is eligible for retention only if it builds, has\n        zero failed specs, and weakly dominates that verified score. Among\n        eligible checkpoints retain the highest-scoring one.\n        \"\"\"\n        import os\n        initial = os.environ.get(\"VERO_INITIAL_SEED\")\n        eligible = [\n            r for r in records\n            if r.build_ok is True\n            and (r.failed_specs or 0) == 0\n            and (r.passed_specs if r.passed_specs is not None else -1) >= 15\n        ]\n        if not eligible:\n            return initial\n        best = max(\n            eligible,\n            key=lambda r: (r.passed_specs or -1, -(r.index or 0)),\n        )\n        return best.artifact_path\n\n'''
-          if anchor not in s:
-              raise SystemExit('iterate helper anchor not found')
-          s = s.replace(anchor, helper, 1)
-
           old = '            seed_artifact_path=None,\n            timeout_override=cap_s,'
-          new = '            seed_artifact_path=_best_verified_seed(),\n            timeout_override=cap_s,'
+          new = '            seed_artifact_path=__import__("os").environ.get("VERO_INITIAL_SEED"),\n            timeout_override=cap_s,'
           if old not in s:
-              raise SystemExit('iterate seed patch target not found')
+              raise SystemExit('seed patch target not found')
           p.write_text(s.replace(old, new, 1))
 
           p = Path('src/vero/generation/prompt.py')
@@ -59,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r\"\"\"\n\n# Residual-driven developmental controller\n\nThis run begins from an independently Vero-verified 15/48 artifact. The outer controller now enforces monotone verified retention: a candidate checkpoint is retained only if it builds, has zero failed specs, and scores at least 15/48; otherwise the next iteration reverts to the best verified checkpoint.\n\nApply explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nCurrent verified state: 15 passed, 0 failed, 33 unfilled. Previous verified refinements include a reversed-list/alignment capability, convolve_one_right, and an extensionally equivalent structural gfPowMod recursion that made recurrence transparent.\n\nFor the remaining residuals:\n1. Verify the seeded 15/48-or-better state and inventory the live specs.\n2. Quotient them by shared obstruction. Keep search failure distinct from missing lemma/composition, representation mismatch, frozen-reference boundary, and implementation representation failure.\n3. Push lawful composition before inventing new machinery.\n4. Continue the ring evaluation-homomorphism separator. The previous attempt localized the obstruction to modular-normalization lemmas around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication and convolution. Build the smallest reusable normalization/evaluation bridge that can unlock multiple of mul_eval_hom, sub_eval_hom, mul_comm_eval, mul_assoc_eval, mul_add_distrib_eval and downstream division reconstruction.\n5. Prefer one reusable lemma/refactor that closes several obligations over isolated tactic proofs. If the separator is false or too expensive, record the counterevidence and move to the next obstruction class.\n6. Do not leave previously verified proof slots broken. Before finishing a candidate checkpoint, run the relevant Lean file and full lake build; repair or revert speculative edits that regress verified obligations.\n7. After every candidate capability/refactor, replay the full benchmark; the outer verifier will revoke regressions automatically.\n8. Record RESIDUAL_REPORT.md with starting score, obstruction quotient, chosen separator, newly discharged specs, remaining residuals, and an ablation claim.\n\nThe objective is causal verified reachability gain from residual-driven structural change, not raw proof volume.\n\"\"\"\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL residual probe\n\nYou begin from an independently Vero-verified 15/48 artifact (0 failed, 33 unfilled). Preserve every verified slot. This is a tightly bounded scientific probe, not a general solve attempt.\n\nTarget exactly ONE obstruction: the modular-normalization/evaluation bridge around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication, and convolution. The objective is the smallest reusable lemma or refactor that can discharge at least one ring evaluation-homomorphism spec and ideally unlock several downstream laws.\n\nRules:\n1. Do not re-inventory the whole repository. Inspect only the relevant Ring implementation/spec/proof region and prior verified helpers.\n2. Push existing lawful composition first. Do not invent broad abstractions unless a precise residual forces them.\n3. Make one candidate structural refinement at a time. Test the relevant Lean file immediately.\n4. If the candidate does not compile or does not plausibly unlock a target spec after two focused repair attempts, revert it and stop rather than grinding.\n5. Do not touch already verified proof slots unless required by the separator. Never leave them broken.\n6. Run full `lake build` once, near the end, only after the focused proof file succeeds.\n7. Success = a checkpoint that preserves the 15 verified specs with 0 failures and adds at least one newly verified spec.\n8. If no gain is reachable within this bounded probe, leave the 15/48 seed intact and write RESIDUAL_REPORT.md naming the exact remaining obstruction and cheapest next separator.\n\nBe economical with tool calls, context reads, and proof search. Stop on verified gain or crisp bounded failure.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -86,7 +79,7 @@ jobs:
           test -s baseline/iter-2/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/iter-2/source/artifact.json)"
 
-      - name: Run residual-driven developmental iterations
+      - name: Run economical single-separator probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -106,27 +99,20 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=5400 \
+            agent.timeout_seconds=480 \
             agent.sandbox_mode=danger-full-access \
-            iterate.max=3 \
-            iterate.mode=eval \
-            +iterate.resume=true \
-            iterate.feedback=true \
-            iterate.stop_on_done=true
+            iterate.max=0
 
-      - name: Summarize developmental result
+      - name: Summarize result
         if: always()
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools developmental v1' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero galoistools economical residual probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
-          echo >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
-          echo >> "$GITHUB_STEP_SUMMARY"
-          test -f agent_runs/galoistools-developmental-v1/iterations.json && cat agent_runs/galoistools-developmental-v1/iterations.json >> "$GITHUB_STEP_SUMMARY" || true
 
-      - name: Upload developmental artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
