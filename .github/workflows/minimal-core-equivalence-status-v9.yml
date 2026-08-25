@@ -1,0 +1,61 @@
+name: Minimal Core Equivalence Status V9
+
+on:
+  push:
+    paths:
+      - 'experiments/minimal_core_equivalence_status_v9.py'
+      - '.github/workflows/minimal-core-equivalence-status-v9.yml'
+  workflow_dispatch:
+
+jobs:
+  equivalence-status-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_EQUIVALENCE_STATUS_V9 PRECOMMIT
+          Parent positive: V8 run 32846672155.
+
+          Question: can the system infer which current equivalences are permanent versus provisional from evidence, rather than being told the status?
+
+          Frozen design:
+          - Mixed pool of eight representation pairs, all equivalent under their local current continuation C0.
+          - Some pairs are exact partition/isomorphism cases; others are compressed-vs-rich pairs that are only C0-equivalent.
+          - Status labels are not used by the controller.
+          - Future continuation carrier is CompleteCover over all 16 Boolean predicates on the four-state latent domain.
+          - Evidence law: a pair is PROVISIONAL as soon as any future continuation separates its sufficiency behavior; PERMANENT may be assigned only after full carrier exhaustion with zero separators.
+          - Progressive exposure must revise only provisional pairs.
+          - A strict prefix control must leave at least one provisional pair unsplit, proving that absence of an early separator does not license permanence.
+          - Final classification must survive all 24 anonymous state relabelings.
+
+          Gates:
+          G1 all pairs equivalent at C0.
+          G2 mixed permanent/provisional pool exists.
+          G3 permanent pairs have zero separators under CompleteCover.
+          G4 provisional pairs eventually split.
+          G5 evidence rule classifies every pair exactly.
+          G6 no permanent pair splits during continuation growth.
+          G7 every provisional pair is selectively revised.
+          G8 premature permanence forbidden by prefix ambiguity.
+          G9 full continuation carrier exhausted.
+          G10 anonymous relabel invariance.
+
+          Interpretation boundary:
+          A pass establishes bounded evidence-driven distinction between permanent extensional quotient and provisional future-relative quotient inside a fully enumerated finite continuation universe. It does not establish permanence beyond that declared universe or autonomous generation of the universe itself.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V9
+        run: python experiments/minimal_core_equivalence_status_v9.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-equivalence-status-v9
+          path: artifacts/minimal_core_equivalence_status_v9
+          retention-days: 30
