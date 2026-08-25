@@ -1,0 +1,51 @@
+name: Minimal Core Capstone Suite V18b
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_capstone_suite_v18b.py'
+      - '.github/workflows/minimal-core-capstone-suite-v18b.yml'
+
+jobs:
+  capstone:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - observation_interface_closure
+          - probe_language_expansion
+          - separator_language_expansion
+          - joint_relational_induction
+          - recursive_self_application
+          - genuine_regime_change
+          - cross_domain_same_controller
+          - developmental_advantage
+          - loop_ablations
+          - transition_invariant_modelcheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_CAPSTONE_SUITE_V18b PRECOMMIT
+          Parent: V18 original suite retained unchanged.
+
+          Corrective purpose:
+          Static inspection found the original loop_ablations never_expand control was invalid: it began empty and was still allowed to cold-search every task, so it could score well without retaining or expanding anything. V18b changes only that control logic and its associated ablation criterion. All other V18 arms execute the original frozen functions unchanged.
+
+          Each matrix arm remains independent. Scientific failures remain red.
+          No aggregate core-loop claim is inferred from partial success.
+          EOF
+      - name: Run ${{ matrix.test }}
+        run: python experiments/minimal_core_capstone_suite_v18b.py --test "${{ matrix.test }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-capstone-v18b-${{ matrix.test }}
+          path: artifacts/minimal_core_capstone_suite_v18/${{ matrix.test }}
+          retention-days: 30
