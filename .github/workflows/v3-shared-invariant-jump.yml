@@ -1,0 +1,28 @@
+name: V3 shared-invariant jump
+
+on:
+  push:
+    branches:
+      - experiment/v3-shared-invariant-jump
+  workflow_dispatch:
+
+jobs:
+  shared-invariant-jump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run shared-invariant jump
+        run: bash scripts/run_v3_shared_invariant_jump.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-shared-invariant-jump
+          path: |
+            v3-shared-invariant-times.tsv
+            v3-shared-invariant-decision.txt
+            v3-shared-invariant-semantic-gate.txt
