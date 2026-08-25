@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Frozen residual-induced constructor test: map-mod evaluation bridge.
+# Residual-driven retry: Horner/zipAddPad congruence using verified map-mod bridge.
 on:
   workflow_dispatch:
   push:
@@ -21,22 +21,21 @@ jobs:
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
 
-      - name: Download verified congruence-capability artifact
+      - name: Download verified map-mod bridge artifact
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32904147519
+          run-id: 32904668523
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for map-mod evaluation bridge probe
+      - name: Patch Vero for bounded Horner retry
         working-directory: vero
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
-
           p = Path('src/vero/cli.py')
           s = p.read_text()
           old = '            gen_result = dispatch_generation(cfg, run_root)\n'
@@ -53,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL map-mod evaluation separator probe\n\nYou begin from the independently Vero-verified 15/48 artifact containing the compiled local modular-congruence capability:\n- `NatModEq`\n- `natModEq_mod`\n- `natModEq_add`\n- `natModEq_mul`\nThe previous Horner/zipAddPad composition attempt was correctly reverted. Preserve all 15 verified specs and the four congruence helpers.\n\nThe verified residual is now structural: empty-side `zipAddPad` branches normalize to `List.map (fun a => a % p) xs`, while the recursive goal wants the original list. Before retrying the main theorem, test the smallest separator that directly removes that mismatch.\n\nTarget exactly ONE theorem in Ring `global_aux`, equivalent to:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x (xs.map (fun a => a % p)))\n  (Galoistools.refPolyEvalRevAux p x xs)`\n\nfor all `p x xs`, with no unnecessary hypotheses.\n\nRules:\n1. Inspect only the four existing congruence helpers and `refPolyEvalRevAux`. Do not inspect unrelated benchmark targets or re-inventory the repo.\n2. Prove by the smallest structural induction on `xs`. Reuse `natModEq_mod`, `natModEq_add`, and `natModEq_mul`; avoid broad `simp` over remainder arithmetic.\n3. Do NOT attempt `zipAddPad`, `add_assoc_eval`, `mul_eval_hom`, or any benchmark theorem in this run.\n4. Put the theorem in editable Ring `global_aux` so artifact extraction retains it.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, stop immediately and write `RESIDUAL_REPORT.md` with the theorem name and state that the next deciding experiment is to retry the Horner/zipAddPad congruence theorem using this bridge.\n7. If it fails after one repair, revert only the new theorem, preserve all existing verified state, and record the exact remaining proof-shape obstruction.\n8. Do not run a full `lake build`; focused Ring compilation is sufficient.\n\nBe extremely economical. Success is this one compiled structural bridge while Vero remains 15/48 with 0 failures.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL Horner / zipAddPad retry after verified structural separator\n\nYou begin from the independently Vero-verified 15/48 artifact containing:\n- `NatModEq`\n- `natModEq_mod`\n- `natModEq_add`\n- `natModEq_mul`\n- `natModEq_refPolyEvalRevAux_map_mod`\n\nThe previous Horner attempt failed because empty-side branches normalized to `List.map (fun a => a % p) xs`. That exact residual has now been discharged by the verified map-mod evaluation bridge. Preserve all existing verified state.\n\nTarget exactly ONE theorem in Ring `global_aux`, equivalent to:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p xs ys))\n  (Galoistools.refPolyEvalRevAux p x xs + Galoistools.refPolyEvalRevAux p x ys)`\n\nfor all `p x xs ys`, with no unnecessary hypotheses.\n\nRules:\n1. Reuse `natModEq_refPolyEvalRevAux_map_mod` immediately for both empty-side branches. Do not rediscover or re-prove map-mod normalization.\n2. For the paired branch, use the existing congruence algebra compositionally. Isolate only the remaining distributive/associative alignment between `(a+b)+x*(A+B)` and `(a+x*A)+(b+x*B)` before modulo.\n3. Inspect only the relevant global_aux helpers plus definitions of `zipAddPad` and `refPolyEvalRevAux`. No repo-wide search.\n4. Do NOT attempt any benchmark theorem (`add_assoc_eval`, `mul_eval_hom`, etc.) in this run.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, stop immediately, retain the theorem, and write `RESIDUAL_REPORT.md` naming the cheapest benchmark transfer target.\n7. If it fails after one repair, revert only the new theorem, preserve the verified 15/48 + helper state, and record the exact surviving paired-branch identity.\n8. No full `lake build`; focused Ring compilation only.\n\nBe extremely economical. Success is the compiled Horner/zipAddPad congruence bridge while preserving 15/48 with 0 failures.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -75,12 +74,12 @@ jobs:
         working-directory: vero
         run: uv sync
 
-      - name: Verify congruence seed artifact exists
+      - name: Verify map-mod bridge seed exists
         run: |
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run economical map-mod evaluation bridge probe
+      - name: Run bounded Horner retry
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -109,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools map-mod evaluation separator probe' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero galoistools Horner retry with map-mod bridge' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
