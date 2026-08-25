@@ -9,7 +9,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
@@ -29,19 +29,21 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for economical residual probe
+      - name: Patch Vero for seeded economical residual probe
         working-directory: vero
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          p = Path('src/vero/cli_iterate.py')
+          # Single-shot mode (iterate.max=0) bypasses cli_iterate, so inject the
+          # verified seed into the direct dispatch path itself.
+          p = Path('src/vero/cli.py')
           s = p.read_text()
-          old = '            seed_artifact_path=None,\n            timeout_override=cap_s,'
-          new = '            seed_artifact_path=__import__("os").environ.get("VERO_INITIAL_SEED"),\n            timeout_override=cap_s,'
+          old = '            gen_result = dispatch_generation(cfg, run_root)\n'
+          new = '            gen_result = dispatch_generation(cfg, run_root, seed_artifact_path=__import__("os").environ.get("VERO_INITIAL_SEED"))\n'
           if old not in s:
-              raise SystemExit('seed patch target not found')
+              raise SystemExit('direct seed patch target not found')
           p.write_text(s.replace(old, new, 1))
 
           p = Path('src/vero/generation/prompt.py')
@@ -52,7 +54,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL residual probe\n\nYou begin from an independently Vero-verified 15/48 artifact (0 failed, 33 unfilled). Preserve every verified slot. This is a tightly bounded scientific probe, not a general solve attempt.\n\nTarget exactly ONE obstruction: the modular-normalization/evaluation bridge around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication, and convolution. The objective is the smallest reusable lemma or refactor that can discharge at least one ring evaluation-homomorphism spec and ideally unlock several downstream laws.\n\nRules:\n1. Do not re-inventory the whole repository. Inspect only the relevant Ring implementation/spec/proof region and prior verified helpers.\n2. Push existing lawful composition first. Do not invent broad abstractions unless a precise residual forces them.\n3. Make one candidate structural refinement at a time. Test the relevant Lean file immediately.\n4. If the candidate does not compile or does not plausibly unlock a target spec after two focused repair attempts, revert it and stop rather than grinding.\n5. Do not touch already verified proof slots unless required by the separator. Never leave them broken.\n6. Run full `lake build` once, near the end, only after the focused proof file succeeds.\n7. Success = a checkpoint that preserves the 15 verified specs with 0 failures and adds at least one newly verified spec.\n8. If no gain is reachable within this bounded probe, leave the 15/48 seed intact and write RESIDUAL_REPORT.md naming the exact remaining obstruction and cheapest next separator.\n\nBe economical with tool calls, context reads, and proof search. Stop on verified gain or crisp bounded failure.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL seeded residual probe\n\nYou begin from a materialized, independently Vero-verified 15/48 artifact (0 failed, 33 unfilled). Preserve every verified slot. This is one bounded scientific probe, not a general solve attempt.\n\nTarget exactly ONE obstruction: the modular-normalization/evaluation bridge around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication, and convolution. Seek the smallest reusable lemma/refactor that can discharge at least one ring evaluation-homomorphism spec.\n\nRules:\n1. Confirm the 15/48 seed is visibly present, then inspect only the relevant Ring implementation/spec/proof region. Do not re-inventory the repository.\n2. Push existing lawful composition first.\n3. Make one candidate refinement at a time and test the focused Lean file immediately.\n4. After at most two focused repairs without progress, revert and stop.\n5. Never leave an already verified slot broken.\n6. Run full `lake build` once only if the focused file succeeds.\n7. Success = preserve all 15 verified specs with 0 failures and add at least one spec.\n8. On bounded failure, preserve the seed and write RESIDUAL_REPORT.md naming the exact obstruction and cheapest next separator.\n\nBe economical with context reads and proof search. Stop on verified gain or crisp bounded failure.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -99,7 +101,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=480 \
+            agent.timeout_seconds=240 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +110,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools economical residual probe' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero galoistools economical seeded residual probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
