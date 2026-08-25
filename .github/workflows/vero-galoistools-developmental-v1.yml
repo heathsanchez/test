@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Isolate the scalar modular cancellation law exposed by the negation-evaluation probe.
+# Deterministic zero-API probe for the scalar modular cancellation law.
 on:
   workflow_dispatch:
   push:
@@ -30,34 +30,6 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for scalar cancellation probe
-        working-directory: vero
-        shell: bash
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          p = Path('src/vero/cli.py')
-          s = p.read_text()
-          old = '            gen_result = dispatch_generation(cfg, run_root)\n'
-          new = '            gen_result = dispatch_generation(cfg, run_root, seed_artifact_path=__import__("os").environ.get("VERO_INITIAL_SEED"))\n'
-          if old not in s:
-              raise SystemExit('direct seed patch target not found')
-          p.write_text(s.replace(old, new, 1))
-
-          p = Path('src/vero/generation/prompt.py')
-          s = p.read_text()
-          old = '    return template.render(\n'
-          new = '    base = template.render(\n'
-          if old not in s:
-              raise SystemExit('prompt render patch target not found')
-          s = s.replace(old, new, 1)
-          marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# SCALAR MODULAR CANCELLATION CONSTRUCTOR PROBE\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. Do not touch any scored theorem. The previous negation-evaluation probe reduced the entire obstruction to one scalar NatModEq cancellation law.\n\nProve exactly ONE reusable global_aux theorem expressing the following implication for `1 < p`:\n\n`NatModEq p (a + b) 0 -> NatModEq p b ((p - a % p) % p)`\n\nAn equivalent orientation/name is fine, but it must compose directly with the attempted coefficient-negation evaluation theorem.\n\nRules:\n1. Inspect only `NatModEq`, the retained NatModEq primitives, and Nat modulo arithmetic already available in the file. No repo inventory and no Horner proof yet.\n2. Add exactly one global_aux theorem. Prefer direct unfolding plus `Nat.add_mod`, `Nat.mod_mod`, modular bounds, and a small case split on `a % p = 0` if needed.\n3. Do NOT use `omega` as the main proof of modular uniqueness; the previous probe already showed that is the wrong abstraction boundary.\n4. Do not retry `natModEq_refPolyEvalRevAux_map_neg`; do not touch any scored `sorry`.\n5. Immediately run `lake lean Galoistools/Proof/Ring.lean`. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain the scalar lemma. Vero should remain exactly 16/48, 0 failed.\n7. If it fails after one repair, revert only the new theorem and report the smallest exact residual.\n8. No full build; Vero evaluation is authoritative.\n\nThis is the smallest constructor exposed by the previous verified failure.\n"""\n    return base + developmental\n'''
-          if marker not in s:
-              raise SystemExit('prompt tail patch target not found')
-          p.write_text(s.replace(marker, replacement, 1))
-          PY
-
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
@@ -67,55 +39,74 @@ jobs:
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
 
-      - name: Install Codex CLI
-        run: npm install -g @openai/codex
-
       - name: Install Vero
         working-directory: vero
         run: uv sync
 
-      - name: Verify seed exists
-        run: |
-          test -s baseline/source/artifact.json
-          echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
-
-      - name: Run scalar cancellation probe
-        working-directory: vero
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          CODEX_AGENT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          VERO_INITIAL_SEED: ${{ github.workspace }}/baseline/source/artifact.json
-        shell: bash
-        run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo 'OPENAI_API_KEY secret missing'
-            exit 2
-          fi
-          printf 'OPENAI_API_KEY=%s\nCODEX_API_KEY=%s\nCODEX_AGENT_API_KEY=%s\n' "$OPENAI_API_KEY" "$CODEX_API_KEY" "$CODEX_AGENT_API_KEY" > .env
-          uv run vero run \
-            benchmark=galoistools \
-            agent=codex \
-            credentials=none \
-            mode=codeproof \
-            name=galoistools-developmental-v1 \
-            agent.timeout_seconds=55 \
-            agent.sandbox_mode=danger-full-access \
-            iterate.max=0
-
-      - name: Summarize result
-        if: always()
+      - name: Materialize 16-of-48 ratchet and test scalar lemma
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero constructor probe: scalar modular cancellation' >> "$GITHUB_STEP_SUMMARY"
-          find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
-          find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          uv run python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          from vero.generation.benchmark import Benchmark
+          from vero.generation.extractor import read_artifact, extract, write_artifact
+          from vero.generation.sandbox import create_sandbox
 
-      - name: Upload artifacts
+          bench_dir = Path('benchmarks/galoistools').resolve()
+          bench = Benchmark(bench_dir)
+          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
+          source = Path('manual_probe/source').resolve()
+          create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
+
+          ring = source / 'Galoistools/Proof/Ring.lean'
+          text = ring.read_text()
+          marker = 'theorem ring_gfStrip_eq_ref (f : List Nat) :'
+          if marker not in text:
+              raise SystemExit('insertion marker not found')
+
+          lemma = r'''
+          theorem natModEq_add_eq_zero_right_neg (p a b : Nat) (hp : 1 < p)
+              (h : NatModEq p (a + b) 0) :
+              NatModEq p b ((p - a % p) % p) := by
+            unfold NatModEq at h ⊢
+            simp only [Nat.zero_mod] at h
+            rw [Nat.add_mod] at h
+            have hp0 : 0 < p := by omega
+            have ha_lt : a % p < p := Nat.mod_lt _ hp0
+            have hb_lt : b % p < p := Nat.mod_lt _ hp0
+            by_cases ha0 : a % p = 0
+            · simpa [ha0, Nat.mod_mod] using h
+            · have ha_pos : 0 < a % p := Nat.pos_of_ne_zero ha0
+              have hsum_ge : p ≤ a % p + b % p := by
+                by_contra hlt
+                have hsum_lt : a % p + b % p < p := Nat.lt_of_not_ge hlt
+                rw [Nat.mod_eq_of_lt hsum_lt] at h
+                omega
+              have hsum_lt2 : a % p + b % p < p + p := by omega
+              have hsub_lt : a % p + b % p - p < p := by omega
+              have hmod : (a % p + b % p) % p =
+                  (a % p + b % p - p) % p := Nat.mod_eq_sub_mod hsum_ge
+              rw [hmod, Nat.mod_eq_of_lt hsub_lt] at h
+              have hsum_eq : a % p + b % p = p := by omega
+              have hcomp_lt : p - a % p < p := by omega
+              have hb_eq : b % p = p - a % p := by omega
+              simp [Nat.mod_mod, Nat.mod_eq_of_lt hcomp_lt, hb_eq]
+
+          '''
+          ring.write_text(text.replace(marker, lemma + marker, 1))
+          subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
+
+          artifact = extract(source, bench, mode='codeproof')
+          write_artifact(artifact, source / 'artifact.json')
+          print('SCALAR_CANCELLATION_COMPILED')
+          PY
+
+      - name: Upload deterministic probe artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/agent_runs/galoistools-developmental-v1/
+          path: vero/manual_probe/
           if-no-files-found: warn
