@@ -1,0 +1,27 @@
+name: V3 PR qualification
+on:
+  push:
+    branches: [experiment/v3-pr-qualification]
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run recursive semantic and performance qualification
+        run: bash scripts/run_v3_pr_qualification.sh
+      - name: Upload V3 qualification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-pr-qualification
+          path: |
+            v3-semantic-gate.txt
+            v3-times.tsv
+            v3-decision.txt
