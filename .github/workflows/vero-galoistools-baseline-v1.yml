@@ -62,10 +62,12 @@ jobs:
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_AGENT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         shell: bash
         run: |
-          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env
-          uv run vero run benchmark=galoistools agent=codex credentials=openai mode=codeproof name=galoistools-codex-baseline-v1 agent.timeout_seconds=5400
+          printf 'OPENAI_API_KEY=%s\nCODEX_API_KEY=%s\nCODEX_AGENT_API_KEY=%s\n' "$OPENAI_API_KEY" "$CODEX_API_KEY" "$CODEX_AGENT_API_KEY" > .env
+          uv run vero run benchmark=galoistools agent=codex credentials=none mode=codeproof name=galoistools-codex-baseline-v1 agent.timeout_seconds=5400
           python - <<'PY'
           import json
           from pathlib import Path
