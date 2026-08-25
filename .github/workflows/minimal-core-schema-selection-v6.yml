@@ -1,0 +1,60 @@
+name: Minimal Core Schema Selection V6
+
+on:
+  workflow_dispatch:
+
+jobs:
+  schema-selection-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_SCHEMA_SELECTION_V6 PRECOMMIT
+          Parent positive: Minimal Core Meta Carrier Synthesis V5 run 32830150392.
+
+          Question: can residual structure select WHICH constructor schema family should be instantiated before enumerating its members?
+
+          Stage 1:
+          - Keep the finite V5 world and verify M0 CompleteCover absence.
+          - Supply a lower-level heterogeneous schema universe only: UNARY_MAP, BINARY_TABLE, PRODUCT, RELATION, PARTITION.
+          - Each schema mechanically generates its own finite carrier.
+          - Residual SAME/DIFFERENT obligations select schema family behaviorally; no named operator is supplied.
+          - Require exactly BINARY_TABLE to survive in stage 1.
+          - Within that schema, quotient surviving members by old-language behavioral symmetries and require a unique behavior orbit.
+          - Require acquisition exactness, held-out transfer, ablation, and all wrong-schema families to fail.
+
+          Counter-regime:
+          - Change the target obligations so the appropriate representational construction is not the same schema family.
+          - Require a different family/families to survive, demonstrating schema selection is residual-relative rather than globally biased toward binary tables.
+          - Interpret literal family multiplicity behaviorally if multiple schemas induce the same protected partition.
+
+          Frozen gates:
+          G1 M0 CompleteCover absence.
+          G2 unique constructor schema selected in stage 1.
+          G3 unique behavioral orbit within selected schema.
+          G4 acquisition exact.
+          G5 held-out transfer.
+          G6 ablation restores failure.
+          G7 wrong schemas fail.
+          G8 counter-regime selects a different schema family.
+          G9 counter-regime has a coherent behavioral class.
+          G10 stage-1 conclusion survives all anonymous primitive permutations.
+
+          Interpretation boundary:
+          A pass establishes bounded residual-relative schema selection from a supplied finite universe of schema TYPES. It does not establish autonomous invention of entirely new schema types or arities outside that universe.
+
+          Exploratory minimal-core work only; does not alter Bao A/B/G/P preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_schema_selection_v6.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-core-schema-selection-v6
+          path: artifacts/minimal_core_schema_selection_v6
+          retention-days: 30
