@@ -1,0 +1,60 @@
+name: Minimal Core Context Synthesis V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/minimal_core_context_synthesis_v2.py'
+      - '.github/workflows/minimal-core-context-synthesis-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  context-synthesis-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_CONTEXT_SYNTHESIS_V2 PRECOMMIT
+          Parent evidence: Minimal Core Future Equivalence V1 run 32826349732.
+          Hypothesis: a residual can drive synthesis of a missing contextual distinguisher from a frozen anonymous primitive grammar, and the induced context can update the future-relative quotient without semantic labels being supplied.
+
+          Stage 1:
+          - 16 raw states (u,v,p), p in 0..3.
+          - Initial representation remembers u and a nuisance presentation bit while aliasing v.
+          - Missing acquisition context is not primitive; in the anonymous grammar it is representable minimally as XOR of two primitive observations.
+          - Constructor sees only pairwise SAME/DIFFERENT verifier residual obligations on acquisition states, not semantic names or target labels.
+          - Held-out future contexts are not used in synthesis.
+
+          Stage 2:
+          - A new continuation makes a previously irrelevant presentation distinction relevant.
+          - The same synthesis procedure must add the new minimal context, refine the quotient, and lose exactness under targeted ablation.
+
+          Frozen gates:
+          G1 initial context family inadequate.
+          G2 no smaller stage-1 context exists.
+          G3 unique minimal stage-1 context synthesized.
+          G4 synthesized context recovers hidden substitutability.
+          G5 revised quotient exact on acquisition and held-out continuations.
+          G6 context ablation restores failure.
+          G7 matched-complexity wrong context fails.
+          G8 stage-2 new context is minimal.
+          G9 recursive context growth refines the quotient and targeted ablation fails.
+          G10 conclusions survive 128 anonymous primitive relabelings.
+
+          Interpretation boundary:
+          A pass establishes bounded context synthesis inside the declared finite primitive grammar. It does not establish autonomous invention of arbitrary verifier contexts or natural-domain adequacy.
+          This remains exploratory minimal-core work and does not alter the Bao A/B/G/P preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_context_synthesis_v2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-core-context-synthesis-v2
+          path: artifacts/minimal_core_context_synthesis_v2
+          retention-days: 30
