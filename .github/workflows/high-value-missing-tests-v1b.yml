@@ -1,0 +1,49 @@
+name: High Value Missing Tests V1B
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/high_value_missing_tests_v1b.py'
+      - '.github/workflows/high-value-missing-tests-v1b.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  separator-suite-v1b:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen V1B protocol
+        run: |
+          cat <<'EOF'
+          HIGH_VALUE_MISSING_TESTS_V1B PRECOMMIT
+          Parent pilot: run 32798523879.
+          Pilot status: all five separators executed, but run was non-evidentiary because n=24 violated frozen n>=60 gate.
+          V1B change 1 only: use one observation per affine task instead of two so the same latent-family generator retains ambiguity and reaches >=60 tasks.
+          V1 hypotheses, scoring, corruption definitions, inter-generation regime, and relation grammars are unchanged.
+          V1B change 2: add a precommitted held-out orientation panel to discriminate general orientation normalization from the V1 panel-specific class split; neither explanation is selected from V1 outcome alone.
+          Primary gates:
+            - n_tasks >= 60;
+            - at least one verifier feedback level remains information-insufficient under the frozen V1 diagnostic;
+            - irrelevant-cell corruption outperforms or equals action-relevant corruption;
+            - old unreachable -> post-C1 reachable -> ablation unreachable;
+            - all three relation grammars recover the same behavioral quotient;
+            - orientation normalization repairs original and held-out orientation failures while panel-specific class split and scope exclusion fail held-out reversed cases.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V1B separator suite
+        run: python experiments/high_value_missing_tests_v1b.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: high-value-missing-tests-v1b
+          path: artifacts/high_value_missing_tests_v1b
+          if-no-files-found: warn
