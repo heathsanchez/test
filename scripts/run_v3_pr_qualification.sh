@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
 set -euxo pipefail
 V2=3d7585c21242f29fdaa48ae9a16e16c6afe42238
-rm -rf /tmp/mgv3-src /tmp/mgv3-baseline /tmp/mgv3-gap2 /tmp/arena-v3
+rm -rf /tmp/mgv3-src /tmp/mgv3-baseline /tmp/mgv3-ratio15 /tmp/arena-v3
 
 git clone https://github.com/metalogiclabs/mathgraph-lean-kernel.git /tmp/mgv3-src
 cd /tmp/mgv3-src
 git checkout "$V2"
 git worktree add /tmp/mgv3-baseline "$V2"
-git worktree add /tmp/mgv3-gap2 "$V2"
+git worktree add /tmp/mgv3-ratio15 "$V2"
 
 python3 - <<'PY'
 from pathlib import Path
-p=Path('/tmp/mgv3-gap2/src/conv.rs')
+p=Path('/tmp/mgv3-ratio15/src/conv.rs')
 s=p.read_text()
 old='''                    } else {\n                        self.unfold_pair(depth, t, t2)\n                    }\n'''
-new='''                    } else {\n                        let lx = sx.len();\n                        let ly = sy.len();\n                        let gap = if lx >= ly { lx - ly } else { ly - lx };\n                        if gap >= 2 {\n                            if lx <= ly {\n                                let v1 = self.unfold_value(depth, t);\n                                if !std::ptr::eq(v1, t) {\n                                    return self.unify::<true>(depth, v1, t2);\n                                }\n                                let v2 = self.unfold_value(depth, t2);\n                                if !std::ptr::eq(v2, t2) {\n                                    return self.unify::<true>(depth, t, v2);\n                                }\n                            } else {\n                                let v2 = self.unfold_value(depth, t2);\n                                if !std::ptr::eq(v2, t2) {\n                                    return self.unify::<true>(depth, t, v2);\n                                }\n                                let v1 = self.unfold_value(depth, t);\n                                if !std::ptr::eq(v1, t) {\n                                    return self.unify::<true>(depth, v1, t2);\n                                }\n                            }\n                        }\n                        self.unfold_pair(depth, t, t2)\n                    }\n'''
+new='''                    } else {\n                        let lx = sx.len();\n                        let ly = sy.len();\n                        let gap = if lx >= ly { lx - ly } else { ly - lx };\n                        let shorter = lx.min(ly);\n                        let longer = lx.max(ly);\n                        if gap >= 2 && (longer * 2 >= shorter * 3) {\n                            if lx <= ly {\n                                let v1 = self.unfold_value(depth, t);\n                                if !std::ptr::eq(v1, t) {\n                                    return self.unify::<true>(depth, v1, t2);\n                                }\n                                let v2 = self.unfold_value(depth, t2);\n                                if !std::ptr::eq(v2, t2) {\n                                    return self.unify::<true>(depth, t, v2);\n                                }\n                            } else {\n                                let v2 = self.unfold_value(depth, t2);\n                                if !std::ptr::eq(v2, t2) {\n                                    return self.unify::<true>(depth, t, v2);\n                                }\n                                let v1 = self.unfold_value(depth, t);\n                                if !std::ptr::eq(v1, t) {\n                                    return self.unify::<true>(depth, v1, t2);\n                                }\n                            }\n                        }\n                        self.unfold_pair(depth, t, t2)\n                    }\n'''
 anchor='''                    } else if rh.is_lt(&lh) {'''
 pos=s.index(anchor)
 target=s.index(old,pos)
@@ -22,7 +22,7 @@ s=s[:target]+s[target:].replace(old,new,1)
 p.write_text(s)
 PY
 
-for arm in baseline gap2; do
+for arm in baseline ratio15; do
   cd "/tmp/mgv3-$arm"
   cargo test --release --locked
   RUSTFLAGS='-C target-cpu=x86-64' cargo build --release --locked
@@ -37,23 +37,22 @@ git clone --depth 1 https://github.com/leanprover/lean-kernel-arena /tmp/arena-v
 cd /tmp/arena-v3
 nix develop -c ./lka.py build-test
 
-# Recursive semantic replay: include nested Tutorial and undecidability suites.
 : > /tmp/v3-semantic-gate.txt
 count=0
 while IFS= read -r f; do
   count=$((count+1))
-  bstatus=0; gstatus=0
+  bstatus=0; rstatus=0
   timeout 180 /tmp/mgv3-bin-baseline /tmp/checker-v3.json < "$f" >/tmp/v3-base.out 2>/tmp/v3-base.err || bstatus=$?
-  timeout 180 /tmp/mgv3-bin-gap2 /tmp/checker-v3.json < "$f" >/tmp/v3-gap2.out 2>/tmp/v3-gap2.err || gstatus=$?
-  if [ "$bstatus" -ne "$gstatus" ]; then
-    printf 'MISMATCH\t%s\tbase=%s\tgap2=%s\n' "$f" "$bstatus" "$gstatus" | tee -a /tmp/v3-semantic-gate.txt
+  timeout 180 /tmp/mgv3-bin-ratio15 /tmp/checker-v3.json < "$f" >/tmp/v3-ratio15.out 2>/tmp/v3-ratio15.err || rstatus=$?
+  if [ "$bstatus" -ne "$rstatus" ]; then
+    printf 'MISMATCH\t%s\tbase=%s\tratio15=%s\n' "$f" "$bstatus" "$rstatus" | tee -a /tmp/v3-semantic-gate.txt
+    cp /tmp/v3-semantic-gate.txt "$GITHUB_WORKSPACE"/
     exit 1
   fi
   printf 'MATCH\t%s\tstatus=%s\n' "$f" "$bstatus" >> /tmp/v3-semantic-gate.txt
 done < <(find _build/tests -type f -name '*.ndjson' | sort)
-echo "RECURSIVE_SEMANTIC_GATE_PASS tests=$count" | tee -a /tmp/v3-semantic-gate.txt
+echo "RECURSIVE_SEMANTIC_GATE_PASS tests=$count candidate=ratio15" | tee -a /tmp/v3-semantic-gate.txt
 
-# Repeated full-Mathlib performance qualification, alternating arm order.
 : > /tmp/v3-times.tsv
 measure () {
   local arm=$1 rep=$2
@@ -62,9 +61,9 @@ measure () {
 }
 for rep in 1 2 3 4 5; do
   if (( rep % 2 == 1 )); then
-    measure baseline "$rep"; measure gap2 "$rep"
+    measure baseline "$rep"; measure ratio15 "$rep"
   else
-    measure gap2 "$rep"; measure baseline "$rep"
+    measure ratio15 "$rep"; measure baseline "$rep"
   fi
 done
 
@@ -75,14 +74,14 @@ r=defaultdict(list)
 with open('/tmp/v3-times.tsv') as f:
     for arm,rep,x in csv.reader(f, delimiter='\t'):
         r[arm].append(float(x))
-b=statistics.median(r['baseline']); g=statistics.median(r['gap2'])
+b=statistics.median(r['baseline']); g=statistics.median(r['ratio15'])
 delta=(g/b-1)*100
-print('V3_MATHLIB_QUALIFICATION')
+print('V3_RATIO15_MATHLIB_QUALIFICATION')
 print('baseline', b, r['baseline'])
-print('gap2', g, r['gap2'])
+print('ratio15', g, r['ratio15'])
 print('delta_pct', delta)
 if g <= 0.99*b:
-    print('V3_PR_DECISION=QUALIFIED')
+    print('V3_PR_DECISION=QUALIFIED_RATIO15')
 else:
     print('V3_PR_DECISION=PERF_NOT_REPRODUCED')
     raise SystemExit(1)
