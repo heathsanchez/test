@@ -29,7 +29,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for true carry-forward and residual controller
+      - name: Patch Vero for monotone verified retention and residual controller
         working-directory: vero
         shell: bash
         run: |
@@ -38,10 +38,17 @@ jobs:
 
           p = Path('src/vero/cli_iterate.py')
           s = p.read_text()
+
+          anchor = '    launched_any = False  # has any chunk run yet this run?\n\n'
+          helper = '''    launched_any = False  # has any chunk run yet this run?\n\n    def _best_verified_seed() -> str | None:\n        \"\"\"Monotone retention: never seed from a regression.\n\n        The externally verified initial checkpoint is 15/48 with zero failures.\n        A generated artifact is eligible for retention only if it builds, has\n        zero failed specs, and weakly dominates that verified score. Among\n        eligible checkpoints retain the highest-scoring one.\n        \"\"\"\n        import os\n        initial = os.environ.get(\"VERO_INITIAL_SEED\")\n        eligible = [\n            r for r in records\n            if r.build_ok is True\n            and (r.failed_specs or 0) == 0\n            and (r.passed_specs if r.passed_specs is not None else -1) >= 15\n        ]\n        if not eligible:\n            return initial\n        best = max(\n            eligible,\n            key=lambda r: (r.passed_specs or -1, -(r.index or 0)),\n        )\n        return best.artifact_path\n\n'''
+          if anchor not in s:
+              raise SystemExit('iterate helper anchor not found')
+          s = s.replace(anchor, helper, 1)
+
           old = '            seed_artifact_path=None,\n            timeout_override=cap_s,'
-          new = '            seed_artifact_path=((__import__("os").environ.get("VERO_INITIAL_SEED")) if not launched_any else (records[-1].artifact_path if resume_enabled and records else None)),\n            timeout_override=cap_s,'
+          new = '            seed_artifact_path=_best_verified_seed(),\n            timeout_override=cap_s,'
           if old not in s:
-              raise SystemExit('iterate carry-forward patch target not found')
+              raise SystemExit('iterate seed patch target not found')
           p.write_text(s.replace(old, new, 1))
 
           p = Path('src/vero/generation/prompt.py')
@@ -52,7 +59,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# Residual-driven developmental controller\n\nThis run begins from an independently Vero-verified 15/48 artifact. Preserve all verified progress. Do not restart implementations or solved proofs.\n\nApply explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nCurrent state: 15 passed, 0 failed, 33 unfilled. Previous verified refinements include a reversed-list/alignment capability, convolve_one_right, and an extensionally equivalent structural gfPowMod recursion that made recurrence transparent.\n\nFor the remaining residuals:\n1. Verify the seeded 15/48 state and inventory the 33 live specs.\n2. Quotient them by shared obstruction. Keep search failure distinct from missing lemma/composition, representation mismatch, frozen-reference boundary, and implementation representation failure.\n3. Push lawful composition before inventing new machinery.\n4. Prioritize the ring evaluation-homomorphism separator: build the smallest reusable bridge between editable list algorithms and frozen refPolyEval semantics that can unlock multiple of mul_eval_hom, sub_eval_hom, mul_comm_eval, mul_assoc_eval, mul_add_distrib_eval and downstream division reconstruction.\n5. Prefer one reusable lemma/refactor that closes several obligations over isolated tactic proofs. If that separator is false or too expensive, record the counterevidence and move to the next obstruction class.\n6. After every capability/refactor, replay the full benchmark; retain only verified gains. Preserve implementation conformance.\n7. Record RESIDUAL_REPORT.md with starting score, obstruction quotient, chosen separator, newly discharged specs, remaining residuals, and an ablation claim.\n\nThe objective is causal verified reachability gain from residual-driven structural change, not raw proof volume.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r\"\"\"\n\n# Residual-driven developmental controller\n\nThis run begins from an independently Vero-verified 15/48 artifact. The outer controller now enforces monotone verified retention: a candidate checkpoint is retained only if it builds, has zero failed specs, and scores at least 15/48; otherwise the next iteration reverts to the best verified checkpoint.\n\nApply explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nCurrent verified state: 15 passed, 0 failed, 33 unfilled. Previous verified refinements include a reversed-list/alignment capability, convolve_one_right, and an extensionally equivalent structural gfPowMod recursion that made recurrence transparent.\n\nFor the remaining residuals:\n1. Verify the seeded 15/48-or-better state and inventory the live specs.\n2. Quotient them by shared obstruction. Keep search failure distinct from missing lemma/composition, representation mismatch, frozen-reference boundary, and implementation representation failure.\n3. Push lawful composition before inventing new machinery.\n4. Continue the ring evaluation-homomorphism separator. The previous attempt localized the obstruction to modular-normalization lemmas around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication and convolution. Build the smallest reusable normalization/evaluation bridge that can unlock multiple of mul_eval_hom, sub_eval_hom, mul_comm_eval, mul_assoc_eval, mul_add_distrib_eval and downstream division reconstruction.\n5. Prefer one reusable lemma/refactor that closes several obligations over isolated tactic proofs. If the separator is false or too expensive, record the counterevidence and move to the next obstruction class.\n6. Do not leave previously verified proof slots broken. Before finishing a candidate checkpoint, run the relevant Lean file and full lake build; repair or revert speculative edits that regress verified obligations.\n7. After every candidate capability/refactor, replay the full benchmark; the outer verifier will revoke regressions automatically.\n8. Record RESIDUAL_REPORT.md with starting score, obstruction quotient, chosen separator, newly discharged specs, remaining residuals, and an ablation claim.\n\nThe objective is causal verified reachability gain from residual-driven structural change, not raw proof volume.\n\"\"\"\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
