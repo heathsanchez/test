@@ -1,0 +1,42 @@
+name: Behavioral Object Equivalence Condition V4
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/behavioral_object_equivalence_condition_v4.py'
+      - '.github/workflows/behavioral-object-equivalence-condition-v4.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  equivalence-condition-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          BEHAVIORAL_OBJECT_EQUIVALENCE_CONDITION_V4 PRECOMMIT
+          Parent evidence: Behavioral Object Class Boundary V3 run 32808509116.
+          V3 showed the five-member class splits in generic finite tables.
+          Frozen hypothesis D: existence of a target-deterministic candidate query is sufficient for all five frozen measures to induce the same selected action.
+          Stress: 5,000 heterogeneous finite tasks satisfying D; any action disagreement falsifies sufficiency.
+          Boundary control: construct a task satisfying uniform query-outcome masses U and equal target-support sizes E, but not D; U+E must still permit an action split.
+          This tests a structural condition for equivalence, not autonomous discovery of the condition.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run equivalence-condition separator
+        run: python experiments/behavioral_object_equivalence_condition_v4.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: behavioral-object-equivalence-condition-v4
+          path: artifacts/behavioral_object_equivalence_condition_v4
+          retention-days: 30
