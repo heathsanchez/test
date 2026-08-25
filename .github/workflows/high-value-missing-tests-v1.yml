@@ -1,0 +1,43 @@
+name: High Value Missing Tests V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/high_value_missing_tests_v1.py'
+      - '.github/workflows/high-value-missing-tests-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  separator-suite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          HIGH_VALUE_MISSING_TESTS_V1 PRECOMMIT
+          Seed: 20260825
+          A verifier-channel test: precompute action-insufficient feedback levels by exact finite enumeration.
+          B corruption test: compare irrelevant-cell versus action-relevant-cell corruption under the same quotient selector.
+          C inter-generation test: require old unreachable, post-admission reachable, and ablation unreachable under a declared finite constructor regime.
+          D relation-grammar invariance: three independently encoded relation grammars must recover the same behavioral quotient.
+          E orientation diagnosis: compare normalization, scope-exclusion, and class-split rivals on a frozen 14-pass/2-fail panel.
+          No outcome-dependent changes are permitted after this commit.
+          EOF
+      - name: Run separator suite
+        run: python experiments/high_value_missing_tests_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: high-value-missing-tests-v1
+          path: artifacts/high_value_missing_tests_v1
+          if-no-files-found: warn
