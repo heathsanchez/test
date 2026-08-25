@@ -1,0 +1,59 @@
+name: Minimal Core Constructor Expansion V3
+
+on:
+  workflow_dispatch:
+
+jobs:
+  constructor-expansion-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_CONSTRUCTOR_EXPANSION_V3 PRECOMMIT
+          Parent evidence: Minimal Core Context Synthesis V2 run 32827642857.
+
+          Hypothesis: verified residuals can force a bounded expansion of the context-construction language itself.
+
+          Stage 1:
+          - Freeze M0 to constants, anonymous primitive observations, and unary negation only.
+          - Exhaust M0 completely and require zero context satisfying the verifier-induced SAME/DIFFERENT obligations.
+          - Freeze a meta-grammar of candidate single binary-operator edits before evaluation.
+          - Residual obligations, not target labels or semantic names, select the unique minimal edit.
+          - M1 must form the previously unformable distinguisher, transfer to held-out continuation states, and lose the capability under edit ablation.
+          - Matched-complexity wrong operator edits must fail.
+
+          Stage 2:
+          - Change the continuation regime so a second previously irrelevant distinction becomes necessary.
+          - M1 must again be CompleteCover-insufficient.
+          - A second frozen meta-edit (PAIR/product constructor) must create the minimum behavioral context, refine the quotient, and fail under ablation.
+
+          Gates:
+          G1 M0 CompleteCover establishes absence.
+          G2 unique minimal stage-1 grammar edit.
+          G3 M1 forms required context.
+          G4 held-out transfer.
+          G5 removing the edit restores unformability.
+          G6 matched-complexity wrong edits fail.
+          G7 regime-2 target is unformable in M1.
+          G8 stage-2 minimum is behaviorally unique.
+          G9 expanded M2 is exact and ablation restores failure.
+          G10 stage-1 conclusion survives all anonymous primitive permutations.
+
+          Interpretation boundary:
+          A pass demonstrates Form(M0) subsetneq Form(M1) and then Form(M1) subsetneq Form(M2) causally induced by verifier residual obligations inside an explicitly supplied finite meta-grammar. It does NOT show unrestricted invention of arbitrary meta-operators, natural-domain adequacy, or autonomous expansion beyond the supplied meta-language.
+
+          Exploratory minimal-core work only; does not alter Bao A/B/G/P preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_constructor_expansion_v3.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-core-constructor-expansion-v3
+          path: artifacts/minimal_core_constructor_expansion_v3
+          retention-days: 30
