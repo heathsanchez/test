@@ -1,0 +1,48 @@
+name: Minimal Core Schema Orbit Separator V7
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_schema_orbit_separator_v7.py'
+      - '.github/workflows/minimal-core-schema-orbit-separator-v7.yml'
+
+jobs:
+  schema-orbit-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_SCHEMA_ORBIT_SEPARATOR_V7 PRECOMMIT
+          Parent negative: V6 run 32833460925.
+
+          V6 residual structure left BINARY_TABLE and RELATION jointly viable.
+          V7 does not force literal schema uniqueness. It tests whether the surviving schema families are one future-relative behavioral class under the current continuation set, and whether a minimal new continuation splits that class.
+
+          Frozen gates:
+          G1 both V6 schema families survive.
+          G2 they induce the same protected partition on current acquisition+held-out states.
+          G3 the complete finite continuation carrier contains at least one separator.
+          G4 minimum separator is unique up to complement symmetry.
+          G5 adding it refines the schema class so exactly one schema family is sufficient.
+          G6 removing it restores the previous behavioral equivalence.
+          G7 conclusion survives all anonymous primitive permutations.
+
+          Interpretation boundary:
+          A pass supports schema identity as future-relative behavioral equivalence, not literal constructor syntax. It does not imply unrestricted schema invention; the continuation carrier and schema families remain finite and supplied.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_schema_orbit_separator_v7.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-core-schema-orbit-separator-v7
+          path: artifacts/minimal_core_schema_orbit_separator_v7
+          retention-days: 30
