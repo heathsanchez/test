@@ -1,0 +1,66 @@
+name: Minimal Core Future Equivalence V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/minimal_core_future_equivalence_v1.py'
+      - '.github/workflows/minimal-core-future-equivalence-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  minimal-core-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_FUTURE_EQUIVALENCE_V1 PRECOMMIT
+          Hypothesis: the minimal developmental core can be reduced to
+            (current equivalence relation, external contextual verifier, coarsest consistent revision).
+
+          Finite substrate:
+          - 16 raw states (u,v,p), where p is a presentation coordinate.
+          - Initial representation (u,p): it falsely distinguishes presentation values p but aliases v.
+          - Regime-1 verifier contexts depend only on future-relevant (u,v).
+          - Acquisition contexts are distinct from held-out future contexts.
+          - Regime 2 adds one continuation that makes presentation parity newly relevant.
+
+          Primary tests:
+          G1 initial representation is inadequate.
+          G2 verifier-induced minimal revision is exact on acquisition.
+          G3 the induced quotient is exact on held-out future contexts.
+          G4 it is strictly smaller than both initial representation and raw identity.
+          G5 split-only restores correctness but remains over-refined.
+          G6 quotient-only compresses but remains behaviorally inadequate.
+          G7 a matched-size wrong quotient fails.
+          G8 regime change forces refinement of the previously sufficient quotient.
+          G9 targeted ablation of that new distinction restores failure.
+          G10 all conclusions survive 256 independent surface relabellings.
+
+          Interpretation boundary:
+          A pass would show that this three-part core is sufficient for exact split/quotient
+          revision, held-out continuation preservation, regime-relative refinement, and causal
+          ablation in this declared finite world. It does not establish that the same three-part
+          core is sufficient in natural domains, nor autonomous invention of verifier contexts.
+
+          This separator is exploratory/minimal-core work and is not part of the Bao A/B/G/P
+          confirmatory joint study; it does not consume or alter that preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run minimal-core separator
+        run: python experiments/minimal_core_future_equivalence_v1.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-future-equivalence-v1
+          path: artifacts/minimal_core_future_equivalence_v1
+          retention-days: 30
