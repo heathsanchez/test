@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Residual-driven retry: Horner/zipAddPad congruence using verified map-mod bridge.
+# Residual-induced relation-management probe: absorb one extra outer modulo.
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 6
     permissions:
       actions: read
       contents: read
@@ -30,7 +30,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for bounded Horner retry
+      - name: Patch Vero for minimal relation-normalization probe
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL Horner / zipAddPad retry after verified structural separator\n\nYou begin from the independently Vero-verified 15/48 artifact containing:\n- `NatModEq`\n- `natModEq_mod`\n- `natModEq_add`\n- `natModEq_mul`\n- `natModEq_refPolyEvalRevAux_map_mod`\n\nThe previous Horner attempt failed because empty-side branches normalized to `List.map (fun a => a % p) xs`. That exact residual has now been discharged by the verified map-mod evaluation bridge. Preserve all existing verified state.\n\nTarget exactly ONE theorem in Ring `global_aux`, equivalent to:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p xs ys))\n  (Galoistools.refPolyEvalRevAux p x xs + Galoistools.refPolyEvalRevAux p x ys)`\n\nfor all `p x xs ys`, with no unnecessary hypotheses.\n\nRules:\n1. Reuse `natModEq_refPolyEvalRevAux_map_mod` immediately for both empty-side branches. Do not rediscover or re-prove map-mod normalization.\n2. For the paired branch, use the existing congruence algebra compositionally. Isolate only the remaining distributive/associative alignment between `(a+b)+x*(A+B)` and `(a+x*A)+(b+x*B)` before modulo.\n3. Inspect only the relevant global_aux helpers plus definitions of `zipAddPad` and `refPolyEvalRevAux`. No repo-wide search.\n4. Do NOT attempt any benchmark theorem (`add_assoc_eval`, `mul_eval_hom`, etc.) in this run.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, stop immediately, retain the theorem, and write `RESIDUAL_REPORT.md` naming the cheapest benchmark transfer target.\n7. If it fails after one repair, revert only the new theorem, preserve the verified 15/48 + helper state, and record the exact surviving paired-branch identity.\n8. No full `lake build`; focused Ring compilation only.\n\nBe extremely economical. Success is the compiled Horner/zipAddPad congruence bridge while preserving 15/48 with 0 failures.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL relation-management constructor probe\n\nStep back. Do NOT retry the Horner theorem. The last verified failure already isolated the exact residual: `NatModEq` unfolds to equality of remainders, and an already-reduced Horner expression acquires one redundant outer `% p`. The representation is fine; we are missing the smallest relation law that absorbs that normalization boundary.\n\nYou begin from the independently Vero-verified 15/48 artifact containing `NatModEq`, `natModEq_mod`, `natModEq_add`, `natModEq_mul`, and `natModEq_refPolyEvalRevAux_map_mod`. Preserve all of it.\n\nTarget exactly ONE tiny theorem in Ring `global_aux` equivalent to:\n\n`theorem natModEq_mod_left {p a b : Nat} (h : NatModEq p a b) : NatModEq p (a % p) b`\n\n(or the opposite orientation if that is strictly more useful for absorbing the extra outer modulo). It should be essentially `Nat.mod_mod` plus `h`.\n\nRules:\n1. Inspect only the definition of `NatModEq` and `Nat.mod_mod` orientation if necessary. No repo inventory.\n2. Do not touch Horner, `zipAddPad`, or any benchmark theorem.\n3. Add only this relation-management lemma to Ring `global_aux`.\n4. Compile `Galoistools/Proof/Ring.lean` immediately. At most ONE syntactic/orientation repair.\n5. If it compiles, stop immediately and write `RESIDUAL_REPORT.md`: next experiment is to compose the existing failed Horner paired branch WITHOUT unfolding `NatModEq` early, using this normalization lemma at the boundary.\n6. If it fails, revert only the new lemma and record the exact type mismatch.\n7. No full build.\n\nThis should be easy. Success is one compiled normalization law while Vero remains 15/48 with 0 failures.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -74,12 +74,12 @@ jobs:
         working-directory: vero
         run: uv sync
 
-      - name: Verify map-mod bridge seed exists
+      - name: Verify seed exists
         run: |
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run bounded Horner retry
+      - name: Run minimal relation-normalization probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=90 \
+            agent.timeout_seconds=60 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools Horner retry with map-mod bridge' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero NatModEq normalization bridge probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
