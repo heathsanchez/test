@@ -1,0 +1,64 @@
+name: Minimal Core Induced Residual History V14
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_induced_residual_history_v14.py'
+      - '.github/workflows/minimal-core-induced-residual-history-v14.yml'
+
+jobs:
+  induced-residual-history:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_INDUCED_RESIDUAL_HISTORY_V14 PRECOMMIT
+          Parent positive: Minimal Core Relational Epistemic Feature V13 run 32881479358.
+
+          Question: can the residual-side representation needed for relational epistemic search be induced from raw verifier interaction history, rather than supplied as V13's complete structural residual vector?
+
+          Frozen design:
+          - Same 3-bit finite universe and source-distinct train/held-out pair families as V11-V13.
+          - Controller is NOT given the 28-edge A-aliases/B-splits residual vector.
+          - For each residual it receives only 12 anonymous pair-probe interactions; each probe returns two raw verifier bits SAME_A and SAME_B.
+          - Candidate continuations are still observed only as raw 8-bit traces.
+          - Generic four-class history/query interaction counts are learned from pairwise verifier separator labels on source training pairs.
+          - Held-out ranking uses only the learned model over raw probe histories and raw continuation behavior; no held-out separator map is used.
+          - Compare against V12-style global scalar, lexical, 200 seeded random controls, and residual-history ablation.
+          - Permanence remains CompleteCover-relative.
+          - Relabel states, transport anonymous probes, refit, and require robust held-out discovery.
+
+          Frozen gates:
+          G1 all pairs equivalent at C0.
+          G2 pairwise training verifier signal nonconstant.
+          G3 history model finds every held-out provisional pair.
+          G4 no permanent pair falsely splits.
+          G5 permanence assigned only after CompleteCover.
+          G6 history model strictly beats V12-style scalar baseline.
+          G7 history model strictly beats lexical control.
+          G8 history model strictly beats random median.
+          G9 raw history uses 12 probes, strictly fewer than V13's 28 supplied structural residual coordinates.
+          G10 ablating residual history harms search.
+          G11 re-induction survives anonymous relabeling within 2x baseline, floor 4.
+          G12 no hand-authored full residual vector enters the learner.
+
+          Interpretation boundary:
+          A pass establishes bounded induction of a useful residual-relative search representation from a supplied raw verifier-probe interface. It does not establish autonomous invention of that probe interface, arbitrary residual-schema growth, or replacement of CompleteCover for permanence.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V14
+        run: python experiments/minimal_core_induced_residual_history_v14.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-induced-residual-history-v14
+          path: artifacts/minimal_core_induced_residual_history_v14
+          retention-days: 30
