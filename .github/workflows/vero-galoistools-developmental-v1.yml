@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Residual-induced relation-management probe: absorb one extra outer modulo.
+# Recompose after verified residual-induced normalization law.
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
     permissions:
       actions: read
       contents: read
@@ -21,16 +21,16 @@ jobs:
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
 
-      - name: Download verified map-mod bridge artifact
+      - name: Download verified normalization artifact
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32904668523
+          run-id: 32905860354
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for minimal relation-normalization probe
+      - name: Patch Vero for constrained Horner recomposition
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL relation-management constructor probe\n\nStep back. Do NOT retry the Horner theorem. The last verified failure already isolated the exact residual: `NatModEq` unfolds to equality of remainders, and an already-reduced Horner expression acquires one redundant outer `% p`. The representation is fine; we are missing the smallest relation law that absorbs that normalization boundary.\n\nYou begin from the independently Vero-verified 15/48 artifact containing `NatModEq`, `natModEq_mod`, `natModEq_add`, `natModEq_mul`, and `natModEq_refPolyEvalRevAux_map_mod`. Preserve all of it.\n\nTarget exactly ONE tiny theorem in Ring `global_aux` equivalent to:\n\n`theorem natModEq_mod_left {p a b : Nat} (h : NatModEq p a b) : NatModEq p (a % p) b`\n\n(or the opposite orientation if that is strictly more useful for absorbing the extra outer modulo). It should be essentially `Nat.mod_mod` plus `h`.\n\nRules:\n1. Inspect only the definition of `NatModEq` and `Nat.mod_mod` orientation if necessary. No repo inventory.\n2. Do not touch Horner, `zipAddPad`, or any benchmark theorem.\n3. Add only this relation-management lemma to Ring `global_aux`.\n4. Compile `Galoistools/Proof/Ring.lean` immediately. At most ONE syntactic/orientation repair.\n5. If it compiles, stop immediately and write `RESIDUAL_REPORT.md`: next experiment is to compose the existing failed Horner paired branch WITHOUT unfolding `NatModEq` early, using this normalization lemma at the boundary.\n6. If it fails, revert only the new lemma and record the exact type mismatch.\n7. No full build.\n\nThis should be easy. Success is one compiled normalization law while Vero remains 15/48 with 0 failures.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL Horner recomposition after exact residual law\n\nYou begin from the independently Vero-verified 15/48 artifact containing the accumulated residual-induced capability stack:\n- `NatModEq`\n- `natModEq_mod`\n- `natModEq_add`\n- `natModEq_mul`\n- `natModEq_refPolyEvalRevAux_map_mod`\n- `natModEq_mod_left`\n\nThe previous Horner attempt already established that the empty-list branches are solved. Its only failure came from unfolding `NatModEq` too early in the paired branch, creating a redundant outer `% p`. That exact residual now has a verified constructor, `natModEq_mod_left`.\n\nRECOMPOSE now. Target exactly ONE theorem in Ring `global_aux` equivalent to:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p xs ys))\n  (Galoistools.refPolyEvalRevAux p x xs + Galoistools.refPolyEvalRevAux p x ys)`\n\nfor all `p x xs ys`.\n\nRules:\n1. Reuse `natModEq_refPolyEvalRevAux_map_mod` for both empty-side branches.\n2. In the paired branch, keep `NatModEq` ABSTRACT. Do NOT globally `unfold NatModEq`. Compose `natModEq_mul`, `natModEq_add`, and `natModEq_mod_left` at the exact normalization boundary.\n3. The only raw Nat equality you may prove is the distributive/associative rearrangement `(a+b)+x*(A+B) = (a+x*A)+(b+x*B)` (or an equivalent orientation), then transport it into `NatModEq` by rewriting.\n4. Inspect only the accumulated helpers and the two definitions. No repo inventory, no benchmark targets.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain it. Write `RESIDUAL_REPORT.md` naming exactly one cheapest transfer target among the unfilled Ring specs; prefer an addition/evaluation theorem that directly consumes this bridge.\n7. If it still fails, revert only the new Horner theorem and record the exact residual expression. Do not invent another abstraction in this run.\n8. No full build; Vero evaluation will independently check the artifact.\n\nThis is recomposition, not search. Be economical. Success is the compiled Horner/zipAddPad congruence bridge with the verified 15/48 state preserved.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run minimal relation-normalization probe
+      - name: Run constrained Horner recomposition
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=60 \
+            agent.timeout_seconds=75 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero NatModEq normalization bridge probe' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero Horner recomposition with normalization bridge' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
