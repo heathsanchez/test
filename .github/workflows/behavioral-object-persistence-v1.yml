@@ -1,0 +1,47 @@
+name: Behavioral Object Persistence V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/behavioral_object_persistence_v1.py'
+      - '.github/workflows/behavioral-object-persistence-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  behavioral-object-persistence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          BEHAVIORAL_OBJECT_PERSISTENCE_V1 PRECOMMIT
+          Parent negative: binary residual persistence transfer run 32804572615.
+          Purpose: distinguish failure of verbal-rule retention from failure of structural behavioral retention.
+          Acquisition: 72 tasks from mod-2/mod-3; external exact verifier labels only which query is optimal.
+          Frozen candidate grammar: 8 generic scalar comparative relations, declared before outcome.
+          Retention: select the unique acquisition-best relation object. No natural-language rule is generated.
+          Held-out: 48 source-distinct mod-5 tasks, zero verifier feedback.
+          Controls: lexical cold; non-target query-entropy heuristic; wrong-pair-selected size-matched sham object; targeted ablation to cold.
+          Primary: retained behavioral object must strictly beat all four controls on held-out exact optimal-query rate.
+          Causal profile: retained-help-only cases must exceed retained-harm-only cases relative to ablation.
+          Important scope: this is a bounded test of retention FORM. The relation grammar is researcher-declared; a pass is not autonomous grammar invention.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run behavioral-object persistence separator
+        run: python experiments/behavioral_object_persistence_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: behavioral-object-persistence-v1
+          path: artifacts/behavioral_object_persistence_v1
+          retention-days: 30
