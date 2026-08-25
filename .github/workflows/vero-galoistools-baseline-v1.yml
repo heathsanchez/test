@@ -1,0 +1,71 @@
+name: Vero galoistools baseline v1
+
+on:
+  push:
+    paths:
+      - '.github/workflows/vero-galoistools-baseline-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  galoistools:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    steps:
+      - name: Checkout controller repo
+        uses: actions/checkout@v4
+
+      - name: Clone Vero
+        run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Lean toolchain manager
+        shell: bash
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+
+      - name: Check credential presence
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo 'OPENAI_API_KEY secret is not configured in this repository.'
+            exit 2
+          fi
+
+      - name: Run galoistools code+proof baseline
+        working-directory: vero
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        shell: bash
+        run: |
+          printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env
+          uv run vero run benchmark=galoistools agent=codex credentials=openai mode=codeproof name=galoistools-codex-baseline-v1 agent.timeout_seconds=5400
+
+      - name: Summarize report
+        if: always()
+        working-directory: vero
+        shell: bash
+        run: |
+          echo '## Vero galoistools baseline' >> "$GITHUB_STEP_SUMMARY"
+          find agent_runs -path '*/eval/*/report.md' -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          echo >> "$GITHUB_STEP_SUMMARY"
+          find agent_runs -maxdepth 4 -type f \( -name 'report.md' -o -name 'artifact.json' -o -name 'run.yaml' -o -name 'agent.log' -o -name 'agent_events.jsonl' \) -print || true
+
+      - name: Upload Vero run artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-baseline-v1
+          path: vero/agent_runs/galoistools-codex-baseline-v1/
+          if-no-files-found: warn
