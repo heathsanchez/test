@@ -1,0 +1,50 @@
+name: Verifier Binary Channel V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/verifier_binary_channel_v1.py'
+      - '.github/workflows/verifier-binary-channel-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  binary-channel-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          VERIFIER_BINARY_CHANNEL_V1 PRECOMMIT
+          Parent evidence: High Value Missing Tests V1B run 32798920496.
+          Motivation: V1B's verifier-channel diagnostic used target-value ambiguity as a conservative proxy; this run tests a literal non-identifying feedback channel.
+          Frozen tasks: 48 protected comparative-query tasks, 16 each from mod-2/mod-3/mod-5 families.
+          Frozen model: gpt-4.1-mini, temperature 0.
+          Arms: ONE_SHOT_COMPARATIVE; RECHECK_CONTROL (one equal-compute extra pass with no verifier information); VERIFIED_BINARY (one extra pass with only TOP_OK or TOP_WRONG).
+          Binary verifier never supplies a better rival, score, outcome, target value, quotient cell, or hidden state.
+          Only one binary repair round is allowed, preventing repeated membership-query elimination.
+          Before LLM scoring, for every canonical proposed action index i, TOP_WRONG must remain compatible with at least two distinct optimal action indices over the frozen corpus.
+          Primary: VERIFIED_BINARY exact optimal-query rate > ONE_SHOT_COMPARATIVE and > RECHECK_CONTROL.
+          Secondary: VERIFIED_BINARY downstream accuracy >= RECHECK_CONTROL.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run binary verifier separator
+        run: python experiments/verifier_binary_channel_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verifier-binary-channel-v1
+          path: artifacts/verifier_binary_channel_v1
+          retention-days: 30
