@@ -1,0 +1,50 @@
+name: Minimal Core Schema Isomorphism V8
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_schema_isomorphism_v8.py'
+      - '.github/workflows/minimal-core-schema-isomorphism-v8.yml'
+
+jobs:
+  schema-isomorphism-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_SCHEMA_ISOMORPHISM_V8 PRECOMMIT
+          Parent negative: V7 run 32845320435.
+
+          V7 found BINARY_TABLE and RELATION behaviorally identical and found zero separators in the complete declared continuation carrier.
+
+          V8 asks whether this is because the two schema families are actually extensionally isomorphic, in which case no behavior-only continuation expansion can ever separate them and they should be quotiented permanently.
+
+          Frozen gates:
+          G1 code<->mask extensional map exact over all 16 members and all four Boolean inputs.
+          G2 the two finite carriers are bijective extensionally.
+          G3 they induce the same closure-relative capability orbits under old-language symmetries.
+          G4 exhaustive enumeration of all 65,536 Boolean functionals over the 16 extensional functions finds zero behavioral separators.
+          G5 non-isomorphic control PARITY vs PAIR is equivalent under current continuation C0.
+          G6 a new continuation C1 separates the non-isomorphic control: PAIR remains sufficient, PARITY cannot recover the needed component under any unary decoder.
+          G7 ablating C1 restores C0 equivalence.
+          G8 exact-isomorphism conclusion survives anonymous input swaps/complements.
+
+          Interpretation boundary:
+          A pass means the V6/V7 BINARY_TABLE-vs-RELATION ambiguity was not unresolved schema identity at all; those supplied schemas are two presentations of the same extensional object and should be quotiented. It also shows on a non-isomorphic control that continuation growth can refine schema identity when latent future-relevant structure differs. It does not establish autonomous generation of new continuation schemas.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_schema_isomorphism_v8.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-core-schema-isomorphism-v8
+          path: artifacts/minimal_core_schema_isomorphism_v8
+          retention-days: 30
