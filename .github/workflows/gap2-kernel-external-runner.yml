@@ -1,0 +1,50 @@
+name: Gap2 kernel census and jump external runner
+
+on:
+  push:
+    branches:
+      - experiment/gap2-kernel-external-runner
+  workflow_dispatch:
+
+concurrency:
+  group: gap2-kernel-external-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  census_then_jump:
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    steps:
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Checkout frozen kernel experiment
+        run: |
+          git clone https://github.com/metalogiclabs/mathgraph-lean-kernel.git kernel
+          cd kernel
+          git checkout 1430a77a01085e688c9deb0d81c4521e2ed3aba6
+          test "$(git rev-parse HEAD)" = "1430a77a01085e688c9deb0d81c4521e2ed3aba6"
+      - name: Run lightweight pair census
+        working-directory: kernel
+        run: bash scripts/run_gap2_pair_census_lite.sh
+      - name: Upload census evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gap2-pair-census-lite
+          path: |
+            kernel/pair-census-summary.txt
+            kernel/pair-events.log
+      - name: Run frozen pair-band jump
+        working-directory: kernel
+        run: bash scripts/run_gap2_pair_band_jump.sh
+      - name: Upload jump results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gap2-pair-band-jump
+          path: |
+            kernel/pair-times.tsv
+            kernel/pair-decision.txt
+            kernel/pair-semantic-gate.txt
