@@ -1,0 +1,66 @@
+name: Minimal Core Active Probe Selection V15
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'experiments/minimal_core_active_probe_selection_v15.py'
+      - '.github/workflows/minimal-core-active-probe-selection-v15.yml'
+  workflow_dispatch:
+
+jobs:
+  active-probe-selection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_ACTIVE_PROBE_SELECTION_V15 PRECOMMIT
+          Parent positive: Minimal Core Induced Residual History V14 run 32883156241.
+
+          Question: can verifier experience select which questions to ask about an unresolved representation, rather than receiving a hand-selected residual probe interface?
+
+          Frozen design:
+          - Same 3-bit finite universe and source-distinct train/held-out residual families as V11-V14.
+          - Complete raw residual-probe carrier is all 28 unordered anonymous state pairs.
+          - No 12-probe set is supplied to the active model.
+          - On source training residual/query examples, each candidate probe is scored only from its raw SAME_A/SAME_B response, raw query disagreement on that probe, and verifier separator outcomes.
+          - Select exactly 12/28 probes before held-out evaluation.
+          - Fit the same generic four-class history/query model on the selected probes.
+          - Held-out ranking receives no held-out separator map or held-out verifier labels.
+          - Compare matched-budget active probe selection against lexical 12-probe selection and 100 seeded random 12-probe subsets.
+          - Also compare against no-history ablation and report the full 28-probe ceiling.
+          - Permanence remains CompleteCover-relative.
+          - Under anonymous state relabeling, reselect probes from the complete carrier and refit before held-out evaluation.
+
+          Frozen gates:
+          G1 all pairs equivalent at C0.
+          G2 candidate-probe information signal is nonconstant.
+          G3 active-probe history model finds every held-out provisional pair.
+          G4 no permanent held-out pair falsely splits.
+          G5 permanence assigned only after CompleteCover.
+          G6 active probe selection strictly beats lexical matched-budget probe selection.
+          G7 active probe selection strictly beats random matched-budget probe-set median.
+          G8 ablating probe history harms search.
+          G9 exactly 12 distinct probes selected from the complete 28-probe carrier.
+          G10 probe reselection/refit survives anonymous relabeling within 2x baseline, floor 4.
+          G11 no hand-selected probe set enters the active model.
+
+          Interpretation boundary:
+          A pass establishes bounded evidence that prior verifier outcomes can select a useful residual-observation interface from a supplied finite probe carrier. It does not establish autonomous generation of new probe types, arbitrary observation-language growth, or replacement of CompleteCover for permanence.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V15
+        run: python experiments/minimal_core_active_probe_selection_v15.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-active-probe-selection-v15
+          path: artifacts/minimal_core_active_probe_selection_v15
+          retention-days: 30
