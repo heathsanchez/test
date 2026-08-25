@@ -1,5 +1,14 @@
 import argparse
-import experiments.minimal_core_capstone_suite_v18 as v18
+import importlib.util
+from pathlib import Path
+
+# Load the frozen V18 script by file path. GitHub Actions executes this file as a
+# script, so the repository root is not guaranteed to make `experiments` an
+# importable package.
+_v18_path = Path(__file__).with_name("minimal_core_capstone_suite_v18.py")
+_spec = importlib.util.spec_from_file_location("minimal_core_capstone_suite_v18", _v18_path)
+v18 = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(v18)
 
 
 def test_loop_ablations_corrected():
