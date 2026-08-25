@@ -1,0 +1,132 @@
+name: Vero galoistools developmental v1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vero-galoistools-developmental-v1.yml'
+
+jobs:
+  developmental:
+    runs-on: ubuntu-latest
+    timeout-minutes: 100
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Checkout controller repo
+        uses: actions/checkout@v4
+
+      - name: Clone Vero
+        run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+
+      - name: Download verified 11/48 baseline artifact
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 32895697242
+          name: vero-galoistools-baseline-v1
+          path: baseline
+
+      - name: Patch Vero for initial seed and developmental method
+        working-directory: vero
+        shell: bash
+        env:
+          BASELINE_ARTIFACT: ${{ github.workspace }}/baseline/source/artifact.json
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          # Seed iteration 0 from the already independently graded 11/48 artifact.
+          p = Path('src/vero/cli_iterate.py')
+          s = p.read_text()
+          old = 'seed_artifact_path=None,\n            timeout_override=cap_s,'
+          new = 'seed_artifact_path=(__import__("os").environ.get("VERO_INITIAL_SEED") if not launched_any else None),\n            timeout_override=cap_s,'
+          if old not in s:
+              raise SystemExit('iterate seed patch target not found')
+          p.write_text(s.replace(old, new, 1))
+
+          # Append our verified-residual controller doctrine to every generated instruction.
+          p = Path('src/vero/generation/prompt.py')
+          s = p.read_text()
+          old = '    return template.render(\n'
+          new = '''    base = template.render(\n'''
+          if old not in s:
+              raise SystemExit('prompt render patch target not found')
+          s = s.replace(old, new, 1)
+          marker = '        upstream_source=upstream_source,\n    )\n'
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# Residual-driven developmental controller\n\nDo not treat the remaining specifications as independent proof holes and do not merely grind tactics. The run is seeded from an independently verified 11/48 artifact. Preserve all already verified progress.\n\nApply this loop explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nFor the current 37 residual obligations:\n1. Verify the seeded state first and inventory exactly which specs remain unfilled.\n2. Cluster the residuals by shared obstruction. Distinguish search failure, missing composition/lemma, frozen-reference vs implementation semantic boundary, representation/access failure, and genuinely missing expressivity.\n3. Do not introduce new machinery while an existing lawful composition remains unexplored.\n4. Seek the smallest reusable lemma/refactor that separates the largest live obstruction class. Prefer one structural refinement that unlocks multiple specs over unrelated local proofs.\n5. After adding a candidate capability, replay all specs. Check that it actually reduces the targeted residual class.\n6. Keep changes only if they compile and increase verified reachability; if a proposed abstraction does not help, revert or downscope it.\n7. Record a concise RESIDUAL_REPORT.md in the sandbox summarizing: verified starting score, obstruction classes, chosen separator/refinement, newly discharged specs, remaining residuals, and one ablation statement describing what depends on the new capability.\n\nThe scientific objective is not raw tactic volume. It is to discover whether verified residuals justify a representation or reusable-capability change that causally expands the reachable proof set.\n"""\n    return base + developmental\n'''
+          if marker not in s:
+              raise SystemExit('prompt tail patch target not found')
+          p.write_text(s.replace(marker, replacement, 1))
+          PY
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Lean toolchain manager
+        shell: bash
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Install Codex CLI
+        run: npm install -g @openai/codex
+
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+
+      - name: Verify seed artifact exists
+        run: |
+          test -s baseline/source/artifact.json
+          echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
+
+      - name: Run residual-driven developmental iterations
+        working-directory: vero
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CODEX_AGENT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VERO_INITIAL_SEED: ${{ github.workspace }}/baseline/source/artifact.json
+        shell: bash
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo 'OPENAI_API_KEY secret missing'
+            exit 2
+          fi
+          printf 'OPENAI_API_KEY=%s\nCODEX_API_KEY=%s\nCODEX_AGENT_API_KEY=%s\n' "$OPENAI_API_KEY" "$CODEX_API_KEY" "$CODEX_AGENT_API_KEY" > .env
+          uv run vero run \
+            benchmark=galoistools \
+            agent=codex \
+            credentials=none \
+            mode=codeproof \
+            name=galoistools-developmental-v1 \
+            agent.timeout_seconds=5400 \
+            agent.sandbox_mode=danger-full-access \
+            iterate.max=2 \
+            iterate.mode=eval \
+            iterate.resume=true \
+            iterate.feedback=true \
+            iterate.stop_on_done=true
+
+      - name: Summarize developmental result
+        if: always()
+        working-directory: vero
+        shell: bash
+        run: |
+          echo '## Vero galoistools developmental v1' >> "$GITHUB_STEP_SUMMARY"
+          find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          echo >> "$GITHUB_STEP_SUMMARY"
+          find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          echo >> "$GITHUB_STEP_SUMMARY"
+          test -f agent_runs/galoistools-developmental-v1/iterations.json && cat agent_runs/galoistools-developmental-v1/iterations.json >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload developmental artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-developmental-v1
+          path: vero/agent_runs/galoistools-developmental-v1/
+          if-no-files-found: warn
