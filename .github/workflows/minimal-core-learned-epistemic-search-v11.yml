@@ -1,0 +1,62 @@
+name: Minimal Core Learned Epistemic Search V11
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_learned_epistemic_search_v11.py'
+      - '.github/workflows/minimal-core-learned-epistemic-search-v11.yml'
+
+jobs:
+  learned-epistemic-search:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_LEARNED_EPISTEMIC_SEARCH_V11 PRECOMMIT
+          Parent positive: Minimal Core Active Separator Search V10 run 32848103682.
+
+          Question: can the system learn where distinction-changing evidence is likely to be found from prior verifier outcomes, then transfer that search policy to source-distinct representation pairs without access to the held-out separator map?
+
+          Frozen design:
+          - 3-bit latent domain; full continuation carrier is all 256 Boolean predicates.
+          - Training and held-out representation-pair families use different base partitions.
+          - Learner sees continuation features plus aggregate split yield from 48 deterministic training queries only.
+          - Ridge model predicts epistemic value of unseen continuations.
+          - Held-out ranking uses only the learned continuation score, never held-out pair-specific separator structure.
+          - A verified separator immediately revokes/refines a provisional quotient.
+          - Permanence still requires CompleteCover of the residual carrier.
+          - Compare against lexical search and 200 seeded random-order controls.
+          - Test anonymous state-relabel robustness on 256 deterministic relabelings.
+
+          Frozen gates:
+          G1 all train/held-out pairs equivalent at C0.
+          G2 training verifier signal is nonconstant.
+          G3 learned policy finds all held-out provisional pairs.
+          G4 no held-out permanent pair is falsely split.
+          G5 permanence assigned only after CompleteCover.
+          G6 learned policy strictly beats lexical control.
+          G7 learned policy strictly beats random median.
+          G8 held-out separator discovery uses fewer than all 256 continuations.
+          G9 relabel robustness stays within 2x baseline learned discovery steps.
+          G10 held-out separator map is not used in ranking.
+
+          Interpretation boundary:
+          A pass establishes bounded transfer of an epistemic search policy learned from prior verifier outcomes. It does not establish autonomous generation of continuation features or schemas, and CompleteCover remains the evidentiary requirement for permanence.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V11
+        run: python experiments/minimal_core_learned_epistemic_search_v11.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-learned-epistemic-search-v11
+          path: artifacts/minimal_core_learned_epistemic_search_v11
+          retention-days: 30
