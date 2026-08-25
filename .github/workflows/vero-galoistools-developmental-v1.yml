@@ -79,20 +79,20 @@ jobs:
             by_cases ha0 : a % p = 0
             · simpa [ha0, Nat.mod_mod] using h
             · have ha_pos : 0 < a % p := Nat.pos_of_ne_zero ha0
-              have hsum_ge : p ≤ a % p + b % p := by
-                by_contra hlt
-                have hsum_lt : a % p + b % p < p := Nat.lt_of_not_ge hlt
+              by_cases hsum_ge : p ≤ a % p + b % p
+              · have hsum_lt2 : a % p + b % p < p + p := by omega
+                have hsub_lt : a % p + b % p - p < p := by omega
+                have hmod : (a % p + b % p) % p =
+                    (a % p + b % p - p) % p := Nat.mod_eq_sub_mod hsum_ge
+                rw [hmod, Nat.mod_eq_of_lt hsub_lt] at h
+                have hsum_eq : a % p + b % p = p := by omega
+                have hcomp_lt : p - a % p < p := by omega
+                have hb_eq : b % p = p - a % p := by omega
+                rw [hb_eq]
+                simp [Nat.mod_eq_of_lt hcomp_lt]
+              · have hsum_lt : a % p + b % p < p := Nat.lt_of_not_ge hsum_ge
                 rw [Nat.mod_eq_of_lt hsum_lt] at h
                 omega
-              have hsum_lt2 : a % p + b % p < p + p := by omega
-              have hsub_lt : a % p + b % p - p < p := by omega
-              have hmod : (a % p + b % p) % p =
-                  (a % p + b % p - p) % p := Nat.mod_eq_sub_mod hsum_ge
-              rw [hmod, Nat.mod_eq_of_lt hsub_lt] at h
-              have hsum_eq : a % p + b % p = p := by omega
-              have hcomp_lt : p - a % p < p := by omega
-              have hb_eq : b % p = p - a % p := by omega
-              simp [Nat.mod_mod, Nat.mod_eq_of_lt hcomp_lt, hb_eq]
 
           '''
           ring.write_text(text.replace(marker, lemma + marker, 1))
