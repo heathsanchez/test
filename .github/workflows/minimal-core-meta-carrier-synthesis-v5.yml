@@ -1,0 +1,68 @@
+name: Minimal Core Meta Carrier Synthesis V5
+
+on:
+  push:
+    paths:
+      - 'experiments/minimal_core_meta_carrier_synthesis_v5.py'
+      - '.github/workflows/minimal-core-meta-carrier-synthesis-v5.yml'
+  workflow_dispatch:
+
+jobs:
+  meta-carrier-synthesis-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_META_CARRIER_SYNTHESIS_V5 PRECOMMIT
+          Parent positive: Minimal Core Constructor Expansion V4 run 32829446298.
+
+          Question: can the meta-edit carrier itself be generated from lower-level structure rather than supplied as a named operator menu?
+
+          Stage 1:
+          - Keep the V4 finite world and exhaustively verify M0 insufficiency.
+          - REMOVE the named binary edit menu.
+          - Supply only a lower-level extensional schema: a 2-input Boolean table has four anonymous output slots.
+          - Generate the full 2^4 = 16 truth-table carrier mechanically.
+          - Compute closure-relative capability orbits from transformations already available in M0: input/output negation and argument permutation.
+          - Verifier SAME/DIFFERENT residual obligations must select exactly one orbit.
+          - Conventional semantic names are decoded only after selection for reporting and play no role in search.
+          - The selected orbit must transfer held-out and fail under ablation; every generated wrong orbit must fail.
+
+          Stage 2:
+          - Change the continuation regime so presentation parity becomes relevant.
+          - M1 must again be insufficient.
+          - Generate the complete finite carrier of unordered 2-context products from M1 rather than naming a specific PAIR representative.
+          - The minimum valid product carrier must be behaviorally unique, exact, and ablatable.
+
+          Frozen gates:
+          G1 M0 CompleteCover absence.
+          G2 all 16 extensional truth tables generated.
+          G3 closure-relative orbits induced from old-language symmetries.
+          G4 residuals select a unique generated orbit.
+          G5 selected orbit decodes post hoc to parity, not by construction.
+          G6 stage-1 held-out transfer and ablation.
+          G7 all wrong generated orbits fail.
+          G8 regime-2 M1 insufficiency.
+          G9 generated product carrier has a unique behavioral minimum.
+          G10 recursive growth restores exactness and is ablatable.
+          G11 conclusions survive all anonymous primitive permutations.
+
+          Interpretation boundary:
+          A pass removes the hand-specified finite operator menu used in V4: the candidate edit carrier is generated extensionally from a lower-level truth-table schema, and residuals select a closure-relative capability class. It still relies on a supplied finite schema saying what a binary truth table/product carrier is; it does not establish unrestricted invention of new arities, data types, or arbitrary meta-languages.
+
+          Exploratory minimal-core work only; does not alter Bao A/B/G/P preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_meta_carrier_synthesis_v5.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-meta-carrier-synthesis-v5
+          path: artifacts/minimal_core_meta_carrier_synthesis_v5
+          retention-days: 30
