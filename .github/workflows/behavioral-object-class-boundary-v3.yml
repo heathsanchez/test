@@ -1,0 +1,43 @@
+name: Behavioral Object Class Boundary V3
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/behavioral_object_class_boundary_v3.py'
+      - '.github/workflows/behavioral-object-class-boundary-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  class-boundary-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          BEHAVIORAL_OBJECT_CLASS_BOUNDARY_V3 PRECOMMIT
+          Parent evidence: Behavioral Object Equivalence Class V2 run 32808248132.
+          V2 result: five literal relations were action-equivalent on 216 affine-family tasks.
+          Purpose: determine whether that equivalence is regime-relative or reflects a deeper identity.
+          New regime: generic finite hypothesis tables with 12 worlds, 3 target values, 4 candidate queries, 3 possible outcomes, and nonuniform outcome masses.
+          Exact expected target entropy remains the frozen decision verifier.
+          Search budget: 200,000 generated valid tasks; target split panel 64.
+          Primary: at least 16 valid tasks must separate the five-member class, exact entropy must remain perfect, and at least one former surrogate must disagree with exact entropy on >=25% of the split panel.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run class-boundary separator
+        run: python experiments/behavioral_object_class_boundary_v3.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: behavioral-object-class-boundary-v3
+          path: artifacts/behavioral_object_class_boundary_v3
+          retention-days: 30
