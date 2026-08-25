@@ -1,0 +1,44 @@
+name: Behavioral Object Equivalence Class V2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/behavioral_object_equivalence_class_v2.py'
+      - '.github/workflows/behavioral-object-equivalence-class-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  equivalence-class-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          BEHAVIORAL_OBJECT_EQUIVALENCE_CLASS_V2 PRECOMMIT
+          Parent: Behavioral Object Persistence V1 run 32807496896.
+          Parent failed only because acquisition did not identify a unique literal object: five frozen relations tied 72/72.
+          This run does not introduce a post-hoc tiebreaker. The five-member acquisition winner set is frozen as the candidate equivalence class.
+          Test 1: recreate the parent acquisition and exact 48-task held-out panel; all five members must choose the same actions and remain 48/48 optimal.
+          Test 2: independently seeded new 96-task mod-5 stress panel; all five members must again choose the same actions and remain 96/96 optimal.
+          Negative control: non-target query entropy must differ behaviorally from the five-member class and score below perfect on both panels.
+          If the five members split on either panel, the class claim fails and acquisition is underdetermining rather than quotient-identifying.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run equivalence-class separator
+        run: python experiments/behavioral_object_equivalence_class_v2.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: behavioral-object-equivalence-class-v2
+          path: artifacts/behavioral_object_equivalence_class_v2
+          retention-days: 30
