@@ -1,0 +1,33 @@
+name: Gap2 3-6 causal separator
+
+on:
+  push:
+    branches:
+      - experiment/gap2-36-causal-separator
+  workflow_dispatch:
+
+concurrency:
+  group: gap2-36-causal-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  causal_separator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run 3-6 causal separator
+        run: bash scripts/run_gap2_36_causal_separator.sh
+      - name: Upload separator evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: gap2-36-causal-separator
+          path: |
+            gap2-36-times.tsv
+            gap2-36-decision.txt
+            gap2-36-semantic-gate.txt
