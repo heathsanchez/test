@@ -1,0 +1,64 @@
+name: Minimal Core Relational Epistemic Feature V13
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_relational_epistemic_feature_v13.py'
+      - '.github/workflows/minimal-core-relational-epistemic-feature-v13.yml'
+
+jobs:
+  relational-epistemic-feature:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_RELATIONAL_EPISTEMIC_FEATURE_V13 PRECOMMIT
+          Parent negative: Minimal Core Induced Epistemic Feature V12 run 32880436404.
+
+          Question: was V12's failure caused by trying to assign one global scalar epistemic value to a continuation, when separator value is actually relational to the unresolved representation residual?
+
+          Frozen design:
+          - Same 3-bit finite universe and source-distinct train/held-out pair families as V11/V12.
+          - Learner sees raw 8-bit continuation traces and anonymous pair-residual structure only; no named latent-bit, parity, Walsh, or semantic continuation features.
+          - Training supervision is the pairwise verifier bit: whether query q separates representation pair r.
+          - Generic relational coordinates couple query disagreement on an anonymous state-pair with whether that state-pair is aliased by the coarse representation and split by its refinement.
+          - Fit one frozen logistic model on 64 training queries x source training pairs.
+          - On held-out residuals, rank continuations by aggregate predicted separator value over unresolved pairs. Ranking never uses held-out verifier labels or a held-out separator map.
+          - Compare directly against the V12-style global scalar raw-trace model, lexical search, and 200 seeded random controls.
+          - Ablate residual-specific coupling back to the scalar model.
+          - Permanence remains CompleteCover-relative.
+          - Refit after anonymous state relabelings and require robust transfer.
+
+          Frozen gates:
+          G1 all pairs equivalent at C0.
+          G2 training verifier signal nonconstant.
+          G3 relational model finds every held-out provisional pair.
+          G4 no permanent held-out pair falsely splits.
+          G5 permanence assigned only after CompleteCover.
+          G6 relational search strictly beats V12-style scalar baseline.
+          G7 relational search strictly beats lexical control.
+          G8 relational search strictly beats random median.
+          G9 ablating residual-specific coupling harms search.
+          G10 re-induction survives anonymous relabeling within 2x baseline, floor 4.
+          G11 no named semantic continuation features enter the learner.
+
+          Interpretation boundary:
+          A pass establishes bounded evidence that epistemic value is residual-relative rather than an intrinsic scalar property of a question in this finite setting. It does not establish arbitrary learned residual encodings, autonomous observation-interface invention, or replacement of CompleteCover for permanence.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V13
+        run: python experiments/minimal_core_relational_epistemic_feature_v13.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-relational-epistemic-feature-v13
+          path: artifacts/minimal_core_relational_epistemic_feature_v13
+          retention-days: 30
