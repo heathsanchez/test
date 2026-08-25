@@ -17,6 +17,21 @@ jobs:
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
 
+      - name: Patch Vero for current Codex CLI
+        working-directory: vero
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('src/vero/generation/agents/codex.py')
+          s = p.read_text()
+          old = 'cmd.append("--full-auto")'
+          new = 'cmd.extend(["--sandbox", "workspace-write"])'
+          if old not in s:
+              raise SystemExit('expected --full-auto call not found')
+          p.write_text(s.replace(old, new, 1))
+          PY
+
       - name: Install uv
         uses: astral-sh/setup-uv@v6
 
@@ -51,6 +66,22 @@ jobs:
         run: |
           printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY" > .env
           uv run vero run benchmark=galoistools agent=codex credentials=openai mode=codeproof name=galoistools-codex-baseline-v1 agent.timeout_seconds=5400
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          events = Path('agent_runs/galoistools-codex-baseline-v1/source/agent_events.jsonl')
+          ended_ok = False
+          for line in events.read_text().splitlines():
+              try:
+                  obj = json.loads(line)
+              except Exception:
+                  continue
+              if obj.get('type') == 'run_end' or obj.get('event') == 'run_end':
+                  payload = obj.get('payload', obj)
+                  ended_ok = payload.get('ok') is True
+          if not ended_ok:
+              raise SystemExit('Codex agent did not complete successfully')
+          PY
 
       - name: Summarize report
         if: always()
