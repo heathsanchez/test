@@ -1,0 +1,58 @@
+name: Minimal Core Epistemic Policy Scope V20
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_epistemic_policy_scope_v20.py'
+      - '.github/workflows/minimal-core-epistemic-policy-scope-v20.yml'
+
+jobs:
+  v20:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL CORE EPISTEMIC POLICY SCOPE V20 PRECOMMIT
+
+          Parent evidence:
+          V19: residual-relative relational search beat global scalar in 57/64 trials, median 2 vs 43, sign-test p=3.82e-11, but lost 7 trials and failed the preregistered 60/64 non-worse gate.
+
+          Question:
+          Can source-side verifier evidence predict when the relational epistemic policy is out of scope, so a meta-controller can switch between relational and global search without observing held-out outcomes?
+
+          Frozen design:
+          - 64 independently seeded presentation/query-schedule trials.
+          - Same source-distinct finite family as V19.
+          - Deterministic fitting only.
+          - For each trial, choose relational vs global using leave-one-source-family-out cross-validation on source training residuals only.
+          - The true held-out residuals are not used in policy choice.
+          - Conservative tie-break is global.
+          - CompleteCover semantics checked on every held-out trial.
+
+          Frozen gates:
+          G1 CompleteCover valid in all trials.
+          G2 Meta-controller must actually use both policies.
+          G3 Meta median strictly better than global median.
+          G4 Meta worst-case strictly better than always-relational worst-case.
+          G5 Meta total/mean cost no worse than always-relational.
+          G6 Meta rescues at least half of trials where relational loses to global.
+          G7 Meta is worse than always-relational on at most 4/64 trials.
+          G8 Scope decision uses source CV only.
+
+          Interpretation boundary:
+          A pass supports a bounded reversible/scope-gated epistemic policy, not a universal meta-controller. A fail localizes whether source-side CV is insufficient to detect relational-policy scope.
+          EOF
+      - name: Run V20
+        run: python experiments/minimal_core_epistemic_policy_scope_v20.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-epistemic-policy-scope-v20
+          path: artifacts/minimal_core_epistemic_policy_scope_v20
+          retention-days: 30
