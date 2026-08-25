@@ -9,7 +9,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 12
     permissions:
       actions: read
       contents: read
@@ -29,15 +29,13 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for seeded economical residual probe
+      - name: Patch Vero for seeded Nat.ModEq probe
         working-directory: vero
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
 
-          # Single-shot mode (iterate.max=0) bypasses cli_iterate, so inject the
-          # verified seed into the direct dispatch path itself.
           p = Path('src/vero/cli.py')
           s = p.read_text()
           old = '            gen_result = dispatch_generation(cfg, run_root)\n'
@@ -54,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL seeded residual probe\n\nYou begin from a materialized, independently Vero-verified 15/48 artifact (0 failed, 33 unfilled). Preserve every verified slot. This is one bounded scientific probe, not a general solve attempt.\n\nTarget exactly ONE obstruction: the modular-normalization/evaluation bridge around refPolyEvalRevAux, zipAddPad, coefficient map-mod, scalar multiplication, and convolution. Seek the smallest reusable lemma/refactor that can discharge at least one ring evaluation-homomorphism spec.\n\nRules:\n1. Confirm the 15/48 seed is visibly present, then inspect only the relevant Ring implementation/spec/proof region. Do not re-inventory the repository.\n2. Push existing lawful composition first.\n3. Make one candidate refinement at a time and test the focused Lean file immediately.\n4. After at most two focused repairs without progress, revert and stop.\n5. Never leave an already verified slot broken.\n6. Run full `lake build` once only if the focused file succeeds.\n7. Success = preserve all 15 verified specs with 0 failures and add at least one spec.\n8. On bounded failure, preserve the seed and write RESIDUAL_REPORT.md naming the exact obstruction and cheapest next separator.\n\nBe economical with context reads and proof search. Stop on verified gain or crisp bounded failure.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL Nat.ModEq separator probe\n\nYou begin from the materialized independently Vero-verified 15/48 artifact. Preserve it exactly unless the new capability compiles. This is a capability-construction probe, NOT a benchmark-score attempt.\n\nThe previous bounded run established a sharper residual: proving the recursive Horner/zipAddPad bridge by literal Nat equality is the wrong relation because nested `% p` reductions obscure distributivity. The proposed separator is modular congruence.\n\nTarget exactly ONE thing:\nConstruct the smallest reusable `Nat.ModEq p` lemma (or equivalent modular-congruence lemma already in Lean) showing that little-endian Horner evaluation respects `zipAddPad`. It should express that evaluating `zipAddPad p xs ys` is congruent modulo `p` to the sum of the evaluations of `xs` and `ys`. Carry only the minimal positivity/nonzero hypothesis on `p` actually needed.\n\nRules:\n1. Confirm the seeded Ring helpers are present. Inspect only definitions/theorems needed for `refPolyEvalRevAux`, `zipAddPad`, and `Nat.ModEq` API usage.\n2. Do NOT attempt `add_assoc_eval`, `mul_eval_hom`, or any other benchmark proof in this run. We are testing whether the missing capability itself is expressible and compilable.\n3. Prefer existing `Nat.ModEq` lemmas for addition, multiplication, and remainder over manual `%` normalization.\n4. Put the candidate in an editable Ring proof auxiliary/global auxiliary slot so it will survive artifact extraction.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most two focused repairs.\n6. If it compiles, stop. Do not spend tokens transferring it yet. Write `RESIDUAL_REPORT.md` naming the exact theorem constructed and the cheapest benchmark theorem to test next.\n7. If it does not compile after two repairs, revert completely to the 15/48 seed and record the smallest remaining obstruction.\n8. Do not run full `lake build` unless needed to validate artifact integrity after a successful focused compile.\n\nSuccess for this run is NOT 16/48. Success is a compiled reusable modular-congruence evaluation bridge while preserving the existing 15 verified specs.\n\nBe extremely economical with context reads and tool calls.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -81,7 +79,7 @@ jobs:
           test -s baseline/iter-2/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/iter-2/source/artifact.json)"
 
-      - name: Run economical single-separator probe
+      - name: Run economical Nat.ModEq separator probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -101,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=240 \
+            agent.timeout_seconds=180 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -110,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero galoistools economical seeded residual probe' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero galoistools Nat.ModEq separator probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
