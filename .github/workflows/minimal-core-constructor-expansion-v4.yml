@@ -1,0 +1,66 @@
+name: Minimal Core Constructor Expansion V4
+
+on:
+  workflow_dispatch:
+
+jobs:
+  constructor-expansion-class-separator:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_CONSTRUCTOR_EXPANSION_V4 PRECOMMIT
+          Parent negative: V3 run 32828708188.
+
+          V3 failed for two scientific reasons:
+          (1) M0 already contained valid stage-1 contexts, so expansion was not necessary;
+          (2) literal operator uniqueness was the wrong identity criterion because XOR/XNOR differ by NOT already installed in M0.
+
+          V4 hypothesis: verified residual obligations can force a unique new capability class outside Cl(M0), where identity is closure-relative rather than literal.
+
+          Stage 1:
+          - Freeze M0 to constants, anonymous primitive observations, and unary NOT only.
+          - Exhaust M0 completely and require zero valid contexts.
+          - Freeze binary meta-edits AND/OR/XOR/XNOR/NAND/NOR/A/B.
+          - Quotient candidate edits by M0-available output negation and presentation symmetry.
+          - Require a unique minimum surviving capability orbit: PARITY_ORBIT={XOR,XNOR}.
+          - No non-parity capability orbit may satisfy the residual obligations.
+          - A canonical representative is used only for downstream evaluation; the scientific claim concerns the orbit.
+          - Require held-out transfer and edit ablation back to unformability.
+
+          Stage 2:
+          - Add a continuation making presentation parity newly relevant.
+          - M1 with the parity orbit must be CompleteCover-insufficient.
+          - Frozen PAIR/product meta-edit must create the minimum behavioral quotient, restore exactness, and fail under ablation.
+
+          Gates:
+          G1 M0 CompleteCover absence.
+          G2 unique minimal closure-relative capability class.
+          G3 M1 forms the required stage-1 context.
+          G4 held-out transfer.
+          G5 ablation restores unformability.
+          G6 all matched-complexity wrong capability classes fail.
+          G7 regime-2 target unformable in M1.
+          G8 stage-2 behavioral minimum unique.
+          G9 M2 exact and ablation restores failure.
+          G10 stage-1 class result invariant under all anonymous primitive permutations.
+
+          Interpretation boundary:
+          A pass establishes bounded constructor-language growth at the level of a closure-relative capability class inside a supplied finite meta-grammar. It does not establish unrestricted meta-language invention or natural-domain adequacy.
+
+          Exploratory minimal-core work; does not alter Bao A/B/G/P preregistration.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run separator
+        run: python experiments/minimal_core_constructor_expansion_v4.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-constructor-expansion-v4
+          path: artifacts/minimal_core_constructor_expansion_v4
+          retention-days: 30
