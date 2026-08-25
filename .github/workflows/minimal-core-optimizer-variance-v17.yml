@@ -1,0 +1,57 @@
+name: Minimal Core Optimizer Variance V17
+
+on:
+  push:
+    paths:
+      - 'experiments/minimal_core_optimizer_variance_v17.py'
+      - '.github/workflows/minimal-core-optimizer-variance-v17.yml'
+  workflow_dispatch:
+
+jobs:
+  optimizer-variance:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_OPTIMIZER_VARIANCE_V17 PRECOMMIT
+          Parent partial/negative: V15 run 32883964654.
+          Parent diagnostic: V16 run 32890414414.
+
+          Question: was V15 anonymous-relabel spread caused by stochastic optimizer/procedural variance rather than by structural non-equivariance of probe selection or the downstream residual/query model?
+
+          Frozen design:
+          - Reconstruct the V15 finite train/held-out residual family, 28-probe carrier, MI selector, K=12 budget and raw four-class history features.
+          - Use the same 16 frozen anonymous state relabelings.
+          - Verify that independent MI reselection equals transport of the original selected probe interface in every relabeling.
+          - On each relabeling compare deterministic full-batch logistic fitting against V15-style stochastic SGD.
+          - Use 12 frozen stochastic optimizer seeds per relabeling.
+          - Evaluate held-out separator-search steps under the same complete 256-continuation carrier.
+
+          Frozen gates:
+          G1 probe reselection equals transported interface under all relabelings.
+          G2 deterministic fit has zero relabel step variance.
+          G3 stochastic fit reproduces material step variance of at least 8 queries across frozen trials/seeds.
+          G4 stochastic fit has a worse tail than deterministic fitting.
+          G5 at least one stochastic seed can match deterministic performance, separating variance from a uniformly inferior model.
+          G6 deterministic search remains within the frozen efficiency bound.
+          G7 no scientific design change other than the optimizer separator.
+
+          Interpretation boundary:
+          A pass isolates V15's relabel spread to stochastic optimization in this frozen finite family. It does not establish optimizer-independent invariance for arbitrary learners or autonomous observation-language invention.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V17
+        run: python experiments/minimal_core_optimizer_variance_v17.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-optimizer-variance-v17
+          path: artifacts/minimal_core_optimizer_variance_v17
+          retention-days: 30
