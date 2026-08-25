@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Transfer test from the verified 16/48 additive semantic capability stack.
+# Isolate the exact subtraction residual: Horner evaluation under coefficient-wise modular negation.
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 6
     permissions:
       actions: read
       contents: read
@@ -30,7 +30,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for subtraction-evaluation transfer
+      - name: Patch Vero for negation-evaluation constructor probe
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL TRANSFER: subtraction evaluation\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. This is the intact ratchet, not the ablation artifact. It contains the verified modular-congruence stack, `natModEq_refPolyEvalRevAux_zipAddPad`, `refPolyEval_gfStrip`, and the nearby subtraction bridge `zipSubPad_eq_add_neg`.\n\nTest exactly ONE sibling scored theorem: `spec_sub_eval_hom` (the corresponding `prove_sub_eval_hom` slot). This is a transfer test: determine whether the representation learned from additive evaluation makes subtraction semantics reachable with the existing retained language.\n\nRules:\n1. Inspect only `prove_sub_eval_hom`, `gfSub`, `zipSubPad`, `zipSubPad_eq_add_neg`, `gfNeg`, and the retained modular/Horner/strip helpers. No repo inventory.\n2. Push the strongest existing composition first. Do NOT invent a new helper unless the compile leaves one exact constructor-level residual that cannot be expressed from the retained helpers.\n3. Fill only the `prove_sub_eval_hom` scored proof. Do not touch any other scored slot.\n4. Prefer rewriting `zipSubPad` through `zipSubPad_eq_add_neg`, stripping with `refPolyEval_gfStrip`, and reusing the zip-add evaluation congruence.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, STOP. Preserve the proof and let Vero evaluate; success is 17/48, 0 failed.\n7. If it does not compile after one repair, revert only this scored proof, preserve the 16/48 capability stack, and report the smallest exact residual (for example a missing evaluation law for coefficient-wise negation). Do not keep searching.\n8. No full build; Vero evaluation is authoritative.\n\nThis run decides transfer versus the next residual.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# NEGATION-EVALUATION CONSTRUCTOR PROBE\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. Do not touch any scored theorem. The failed subtraction transfer isolated one exact residual: evaluation of coefficient-wise modular negation.\n\nProve exactly ONE reusable global_aux theorem, with a name such as `natModEq_refPolyEvalRevAux_map_neg`, expressing that for p > 1:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x\n    (xs.map (fun c => (p - c % p) % p)))\n  ((p - Galoistools.refPolyEvalRevAux p x xs % p) % p)`\n\nAn equivalent NatModEq formulation is fine if it composes directly with `natModEq_refPolyEvalRevAux_zipAddPad` and the subtraction target.\n\nRules:\n1. Inspect only the retained NatModEq primitives, Horner evaluator, coefficient-negation expression, and any already-retained cancellation/additive helper that can prove this law. No repo inventory.\n2. Do not retry `prove_sub_eval_hom`; do not fill any scored `sorry`.\n3. Push existing algebra first. Prefer induction on `xs` plus `natModEq_add`/`natModEq_mul`, or derive the negation law via verified cancellation if that is shorter.\n4. Add exactly one global_aux theorem. No second helper unless the theorem literally cannot typecheck without a tiny local fact inside its proof.\n5. Immediately run `lake lean Galoistools/Proof/Ring.lean`. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain it. Vero should remain exactly 16/48, 0 failed.\n7. If it fails after one repair, revert only this new theorem and report the smallest exact residual.\n8. No full build; Vero evaluation is authoritative.\n\nThis is a constructor probe, not a score attempt.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run subtraction-evaluation transfer
+      - name: Run negation-evaluation constructor probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=80 \
+            agent.timeout_seconds=65 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero transfer: spec_sub_eval_hom' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero constructor probe: coefficient-negation evaluation' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
