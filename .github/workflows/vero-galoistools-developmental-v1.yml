@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Causal transfer retry after verified strip-evaluation constructor.
+# Causal ablation of the strip-evaluation bridge after the verified 16/48 gain.
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 6
     permissions:
       actions: read
       contents: read
@@ -21,16 +21,16 @@ jobs:
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
 
-      - name: Download verified strip bridge artifact
+      - name: Download verified 16-of-48 artifact
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32906932000
+          run-id: 32907148895
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for add-associativity causal retry
+      - name: Patch Vero for causal ablation
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# CAUSAL RETRY: spec_add_assoc_eval after verified strip-evaluation bridge\n\nStart from the independently Vero-verified 15/48 artifact from run 32906932000. It contains the accumulated modular/Horner capability stack plus the newly verified theorem equivalent to:\n\n`refPolyEval_gfStrip (p x : Nat) (xs : List Nat) :\n  Galoistools.refPolyEval p (Galoistools.gfStrip xs) x =\n  Galoistools.refPolyEval p xs x`.\n\nThe previous scored transfer already showed that the only structural obstruction was the strip/evaluation boundary. That boundary is now closed. Retry exactly ONE benchmark theorem: `spec_add_assoc_eval`.\n\nRules:\n1. Inspect only the proof slot for `spec_add_assoc_eval`, `gfAdd`, and the retained Horner/strip helpers. No repo inventory.\n2. Fill ONLY the `sorry` body for `prove_add_assoc_eval` / the theorem corresponding to `spec_add_assoc_eval`. Do not change any statement or any other scored proof.\n3. Use `refPolyEval_gfStrip` to eliminate strip bookkeeping and `natModEq_refPolyEvalRevAux_zipAddPad` to expose modular addition semantics.\n4. Keep the modular relation abstract until the final equality; finish by Nat addition associativity modulo p.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain it. Do not attempt another benchmark theorem.\n7. If it fails after one repair, revert only this scored proof and record the exact residual; preserve all verified helpers.\n8. No full build; Vero evaluation is authoritative.\n\nSuccess criterion is exact: Vero moves from 15/48 to 16/48, 0 failures.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL CAUSAL ABLATION\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. The scored gain `prove_add_assoc_eval` was obtained only after constructing `refPolyEval_gfStrip`.\n\nPerform one ablation only:\n1. In `Galoistools/Proof/Ring.lean`, remove exactly the retained theorem `refPolyEval_gfStrip` from `global_aux`. Do not alter any other helper, scored proof, statement, or file.\n2. Leave the now-filled `prove_add_assoc_eval` proof unchanged.\n3. Immediately run `lake lean Galoistools/Proof/Ring.lean`.\n4. Record whether compilation fails specifically because `prove_add_assoc_eval` depends on the removed strip bridge. Do not repair, search for an alternate proof, or edit anything else.\n5. STOP after this compile. This is an ablation witness, not a candidate artifact.\n\nExpected causal witness: the 16th scored proof ceases to compile when the induced strip-evaluation capability is withdrawn, while the retained 16/48 artifact from the parent run remains the ratchet.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run add-associativity causal retry
+      - name: Run causal ablation
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=90 \
+            agent.timeout_seconds=45 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero causal retry: spec_add_assoc_eval' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero causal ablation: refPolyEval_gfStrip' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
