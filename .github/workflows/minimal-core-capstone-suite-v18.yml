@@ -1,0 +1,63 @@
+name: Minimal Core Capstone Suite V18
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_capstone_suite_v18.py'
+      - '.github/workflows/minimal-core-capstone-suite-v18.yml'
+
+jobs:
+  capstone:
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        test:
+          - observation_interface_closure
+          - probe_language_expansion
+          - separator_language_expansion
+          - joint_relational_induction
+          - recursive_self_application
+          - genuine_regime_change
+          - cross_domain_same_controller
+          - developmental_advantage
+          - loop_ablations
+          - transition_invariant_modelcheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_CAPSTONE_SUITE_V18 PRECOMMIT
+          Parent lineage: V1-V17 minimal-core experiments, including V15 partial, V16 diagnostic, V17 optimizer separator.
+
+          Goal: run compact bounded falsification tests for the remaining proposed core-loop components.
+          Each matrix arm is interpreted independently. A failure is retained as evidence; no aggregate PASS is inferred from partial success.
+
+          Arms:
+          1 observation_interface_closure: deterministic learned probe interface must be equivariant under 16 anonymous relabelings.
+          2 probe_language_expansion: a target unavailable to primitive one-bit probes must become expressible through generated binary probe schemas.
+          3 separator_language_expansion: CompleteCover of a frozen old continuation language must yield zero separators, while generated composite continuations expose one.
+          4 joint_relational_induction: raw residual/query interactions must support a learned relational predictor above scalar baseline.
+          5 recursive_self_application: the identical quotient/refinement controller must operate at world/operator/probe levels.
+          6 genuine_regime_change: a target unreachable in old language must become reachable only after verified language expansion.
+          7 cross_domain_same_controller: identical controller code must form nontrivial quotients in three different finite semantic domains. This is a bounded proxy, not yet Lean/code/SAIR transfer.
+          8 developmental_advantage: retained verified distinctions must reduce future query cost versus cold reconstruction.
+          9 loop_ablations: premature permanence, retain-all, never-expand, always-expand and global-value controls must be separable from the full loop.
+          10 transition_invariant_modelcheck: exhaustively verify finite safety laws: split only after separator, permanence only after CompleteCover, expansion only after obstruction.
+
+          Interpretation boundary:
+          These are compact bounded tests. In particular the cross-domain arm is a synthetic same-controller proxy and does not establish unchanged transfer to Lean, SAIR or natural code. Autonomous arbitrary probe-language invention and a general mathematical theorem remain open even if their bounded separators pass.
+          EOF
+      - name: Run ${{ matrix.test }}
+        run: python experiments/minimal_core_capstone_suite_v18.py --test "${{ matrix.test }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-capstone-v18-${{ matrix.test }}
+          path: artifacts/minimal_core_capstone_suite_v18/${{ matrix.test }}
+          retention-days: 30
