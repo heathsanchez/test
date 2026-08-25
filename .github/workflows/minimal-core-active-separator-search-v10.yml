@@ -1,0 +1,59 @@
+name: Minimal Core Active Separator Search V10
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_active_separator_search_v10.py'
+      - '.github/workflows/minimal-core-active-separator-search-v10.yml'
+
+jobs:
+  active-separator-search:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_ACTIVE_SEPARATOR_SEARCH_V10 PRECOMMIT
+          Parent positive: Minimal Core Equivalence Status V9 run 32847079264.
+
+          Question: can the controller actively prioritize distinction-changing future continuations rather than exhaustively enumerate the full carrier, while preserving the asymmetric rule that permanence requires CompleteCover?
+
+          Frozen design:
+          - Mixed pool of eight representation pairs, all equivalent at C0.
+          - Four are permanent within the declared 16-continuation universe; four are provisional.
+          - Candidate continuation carrier remains the full 16 Boolean predicates on the four-state latent domain.
+          - Active policy ranks unqueried continuations by how many unresolved pair distinctions they would test, then predicate complexity, then code.
+          - A pair is split immediately on a verified separator.
+          - No pair may be called permanent from adaptive search alone; remaining pairs require exhaustive no-separator certification over the residual carrier.
+          - Compare separator discovery against lexical/code-order search.
+          - Require anonymous state-relabel robustness.
+
+          Frozen gates:
+          G1 all pairs equivalent at C0.
+          G2 active search finds every provisional pair.
+          G3 no permanent pair is falsely split.
+          G4 permanence is assigned only after CompleteCover of the residual carrier.
+          G5 final classification exact.
+          G6 all provisional pairs are discovered before all 16 continuations are consumed.
+          G7 active policy is not worse than lexical control.
+          G8 result survives all 24 anonymous state relabelings.
+
+          Interpretation boundary:
+          A pass establishes bounded adaptive prioritization of distinction-changing continuations. It does not remove CompleteCover as the evidentiary requirement for permanence and does not establish autonomous generation of new continuation schemas outside the supplied finite carrier.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V10
+        run: python experiments/minimal_core_active_separator_search_v10.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-active-separator-search-v10
+          path: artifacts/minimal_core_active_separator_search_v10
+          retention-days: 30
