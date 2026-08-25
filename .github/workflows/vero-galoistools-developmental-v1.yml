@@ -106,7 +106,7 @@ jobs:
             iterate.max=2 \
             iterate.mode=eval \
             +iterate.resume=true \
-            +iterate.feedback=true \
+            iterate.feedback=true \
             iterate.stop_on_done=true
 
       - name: Summarize developmental result
