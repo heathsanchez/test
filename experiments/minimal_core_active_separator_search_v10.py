@@ -24,7 +24,7 @@ base_parts=[((0,1),(2,3)), ((0,2),(1,3)), ((0,3),(1,2)), ((0,),(1,2,3))]
 for i,(part,pm) in enumerate(zip(base_parts,perms)):
     # same extensional partition, merely block/order presentation changed
     A=tuple(tuple(block) for block in part)
-    B=tuple(reversed(tuple(reversed(block)) for block in part))
+    B=tuple(reversed(tuple(tuple(reversed(block)) for block in part)))
     pairs.append((f'P{i}',A,B,True))
 
 # Provisional pairs: coarse vs strict refinement.
