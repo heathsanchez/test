@@ -1,6 +1,5 @@
 name: Vero galoistools developmental v1
 
-# Relaunch after API credit top-up: 2026-08-26
 on:
   workflow_dispatch:
   push:
@@ -21,41 +20,39 @@ jobs:
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
 
-      - name: Download verified 11/48 baseline artifact
+      - name: Download verified 15/48 developmental artifact
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32895697242
-          name: vero-galoistools-baseline-v1
+          run-id: 32897362275
+          name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for initial seed and developmental method
+      - name: Patch Vero for true carry-forward and residual controller
         working-directory: vero
         shell: bash
-        env:
-          BASELINE_ARTIFACT: ${{ github.workspace }}/baseline/source/artifact.json
         run: |
           python - <<'PY'
           from pathlib import Path
 
           p = Path('src/vero/cli_iterate.py')
           s = p.read_text()
-          old = 'seed_artifact_path=None,\n            timeout_override=cap_s,'
-          new = 'seed_artifact_path=(__import__("os").environ.get("VERO_INITIAL_SEED") if not launched_any else None),\n            timeout_override=cap_s,'
+          old = '            seed_artifact_path=None,\n            timeout_override=cap_s,'
+          new = '            seed_artifact_path=((__import__("os").environ.get("VERO_INITIAL_SEED")) if not launched_any else (records[-1].artifact_path if resume_enabled and records else None)),\n            timeout_override=cap_s,'
           if old not in s:
-              raise SystemExit('iterate seed patch target not found')
+              raise SystemExit('iterate carry-forward patch target not found')
           p.write_text(s.replace(old, new, 1))
 
           p = Path('src/vero/generation/prompt.py')
           s = p.read_text()
           old = '    return template.render(\n'
-          new = '''    base = template.render(\n'''
+          new = '    base = template.render(\n'
           if old not in s:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# Residual-driven developmental controller\n\nDo not treat the remaining specifications as independent proof holes and do not merely grind tactics. The run is seeded from an independently verified 11/48 artifact. Preserve all already verified progress.\n\nApply this loop explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nFor the current 37 residual obligations:\n1. Verify the seeded state first and inventory exactly which specs remain unfilled.\n2. Cluster the residuals by shared obstruction. Distinguish search failure, missing composition/lemma, frozen-reference vs implementation semantic boundary, representation/access failure, and genuinely missing expressivity.\n3. Do not introduce new machinery while an existing lawful composition remains unexplored.\n4. Seek the smallest reusable lemma/refactor that separates the largest live obstruction class. Prefer one structural refinement that unlocks multiple specs over unrelated local proofs.\n5. After adding a candidate capability, replay all specs. Check that it actually reduces the targeted residual class.\n6. Keep changes only if they compile and increase verified reachability; if a proposed abstraction does not help, revert or downscope it.\n7. Record a concise RESIDUAL_REPORT.md in the sandbox summarizing: verified starting score, obstruction classes, chosen separator/refinement, newly discharged specs, remaining residuals, and one ablation statement describing what depends on the new capability.\n\nThe scientific objective is not raw tactic volume. It is to discover whether verified residuals justify a representation or reusable-capability change that causally expands the reachable proof set.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# Residual-driven developmental controller\n\nThis run begins from an independently Vero-verified 15/48 artifact. Preserve all verified progress. Do not restart implementations or solved proofs.\n\nApply explicitly:\nPUSH -> VERIFY -> RESIDUAL -> DIAGNOSE -> SEEK SEPARATOR -> REFINE/EXPAND -> RETAIN PROVISIONALLY -> TRANSFER/ABLATE/REVOKE -> REPEAT.\n\nCurrent state: 15 passed, 0 failed, 33 unfilled. Previous verified refinements include a reversed-list/alignment capability, convolve_one_right, and an extensionally equivalent structural gfPowMod recursion that made recurrence transparent.\n\nFor the remaining residuals:\n1. Verify the seeded 15/48 state and inventory the 33 live specs.\n2. Quotient them by shared obstruction. Keep search failure distinct from missing lemma/composition, representation mismatch, frozen-reference boundary, and implementation representation failure.\n3. Push lawful composition before inventing new machinery.\n4. Prioritize the ring evaluation-homomorphism separator: build the smallest reusable bridge between editable list algorithms and frozen refPolyEval semantics that can unlock multiple of mul_eval_hom, sub_eval_hom, mul_comm_eval, mul_assoc_eval, mul_add_distrib_eval and downstream division reconstruction.\n5. Prefer one reusable lemma/refactor that closes several obligations over isolated tactic proofs. If that separator is false or too expensive, record the counterevidence and move to the next obstruction class.\n6. After every capability/refactor, replay the full benchmark; retain only verified gains. Preserve implementation conformance.\n7. Record RESIDUAL_REPORT.md with starting score, obstruction quotient, chosen separator, newly discharged specs, remaining residuals, and an ablation claim.\n\nThe objective is causal verified reachability gain from residual-driven structural change, not raw proof volume.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -77,10 +74,10 @@ jobs:
         working-directory: vero
         run: uv sync
 
-      - name: Verify seed artifact exists
+      - name: Verify 15/48 seed artifact exists
         run: |
-          test -s baseline/source/artifact.json
-          echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
+          test -s baseline/iter-2/source/artifact.json
+          echo "seed artifact bytes: $(wc -c < baseline/iter-2/source/artifact.json)"
 
       - name: Run residual-driven developmental iterations
         working-directory: vero
@@ -88,7 +85,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CODEX_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           CODEX_AGENT_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          VERO_INITIAL_SEED: ${{ github.workspace }}/baseline/source/artifact.json
+          VERO_INITIAL_SEED: ${{ github.workspace }}/baseline/iter-2/source/artifact.json
         shell: bash
         run: |
           if [ -z "$OPENAI_API_KEY" ]; then
@@ -104,7 +101,7 @@ jobs:
             name=galoistools-developmental-v1 \
             agent.timeout_seconds=5400 \
             agent.sandbox_mode=danger-full-access \
-            iterate.max=2 \
+            iterate.max=3 \
             iterate.mode=eval \
             +iterate.resume=true \
             iterate.feedback=true \
