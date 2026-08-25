@@ -38,7 +38,6 @@ jobs:
           python - <<'PY'
           from pathlib import Path
 
-          # Seed iteration 0 from the already independently graded 11/48 artifact.
           p = Path('src/vero/cli_iterate.py')
           s = p.read_text()
           old = 'seed_artifact_path=None,\n            timeout_override=cap_s,'
@@ -47,7 +46,6 @@ jobs:
               raise SystemExit('iterate seed patch target not found')
           p.write_text(s.replace(old, new, 1))
 
-          # Append our verified-residual controller doctrine to every generated instruction.
           p = Path('src/vero/generation/prompt.py')
           s = p.read_text()
           old = '    return template.render(\n'
@@ -107,8 +105,8 @@ jobs:
             agent.sandbox_mode=danger-full-access \
             iterate.max=2 \
             iterate.mode=eval \
-            iterate.resume=true \
-            iterate.feedback=true \
+            +iterate.resume=true \
+            +iterate.feedback=true \
             iterate.stop_on_done=true
 
       - name: Summarize developmental result
