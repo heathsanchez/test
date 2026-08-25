@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Isolate the exact subtraction residual: Horner evaluation under coefficient-wise modular negation.
+# Isolate the scalar modular cancellation law exposed by the negation-evaluation probe.
 on:
   workflow_dispatch:
   push:
@@ -30,7 +30,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for negation-evaluation constructor probe
+      - name: Patch Vero for scalar cancellation probe
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# NEGATION-EVALUATION CONSTRUCTOR PROBE\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. Do not touch any scored theorem. The failed subtraction transfer isolated one exact residual: evaluation of coefficient-wise modular negation.\n\nProve exactly ONE reusable global_aux theorem, with a name such as `natModEq_refPolyEvalRevAux_map_neg`, expressing that for p > 1:\n\n`NatModEq p\n  (Galoistools.refPolyEvalRevAux p x\n    (xs.map (fun c => (p - c % p) % p)))\n  ((p - Galoistools.refPolyEvalRevAux p x xs % p) % p)`\n\nAn equivalent NatModEq formulation is fine if it composes directly with `natModEq_refPolyEvalRevAux_zipAddPad` and the subtraction target.\n\nRules:\n1. Inspect only the retained NatModEq primitives, Horner evaluator, coefficient-negation expression, and any already-retained cancellation/additive helper that can prove this law. No repo inventory.\n2. Do not retry `prove_sub_eval_hom`; do not fill any scored `sorry`.\n3. Push existing algebra first. Prefer induction on `xs` plus `natModEq_add`/`natModEq_mul`, or derive the negation law via verified cancellation if that is shorter.\n4. Add exactly one global_aux theorem. No second helper unless the theorem literally cannot typecheck without a tiny local fact inside its proof.\n5. Immediately run `lake lean Galoistools/Proof/Ring.lean`. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain it. Vero should remain exactly 16/48, 0 failed.\n7. If it fails after one repair, revert only this new theorem and report the smallest exact residual.\n8. No full build; Vero evaluation is authoritative.\n\nThis is a constructor probe, not a score attempt.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# SCALAR MODULAR CANCELLATION CONSTRUCTOR PROBE\n\nStart from the independently Vero-verified 16/48 artifact from run 32907148895. Do not touch any scored theorem. The previous negation-evaluation probe reduced the entire obstruction to one scalar NatModEq cancellation law.\n\nProve exactly ONE reusable global_aux theorem expressing the following implication for `1 < p`:\n\n`NatModEq p (a + b) 0 -> NatModEq p b ((p - a % p) % p)`\n\nAn equivalent orientation/name is fine, but it must compose directly with the attempted coefficient-negation evaluation theorem.\n\nRules:\n1. Inspect only `NatModEq`, the retained NatModEq primitives, and Nat modulo arithmetic already available in the file. No repo inventory and no Horner proof yet.\n2. Add exactly one global_aux theorem. Prefer direct unfolding plus `Nat.add_mod`, `Nat.mod_mod`, modular bounds, and a small case split on `a % p = 0` if needed.\n3. Do NOT use `omega` as the main proof of modular uniqueness; the previous probe already showed that is the wrong abstraction boundary.\n4. Do not retry `natModEq_refPolyEvalRevAux_map_neg`; do not touch any scored `sorry`.\n5. Immediately run `lake lean Galoistools/Proof/Ring.lean`. Allow at most ONE focused repair.\n6. If it compiles, STOP and retain the scalar lemma. Vero should remain exactly 16/48, 0 failed.\n7. If it fails after one repair, revert only the new theorem and report the smallest exact residual.\n8. No full build; Vero evaluation is authoritative.\n\nThis is the smallest constructor exposed by the previous verified failure.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run negation-evaluation constructor probe
+      - name: Run scalar cancellation probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=65 \
+            agent.timeout_seconds=55 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero constructor probe: coefficient-negation evaluation' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero constructor probe: scalar modular cancellation' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
