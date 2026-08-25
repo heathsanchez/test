@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Cheapest direct transfer from verified Horner-addition bridge.
+# Residual-induced constructor probe: stripping leading zeros preserves evaluation.
 on:
   workflow_dispatch:
   push:
@@ -10,7 +10,7 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 6
     permissions:
       actions: read
       contents: read
@@ -30,7 +30,7 @@ jobs:
           name: vero-galoistools-developmental-v1
           path: baseline
 
-      - name: Patch Vero for direct add-associativity transfer
+      - name: Patch Vero for strip-evaluation constructor probe
         working-directory: vero
         shell: bash
         run: |
@@ -52,7 +52,7 @@ jobs:
               raise SystemExit('prompt render patch target not found')
           s = s.replace(old, new, 1)
           marker = '        upstream_source=upstream_source,\n    )\n'
-          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL benchmark transfer from verified Horner-addition capability\n\nYou begin from the independently Vero-verified 15/48 artifact containing the accumulated residual-induced stack, including the now-compiled theorem equivalent to:\n\n`natModEq_refPolyEvalRevAux_zipAddPad (p x) (xs ys) :\n  NatModEq p\n    (Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p xs ys))\n    (Galoistools.refPolyEvalRevAux p x xs + Galoistools.refPolyEvalRevAux p x ys)`\n\nThis run is the first external-capability transfer test. Target exactly ONE existing unfilled Ring benchmark theorem: the proof of `spec_add_assoc_eval`. Do not add another helper unless the theorem is literally unreachable without one; the hypothesis is that the retained Horner bridge is already sufficient.\n\nRules:\n1. Inspect only the statement/proof slot for `spec_add_assoc_eval`, the definition of `gfAdd`, and the retained Horner/addition helpers.\n2. Fill ONLY the `sorry` body for `spec_add_assoc_eval`. Do not change its statement and do not touch any other benchmark proof.\n3. Reuse `natModEq_refPolyEvalRevAux_zipAddPad` compositionally. Reduce the `gfAdd`/reverse/strip bookkeeping only as much as needed to expose evaluation of `zipAddPad`; reuse existing strip/reverse evaluation helpers if present.\n4. The target semantic law is exactly associativity of addition under `refPolyEval`; once both sides are reduced via the Horner bridge, finish with ordinary Nat modular-addition associativity.\n5. Compile `Galoistools/Proof/Ring.lean` immediately. Allow at most ONE focused repair.\n6. If `spec_add_assoc_eval` compiles, STOP. Do not attempt a second benchmark theorem. Record that the residual-induced constructor stack transferred into a previously unfilled scored spec.\n7. If it fails after one repair, restore only that benchmark proof to `sorry`, preserve all retained helpers, and record the exact remaining bookkeeping residual.\n8. No repo-wide search and no full build; Vero evaluation independently decides whether the scored slot moved from unfilled to passed.\n\nSuccess criterion: Vero moves from 15/48 to 16/48 with 0 failures because `spec_add_assoc_eval` is now verified.\n"""\n    return base + developmental\n'''
+          replacement = '''        upstream_source=upstream_source,\n    )\n    developmental = r"""\n\n# ECONOMICAL strip-evaluation residual probe\n\nStart from the independently Vero-verified 15/48 artifact containing the full modular/Horner capability stack. The last scored transfer failed for one exact boundary reason: `gfAdd` strips leading zeros before reversing, and we lack a reusable theorem that this stripping preserves the reference polynomial evaluation.\n\nDo NOT retry `spec_add_assoc_eval`. Prove exactly ONE reusable theorem in Ring `global_aux` equivalent to:\n\n`theorem refPolyEval_gfStrip (p x : Nat) (xs : List Nat) :\n  Galoistools.refPolyEval p (Galoistools.gfStrip xs) x =\n  Galoistools.refPolyEval p xs x`\n\nYou may choose an equivalent theorem stated directly at `refPolyEvalRevAux` over reversed lists if that makes the induction structurally exact, but the retained result must immediately imply the displayed theorem.\n\nRules:\n1. Inspect only `gfStrip`, `refPolyEval`, `refPolyEvalRevAux`, and the nearby retained helpers. No benchmark theorem and no repo inventory.\n2. The previous failed induction mismatch is the clue: do not formulate the induction hypothesis at a level that unfolds away before recursive use. Prefer proving the smallest reversed-Horner append-zero fact first inside the proof if needed, then the strip theorem. Do not add unrelated helpers.\n3. Add only this constructor to `global_aux`.\n4. Compile `Galoistools/Proof/Ring.lean` immediately. At most ONE focused syntactic/orientation repair.\n5. If it compiles, STOP. Preserve it and record that the next run should retry only `spec_add_assoc_eval` from this artifact.\n6. If it fails after one repair, revert only this new constructor and record the exact residual.\n7. No full build; Vero evaluation independently verifies the artifact.\n\nSuccess is a compiled strip-evaluation invariance constructor while the externally verified benchmark state stays 15/48, 0 failed.\n"""\n    return base + developmental\n'''
           if marker not in s:
               raise SystemExit('prompt tail patch target not found')
           p.write_text(s.replace(marker, replacement, 1))
@@ -79,7 +79,7 @@ jobs:
           test -s baseline/source/artifact.json
           echo "seed artifact bytes: $(wc -c < baseline/source/artifact.json)"
 
-      - name: Run direct add-associativity transfer
+      - name: Run strip-evaluation constructor probe
         working-directory: vero
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
@@ -99,7 +99,7 @@ jobs:
             credentials=none \
             mode=codeproof \
             name=galoistools-developmental-v1 \
-            agent.timeout_seconds=75 \
+            agent.timeout_seconds=70 \
             agent.sandbox_mode=danger-full-access \
             iterate.max=0
 
@@ -108,7 +108,7 @@ jobs:
         working-directory: vero
         shell: bash
         run: |
-          echo '## Vero direct transfer: spec_add_assoc_eval' >> "$GITHUB_STEP_SUMMARY"
+          echo '## Vero strip-evaluation constructor probe' >> "$GITHUB_STEP_SUMMARY"
           find agent_runs/galoistools-developmental-v1 -name report.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
           find agent_runs/galoistools-developmental-v1 -name RESIDUAL_REPORT.md -print -exec cat {} \; >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
