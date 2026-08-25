@@ -1,7 +1,7 @@
-name: V3 PR qualification
+name: V3 ratio15 PR qualification
 on:
   push:
-    branches: [experiment/v3-pr-qualification]
+    branches: [experiment/v3-ratio15-pr-qualification]
   workflow_dispatch:
 
 jobs:
@@ -14,13 +14,13 @@ jobs:
         with:
           enable_kvm: true
           set_as_trusted_user: true
-      - name: Run recursive semantic and performance qualification
+      - name: Run recursive semantic and five-rep ratio15 qualification
         run: bash scripts/run_v3_pr_qualification.sh
-      - name: Upload V3 qualification evidence
+      - name: Upload V3 ratio15 qualification evidence
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: v3-pr-qualification
+          name: v3-ratio15-pr-qualification
           path: |
             v3-semantic-gate.txt
             v3-times.tsv
