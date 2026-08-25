@@ -1,0 +1,70 @@
+name: Minimal Core Scope Observability V21
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_scope_observability_v21.py'
+      - '.github/workflows/minimal-core-scope-observability-v21.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  v21:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL CORE SCOPE OBSERVABILITY V21 PRECOMMIT
+
+          Parent evidence:
+          V20 failed. It chose global on 61/64 trials. It rescued all 6 trials where relational lost, but harmed 55 relational wins; meta mean 41.31 vs relational 14.73 and meta max 95 vs relational 93. Thus naive source-CV policy selection is badly miscalibrated even though relational failure is sometimes worth avoiding.
+
+          Question:
+          Is relational-policy failure predictably observable from a richer but still source-visible signature, after calibration on prior verified trials, and does that signal transfer to new independently seeded trials?
+
+          Frozen design:
+          - Parent V20 run 32897971374 supplies 64 already-observed calibration trials; no parent rerun compute.
+          - Download its frozen artifact and use only source-visible CV totals/fold profiles as predictor inputs.
+          - Label parent trials only with already verified relational-vs-global held-out outcome to calibrate a scope-risk model.
+          - Freeze model and threshold before 64 NEW trials, seeds 2026082721..2026082784.
+          - New-trial policy choice sees only source-side CV evidence, never its held-out outcome.
+          - Same V20 relational/global controllers and CompleteCover semantics.
+
+          Frozen gates:
+          G1 CompleteCover valid all new trials.
+          G2 Oracle switching has positive mean and worst-case headroom.
+          G3 New family contains >=4 relational-loss cases (otherwise separator underpowered).
+          G4 Frozen source-visible risk predictor AUROC >=0.75 on new trials.
+          G5 Gate rescues >= half new relational losses.
+          G6 Gate harms <=8 relational-win trials.
+          G7 Gated mean cost <= always-relational.
+          G8 Gated worst-case strictly < always-relational.
+          G9 Threshold is selected from parent evidence only.
+
+          Interpretation boundary:
+          PASS supports a transferable observable scope signal for this bounded epistemic controller. FAIL says this frozen source-visible signature is insufficient; it does not prove scope is intrinsically unobservable. Do not tune thresholds on the new trials after seeing them.
+          EOF
+      - name: Download frozen V20 parent artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: minimal-core-epistemic-policy-scope-v20
+          path: artifacts/v20_parent
+          github-token: ${{ github.token }}
+          repository: heathsanchez/test
+          run-id: 32897971374
+      - name: Run V21
+        run: python experiments/minimal_core_scope_observability_v21.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-scope-observability-v21
+          path: artifacts/minimal_core_scope_observability_v21
+          retention-days: 30
