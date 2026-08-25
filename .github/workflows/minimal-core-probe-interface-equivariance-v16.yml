@@ -1,0 +1,56 @@
+name: Minimal Core Probe Interface Equivariance V16
+
+on:
+  push:
+    paths:
+      - 'experiments/minimal_core_probe_interface_equivariance_v16.py'
+      - '.github/workflows/minimal-core-probe-interface-equivariance-v16.yml'
+  workflow_dispatch:
+
+jobs:
+  probe-interface-equivariance:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_PROBE_INTERFACE_EQUIVARIANCE_V16 PRECOMMIT
+          Parent partial/negative: V15 run 32883964654 (10/11 gates; relabel robustness failed).
+
+          Question: does V15 presentation sensitivity come from the probe selector choosing presentation-dependent representatives, or from the downstream residual/query model itself?
+
+          Frozen design:
+          - Reconstruct the exact V15 finite train/held-out residual family and complete 28-probe carrier.
+          - Select the original 12-probe interface using V15's empirical-MI rule.
+          - Replace stochastic fitting with deterministic full-batch logistic fitting solely to isolate equivariance from optimizer randomness.
+          - Across 16 frozen anonymous state relabelings, compare two arms:
+            A) transport the original selected probe interface through the relabeling;
+            B) independently reselect 12 probes from the relabeled training evidence using the same MI rule.
+          - Compare every held-out residual and all 256 continuations at the score level after transporting continuations.
+          - Canonicalize each 12-edge probe set as an unlabeled graph under all 8! state permutations to test whether literal probe sets differ while their interface orbit is preserved.
+
+          Frozen gates:
+          G1 transported probe interface is score-equivariant to numerical tolerance 1e-10.
+          G2 the source of V15 sensitivity is decisively classified rather than mixed/numerical.
+          G3 transport preserves the probe-interface graph orbit.
+          G4 the reselection arm is nontrivial (literal set or scores differ somewhere).
+
+          Interpretation boundary:
+          A pass is a diagnostic result. If transport is invariant but reselection is not, the next target is an invariant selector over probe-interface classes rather than literal probes. If transport itself fails, the residual/query representation or model remains presentation-sensitive. This does not establish autonomous probe-language invention.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V16
+        run: python experiments/minimal_core_probe_interface_equivariance_v16.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-probe-interface-equivariance-v16
+          path: artifacts/minimal_core_probe_interface_equivariance_v16
+          retention-days: 30
