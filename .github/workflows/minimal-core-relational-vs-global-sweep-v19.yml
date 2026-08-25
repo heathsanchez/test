@@ -1,0 +1,56 @@
+name: Minimal Core Relational vs Global Sweep V19
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_relational_vs_global_sweep_v19.py'
+      - '.github/workflows/minimal-core-relational-vs-global-sweep-v19.yml'
+
+jobs:
+  v19:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE RELATIONAL VS GLOBAL SWEEP V19 PRECOMMIT
+
+          Parent evidence: V13 relational epistemic value beat the V12-style global scalar baseline 8 vs 52 queries. V18b's coarse recency-loop ablation failed because a fixed global ordering happened to cost 19 vs 21 on one synthetic sequence.
+
+          Question:
+          Does the actual residual-relative relational controller, not a recency surrogate, repeatedly outperform the matched global-value ablation across an independently seeded frozen family?
+
+          Frozen design:
+          - 64 trials.
+          - Source-distinct train/heldout residual families from V13.
+          - Each trial independently samples an anonymous state relabeling and 64-query training schedule.
+          - Relational learner uses only raw continuation traces coupled to anonymous residual pair structure.
+          - Matched global ablation sees the same training schedule but removes residual-specific coupling and learns one scalar continuation value.
+          - Deterministic full-batch fitting is used to remove the V15/V17 stochastic-optimizer confound.
+          - CompleteCover semantics are checked on every held-out trial.
+
+          Frozen gates:
+          G1 CompleteCover semantics valid in all trials.
+          G2 relational wins >=56/64.
+          G3 relational median query cost strictly below global scalar median.
+          G4 relational is not worse in >=60/64.
+          G5 exact one-sided sign-test p < 1e-6.
+          G6 deterministic fit only.
+          G7 global control removes residual-specific coupling.
+
+          Interpretation boundary:
+          A pass supports repeated bounded necessity/value of V(q,rho) over V(q) in this finite family. It does not establish universal dominance or the full cross-domain core loop.
+          EOF
+      - name: Run V19
+        run: python experiments/minimal_core_relational_vs_global_sweep_v19.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-relational-vs-global-sweep-v19
+          path: artifacts/minimal_core_relational_vs_global_sweep_v19
+          retention-days: 30
