@@ -1,0 +1,63 @@
+name: Minimal Core Induced Epistemic Feature V12
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'experiments/minimal_core_induced_epistemic_feature_v12.py'
+      - '.github/workflows/minimal-core-induced-epistemic-feature-v12.yml'
+
+jobs:
+  induced-epistemic-feature:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Precommit
+        run: |
+          cat <<'EOF'
+          MINIMAL_CORE_INDUCED_EPISTEMIC_FEATURE_V12 PRECOMMIT
+          Parent positive: Minimal Core Learned Epistemic Search V11 run 32848663345.
+
+          Question: can a compact epistemic feature map be induced directly from raw continuation behavior and prior verifier yields, rather than supplied as engineered continuation features?
+
+          Frozen design:
+          - Same 3-bit finite continuation universe as V11: all 256 Boolean traces over 8 anonymous states.
+          - Training and held-out representation-pair families remain source-distinct.
+          - Learner receives only raw 8-bit continuation traces and aggregate verifier split-yield on 64 deterministic training queries.
+          - No named latent-bit, parity, Walsh, or other semantic continuation features are provided.
+          - A ridge model induces a one-dimensional epistemic coordinate phi(c) directly from raw traces.
+          - Held-out ranking uses phi only; no held-out separator map or pair-specific foresight is available to the ranking function.
+          - Compare against lexical, random-median, and feature-ablation controls.
+          - Permanence remains CompleteCover-relative.
+          - Relearn phi after anonymous state relabelings and require robust held-out separator discovery.
+
+          Frozen gates:
+          G1 all pairs equivalent at C0.
+          G2 raw verifier training signal is nonconstant.
+          G3 induced feature finds every held-out provisional pair.
+          G4 no held-out permanent pair is falsely split.
+          G5 permanence assigned only after CompleteCover.
+          G6 induced feature strictly beats lexical control.
+          G7 induced feature strictly beats random median.
+          G8 ablating the learned feature harms separator search.
+          G9 induced epistemic map is one-dimensional.
+          G10 re-induction survives anonymous state relabeling within 2x baseline (floor 4).
+          G11 no engineered semantic continuation features enter the learner.
+
+          Interpretation boundary:
+          A pass establishes bounded induction of a compact epistemic ranking coordinate from raw continuation traces plus prior verifier outcomes. It does not establish autonomous invention of the raw observation interface, arbitrary feature-language growth, or replacement of CompleteCover for permanence.
+
+          Exploratory minimal-core work only; Bao A/B/G/P preregistration unchanged.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run V12
+        run: python experiments/minimal_core_induced_epistemic_feature_v12.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-core-induced-epistemic-feature-v12
+          path: artifacts/minimal_core_induced_epistemic_feature_v12
+          retention-days: 30
