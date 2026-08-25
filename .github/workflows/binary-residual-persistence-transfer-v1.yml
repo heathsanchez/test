@@ -1,0 +1,47 @@
+name: Binary Residual Persistence Transfer V1
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/binary_residual_persistence_transfer_v1.py'
+      - '.github/workflows/binary-residual-persistence-transfer-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  persistence-transfer:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      UVRM_MODEL: gpt-4.1-mini
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Frozen protocol
+        run: |
+          cat <<'EOF'
+          BINARY_RESIDUAL_PERSISTENCE_TRANSFER_V1 PRECOMMIT
+          Parent evidence: Verifier Binary Channel V1 run 32802074446.
+          Acquisition: 24 protected tasks, mod-2/mod-3 only; one-shot comparative ranking followed by at most one non-identifying TOP_OK/TOP_WRONG verifier bit and one repair.
+          Retention: compress acquisition episodes into one <=90-word task-agnostic rule. Rule is forbidden from containing concrete task IDs, pair names, specific moduli, answer values, or memorized positions.
+          Held-out: 16 source-distinct mod-5 tasks, with NO verifier feedback.
+          Arms: COLD; equal-compute RECHECK; RETAINED_VERIFIED_RULE; SHAM_RULE learned without verifier feedback; targeted ABLATION removing retained rule.
+          Primary: RETAINED_VERIFIED_RULE exact optimal-query rate must exceed COLD, RECHECK, SHAM_RULE, and ABLATION.
+          Secondary: retained-rule downstream accuracy must be >= RECHECK.
+          No outcome-dependent changes after this commit.
+          EOF
+      - name: Run protected persistence-transfer separator
+        run: python experiments/binary_residual_persistence_transfer_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: binary-residual-persistence-transfer-v1
+          path: artifacts/binary_residual_persistence_transfer_v1
+          retention-days: 30
