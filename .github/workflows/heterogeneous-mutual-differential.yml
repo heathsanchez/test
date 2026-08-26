@@ -23,6 +23,7 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git arena
           sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' arena/checkers/mathgraph.yaml
+          sed -i '/ROOT=$(cd \.\.\/\.\.\/\.\.\/\.\. && pwd)/a\  python3 "$ROOT/../experiments/patch_mathgraph_mutual_recursive.py"' arena/checkers/mathgraph.yaml
           cat experiments/heterogeneous-mutual-cases.lean >> arena/tutorial/Tutorial.lean
           cat experiments/mutual-minimal-cases.lean >> arena/tutorial/Tutorial.lean
           cat experiments/mutual-constructor-boundary-cases.lean >> arena/tutorial/Tutorial.lean
