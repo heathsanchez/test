@@ -17,63 +17,56 @@ namespace GaloistoolsDivCoreStep
 footer = '\nend GaloistoolsDivCoreStep\n'
 
 probes = {
-'available_ring_capabilities': r'''
-#check prove_add_zero
-#check prove_add_comm
-#check prove_add_neg_cancel
-#check prove_sub_eq_add_neg
-#check prove_mul_one
-#check prove_mul_zero
-#check prove_mul_eval_hom
-#check prove_sub_eval_hom
-''',
-'divcore_recursive_unfold': r'''
-theorem divcore_recursive_unfold
-    (p fuel : Nat) (g qacc cur : List Nat) (expDeg : Int)
-    (hdeg : ¬ Galoistools.gfDegree (Galoistools.gfStrip cur) < Galoistools.gfDegree g) :
-    Galoistools.divCore p g (fuel + 1) qacc expDeg cur =
-      let cur0 := Galoistools.gfStrip cur
-      let dc := Galoistools.gfDegree cur0
-      let dg := Galoistools.gfDegree g
-      let c := (Galoistools.leadCoeff cur0 * Galoistools.invMod (Galoistools.leadCoeff g) p) % p
-      let s := dc - dg
-      let gap := List.replicate (expDeg - s).toNat 0
-      let qacc' := qacc ++ gap ++ [c]
-      let sub := Galoistools.shiftUp s.toNat (Galoistools.scaleP p c g)
-      let cur' := Galoistools.gfSub cur0 sub p
-      Galoistools.divCore p g fuel qacc' (s - 1) cur' := by
-  simp [Galoistools.divCore, hdeg]
-''',
-'ref_lead_impl_bridge': r'''
-theorem ref_lead_impl_bridge (g : List Nat) :
-    Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
-  cases g <;> rfl
-''',
-'monic_step_coefficient_shape': r'''
-theorem monic_step_coefficient_shape (cur g : List Nat) (p : Nat)
-    (hg : Galoistools.refLeadCoeff g = 1) :
-    (Galoistools.leadCoeff cur * Galoistools.invMod (Galoistools.leadCoeff g) p) % p =
-      (Galoistools.leadCoeff cur * Galoistools.invMod 1 p) % p := by
-  have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
-    cases g <;> rfl
-  rw [hbridge, hg]
+'mod_lemma_inventory': r'''
+#check Int.emod_eq_of_lt
+#check Int.emod_eq_of_lt_of_nonneg
+#check Int.ofNat_pos
 ''',
 'euclid_one_mod': r'''
 theorem euclid_one_mod (p : Nat) (hp : 1 < p) :
     ((1 : Int) % (Int.ofNat p)) = 1 := by
-  omega
+  have hpos : (0 : Int) ≤ 1 := by omega
+  have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+  exact Int.emod_eq_of_lt hpos hlt
 ''',
-'euclid_mod_one': r'''
-theorem euclid_mod_one (p : Nat) :
-    ((Int.ofNat p) % (1 : Int)) = 0 := by
-  simp
+'egcd_p_one': r'''
+theorem egcd_p_one (p : Nat) (hp : 1 < p) :
+    Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := by
+  have hp0 : (Int.ofNat p) ≠ 0 := by
+    exact_mod_cast (show p ≠ 0 by omega)
+  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
+  have hdiv : ((Int.ofNat p) / (1 : Int)) = Int.ofNat p := by simp
+  cases p with
+  | zero => omega
+  | succ p =>
+      simp [Galoistools.egcdInt, hp0, hp1, hdiv]
+''',
+'egcd_one_p': r'''
+theorem egcd_one_p (p : Nat) (hp : 1 < p) :
+    Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
+  have hp0 : (Int.ofNat p) ≠ 0 := by
+    exact_mod_cast (show p ≠ 0 by omega)
+  have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+    exact Int.emod_eq_of_lt (by omega) hlt
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
+    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+    exact Int.ediv_eq_zero_of_lt (by omega) hlt
+  simp [Galoistools.egcdInt, hp0, h1p, hdiv]
 ''',
 'invmod_one': r'''
 theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
-  have hp0 : (Int.ofNat p) ≠ 0 := by omega
-  have h1p : ((1 : Int) % (Int.ofNat p)) = 1 := by omega
-  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
-  simp [Galoistools.invMod, Galoistools.egcdInt, hp0, h1p, hp1]
+  have hp0 : p ≠ 0 := by omega
+  have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+    exact Int.emod_eq_of_lt (by omega) hlt
+  have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
+    have hpI0 : (Int.ofNat p) ≠ 0 := by exact_mod_cast hp0
+    have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
+      have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+      exact Int.ediv_eq_zero_of_lt (by omega) hlt
+    simp [Galoistools.egcdInt, hpI0, h1p, hdiv]
+  simp [Galoistools.invMod, hp0, h1p, heg]
 ''',
 'monic_step_coefficient_reduced': r'''
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
@@ -84,11 +77,18 @@ theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
   have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
     cases g <;> rfl
   rw [hbridge, hg]
-  have hp0 : (Int.ofNat p) ≠ 0 := by omega
-  have h1p : ((1 : Int) % (Int.ofNat p)) = 1 := by omega
-  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
   have hi : Galoistools.invMod 1 p = 1 := by
-    simp [Galoistools.invMod, Galoistools.egcdInt, hp0, h1p, hp1]
+    have hp0 : p ≠ 0 := by omega
+    have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+      have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+      exact Int.emod_eq_of_lt (by omega) hlt
+    have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
+      have hpI0 : (Int.ofNat p) ≠ 0 := by exact_mod_cast hp0
+      have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
+        have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
+        exact Int.ediv_eq_zero_of_lt (by omega) hlt
+      simp [Galoistools.egcdInt, hpI0, h1p, hdiv]
+    simp [Galoistools.invMod, hp0, h1p, heg]
   rw [hi]
   simp [Nat.mod_eq_of_lt hlc]
 '''
@@ -104,8 +104,8 @@ for name, text in probes.items():
     errors=[x for x in lines if 'error:' in x or 'error(' in x or 'unknown identifier' in x]
     goals=[]
     for k,line in enumerate(lines):
-        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+60]))
-    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-300:])}
+        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+70]))
+    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-320:])}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     print(item['raw_tail'])
