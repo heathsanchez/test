@@ -24,13 +24,14 @@ jobs:
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git arena
           sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' arena/checkers/mathgraph.yaml
           cat experiments/heterogeneous-mutual-cases.lean >> arena/tutorial/Tutorial.lean
+          cat experiments/mutual-minimal-cases.lean >> arena/tutorial/Tutorial.lean
 
       - name: Build generated tutorial tests
         run: |
           set -euxo pipefail
           cd arena
           nix develop -c ./lka.py build-test tutorial
-          find _build/tests/tutorial -type f | grep -E 'hetero|homogeneousMutualControl|levelEq|mutualMeta' || true
+          find _build/tests/tutorial -type f | grep -E 'hetero|homogeneousMutualControl|levelEq|mutualMeta|minParam' || true
 
       - name: Build and run checker differential
         run: |
@@ -52,4 +53,4 @@ jobs:
         run: |
           set -euxo pipefail
           cd arena
-          python3 -c "import json,pathlib; targets=('hetero','homogeneousMutualControl','levelEq','mutualMeta'); rows=sorted((d.get('checker'),d.get('test'),d.get('status'),d.get('exit_code'),d.get('error')) for p in pathlib.Path('_results').glob('*.json') for d in [json.loads(p.read_text())] if any(x in d.get('test','') for x in targets)); print('=== TARGET VERDICTS ==='); [print('\t'.join('' if x is None else str(x) for x in r)) for r in rows]; print('=== BUILD STATUS ==='); print(pathlib.Path('checker-build-status.txt').read_text()); assert rows"
+          python3 -c "import json,pathlib; targets=('hetero','homogeneousMutualControl','levelEq','mutualMeta','minParam'); rows=sorted((d.get('checker'),d.get('test'),d.get('status'),d.get('exit_code'),d.get('error')) for p in pathlib.Path('_results').glob('*.json') for d in [json.loads(p.read_text())] if any(x in d.get('test','') for x in targets)); print('=== TARGET VERDICTS ==='); [print('\t'.join('' if x is None else str(x) for x in r)) for r in rows]; print('=== BUILD STATUS ==='); print(pathlib.Path('checker-build-status.txt').read_text()); assert rows"
