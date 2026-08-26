@@ -16,40 +16,66 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# Run 100 closed the implementation/reference strip bridge.  The only remaining
-# small-branch mismatch is the extra gfStrip applied to f by gfDiv.  IsNorm says
-# f is itself the output of refGfStrip; idempotence therefore implies f is already
-# stripped.  Prove that once, transfer it across the bridge, close the small branch,
-# and keep the validated fuel/prefix skeleton beside it for the full induction.
-# Run 101: execute the already-prepared normalized-strip closure probes.
+# Run 102 showed that IsNorm is refGfTrunc p f = f, not merely strip-idempotence.
+# The right bridge is therefore structural: refGfStrip can never return a list
+# whose head is zero.  Hence a normalized nonempty f cannot start with zero, so
+# it is already stripped.  We also avoid the canonical-vs-implementation theorem
+# mismatch by proving the implementation left-zero law directly from the same
+# frozen/implementation truncation bridge.
 probes = {
-'ref_strip_idem': r'''
-theorem ref_strip_idem (f : List Nat) :
-    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
-  induction f with
-  | nil => rfl
+'ref_strip_ne_zero_head': r'''
+theorem ref_strip_ne_zero_head (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
   | cons a as ih =>
       simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h, Galoistools.refGfStrip]
+      · simp [h]
+''',
+'norm_head_nonzero': r'''
+theorem ref_strip_ne_zero_head_local (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a as ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
+  intro ha
+  subst a
+  have h : Galoistools.refGfTrunc p (0 :: as) = 0 :: as := hf
+  simp only [Galoistools.refGfTrunc, List.map_cons, Nat.zero_mod] at h
+  exact ref_strip_ne_zero_head_local (0 :: as.map (fun x => x % p)) as h
 ''',
 'norm_ref_strip_self': r'''
-theorem ref_strip_idem_local (f : List Nat) :
-    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
-  induction f with
-  | nil => rfl
+theorem ref_strip_ne_zero_head_local2 (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
   | cons a as ih =>
       simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h, Galoistools.refGfStrip]
+      · simp [h]
 
 theorem norm_ref_strip_self (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) : Galoistools.refGfStrip f = f := by
-  have h := congrArg Galoistools.refGfStrip hf
-  rw [ref_strip_idem_local] at h
-  exact h.symm
+  cases f with
+  | nil => rfl
+  | cons a as =>
+      have ha : a ≠ 0 := by
+        intro hzero
+        subst a
+        have h : Galoistools.refGfTrunc p (0 :: as) = 0 :: as := hf
+        simp only [Galoistools.refGfTrunc, List.map_cons, Nat.zero_mod] at h
+        exact ref_strip_ne_zero_head_local2 (0 :: as.map (fun x => x % p)) as h
+      simp [Galoistools.refGfStrip, ha]
 ''',
 'norm_impl_strip_self': r'''
 theorem strip_bridge_local (f : List Nat) :
@@ -62,25 +88,32 @@ theorem strip_bridge_local (f : List Nat) :
       · simp [h, ih]
       · simp [h]
 
-theorem ref_strip_idem_local2 (f : List Nat) :
-    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
-  induction f with
-  | nil => rfl
+theorem ref_strip_ne_zero_head_local3 (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
   | cons a as ih =>
       simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h, Galoistools.refGfStrip]
+      · simp [h]
 
 theorem norm_impl_strip_self (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
   rw [strip_bridge_local]
-  have h := congrArg Galoistools.refGfStrip hf
-  rw [ref_strip_idem_local2] at h
-  exact h.symm
+  cases f with
+  | nil => rfl
+  | cons a as =>
+      have ha : a ≠ 0 := by
+        intro hzero
+        subst a
+        have h : Galoistools.refGfTrunc p (0 :: as) = 0 :: as := hf
+        simp only [Galoistools.refGfTrunc, List.map_cons, Nat.zero_mod] at h
+        exact ref_strip_ne_zero_head_local3 (0 :: as.map (fun x => x % p)) as h
+      simp [Galoistools.refGfStrip, ha]
 ''',
-'identity_small_branch_closed': r'''
-theorem strip_bridge_local3 (f : List Nat) :
+'impl_left_zero_norm': r'''
+theorem strip_bridge_local4 (f : List Nat) :
     Galoistools.gfStrip f = Galoistools.refGfStrip f := by
   induction f with
   | nil => rfl
@@ -90,31 +123,38 @@ theorem strip_bridge_local3 (f : List Nat) :
       · simp [h, ih]
       · simp [h]
 
-theorem ref_strip_idem_local3 (f : List Nat) :
-    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
+theorem impl_left_zero_norm (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
+  have ht : Galoistools.gfTrunc p f = f := by
+    rw [Galoistools.gfTrunc, strip_bridge_local4]
+    exact hf
+  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.gfTrunc] using ht
+''',
+'identity_small_branch_closed': r'''
+theorem strip_bridge_local5 (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
   induction f with
   | nil => rfl
   | cons a as ih =>
-      simp only [Galoistools.refGfStrip]
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h, Galoistools.refGfStrip]
+      · simp [h]
 
-theorem norm_impl_strip_self3 (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
-  rw [strip_bridge_local3]
-  have h := congrArg Galoistools.refGfStrip hf
-  rw [ref_strip_idem_local3] at h
-  exact h.symm
+theorem impl_left_zero_norm5 (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
+  have ht : Galoistools.gfTrunc p f = f := by
+    rw [Galoistools.gfTrunc, strip_bridge_local5]
+    exact hf
+  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.gfTrunc] using ht
 
 theorem identity_small_branch_closed (f g : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) (hg : g ≠ [])
     (hd : Galoistools.gfDegree f < Galoistools.gfDegree g) :
     Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
       (Galoistools.gfDiv f g p).snd p = f := by
-  have hs : Galoistools.gfStrip f = f := norm_impl_strip_self3 f p hf
-  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul, hs]
-  exact prove_add_zero f p hf
+  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
+  exact impl_left_zero_norm5 f p hf
 ''',
 'initial_budget': r'''
 theorem initial_budget (f g : List Nat)
