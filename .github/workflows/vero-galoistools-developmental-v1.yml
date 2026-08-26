@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: reuse verified monic theorem against gcd output
+# zero-agent residual push: expose exact gcd-monic coprimality residual
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Probe gcd monic residual
+      - name: Expose gcd monic residual
         working-directory: vero
         shell: bash
         run: |
@@ -60,12 +60,12 @@ jobs:
           end = '-- !benchmark @end proof def=prove_gcd_monic\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = "  intro f g p hp hf hg\n  simp only [canonical]\n  let h := Galoistools.gcdLoop p (f.length + g.length + 1) f g\n  by_cases hz : h = []\n  · left\n    simp [Galoistools.gfGcd, h, hz]\n  · right\n    change Galoistools.refLeadCoeff (Galoistools.gfMonic h p).2 = 1\n    apply prove_monic_leadCoeff_one h p hp.1 hz\n    omega\n"
+          proof = "  intro f g p hp hf hg\n  simp only [canonical]\n  let h := Galoistools.gcdLoop p (f.length + g.length + 1) f g\n  by_cases hz : h = []\n  · left\n    simp [Galoistools.gfGcd, h, hz, Galoistools.gfMonic]\n  · right\n    change Galoistools.refLeadCoeff (Galoistools.gfMonic h p).2 = 1\n    apply prove_monic_leadCoeff_one h p hp.1 hz\n    trace_state\n    sorry\n"
           div.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Division.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('GCD_MONIC_REUSE_EXIT', cp.returncode)
+          print('GCD_MONIC_RESIDUAL_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
