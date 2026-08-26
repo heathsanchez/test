@@ -43,8 +43,8 @@ theorem invmod_one_body (p : Nat)
      (r.snd.fst % Int.ofNat p).toNat) = 1 := by
   change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
           (r.snd.fst % Int.ofNat p).toNat) = 1
-  rw [heg, h1p]
-  rfl
+  rw [heg]
+  simp [h1p]
 ''',
 'egcd_zero_right': r'''
 theorem egcd_zero_right (fuel : Nat) (a : Int) :
@@ -123,8 +123,8 @@ theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
   rw [show 1 + p + 1 = 2 + p by omega]
   change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
           (r.snd.fst % Int.ofNat p).toNat) = 1
-  rw [heg, h1p]
-  rfl
+  rw [heg]
+  simp [h1p]
 ''',
 'monic_step_coefficient_reduced': r'''
 theorem egcd_zero_right_local4 (fuel : Nat) (a : Int) :
@@ -161,8 +161,8 @@ theorem invmod_one_local4 (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 :=
   rw [show 1 + p + 1 = 2 + p by omega]
   change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
           (r.snd.fst % Int.ofNat p).toNat) = 1
-  rw [heg, h1p]
-  rfl
+  rw [heg]
+  simp [h1p]
 
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
     (hp : 1 < p) (hg : Galoistools.refLeadCoeff g = 1)
