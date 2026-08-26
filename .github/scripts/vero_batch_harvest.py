@@ -8,7 +8,8 @@ seed = read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
 source = Path('batch_harvest/source').resolve()
 create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
-header = '''import Galoistools.Proof.Ring
+header = '''import Std.Tactic.Omega
+import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 import Galoistools.Spec.Division
 
@@ -71,8 +72,11 @@ theorem probe_divcore_zero_nonempty (p fuel : Nat) (g q : List Nat) (e : Int)
       | zero => simp [Galoistools.divCore, Galoistools.gfStrip]
       | succ n =>
           cases as with
-          | nil => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
-          | cons b bs => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+          | nil =>
+              simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+          | cons b bs =>
+              have hdeg : (-1 : Int) < (bs.length : Int) + 1 := by omega
+              simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree, hdeg]
 '''
 
 probes = {
