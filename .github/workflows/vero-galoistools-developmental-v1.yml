@@ -7,6 +7,7 @@ on:
       - '.github/workflows/vero-galoistools-developmental-v1.yml'
       - '.github/scripts/vero_batch_harvest.py'
       - '.github/scripts/vero_galoistools_allin.py'
+      - '.github/scripts/vero_divcore_step.py'
 
 jobs:
   developmental:
@@ -34,10 +35,12 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      # Retrigger after GitHub startup failure; scientific payload unchanged.
       - name: Prime-field division invariant census
         working-directory: vero
         run: uv run python ../.github/scripts/vero_batch_harvest.py
+      - name: Recursive divCore step probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_divcore_step.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
@@ -47,6 +50,13 @@ jobs:
         with:
           name: vero-galoistools-invariants
           path: vero/batch_harvest/
+          if-no-files-found: warn
+      - name: Upload divCore step census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-divcore-step
+          path: vero/divcore_step/
           if-no-files-found: warn
       - name: Upload all-in result
         if: always()
