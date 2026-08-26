@@ -141,6 +141,30 @@ theorem strip_bridge_local5 (f : List Nat) :
       · simp [h, ih]
       · simp [h]
 
+theorem ref_strip_ne_zero_head_local5 (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a as ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem norm_impl_strip_self5 (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  rw [strip_bridge_local5]
+  cases f with
+  | nil => rfl
+  | cons a as =>
+      have ha : a ≠ 0 := by
+        intro hzero
+        subst a
+        have h : Galoistools.refGfTrunc p (0 :: as) = 0 :: as := hf
+        simp only [Galoistools.refGfTrunc, List.map_cons, Nat.zero_mod] at h
+        exact ref_strip_ne_zero_head_local5 (0 :: as.map (fun x => x % p)) as h
+      simp [Galoistools.refGfStrip, ha]
+
 theorem impl_left_zero_norm5 (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
   have ht : Galoistools.gfTrunc p f = f := by
@@ -154,6 +178,8 @@ theorem identity_small_branch_closed (f g : List Nat) (p : Nat)
     Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
       (Galoistools.gfDiv f g p).snd p = f := by
   simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
+  have hs : Galoistools.gfStrip f = f := norm_impl_strip_self5 f p hf
+  rw [hs]
   exact impl_left_zero_norm5 f p hf
 ''',
 'initial_budget': r'''
