@@ -74,11 +74,9 @@ theorem probe_divcore_zero_nonempty (p fuel : Nat) (g q : List Nat) (e : Int)
           | nil =>
               simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
           | cons b bs =>
-              have hnonneg : (0 : Int) ≤ (bs.length : Int) := Int.ofNat_nonneg _
-              have hone : (0 : Int) ≤ 1 := by decide
-              have hsum : (0 : Int) ≤ (bs.length : Int) + 1 := add_nonneg hnonneg hone
-              have hm1 : (-1 : Int) < 0 := by decide
-              have hdeg : (-1 : Int) < (bs.length : Int) + 1 := lt_of_lt_of_le hm1 hsum
+              have hdeg : (-1 : Int) < (bs.length : Int) + 1 := by
+                change Int.negSucc 0 < Int.ofNat (bs.length + 1)
+                exact Int.negSucc_lt_ofNat _ _
               simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree, hdeg]
 '''
 
@@ -150,19 +148,13 @@ for name, theorem_text in probes.items():
     cp = subprocess.run(['lake','lean', probe.name], cwd=source, text=True, capture_output=True)
     out = cp.stdout + '\n' + cp.stderr
     lines = out.splitlines()
-    errors = [line for line in lines if 'error:' in line or line.startswith('error:')]
+    errors = [line for line in lines if 'error:' in line or line.startswith('error:') or 'error(' in line]
     states = []
     for k, line in enumerate(lines):
         if line.startswith('case ') or '⊢ ' in line:
             states.append('\n'.join(lines[k:k+28]))
     raw_tail = '\n'.join(lines[-120:]) if cp.returncode != 0 else ''
-    item = {
-        'probe': name,
-        'exit': cp.returncode,
-        'errors': errors[-8:],
-        'residual': states[-3:],
-        'raw_tail': raw_tail,
-    }
+    item = {'probe': name, 'exit': cp.returncode, 'errors': errors[-8:], 'residual': states[-3:], 'raw_tail': raw_tail}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     for e in errors[-8:]: print(e)
