@@ -34,6 +34,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
+      # Retrigger after GitHub startup failure; scientific payload unchanged.
       - name: Prime-field division invariant census
         working-directory: vero
         run: uv run python ../.github/scripts/vero_batch_harvest.py
