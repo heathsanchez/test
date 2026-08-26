@@ -51,10 +51,10 @@ theorem divcore_zero_fuel
   rfl
 ''',
 'ring_theorem_inventory': r'''
-#check Galoistools.prove_add_zero
-#check Galoistools.prove_add_comm
-#check Galoistools.prove_add_neg_cancel
-#check Galoistools.prove_sub_eq_add_neg
+#check prove_add_zero
+#check prove_add_comm
+#check prove_add_neg_cancel
+#check prove_sub_eq_add_neg
 ''',
 'add_sub_cancel_direct': r'''
 theorem add_sub_cancel_direct
@@ -63,7 +63,7 @@ theorem add_sub_cancel_direct
     (hcur : Galoistools.IsNorm p cur)
     (hsub : Galoistools.IsNorm p sub) :
     Galoistools.gfAdd sub (Galoistools.gfSub cur sub p) p = cur := by
-  rw [Galoistools.prove_sub_eq_add_neg cur sub p hp]
+  rw [prove_sub_eq_add_neg cur sub p hp]
   simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
 ''',
 'add_sub_cancel_other_orientation': r'''
@@ -73,7 +73,7 @@ theorem add_sub_cancel_other_orientation
     (hcur : Galoistools.IsNorm p cur)
     (hsub : Galoistools.IsNorm p sub) :
     Galoistools.gfAdd (Galoistools.gfSub cur sub p) sub p = cur := by
-  rw [Galoistools.prove_sub_eq_add_neg cur sub p hp]
+  rw [prove_sub_eq_add_neg cur sub p hp]
   simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
 '''
 }
