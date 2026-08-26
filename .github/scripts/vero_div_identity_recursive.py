@@ -47,8 +47,8 @@ theorem mod_add_assoc (p a b c : Nat) :
       ((a % p + (b % p + c % p) % p) % p) := by
   calc
     (((a % p + b % p) % p + c % p) % p) = ((a + b + c) % p) := by
-      rw [← Nat.add_mod]
-      rw [← Nat.add_mod]
+      rw [← Nat.add_mod a b p]
+      rw [← Nat.add_mod (a + b) c p]
     _ = ((a + (b + c)) % p) := by rw [Nat.add_assoc]
     _ = ((a % p + (b % p + c % p) % p) % p) := by
       rw [Nat.add_mod a (b + c) p]
@@ -78,14 +78,25 @@ theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
         cases bs with
         | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
         | cons b bs => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
+  have hmod : ∀ as bs : List Nat,
+      List.map (fun x => x % p) (Galoistools.zipAddPad p as bs) =
+        Galoistools.zipAddPad p as bs := by
+    intro as bs
+    induction as generalizing bs with
+    | nil =>
+        cases bs <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
+    | cons a as ih =>
+        cases bs with
+        | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
+        | cons b bs => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
   have hscalar : ∀ a b c : Nat,
       (((a % p + b % p) % p + c % p) % p) =
         ((a % p + (b % p + c % p) % p) % p) := by
     intro a b c
     calc
       (((a % p + b % p) % p + c % p) % p) = ((a + b + c) % p) := by
-        rw [← Nat.add_mod]
-        rw [← Nat.add_mod]
+        rw [← Nat.add_mod a b p]
+        rw [← Nat.add_mod (a + b) c p]
       _ = ((a + (b + c)) % p) := by rw [Nat.add_assoc]
       _ = ((a % p + (b % p + c % p) % p) % p) := by
         rw [Nat.add_mod a (b + c) p]
@@ -93,15 +104,15 @@ theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
   induction xs generalizing ys zs with
   | nil =>
       cases ys <;> cases zs <;>
-        simp [Galoistools.zipAddPad, hleft, hright]
+        simp [Galoistools.zipAddPad, hleft, hright, hmod]
   | cons x xs ih =>
       cases ys with
       | nil =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, hleft, hright, ih]
+            simp [Galoistools.zipAddPad, hleft, hright, hmod, ih]
       | cons y ys =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, hleft, hright, hscalar, ih]
+            simp [Galoistools.zipAddPad, hleft, hright, hmod, hscalar, ih, Nat.add_assoc]
 '''
 }
 
