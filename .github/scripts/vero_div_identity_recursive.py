@@ -81,6 +81,23 @@ theorem raw_left_zero_norm (f : List Nat) (p : Nat)
     _ = f := by
       simpa only [canonical] using (prove_add_zero f p hf)
 ''',
+'zipAddPad_assoc': r'''
+theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
+    Galoistools.zipAddPad p (Galoistools.zipAddPad p xs ys) zs =
+      Galoistools.zipAddPad p xs (Galoistools.zipAddPad p ys zs) := by
+  induction xs generalizing ys zs with
+  | nil =>
+      cases ys <;> cases zs <;>
+        simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc]
+  | cons x xs ih =>
+      cases ys with
+      | nil =>
+          cases zs <;>
+            simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc, ih]
+      | cons y ys =>
+          cases zs <;>
+            simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc, ih]
+''',
 'add_sub_cancel_rewrite': r'''
 theorem add_sub_cancel_rewrite
     (cur sub : List Nat) (p : Nat)
