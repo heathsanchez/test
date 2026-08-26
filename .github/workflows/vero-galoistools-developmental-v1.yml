@@ -1,6 +1,5 @@
 name: Vero galoistools developmental v1
 
-# Zero-API constructor probe from the verified 17/48 ratchet.
 on:
   workflow_dispatch:
   push:
@@ -16,9 +15,8 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Clone Vero
-        run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download verified 17-of-48 artifact
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - name: Download 17/48 ratchet
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -34,7 +32,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Prove scalar-map evaluation constructor
+      - name: Prove multiplication evaluation homomorphism
         working-directory: vero
         shell: bash
         run: |
@@ -44,47 +42,100 @@ jobs:
           from vero.generation.benchmark import Benchmark
           from vero.generation.extractor import read_artifact, extract, write_artifact
           from vero.generation.sandbox import create_sandbox
-
+          from vero.evaluation.runner import run_evaluation
           bench_dir = Path('benchmarks/galoistools').resolve()
           bench = Benchmark(bench_dir)
           seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('constructor/source').resolve()
+          source = Path('mul_eval/source').resolve()
           create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
           ring = source / 'Galoistools/Proof/Ring.lean'
           text = ring.read_text()
-          required = ['theorem natModEq_refPolyEvalRevAux_zipAddPad', 'theorem refPolyEval_gfStrip']
-          for name in required:
-              if name not in text:
-                  raise SystemExit(f'missing retained capability: {name}')
+          aux_start = '-- !benchmark @start proof_aux def=prove_mul_eval_hom\n'
+          aux_end = '-- !benchmark @end proof_aux def=prove_mul_eval_hom\n'
+          ai = text.index(aux_start) + len(aux_start)
+          aj = text.index(aux_end, ai)
+          aux = r'''theorem natModEq_refPolyEvalRevAux_map_mul (p x a : Nat) (ys : List Nat) :
+              NatModEq p
+                (Galoistools.refPolyEvalRevAux p x (ys.map (fun y => (a * y) % p)))
+                (a * Galoistools.refPolyEvalRevAux p x ys) := by
+            induction ys with
+            | nil => rfl
+            | cons y ys ih =>
+                simp only [List.map_cons, Galoistools.refPolyEvalRevAux]
+                have hhead : NatModEq p ((a * y) % p) (a * y) := natModEq_mod_left (by rfl)
+                have htail : NatModEq p
+                    (x * Galoistools.refPolyEvalRevAux p x (ys.map (fun z => (a * z) % p)))
+                    (x * (a * Galoistools.refPolyEvalRevAux p x ys)) := natModEq_mul (by rfl) ih
+                have hsum := natModEq_mod_left (natModEq_add hhead htail)
+                have halg : a * y + x * (a * Galoistools.refPolyEvalRevAux p x ys) =
+                    a * (y + x * Galoistools.refPolyEvalRevAux p x ys) := by
+                  simp [Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+                rw [halg] at hsum
+                have hfactor : NatModEq p
+                    (a * ((y + x * Galoistools.refPolyEvalRevAux p x ys) % p))
+                    (a * (y + x * Galoistools.refPolyEvalRevAux p x ys)) :=
+                  natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
+                exact hsum.trans hfactor.symm
 
-          marker = '-- !benchmark @start proof def=prove_mul_eval_hom kind=prove target=spec_mul_eval_hom\n'
-          k = text.index(marker)
-          theorem = r'''
--- Developmental constructor: Horner evaluation commutes with coefficientwise scalar multiplication.
-theorem natModEq_refPolyEvalRevAux_map_mul
-    (p x a : Nat) (ys : List Nat) :
-    NatModEq p
-      (Galoistools.refPolyEvalRevAux p x (ys.map (fun y => (a * y) % p)))
-      ((a % p) * Galoistools.refPolyEvalRevAux p x ys) := by
-  induction ys with
-  | nil => simp [NatModEq, Galoistools.refPolyEvalRevAux]
-  | cons y ys ih =>
-      unfold NatModEq at ih ⊢
-      simp only [List.map_cons, Galoistools.refPolyEvalRevAux]
-      simp [Nat.add_mod, Nat.mul_mod, Nat.mul_add, Nat.add_mul,
-        Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm, ih]
-
-'''
-          ring.write_text(text[:k] + theorem + text[k:])
-          subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
+          theorem natModEq_refPolyEvalRevAux_convolve (p x : Nat) (xs ys : List Nat) :
+              NatModEq p
+                (Galoistools.refPolyEvalRevAux p x (Galoistools.convolve p xs ys))
+                (Galoistools.refPolyEvalRevAux p x xs * Galoistools.refPolyEvalRevAux p x ys) := by
+            induction xs with
+            | nil => rfl
+            | cons a xs ih =>
+                simp only [Galoistools.convolve]
+                let head := ys.map (fun y => (a * y) % p)
+                let tail := 0 :: Galoistools.convolve p xs ys
+                have hzip := natModEq_refPolyEvalRevAux_zipAddPad p x head tail
+                have hhead : NatModEq p (Galoistools.refPolyEvalRevAux p x head)
+                    (a * Galoistools.refPolyEvalRevAux p x ys) := by
+                  simpa [head] using natModEq_refPolyEvalRevAux_map_mul p x a ys
+                have htail : NatModEq p (Galoistools.refPolyEvalRevAux p x tail)
+                    (x * (Galoistools.refPolyEvalRevAux p x xs * Galoistools.refPolyEvalRevAux p x ys)) := by
+                  simp only [tail, Galoistools.refPolyEvalRevAux, Nat.zero_add]
+                  exact natModEq_mod_left (natModEq_mul (by rfl) ih)
+                have hchain := hzip.trans (natModEq_add hhead htail)
+                have halg : a * Galoistools.refPolyEvalRevAux p x ys +
+                    x * (Galoistools.refPolyEvalRevAux p x xs * Galoistools.refPolyEvalRevAux p x ys) =
+                    (a + x * Galoistools.refPolyEvalRevAux p x xs) * Galoistools.refPolyEvalRevAux p x ys := by
+                  simp [Nat.add_mul, Nat.mul_assoc]
+                rw [halg] at hchain
+                have hfactor : NatModEq p
+                    (Galoistools.refPolyEvalRevAux p x (a :: xs) * Galoistools.refPolyEvalRevAux p x ys)
+                    ((a + x * Galoistools.refPolyEvalRevAux p x xs) * Galoistools.refPolyEvalRevAux p x ys) := by
+                  simp only [Galoistools.refPolyEvalRevAux]
+                  exact natModEq_mul (natModEq_mod_left (by rfl)) (by rfl)
+                exact hchain.trans hfactor.symm
+          '''
+          text = text[:ai] + aux + text[aj:]
+          start = '-- !benchmark @start proof def=prove_mul_eval_hom kind=prove target=spec_mul_eval_hom\n'
+          end = '-- !benchmark @end proof def=prove_mul_eval_hom\n'
+          i = text.index(start) + len(start)
+          j = text.index(end, i)
+          proof = r'''  intro f g p x hp
+            simp only [canonical, Galoistools.gfMul]
+            by_cases hzero : f = [] ∨ g = []
+            · rw [if_pos hzero]
+              rcases hzero with rfl | rfl <;> simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux]
+            · rw [if_neg hzero, refPolyEval_gfStrip]
+              simp only [Galoistools.refPolyEval, List.reverse_reverse]
+              have hconv := natModEq_refPolyEvalRevAux_convolve p x f.reverse g.reverse
+              unfold NatModEq at hconv
+              simpa only [Nat.mod_mod] using hconv
+          '''
+          ring.write_text(text[:i] + proof + text[j:])
+          subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, check=True)
           artifact = extract(source, bench, mode='codeproof')
           write_artifact(artifact, source / 'artifact.json')
-          print('SCALAR_MAP_EVAL_COMPILED')
+          result = run_evaluation(benchmark_dir=bench_dir, artifact=artifact, mode='codeproof', eval_sandbox_dir=Path('mul_eval/eval/sandbox').resolve(), report_dir=Path('mul_eval/eval').resolve(), lake_timeout=180)
+          print(result.md_path.read_text())
+          print('MUL_EVAL_PROBE_COMPLETE', result.report.summary)
           PY
-      - name: Upload constructor artifact
+      - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/constructor/
+          path: vero/mul_eval/
           if-no-files-found: warn
