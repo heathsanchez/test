@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: prove egcdInt Bezout invariant, then monic inverse correctness
+# zero-agent residual push: fix Bezout algebra, then expose post-unfold invMod residual
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Push egcd invariant through monic proof
+      - name: Push corrected egcd invariant through invMod unfold
         working-directory: vero
         shell: bash
         run: |
@@ -73,9 +73,11 @@ jobs:
                     let r := Galoistools.egcdInt fuel b (a % b)
                     have hr := ih b (a % b)
                     change a * r.2.2 + b * (r.2.1 - (a / b) * r.2.2) = r.1
-                    change b * r.2.1 + (a - b * (a / b)) * r.2.2 = r.1
-                    rw [← Int.emod_def]
-                    exact hr
+                    calc
+                      a * r.2.2 + b * (r.2.1 - (a / b) * r.2.2)
+                          = b * r.2.1 + (a - b * (a / b)) * r.2.2 := by ring
+                      _ = b * r.2.1 + (a % b) * r.2.2 := by rw [Int.emod_def]
+                      _ = r.1 := hr
             simp only [canonical]
             cases f with
             | nil => contradiction
@@ -87,15 +89,16 @@ jobs:
               · rw [Galoistools.gfMonic]
                 simp only [ha, ↓reduceIte, Galoistools.gfQuoGround, List.map_cons,
                   Galoistools.refLeadCoeff]
-                let r := Galoistools.egcdInt (a % p + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
-                have hbez := egcd_bezout (a % p + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
+                unfold Galoistools.invMod
+                let r := Galoistools.egcdInt (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
+                have hbez := egcd_bezout (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
                 change a * ((r.2.1 % (Int.ofNat p)).toNat) % p = 1
           '''
           ring.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('EGCD_BEZOUT_PUSH_EXIT', cp.returncode)
+          print('EGCD_BEZOUT_REWRITE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
