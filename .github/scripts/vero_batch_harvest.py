@@ -16,64 +16,79 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# We deliberately stop probing invMod/egcd internals here.  The 23/48 plateau
-# says the next useful object must live at the division recursion boundary.
-# These probes expose the exact induction interface of divCore before we commit
-# to a large proof: base case, early-stop case, recursive-step equation, and the
-# public gfDiv unfolding under the scored hypotheses.
+# Run 97 exposed the correct recursion boundary.  The quotient accumulator is a
+# high-degree prefix; completing it with the still-unfilled low-degree zero slots
+# gives the polynomial whose contribution plus `cur` should remain the original
+# dividend.  These probes test that representation before attempting induction.
 probes = {
-'divcore_zero': r'''
-theorem divCore_zero (p : Nat) (g q cur : List Nat) (e : Int) :
-    Galoistools.divCore p g 0 q e cur =
-      (Galoistools.gfStrip q, Galoistools.gfStrip cur) := by
-  rfl
+'add_left_zero_from_ratchet': r'''
+theorem add_left_zero_from_ratchet (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
+  rw [prove_add_comm]
+  exact prove_add_zero f p hf
 ''',
-'divcore_stop': r'''
-theorem divCore_stop (p fuel : Nat) (g q cur : List Nat) (e : Int)
-    (h : Galoistools.gfDegree (Galoistools.gfStrip cur) < Galoistools.gfDegree g) :
-    Galoistools.divCore p g (fuel+1) q e cur =
-      (Galoistools.gfStrip (q ++ List.replicate (e+1).toNat 0),
-       Galoistools.gfStrip cur) := by
-  simp [Galoistools.divCore, h]
+'monic_nonempty': r'''
+theorem monic_nonempty (g : List Nat)
+    (h : Galoistools.refLeadCoeff g = 1) : g ≠ [] := by
+  intro hg
+  subst g
+  simp [Galoistools.refLeadCoeff] at h
 ''',
-'divcore_step': r'''
-theorem divCore_step (p fuel : Nat) (g q cur : List Nat) (e : Int)
-    (h : ¬ Galoistools.gfDegree (Galoistools.gfStrip cur) < Galoistools.gfDegree g) :
-    let cur0 := Galoistools.gfStrip cur
-    let dg := Galoistools.gfDegree g
-    let dc := Galoistools.gfDegree cur0
-    let c := (Galoistools.leadCoeff cur0 * Galoistools.invMod (Galoistools.leadCoeff g) p) % p
-    let s := dc - dg
-    let gap := List.replicate (e - s).toNat 0
-    let q' := q ++ gap ++ [c]
-    let sub := Galoistools.shiftUp s.toNat (Galoistools.scaleP p c g)
-    let cur' := Galoistools.gfSub cur0 sub p
-    Galoistools.divCore p g (fuel+1) q e cur =
-      Galoistools.divCore p g fuel q' (s-1) cur' := by
-  simp [Galoistools.divCore, h]
+'strip_zero_fill': r'''
+theorem strip_zero_fill (n : Nat) :
+    Galoistools.gfStrip (List.replicate n 0) = [] := by
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
 ''',
-'gfdiv_unfold_monic': r'''
-theorem gfDiv_unfold_monic (f g : List Nat) (p : Nat)
-    (hg : g ≠ [])
-    (hdeg : ¬ Galoistools.gfDegree f < Galoistools.gfDegree g) :
-    Galoistools.gfDiv f g p =
-      Galoistools.divCore p g (f.length+1) []
-        (Galoistools.gfDegree f - Galoistools.gfDegree g) f := by
-  simp [Galoistools.gfDiv, hg, hdeg]
+'initial_prefix_identity': r'''
+theorem initial_prefix_identity (f g : List Nat) (p k : Nat)
+    (hf : Galoistools.IsNorm p f) :
+    Galoistools.gfAdd
+      (Galoistools.gfMul (Galoistools.gfStrip ([] ++ List.replicate k 0)) g p)
+      f p = f := by
+  rw [strip_zero_fill]
+  simp [Galoistools.gfMul]
+  exact add_left_zero_from_ratchet f p hf
 ''',
-'div_identity_split': r'''
-theorem div_identity_split (f g : List Nat) (p : Nat)
+'div_identity_split_sharp': r'''
+theorem div_identity_split_sharp (f g : List Nat) (p : Nat)
     (hp : 1 < p) (hf : Galoistools.IsNorm p f) (hgN : Galoistools.IsNorm p g)
     (hmonic : Galoistools.refLeadCoeff g = 1) :
     Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
       (Galoistools.gfDiv f g p).snd p = f := by
-  by_cases hg : g = []
-  · subst g
-    simp [Galoistools.gfDiv]
+  have hg : g ≠ [] := monic_nonempty g hmonic
   by_cases hd : Galoistools.gfDegree f < Galoistools.gfDegree g
-  · simp [Galoistools.gfDiv, hg, hd]
-    simpa using hf
+  · simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
+    rw [prove_add_comm]
+    apply prove_add_zero
+    simpa [Galoistools.IsNorm] using hf
   · simp only [Galoistools.gfDiv, hg, hd, if_false]
+''',
+'prefix_complete_step_shape': r'''
+theorem prefix_complete_step_shape (q : List Nat) (e s : Int) (c : Nat)
+    (hes : s ≤ e) (hs : 0 ≤ s) :
+    let gap := List.replicate (e - s).toNat 0
+    let q' := q ++ gap ++ [c]
+    q' ++ List.replicate s.toNat 0 =
+      q ++ gap ++ [c] ++ List.replicate s.toNat 0 := by
+  simp
+''',
+'divcore_invariant_statement': r'''
+def completedQ (q : List Nat) (e : Int) : List Nat :=
+  Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0)
+
+def DivInv (p : Nat) (g origin q cur : List Nat) (e : Int) : Prop :=
+  Galoistools.gfAdd (Galoistools.gfMul (completedQ q e) g p)
+    (Galoistools.gfStrip cur) p = origin
+
+theorem divCore_zero_inv_readout (p : Nat) (g origin q cur : List Nat) (e : Int)
+    (h : DivInv p g origin q cur e) :
+    Galoistools.gfAdd
+      (Galoistools.gfMul (completedQ (Galoistools.divCore p g 0 q e cur).1 (-1)) g p)
+      (Galoistools.divCore p g 0 q e cur).2 p = origin := by
+  simp [Galoistools.divCore, completedQ, DivInv] at h ⊢
+  simpa using h
 '''
 }
 
@@ -87,8 +102,8 @@ for name, text in probes.items():
     errors=[x for x in lines if 'error:' in x or 'error(' in x or 'unknown identifier' in x]
     goals=[]
     for k,line in enumerate(lines):
-        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+40]))
-    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-220:]) if cp.returncode else ''}
+        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+50]))
+    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-260:]) if cp.returncode else ''}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     for e in errors[-12:]: print(e)
