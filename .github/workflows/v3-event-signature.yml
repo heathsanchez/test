@@ -1,0 +1,29 @@
+name: V3 event signature
+
+on:
+  push:
+    branches: [experiment/v3-structural-band-separator]
+    paths:
+      - scripts/run_v3_event_signature.sh
+      - .github/workflows/v3-event-signature.yml
+  workflow_dispatch:
+
+jobs:
+  event-signature:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run event-level census
+        run: bash scripts/run_v3_event_signature.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-event-signature
+          path: v3-event-signature/
+          if-no-files-found: warn
