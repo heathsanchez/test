@@ -25,6 +25,16 @@ theorem refstrip_no_zero_head (xs as : List Nat) :
       simp only [Galoistools.refGfStrip]
       split <;> simp_all
 
+theorem refstrip_length_le (xs : List Nat) :
+    (Galoistools.refGfStrip xs).length ≤ xs.length := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a xs ih =>
+      simp only [Galoistools.refGfStrip]
+      split
+      · exact Nat.le_trans ih (Nat.le_succ xs.length)
+      · simp
+
 theorem norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
   intro ha
@@ -38,23 +48,24 @@ theorem norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
 
 theorem norm_head_mod (a : Nat) (as : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p (a :: as)) : a % p = a := by
-  have ha : a ≠ 0 := norm_head_nonzero a as p hf
   change Galoistools.refGfTrunc p (a :: as) = a :: as at hf
   unfold Galoistools.refGfTrunc at hf
   simp only [List.map_cons] at hf
   have hamod : a % p ≠ 0 := by
     intro hz
     rw [hz] at hf
-    have hbad : Galoistools.refGfStrip (as.map (fun x => x % p)) = 0 :: as := by
-      simpa [Galoistools.refGfStrip] using hf
-    exact refstrip_no_zero_head (as.map (fun x => x % p)) as hbad
+    simp only [Galoistools.refGfStrip, if_pos rfl] at hf
+    have hlen := congrArg List.length hf
+    have hle := refstrip_length_le (as.map (fun x => x % p))
+    rw [hlen] at hle
+    simp at hle
   simp [Galoistools.refGfStrip, hamod] at hf
   exact hf.1
 
 theorem norm_head_lt (a : Nat) (as : List Nat) (p : Nat)
     (hp : 1 < p) (hf : Galoistools.IsNorm p (a :: as)) : a < p := by
   have hm := norm_head_mod a as p hf
-  have hp0 : 0 < p := lt_trans Nat.zero_lt_one hp
+  have hp0 : 0 < p := Nat.lt_trans Nat.zero_lt_one hp
   have hlt : a % p < p := Nat.mod_lt a hp0
   rw [hm] at hlt
   exact hlt
@@ -71,7 +82,7 @@ theorem prime_norm_gcd_one (a : Nat) (as : List Nat) (p : Nat)
     have haPos : 0 < a := Nat.pos_of_ne_zero ha0
     exact Nat.gcd_pos_of_pos_left p haPos
   have hdle : d ≤ a := Nat.le_of_dvd (Nat.pos_of_ne_zero ha0) hdA
-  have hdp : d < p := lt_of_le_of_lt hdle halt
+  have hdp : d < p := Nat.lt_of_le_of_lt hdle halt
   change d = 1
   cases hd : d with
   | zero =>
@@ -95,28 +106,21 @@ example (a : Nat) (as : List Nat) (p : Nat)
   exact ⟨norm_head_nonzero a as p hf, norm_head_lt a as p hp.1 hf,
     prime_norm_gcd_one a as p hp hf⟩
 ''',
-'inv_one': r'''
+'inv_one_unfold': r'''
 example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
-  simp [Galoistools.invMod, Galoistools.egcdInt, hp]
+  have hp0 : p ≠ 0 := Nat.ne_of_gt (Nat.lt_trans Nat.zero_lt_one hp)
+  unfold Galoistools.invMod
+  simp [Galoistools.egcdInt, hp0, hp]
 ''',
-'lead_inv_via_monic': common + r'''
+'lead_inv_via_monic_nonone': common + r'''
 example (a : Nat) (as : List Nat) (p : Nat)
-    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p (a :: as)) :
+    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p (a :: as)) (ha1 : a ≠ 1) :
     (a * Galoistools.invMod a p) % p = 1 := by
   have hcop : Nat.gcd a p = 1 := prime_norm_gcd_one a as p hp hf
   have hm := prove_monic_leadCoeff_one (a :: as) p hp.1 (by simp) hcop
   change Galoistools.refLeadCoeff (Galoistools.gfMonic (a :: as) p).2 = 1 at hm
-  simp [Galoistools.gfMonic, Galoistools.gfQuoGround, Galoistools.refLeadCoeff] at hm
-  by_cases ha1 : a = 1
-  · subst a
-    simpa using hm
-  · exact hm
-''',
-'lead_inv_direct_shape': common + r'''
-example (a : Nat) (as : List Nat) (p : Nat)
-    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p (a :: as)) :
-    Nat.gcd a p = 1 ∧ a < p := by
-  exact ⟨prime_norm_gcd_one a as p hp hf, norm_head_lt a as p hp.1 hf⟩
+  simp [Galoistools.gfMonic, ha1, Galoistools.gfQuoGround, Galoistools.refLeadCoeff] at hm
+  exact hm
 '''
 }
 
