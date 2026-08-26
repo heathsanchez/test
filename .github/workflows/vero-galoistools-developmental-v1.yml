@@ -81,45 +81,46 @@ jobs:
           end = '-- !benchmark @end proof def=prove_sub_eval_hom\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = r'''  intro f g p x hp
-          simp only [canonical, Galoistools.gfSub]
-          rw [refPolyEval_gfStrip]
-          simp only [Galoistools.refPolyEval, List.reverse_reverse]
-          rw [zipSubPad_eq_add_neg]
-          have hadd := natModEq_refPolyEvalRevAux_zipAddPad p x f.reverse
-            (g.reverse.map (fun c => (p - c % p) % p))
-          have hneg := natModEq_refPolyEvalRevAux_map_neg p x hp g.reverse
-          unfold NatModEq at hadd hneg
-          have eval_mod (xs : List Nat) :
-              Galoistools.refPolyEvalRevAux p x xs % p =
-                Galoistools.refPolyEvalRevAux p x xs := by
-            cases xs <;> simp [Galoistools.refPolyEvalRevAux]
-          have hp0 : 0 < p := by omega
-          have hb_le : Galoistools.refPolyEvalRevAux p x g.reverse % p ≤ p :=
-            Nat.le_of_lt (Nat.mod_lt _ hp0)
-          calc
-            Galoistools.refPolyEvalRevAux p x
-                (Galoistools.zipAddPad p f.reverse
-                  (g.reverse.map (fun c => (p - c % p) % p))) =
+          proof = r'''  by
+            intro f g p x hp
+            simp only [canonical, Galoistools.gfSub]
+            rw [refPolyEval_gfStrip]
+            simp only [Galoistools.refPolyEval, List.reverse_reverse]
+            rw [zipSubPad_eq_add_neg]
+            have hadd := natModEq_refPolyEvalRevAux_zipAddPad p x f.reverse
+              (g.reverse.map (fun c => (p - c % p) % p))
+            have hneg := natModEq_refPolyEvalRevAux_map_neg p x hp g.reverse
+            unfold NatModEq at hadd hneg
+            have eval_mod (xs : List Nat) :
+                Galoistools.refPolyEvalRevAux p x xs % p =
+                  Galoistools.refPolyEvalRevAux p x xs := by
+              cases xs <;> simp [Galoistools.refPolyEvalRevAux]
+            have hp0 : 0 < p := by omega
+            have hb_le : Galoistools.refPolyEvalRevAux p x g.reverse % p ≤ p :=
+              Nat.le_of_lt (Nat.mod_lt _ hp0)
+            calc
               Galoistools.refPolyEvalRevAux p x
-                (Galoistools.zipAddPad p f.reverse
-                  (g.reverse.map (fun c => (p - c % p) % p))) % p :=
-                (eval_mod _).symm
-            _ = (Galoistools.refPolyEvalRevAux p x f.reverse +
-                  Galoistools.refPolyEvalRevAux p x
-                    (g.reverse.map (fun c => (p - c % p) % p))) % p := hadd
-            _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
-                  Galoistools.refPolyEvalRevAux p x
-                    (g.reverse.map (fun c => (p - c % p) % p)) % p) % p := by
-                  rw [Nat.add_mod]
-            _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
-                  ((p - Galoistools.refPolyEvalRevAux p x g.reverse % p) % p) % p) % p := by
-                  rw [hneg]
-            _ = (Galoistools.refPolyEvalRevAux p x f.reverse + p -
-                  Galoistools.refPolyEvalRevAux p x g.reverse % p) % p := by
-                  rw [Nat.mod_mod]
-                  rw [Nat.add_sub_assoc hb_le]
-                  rw [Nat.add_mod]
+                  (Galoistools.zipAddPad p f.reverse
+                    (g.reverse.map (fun c => (p - c % p) % p))) =
+                Galoistools.refPolyEvalRevAux p x
+                  (Galoistools.zipAddPad p f.reverse
+                    (g.reverse.map (fun c => (p - c % p) % p))) % p :=
+                  (eval_mod _).symm
+              _ = (Galoistools.refPolyEvalRevAux p x f.reverse +
+                    Galoistools.refPolyEvalRevAux p x
+                      (g.reverse.map (fun c => (p - c % p) % p))) % p := hadd
+              _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
+                    Galoistools.refPolyEvalRevAux p x
+                      (g.reverse.map (fun c => (p - c % p) % p)) % p) % p := by
+                    rw [Nat.add_mod]
+              _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
+                    ((p - Galoistools.refPolyEvalRevAux p x g.reverse % p) % p) % p) % p := by
+                    rw [hneg]
+              _ = (Galoistools.refPolyEvalRevAux p x f.reverse + p -
+                    Galoistools.refPolyEvalRevAux p x g.reverse % p) % p := by
+                    rw [Nat.mod_mod]
+                    rw [Nat.add_sub_assoc hb_le]
+                    rw [Nat.add_mod]
           '''
           ring.write_text(text[:i] + proof + text[j:])
           subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
