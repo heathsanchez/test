@@ -9,6 +9,7 @@ on:
       - '.github/scripts/vero_galoistools_allin.py'
       - '.github/scripts/vero_divcore_step.py'
       - '.github/scripts/vero_div_identity_recursive.py'
+      - '.github/scripts/vero_divcore_coeff_bound.py'
 
 jobs:
   developmental:
@@ -45,6 +46,9 @@ jobs:
       - name: Division identity recursive probes
         working-directory: vero
         run: uv run python ../.github/scripts/vero_div_identity_recursive.py
+      - name: Recursive remainder coefficient probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_divcore_coeff_bound.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
@@ -68,6 +72,13 @@ jobs:
         with:
           name: vero-galoistools-div-identity-recursive
           path: vero/div_identity_recursive/
+          if-no-files-found: warn
+      - name: Upload recursive remainder coefficient census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-divcore-coeff
+          path: vero/divcore_coeff/
           if-no-files-found: warn
       - name: Upload all-in result
         if: always()
