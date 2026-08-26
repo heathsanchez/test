@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent ratchet: persist verified monic proof into artifact and clean rebuild
+# zero-agent residual push: harvest gcd zero-right from ratcheted monic baseline
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download green monic source
+      - name: Download monic ratchet
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32925947744
+          run-id: 32926333265
           name: vero-galoistools-developmental-v1
-          path: green
+          path: baseline
       - uses: astral-sh/setup-uv@v6
       - name: Install Lean
         run: |
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Extract ratchet and replay clean
+      - name: Close gcd zero-right and ratchet
         working-directory: vero
         shell: bash
         run: |
@@ -41,35 +41,43 @@ jobs:
           from pathlib import Path
           import subprocess
           from vero.generation.benchmark import Benchmark
-          from vero.generation.extractor import extract, write_artifact
+          from vero.generation.extractor import read_artifact, extract, write_artifact
           from vero.generation.sandbox import create_sandbox
 
           bench_dir = Path('benchmarks/galoistools').resolve()
           bench = Benchmark(bench_dir)
-          green = Path('../green/source').resolve()
-          art = extract(green, bench, mode='codeproof')
-          out = Path('ratchet/source')
-          out.mkdir(parents=True, exist_ok=True)
-          write_artifact(art, out / 'artifact.json')
+          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
+          source = Path('gcd_zero_probe/source').resolve()
+          create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
-          target = [s for s in art.slots if s.def_name == 'prove_monic_leadCoeff_one' and s.key == 'proof']
-          assert len(target) == 1, target
-          assert target[0].found and not target[0].is_empty and not target[0].contains_sorry
-          print('MONIC_RATCHET_SLOT_OK', target[0].body_hash)
+          div = source / 'Galoistools/Proof/Division.lean'
+          text = div.read_text()
+          start = '-- !benchmark @start proof def=prove_gcd_zero_right kind=prove target=spec_gcd_zero_right\n'
+          end = '-- !benchmark @end proof def=prove_gcd_zero_right\n'
+          i = text.index(start) + len(start)
+          j = text.index(end, i)
+          proof = '''  intro f p\n  simp [canonical, Galoistools.gfGcd, Galoistools.gcdLoop]\n'''
+          div.write_text(text[:i] + proof + text[j:])
 
-          replay = Path('ratchet/replay').resolve()
-          create_sandbox(bench_dir, replay, mode='codeproof', overwrite=True, seed_artifact=art)
-          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=replay, text=True, capture_output=True)
+          cp = subprocess.run(['lake','lean','Galoistools/Proof/Division.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('MONIC_RATCHET_REPLAY_EXIT', cp.returncode)
+          print('GCD_ZERO_RIGHT_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
+
+          art = extract(source, bench, mode='codeproof')
+          out = Path('gcd_zero_probe/ratchet')
+          out.mkdir(parents=True, exist_ok=True)
+          write_artifact(art, out / 'artifact.json')
+          target = [s for s in art.slots if s.def_name == 'prove_gcd_zero_right' and s.key == 'proof']
+          assert len(target) == 1 and target[0].found and not target[0].is_empty and not target[0].contains_sorry
+          print('GCD_ZERO_RIGHT_RATCHET_OK', target[0].body_hash)
           PY
       - name: Upload ratchet
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/ratchet/
+          path: vero/gcd_zero_probe/
           if-no-files-found: warn
