@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# residual probe: 21/48 -> monic leading coefficient
+# residual probe: discharge monic list-shape bookkeeping, expose invMod arithmetic
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Probe monic leading-coefficient residual
+      - name: Expose modular inverse residual
         working-directory: vero
         shell: bash
         run: |
@@ -61,17 +61,19 @@ jobs:
             cases f with
             | nil => contradiction
             | cons a as =>
-              simp only [Galoistools.refLeadCoeff] at hcop ⊢
-              simp only [Galoistools.gfMonic]
-              split
-              · simp_all
-              · simp only [Galoistools.gfQuoGround, List.map_cons, Galoistools.refLeadCoeff]
+              simp only [Galoistools.refLeadCoeff] at hcop
+              change Galoistools.refLeadCoeff (Galoistools.gfMonic (a :: as) p).2 = 1
+              by_cases ha : a = 1
+              · simp [Galoistools.gfMonic, ha, Galoistools.refLeadCoeff]
+              · rw [Galoistools.gfMonic]
+                simp only [ha, ↓reduceIte, Galoistools.gfQuoGround, List.map_cons,
+                  Galoistools.refLeadCoeff]
           '''
           ring.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('MONIC_PROBE_EXIT', cp.returncode)
+          print('MONIC_INVMOD_RESIDUAL_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
