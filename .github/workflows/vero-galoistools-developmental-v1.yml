@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: remove unavailable ring tactic from Bezout step
+# zero-agent residual push: prove egcd first component is gcd when fuel exceeds second argument
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Push egcd invariant with core algebra rewrites
+      - name: Push gcd-value invariant through monic residual
         working-directory: vero
         shell: bash
         run: |
@@ -80,6 +80,28 @@ jobs:
                       ac_rfl
                     rw [halg, ← Int.emod_def]
                     exact hr
+            have egcd_gcd : ∀ fuel m n : Nat, n < fuel →
+                (Galoistools.egcdInt fuel (Int.ofNat m) (Int.ofNat n)).1 =
+                  Int.ofNat (Nat.gcd m n) := by
+              intro fuel
+              induction fuel with
+              | zero =>
+                  intro m n h
+                  exact (Nat.not_lt_zero n h).elim
+              | succ fuel ih =>
+                  intro m n h
+                  by_cases hn : n = 0
+                  · subst n
+                    simp [Galoistools.egcdInt]
+                  · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
+                    have hnfuel : n ≤ fuel := Nat.le_of_lt_succ h
+                    have hmod : m % n < fuel :=
+                      lt_of_lt_of_le (Nat.mod_lt m hnpos) hnfuel
+                    rw [Galoistools.egcdInt]
+                    simp only [Int.ofNat_eq_coe, Int.ofNat_eq_coe] at *
+                    simp only [hn, Int.ofNat_eq_coe, Int.natCast_ne_zero, ↓reduceIte]
+                    have hr := ih n (m % n) hmod
+                    simpa [Nat.gcd_comm, Nat.gcd_rec] using hr
             simp only [canonical]
             cases f with
             | nil => contradiction
@@ -94,13 +116,22 @@ jobs:
                 unfold Galoistools.invMod
                 let r := Galoistools.egcdInt (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
                 have hbez := egcd_bezout (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
+                have hfuel : p < a + p + 1 := by
+                  omega
+                have hg := egcd_gcd (a + p + 1) (a % p) p hfuel
+                have hgp : Nat.gcd (a % p) p = 1 := by
+                  rw [← Nat.gcd_rec p a, Nat.gcd_comm]
+                  exact hcop
+                have hr1 : r.1 = 1 := by
+                  dsimp [r]
+                  simpa [hgp] using hg
                 change a * ((r.2.1 % (Int.ofNat p)).toNat) % p = 1
           '''
           ring.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('EGCD_CORE_REWRITE_EXIT', cp.returncode)
+          print('EGCD_GCD_VALUE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
