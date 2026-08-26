@@ -17,100 +17,48 @@ namespace GaloistoolsBatch
 footer = '\nend GaloistoolsBatch\n'
 
 probes = {
-'sub_self': r'''
+'sub_self_via_specs': r'''
 theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
     Galoistools.gfSub f f p = [] := by
-  unfold Galoistools.gfSub
-  rw [Galoistools.Proof.zipSubPad_eq_add_neg]
-  rw [Galoistools.Proof.zipAddPad_neg_self p hp]
-  simpa [List.map_reverse] using Galoistools.Proof.gfStrip_map_zero f
+  calc
+    Galoistools.gfSub f f p
+        = Galoistools.gfAdd f (Galoistools.gfNeg f p) p := prove_sub_eq_add_neg f f p hp
+    _ = [] := prove_add_neg_cancel f p hp
 ''',
 'norm_impl_identity': r'''
 theorem probe_norm_impl_identity (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) :
     Galoistools.gfStrip (f.map (fun a => a % p)) = f := by
   change Galoistools.refGfTrunc p f = f at hf
+  unfold Galoistools.refGfTrunc at hf
   calc
     Galoistools.gfStrip (f.map (fun a => a % p))
-        = Galoistools.refGfStrip (f.map (fun a => a % p)) :=
-          Galoistools.Proof.ring_gfStrip_eq_ref _
+        = Galoistools.refGfStrip (f.map (fun a => a % p)) := ring_gfStrip_eq_ref _
     _ = f := hf
 ''',
-'refstrip_no_zero_head': r'''
-theorem probe_refstrip_no_zero_head (xs as : List Nat) :
-    Galoistools.refGfStrip xs ≠ 0 :: as := by
-  induction xs with
-  | nil => simp [Galoistools.refGfStrip]
-  | cons a xs ih =>
-      simp only [Galoistools.refGfStrip]
-      by_cases ha : a = 0
-      · simp [ha, ih]
-      · simp [ha]
-''',
-'norm_head_nonzero': r'''
-theorem probe_refstrip_no_zero_head (xs as : List Nat) :
-    Galoistools.refGfStrip xs ≠ 0 :: as := by
-  induction xs with
-  | nil => simp [Galoistools.refGfStrip]
-  | cons a xs ih =>
-      simp only [Galoistools.refGfStrip]
-      by_cases ha : a = 0
-      · simp [ha, ih]
-      · simp [ha]
-
-theorem probe_norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
-  intro ha
-  subst a
-  change Galoistools.refGfTrunc p (0 :: as) = 0 :: as at hf
-  unfold Galoistools.refGfTrunc at hf
-  simp only [List.map_cons, Nat.zero_mod] at hf
-  exact probe_refstrip_no_zero_head (as.map (fun x => x % p)) as hf
-''',
-'norm_strip_identity': r'''
-theorem probe_refstrip_no_zero_head (xs as : List Nat) :
-    Galoistools.refGfStrip xs ≠ 0 :: as := by
-  induction xs with
-  | nil => simp [Galoistools.refGfStrip]
-  | cons a xs ih =>
-      simp only [Galoistools.refGfStrip]
-      by_cases ha : a = 0
-      · simp [ha, ih]
-      · simp [ha]
-
-theorem probe_norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
-  intro ha
-  subst a
-  change Galoistools.refGfTrunc p (0 :: as) = 0 :: as at hf
-  unfold Galoistools.refGfTrunc at hf
-  simp only [List.map_cons, Nat.zero_mod] at hf
-  exact probe_refstrip_no_zero_head (as.map (fun x => x % p)) as hf
-
-theorem probe_norm_strip_identity (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
-  cases f with
-  | nil => rfl
-  | cons a as =>
-      have ha := probe_norm_head_nonzero a as p hf
-      simp [Galoistools.gfStrip, ha]
+'divcore_zero_tail': r'''
+theorem probe_divcore_zero_tail (p fuel : Nat) (q : List Nat) (e : Int) :
+    (Galoistools.divCore p [] fuel q e []).2 = [] := by
+  cases fuel with
+  | zero => simp [Galoistools.divCore, Galoistools.gfStrip]
+  | succ n => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
 ''',
 'rem_self': r'''
 theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
     Galoistools.gfSub f f p = [] := by
-  unfold Galoistools.gfSub
-  rw [Galoistools.Proof.zipSubPad_eq_add_neg]
-  rw [Galoistools.Proof.zipAddPad_neg_self p hp]
-  simpa [List.map_reverse] using Galoistools.Proof.gfStrip_map_zero f
+  calc
+    Galoistools.gfSub f f p
+        = Galoistools.gfAdd f (Galoistools.gfNeg f p) p := prove_sub_eq_add_neg f f p hp
+    _ = [] := prove_add_neg_cancel f p hp
 
 theorem probe_norm_impl_identity (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) :
     Galoistools.gfStrip (f.map (fun a => a % p)) = f := by
   change Galoistools.refGfTrunc p f = f at hf
+  unfold Galoistools.refGfTrunc at hf
   calc
     Galoistools.gfStrip (f.map (fun a => a % p))
-        = Galoistools.refGfStrip (f.map (fun a => a % p)) :=
-          Galoistools.Proof.ring_gfStrip_eq_ref _
+        = Galoistools.refGfStrip (f.map (fun a => a % p)) := ring_gfStrip_eq_ref _
     _ = f := hf
 
 theorem probe_refstrip_no_zero_head (xs as : List Nat) :
@@ -154,11 +102,10 @@ theorem probe_rem_self (f : List Nat) (p : Nat)
   · simp [hz]
     simp only [Galoistools.divCore]
     rw [hstrip]
-    simp only [lt_self_iff_false, if_false, sub_self, Int.toNat_zero,
-      List.replicate_zero, List.append_nil, hinv]
-    simp [Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub, hstrip]
+    simp [hz, hinv, Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub,
+      Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
 ''',
-'gcd_self_from_rem': r'''
+'gcd_self_cascade': r'''
 theorem probe_gcdloop_zero_right (p fuel : Nat) (f : List Nat) :
     Galoistools.gcdLoop p fuel f [] = f := by
   cases fuel with
