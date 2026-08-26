@@ -24,10 +24,7 @@ jobs:
           set -euxo pipefail
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git arena
           cd arena
-
-          # Pin MathGraph to the recursor-soundness candidate currently under Arena review.
           sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' checkers/mathgraph.yaml
-
           cat >> tutorial/Tutorial.lean <<'LEAN'
 
 /-! Differential tests for heterogeneous mutual inductive universe blocks. -/
@@ -152,3 +149,5 @@ LEAN
           if not rows:
               raise SystemExit('No target results found')
           PY
+
+# retrigger after GitHub Actions recovery
