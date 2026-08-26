@@ -50,9 +50,6 @@ jobs:
 
           div = source / 'Galoistools/Proof/Division.lean'
           text = div.read_text()
-
-          # Import the now-verified Ring proof module so Division can reuse the
-          # modular-inverse/monic theorem instead of reproving extended Euclid.
           istart = '-- !benchmark @start imports\n'
           iend = '-- !benchmark @end imports\n'
           i = text.index(istart) + len(istart)
@@ -63,17 +60,7 @@ jobs:
           end = '-- !benchmark @end proof def=prove_gcd_monic\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = r'''  intro f g p hp hf hg
-  simp only [canonical]
-  let h := Galoistools.gcdLoop p (f.length + g.length + 1) f g
-  by_cases hz : h = []
-  · left
-    simp [Galoistools.gfGcd, h, hz]
-  · right
-    change Galoistools.refLeadCoeff (Galoistools.gfMonic h p).2 = 1
-    apply prove_monic_leadCoeff_one h p hp.1 hz
-    omega
-'''
+          proof = "  intro f g p hp hf hg\n  simp only [canonical]\n  let h := Galoistools.gcdLoop p (f.length + g.length + 1) f g\n  by_cases hz : h = []\n  · left\n    simp [Galoistools.gfGcd, h, hz]\n  · right\n    change Galoistools.refLeadCoeff (Galoistools.gfMonic h p).2 = 1\n    apply prove_monic_leadCoeff_one h p hp.1 hz\n    omega\n"
           div.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Division.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
