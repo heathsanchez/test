@@ -16,34 +16,7 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-probes = {
-'sub_self_via_specs': r'''
-theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
-    Galoistools.gfSub f f p = [] := by
-  calc
-    Galoistools.gfSub f f p
-        = Galoistools.gfAdd f (Galoistools.gfNeg f p) p := prove_sub_eq_add_neg f f p hp
-    _ = [] := prove_add_neg_cancel f p hp
-''',
-'norm_impl_identity': r'''
-theorem probe_norm_impl_identity (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) :
-    Galoistools.gfStrip (f.map (fun a => a % p)) = f := by
-  change Galoistools.refGfTrunc p f = f at hf
-  unfold Galoistools.refGfTrunc at hf
-  calc
-    Galoistools.gfStrip (f.map (fun a => a % p))
-        = Galoistools.refGfStrip (f.map (fun a => a % p)) := ring_gfStrip_eq_ref _
-    _ = f := hf
-''',
-'divcore_zero_tail': r'''
-theorem probe_divcore_zero_tail (p fuel : Nat) (q : List Nat) (e : Int) :
-    (Galoistools.divCore p [] fuel q e []).2 = [] := by
-  cases fuel with
-  | zero => simp [Galoistools.divCore, Galoistools.gfStrip]
-  | succ n => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
-''',
-'rem_self': r'''
+common = r'''
 theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
     Galoistools.gfSub f f p = [] := by
   calc
@@ -88,6 +61,25 @@ theorem probe_norm_strip_identity (f : List Nat) (p : Nat)
       have ha := probe_norm_head_nonzero a as p hf
       simp [Galoistools.gfStrip, ha]
 
+theorem probe_divcore_zero_nonempty (p fuel : Nat) (g q : List Nat) (e : Int)
+    (hg : g ≠ []) :
+    (Galoistools.divCore p g fuel q e []).2 = [] := by
+  cases g with
+  | nil => contradiction
+  | cons a as =>
+      cases fuel with
+      | zero => simp [Galoistools.divCore, Galoistools.gfStrip]
+      | succ n =>
+          simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+'''
+
+probes = {
+'divcore_zero_nonempty': common + r'''
+example (p fuel : Nat) (g q : List Nat) (e : Int) (hg : g ≠ []) :
+    (Galoistools.divCore p g fuel q e []).2 = [] :=
+  probe_divcore_zero_nonempty p fuel g q e hg
+''',
+'rem_self_closed': common + r'''
 theorem probe_rem_self (f : List Nat) (p : Nat)
     (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
     (hinv : (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1) :
@@ -102,19 +94,38 @@ theorem probe_rem_self (f : List Nat) (p : Nat)
   · simp [hz]
     simp only [Galoistools.divCore]
     rw [hstrip]
-    simp [hz, hinv, Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub,
-      Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+    simp [hz, hinv, Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub]
+    exact probe_divcore_zero_nonempty p f.length f [1] (-1) hz
 ''',
-'gcd_self_cascade': r'''
+'gcd_self_full': common + r'''
+theorem probe_rem_self (f : List Nat) (p : Nat)
+    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
+    (hinv : (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1) :
+    Galoistools.gfRem f f p = [] := by
+  have hp1 : 1 < p := hp.1
+  have hstrip := probe_norm_strip_identity f p hf
+  have htrunc := probe_norm_impl_identity f p hf
+  have hsub := probe_sub_self f p hp1
+  unfold Galoistools.gfRem Galoistools.gfDiv
+  by_cases hz : f = []
+  · simp [hz]
+  · simp [hz]
+    simp only [Galoistools.divCore]
+    rw [hstrip]
+    simp [hz, hinv, Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub]
+    exact probe_divcore_zero_nonempty p f.length f [1] (-1) hz
+
 theorem probe_gcdloop_zero_right (p fuel : Nat) (f : List Nat) :
     Galoistools.gcdLoop p fuel f [] = f := by
   cases fuel with
   | zero => rfl
   | succ n => simp [Galoistools.gcdLoop]
 
-theorem probe_gcd_self_from_rem (f : List Nat) (p : Nat)
-    (hrem : Galoistools.gfRem f f p = []) :
+theorem probe_gcd_self_full (f : List Nat) (p : Nat)
+    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
+    (hinv : (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1) :
     Galoistools.gfGcd f f p = (Galoistools.gfMonic f p).2 := by
+  have hrem := probe_rem_self f p hp hf hinv
   unfold Galoistools.gfGcd
   simp only [Galoistools.gcdLoop]
   rw [hrem]
@@ -134,7 +145,7 @@ for name, theorem_text in probes.items():
     states = []
     for k, line in enumerate(lines):
         if line.startswith('case ') or '⊢ ' in line:
-            states.append('\n'.join(lines[k:k+24]))
+            states.append('\n'.join(lines[k:k+28]))
     item = {'probe': name, 'exit': cp.returncode, 'errors': errors[-8:], 'residual': states[-3:]}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
