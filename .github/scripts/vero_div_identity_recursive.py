@@ -49,6 +49,32 @@ theorem divcore_zero_fuel
     Galoistools.divCore p g 0 qacc expDeg cur =
       (Galoistools.gfStrip qacc, Galoistools.gfStrip cur) := by
   rfl
+''',
+'ring_theorem_inventory': r'''
+#check Galoistools.prove_add_zero
+#check Galoistools.prove_add_comm
+#check Galoistools.prove_add_neg_cancel
+#check Galoistools.prove_sub_eq_add_neg
+''',
+'add_sub_cancel_direct': r'''
+theorem add_sub_cancel_direct
+    (cur sub : List Nat) (p : Nat)
+    (hp : 1 < p)
+    (hcur : Galoistools.IsNorm p cur)
+    (hsub : Galoistools.IsNorm p sub) :
+    Galoistools.gfAdd sub (Galoistools.gfSub cur sub p) p = cur := by
+  rw [Galoistools.prove_sub_eq_add_neg cur sub p hp]
+  simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
+''',
+'add_sub_cancel_other_orientation': r'''
+theorem add_sub_cancel_other_orientation
+    (cur sub : List Nat) (p : Nat)
+    (hp : 1 < p)
+    (hcur : Galoistools.IsNorm p cur)
+    (hsub : Galoistools.IsNorm p sub) :
+    Galoistools.gfAdd (Galoistools.gfSub cur sub p) sub p = cur := by
+  rw [Galoistools.prove_sub_eq_add_neg cur sub p hp]
+  simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
 '''
 }
 
@@ -62,8 +88,8 @@ for name, text in probes.items():
     errors=[x for x in lines if 'error:' in x or 'error(' in x or 'unknown identifier' in x]
     goals=[]
     for k,line in enumerate(lines):
-        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+80]))
-    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-360:]) if cp.returncode else ''}
+        if '⊢ ' in line or line.startswith('case '): goals.append('\n'.join(lines[k:k+100]))
+    item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-440:]) if cp.returncode else ''}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['raw_tail'])
