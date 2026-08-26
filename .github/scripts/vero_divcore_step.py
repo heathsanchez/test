@@ -18,14 +18,14 @@ footer = '\nend GaloistoolsDivCoreStep\n'
 
 probes = {
 'available_ring_capabilities': r'''
-#check Galoistools.prove_add_zero
-#check Galoistools.prove_add_comm
-#check Galoistools.prove_add_neg_cancel
-#check Galoistools.prove_sub_eq_add_neg
-#check Galoistools.prove_mul_one
-#check Galoistools.prove_mul_zero
-#check Galoistools.prove_mul_eval_hom
-#check Galoistools.prove_sub_eval_hom
+#check prove_add_zero
+#check prove_add_comm
+#check prove_add_neg_cancel
+#check prove_sub_eq_add_neg
+#check prove_mul_one
+#check prove_mul_zero
+#check prove_mul_eval_hom
+#check prove_sub_eval_hom
 ''',
 'divcore_recursive_unfold': r'''
 theorem divcore_recursive_unfold
@@ -60,7 +60,23 @@ theorem monic_step_coefficient_shape (cur g : List Nat) (p : Nat)
 ''',
 'invmod_one': r'''
 theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
-  simp [Galoistools.invMod, Galoistools.egcdInt, hp]
+  obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+  simp [Galoistools.invMod, Galoistools.egcdInt]
+''',
+'monic_step_coefficient_reduced': r'''
+theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
+    (hp : 1 < p) (hg : Galoistools.refLeadCoeff g = 1)
+    (hlc : Galoistools.leadCoeff cur < p) :
+    (Galoistools.leadCoeff cur * Galoistools.invMod (Galoistools.leadCoeff g) p) % p =
+      Galoistools.leadCoeff cur := by
+  have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
+    cases g <;> rfl
+  rw [hbridge, hg]
+  have hi : Galoistools.invMod 1 p = 1 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    simp [Galoistools.invMod, Galoistools.egcdInt]
+  rw [hi]
+  simp [Nat.mod_eq_of_lt hlc]
 '''
 }
 
