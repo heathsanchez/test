@@ -58,10 +58,22 @@ theorem monic_step_coefficient_shape (cur g : List Nat) (p : Nat)
     cases g <;> rfl
   rw [hbridge, hg]
 ''',
+'euclid_one_mod': r'''
+theorem euclid_one_mod (p : Nat) (hp : 1 < p) :
+    ((1 : Int) % (Int.ofNat p)) = 1 := by
+  omega
+''',
+'euclid_mod_one': r'''
+theorem euclid_mod_one (p : Nat) :
+    ((Int.ofNat p) % (1 : Int)) = 0 := by
+  simp
+''',
 'invmod_one': r'''
 theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
-  obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
-  simp [Galoistools.invMod, Galoistools.egcdInt]
+  have hp0 : (Int.ofNat p) ≠ 0 := by omega
+  have h1p : ((1 : Int) % (Int.ofNat p)) = 1 := by omega
+  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
+  simp [Galoistools.invMod, Galoistools.egcdInt, hp0, h1p, hp1]
 ''',
 'monic_step_coefficient_reduced': r'''
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
@@ -72,9 +84,11 @@ theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
   have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
     cases g <;> rfl
   rw [hbridge, hg]
+  have hp0 : (Int.ofNat p) ≠ 0 := by omega
+  have h1p : ((1 : Int) % (Int.ofNat p)) = 1 := by omega
+  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
   have hi : Galoistools.invMod 1 p = 1 := by
-    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
-    simp [Galoistools.invMod, Galoistools.egcdInt]
+    simp [Galoistools.invMod, Galoistools.egcdInt, hp0, h1p, hp1]
   rw [hi]
   simp [Nat.mod_eq_of_lt hlc]
 '''
