@@ -1,0 +1,26 @@
+name: V3 declaration localization
+on:
+  push:
+    branches:
+      - experiment/v3-declaration-localization
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  localize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run declaration-boundary localization
+        run: bash scripts/run_v3_declaration_localization.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-declaration-localization
+          path: v3-declaration-localization/
+          if-no-files-found: warn
