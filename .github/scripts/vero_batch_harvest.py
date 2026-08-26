@@ -70,7 +70,9 @@ theorem probe_divcore_zero_nonempty (p fuel : Nat) (g q : List Nat) (e : Int)
       cases fuel with
       | zero => simp [Galoistools.divCore, Galoistools.gfStrip]
       | succ n =>
-          simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+          cases as with
+          | nil => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
+          | cons b bs => simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
 '''
 
 probes = {
