@@ -19,7 +19,9 @@ jobs:
           enable_kvm: true
           set_as_trusted_user: true
       - name: Run event-level census
-        run: bash scripts/run_v3_event_signature.sh
+        run: |
+          sed -i 's/record_v3_event(depth, sx.len(), sy.len(), lh, rh)/record_v3_event(depth, sx.len() as usize, sy.len() as usize, lh, rh)/' scripts/run_v3_event_signature.sh
+          bash scripts/run_v3_event_signature.sh
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
