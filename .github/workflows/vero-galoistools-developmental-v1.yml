@@ -8,6 +8,7 @@ on:
       - '.github/scripts/vero_batch_harvest.py'
       - '.github/scripts/vero_galoistools_allin.py'
       - '.github/scripts/vero_divcore_step.py'
+      - '.github/scripts/vero_div_identity_recursive.py'
 
 jobs:
   developmental:
@@ -41,6 +42,9 @@ jobs:
       - name: Recursive divCore step probes
         working-directory: vero
         run: uv run python ../.github/scripts/vero_divcore_step.py
+      - name: Division identity recursive probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_div_identity_recursive.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
@@ -57,6 +61,13 @@ jobs:
         with:
           name: vero-galoistools-divcore-step
           path: vero/divcore_step/
+          if-no-files-found: warn
+      - name: Upload division identity recursive census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-div-identity-recursive
+          path: vero/div_identity_recursive/
           if-no-files-found: warn
       - name: Upload all-in result
         if: always()
