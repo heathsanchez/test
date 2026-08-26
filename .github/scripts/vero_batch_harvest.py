@@ -16,25 +16,41 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# Run 99 validated the quotient fuel-budget skeleton.  The only failures were
-# the implementation/reference normal-form boundary: gfStrip and refGfStrip are
-# byte-for-byte recursive copies, but Lean will not identify distinct defs by
-# unfolding under the IsNorm hypothesis.  Close that bridge explicitly, derive
-# implementation normalization from frozen IsNorm, then immediately retest the
-# small division branch and the divCore readout prerequisites.
+# Run 100 closed the implementation/reference strip bridge.  The only remaining
+# small-branch mismatch is the extra gfStrip applied to f by gfDiv.  IsNorm says
+# f is itself the output of refGfStrip; idempotence therefore implies f is already
+# stripped.  Prove that once, transfer it across the bridge, close the small branch,
+# and keep the validated fuel/prefix skeleton beside it for the full induction.
 probes = {
-'strip_bridge': r'''
-theorem strip_bridge (f : List Nat) :
-    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+'ref_strip_idem': r'''
+theorem ref_strip_idem (f : List Nat) :
+    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
   induction f with
   | nil => rfl
   | cons a as ih =>
-      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h]
+      · simp [h, Galoistools.refGfStrip]
 ''',
-'trunc_bridge': r'''
+'norm_ref_strip_self': r'''
+theorem ref_strip_idem_local (f : List Nat) :
+    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h, Galoistools.refGfStrip]
+
+theorem norm_ref_strip_self (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.refGfStrip f = f := by
+  have h := congrArg Galoistools.refGfStrip hf
+  rw [ref_strip_idem_local] at h
+  exact h.symm
+''',
+'norm_impl_strip_self': r'''
 theorem strip_bridge_local (f : List Nat) :
     Galoistools.gfStrip f = Galoistools.refGfStrip f := by
   induction f with
@@ -45,29 +61,24 @@ theorem strip_bridge_local (f : List Nat) :
       · simp [h, ih]
       · simp [h]
 
-theorem trunc_bridge (p : Nat) (f : List Nat) :
-    Galoistools.gfStrip (f.map (fun x => x % p)) = Galoistools.refGfTrunc p f := by
-  rw [strip_bridge_local]
-  rfl
-''',
-'norm_to_impl_trunc': r'''
-theorem strip_bridge_local2 (f : List Nat) :
-    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+theorem ref_strip_idem_local2 (f : List Nat) :
+    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
   induction f with
   | nil => rfl
   | cons a as ih =>
-      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h]
+      · simp [h, Galoistools.refGfStrip]
 
-theorem norm_to_impl_trunc (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) :
-    Galoistools.gfStrip (f.map (fun x => x % p)) = f := by
-  rw [strip_bridge_local2]
-  exact hf
+theorem norm_impl_strip_self (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  rw [strip_bridge_local]
+  have h := congrArg Galoistools.refGfStrip hf
+  rw [ref_strip_idem_local2] at h
+  exact h.symm
 ''',
-'add_left_zero_bridged': r'''
+'identity_small_branch_closed': r'''
 theorem strip_bridge_local3 (f : List Nat) :
     Galoistools.gfStrip f = Galoistools.refGfStrip f := by
   induction f with
@@ -78,32 +89,31 @@ theorem strip_bridge_local3 (f : List Nat) :
       · simp [h, ih]
       · simp [h]
 
-theorem add_left_zero_bridged (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
-  simp [Galoistools.gfAdd, Galoistools.zipAddPad]
-  rw [strip_bridge_local3]
-  exact hf
-''',
-'identity_small_branch_bridged': r'''
-theorem strip_bridge_local4 (f : List Nat) :
-    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+theorem ref_strip_idem_local3 (f : List Nat) :
+    Galoistools.refGfStrip (Galoistools.refGfStrip f) = Galoistools.refGfStrip f := by
   induction f with
   | nil => rfl
   | cons a as ih =>
-      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      simp only [Galoistools.refGfStrip]
       by_cases h : a = 0
       · simp [h, ih]
-      · simp [h]
+      · simp [h, Galoistools.refGfStrip]
 
-theorem identity_small_branch_bridged (f g : List Nat) (p : Nat)
+theorem norm_impl_strip_self3 (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  rw [strip_bridge_local3]
+  have h := congrArg Galoistools.refGfStrip hf
+  rw [ref_strip_idem_local3] at h
+  exact h.symm
+
+theorem identity_small_branch_closed (f g : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) (hg : g ≠ [])
     (hd : Galoistools.gfDegree f < Galoistools.gfDegree g) :
     Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
       (Galoistools.gfDiv f g p).snd p = f := by
-  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
-  simp [Galoistools.gfAdd, Galoistools.zipAddPad]
-  rw [strip_bridge_local4]
-  exact hf
+  have hs : Galoistools.gfStrip f = f := norm_impl_strip_self3 f p hf
+  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul, hs]
+  exact prove_add_zero f p hf
 ''',
 'initial_budget': r'''
 theorem initial_budget (f g : List Nat)
@@ -116,37 +126,12 @@ theorem initial_budget (f g : List Nat)
 theorem zero_budget_forces_complete (e : Int)
     (hbudget : (e + 1).toNat ≤ 0) : (e + 1).toNat = 0 := by
   omega
-
-theorem zero_budget_completedQ (q : List Nat) (e : Int)
-    (hbudget : (e + 1).toNat ≤ 0) :
-    Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0) =
-      Galoistools.gfStrip q := by
-  have hz : (e + 1).toNat = 0 := by omega
-  simp [hz]
 ''',
 'budget_step': r'''
 theorem budget_step (fuel : Nat) (e s : Int)
     (hb : (e + 1).toNat ≤ fuel + 1)
     (hs : s ≤ e) : s.toNat ≤ fuel + 1 := by
   omega
-''',
-'divcore_zero_budget_readout': r'''
-def completedQ0 (q : List Nat) (e : Int) : List Nat :=
-  Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0)
-
-def DivInv0 (p : Nat) (g origin q cur : List Nat) (e : Int) : Prop :=
-  Galoistools.gfAdd (Galoistools.gfMul (completedQ0 q e) g p)
-    (Galoistools.gfStrip cur) p = origin
-
-theorem divCore_zero_budget_readout (p : Nat) (g origin q cur : List Nat) (e : Int)
-    (hbudget : (e + 1).toNat ≤ 0)
-    (h : DivInv0 p g origin q cur e) :
-    Galoistools.gfAdd
-      (Galoistools.gfMul (Galoistools.divCore p g 0 q e cur).1 g p)
-      (Galoistools.divCore p g 0 q e cur).2 p = origin := by
-  have hz : (e + 1).toNat = 0 := by omega
-  simp [Galoistools.divCore, DivInv0, completedQ0, hz] at h ⊢
-  simpa using h
 ''',
 'completed_prefix_step_exact': r'''
 theorem completed_prefix_step_exact (q : List Nat) (e s : Int) (c : Nat)
