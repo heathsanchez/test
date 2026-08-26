@@ -16,8 +16,59 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
+common = r'''
+theorem egcd_second_step (n : Nat) :
+    (Galoistools.egcdInt (n + 3) (Int.ofNat (n + 2)) 1).2.2 = 1 := by
+  simp [Galoistools.egcdInt]
+'''
+
 probes = {
-'inv_one_cases': r'''
+'egcd_compose': common + r'''
+theorem egcd_one_shape (n : Nat) :
+    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
+  simp only [hp0, if_false]
+  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
+  rw [hmod]
+  exact egcd_second_step n
+''',
+'inv_one_from_shape': common + r'''
+theorem egcd_one_shape (n : Nat) :
+    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
+  simp only [hp0, if_false]
+  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
+  rw [hmod]
+  exact egcd_second_step n
+
+theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
+  unfold Galoistools.invMod
+  have hnmod : 1 % (n + 2) = 1 := by omega
+  rw [hnmod]
+  have hs := egcd_one_shape n
+  rw [hs]
+  omega
+''',
+'inv_one_general': common + r'''
+theorem egcd_one_shape (n : Nat) :
+    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
+  simp only [hp0, if_false]
+  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
+  rw [hmod]
+  exact egcd_second_step n
+
+theorem invMod_one_exact (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
+  unfold Galoistools.invMod
+  have hnmod : 1 % (n + 2) = 1 := by omega
+  rw [hnmod]
+  have hs := egcd_one_shape n
+  rw [hs]
+  omega
+
 example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
   cases p with
   | zero => simp at hp
@@ -25,21 +76,7 @@ example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
     cases p with
     | zero => simp at hp
     | succ n =>
-      simp [Galoistools.invMod, Galoistools.egcdInt]
-''',
-'inv_one_exact': r'''
-example (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  simp [Galoistools.invMod, Galoistools.egcdInt]
-''',
-'egcd_one_shape': r'''
-example (n : Nat) :
-    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
-  simp [Galoistools.egcdInt]
-''',
-'egcd_second_step': r'''
-example (n : Nat) :
-    (Galoistools.egcdInt (n + 3) (Int.ofNat (n + 2)) 1).2.2 = 1 := by
-  simp [Galoistools.egcdInt]
+      simpa [Nat.add_assoc] using invMod_one_exact n
 '''
 }
 
