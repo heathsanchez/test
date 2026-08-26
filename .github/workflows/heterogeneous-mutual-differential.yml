@@ -9,7 +9,7 @@ on:
 jobs:
   differential:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -18,42 +18,73 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare Arena
+      - name: Prepare focused Arena witnesses
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git arena
-          sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' arena/checkers/mathgraph.yaml
-          sed -i '/ROOT=$(cd \.\.\/\.\.\/\.\.\/\.\. && pwd)/a\  python3 "$ROOT/../experiments/patch_mathgraph_mutual_recursive.py"' arena/checkers/mathgraph.yaml
           cat experiments/heterogeneous-mutual-cases.lean >> arena/tutorial/Tutorial.lean
           cat experiments/mutual-minimal-cases.lean >> arena/tutorial/Tutorial.lean
           cat experiments/mutual-constructor-boundary-cases.lean >> arena/tutorial/Tutorial.lean
           cat experiments/mutual-constructor-refinement-cases.lean >> arena/tutorial/Tutorial.lean
-
-      - name: Build generated tutorial tests
-        run: |
-          set -euxo pipefail
           cd arena
           nix develop -c ./lka.py build-test tutorial
-          find _build/tests/tutorial -type f | grep -E 'hetero|homogeneousMutualControl|levelEq|mutualMeta|minParam|ctorBoundary|ctorRefine' || true
+          nix develop -c ./lka.py build-checker ind-models
 
-      - name: Build and run checker differential
+      - name: Run ind-models verbosely on decisive witnesses
         run: |
           set -uo pipefail
           cd arena
-          checkers=(official mathgraph sokonanoda nanoda lean4lean ind-models)
-          : > checker-build-status.txt
-          for c in "${checkers[@]}"; do
-            echo "===== BUILD $c ====="
-            if nix develop -c ./lka.py build-checker "$c"; then
-              echo "$c build=ok" | tee -a checker-build-status.txt
-              nix develop -c ./lka.py run --checker "$c" --test 'tutorial/*' || true
-            else
-              echo "$c build=FAILED" | tee -a checker-build-status.txt
-            fi
+          BIN="$PWD/_build/checkers/ind-models/src/.lake/build/bin/lean-inductive-models"
+          if [ ! -x "$BIN" ]; then
+            BIN=$(find _build/checkers/ind-models -type f -path '*/.lake/build/bin/lean-inductive-models' -print -quit)
+          fi
+          echo "BIN=$BIN"
+          tests=(
+            good/154_levelEqMaxControl_B.fromA.ndjson
+            good/155_levelEqImaxControl_B.fromA.ndjson
+            good/156_levelEqParamIdem_B.fromA.ndjson
+            good/157_levelEqParamAbsorb_B.fromA.ndjson
+            good/162_minParamIdem_B.rec.ndjson
+            good/166_ctorBoundaryNullary_B.mk.ndjson
+            good/169_ctorBoundaryScc_B.fromA.ndjson
+            good/170_ctorRefineSameNullary_B.mk.ndjson
+            good/171_ctorRefineMaxZeroNullary_B.mk.ndjson
+            good/175_ctorRefineOnlyB_B.mk.ndjson
+          )
+          : > /tmp/ind-models-diagnostic.txt
+          for t in "${tests[@]}"; do
+            echo "===== $t =====" | tee -a /tmp/ind-models-diagnostic.txt
+            LEAN_INDUCTIVE_MODELS_PLANNER_LEVEL_TRACE=1 \
+            LEAN_INDUCTIVE_MODELS_OUTPUT_BACKEND_TRACE=1 \
+              "$BIN" --type-check-input --no-output "_build/tests/tutorial/$t" \
+              >>/tmp/ind-models-diagnostic.txt 2>&1
+            rc=$?
+            echo "EXIT=$rc" | tee -a /tmp/ind-models-diagnostic.txt
           done
+          cat /tmp/ind-models-diagnostic.txt
 
-      - name: Summarize target verdicts
+      - name: Probe level algebra directly
         run: |
           set -euxo pipefail
-          cd arena
-          python3 -c "import json,pathlib; targets=('hetero','homogeneousMutualControl','levelEq','mutualMeta','minParam','ctorBoundary','ctorRefine'); rows=sorted((d.get('checker'),d.get('test'),d.get('status'),d.get('exit_code'),d.get('error')) for p in pathlib.Path('_results').glob('*.json') for d in [json.loads(p.read_text())] if any(x in d.get('test','') for x in targets)); print('=== TARGET VERDICTS ==='); [print('\t'.join('' if x is None else str(x) for x in r)) for r in rows]; print('=== BUILD STATUS ==='); print(pathlib.Path('checker-build-status.txt').read_text()); assert rows"
+          cd arena/_build/checkers/ind-models/src
+          cat > LevelProbe.lean <<'EOF'
+          import InductiveModels.LevelAlgebra
+          open Lean InductiveModels.LevelAlgebra
+          def main : IO Unit := do
+            let u := Level.param `u
+            let v := Level.param `v
+            let pairs := [
+              ("idem", Level.max u u, u),
+              ("absorb", Level.max u (Level.max u v), Level.max u v),
+              ("maxzero", Level.max u Level.zero, u)
+            ]
+            for (name, a, b) in pairs do
+              IO.println s!"{name}: levelEquiv={repr (levelEquiv a b)} normalizeEq={a.normalize == b.normalize}"
+          EOF
+          lake env lean --run LevelProbe.lean
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ind-models-mutual-diagnostic
+          path: /tmp/ind-models-diagnostic.txt
