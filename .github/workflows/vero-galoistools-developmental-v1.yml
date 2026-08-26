@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: expose modulo congruence before residue rewrites
+# zero-agent ratchet: persist verified monic proof into artifact and clean rebuild
 
 on:
   workflow_dispatch:
@@ -17,14 +17,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download 21/48 ratchet
+      - name: Download green monic source
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32920029678
+          run-id: 32925947744
           name: vero-galoistools-developmental-v1
-          path: baseline
+          path: green
       - uses: astral-sh/setup-uv@v6
       - name: Install Lean
         run: |
@@ -33,147 +33,43 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Push Bezout through final residue bridge
+      - name: Extract ratchet and replay clean
         working-directory: vero
         shell: bash
         run: |
           uv run python - <<'PY'
           from pathlib import Path
           import subprocess
-          from vero.generation.extractor import read_artifact
+          from vero.generation.benchmark import Benchmark
+          from vero.generation.extractor import extract, write_artifact
           from vero.generation.sandbox import create_sandbox
 
           bench_dir = Path('benchmarks/galoistools').resolve()
-          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('monic_probe/source').resolve()
-          create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
+          bench = Benchmark(bench_dir)
+          green = Path('../green/source').resolve()
+          art = extract(green, bench, mode='codeproof')
+          out = Path('ratchet/source')
+          out.mkdir(parents=True, exist_ok=True)
+          write_artifact(art, out / 'artifact.json')
 
-          ring = source / 'Galoistools/Proof/Ring.lean'
-          text = ring.read_text()
-          start = '-- !benchmark @start proof def=prove_monic_leadCoeff_one kind=prove target=spec_monic_leadCoeff_one\n'
-          end = '-- !benchmark @end proof def=prove_monic_leadCoeff_one\n'
-          i = text.index(start) + len(start)
-          j = text.index(end, i)
-          proof = r'''  intro f p hp hne hcop
-            have egcd_bezout : ∀ fuel a b,
-                let r := Galoistools.egcdInt fuel a b
-                a * r.2.1 + b * r.2.2 = r.1 := by
-              intro fuel
-              induction fuel with
-              | zero =>
-                  intro a b
-                  simp [Galoistools.egcdInt]
-              | succ fuel ih =>
-                  intro a b
-                  simp only [Galoistools.egcdInt]
-                  by_cases hb : b = 0
-                  · simp [hb]
-                  · simp only [hb, ↓reduceIte]
-                    let r := Galoistools.egcdInt fuel b (a % b)
-                    have hr := ih b (a % b)
-                    change a * r.2.2 + b * (r.2.1 - (a / b) * r.2.2) = r.1
-                    have halg :
-                        a * r.2.2 + b * (r.2.1 - (a / b) * r.2.2) =
-                          b * r.2.1 + (a - b * (a / b)) * r.2.2 := by
-                      simp only [Int.sub_eq_add_neg, Int.mul_add, Int.add_mul,
-                        Int.mul_neg, Int.neg_mul, Int.mul_assoc]
-                      ac_rfl
-                    rw [halg, ← Int.emod_def]
-                    exact hr
-            have egcd_gcd : ∀ fuel m n : Nat, n < fuel →
-                (Galoistools.egcdInt fuel (Int.ofNat m) (Int.ofNat n)).1 =
-                  Int.ofNat (Nat.gcd m n) := by
-              intro fuel
-              induction fuel with
-              | zero =>
-                  intro m n h
-                  exact (Nat.not_lt_zero n h).elim
-              | succ fuel ih =>
-                  intro m n h
-                  by_cases hn : n = 0
-                  · subst n
-                    simp [Galoistools.egcdInt]
-                  · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
-                    have hnfuel : n ≤ fuel := Nat.le_of_lt_succ h
-                    have hmod0 : m % n < n := Nat.mod_lt m hnpos
-                    have hmod : m % n < fuel := Std.lt_of_lt_of_le hmod0 hnfuel
-                    rw [Galoistools.egcdInt]
-                    have hnI : (Int.ofNat n) ≠ 0 := (Int.ofNat_ne_zero).2 hn
-                    rw [if_neg hnI]
-                    have hr := ih n (m % n) hmod
-                    change (Galoistools.egcdInt fuel (Int.ofNat n) (Int.ofNat (m % n))).1 =
-                      Int.ofNat (Nat.gcd m n)
-                    have hgcd : Nat.gcd m n = Nat.gcd n (m % n) := by
-                      rw [Nat.gcd_comm m n, Nat.gcd_rec n m, Nat.gcd_comm (m % n) n]
-                    rw [hgcd]
-                    exact hr
-            simp only [canonical]
-            cases f with
-            | nil => contradiction
-            | cons a as =>
-              simp only [Galoistools.refLeadCoeff] at hcop
-              change Galoistools.refLeadCoeff (Galoistools.gfMonic (a :: as) p).2 = 1
-              by_cases ha : a = 1
-              · simp [Galoistools.gfMonic, ha, Galoistools.refLeadCoeff]
-              · rw [Galoistools.gfMonic]
-                simp only [ha, ↓reduceIte, Galoistools.gfQuoGround, List.map_cons,
-                  Galoistools.refLeadCoeff]
-                unfold Galoistools.invMod
-                let r := Galoistools.egcdInt (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
-                have hbez := egcd_bezout (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
-                have hfuel : p < a + p + 1 := by omega
-                have hg := egcd_gcd (a + p + 1) (a % p) p hfuel
-                have hgp : Nat.gcd (a % p) p = 1 := by
-                  rw [← Nat.gcd_rec p a, Nat.gcd_comm]
-                  exact hcop
-                have hr1 : r.1 = 1 := by
-                  dsimp [r]
-                  simpa [hgp] using hg
-                change Int.ofNat (a % p) * r.2.1 + Int.ofNat p * r.2.2 = r.1 at hbez
-                rw [hr1] at hbez
-                have hone : (1 : Int) % Int.ofNat p = 1 := by
-                  change Int.ofNat (1 % p) = Int.ofNat 1
-                  rw [Nat.mod_eq_of_lt hp]
-                have hmodI := congrArg (fun z : Int => z % Int.ofNat p) hbez
-                change (Int.ofNat (a % p) * r.2.1 + Int.ofNat p * r.2.2) % Int.ofNat p =
-                  (1 : Int) % Int.ofNat p at hmodI
-                rw [Int.add_mul_emod_self_left, hone] at hmodI
-                have hcoef :
-                    (Int.ofNat (a % p) * (r.2.1 % Int.ofNat p)) % Int.ofNat p = 1 := by
-                  rw [← Int.emod_add_mul_ediv r.2.1 (Int.ofNat p)] at hmodI
-                  rw [Int.mul_add] at hmodI
-                  have hreassoc :
-                      Int.ofNat (a % p) * (Int.ofNat p * (r.2.1 / Int.ofNat p)) =
-                        Int.ofNat p * (Int.ofNat (a % p) * (r.2.1 / Int.ofNat p)) := by
-                    ac_rfl
-                  rw [hreassoc, Int.add_mul_emod_self_left] at hmodI
-                  exact hmodI
-                have hp0 : p ≠ 0 := by omega
-                have hpI0 : (Int.ofNat p) ≠ 0 := (Int.ofNat_ne_zero).2 hp0
-                have hxnonneg : 0 ≤ r.2.1 % Int.ofNat p :=
-                  Int.emod_nonneg r.2.1 hpI0
-                have hxcast :
-                    Int.ofNat ((r.2.1 % Int.ofNat p).toNat) = r.2.1 % Int.ofNat p := by
-                  exact Int.toNat_of_nonneg hxnonneg
-                rw [← hxcast] at hcoef
-                change Int.ofNat (((a % p) * (r.2.1 % Int.ofNat p).toNat) % p) = Int.ofNat 1 at hcoef
-                have hnat : ((a % p) * (r.2.1 % Int.ofNat p).toNat) % p = 1 :=
-                  Int.ofNat.inj hcoef
-                change a * ((r.2.1 % (Int.ofNat p)).toNat) % p = 1
-                simpa [Nat.mul_mod] using hnat
-          '''
-          ring.write_text(text[:i] + proof + text[j:])
-          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
+          target = [s for s in art.slots if s.def_name == 'prove_monic_leadCoeff_one' and s.key == 'proof']
+          assert len(target) == 1, target
+          assert target[0].found and not target[0].is_empty and not target[0].contains_sorry
+          print('MONIC_RATCHET_SLOT_OK', target[0].body_hash)
+
+          replay = Path('ratchet/replay').resolve()
+          create_sandbox(bench_dir, replay, mode='codeproof', overwrite=True, seed_artifact=art)
+          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=replay, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('BEZOUT_RESIDUE_EXPOSED_EXIT', cp.returncode)
+          print('MONIC_RATCHET_REPLAY_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
-      - name: Upload artifact
+      - name: Upload ratchet
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/monic_probe/
+          path: vero/ratchet/
           if-no-files-found: warn
