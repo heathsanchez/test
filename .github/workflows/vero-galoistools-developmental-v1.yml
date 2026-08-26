@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: prove egcd first component is gcd when fuel exceeds second argument
+# zero-agent residual push: stabilize gcd-value invariant proof surface
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Push gcd-value invariant through monic residual
+      - name: Stabilize gcd-value invariant and expose final residue
         working-directory: vero
         shell: bash
         run: |
@@ -95,11 +95,12 @@ jobs:
                     simp [Galoistools.egcdInt]
                   · have hnpos : 0 < n := Nat.pos_of_ne_zero hn
                     have hnfuel : n ≤ fuel := Nat.le_of_lt_succ h
-                    have hmod : m % n < fuel :=
-                      lt_of_lt_of_le (Nat.mod_lt m hnpos) hnfuel
+                    have hmod : m % n < fuel := by
+                      have hm := Nat.mod_lt m hnpos
+                      omega
                     rw [Galoistools.egcdInt]
-                    simp only [Int.ofNat_eq_coe, Int.ofNat_eq_coe] at *
-                    simp only [hn, Int.ofNat_eq_coe, Int.natCast_ne_zero, ↓reduceIte]
+                    have hnI : (Int.ofNat n) ≠ 0 := by omega
+                    rw [if_neg hnI]
                     have hr := ih n (m % n) hmod
                     simpa [Nat.gcd_comm, Nat.gcd_rec] using hr
             simp only [canonical]
@@ -116,8 +117,7 @@ jobs:
                 unfold Galoistools.invMod
                 let r := Galoistools.egcdInt (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
                 have hbez := egcd_bezout (a + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
-                have hfuel : p < a + p + 1 := by
-                  omega
+                have hfuel : p < a + p + 1 := by omega
                 have hg := egcd_gcd (a + p + 1) (a % p) p hfuel
                 have hgp : Nat.gcd (a % p) p = 1 := by
                   rw [← Nat.gcd_rec p a, Nat.gcd_comm]
@@ -131,7 +131,7 @@ jobs:
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('EGCD_GCD_VALUE_EXIT', cp.returncode)
+          print('EGCD_GCD_STABLE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
