@@ -15,6 +15,54 @@ def mutualDummyRecInfo (indName : Lean.Name) (allNames : List Lean.Name) : Lean.
     isUnsafe := false
   }
 
+def rawMutualPair (A B : Lean.Name) (uA uB : Lean.Level) : Array Lean.ConstantInfo :=
+  let all := [A, B]
+  #[
+    .inductInfo {
+      name := A, levelParams := [], type := .sort uA
+      numParams := 0, numIndices := 0, all := all
+      ctors := [A ++ `fromB]
+      numNested := 0, isRec := true, isUnsafe := false, isReflexive := false
+    },
+    .ctorInfo {
+      name := A ++ `fromB, levelParams := []
+      type := arrow (.const B []) (.const A [])
+      numParams := 0, induct := A, cidx := 0, numFields := 1, isUnsafe := false
+    },
+    mutualDummyRecInfo A all,
+    .inductInfo {
+      name := B, levelParams := [], type := .sort uB
+      numParams := 0, numIndices := 0, all := all
+      ctors := [B ++ `fromA]
+      numNested := 0, isRec := true, isUnsafe := false, isReflexive := false
+    },
+    .ctorInfo {
+      name := B ++ `fromA, levelParams := []
+      type := arrow (.const A []) (.const B [])
+      numParams := 0, induct := B, cidx := 0, numFields := 1, isUnsafe := false
+    },
+    mutualDummyRecInfo B all
+  ]
+
+def rawEmptyMutualPair (A B : Lean.Name) (uA uB : Lean.Level) : Array Lean.ConstantInfo :=
+  let all := [A, B]
+  #[
+    .inductInfo {
+      name := A, levelParams := [], type := .sort uA
+      numParams := 0, numIndices := 0, all := all
+      ctors := []
+      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+    },
+    mutualDummyRecInfo A all,
+    .inductInfo {
+      name := B, levelParams := [], type := .sort uB
+      numParams := 0, numIndices := 0, all := all
+      ctors := []
+      numNested := 0, isRec := false, isUnsafe := false, isReflexive := false
+    },
+    mutualDummyRecInfo B all
+  ]
+
 /-- Alex Meiburg example: Prop mediates Type 0 and Type 2. Current Lean contract rejects. -/
 bad_raw_consts
   let A := `heteroABC_A
@@ -102,6 +150,21 @@ bad_raw_consts
     mutualDummyRecInfo H all
   ]
 
+/-- Nearest recursive boundary: Prop versus Type 0. -/
+bad_raw_consts rawMutualPair `heteroPropType0_P `heteroPropType0_T .zero (.succ .zero)
+
+/-- Recursive Type 0 versus Type 1 without Prop mediation. -/
+bad_raw_consts rawMutualPair `heteroType0Type1_A `heteroType0Type1_B (.succ .zero) (.succ (.succ .zero))
+
+/-- Same Prop/Type mismatch, but with the higher-universe member first. -/
+bad_raw_consts rawMutualPair `heteroReversed_H `heteroReversed_P (.succ (.succ .zero)) .zero
+
+/-- The universe restriction is block-level even when the block is linearizable/non-recursive. -/
+bad_raw_consts rawEmptyMutualPair `heteroEmptyProp_A `heteroEmptyProp_B .zero (.succ .zero)
+
+/-- A second non-recursive heterogeneous block, entirely in Type. -/
+bad_raw_consts rawEmptyMutualPair `heteroEmptyType_A `heteroEmptyType_B (.succ .zero) (.succ (.succ (.succ .zero)))
+
 /-- Harness control: an otherwise similar homogeneous mutual block must remain accepted. -/
 good_decl
   .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
@@ -117,6 +180,44 @@ good_decl
       type := .sort 1
       ctors := [
         { name := `homogeneousMutualControl_B.fromA, type := arrow (.const `homogeneousMutualControl_A []) (.const `homogeneousMutualControl_B []) }
+      ]
+    }
+  ]
+
+/-- Equality must be semantic, not syntactic: max (Type 0) Prop = Type 0. -/
+good_decl
+  .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
+    {
+      name := `levelEqMaxControl_A
+      type := .sort (.max (.succ .zero) .zero)
+      ctors := [
+        { name := `levelEqMaxControl_A.fromB, type := arrow (.const `levelEqMaxControl_B []) (.const `levelEqMaxControl_A []) }
+      ]
+    },
+    {
+      name := `levelEqMaxControl_B
+      type := .sort (.succ .zero)
+      ctors := [
+        { name := `levelEqMaxControl_B.fromA, type := arrow (.const `levelEqMaxControl_A []) (.const `levelEqMaxControl_B []) }
+      ]
+    }
+  ]
+
+/-- A second semantic-equality control through imax normalization. -/
+good_decl
+  .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
+    {
+      name := `levelEqImaxControl_A
+      type := .sort (.imax .zero (.succ .zero))
+      ctors := [
+        { name := `levelEqImaxControl_A.fromB, type := arrow (.const `levelEqImaxControl_B []) (.const `levelEqImaxControl_A []) }
+      ]
+    },
+    {
+      name := `levelEqImaxControl_B
+      type := .sort (.succ .zero)
+      ctors := [
+        { name := `levelEqImaxControl_B.fromA, type := arrow (.const `levelEqImaxControl_A []) (.const `levelEqImaxControl_B []) }
       ]
     }
   ]
