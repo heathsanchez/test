@@ -17,73 +17,9 @@ namespace GaloistoolsDivIdentityRecursive
 footer = '\nend GaloistoolsDivIdentityRecursive\n'
 
 probes = {
-'divcore_stop_unfold': r'''
-theorem divcore_stop_unfold
-    (p fuel : Nat) (g qacc cur : List Nat) (expDeg : Int)
-    (hstrip : Galoistools.gfStrip cur = cur)
-    (hlt : Galoistools.gfDegree cur < Galoistools.gfDegree g) :
-    Galoistools.divCore p g (fuel + 1) qacc expDeg cur =
-      (Galoistools.gfStrip
-        (qacc ++ List.replicate (expDeg + 1).toNat 0), cur) := by
-  simp [Galoistools.divCore, hstrip, hlt]
-''',
-'divcore_recursive_unfold': r'''
-theorem divcore_recursive_unfold
-    (p fuel : Nat) (g qacc cur : List Nat) (expDeg : Int)
-    (hstrip : Galoistools.gfStrip cur = cur)
-    (hge : ¬ Galoistools.gfDegree cur < Galoistools.gfDegree g) :
-    Galoistools.divCore p g (fuel + 1) qacc expDeg cur =
-      let c := (Galoistools.leadCoeff cur *
-        Galoistools.invMod (Galoistools.leadCoeff g) p) % p
-      let s := Galoistools.gfDegree cur - Galoistools.gfDegree g
-      let gap := List.replicate (expDeg - s).toNat 0
-      let qacc' := qacc ++ gap ++ [c]
-      let sub := Galoistools.shiftUp s.toNat (Galoistools.scaleP p c g)
-      let cur' := Galoistools.gfSub cur sub p
-      Galoistools.divCore p g fuel qacc' (s - 1) cur' := by
-  simp [Galoistools.divCore, hstrip, hge]
-''',
-'divcore_zero_fuel': r'''
-theorem divcore_zero_fuel
-    (p : Nat) (g qacc cur : List Nat) (expDeg : Int) :
-    Galoistools.divCore p g 0 qacc expDeg cur =
-      (Galoistools.gfStrip qacc, Galoistools.gfStrip cur) := by
-  rfl
-''',
-'raw_sub_eq_add_neg': r'''
-theorem raw_sub_eq_add_neg (f g : List Nat) (p : Nat) (hp : 1 < p) :
-    Galoistools.gfSub f g p =
-      Galoistools.gfAdd f (Galoistools.gfNeg g p) p := by
-  simp only [Galoistools.gfSub, Galoistools.gfAdd, Galoistools.gfNeg]
-  rw [← List.map_reverse]
-  rw [zipSubPad_eq_add_neg]
-''',
-'raw_add_neg_cancel': r'''
-theorem raw_add_neg_cancel (f : List Nat) (p : Nat) (hp : 1 < p) :
-    Galoistools.gfAdd f (Galoistools.gfNeg f p) p = [] := by
-  simp only [Galoistools.gfAdd, Galoistools.gfNeg]
-  rw [← List.map_reverse]
-  rw [zipAddPad_neg_self p hp]
-  simpa [List.map_reverse] using gfStrip_map_zero f
-''',
-'raw_add_comm_bridge': r'''
-theorem raw_add_comm_bridge (f g : List Nat) (p : Nat) :
-    Galoistools.gfAdd f g p = Galoistools.gfAdd g f p := by
-  simpa only [canonical] using (prove_add_comm f g p)
-''',
-'raw_left_zero_norm': r'''
-theorem raw_left_zero_norm (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) :
-    Galoistools.gfAdd [] f p = f := by
-  calc
-    Galoistools.gfAdd [] f p = Galoistools.gfAdd f [] p := by
-      simpa only [canonical] using (prove_add_comm [] f p)
-    _ = f := by
-      simpa only [canonical] using (prove_add_zero f p hf)
-''',
-'zipAddPad_map_mod': r'''
-theorem zipAddPad_map_mod (p : Nat) (xs ys : List Nat) :
-    List.map (fun x => x % p) (Galoistools.zipAddPad p xs ys) =
+'zipAddPad_mod_left': r'''
+theorem zipAddPad_mod_left (p : Nat) (xs ys : List Nat) :
+    Galoistools.zipAddPad p (List.map (fun x => x % p) xs) ys =
       Galoistools.zipAddPad p xs ys := by
   induction xs generalizing ys with
   | nil =>
@@ -93,10 +29,10 @@ theorem zipAddPad_map_mod (p : Nat) (xs ys : List Nat) :
       | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
       | cons y ys => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
 ''',
-'zipAddPad_mod_inputs': r'''
-theorem zipAddPad_mod_inputs (p : Nat) (xs ys : List Nat) :
-    Galoistools.zipAddPad p (List.map (fun x => x % p) xs) ys =
-      Galoistools.zipAddPad p xs (List.map (fun y => y % p) ys) := by
+'zipAddPad_mod_right': r'''
+theorem zipAddPad_mod_right (p : Nat) (xs ys : List Nat) :
+    Galoistools.zipAddPad p xs (List.map (fun y => y % p) ys) =
+      Galoistools.zipAddPad p xs ys := by
   induction xs generalizing ys with
   | nil =>
       cases ys <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
@@ -105,12 +41,25 @@ theorem zipAddPad_mod_inputs (p : Nat) (xs ys : List Nat) :
       | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
       | cons y ys => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
 ''',
+'mod_add_assoc': r'''
+theorem mod_add_assoc (p a b c : Nat) :
+    (((a % p + b % p) % p + c % p) % p) =
+      ((a % p + (b % p + c % p) % p) % p) := by
+  calc
+    (((a % p + b % p) % p + c % p) % p) = ((a + b + c) % p) := by
+      rw [← Nat.add_mod]
+      rw [← Nat.add_mod]
+    _ = ((a + (b + c)) % p) := by rw [Nat.add_assoc]
+    _ = ((a % p + (b % p + c % p) % p) % p) := by
+      rw [Nat.add_mod a (b + c) p]
+      rw [Nat.add_mod b c p]
+''',
 'zipAddPad_assoc': r'''
 theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
     Galoistools.zipAddPad p (Galoistools.zipAddPad p xs ys) zs =
       Galoistools.zipAddPad p xs (Galoistools.zipAddPad p ys zs) := by
-  have hmap : ∀ as bs : List Nat,
-      List.map (fun x => x % p) (Galoistools.zipAddPad p as bs) =
+  have hleft : ∀ as bs : List Nat,
+      Galoistools.zipAddPad p (List.map (fun x => x % p) as) bs =
         Galoistools.zipAddPad p as bs := by
     intro as bs
     induction as generalizing bs with
@@ -119,35 +68,40 @@ theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
         cases bs with
         | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
         | cons b bs => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
+  have hright : ∀ as bs : List Nat,
+      Galoistools.zipAddPad p as (List.map (fun x => x % p) bs) =
+        Galoistools.zipAddPad p as bs := by
+    intro as bs
+    induction as generalizing bs with
+    | nil => cases bs <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
+    | cons a as ih =>
+        cases bs with
+        | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
+        | cons b bs => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
+  have hscalar : ∀ a b c : Nat,
+      (((a % p + b % p) % p + c % p) % p) =
+        ((a % p + (b % p + c % p) % p) % p) := by
+    intro a b c
+    calc
+      (((a % p + b % p) % p + c % p) % p) = ((a + b + c) % p) := by
+        rw [← Nat.add_mod]
+        rw [← Nat.add_mod]
+      _ = ((a + (b + c)) % p) := by rw [Nat.add_assoc]
+      _ = ((a % p + (b % p + c % p) % p) % p) := by
+        rw [Nat.add_mod a (b + c) p]
+        rw [Nat.add_mod b c p]
   induction xs generalizing ys zs with
   | nil =>
       cases ys <;> cases zs <;>
-        simp [Galoistools.zipAddPad, Nat.mod_mod, hmap]
+        simp [Galoistools.zipAddPad, hleft, hright]
   | cons x xs ih =>
       cases ys with
       | nil =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, Nat.mod_mod, hmap, ih]
+            simp [Galoistools.zipAddPad, hleft, hright, ih]
       | cons y ys =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, Nat.mod_mod, Nat.add_mod, Nat.add_assoc, hmap, ih]
-''',
-'add_sub_cancel_rewrite': r'''
-theorem add_sub_cancel_rewrite
-    (cur sub : List Nat) (p : Nat)
-    (hp : 1 < p)
-    (hcur : Galoistools.IsNorm p cur)
-    (hsub : Galoistools.IsNorm p sub) :
-    Galoistools.gfAdd sub (Galoistools.gfSub cur sub p) p = cur := by
-  rw [show Galoistools.gfSub cur sub p =
-      Galoistools.gfAdd cur (Galoistools.gfNeg sub p) p by
-    simpa only [canonical] using (prove_sub_eq_add_neg cur sub p hp)]
-  rw [show Galoistools.gfAdd sub
-      (Galoistools.gfAdd cur (Galoistools.gfNeg sub p) p) p =
-      Galoistools.gfAdd (Galoistools.gfAdd cur (Galoistools.gfNeg sub p) p) sub p by
-    simpa only [canonical] using
-      (prove_add_comm sub (Galoistools.gfAdd cur (Galoistools.gfNeg sub p) p) p)]
-  simp only [Galoistools.gfAdd, Galoistools.gfNeg]
+            simp [Galoistools.zipAddPad, hleft, hright, hscalar, ih]
 '''
 }
 
