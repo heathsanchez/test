@@ -18,95 +18,21 @@ jobs:
         with:
           github_access_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Prepare Arena with heterogeneous mutual cases
-        shell: bash
+      - name: Prepare Arena
         run: |
           set -euxo pipefail
           git clone --depth 1 https://github.com/leanprover/lean-kernel-arena.git arena
-          cd arena
-          sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' checkers/mathgraph.yaml
-          cat >> tutorial/Tutorial.lean <<'LEAN'
-
-/-! Differential tests for heterogeneous mutual inductive universe blocks. -/
-
-/-- Alex Meiburg example: Prop mediates Type 0 and Type 2. Current Lean contract rejects. -/
-bad_decl
-  .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
-    {
-      name := `heteroABC_A
-      type := .sort 0
-      ctors := [
-        { name := `heteroABC_A.fromB, type := arrow (.const `heteroABC_B []) (.const `heteroABC_A []) },
-        { name := `heteroABC_A.fromC, type := arrow (.const `heteroABC_C []) (.const `heteroABC_A []) }
-      ]
-    },
-    {
-      name := `heteroABC_B
-      type := .sort 1
-      ctors := [
-        { name := `heteroABC_B.fromA, type := arrow (.const `heteroABC_A []) (.const `heteroABC_B []) }
-      ]
-    },
-    {
-      name := `heteroABC_C
-      type := .sort 3
-      ctors := [
-        { name := `heteroABC_C.fromA, type := arrow (.const `heteroABC_A []) (.const `heteroABC_C []) }
-      ]
-    }
-  ]
-
-/-- Alex Meiburg weaker example: G : Prop mutually recursive with H : Type 1. Current Lean contract rejects. -/
-bad_decl
-  .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
-    {
-      name := `heteroGH_G
-      type := .sort 0
-      ctors := [
-        { name := `heteroGH_G.base, type := .const `heteroGH_G [] },
-        { name := `heteroGH_G.fromH, type := arrow (.const `heteroGH_H []) (.const `heteroGH_G []) }
-      ]
-    },
-    {
-      name := `heteroGH_H
-      type := .sort 2
-      ctors := [
-        { name := `heteroGH_H.mk, type := arrow (.const `heteroGH_G []) (.const `heteroGH_H []) }
-      ]
-    }
-  ]
-
-/-- Harness control: an otherwise similar homogeneous mutual block must remain accepted. -/
-good_decl
-  .inductDecl (lparams := []) (nparams := 0) (isUnsafe := false) [
-    {
-      name := `homogeneousMutualControl_A
-      type := .sort 1
-      ctors := [
-        { name := `homogeneousMutualControl_A.fromB, type := arrow (.const `homogeneousMutualControl_B []) (.const `homogeneousMutualControl_A []) }
-      ]
-    },
-    {
-      name := `homogeneousMutualControl_B
-      type := .sort 1
-      ctors := [
-        { name := `homogeneousMutualControl_B.fromA, type := arrow (.const `homogeneousMutualControl_A []) (.const `homogeneousMutualControl_B []) }
-      ]
-    }
-  ]
-LEAN
+          sed -i 's/^rev: .*/rev: 2de1895a52d21ad266b77002defe3e6bc69bbcfd/' arena/checkers/mathgraph.yaml
+          cat experiments/heterogeneous-mutual-cases.lean >> arena/tutorial/Tutorial.lean
 
       - name: Build generated tutorial tests
-        shell: bash
         run: |
           set -euxo pipefail
           cd arena
           nix develop -c ./lka.py build-test tutorial
-          echo '=== generated target cases ==='
           find _build/tests/tutorial -type f | grep -E 'hetero|homogeneousMutualControl' || true
 
       - name: Build and run checker differential
-        shell: bash
         run: |
           set -uo pipefail
           cd arena
@@ -116,7 +42,6 @@ LEAN
             echo "===== BUILD $c ====="
             if nix develop -c ./lka.py build-checker "$c"; then
               echo "$c build=ok" | tee -a checker-build-status.txt
-              echo "===== RUN $c ====="
               nix develop -c ./lka.py run --checker "$c" --test 'tutorial/*' || true
             else
               echo "$c build=FAILED" | tee -a checker-build-status.txt
@@ -124,30 +49,7 @@ LEAN
           done
 
       - name: Summarize target verdicts
-        shell: bash
         run: |
           set -euxo pipefail
           cd arena
-          python3 - <<'PY'
-          import json, pathlib
-          targets = ('heteroABC', 'heteroGH', 'homogeneousMutualControl')
-          rows=[]
-          for p in pathlib.Path('_results').glob('*.json'):
-              try:
-                  d=json.loads(p.read_text())
-              except Exception:
-                  continue
-              t=d.get('test','')
-              if any(x in t for x in targets):
-                  rows.append((d.get('checker'), t, d.get('status'), d.get('exit_code'), d.get('error')))
-          rows.sort()
-          print('\n=== TARGET VERDICTS ===')
-          for r in rows:
-              print('\t'.join('' if x is None else str(x) for x in r))
-          print('\n=== BUILD STATUS ===')
-          print(pathlib.Path('checker-build-status.txt').read_text())
-          if not rows:
-              raise SystemExit('No target results found')
-          PY
-
-# retrigger after GitHub Actions recovery
+          python3 -c "import json,pathlib; targets=('heteroABC','heteroGH','homogeneousMutualControl'); rows=sorted((d.get('checker'),d.get('test'),d.get('status'),d.get('exit_code'),d.get('error')) for p in pathlib.Path('_results').glob('*.json') for d in [json.loads(p.read_text())] if any(x in d.get('test','') for x in targets)); print('=== TARGET VERDICTS ==='); [print('\t'.join('' if x is None else str(x) for x in r)) for r in rows]; print('=== BUILD STATUS ==='); print(pathlib.Path('checker-build-status.txt').read_text()); assert rows"
