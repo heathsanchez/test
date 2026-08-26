@@ -16,78 +16,89 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# Second-stage batch: push the shared Euclidean invariants one layer deeper.
-# In particular, determine whether rem_self alone collapses gcd_self and make
-# gcdLoop-normalization reduce explicitly to remainder-normalization.
 probes = {
-'rem_self_step': r'''
-theorem probe_rem_self_step (f : List Nat) (p : Nat)
-    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f) :
+'gcdloop_zero_right': r'''
+theorem probe_gcdloop_zero_right (p fuel : Nat) (f : List Nat) :
+    Galoistools.gcdLoop p fuel f [] = f := by
+  cases fuel with
+  | zero => rfl
+  | succ n => simp [Galoistools.gcdLoop]
+''',
+'gcd_self_from_rem': r'''
+theorem probe_gcdloop_zero_right (p fuel : Nat) (f : List Nat) :
+    Galoistools.gcdLoop p fuel f [] = f := by
+  cases fuel with
+  | zero => rfl
+  | succ n => simp [Galoistools.gcdLoop]
+
+theorem probe_gcd_self_from_rem (f : List Nat) (p : Nat)
+    (hrem : Galoistools.gfRem f f p = []) :
+    Galoistools.gfGcd f f p = (Galoistools.gfMonic f p).2 := by
+  unfold Galoistools.gfGcd
+  simp only [Galoistools.gcdLoop]
+  rw [hrem]
+  rw [probe_gcdloop_zero_right]
+''',
+'strip_of_norm': r'''
+theorem probe_strip_of_norm (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      unfold Galoistools.IsNorm Galoistools.refGfTrunc at hf
+      simp only [List.map_cons] at hf
+      by_cases ha : a = 0
+      · subst a
+        simp [Galoistools.refGfStrip] at hf
+      · simp [Galoistools.gfStrip, ha]
+        trace_state
+        sorry
+''',
+'inv_lead_unit': r'''
+theorem probe_inv_lead_unit (f : List Nat) (p : Nat)
+    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f) (hz : f ≠ []) :
+    (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1 := by
+  cases f with
+  | nil => contradiction
+  | cons a as =>
+      simp [Galoistools.leadCoeff]
+      trace_state
+      sorry
+''',
+'rem_self_from_atoms': r'''
+theorem probe_rem_self_from_atoms (f : List Nat) (p : Nat)
+    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
+    (hstrip : Galoistools.gfStrip f = f)
+    (hinv : (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1) :
     Galoistools.gfRem f f p = [] := by
   unfold Galoistools.gfRem Galoistools.gfDiv
   by_cases hz : f = []
   · simp [hz]
   · simp [hz]
     simp only [Galoistools.divCore]
+    rw [hstrip]
+    simp only [lt_self_iff_false, if_false, sub_self, Int.toNat_zero, List.replicate_zero,
+      List.append_nil, hinv]
+    simp [Galoistools.shiftUp, Galoistools.scaleP]
     trace_state
     sorry
 ''',
-'gcd_self_from_rem': r'''
-theorem probe_gcd_self_from_rem (f : List Nat) (p : Nat)
-    (hp : 1 < p) (hf : Galoistools.IsNorm p f)
-    (hrem : Galoistools.gfRem f f p = []) :
-    Galoistools.gfGcd f f p = (Galoistools.gfMonic f p).2 := by
-  unfold Galoistools.gfGcd
-  by_cases hz : f = []
-  · subst f; simp [Galoistools.gcdLoop, Galoistools.gfMonic]
-  · simp [Galoistools.gcdLoop, hz, hrem]
-''',
 'gcdloop_norm_from_remnorm': r'''
 theorem probe_gcdloop_norm_from_remnorm (f g : List Nat) (p fuel : Nat)
-    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
-    (hg : Galoistools.IsNorm p g)
+    (hf : Galoistools.IsNorm p f) (hg : Galoistools.IsNorm p g)
     (hremnorm : ∀ a b, Galoistools.IsNorm p a → Galoistools.IsNorm p b → b ≠ [] →
       Galoistools.IsNorm p (Galoistools.gfRem a b p)) :
     Galoistools.IsNorm p (Galoistools.gcdLoop p fuel f g) := by
   induction fuel generalizing f g with
-  | zero => simpa [Galoistools.gcdLoop] using hf
+  | zero => exact hf
   | succ fuel ih =>
-      simp only [Galoistools.gcdLoop]
+      unfold Galoistools.gcdLoop
       by_cases hz : g = []
       · simp [hz, hf]
       · simp [hz]
-        exact ih hg (hremnorm f g hf hg hz)
-''',
-'rem_norm_unfold': r'''
-theorem probe_rem_norm_unfold (f g : List Nat) (p : Nat)
-    (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
-    (hg : Galoistools.IsNorm p g) (hz : g ≠ []) :
-    Galoistools.IsNorm p (Galoistools.gfRem f g p) := by
-  unfold Galoistools.gfRem Galoistools.gfDiv
-  simp [hz]
-  by_cases hdeg : Galoistools.gfDegree f < Galoistools.gfDegree g
-  · simp [hdeg]
-    trace_state
-    sorry
-  · simp [hdeg]
-    trace_state
-    sorry
-''',
-'rem_degree_unfold': r'''
-theorem probe_rem_degree_unfold (f g : List Nat) (p : Nat)
-    (hp : Galoistools.PrimeField p) (hg : Galoistools.IsNorm p g) (hz : g ≠ []) :
-    let r := Galoistools.gfRem f g p
-    r = [] ∨ Galoistools.refGfDegree r < Galoistools.refGfDegree g := by
-  dsimp
-  unfold Galoistools.gfRem Galoistools.gfDiv
-  simp [hz]
-  by_cases hdeg : Galoistools.gfDegree f < Galoistools.gfDegree g
-  · simp [hdeg]
-    trace_state
-    sorry
-  · simp [hdeg]
-    trace_state
-    sorry
+        apply ih
+        · exact hg
+        · exact hremnorm f g hf hg hz
 ''',
 }
 
@@ -102,7 +113,7 @@ for name, theorem_text in probes.items():
     states = []
     for k, line in enumerate(lines):
         if line.startswith('case ') or '⊢ ' in line:
-            states.append('\n'.join(lines[k:k+18]))
+            states.append('\n'.join(lines[k:k+20]))
     item = {'probe': name, 'exit': cp.returncode, 'errors': errors[-8:], 'residual': states[-3:]}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
