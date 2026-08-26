@@ -66,16 +66,37 @@ theorem raw_add_neg_cancel (f : List Nat) (p : Nat) (hp : 1 < p) :
   rw [zipAddPad_neg_self p hp]
   simpa [List.map_reverse] using gfStrip_map_zero f
 ''',
-'canonical_sub_bridge': r'''
-theorem canonical_sub_bridge (f g : List Nat) (p : Nat) (hp : 1 < p) :
-    Galoistools.gfSub f g p =
-      Galoistools.gfAdd f (Galoistools.gfNeg g p) p := by
-  simpa only [canonical] using (prove_sub_eq_add_neg f g p hp)
+'raw_add_comm_bridge': r'''
+theorem raw_add_comm_bridge (f g : List Nat) (p : Nat) :
+    Galoistools.gfAdd f g p = Galoistools.gfAdd g f p := by
+  simpa only [canonical] using (prove_add_comm f g p)
 ''',
-'canonical_add_neg_bridge': r'''
-theorem canonical_add_neg_bridge (f : List Nat) (p : Nat) (hp : 1 < p) :
-    Galoistools.gfAdd f (Galoistools.gfNeg f p) p = [] := by
-  simpa only [canonical] using (prove_add_neg_cancel f p hp)
+'raw_add_assoc_probe': r'''
+theorem raw_add_assoc_probe (f g h : List Nat) (p : Nat) :
+    Galoistools.gfAdd (Galoistools.gfAdd f g p) h p =
+      Galoistools.gfAdd f (Galoistools.gfAdd g h p) p := by
+  simp only [Galoistools.gfAdd]
+  simp [Galoistools.zipAddPad, Nat.add_mod]
+''',
+'raw_left_zero_norm': r'''
+theorem raw_left_zero_norm (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) :
+    Galoistools.gfAdd [] f p = f := by
+  simpa only [canonical] using (prove_add_zero f p hf)
+''',
+'add_sub_cancel_direct': r'''
+theorem add_sub_cancel_direct
+    (cur sub : List Nat) (p : Nat)
+    (hp : 1 < p)
+    (hcur : Galoistools.IsNorm p cur)
+    (hsub : Galoistools.IsNorm p sub) :
+    Galoistools.gfAdd sub (Galoistools.gfSub cur sub p) p = cur := by
+  rw [raw_sub_eq_add_neg cur sub p hp]
+  rw [← raw_add_assoc_probe sub cur (Galoistools.gfNeg sub p) p]
+  rw [raw_add_comm_bridge sub cur p]
+  rw [raw_add_assoc_probe cur sub (Galoistools.gfNeg sub p) p]
+  rw [raw_add_neg_cancel sub p hp]
+  exact raw_left_zero_norm cur p hcur
 '''
 }
 
