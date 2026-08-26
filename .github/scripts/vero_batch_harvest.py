@@ -21,6 +21,7 @@ footer = '\nend GaloistoolsBatch\n'
 # f is itself the output of refGfStrip; idempotence therefore implies f is already
 # stripped.  Prove that once, transfer it across the bridge, close the small branch,
 # and keep the validated fuel/prefix skeleton beside it for the full induction.
+# Run 101: execute the already-prepared normalized-strip closure probes.
 probes = {
 'ref_strip_idem': r'''
 theorem ref_strip_idem (f : List Nat) :
