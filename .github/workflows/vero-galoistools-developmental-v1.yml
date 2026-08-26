@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# residual probe: discharge monic list-shape bookkeeping, expose invMod arithmetic
+# zero-agent theorem-surface probe: inspect Lean 4.29.1 Nat extended-gcd API
 
 on:
   workflow_dispatch:
@@ -10,77 +10,29 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 4
     permissions:
-      actions: read
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download 21/48 ratchet
-        uses: actions/download-artifact@v4
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          repository: heathsanchez/test
-          run-id: 32920029678
-          name: vero-galoistools-developmental-v1
-          path: baseline
-      - uses: astral-sh/setup-uv@v6
-      - name: Install Lean
+      - name: Install Lean 4.29.1
+        shell: bash
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Install Vero
-        working-directory: vero
-        run: uv sync
-      - name: Expose modular inverse residual
-        working-directory: vero
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.29.1
+      - name: Inspect extended-gcd theorem surface
         shell: bash
         run: |
-          uv run python - <<'PY'
-          from pathlib import Path
-          import subprocess
-          from vero.generation.benchmark import Benchmark
-          from vero.generation.extractor import read_artifact
-          from vero.generation.sandbox import create_sandbox
-
-          bench_dir = Path('benchmarks/galoistools').resolve()
-          bench = Benchmark(bench_dir)
-          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('monic_probe/source').resolve()
-          create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
-
-          ring = source / 'Galoistools/Proof/Ring.lean'
-          text = ring.read_text()
-          start = '-- !benchmark @start proof def=prove_monic_leadCoeff_one kind=prove target=spec_monic_leadCoeff_one\n'
-          end = '-- !benchmark @end proof def=prove_monic_leadCoeff_one\n'
-          i = text.index(start) + len(start)
-          j = text.index(end, i)
-          proof = r'''  intro f p hp hne hcop
-            simp only [canonical]
-            cases f with
-            | nil => contradiction
-            | cons a as =>
-              simp only [Galoistools.refLeadCoeff] at hcop
-              change Galoistools.refLeadCoeff (Galoistools.gfMonic (a :: as) p).2 = 1
-              by_cases ha : a = 1
-              · simp [Galoistools.gfMonic, ha, Galoistools.refLeadCoeff]
-              · rw [Galoistools.gfMonic]
-                simp only [ha, ↓reduceIte, Galoistools.gfQuoGround, List.map_cons,
-                  Galoistools.refLeadCoeff]
-          '''
-          ring.write_text(text[:i] + proof + text[j:])
-          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
-          print(cp.stdout)
-          print(cp.stderr)
-          print('MONIC_INVMOD_RESIDUAL_EXIT', cp.returncode)
-          if cp.returncode != 0:
-              raise SystemExit(cp.returncode)
-          PY
-      - name: Upload artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: vero-galoistools-developmental-v1
-          path: vero/monic_probe/
-          if-no-files-found: warn
+          set -euxo pipefail
+          SRC="$HOME/.elan/toolchains/leanprover--lean4---v4.29.1/src/lean/Init/Data/Nat/Gcd.lean"
+          grep -n -E 'xgcd|gcdA|gcdB|gcd_eq.*gcd' "$SRC" | tail -n 120
+          cat > /tmp/Probe.lean <<'EOF'
+          import Init.Data.Nat.Gcd
+          #check Nat.xgcd
+          #check Nat.gcdA
+          #check Nat.gcdB
+          #check Nat.gcd_eq_gcdA_mul_add_gcdB_mul
+          #check Nat.gcd_eq_gcdA_mul_add_gcdB_mul
+          EOF
+          "$HOME/.elan/bin/lean" /tmp/Probe.lean || true
