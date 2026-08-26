@@ -16,79 +16,86 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# Run 97 exposed the correct recursion boundary.  The quotient accumulator is a
-# high-degree prefix; completing it with the still-unfilled low-degree zero slots
-# gives the polynomial whose contribution plus `cur` should remain the original
-# dividend.  These probes test that representation before attempting induction.
+# Run 98 exposed the missing part of the representation: reconstruction alone
+# is not enough because divCore has a fuel=0 branch that can return before the
+# quotient's low-degree slots are filled.  The public call starts with enough
+# fuel; the inductive statement must carry that budget.  We now test exactly
+# that condition and the base-case consequence e < 0.
 probes = {
-'add_left_zero_from_ratchet': r'''
-theorem add_left_zero_from_ratchet (f : List Nat) (p : Nat)
+'add_left_zero_direct': r'''
+theorem add_left_zero_direct (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
-  rw [prove_add_comm]
-  exact prove_add_zero f p hf
+  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.IsNorm,
+    Galoistools.refGfTrunc, Galoistools.gfStrip, Galoistools.refGfStrip] using hf
 ''',
-'monic_nonempty': r'''
-theorem monic_nonempty (g : List Nat)
+'monic_nonempty_inline': r'''
+theorem monic_nonempty_inline (g : List Nat)
     (h : Galoistools.refLeadCoeff g = 1) : g ≠ [] := by
   intro hg
   subst g
   simp [Galoistools.refLeadCoeff] at h
 ''',
-'strip_zero_fill': r'''
-theorem strip_zero_fill (n : Nat) :
-    Galoistools.gfStrip (List.replicate n 0) = [] := by
-  induction n with
-  | zero => rfl
-  | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
+'initial_budget': r'''
+theorem initial_budget (f g : List Nat)
+    (hd : ¬ Galoistools.gfDegree f < Galoistools.gfDegree g) :
+    (Galoistools.gfDegree f - Galoistools.gfDegree g + 1).toNat ≤ f.length + 1 := by
+  simp [Galoistools.gfDegree] at hd ⊢
+  omega
 ''',
-'initial_prefix_identity': r'''
-theorem initial_prefix_identity (f g : List Nat) (p k : Nat)
-    (hf : Galoistools.IsNorm p f) :
-    Galoistools.gfAdd
-      (Galoistools.gfMul (Galoistools.gfStrip ([] ++ List.replicate k 0)) g p)
-      f p = f := by
-  rw [strip_zero_fill]
-  simp [Galoistools.gfMul]
-  exact add_left_zero_from_ratchet f p hf
+'zero_budget_forces_complete': r'''
+theorem zero_budget_forces_complete (e : Int)
+    (hbudget : (e + 1).toNat ≤ 0) : (e + 1).toNat = 0 := by
+  omega
+
+theorem zero_budget_completedQ (q : List Nat) (e : Int)
+    (hbudget : (e + 1).toNat ≤ 0) :
+    Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0) =
+      Galoistools.gfStrip q := by
+  have hz : (e + 1).toNat = 0 := by omega
+  simp [hz]
 ''',
-'div_identity_split_sharp': r'''
-theorem div_identity_split_sharp (f g : List Nat) (p : Nat)
-    (hp : 1 < p) (hf : Galoistools.IsNorm p f) (hgN : Galoistools.IsNorm p g)
-    (hmonic : Galoistools.refLeadCoeff g = 1) :
+'budget_step': r'''
+theorem budget_step (fuel : Nat) (e s : Int)
+    (hb : (e + 1).toNat ≤ fuel + 1)
+    (hs : s ≤ e) : s.toNat ≤ fuel + 1 := by
+  omega
+''',
+'identity_small_branch': r'''
+theorem identity_small_branch (f g : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) (hg : g ≠ [])
+    (hd : Galoistools.gfDegree f < Galoistools.gfDegree g) :
     Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
       (Galoistools.gfDiv f g p).snd p = f := by
-  have hg : g ≠ [] := monic_nonempty g hmonic
-  by_cases hd : Galoistools.gfDegree f < Galoistools.gfDegree g
-  · simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
-    rw [prove_add_comm]
-    apply prove_add_zero
-    simpa [Galoistools.IsNorm] using hf
-  · simp only [Galoistools.gfDiv, hg, hd, if_false]
+  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
+  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.IsNorm,
+    Galoistools.refGfTrunc, Galoistools.gfStrip, Galoistools.refGfStrip] using hf
 ''',
-'prefix_complete_step_shape': r'''
-theorem prefix_complete_step_shape (q : List Nat) (e s : Int) (c : Nat)
-    (hes : s ≤ e) (hs : 0 ≤ s) :
+'divcore_zero_budget_readout': r'''
+def completedQ0 (q : List Nat) (e : Int) : List Nat :=
+  Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0)
+
+def DivInv0 (p : Nat) (g origin q cur : List Nat) (e : Int) : Prop :=
+  Galoistools.gfAdd (Galoistools.gfMul (completedQ0 q e) g p)
+    (Galoistools.gfStrip cur) p = origin
+
+theorem divCore_zero_budget_readout (p : Nat) (g origin q cur : List Nat) (e : Int)
+    (hbudget : (e + 1).toNat ≤ 0)
+    (h : DivInv0 p g origin q cur e) :
+    Galoistools.gfAdd
+      (Galoistools.gfMul (Galoistools.divCore p g 0 q e cur).1 g p)
+      (Galoistools.divCore p g 0 q e cur).2 p = origin := by
+  have hz : (e + 1).toNat = 0 := by omega
+  simp [Galoistools.divCore, DivInv0, completedQ0, hz] at h ⊢
+  simpa using h
+''',
+'completed_prefix_step_exact': r'''
+theorem completed_prefix_step_exact (q : List Nat) (e s : Int) (c : Nat)
+    (hs0 : 0 ≤ s) (hse : s ≤ e) :
     let gap := List.replicate (e - s).toNat 0
     let q' := q ++ gap ++ [c]
     q' ++ List.replicate s.toNat 0 =
-      q ++ gap ++ [c] ++ List.replicate s.toNat 0 := by
+      q ++ List.replicate (e - s).toNat 0 ++ [c] ++ List.replicate s.toNat 0 := by
   simp
-''',
-'divcore_invariant_statement': r'''
-def completedQ (q : List Nat) (e : Int) : List Nat :=
-  Galoistools.gfStrip (q ++ List.replicate (e + 1).toNat 0)
-
-def DivInv (p : Nat) (g origin q cur : List Nat) (e : Int) : Prop :=
-  Galoistools.gfAdd (Galoistools.gfMul (completedQ q e) g p)
-    (Galoistools.gfStrip cur) p = origin
-
-theorem divCore_zero_inv_readout (p : Nat) (g origin q cur : List Nat) (e : Int)
-    (h : DivInv p g origin q cur e) :
-    Galoistools.gfAdd
-      (Galoistools.gfMul (completedQ (Galoistools.divCore p g 0 q e cur).1 (-1)) g p)
-      (Galoistools.divCore p g 0 q e cur).2 p = origin := by
-  simp [Galoistools.divCore, completedQ, DivInv] at h ⊢
-  simpa using h
 '''
 }
 
