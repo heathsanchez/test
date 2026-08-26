@@ -51,8 +51,7 @@ theorem egcd_p_one_local2 (p : Nat) :
 
 theorem egcd_one_p (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hpI0 : (Int.ofNat p) ≠ 0 :=
-    Int.ne_of_gt (Int.ofNat_lt.2 (by omega : 0 < p))
+  have hp0 : p ≠ 0 := by omega
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
@@ -60,7 +59,7 @@ theorem egcd_one_p (p : Nat) (hp : 1 < p) :
   have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
     egcd_p_one_local2 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
+  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
 ''',
 'invmod_one': r'''
 theorem egcd_zero_right_local3 (fuel : Nat) (a : Int) :
@@ -75,8 +74,7 @@ theorem egcd_p_one_local3 (p : Nat) :
 
 theorem egcd_one_p_local3 (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hpI0 : (Int.ofNat p) ≠ 0 :=
-    Int.ne_of_gt (Int.ofNat_lt.2 (by omega : 0 < p))
+  have hp0 : p ≠ 0 := by omega
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
@@ -84,17 +82,19 @@ theorem egcd_one_p_local3 (p : Nat) (hp : 1 < p) :
   have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
     egcd_p_one_local3 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
+  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
 
 theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
+  have hnat : 1 % p = 1 := Nat.mod_eq_of_lt hp
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have heg := egcd_one_p_local3 p hp
   unfold Galoistools.invMod
-  rw [h1p]
+  rw [hnat]
   rw [show 1 + p + 1 = 2 + p by omega]
   rw [heg]
-  simp [h1p]
+  rw [h1p]
+  rfl
 ''',
 'monic_step_coefficient_reduced': r'''
 theorem egcd_zero_right_local4 (fuel : Nat) (a : Int) :
@@ -109,8 +109,7 @@ theorem egcd_p_one_local4 (p : Nat) :
 
 theorem egcd_one_p_local4 (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hpI0 : (Int.ofNat p) ≠ 0 :=
-    Int.ne_of_gt (Int.ofNat_lt.2 (by omega : 0 < p))
+  have hp0 : p ≠ 0 := by omega
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
@@ -118,17 +117,19 @@ theorem egcd_one_p_local4 (p : Nat) (hp : 1 < p) :
   have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
     egcd_p_one_local4 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
+  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
 
 theorem invmod_one_local4 (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
+  have hnat : 1 % p = 1 := Nat.mod_eq_of_lt hp
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have heg := egcd_one_p_local4 p hp
   unfold Galoistools.invMod
-  rw [h1p]
+  rw [hnat]
   rw [show 1 + p + 1 = 2 + p by omega]
   rw [heg]
-  simp [h1p]
+  rw [h1p]
+  rfl
 
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
     (hp : 1 < p) (hg : Galoistools.refLeadCoeff g = 1)
