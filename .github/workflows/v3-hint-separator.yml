@@ -1,0 +1,23 @@
+name: V3 hint separator
+on:
+  push:
+    branches: [experiment/v3-structural-band-separator]
+  workflow_dispatch:
+jobs:
+  hint-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run structural hint separator
+        run: bash scripts/run_v3_hint_separator.sh
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: v3-hint-separator
+          path: v3-hint-separator/
+          if-no-files-found: warn
