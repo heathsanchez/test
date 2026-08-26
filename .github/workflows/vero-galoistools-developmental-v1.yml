@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# deterministic closure step: mul_eval_hom -> mul_assoc_eval (run)
+# deterministic closure step: repair mul_assoc_eval from 19/48
 
 on:
   workflow_dispatch:
@@ -53,18 +53,42 @@ jobs:
 
           ring = source / 'Galoistools/Proof/Ring.lean'
           text = ring.read_text()
-          if 'theorem prove_mul_eval_hom' not in text or 'theorem prove_mul_comm_eval' not in text:
-              raise SystemExit('19/48 ratchet missing multiplication closure')
-
           start = '-- !benchmark @start proof def=prove_mul_assoc_eval kind=prove target=spec_mul_assoc_eval\n'
           end = '-- !benchmark @end proof def=prove_mul_assoc_eval\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
           proof = r'''  intro f g h p x hp
-            have hfg := prove_mul_eval_hom f g p x hp
-            have hgh := prove_mul_eval_hom g h p x hp
-            have hleft := prove_mul_eval_hom (Galoistools.gfMul f g p) h p x hp
-            have hright := prove_mul_eval_hom f (Galoistools.gfMul g h p) p x hp
+            have hfg :
+                Galoistools.refPolyEval p (Galoistools.gfMul f g p) x =
+                  (Galoistools.refPolyEval p f x * Galoistools.refPolyEval p g x) % p := by
+              simpa [canonical] using prove_mul_eval_hom f g p x hp
+            have hgh :
+                Galoistools.refPolyEval p (Galoistools.gfMul g h p) x =
+                  (Galoistools.refPolyEval p g x * Galoistools.refPolyEval p h x) % p := by
+              simpa [canonical] using prove_mul_eval_hom g h p x hp
+            have hleft :
+                Galoistools.refPolyEval p (Galoistools.gfMul (Galoistools.gfMul f g p) h p) x =
+                  (Galoistools.refPolyEval p (Galoistools.gfMul f g p) x *
+                    Galoistools.refPolyEval p h x) % p := by
+              simpa [canonical] using prove_mul_eval_hom (Galoistools.gfMul f g p) h p x hp
+            have hright :
+                Galoistools.refPolyEval p (Galoistools.gfMul f (Galoistools.gfMul g h p) p) x =
+                  (Galoistools.refPolyEval p f x *
+                    Galoistools.refPolyEval p (Galoistools.gfMul g h p) x) % p := by
+              simpa [canonical] using prove_mul_eval_hom f (Galoistools.gfMul g h p) p x hp
+            let a := Galoistools.refPolyEval p f x
+            let b := Galoistools.refPolyEval p g x
+            let c := Galoistools.refPolyEval p h x
+            have hmodassoc : (((a * b) % p) * c) % p = (a * ((b * c) % p)) % p := by
+              have h1 : NatModEq p (((a * b) % p) * c) ((a * b) * c) :=
+                natModEq_mul (natModEq_mod_left (by rfl)) (by rfl)
+              have h2 : NatModEq p (a * ((b * c) % p)) (a * (b * c)) :=
+                natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
+              unfold NatModEq at h1 h2
+              calc
+                (((a * b) % p) * c) % p = ((a * b) * c) % p := h1
+                _ = (a * (b * c)) % p := by rw [Nat.mul_assoc]
+                _ = (a * ((b * c) % p)) % p := h2.symm
             calc
               Galoistools.refPolyEval p (Galoistools.gfMul (Galoistools.gfMul f g p) h p) x =
                   (Galoistools.refPolyEval p (Galoistools.gfMul f g p) x *
@@ -73,24 +97,16 @@ jobs:
                     Galoistools.refPolyEval p h x) % p := by rw [hfg]
               _ = (Galoistools.refPolyEval p f x *
                     ((Galoistools.refPolyEval p g x * Galoistools.refPolyEval p h x) % p)) % p := by
-                    simp [Nat.mul_mod, Nat.mul_assoc]
+                    simpa [a, b, c] using hmodassoc
               _ = (Galoistools.refPolyEval p f x *
                     Galoistools.refPolyEval p (Galoistools.gfMul g h p) x) % p := by rw [hgh]
               _ = Galoistools.refPolyEval p (Galoistools.gfMul f (Galoistools.gfMul g h p) p) x := hright.symm
           '''
           ring.write_text(text[:i] + proof + text[j:])
           subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, check=True)
-
           artifact = extract(source, bench, mode='codeproof')
           write_artifact(artifact, source / 'artifact.json')
-          result = run_evaluation(
-              benchmark_dir=bench_dir,
-              artifact=artifact,
-              mode='codeproof',
-              eval_sandbox_dir=Path('mul_assoc/eval/sandbox').resolve(),
-              report_dir=Path('mul_assoc/eval').resolve(),
-              lake_timeout=180,
-          )
+          result = run_evaluation(benchmark_dir=bench_dir, artifact=artifact, mode='codeproof', eval_sandbox_dir=Path('mul_assoc/eval/sandbox').resolve(), report_dir=Path('mul_assoc/eval').resolve(), lake_timeout=180)
           print(result.md_path.read_text())
           print('MUL_ASSOC_CLOSURE_COMPLETE', result.report.summary)
           PY
