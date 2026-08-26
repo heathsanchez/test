@@ -1,0 +1,31 @@
+name: V3 Arena-native release candidate
+
+on:
+  push:
+    branches:
+      - experiment/v3-arena-native-rc
+  workflow_dispatch:
+
+jobs:
+  arena-native-rc:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Install perf
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y linux-tools-common linux-tools-generic linux-tools-$(uname -r) || sudo apt-get install -y linux-tools-common linux-tools-generic
+      - name: Run Arena-native V3 RC qualification
+        run: bash scripts/run_v3_arena_native_rc.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-arena-native-rc
+          path: v3-arena-native-rc/
+          if-no-files-found: warn
