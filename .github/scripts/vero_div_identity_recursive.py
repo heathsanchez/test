@@ -50,31 +50,32 @@ theorem divcore_zero_fuel
       (Galoistools.gfStrip qacc, Galoistools.gfStrip cur) := by
   rfl
 ''',
-'ring_theorem_inventory': r'''
-#check prove_add_zero
-#check prove_add_comm
-#check prove_add_neg_cancel
-#check prove_sub_eq_add_neg
+'raw_sub_eq_add_neg': r'''
+theorem raw_sub_eq_add_neg (f g : List Nat) (p : Nat) (hp : 1 < p) :
+    Galoistools.gfSub f g p =
+      Galoistools.gfAdd f (Galoistools.gfNeg g p) p := by
+  simp only [Galoistools.gfSub, Galoistools.gfAdd, Galoistools.gfNeg]
+  rw [← List.map_reverse]
+  rw [zipSubPad_eq_add_neg]
 ''',
-'add_sub_cancel_direct': r'''
-theorem add_sub_cancel_direct
-    (cur sub : List Nat) (p : Nat)
-    (hp : 1 < p)
-    (hcur : Galoistools.IsNorm p cur)
-    (hsub : Galoistools.IsNorm p sub) :
-    Galoistools.gfAdd sub (Galoistools.gfSub cur sub p) p = cur := by
-  rw [prove_sub_eq_add_neg cur sub p hp]
-  simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
+'raw_add_neg_cancel': r'''
+theorem raw_add_neg_cancel (f : List Nat) (p : Nat) (hp : 1 < p) :
+    Galoistools.gfAdd f (Galoistools.gfNeg f p) p = [] := by
+  simp only [Galoistools.gfAdd, Galoistools.gfNeg]
+  rw [← List.map_reverse]
+  rw [zipAddPad_neg_self p hp]
+  simpa [List.map_reverse] using gfStrip_map_zero f
 ''',
-'add_sub_cancel_other_orientation': r'''
-theorem add_sub_cancel_other_orientation
-    (cur sub : List Nat) (p : Nat)
-    (hp : 1 < p)
-    (hcur : Galoistools.IsNorm p cur)
-    (hsub : Galoistools.IsNorm p sub) :
-    Galoistools.gfAdd (Galoistools.gfSub cur sub p) sub p = cur := by
-  rw [prove_sub_eq_add_neg cur sub p hp]
-  simp [Galoistools.gfAdd, Galoistools.gfNeg, Galoistools.gfTrunc] at *
+'canonical_sub_bridge': r'''
+theorem canonical_sub_bridge (f g : List Nat) (p : Nat) (hp : 1 < p) :
+    Galoistools.gfSub f g p =
+      Galoistools.gfAdd f (Galoistools.gfNeg g p) p := by
+  simpa only [canonical] using (prove_sub_eq_add_neg f g p hp)
+''',
+'canonical_add_neg_bridge': r'''
+theorem canonical_add_neg_bridge (f : List Nat) (p : Nat) (hp : 1 < p) :
+    Galoistools.gfAdd f (Galoistools.gfNeg f p) p = [] := by
+  simpa only [canonical] using (prove_add_neg_cancel f p hp)
 '''
 }
 
