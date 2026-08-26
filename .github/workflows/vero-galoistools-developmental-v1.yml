@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: Bezout to modular inverse residue
+# zero-agent residual push: expose modulo congruence before residue rewrites
 
 on:
   workflow_dispatch:
@@ -135,6 +135,8 @@ jobs:
                   change Int.ofNat (1 % p) = Int.ofNat 1
                   rw [Nat.mod_eq_of_lt hp]
                 have hmodI := congrArg (fun z : Int => z % Int.ofNat p) hbez
+                change (Int.ofNat (a % p) * r.2.1 + Int.ofNat p * r.2.2) % Int.ofNat p =
+                  (1 : Int) % Int.ofNat p at hmodI
                 rw [Int.add_mul_emod_self_left, hone] at hmodI
                 have hcoef :
                     (Int.ofNat (a % p) * (r.2.1 % Int.ofNat p)) % Int.ofNat p = 1 := by
@@ -164,7 +166,7 @@ jobs:
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('BEZOUT_RESIDUE_EXIT', cp.returncode)
+          print('BEZOUT_RESIDUE_EXPOSED_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
