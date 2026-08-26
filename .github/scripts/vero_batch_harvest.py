@@ -155,11 +155,21 @@ for name, theorem_text in probes.items():
     for k, line in enumerate(lines):
         if line.startswith('case ') or '⊢ ' in line:
             states.append('\n'.join(lines[k:k+28]))
-    item = {'probe': name, 'exit': cp.returncode, 'errors': errors[-8:], 'residual': states[-3:]}
+    raw_tail = '\n'.join(lines[-120:]) if cp.returncode != 0 else ''
+    item = {
+        'probe': name,
+        'exit': cp.returncode,
+        'errors': errors[-8:],
+        'residual': states[-3:],
+        'raw_tail': raw_tail,
+    }
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     for e in errors[-8:]: print(e)
     for st in states[-3:]: print(st)
+    if cp.returncode != 0:
+        print(f'--- RAW TAIL {name} ---')
+        print(raw_tail)
 
 outdir = Path('batch_harvest')
 outdir.mkdir(exist_ok=True)
