@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: tighten gcd-value induction and expose final residue
+# zero-agent residual push: remove coercion-sensitive omega from egcd bridge
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Tighten gcd-value induction and expose final residue
+      - name: Push gcd invariant past coercion bridge
         working-directory: vero
         shell: bash
         run: |
@@ -98,7 +98,7 @@ jobs:
                     have hmod0 : m % n < n := Nat.mod_lt m hnpos
                     have hmod : m % n < fuel := Std.lt_of_lt_of_le hmod0 hnfuel
                     rw [Galoistools.egcdInt]
-                    have hnI : (Int.ofNat n) ≠ 0 := by omega
+                    have hnI : (Int.ofNat n) ≠ 0 := (Int.ofNat_ne_zero).2 hn
                     rw [if_neg hnI]
                     have hr := ih n (m % n) hmod
                     change (Galoistools.egcdInt fuel (Int.ofNat n) (Int.ofNat (m % n))).1 =
@@ -135,7 +135,7 @@ jobs:
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('EGCD_GCD_TIGHT_EXIT', cp.returncode)
+          print('EGCD_COERCION_FREE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
