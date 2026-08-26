@@ -1,6 +1,6 @@
 name: Vero galoistools developmental v1
 
-# Deterministic zero-API score retry: verified negation evaluation -> subtraction evaluation.
+# Zero-API constructor probe from the verified 17/48 ratchet.
 on:
   workflow_dispatch:
   push:
@@ -15,35 +15,26 @@ jobs:
       actions: read
       contents: read
     steps:
-      - name: Checkout controller repo
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Clone Vero
         run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-
-      - name: Download verified negation-evaluation artifact
+      - name: Download verified 17-of-48 artifact
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32912246633
+          run-id: 32916731196
           name: vero-galoistools-developmental-v1
           path: baseline
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v6
-
-      - name: Install Lean toolchain manager
-        shell: bash
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Lean
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
       - name: Install Vero
         working-directory: vero
         run: uv sync
-
-      - name: Recompose spec_sub_eval_hom and evaluate
+      - name: Prove scalar-map evaluation constructor
         working-directory: vero
         shell: bash
         run: |
@@ -53,98 +44,47 @@ jobs:
           from vero.generation.benchmark import Benchmark
           from vero.generation.extractor import read_artifact, extract, write_artifact
           from vero.generation.sandbox import create_sandbox
-          from vero.evaluation.runner import run_evaluation
 
           bench_dir = Path('benchmarks/galoistools').resolve()
           bench = Benchmark(bench_dir)
-          seed_path = Path('../baseline/source/artifact.json').resolve()
-          if not seed_path.is_file():
-              raise SystemExit(f'negation seed missing: {seed_path}')
-          seed = read_artifact(seed_path)
-          source = Path('score_retry/source').resolve()
+          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
+          source = Path('constructor/source').resolve()
           create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
-
           ring = source / 'Galoistools/Proof/Ring.lean'
           text = ring.read_text()
-          required = [
-              'theorem natModEq_add_eq_zero_right_neg',
-              'theorem natModEq_refPolyEvalRevAux_map_neg',
-              'theorem natModEq_refPolyEvalRevAux_zipAddPad',
-              'theorem refPolyEval_gfStrip',
-              'theorem zipSubPad_eq_add_neg',
-          ]
+          required = ['theorem natModEq_refPolyEvalRevAux_zipAddPad', 'theorem refPolyEval_gfStrip']
           for name in required:
               if name not in text:
                   raise SystemExit(f'missing retained capability: {name}')
 
-          start = '-- !benchmark @start proof def=prove_sub_eval_hom kind=prove target=spec_sub_eval_hom\n'
-          end = '-- !benchmark @end proof def=prove_sub_eval_hom\n'
-          i = text.index(start) + len(start)
-          j = text.index(end, i)
-          proof = r'''  intro f g p x hp
-            simp only [canonical, Galoistools.gfSub]
-            rw [refPolyEval_gfStrip]
-            simp only [Galoistools.refPolyEval, List.reverse_reverse]
-            rw [zipSubPad_eq_add_neg]
-            have hadd := natModEq_refPolyEvalRevAux_zipAddPad p x f.reverse
-              (g.reverse.map (fun c => (p - c % p) % p))
-            have hneg := natModEq_refPolyEvalRevAux_map_neg p x hp g.reverse
-            unfold NatModEq at hadd hneg
-            have eval_mod (xs : List Nat) :
-                Galoistools.refPolyEvalRevAux p x xs % p =
-                  Galoistools.refPolyEvalRevAux p x xs := by
-              cases xs <;> simp [Galoistools.refPolyEvalRevAux]
-            have hp0 : 0 < p := by omega
-            have hb_le : Galoistools.refPolyEvalRevAux p x g.reverse % p ≤ p :=
-              Nat.le_of_lt (Nat.mod_lt _ hp0)
-            calc
-              Galoistools.refPolyEvalRevAux p x
-                  (Galoistools.zipAddPad p f.reverse
-                    (g.reverse.map (fun c => (p - c % p) % p))) =
-                Galoistools.refPolyEvalRevAux p x
-                  (Galoistools.zipAddPad p f.reverse
-                    (g.reverse.map (fun c => (p - c % p) % p))) % p :=
-                  (eval_mod _).symm
-              _ = (Galoistools.refPolyEvalRevAux p x f.reverse +
-                    Galoistools.refPolyEvalRevAux p x
-                      (g.reverse.map (fun c => (p - c % p) % p))) % p := hadd
-              _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
-                    Galoistools.refPolyEvalRevAux p x
-                      (g.reverse.map (fun c => (p - c % p) % p)) % p) % p := by
-                    rw [Nat.add_mod]
-              _ = (Galoistools.refPolyEvalRevAux p x f.reverse % p +
-                    ((p - Galoistools.refPolyEvalRevAux p x g.reverse % p) % p) % p) % p := by
-                    rw [hneg]
-              _ = (Galoistools.refPolyEvalRevAux p x f.reverse + p -
-                    Galoistools.refPolyEvalRevAux p x g.reverse % p) % p := by
-                    rw [Nat.add_sub_assoc hb_le]
-                    simpa only [Nat.mod_mod, eval_mod f.reverse] using
-                      (Nat.add_mod
-                        (Galoistools.refPolyEvalRevAux p x f.reverse)
-                        (p - Galoistools.refPolyEvalRevAux p x g.reverse % p) p).symm
-          '''
-          ring.write_text(text[:i] + proof + text[j:])
-          subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
+          marker = '-- !benchmark @start proof def=prove_mul_eval_hom kind=prove target=spec_mul_eval_hom\n'
+          k = text.index(marker)
+          theorem = r'''
+-- Developmental constructor: Horner evaluation commutes with coefficientwise scalar multiplication.
+theorem natModEq_refPolyEvalRevAux_map_mul
+    (p x a : Nat) (ys : List Nat) :
+    NatModEq p
+      (Galoistools.refPolyEvalRevAux p x (ys.map (fun y => (a * y) % p)))
+      ((a % p) * Galoistools.refPolyEvalRevAux p x ys) := by
+  induction ys with
+  | nil => simp [NatModEq, Galoistools.refPolyEvalRevAux]
+  | cons y ys ih =>
+      unfold NatModEq at ih ⊢
+      simp only [List.map_cons, Galoistools.refPolyEvalRevAux]
+      simp [Nat.add_mod, Nat.mul_mod, Nat.mul_add, Nat.add_mul,
+        Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm, ih]
 
+'''
+          ring.write_text(text[:k] + theorem + text[k:])
+          subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
           artifact = extract(source, bench, mode='codeproof')
           write_artifact(artifact, source / 'artifact.json')
-          result = run_evaluation(
-              benchmark_dir=bench_dir,
-              artifact=artifact,
-              mode='codeproof',
-              eval_sandbox_dir=Path('score_retry/eval/sandbox').resolve(),
-              report_dir=Path('score_retry/eval').resolve(),
-              lake_timeout=180,
-          )
-          print(result.md_path.read_text())
-          summary = result.report.summary
-          print('SUB_EVAL_SCORE_RETRY_COMPLETE', summary)
+          print('SCALAR_MAP_EVAL_COMPILED')
           PY
-
-      - name: Upload score retry artifact
+      - name: Upload constructor artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/score_retry/
+          path: vero/constructor/
           if-no-files-found: warn
