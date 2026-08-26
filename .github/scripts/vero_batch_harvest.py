@@ -23,51 +23,39 @@ theorem egcd_second_step (n : Nat) :
 '''
 
 probes = {
-'egcd_compose': common + r'''
-theorem egcd_one_shape (n : Nat) :
-    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
-  rw [Galoistools.egcdInt]
-  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
-  simp only [hp0, if_false]
-  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
-  rw [hmod]
-  exact egcd_second_step n
+'checks': r'''
+#check Nat.mod_eq_of_lt
+#check Int.emod_eq_of_lt
+#check Int.ofNat_pos
+#check Int.ofNat_eq_zero
+#check Nat.succ_pos
 ''',
-'inv_one_from_shape': common + r'''
-theorem egcd_one_shape (n : Nat) :
-    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
+'egcd_exact_simp': common + r'''
+example (n : Nat) :
+    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  simp [Galoistools.egcdInt]
+''',
+'egcd_exact_structural': common + r'''
+example (n : Nat) :
+    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
   rw [Galoistools.egcdInt]
-  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
-  simp only [hp0, if_false]
-  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
-  rw [hmod]
-  exact egcd_second_step n
+  simp [Galoistools.egcdInt]
+''',
+'inv_one_exact_simp': common + r'''
+theorem egcd_one_shape_exact (n : Nat) :
+    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  simp [Galoistools.egcdInt]
 
-theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  unfold Galoistools.invMod
-  have hnmod : 1 % (n + 2) = 1 := by omega
-  rw [hnmod]
-  have hs := egcd_one_shape n
-  rw [hs]
-  omega
+example (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
+  simp [Galoistools.invMod, egcd_one_shape_exact]
 ''',
 'inv_one_general': common + r'''
-theorem egcd_one_shape (n : Nat) :
-    (Galoistools.egcdInt (n + 4) 1 (Int.ofNat (n + 2))).2.1 = 1 := by
-  rw [Galoistools.egcdInt]
-  have hp0 : (Int.ofNat (n + 2)) ≠ 0 := by omega
-  simp only [hp0, if_false]
-  have hmod : (1 : Int) % (Int.ofNat (n + 2)) = 1 := by omega
-  rw [hmod]
-  exact egcd_second_step n
+theorem egcd_one_shape_exact (n : Nat) :
+    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  simp [Galoistools.egcdInt]
 
 theorem invMod_one_exact (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  unfold Galoistools.invMod
-  have hnmod : 1 % (n + 2) = 1 := by omega
-  rw [hnmod]
-  have hs := egcd_one_shape n
-  rw [hs]
-  omega
+  simp [Galoistools.invMod, egcd_one_shape_exact]
 
 example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
   cases p with
