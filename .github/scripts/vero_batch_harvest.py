@@ -16,46 +16,67 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-common = r'''
-theorem egcd_second_step (n : Nat) :
-    (Galoistools.egcdInt (n + 3) (Int.ofNat (n + 2)) 1).2.2 = 1 := by
-  simp [Galoistools.egcdInt]
+facts = r'''
+theorem cast_sum_ne_zero (n : Nat) : (Int.ofNat (n + 2)) ≠ 0 := by
+  intro h
+  have hz : n + 2 = 0 := Int.ofNat_eq_zero.mp h
+  omega
+
+theorem one_mod_cast_sum (n : Nat) : (1 : Int) % Int.ofNat (n + 2) = 1 := by
+  apply Int.emod_eq_of_lt
+  · omega
+  · omega
 '''
 
 probes = {
-'checks': r'''
-#check Nat.mod_eq_of_lt
-#check Int.emod_eq_of_lt
-#check Int.ofNat_pos
-#check Int.ofNat_eq_zero
-#check Nat.succ_pos
-''',
-'egcd_exact_simp': common + r'''
-example (n : Nat) :
+'int_facts': facts,
+'egcd_manual': facts + r'''
+theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  have hp0 := cast_sum_ne_zero n
+  simp only [hp0, if_false]
+  have hmod := one_mod_cast_sum n
+  rw [hmod]
   simp [Galoistools.egcdInt]
 ''',
-'egcd_exact_structural': common + r'''
+'egcd_manual_explicit': facts + r'''
 example (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
   rw [Galoistools.egcdInt]
+  rw [if_neg (cast_sum_ne_zero n)]
+  rw [one_mod_cast_sum n]
   simp [Galoistools.egcdInt]
 ''',
-'inv_one_exact_simp': common + r'''
-theorem egcd_one_shape_exact (n : Nat) :
+'inv_one_manual': facts + r'''
+theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  rw [if_neg (cast_sum_ne_zero n)]
+  rw [one_mod_cast_sum n]
   simp [Galoistools.egcdInt]
 
-example (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  simp [Galoistools.invMod, egcd_one_shape_exact]
+theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
+  unfold Galoistools.invMod
+  have hnmod : 1 % (n + 2) = 1 := Nat.mod_eq_of_lt (by omega)
+  rw [hnmod]
+  rw [egcd_one_shape n]
+  simp
 ''',
-'inv_one_general': common + r'''
-theorem egcd_one_shape_exact (n : Nat) :
+'inv_one_general': facts + r'''
+theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  rw [Galoistools.egcdInt]
+  rw [if_neg (cast_sum_ne_zero n)]
+  rw [one_mod_cast_sum n]
   simp [Galoistools.egcdInt]
 
-theorem invMod_one_exact (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  simp [Galoistools.invMod, egcd_one_shape_exact]
+theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
+  unfold Galoistools.invMod
+  have hnmod : 1 % (n + 2) = 1 := Nat.mod_eq_of_lt (by omega)
+  rw [hnmod]
+  rw [egcd_one_shape n]
+  simp
 
 example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
   cases p with
@@ -64,7 +85,7 @@ example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
     cases p with
     | zero => simp at hp
     | succ n =>
-      simpa [Nat.add_assoc] using invMod_one_exact n
+      simpa [Nat.add_assoc] using invMod_one n
 '''
 }
 
