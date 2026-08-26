@@ -17,10 +17,34 @@ namespace GaloistoolsDivCoreStep
 footer = '\nend GaloistoolsDivCoreStep\n'
 
 probes = {
-'euclid_one_mod': r'''
-theorem euclid_one_mod (p : Nat) (hp : 1 < p) :
-    ((1 : Int) % (Int.ofNat p)) = 1 := by
-  exact Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
+'egcd_one_p_residual': r'''
+theorem egcd_one_p_residual
+    (p : Nat)
+    (h1p : ((1 : Int) % Int.ofNat p) = 1)
+    (hdiv : ((1 : Int) / Int.ofNat p) = 0)
+    (hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1)) :
+    (Galoistools.egcdInt (1 + p) (Int.ofNat p)
+      ((1 : Int) % Int.ofNat p)).fst = 1 ∧
+    (Galoistools.egcdInt (1 + p) (Int.ofNat p)
+      ((1 : Int) % Int.ofNat p)).snd.snd = 1 ∧
+    (Galoistools.egcdInt (1 + p) (Int.ofNat p)
+      ((1 : Int) % Int.ofNat p)).snd.fst -
+      ((1 : Int) / Int.ofNat p) *
+        (Galoistools.egcdInt (1 + p) (Int.ofNat p)
+          ((1 : Int) % Int.ofNat p)).snd.snd = 0 := by
+  rw [h1p, hmid, hdiv]
+  simp
+''',
+'invmod_one_body': r'''
+theorem invmod_one_body (p : Nat)
+    (h1p : ((1 : Int) % Int.ofNat p) = 1)
+    (heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0)) :
+    (have r := Galoistools.egcdInt (2 + p) (Int.ofNat 1) (Int.ofNat p)
+     (r.snd.fst % Int.ofNat p).toNat) = 1 := by
+  change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
+          (r.snd.fst % Int.ofNat p).toNat) = 1
+  rw [heg, h1p]
+  rfl
 ''',
 'egcd_zero_right': r'''
 theorem egcd_zero_right (fuel : Nat) (a : Int) :
@@ -51,15 +75,18 @@ theorem egcd_p_one_local2 (p : Nat) :
 
 theorem egcd_one_p (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hp0 : p ≠ 0 := by omega
+  have hpI0 : (Int.ofNat p) ≠ 0 := by simpa using (show p ≠ 0 by omega)
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-    exact Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 :=
+    Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
   have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
     egcd_p_one_local2 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
+  rw [Galoistools.egcdInt]
+  rw [if_neg hpI0]
+  rw [h1p, hmid, hdiv]
+  rfl
 ''',
 'invmod_one': r'''
 theorem egcd_zero_right_local3 (fuel : Nat) (a : Int) :
@@ -74,26 +101,29 @@ theorem egcd_p_one_local3 (p : Nat) :
 
 theorem egcd_one_p_local3 (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hp0 : p ≠ 0 := by omega
+  have hpI0 : (Int.ofNat p) ≠ 0 := by simpa using (show p ≠ 0 by omega)
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-    exact Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
-    egcd_p_one_local3 p
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 :=
+    Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
+  have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := egcd_p_one_local3 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
+  rw [Galoistools.egcdInt]
+  rw [if_neg hpI0]
+  rw [h1p, hmid, hdiv]
+  rfl
 
 theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
   have hnat : 1 % p = 1 := Nat.mod_eq_of_lt hp
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have heg := egcd_one_p_local3 p hp
+  have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := egcd_one_p_local3 p hp
   unfold Galoistools.invMod
   rw [hnat]
   rw [show 1 + p + 1 = 2 + p by omega]
-  rw [heg]
-  rw [h1p]
+  change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
+          (r.snd.fst % Int.ofNat p).toNat) = 1
+  rw [heg, h1p]
   rfl
 ''',
 'monic_step_coefficient_reduced': r'''
@@ -109,26 +139,29 @@ theorem egcd_p_one_local4 (p : Nat) :
 
 theorem egcd_one_p_local4 (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hp0 : p ≠ 0 := by omega
+  have hpI0 : (Int.ofNat p) ≠ 0 := by simpa using (show p ≠ 0 by omega)
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-    exact Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
-    egcd_p_one_local4 p
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 :=
+    Int.ediv_eq_zero_of_lt (by omega) (Int.ofNat_lt.2 hp)
+  have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := egcd_p_one_local4 p
   rw [show 2 + p = (1 + p) + 1 by omega]
-  simp [Galoistools.egcdInt, hp0, h1p, hdiv, hmid]
+  rw [Galoistools.egcdInt]
+  rw [if_neg hpI0]
+  rw [h1p, hmid, hdiv]
+  rfl
 
 theorem invmod_one_local4 (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
   have hnat : 1 % p = 1 := Nat.mod_eq_of_lt hp
   have h1p : ((1 : Int) % Int.ofNat p) = 1 :=
     Int.emod_eq_of_lt (by omega) (Int.ofNat_lt.2 hp)
-  have heg := egcd_one_p_local4 p hp
+  have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := egcd_one_p_local4 p hp
   unfold Galoistools.invMod
   rw [hnat]
   rw [show 1 + p + 1 = 2 + p by omega]
-  rw [heg]
-  rw [h1p]
+  change (have r := Galoistools.egcdInt (2 + p) 1 (Int.ofNat p)
+          (r.snd.fst % Int.ofNat p).toNat) = 1
+  rw [heg, h1p]
   rfl
 
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
@@ -136,8 +169,7 @@ theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
     (hlc : Galoistools.leadCoeff cur < p) :
     (Galoistools.leadCoeff cur * Galoistools.invMod (Galoistools.leadCoeff g) p) % p =
       Galoistools.leadCoeff cur := by
-  have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
-    cases g <;> rfl
+  have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by cases g <;> rfl
   rw [hbridge, hg, invmod_one_local4 p hp]
   simp [Nat.mod_eq_of_lt hlc]
 '''
@@ -157,7 +189,7 @@ for name, text in probes.items():
     item={'probe':name,'exit':cp.returncode,'errors':errors[-12:],'residual':goals[-3:],'raw_tail':'\n'.join(lines[-320:])}
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
-    print(item['raw_tail'])
+    if cp.returncode: print(item['raw_tail'])
 
 outdir=Path('divcore_step'); outdir.mkdir(exist_ok=True)
 (outdir/'census.json').write_text(json.dumps(census,indent=2))
