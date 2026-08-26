@@ -63,6 +63,36 @@ def rawEmptyMutualPair (A B : Lean.Name) (uA uB : Lean.Level) : Array Lean.Const
     mutualDummyRecInfo B all
   ]
 
+def rawMutualMetadataPair
+    (A B : Lean.Name)
+    (allA allB recAllA recAllB : List Lean.Name) : Array Lean.ConstantInfo :=
+  #[
+    .inductInfo {
+      name := A, levelParams := [], type := .sort 1
+      numParams := 0, numIndices := 0, all := allA
+      ctors := [A ++ `fromB]
+      numNested := 0, isRec := true, isUnsafe := false, isReflexive := false
+    },
+    .ctorInfo {
+      name := A ++ `fromB, levelParams := []
+      type := arrow (.const B []) (.const A [])
+      numParams := 0, induct := A, cidx := 0, numFields := 1, isUnsafe := false
+    },
+    mutualDummyRecInfo A recAllA,
+    .inductInfo {
+      name := B, levelParams := [], type := .sort 1
+      numParams := 0, numIndices := 0, all := allB
+      ctors := [B ++ `fromA]
+      numNested := 0, isRec := true, isUnsafe := false, isReflexive := false
+    },
+    .ctorInfo {
+      name := B ++ `fromA, levelParams := []
+      type := arrow (.const A []) (.const B [])
+      numParams := 0, induct := B, cidx := 0, numFields := 1, isUnsafe := false
+    },
+    mutualDummyRecInfo B recAllB
+  ]
+
 /-- Alex Meiburg example: Prop mediates Type 0 and Type 2. Current Lean contract rejects. -/
 bad_raw_consts
   let A := `heteroABC_A
@@ -221,3 +251,73 @@ good_decl
       ]
     }
   ]
+
+/-- Parameterized semantic equality: max u u = u inside a mutual block. -/
+good_decl
+  .inductDecl (lparams := [`u]) (nparams := 0) (isUnsafe := false) [
+    {
+      name := `levelEqParamIdem_A
+      type := .sort (.max (.param `u) (.param `u))
+      ctors := [
+        { name := `levelEqParamIdem_A.fromB, type := arrow (.const `levelEqParamIdem_B [.param `u]) (.const `levelEqParamIdem_A [.param `u]) }
+      ]
+    },
+    {
+      name := `levelEqParamIdem_B
+      type := .sort (.param `u)
+      ctors := [
+        { name := `levelEqParamIdem_B.fromA, type := arrow (.const `levelEqParamIdem_A [.param `u]) (.const `levelEqParamIdem_B [.param `u]) }
+      ]
+    }
+  ]
+
+/-- Parameterized semantic equality through absorption: max u (max u v) = max u v. -/
+good_decl
+  .inductDecl (lparams := [`u, `v]) (nparams := 0) (isUnsafe := false) [
+    {
+      name := `levelEqParamAbsorb_A
+      type := .sort (.max (.param `u) (.max (.param `u) (.param `v)))
+      ctors := [
+        { name := `levelEqParamAbsorb_A.fromB, type := arrow (.const `levelEqParamAbsorb_B [.param `u, .param `v]) (.const `levelEqParamAbsorb_A [.param `u, .param `v]) }
+      ]
+    },
+    {
+      name := `levelEqParamAbsorb_B
+      type := .sort (.max (.param `u) (.param `v))
+      ctors := [
+        { name := `levelEqParamAbsorb_B.fromA, type := arrow (.const `levelEqParamAbsorb_A [.param `u, .param `v]) (.const `levelEqParamAbsorb_B [.param `u, .param `v]) }
+      ]
+    }
+  ]
+
+/-- Block metadata disagreement: members list the same block in different orders. -/
+bad_raw_consts
+  rawMutualMetadataPair `mutualMetaOrder_A `mutualMetaOrder_B
+    [`mutualMetaOrder_A, `mutualMetaOrder_B]
+    [`mutualMetaOrder_B, `mutualMetaOrder_A]
+    [`mutualMetaOrder_A, `mutualMetaOrder_B]
+    [`mutualMetaOrder_A, `mutualMetaOrder_B]
+
+/-- Block metadata disagreement: one inductive omits its partner from `all`. -/
+bad_raw_consts
+  rawMutualMetadataPair `mutualMetaMissing_A `mutualMetaMissing_B
+    [`mutualMetaMissing_A, `mutualMetaMissing_B]
+    [`mutualMetaMissing_B]
+    [`mutualMetaMissing_A, `mutualMetaMissing_B]
+    [`mutualMetaMissing_A, `mutualMetaMissing_B]
+
+/-- Recursor metadata disagrees with otherwise-consistent inductive block membership. -/
+bad_raw_consts
+  rawMutualMetadataPair `mutualMetaRecMissing_A `mutualMetaRecMissing_B
+    [`mutualMetaRecMissing_A, `mutualMetaRecMissing_B]
+    [`mutualMetaRecMissing_A, `mutualMetaRecMissing_B]
+    [`mutualMetaRecMissing_A]
+    [`mutualMetaRecMissing_A, `mutualMetaRecMissing_B]
+
+/-- Duplicate member name in block metadata. -/
+bad_raw_consts
+  rawMutualMetadataPair `mutualMetaDuplicate_A `mutualMetaDuplicate_B
+    [`mutualMetaDuplicate_A, `mutualMetaDuplicate_A, `mutualMetaDuplicate_B]
+    [`mutualMetaDuplicate_A, `mutualMetaDuplicate_A, `mutualMetaDuplicate_B]
+    [`mutualMetaDuplicate_A, `mutualMetaDuplicate_A, `mutualMetaDuplicate_B]
+    [`mutualMetaDuplicate_A, `mutualMetaDuplicate_A, `mutualMetaDuplicate_B]
