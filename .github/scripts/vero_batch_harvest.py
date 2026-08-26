@@ -8,7 +8,7 @@ seed = read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
 source = Path('batch_harvest/source').resolve()
 create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
-# One run, many independent theorem probes.  Each file imports the same seeded
+# One run, many independent theorem probes. Each file imports the same seeded
 # project, so a failed proof never masks the others.
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
@@ -20,7 +20,7 @@ footer = '\nend GaloistoolsBatch\n'
 
 probes = {
 'norm_head_bounds': r'''
-lemma probe_norm_head_bounds (p a : Nat) (as : List Nat)
+theorem probe_norm_head_bounds (p a : Nat) (as : List Nat)
     (hn : Galoistools.IsNorm p (a :: as)) : a ≠ 0 ∧ a < p := by
   unfold Galoistools.IsNorm Galoistools.refGfTrunc at hn
   simp only [Galoistools.refGfStrip, List.map_cons] at hn
@@ -35,7 +35,7 @@ lemma probe_norm_head_bounds (p a : Nat) (as : List Nat)
     · exact Nat.lt_of_mod_eq_self hma
 ''',
 'prime_nonzero_coprime': r'''
-lemma probe_prime_nonzero_coprime (p a : Nat) (hp : Galoistools.PrimeField p)
+theorem probe_prime_nonzero_coprime (p a : Nat) (hp : Galoistools.PrimeField p)
     (ha0 : a ≠ 0) (halt : a < p) : Nat.gcd a p = 1 := by
   rcases hp with ⟨hp1, hprime⟩
   let d := Nat.gcd a p
@@ -50,7 +50,7 @@ lemma probe_prime_nonzero_coprime (p a : Nat) (hp : Galoistools.PrimeField p)
   exact hprime d hd2 hdp_lt hmod
 ''',
 'rem_self': r'''
-lemma probe_rem_self (f : List Nat) (p : Nat)
+theorem probe_rem_self (f : List Nat) (p : Nat)
     (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f) :
     Galoistools.gfRem f f p = [] := by
   unfold Galoistools.gfRem Galoistools.gfDiv
@@ -61,7 +61,7 @@ lemma probe_rem_self (f : List Nat) (p : Nat)
     sorry
 ''',
 'rem_norm': r'''
-lemma probe_rem_norm (f g : List Nat) (p : Nat)
+theorem probe_rem_norm (f g : List Nat) (p : Nat)
     (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
     (hg : Galoistools.IsNorm p g) (hz : g ≠ []) :
     Galoistools.IsNorm p (Galoistools.gfRem f g p) := by
@@ -70,7 +70,7 @@ lemma probe_rem_norm (f g : List Nat) (p : Nat)
   sorry
 ''',
 'rem_degree': r'''
-lemma probe_rem_degree (f g : List Nat) (p : Nat)
+theorem probe_rem_degree (f g : List Nat) (p : Nat)
     (hp : Galoistools.PrimeField p) (hg : Galoistools.IsNorm p g) (hz : g ≠ []) :
     let r := Galoistools.gfRem f g p
     r = [] ∨ Galoistools.refGfDegree r < Galoistools.refGfDegree g := by
@@ -80,7 +80,7 @@ lemma probe_rem_degree (f g : List Nat) (p : Nat)
   sorry
 ''',
 'gcdloop_norm': r'''
-lemma probe_gcdloop_norm (f g : List Nat) (p fuel : Nat)
+theorem probe_gcdloop_norm (f g : List Nat) (p fuel : Nat)
     (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
     (hg : Galoistools.IsNorm p g) :
     Galoistools.IsNorm p (Galoistools.gcdLoop p fuel f g) := by
@@ -96,7 +96,7 @@ lemma probe_gcdloop_norm (f g : List Nat) (p fuel : Nat)
         sorry
 ''',
 'gcd_self': r'''
-lemma probe_gcd_self (f : List Nat) (p : Nat)
+theorem probe_gcd_self (f : List Nat) (p : Nat)
     (hp : 1 < p) (hf : Galoistools.IsNorm p f) :
     Galoistools.gfGcd f f p = (Galoistools.gfMonic f p).2 := by
   unfold Galoistools.gfGcd
@@ -109,9 +109,9 @@ lemma probe_gcd_self (f : List Nat) (p : Nat)
 }
 
 census = []
-for name, theorem in probes.items():
+for name, theorem_text in probes.items():
     probe = source / f'Probe_{name}.lean'
-    probe.write_text(header + theorem + footer)
+    probe.write_text(header + theorem_text + footer)
     cp = subprocess.run(['lake','lean', probe.name], cwd=source, text=True, capture_output=True)
     out = cp.stdout + '\n' + cp.stderr
     lines = out.splitlines()
