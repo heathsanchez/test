@@ -16,24 +16,94 @@ namespace GaloistoolsBatch
 '''
 footer = '\nend GaloistoolsBatch\n'
 
-# Run 98 exposed the missing part of the representation: reconstruction alone
-# is not enough because divCore has a fuel=0 branch that can return before the
-# quotient's low-degree slots are filled.  The public call starts with enough
-# fuel; the inductive statement must carry that budget.  We now test exactly
-# that condition and the base-case consequence e < 0.
+# Run 99 validated the quotient fuel-budget skeleton.  The only failures were
+# the implementation/reference normal-form boundary: gfStrip and refGfStrip are
+# byte-for-byte recursive copies, but Lean will not identify distinct defs by
+# unfolding under the IsNorm hypothesis.  Close that bridge explicitly, derive
+# implementation normalization from frozen IsNorm, then immediately retest the
+# small division branch and the divCore readout prerequisites.
 probes = {
-'add_left_zero_direct': r'''
-theorem add_left_zero_direct (f : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
-  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.IsNorm,
-    Galoistools.refGfTrunc, Galoistools.gfStrip, Galoistools.refGfStrip] using hf
+'strip_bridge': r'''
+theorem strip_bridge (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
 ''',
-'monic_nonempty_inline': r'''
-theorem monic_nonempty_inline (g : List Nat)
-    (h : Galoistools.refLeadCoeff g = 1) : g ≠ [] := by
-  intro hg
-  subst g
-  simp [Galoistools.refLeadCoeff] at h
+'trunc_bridge': r'''
+theorem strip_bridge_local (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem trunc_bridge (p : Nat) (f : List Nat) :
+    Galoistools.gfStrip (f.map (fun x => x % p)) = Galoistools.refGfTrunc p f := by
+  rw [strip_bridge_local]
+  rfl
+''',
+'norm_to_impl_trunc': r'''
+theorem strip_bridge_local2 (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem norm_to_impl_trunc (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) :
+    Galoistools.gfStrip (f.map (fun x => x % p)) = f := by
+  rw [strip_bridge_local2]
+  exact hf
+''',
+'add_left_zero_bridged': r'''
+theorem strip_bridge_local3 (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem add_left_zero_bridged (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfAdd [] f p = f := by
+  simp [Galoistools.gfAdd, Galoistools.zipAddPad]
+  rw [strip_bridge_local3]
+  exact hf
+''',
+'identity_small_branch_bridged': r'''
+theorem strip_bridge_local4 (f : List Nat) :
+    Galoistools.gfStrip f = Galoistools.refGfStrip f := by
+  induction f with
+  | nil => rfl
+  | cons a as ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem identity_small_branch_bridged (f g : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) (hg : g ≠ [])
+    (hd : Galoistools.gfDegree f < Galoistools.gfDegree g) :
+    Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
+      (Galoistools.gfDiv f g p).snd p = f := by
+  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
+  simp [Galoistools.gfAdd, Galoistools.zipAddPad]
+  rw [strip_bridge_local4]
+  exact hf
 ''',
 'initial_budget': r'''
 theorem initial_budget (f g : List Nat)
@@ -59,16 +129,6 @@ theorem budget_step (fuel : Nat) (e s : Int)
     (hb : (e + 1).toNat ≤ fuel + 1)
     (hs : s ≤ e) : s.toNat ≤ fuel + 1 := by
   omega
-''',
-'identity_small_branch': r'''
-theorem identity_small_branch (f g : List Nat) (p : Nat)
-    (hf : Galoistools.IsNorm p f) (hg : g ≠ [])
-    (hd : Galoistools.gfDegree f < Galoistools.gfDegree g) :
-    Galoistools.gfAdd (Galoistools.gfMul (Galoistools.gfDiv f g p).fst g p)
-      (Galoistools.gfDiv f g p).snd p = f := by
-  simp [Galoistools.gfDiv, hg, hd, Galoistools.gfMul]
-  simpa [Galoistools.gfAdd, Galoistools.zipAddPad, Galoistools.IsNorm,
-    Galoistools.refGfTrunc, Galoistools.gfStrip, Galoistools.refGfStrip] using hf
 ''',
 'divcore_zero_budget_readout': r'''
 def completedQ0 (q : List Nat) (e : Int) : List Nat :=
