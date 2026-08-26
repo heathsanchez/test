@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# deterministic closure step: mul/add eval homs -> mul_add_distrib_eval
+# residual probe: 21/48 -> monic leading coefficient
 
 on:
   workflow_dispatch:
@@ -17,12 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download 20/48 ratchet
+      - name: Download 21/48 ratchet
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32919655703
+          run-id: 32920029678
           name: vero-galoistools-developmental-v1
           path: baseline
       - uses: astral-sh/setup-uv@v6
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Derive multiplication distributivity semantically
+      - name: Probe monic leading-coefficient residual
         working-directory: vero
         shell: bash
         run: |
@@ -41,97 +41,44 @@ jobs:
           from pathlib import Path
           import subprocess
           from vero.generation.benchmark import Benchmark
-          from vero.generation.extractor import read_artifact, extract, write_artifact
+          from vero.generation.extractor import read_artifact
           from vero.generation.sandbox import create_sandbox
-          from vero.evaluation.runner import run_evaluation
 
           bench_dir = Path('benchmarks/galoistools').resolve()
           bench = Benchmark(bench_dir)
           seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('mul_distrib/source').resolve()
+          source = Path('monic_probe/source').resolve()
           create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
           ring = source / 'Galoistools/Proof/Ring.lean'
           text = ring.read_text()
-          start = '-- !benchmark @start proof def=prove_mul_add_distrib_eval kind=prove target=spec_mul_add_distrib_eval\n'
-          end = '-- !benchmark @end proof def=prove_mul_add_distrib_eval\n'
+          start = '-- !benchmark @start proof def=prove_monic_leadCoeff_one kind=prove target=spec_monic_leadCoeff_one\n'
+          end = '-- !benchmark @end proof def=prove_monic_leadCoeff_one\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = r'''  intro f g h p x hp
+          proof = r'''  intro f p hp hne hcop
             simp only [canonical]
-            have add_eval (u v : List Nat) :
-                Galoistools.refPolyEval p (Galoistools.gfAdd u v p) x =
-                  (Galoistools.refPolyEval p u x + Galoistools.refPolyEval p v x) % p := by
-              simp only [Galoistools.gfAdd]
-              rw [refPolyEval_gfStrip]
-              simp only [Galoistools.refPolyEval, List.reverse_reverse]
-              have hz := natModEq_refPolyEvalRevAux_zipAddPad p x u.reverse v.reverse
-              unfold NatModEq at hz
-              have eval_mod (xs : List Nat) :
-                  Galoistools.refPolyEvalRevAux p x xs % p =
-                    Galoistools.refPolyEvalRevAux p x xs := by
-                cases xs <;> simp [Galoistools.refPolyEvalRevAux]
-              calc
-                Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p u.reverse v.reverse) =
-                    Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p u.reverse v.reverse) % p :=
-                      (eval_mod _).symm
-                _ = (Galoistools.refPolyEvalRevAux p x u.reverse +
-                      Galoistools.refPolyEvalRevAux p x v.reverse) % p := hz
-            have hm_left :
-                Galoistools.refPolyEval p (Galoistools.gfMul f (Galoistools.gfAdd g h p) p) x =
-                  (Galoistools.refPolyEval p f x *
-                    Galoistools.refPolyEval p (Galoistools.gfAdd g h p) x) % p := by
-              simpa [canonical] using prove_mul_eval_hom f (Galoistools.gfAdd g h p) p x hp
-            have hm_fg :
-                Galoistools.refPolyEval p (Galoistools.gfMul f g p) x =
-                  (Galoistools.refPolyEval p f x * Galoistools.refPolyEval p g x) % p := by
-              simpa [canonical] using prove_mul_eval_hom f g p x hp
-            have hm_fh :
-                Galoistools.refPolyEval p (Galoistools.gfMul f h p) x =
-                  (Galoistools.refPolyEval p f x * Galoistools.refPolyEval p h x) % p := by
-              simpa [canonical] using prove_mul_eval_hom f h p x hp
-            let a := Galoistools.refPolyEval p f x
-            let b := Galoistools.refPolyEval p g x
-            let c := Galoistools.refPolyEval p h x
-            have hmoddist : (a * ((b + c) % p)) % p = (((a * b) % p) + ((a * c) % p)) % p := by
-              have hl : NatModEq p (a * ((b + c) % p)) (a * (b + c)) :=
-                natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
-              have hr : NatModEq p (((a * b) % p) + ((a * c) % p)) ((a * b) + (a * c)) :=
-                natModEq_add (natModEq_mod_left (by rfl)) (natModEq_mod_left (by rfl))
-              unfold NatModEq at hl hr
-              calc
-                (a * ((b + c) % p)) % p = (a * (b + c)) % p := hl
-                _ = ((a * b) + (a * c)) % p := by rw [Nat.mul_add]
-                _ = (((a * b) % p) + ((a * c) % p)) % p := hr.symm
-            calc
-              Galoistools.refPolyEval p (Galoistools.gfMul f (Galoistools.gfAdd g h p) p) x =
-                  (Galoistools.refPolyEval p f x *
-                    Galoistools.refPolyEval p (Galoistools.gfAdd g h p) x) % p := hm_left
-              _ = (Galoistools.refPolyEval p f x *
-                    ((Galoistools.refPolyEval p g x + Galoistools.refPolyEval p h x) % p)) % p := by
-                    rw [add_eval]
-              _ = (((Galoistools.refPolyEval p f x * Galoistools.refPolyEval p g x) % p) +
-                    ((Galoistools.refPolyEval p f x * Galoistools.refPolyEval p h x) % p)) % p := by
-                    simpa [a, b, c] using hmoddist
-              _ = (Galoistools.refPolyEval p (Galoistools.gfMul f g p) x +
-                    Galoistools.refPolyEval p (Galoistools.gfMul f h p) x) % p := by
-                    rw [hm_fg, hm_fh]
-              _ = Galoistools.refPolyEval p
-                    (Galoistools.gfAdd (Galoistools.gfMul f g p) (Galoistools.gfMul f h p) p) x :=
-                    (add_eval (Galoistools.gfMul f g p) (Galoistools.gfMul f h p)).symm
+            cases f with
+            | nil => contradiction
+            | cons a as =>
+              simp only [Galoistools.refLeadCoeff] at hcop ⊢
+              simp only [Galoistools.gfMonic]
+              split
+              · simp_all
+              · simp only [Galoistools.gfQuoGround, List.map_cons, Galoistools.refLeadCoeff]
           '''
           ring.write_text(text[:i] + proof + text[j:])
-          subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, check=True)
-          artifact = extract(source, bench, mode='codeproof')
-          write_artifact(artifact, source / 'artifact.json')
-          result = run_evaluation(benchmark_dir=bench_dir, artifact=artifact, mode='codeproof', eval_sandbox_dir=Path('mul_distrib/eval/sandbox').resolve(), report_dir=Path('mul_distrib/eval').resolve(), lake_timeout=180)
-          print(result.md_path.read_text())
-          print('MUL_DISTRIB_CLOSURE_COMPLETE', result.report.summary)
+          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
+          print(cp.stdout)
+          print(cp.stderr)
+          print('MONIC_PROBE_EXIT', cp.returncode)
+          if cp.returncode != 0:
+              raise SystemExit(cp.returncode)
           PY
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/mul_distrib/
+          path: vero/monic_probe/
           if-no-files-found: warn
