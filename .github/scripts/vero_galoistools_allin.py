@@ -57,7 +57,7 @@ print('PASS', passed)
 print('REMAINING', failed)
 
 # Fast frontier scan: test every remaining obligation independently with the
-# smallest representation-aware proof.  A hit is immediately actionable; a miss
+# smallest representation-aware proof. A hit is immediately actionable; a miss
 # records the first real Lean error/residual instead of guessing which theorem is next.
 def replace_slot_body(text, name, body):
     start = f'-- !benchmark @start proof def={name}'
@@ -72,9 +72,8 @@ for name, ok, pf in proofs:
         continue
     original = pf.read_text()
     spec = 'spec_' + name[len('prove_'):]
-    # Keep this deliberately tiny.  We are measuring which residuals are already
-    # definitionally closed by the current ratchet, not hiding search in automation.
-    candidate = f'by\n  simp [{spec}, canonical]'
+    # Benchmark proof slots already sit after `:= by`, so inject tactics only.
+    candidate = f'  simp [{spec}, canonical]'
     pf.write_text(replace_slot_body(original, name, candidate))
     rel = str(pf.relative_to(out))
     q = subprocess.run(['lake','lean',rel], cwd=out, text=True, capture_output=True)
