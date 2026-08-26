@@ -1,5 +1,4 @@
 name: Vero galoistools developmental v1
-# batched residual harvester: one sandbox, reusable lemmas, many adjacent specs
 
 on:
   workflow_dispatch:
@@ -7,11 +6,12 @@ on:
     paths:
       - '.github/workflows/vero-galoistools-developmental-v1.yml'
       - '.github/scripts/vero_batch_harvest.py'
+      - '.github/scripts/vero_galoistools_allin.py'
 
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       actions: read
       contents: read
@@ -34,13 +34,13 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Batch residual harvest
+      - name: All-in frontier attempt
         working-directory: vero
-        run: uv run python ../.github/scripts/vero_batch_harvest.py
-      - name: Upload batch census
+        run: uv run python ../.github/scripts/vero_galoistools_allin.py
+      - name: Upload all-in result
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: vero-galoistools-batch-harvest
-          path: vero/batch_harvest/
+          name: vero-galoistools-allin
+          path: vero/galoistools_allin/
           if-no-files-found: warn
