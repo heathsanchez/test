@@ -75,7 +75,8 @@ theorem probe_divcore_zero_nonempty (p fuel : Nat) (g q : List Nat) (e : Int)
               simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree]
           | cons b bs =>
               have hdeg : (-1 : Int) < (bs.length : Int) + 1 := by
-                cases hlen : bs.length <;> simp [hlen]
+                change Int.negSucc 0 < Int.ofNat (bs.length + 1)
+                simp
               simp [Galoistools.divCore, Galoistools.gfStrip, Galoistools.gfDegree, hdeg]
 '''
 
