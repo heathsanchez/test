@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent theorem-surface probe: inspect Int division identities needed for egcdInt
+# zero-agent residual push: prove egcdInt Bezout invariant, then monic inverse correctness
 
 on:
   workflow_dispatch:
@@ -10,30 +10,99 @@ on:
 jobs:
   developmental:
     runs-on: ubuntu-latest
-    timeout-minutes: 4
+    timeout-minutes: 8
     permissions:
+      actions: read
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - name: Install Lean 4.29.1
-        shell: bash
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - name: Download 21/48 ratchet
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 32920029678
+          name: vero-galoistools-developmental-v1
+          path: baseline
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Lean
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.29.1
-      - name: Inspect Int division theorem surface
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+      - name: Push egcd invariant through monic proof
+        working-directory: vero
         shell: bash
         run: |
-          set -euxo pipefail
-          ROOT="$HOME/.elan/toolchains/leanprover--lean4---v4.29.1/src/lean/Init/Data/Int"
-          grep -R -n -E 'emod.*ediv|ediv.*emod|div.*mod|mod.*div|mul.*ediv|ediv.*mul' "$ROOT" | head -n 180 || true
-          cat > /tmp/Probe.lean <<'EOF'
-          import Init.Data.Int.DivModLemmas
-          #check Int.ediv_add_emod
-          #check Int.ediv_mul_add_emod
-          #check Int.ediv_mul_add_emod_self
-          #check Int.emod_add_ediv
-          #check Int.ediv_mul_le
-          #check Int.emod_def
-          #check Int.ediv_def
-          EOF
-          "$HOME/.elan/bin/elan" run leanprover/lean4:v4.29.1 lean /tmp/Probe.lean || true
+          uv run python - <<'PY'
+          from pathlib import Path
+          import subprocess
+          from vero.generation.benchmark import Benchmark
+          from vero.generation.extractor import read_artifact
+          from vero.generation.sandbox import create_sandbox
+
+          bench_dir = Path('benchmarks/galoistools').resolve()
+          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
+          source = Path('monic_probe/source').resolve()
+          create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
+
+          ring = source / 'Galoistools/Proof/Ring.lean'
+          text = ring.read_text()
+          start = '-- !benchmark @start proof def=prove_monic_leadCoeff_one kind=prove target=spec_monic_leadCoeff_one\n'
+          end = '-- !benchmark @end proof def=prove_monic_leadCoeff_one\n'
+          i = text.index(start) + len(start)
+          j = text.index(end, i)
+          proof = r'''  intro f p hp hne hcop
+            have egcd_bezout : ∀ fuel a b,
+                let r := Galoistools.egcdInt fuel a b
+                a * r.2.1 + b * r.2.2 = r.1 := by
+              intro fuel
+              induction fuel with
+              | zero =>
+                  intro a b
+                  simp [Galoistools.egcdInt]
+              | succ fuel ih =>
+                  intro a b
+                  simp only [Galoistools.egcdInt]
+                  by_cases hb : b = 0
+                  · simp [hb]
+                  · simp only [hb, ↓reduceIte]
+                    let r := Galoistools.egcdInt fuel b (a % b)
+                    have hr := ih b (a % b)
+                    change a * r.2.2 + b * (r.2.1 - (a / b) * r.2.2) = r.1
+                    change b * r.2.1 + (a - b * (a / b)) * r.2.2 = r.1
+                    rw [← Int.emod_def]
+                    exact hr
+            simp only [canonical]
+            cases f with
+            | nil => contradiction
+            | cons a as =>
+              simp only [Galoistools.refLeadCoeff] at hcop
+              change Galoistools.refLeadCoeff (Galoistools.gfMonic (a :: as) p).2 = 1
+              by_cases ha : a = 1
+              · simp [Galoistools.gfMonic, ha, Galoistools.refLeadCoeff]
+              · rw [Galoistools.gfMonic]
+                simp only [ha, ↓reduceIte, Galoistools.gfQuoGround, List.map_cons,
+                  Galoistools.refLeadCoeff]
+                let r := Galoistools.egcdInt (a % p + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
+                have hbez := egcd_bezout (a % p + p + 1) (Int.ofNat (a % p)) (Int.ofNat p)
+                change a * ((r.2.1 % (Int.ofNat p)).toNat) % p = 1
+          '''
+          ring.write_text(text[:i] + proof + text[j:])
+          cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
+          print(cp.stdout)
+          print(cp.stderr)
+          print('EGCD_BEZOUT_PUSH_EXIT', cp.returncode)
+          if cp.returncode != 0:
+              raise SystemExit(cp.returncode)
+          PY
+      - name: Upload artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-developmental-v1
+          path: vero/monic_probe/
+          if-no-files-found: warn
