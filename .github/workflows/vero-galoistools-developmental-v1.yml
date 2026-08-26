@@ -34,9 +34,19 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
+      - name: Prime-field division invariant census
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_batch_harvest.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
+      - name: Upload invariant census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-invariants
+          path: vero/batch_harvest/
+          if-no-files-found: warn
       - name: Upload all-in result
         if: always()
         uses: actions/upload-artifact@v4
