@@ -1,0 +1,27 @@
+name: V3 final short-spine separator
+
+on:
+  push:
+    branches:
+      - experiment/v3-final-short1-separator
+  workflow_dispatch:
+
+jobs:
+  short1-separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run final V3 separator
+        run: bash scripts/run_v3_final_short1_separator.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-final-short1
+          path: v3-final-short1/
+          if-no-files-found: warn
