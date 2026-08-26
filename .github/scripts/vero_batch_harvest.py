@@ -17,66 +17,51 @@ namespace GaloistoolsBatch
 footer = '\nend GaloistoolsBatch\n'
 
 facts = r'''
-theorem cast_sum_ne_zero (n : Nat) : (Int.ofNat (n + 2)) ≠ 0 := by
-  intro h
-  have hz : n + 2 = 0 := Int.ofNat_eq_zero.mp h
-  omega
+theorem cast_sum_ne_zero (n : Nat) : Int.ofNat (n + 2) ≠ 0 := by
+  simp
 
-theorem one_mod_cast_sum (n : Nat) : (1 : Int) % Int.ofNat (n + 2) = 1 := by
+theorem one_mod_cast_sum (n : Nat) :
+    Int.ofNat 1 % Int.ofNat (n + 2) = Int.ofNat 1 := by
   apply Int.emod_eq_of_lt
-  · omega
-  · omega
+  · simp
+  · apply Int.ofNat_lt.mpr
+    omega
 '''
 
 probes = {
 'int_facts': facts,
-'egcd_manual': facts + r'''
+'egcd_simp': facts + r'''
+theorem egcd_one_shape (n : Nat) :
+    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
+  simp [Galoistools.egcdInt, cast_sum_ne_zero n, one_mod_cast_sum n]
+''',
+'egcd_staged': facts + r'''
 theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
   rw [Galoistools.egcdInt]
-  have hp0 := cast_sum_ne_zero n
-  simp only [hp0, if_false]
-  have hmod := one_mod_cast_sum n
-  rw [hmod]
+  simp only [cast_sum_ne_zero, if_false]
+  dsimp
+  simp only [one_mod_cast_sum]
   simp [Galoistools.egcdInt]
 ''',
-'egcd_manual_explicit': facts + r'''
-example (n : Nat) :
-    (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
-  rw [Galoistools.egcdInt]
-  rw [if_neg (cast_sum_ne_zero n)]
-  rw [one_mod_cast_sum n]
-  simp [Galoistools.egcdInt]
-''',
-'inv_one_manual': facts + r'''
+'inv_one_dsimp': facts + r'''
 theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
-  rw [Galoistools.egcdInt]
-  rw [if_neg (cast_sum_ne_zero n)]
-  rw [one_mod_cast_sum n]
-  simp [Galoistools.egcdInt]
+  simp [Galoistools.egcdInt, cast_sum_ne_zero n, one_mod_cast_sum n]
 
 theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
   unfold Galoistools.invMod
-  have hnmod : 1 % (n + 2) = 1 := Nat.mod_eq_of_lt (by omega)
-  rw [hnmod]
+  dsimp
   rw [egcd_one_shape n]
-  simp
+  simp [Nat.mod_eq_of_lt (show 1 < n + 2 by omega)]
 ''',
-'inv_one_general': facts + r'''
+'inv_one_simp': facts + r'''
 theorem egcd_one_shape (n : Nat) :
     (Galoistools.egcdInt (1 + (n + 2) + 1) (Int.ofNat 1) (Int.ofNat (n + 2))).2.1 = 1 := by
-  rw [Galoistools.egcdInt]
-  rw [if_neg (cast_sum_ne_zero n)]
-  rw [one_mod_cast_sum n]
-  simp [Galoistools.egcdInt]
+  simp [Galoistools.egcdInt, cast_sum_ne_zero n, one_mod_cast_sum n]
 
 theorem invMod_one (n : Nat) : Galoistools.invMod 1 (n + 2) % (n + 2) = 1 := by
-  unfold Galoistools.invMod
-  have hnmod : 1 % (n + 2) = 1 := Nat.mod_eq_of_lt (by omega)
-  rw [hnmod]
-  rw [egcd_one_shape n]
-  simp
+  simp [Galoistools.invMod, egcd_one_shape, Nat.mod_eq_of_lt (show 1 < n + 2 by omega)]
 
 example (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p % p = 1 := by
   cases p with
