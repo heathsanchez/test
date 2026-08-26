@@ -117,9 +117,11 @@ jobs:
                     rw [hneg]
               _ = (Galoistools.refPolyEvalRevAux p x f.reverse + p -
                     Galoistools.refPolyEvalRevAux p x g.reverse % p) % p := by
-                    rw [Nat.mod_mod]
                     rw [Nat.add_sub_assoc hb_le]
-                    rw [Nat.add_mod]
+                    simpa only [Nat.mod_mod, eval_mod f.reverse] using
+                      (Nat.add_mod
+                        (Galoistools.refPolyEvalRevAux p x f.reverse)
+                        (p - Galoistools.refPolyEvalRevAux p x g.reverse % p) p).symm
           '''
           ring.write_text(text[:i] + proof + text[j:])
           subprocess.run(['lake', 'lean', 'Galoistools/Proof/Ring.lean'], cwd=source, check=True)
