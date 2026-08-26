@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: harvest gcd zero-right from ratcheted monic baseline
+# zero-agent residual push: reuse verified monic theorem against gcd output
 
 on:
   workflow_dispatch:
@@ -17,12 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download monic ratchet
+      - name: Download gcd-zero ratchet
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32926333265
+          run-id: 32926602836
           name: vero-galoistools-developmental-v1
           path: baseline
       - uses: astral-sh/setup-uv@v6
@@ -33,51 +33,59 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Close gcd zero-right and ratchet
+      - name: Probe gcd monic residual
         working-directory: vero
         shell: bash
         run: |
           uv run python - <<'PY'
           from pathlib import Path
           import subprocess
-          from vero.generation.benchmark import Benchmark
-          from vero.generation.extractor import read_artifact, extract, write_artifact
+          from vero.generation.extractor import read_artifact
           from vero.generation.sandbox import create_sandbox
 
           bench_dir = Path('benchmarks/galoistools').resolve()
-          bench = Benchmark(bench_dir)
-          seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('gcd_zero_probe/source').resolve()
+          seed = read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
+          source = Path('gcd_monic_probe/source').resolve()
           create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
           div = source / 'Galoistools/Proof/Division.lean'
           text = div.read_text()
-          start = '-- !benchmark @start proof def=prove_gcd_zero_right kind=prove target=spec_gcd_zero_right\n'
-          end = '-- !benchmark @end proof def=prove_gcd_zero_right\n'
+
+          # Import the now-verified Ring proof module so Division can reuse the
+          # modular-inverse/monic theorem instead of reproving extended Euclid.
+          istart = '-- !benchmark @start imports\n'
+          iend = '-- !benchmark @end imports\n'
+          i = text.index(istart) + len(istart)
+          j = text.index(iend, i)
+          text = text[:i] + 'import Galoistools.Proof.Ring\n' + text[j:]
+
+          start = '-- !benchmark @start proof def=prove_gcd_monic kind=prove target=spec_gcd_monic\n'
+          end = '-- !benchmark @end proof def=prove_gcd_monic\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = '''  intro f p\n  simp [canonical, Galoistools.gfGcd, Galoistools.gcdLoop]\n'''
+          proof = r'''  intro f g p hp hf hg
+  simp only [canonical]
+  let h := Galoistools.gcdLoop p (f.length + g.length + 1) f g
+  by_cases hz : h = []
+  · left
+    simp [Galoistools.gfGcd, h, hz]
+  · right
+    change Galoistools.refLeadCoeff (Galoistools.gfMonic h p).2 = 1
+    apply prove_monic_leadCoeff_one h p hp.1 hz
+    omega
+'''
           div.write_text(text[:i] + proof + text[j:])
-
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Division.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('GCD_ZERO_RIGHT_EXIT', cp.returncode)
+          print('GCD_MONIC_REUSE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
-
-          art = extract(source, bench, mode='codeproof')
-          out = Path('gcd_zero_probe/ratchet')
-          out.mkdir(parents=True, exist_ok=True)
-          write_artifact(art, out / 'artifact.json')
-          target = [s for s in art.slots if s.def_name == 'prove_gcd_zero_right' and s.key == 'proof']
-          assert len(target) == 1 and target[0].found and not target[0].is_empty and not target[0].contains_sorry
-          print('GCD_ZERO_RIGHT_RATCHET_OK', target[0].body_hash)
           PY
-      - name: Upload ratchet
+      - name: Upload probe
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/gcd_zero_probe/
+          path: vero/gcd_monic_probe/
           if-no-files-found: warn
