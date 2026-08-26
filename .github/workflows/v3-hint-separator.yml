@@ -1,7 +1,5 @@
 name: V3 hint separator
 on:
-  push:
-    branches: [experiment/v3-structural-band-separator]
   workflow_dispatch:
 jobs:
   hint-separator:
