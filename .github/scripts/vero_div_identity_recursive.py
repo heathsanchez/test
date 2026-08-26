@@ -81,22 +81,56 @@ theorem raw_left_zero_norm (f : List Nat) (p : Nat)
     _ = f := by
       simpa only [canonical] using (prove_add_zero f p hf)
 ''',
+'zipAddPad_map_mod': r'''
+theorem zipAddPad_map_mod (p : Nat) (xs ys : List Nat) :
+    List.map (fun x => x % p) (Galoistools.zipAddPad p xs ys) =
+      Galoistools.zipAddPad p xs ys := by
+  induction xs generalizing ys with
+  | nil =>
+      cases ys <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
+  | cons x xs ih =>
+      cases ys with
+      | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
+      | cons y ys => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
+''',
+'zipAddPad_mod_inputs': r'''
+theorem zipAddPad_mod_inputs (p : Nat) (xs ys : List Nat) :
+    Galoistools.zipAddPad p (List.map (fun x => x % p) xs) ys =
+      Galoistools.zipAddPad p xs (List.map (fun y => y % p) ys) := by
+  induction xs generalizing ys with
+  | nil =>
+      cases ys <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
+  | cons x xs ih =>
+      cases ys with
+      | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
+      | cons y ys => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
+''',
 'zipAddPad_assoc': r'''
 theorem zipAddPad_assoc (p : Nat) (xs ys zs : List Nat) :
     Galoistools.zipAddPad p (Galoistools.zipAddPad p xs ys) zs =
       Galoistools.zipAddPad p xs (Galoistools.zipAddPad p ys zs) := by
+  have hmap : ∀ as bs : List Nat,
+      List.map (fun x => x % p) (Galoistools.zipAddPad p as bs) =
+        Galoistools.zipAddPad p as bs := by
+    intro as bs
+    induction as generalizing bs with
+    | nil => cases bs <;> simp [Galoistools.zipAddPad, Nat.mod_mod]
+    | cons a as ih =>
+        cases bs with
+        | nil => simp [Galoistools.zipAddPad, Nat.mod_mod]
+        | cons b bs => simp [Galoistools.zipAddPad, Nat.mod_mod, ih]
   induction xs generalizing ys zs with
   | nil =>
       cases ys <;> cases zs <;>
-        simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc]
+        simp [Galoistools.zipAddPad, Nat.mod_mod, hmap]
   | cons x xs ih =>
       cases ys with
       | nil =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc, ih]
+            simp [Galoistools.zipAddPad, Nat.mod_mod, hmap, ih]
       | cons y ys =>
           cases zs <;>
-            simp [Galoistools.zipAddPad, Nat.add_mod, Nat.add_assoc, ih]
+            simp [Galoistools.zipAddPad, Nat.mod_mod, Nat.add_mod, Nat.add_assoc, hmap, ih]
 ''',
 'add_sub_cancel_rewrite': r'''
 theorem add_sub_cancel_rewrite
