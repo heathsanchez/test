@@ -1,0 +1,27 @@
+name: V3 short1 semantic qualification
+
+on:
+  push:
+    branches:
+      - experiment/v3-short1-semantic-qualification
+  workflow_dispatch:
+
+jobs:
+  semantic-qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+        with:
+          enable_kvm: true
+          set_as_trusted_user: true
+      - name: Run V3 short1 semantic qualification
+        run: bash scripts/run_v3_short1_semantic_qualification.sh
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: v3-short1-semantic
+          path: v3-short1-semantic/
+          if-no-files-found: warn
