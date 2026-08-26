@@ -1,5 +1,5 @@
 name: Vero galoistools developmental v1
-# zero-agent residual push: remove coercion-sensitive omega from egcd bridge
+# zero-agent residual push: Bezout to modular inverse residue
 
 on:
   workflow_dispatch:
@@ -33,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Push gcd invariant past coercion bridge
+      - name: Push Bezout through final residue bridge
         working-directory: vero
         shell: bash
         run: |
@@ -129,13 +129,42 @@ jobs:
                 have hr1 : r.1 = 1 := by
                   dsimp [r]
                   simpa [hgp] using hg
+                change Int.ofNat (a % p) * r.2.1 + Int.ofNat p * r.2.2 = r.1 at hbez
+                rw [hr1] at hbez
+                have hone : (1 : Int) % Int.ofNat p = 1 := by
+                  change Int.ofNat (1 % p) = Int.ofNat 1
+                  rw [Nat.mod_eq_of_lt hp]
+                have hmodI := congrArg (fun z : Int => z % Int.ofNat p) hbez
+                rw [Int.add_mul_emod_self_left, hone] at hmodI
+                have hcoef :
+                    (Int.ofNat (a % p) * (r.2.1 % Int.ofNat p)) % Int.ofNat p = 1 := by
+                  rw [← Int.emod_add_mul_ediv r.2.1 (Int.ofNat p)] at hmodI
+                  rw [Int.mul_add] at hmodI
+                  have hreassoc :
+                      Int.ofNat (a % p) * (Int.ofNat p * (r.2.1 / Int.ofNat p)) =
+                        Int.ofNat p * (Int.ofNat (a % p) * (r.2.1 / Int.ofNat p)) := by
+                    ac_rfl
+                  rw [hreassoc, Int.add_mul_emod_self_left] at hmodI
+                  exact hmodI
+                have hp0 : p ≠ 0 := by omega
+                have hpI0 : (Int.ofNat p) ≠ 0 := (Int.ofNat_ne_zero).2 hp0
+                have hxnonneg : 0 ≤ r.2.1 % Int.ofNat p :=
+                  Int.emod_nonneg r.2.1 hpI0
+                have hxcast :
+                    Int.ofNat ((r.2.1 % Int.ofNat p).toNat) = r.2.1 % Int.ofNat p := by
+                  exact Int.toNat_of_nonneg hxnonneg
+                rw [← hxcast] at hcoef
+                change Int.ofNat (((a % p) * (r.2.1 % Int.ofNat p).toNat) % p) = Int.ofNat 1 at hcoef
+                have hnat : ((a % p) * (r.2.1 % Int.ofNat p).toNat) % p = 1 :=
+                  Int.ofNat.inj hcoef
                 change a * ((r.2.1 % (Int.ofNat p)).toNat) % p = 1
+                simpa [Nat.mul_mod] using hnat
           '''
           ring.write_text(text[:i] + proof + text[j:])
           cp = subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, text=True, capture_output=True)
           print(cp.stdout)
           print(cp.stderr)
-          print('EGCD_COERCION_FREE_EXIT', cp.returncode)
+          print('BEZOUT_RESIDUE_EXIT', cp.returncode)
           if cp.returncode != 0:
               raise SystemExit(cp.returncode)
           PY
