@@ -23,15 +23,77 @@ theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
   unfold Galoistools.gfSub
   rw [Galoistools.Proof.zipSubPad_eq_add_neg]
   rw [Galoistools.Proof.zipAddPad_neg_self p hp]
-  simp [Galoistools.Proof.gfStrip_map_zero]
+  simpa [List.map_reverse] using Galoistools.Proof.gfStrip_map_zero f
 ''',
 'norm_impl_identity': r'''
 theorem probe_norm_impl_identity (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) :
     Galoistools.gfStrip (f.map (fun a => a % p)) = f := by
-  unfold Galoistools.IsNorm Galoistools.refGfTrunc at hf
-  rw [Galoistools.Proof.ring_gfStrip_eq_ref]
-  exact hf
+  change Galoistools.refGfTrunc p f = f at hf
+  calc
+    Galoistools.gfStrip (f.map (fun a => a % p))
+        = Galoistools.refGfStrip (f.map (fun a => a % p)) :=
+          Galoistools.Proof.ring_gfStrip_eq_ref _
+    _ = f := hf
+''',
+'refstrip_no_zero_head': r'''
+theorem probe_refstrip_no_zero_head (xs as : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: as := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a xs ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases ha : a = 0
+      · simp [ha, ih]
+      · simp [ha]
+''',
+'norm_head_nonzero': r'''
+theorem probe_refstrip_no_zero_head (xs as : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: as := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a xs ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases ha : a = 0
+      · simp [ha, ih]
+      · simp [ha]
+
+theorem probe_norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
+  intro ha
+  subst a
+  change Galoistools.refGfTrunc p (0 :: as) = 0 :: as at hf
+  unfold Galoistools.refGfTrunc at hf
+  simp only [List.map_cons, Nat.zero_mod] at hf
+  exact probe_refstrip_no_zero_head (as.map (fun x => x % p)) as hf
+''',
+'norm_strip_identity': r'''
+theorem probe_refstrip_no_zero_head (xs as : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: as := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a xs ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases ha : a = 0
+      · simp [ha, ih]
+      · simp [ha]
+
+theorem probe_norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
+  intro ha
+  subst a
+  change Galoistools.refGfTrunc p (0 :: as) = 0 :: as at hf
+  unfold Galoistools.refGfTrunc at hf
+  simp only [List.map_cons, Nat.zero_mod] at hf
+  exact probe_refstrip_no_zero_head (as.map (fun x => x % p)) as hf
+
+theorem probe_norm_strip_identity (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  cases f with
+  | nil => rfl
+  | cons a as =>
+      have ha := probe_norm_head_nonzero a as p hf
+      simp [Galoistools.gfStrip, ha]
 ''',
 'rem_self': r'''
 theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
@@ -39,31 +101,62 @@ theorem probe_sub_self (f : List Nat) (p : Nat) (hp : 1 < p) :
   unfold Galoistools.gfSub
   rw [Galoistools.Proof.zipSubPad_eq_add_neg]
   rw [Galoistools.Proof.zipAddPad_neg_self p hp]
-  simp [Galoistools.Proof.gfStrip_map_zero]
+  simpa [List.map_reverse] using Galoistools.Proof.gfStrip_map_zero f
 
 theorem probe_norm_impl_identity (f : List Nat) (p : Nat)
     (hf : Galoistools.IsNorm p f) :
     Galoistools.gfStrip (f.map (fun a => a % p)) = f := by
-  unfold Galoistools.IsNorm Galoistools.refGfTrunc at hf
-  rw [Galoistools.Proof.ring_gfStrip_eq_ref]
-  exact hf
+  change Galoistools.refGfTrunc p f = f at hf
+  calc
+    Galoistools.gfStrip (f.map (fun a => a % p))
+        = Galoistools.refGfStrip (f.map (fun a => a % p)) :=
+          Galoistools.Proof.ring_gfStrip_eq_ref _
+    _ = f := hf
+
+theorem probe_refstrip_no_zero_head (xs as : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: as := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a xs ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases ha : a = 0
+      · simp [ha, ih]
+      · simp [ha]
+
+theorem probe_norm_head_nonzero (a : Nat) (as : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
+  intro ha
+  subst a
+  change Galoistools.refGfTrunc p (0 :: as) = 0 :: as at hf
+  unfold Galoistools.refGfTrunc at hf
+  simp only [List.map_cons, Nat.zero_mod] at hf
+  exact probe_refstrip_no_zero_head (as.map (fun x => x % p)) as hf
+
+theorem probe_norm_strip_identity (f : List Nat) (p : Nat)
+    (hf : Galoistools.IsNorm p f) : Galoistools.gfStrip f = f := by
+  cases f with
+  | nil => rfl
+  | cons a as =>
+      have ha := probe_norm_head_nonzero a as p hf
+      simp [Galoistools.gfStrip, ha]
 
 theorem probe_rem_self (f : List Nat) (p : Nat)
     (hp : Galoistools.PrimeField p) (hf : Galoistools.IsNorm p f)
     (hinv : (Galoistools.leadCoeff f * Galoistools.invMod (Galoistools.leadCoeff f) p) % p = 1) :
     Galoistools.gfRem f f p = [] := by
   have hp1 : 1 < p := hp.1
-  have hnorm := probe_norm_impl_identity f p hf
+  have hstrip := probe_norm_strip_identity f p hf
+  have htrunc := probe_norm_impl_identity f p hf
   have hsub := probe_sub_self f p hp1
   unfold Galoistools.gfRem Galoistools.gfDiv
   by_cases hz : f = []
   · simp [hz]
   · simp [hz]
     simp only [Galoistools.divCore]
-    rw [hnorm]
+    rw [hstrip]
     simp only [lt_self_iff_false, if_false, sub_self, Int.toNat_zero,
       List.replicate_zero, List.append_nil, hinv]
-    simp [Galoistools.shiftUp, Galoistools.scaleP, hnorm, hsub]
+    simp [Galoistools.shiftUp, Galoistools.scaleP, htrunc, hsub, hstrip]
 ''',
 'gcd_self_from_rem': r'''
 theorem probe_gcdloop_zero_right (p fuel : Nat) (f : List Nat) :
@@ -79,23 +172,7 @@ theorem probe_gcd_self_from_rem (f : List Nat) (p : Nat)
   simp only [Galoistools.gcdLoop]
   rw [hrem]
   rw [probe_gcdloop_zero_right]
-''',
-'gcdloop_norm_from_remnorm': r'''
-theorem probe_gcdloop_norm_from_remnorm (f g : List Nat) (p fuel : Nat)
-    (hf : Galoistools.IsNorm p f) (hg : Galoistools.IsNorm p g)
-    (hremnorm : ∀ a b, Galoistools.IsNorm p a → Galoistools.IsNorm p b → b ≠ [] →
-      Galoistools.IsNorm p (Galoistools.gfRem a b p)) :
-    Galoistools.IsNorm p (Galoistools.gcdLoop p fuel f g) := by
-  induction fuel generalizing f g with
-  | zero => exact hf
-  | succ fuel ih =>
-      unfold Galoistools.gcdLoop
-      by_cases hz : g = []
-      · simp [hz, hf]
-      · simp [hz]
-        apply ih
-        · exact hg
-        · exact hremnorm f g hf hg hz
+  simp
 ''',
 }
 
