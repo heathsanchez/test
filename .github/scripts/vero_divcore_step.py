@@ -17,58 +17,144 @@ namespace GaloistoolsDivCoreStep
 footer = '\nend GaloistoolsDivCoreStep\n'
 
 probes = {
-'mod_lemma_inventory': r'''
-#check Int.emod_eq_of_lt
-#check Int.emod_eq_of_lt_of_nonneg
-#check Int.ofNat_pos
-''',
 'euclid_one_mod': r'''
 theorem euclid_one_mod (p : Nat) (hp : 1 < p) :
     ((1 : Int) % (Int.ofNat p)) = 1 := by
-  have hpos : (0 : Int) ≤ 1 := by omega
-  have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-  exact Int.emod_eq_of_lt hpos hlt
+  obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+  apply Int.emod_eq_of_lt (by omega)
+  norm_num
+  omega
+''',
+'egcd_zero_right': r'''
+theorem egcd_zero_right (fuel : Nat) (a : Int) :
+    Galoistools.egcdInt fuel a 0 = (a, 1, 0) := by
+  cases fuel <;> simp [Galoistools.egcdInt]
 ''',
 'egcd_p_one': r'''
-theorem egcd_p_one (p : Nat) (hp : 1 < p) :
+theorem egcd_zero_right_local (fuel : Nat) (a : Int) :
+    Galoistools.egcdInt fuel a 0 = (a, 1, 0) := by
+  cases fuel <;> simp [Galoistools.egcdInt]
+
+theorem egcd_p_one (p : Nat) :
     Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := by
-  have hp0 : (Int.ofNat p) ≠ 0 := by
-    exact_mod_cast (show p ≠ 0 by omega)
-  have hp1 : ((Int.ofNat p) % (1 : Int)) = 0 := by simp
-  have hdiv : ((Int.ofNat p) / (1 : Int)) = Int.ofNat p := by simp
-  cases p with
-  | zero => omega
-  | succ p =>
-      simp [Galoistools.egcdInt, hp0, hp1, hdiv]
+  have hz : Galoistools.egcdInt p 1 0 = (1, 1, 0) := egcd_zero_right_local p 1
+  rw [show 1 + p = p + 1 by omega]
+  simp [Galoistools.egcdInt, hz]
 ''',
 'egcd_one_p': r'''
+theorem egcd_zero_right_local2 (fuel : Nat) (a : Int) :
+    Galoistools.egcdInt fuel a 0 = (a, 1, 0) := by
+  cases fuel <;> simp [Galoistools.egcdInt]
+
+theorem egcd_p_one_local2 (p : Nat) :
+    Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := by
+  have hz : Galoistools.egcdInt p 1 0 = (1, 1, 0) := egcd_zero_right_local2 p 1
+  rw [show 1 + p = p + 1 by omega]
+  simp [Galoistools.egcdInt, hz]
+
 theorem egcd_one_p (p : Nat) (hp : 1 < p) :
     Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-  have hp0 : (Int.ofNat p) ≠ 0 := by
-    exact_mod_cast (show p ≠ 0 by omega)
+  have hpI0 : (Int.ofNat p) ≠ 0 := by
+    intro h
+    have : p = 0 := by simpa using h
+    omega
   have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
-    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-    exact Int.emod_eq_of_lt (by omega) hlt
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    apply Int.emod_eq_of_lt (by omega)
+    norm_num
+    omega
   have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-    exact Int.ediv_eq_zero_of_lt (by omega) hlt
-  simp [Galoistools.egcdInt, hp0, h1p, hdiv]
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    norm_num
+  have hmid : Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) :=
+    egcd_p_one_local2 p
+  rw [show 2 + p = (1 + p) + 1 by omega]
+  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
 ''',
 'invmod_one': r'''
-theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
-  have hp0 : p ≠ 0 := by omega
+theorem egcd_zero_right_local3 (fuel : Nat) (a : Int) :
+    Galoistools.egcdInt fuel a 0 = (a, 1, 0) := by
+  cases fuel <;> simp [Galoistools.egcdInt]
+
+theorem egcd_p_one_local3 (p : Nat) :
+    Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := by
+  have hz : Galoistools.egcdInt p 1 0 = (1, 1, 0) := egcd_zero_right_local3 p 1
+  rw [show 1 + p = p + 1 by omega]
+  simp [Galoistools.egcdInt, hz]
+
+theorem egcd_one_p_local3 (p : Nat) (hp : 1 < p) :
+    Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
+  have hpI0 : (Int.ofNat p) ≠ 0 := by
+    intro h
+    have : p = 0 := by simpa using h
+    omega
   have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
-    have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-    exact Int.emod_eq_of_lt (by omega) hlt
-  have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-    have hpI0 : (Int.ofNat p) ≠ 0 := by exact_mod_cast hp0
-    have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-      have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-      exact Int.ediv_eq_zero_of_lt (by omega) hlt
-    simp [Galoistools.egcdInt, hpI0, h1p, hdiv]
-  simp [Galoistools.invMod, hp0, h1p, heg]
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    apply Int.emod_eq_of_lt (by omega)
+    norm_num
+    omega
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    norm_num
+  have hmid := egcd_p_one_local3 p
+  rw [show 2 + p = (1 + p) + 1 by omega]
+  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
+
+theorem invmod_one (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
+  have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    apply Int.emod_eq_of_lt (by omega)
+    norm_num
+    omega
+  have heg := egcd_one_p_local3 p hp
+  unfold Galoistools.invMod
+  rw [h1p]
+  rw [show 1 + p + 1 = 2 + p by omega]
+  rw [heg]
+  simp [h1p]
 ''',
 'monic_step_coefficient_reduced': r'''
+theorem egcd_zero_right_local4 (fuel : Nat) (a : Int) :
+    Galoistools.egcdInt fuel a 0 = (a, 1, 0) := by
+  cases fuel <;> simp [Galoistools.egcdInt]
+
+theorem egcd_p_one_local4 (p : Nat) :
+    Galoistools.egcdInt (1 + p) (Int.ofNat p) 1 = (1, 0, 1) := by
+  have hz : Galoistools.egcdInt p 1 0 = (1, 1, 0) := egcd_zero_right_local4 p 1
+  rw [show 1 + p = p + 1 by omega]
+  simp [Galoistools.egcdInt, hz]
+
+theorem egcd_one_p_local4 (p : Nat) (hp : 1 < p) :
+    Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
+  have hpI0 : (Int.ofNat p) ≠ 0 := by
+    intro h
+    have : p = 0 := by simpa using h
+    omega
+  have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    apply Int.emod_eq_of_lt (by omega)
+    norm_num
+    omega
+  have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    norm_num
+  have hmid := egcd_p_one_local4 p
+  rw [show 2 + p = (1 + p) + 1 by omega]
+  simp [Galoistools.egcdInt, hpI0, h1p, hdiv, hmid]
+
+theorem invmod_one_local4 (p : Nat) (hp : 1 < p) : Galoistools.invMod 1 p = 1 := by
+  have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
+    obtain ⟨k, rfl⟩ : ∃ k, p = k + 2 := by omega
+    apply Int.emod_eq_of_lt (by omega)
+    norm_num
+    omega
+  have heg := egcd_one_p_local4 p hp
+  unfold Galoistools.invMod
+  rw [h1p]
+  rw [show 1 + p + 1 = 2 + p by omega]
+  rw [heg]
+  simp [h1p]
+
 theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
     (hp : 1 < p) (hg : Galoistools.refLeadCoeff g = 1)
     (hlc : Galoistools.leadCoeff cur < p) :
@@ -76,20 +162,7 @@ theorem monic_step_coefficient_reduced (cur g : List Nat) (p : Nat)
       Galoistools.leadCoeff cur := by
   have hbridge : Galoistools.leadCoeff g = Galoistools.refLeadCoeff g := by
     cases g <;> rfl
-  rw [hbridge, hg]
-  have hi : Galoistools.invMod 1 p = 1 := by
-    have hp0 : p ≠ 0 := by omega
-    have h1p : ((1 : Int) % Int.ofNat p) = 1 := by
-      have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-      exact Int.emod_eq_of_lt (by omega) hlt
-    have heg : Galoistools.egcdInt (2 + p) 1 (Int.ofNat p) = (1, 1, 0) := by
-      have hpI0 : (Int.ofNat p) ≠ 0 := by exact_mod_cast hp0
-      have hdiv : ((1 : Int) / Int.ofNat p) = 0 := by
-        have hlt : (1 : Int) < Int.ofNat p := by exact_mod_cast hp
-        exact Int.ediv_eq_zero_of_lt (by omega) hlt
-      simp [Galoistools.egcdInt, hpI0, h1p, hdiv]
-    simp [Galoistools.invMod, hp0, h1p, heg]
-  rw [hi]
+  rw [hbridge, hg, invmod_one_local4 p hp]
   simp [Nat.mod_eq_of_lt hlc]
 '''
 }
