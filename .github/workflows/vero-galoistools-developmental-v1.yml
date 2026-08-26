@@ -1,6 +1,5 @@
 name: Vero galoistools developmental v1
-# deterministic closure step: mul_eval_hom -> mul_comm_eval
-# launch: 2026-08-26T13:28+12:00
+# deterministic closure step: mul_eval_hom -> mul_assoc_eval
 
 on:
   workflow_dispatch:
@@ -18,12 +17,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
-      - name: Download 18/48 ratchet
+      - name: Download 19/48 ratchet
         uses: actions/download-artifact@v4
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           repository: heathsanchez/test
-          run-id: 32917493030
+          run-id: 32919124540
           name: vero-galoistools-developmental-v1
           path: baseline
       - uses: astral-sh/setup-uv@v6
@@ -34,7 +33,7 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Derive multiplication commutativity semantically
+      - name: Derive multiplication associativity semantically
         working-directory: vero
         shell: bash
         run: |
@@ -49,27 +48,35 @@ jobs:
           bench_dir = Path('benchmarks/galoistools').resolve()
           bench = Benchmark(bench_dir)
           seed = read_artifact(Path('../baseline/source/artifact.json').resolve())
-          source = Path('mul_comm/source').resolve()
+          source = Path('mul_assoc/source').resolve()
           create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
           ring = source / 'Galoistools/Proof/Ring.lean'
           text = ring.read_text()
-          if 'theorem prove_mul_eval_hom' not in text:
-              raise SystemExit('18/48 ratchet missing prove_mul_eval_hom')
+          if 'theorem prove_mul_eval_hom' not in text or 'theorem prove_mul_comm_eval' not in text:
+              raise SystemExit('19/48 ratchet missing multiplication closure')
 
-          start = '-- !benchmark @start proof def=prove_mul_comm_eval kind=prove target=spec_mul_comm_eval\n'
-          end = '-- !benchmark @end proof def=prove_mul_comm_eval\n'
+          start = '-- !benchmark @start proof def=prove_mul_assoc_eval kind=prove target=spec_mul_assoc_eval\n'
+          end = '-- !benchmark @end proof def=prove_mul_assoc_eval\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = r'''  intro f g p x hp
+          proof = r'''  intro f g h p x hp
             have hfg := prove_mul_eval_hom f g p x hp
-            have hgf := prove_mul_eval_hom g f p x hp
+            have hgh := prove_mul_eval_hom g h p x hp
+            have hleft := prove_mul_eval_hom (Galoistools.gfMul f g p) h p x hp
+            have hright := prove_mul_eval_hom f (Galoistools.gfMul g h p) p x hp
             calc
-              Galoistools.refPolyEval p (Galoistools.gfMul f g p) x =
-                  (Galoistools.refPolyEval p f x * Galoistools.refPolyEval p g x) % p := hfg
-              _ = (Galoistools.refPolyEval p g x * Galoistools.refPolyEval p f x) % p := by
-                    rw [Nat.mul_comm]
-              _ = Galoistools.refPolyEval p (Galoistools.gfMul g f p) x := hgf.symm
+              Galoistools.refPolyEval p (Galoistools.gfMul (Galoistools.gfMul f g p) h p) x =
+                  (Galoistools.refPolyEval p (Galoistools.gfMul f g p) x *
+                    Galoistools.refPolyEval p h x) % p := hleft
+              _ = (((Galoistools.refPolyEval p f x * Galoistools.refPolyEval p g x) % p) *
+                    Galoistools.refPolyEval p h x) % p := by rw [hfg]
+              _ = (Galoistools.refPolyEval p f x *
+                    ((Galoistools.refPolyEval p g x * Galoistools.refPolyEval p h x) % p)) % p := by
+                    simp [Nat.mul_mod, Nat.mul_assoc]
+              _ = (Galoistools.refPolyEval p f x *
+                    Galoistools.refPolyEval p (Galoistools.gfMul g h p) x) % p := by rw [hgh]
+              _ = Galoistools.refPolyEval p (Galoistools.gfMul f (Galoistools.gfMul g h p) p) x := hright.symm
           '''
           ring.write_text(text[:i] + proof + text[j:])
           subprocess.run(['lake','lean','Galoistools/Proof/Ring.lean'], cwd=source, check=True)
@@ -80,17 +87,17 @@ jobs:
               benchmark_dir=bench_dir,
               artifact=artifact,
               mode='codeproof',
-              eval_sandbox_dir=Path('mul_comm/eval/sandbox').resolve(),
-              report_dir=Path('mul_comm/eval').resolve(),
+              eval_sandbox_dir=Path('mul_assoc/eval/sandbox').resolve(),
+              report_dir=Path('mul_assoc/eval').resolve(),
               lake_timeout=180,
           )
           print(result.md_path.read_text())
-          print('MUL_COMM_CLOSURE_COMPLETE', result.report.summary)
+          print('MUL_ASSOC_CLOSURE_COMPLETE', result.report.summary)
           PY
       - name: Upload artifact
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vero-galoistools-developmental-v1
-          path: vero/mul_comm/
+          path: vero/mul_assoc/
           if-no-files-found: warn
