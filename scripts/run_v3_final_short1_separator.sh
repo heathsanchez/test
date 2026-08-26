@@ -21,35 +21,36 @@ old='''                    } else {
                         self.unfold_pair(depth, t, t2)
                     }
 '''
-if arm=='literal':
-    cond='''let (a,b)=(sx.len().min(sy.len()), sx.len().max(sy.len()));
-                        a == 1 && (b == 3 || b == 4 || b == 6)'''
-elif arm=='general':
-    cond='''let (a,b)=(sx.len().min(sy.len()), sx.len().max(sy.len()));
-                        a == 1 && b >= 3'''
-else: raise SystemExit(arm)
+if arm == 'literal':
+    pred = '(b == 3 || b == 4 || b == 6)'
+elif arm == 'general':
+    pred = 'b >= 3'
+else:
+    raise SystemExit(arm)
 new=f'''                    }} else {{
-                        {cond};
-                        if a == 1 && ''' + ('''(b == 3 || b == 4 || b == 6)''' if arm=='literal' else '''b >= 3''') + ''' {
-                            if sx.len() < sy.len() {
+                        let (a, b) = (sx.len().min(sy.len()), sx.len().max(sy.len()));
+                        if a == 1 && {pred} {{
+                            if sx.len() < sy.len() {{
                                 let v1 = self.unfold_value(depth, t);
-                                if !std::ptr::eq(v1, t) { return self.unify::<true>(depth, v1, t2); }
+                                if !std::ptr::eq(v1, t) {{ return self.unify::<true>(depth, v1, t2); }}
                                 let v2 = self.unfold_value(depth, t2);
-                                if !std::ptr::eq(v2, t2) { return self.unify::<true>(depth, t, v2); }
-                            } else if sy.len() < sx.len() {
+                                if !std::ptr::eq(v2, t2) {{ return self.unify::<true>(depth, t, v2); }}
+                            }} else if sy.len() < sx.len() {{
                                 let v2 = self.unfold_value(depth, t2);
-                                if !std::ptr::eq(v2, t2) { return self.unify::<true>(depth, t, v2); }
+                                if !std::ptr::eq(v2, t2) {{ return self.unify::<true>(depth, t, v2); }}
                                 let v1 = self.unfold_value(depth, t);
-                                if !std::ptr::eq(v1, t) { return self.unify::<true>(depth, v1, t2); }
-                            }
-                        }
+                                if !std::ptr::eq(v1, t) {{ return self.unify::<true>(depth, v1, t2); }}
+                            }}
+                        }}
                         self.unfold_pair(depth, t, t2)
-                    }
+                    }}
 '''
 anchor='''                    } else if rh.is_lt(&lh) {'''
 pos=s.index(anchor)
 target=s.index(old,pos)
 s=s[:target]+s[target:].replace(old,new,1)
+# Fail loudly if the intended intervention is not actually used as control flow.
+assert f'if a == 1 && {pred}' in s
 p.write_text(s)
 PY
   fi
@@ -74,13 +75,13 @@ M=_build/tests/mathlib.ndjson
 # Warm each binary once, then five alternating paired repetitions.
 for arm in baseline literal general; do
   "/tmp/v3s-${arm}-bin" /tmp/checker-v3s.json < "$M" >/dev/null
- done
+done
 : > "$OUT/timings.tsv"
 echo -e 'rep\tarm\tseconds\trc' >> "$OUT/timings.tsv"
 run_one() {
   rep="$1"; arm="$2"
   set +e
-  t=$(/usr/bin/time -f '%e' "/tmp/v3s-${arm}-bin" /tmp/checker-v3s.json < "$M" >/dev/null 2>"/tmp/t-${rep}-${arm}.txt")
+  /usr/bin/time -f '%e' "/tmp/v3s-${arm}-bin" /tmp/checker-v3s.json < "$M" >/dev/null 2>"/tmp/t-${rep}-${arm}.txt"
   rc=$?
   set -e
   sec=$(tail -n1 "/tmp/t-${rep}-${arm}.txt")
@@ -90,7 +91,7 @@ run_one() {
 for rep in 1 2 3 4 5; do
   if [ $((rep%2)) -eq 1 ]; then order='baseline literal general'; else order='general literal baseline'; fi
   for arm in $order; do run_one "$rep" "$arm"; done
- done
+done
 
 python3 - "$OUT/timings.tsv" "$OUT/decision.txt" <<'PY'
 import csv,statistics,sys
