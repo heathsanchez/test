@@ -81,8 +81,7 @@ jobs:
           end = '-- !benchmark @end proof def=prove_sub_eval_hom\n'
           i = text.index(start) + len(start)
           j = text.index(end, i)
-          proof = r'''  by
-            intro f g p x hp
+          proof = r'''  intro f g p x hp
             simp only [canonical, Galoistools.gfSub]
             rw [refPolyEval_gfStrip]
             simp only [Galoistools.refPolyEval, List.reverse_reverse]
