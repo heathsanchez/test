@@ -65,4 +65,45 @@ new_hmul = """          rw [last0_reverse (a :: as), last0_reverse (b :: bs)]
 assert old_hmul in src, 'terminal coefficient normalization residual not found'
 src = src.replace(old_hmul, new_hmul, 1)
 
+old_nonempty = """  intro hz
+  have hrev := congrArg List.reverse hz
+  simp at hrev
+  have hfr : f.reverse ≠ [] := by simpa using hf
+  have hgr : g.reverse ≠ [] := by simpa using hg
+  have hlen := convolve_length_local p f.reverse g.reverse hfr hgr
+  rw [hrev] at hlen
+  simp at hlen
+"""
+new_nonempty = """  intro hz
+  apply hlead
+  simpa [hz, Galoistools.leadCoeff]
+"""
+assert old_nonempty in src, 'gfMul_nonempty residual not found'
+src = src.replace(old_nonempty, new_nonempty, 1)
+
+old_zero_iff = """  constructor
+  · intro h
+    by_contra hn
+    push_neg at hn
+    exact (gfMul_nonempty p f g hp hnf hng hn.1 hn.2) h
+  · intro h
+    simp [Galoistools.gfMul, h]
+"""
+new_zero_iff = """  constructor
+  · intro h
+    by_cases hf : f = []
+    · exact Or.inl hf
+    · by_cases hg : g = []
+      · exact Or.inr hg
+      · exact (gfMul_nonempty p f g hp hnf hng hf hg h).elim
+  · intro h
+    rcases h with hf | hg
+    · subst f
+      simp [Galoistools.gfMul]
+    · subst g
+      simp [Galoistools.gfMul]
+"""
+assert old_zero_iff in src, 'mul_zero_iff residual not found'
+src = src.replace(old_zero_iff, new_zero_iff, 1)
+
 exec(compile(src, '.github/scripts/vero_mul_leading_v3_generated.py', 'exec'), {'__name__': '__main__'})
