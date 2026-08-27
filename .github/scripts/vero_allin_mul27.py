@@ -11,7 +11,7 @@ assert close_marker in src
 src = src.replace(open_marker, 'injection = r"""\n', 1)
 src = src.replace(close_marker, '\n"""\n\nbase = base.replace(needle, injection', 1)
 
-addition = r'''
+addition = r"""
 set_slot('Galoistools/Proof/Ring.lean','proof_aux','prove_mul_zero_iff', _mul_aux)
 set_slot('Galoistools/Proof/Ring.lean','proof','prove_mul_zero_iff', '''  simp only [spec_mul_zero_iff, canonical]
   intro f g p hp hnf hng
@@ -35,7 +35,7 @@ set_slot('Galoistools/Proof/Ring.lean','proof','prove_mul_zero_iff', '''  simp o
       simp [Galoistools.gfMul]
     · subst g
       simp [Galoistools.gfMul]''')
-'''
+"""
 
 new_close = '\n"""\n\nbase = base.replace(needle, injection'
 assert new_close in src
