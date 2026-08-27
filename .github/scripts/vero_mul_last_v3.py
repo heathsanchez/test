@@ -13,7 +13,7 @@ assert code
 code = code.replace("""            simp at hl
           simp only [Galoistools.zipAddPad]
 """, """            simp at hl
-            omega
+            exact hys' (List.length_eq_zero.mp hl)
           simp only [Galoistools.zipAddPad]
 """)
 bench=Path('benchmarks/galoistools').resolve(); seed=read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
