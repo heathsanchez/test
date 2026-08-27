@@ -60,41 +60,7 @@ theorem norm_head_mod_eq_mul (p a : Nat) (as : List Nat)
     exact (List.cons.inj heq).1
 '''
 
-probes = {
-'norm_head_bounds': norm_helpers + r'''
-theorem norm_head_bounds (p a : Nat) (as : List Nat)
-    (hp : Galoistools.PrimeField p) (hn : Galoistools.IsNorm p (a :: as)) :
-    a ≠ 0 ∧ a < p := by
-  have ha0 := norm_head_nonzero_mul p a as hn
-  have hmod := norm_head_mod_eq_mul p a as hn
-  constructor
-  · exact ha0
-  · rw [← hmod]
-    exact Nat.mod_lt _ (by omega)
-''',
-'primefield_coprime_lt': r'''
-theorem primefield_coprime_lt (p a : Nat) (hp : Galoistools.PrimeField p)
-    (ha0 : a ≠ 0) (ha : a < p) : p.Coprime a := by
-  have hgcd : Nat.gcd a p = 1 := by
-    let d := Nat.gcd a p
-    have hda : d ∣ a := Nat.gcd_dvd_left a p
-    have hdp : d ∣ p := Nat.gcd_dvd_right a p
-    have hdle : d ≤ a := Nat.le_of_dvd (Nat.pos_of_ne_zero ha0) hda
-    have hdlt : d < p := lt_of_le_of_lt hdle ha
-    have hd0 : d ≠ 0 := by
-      intro hd
-      subst d
-      simp at hdp
-      omega
-    by_cases hd1 : d = 1
-    · exact hd1
-    · have hd2 : 2 ≤ d := by omega
-      have hnot := hp.2 d hd2 hdlt
-      exact (hnot (Nat.mod_eq_zero_of_dvd hdp)).elim
-  rw [Nat.coprime_comm]
-  exact hgcd
-''',
-'mul_mod_nonzero': r'''
+coprime_helper = r'''
 theorem primefield_coprime_lt_local (p a : Nat) (hp : Galoistools.PrimeField p)
     (ha0 : a ≠ 0) (ha : a < p) : p.Coprime a := by
   have hgcd : Nat.gcd a p = 1 := by
@@ -102,20 +68,37 @@ theorem primefield_coprime_lt_local (p a : Nat) (hp : Galoistools.PrimeField p)
     have hda : d ∣ a := Nat.gcd_dvd_left a p
     have hdp : d ∣ p := Nat.gcd_dvd_right a p
     have hdle : d ≤ a := Nat.le_of_dvd (Nat.pos_of_ne_zero ha0) hda
-    have hdlt : d < p := lt_of_le_of_lt hdle ha
-    have hd0 : d ≠ 0 := by
-      intro hd
-      subst d
-      simp at hdp
-      omega
+    have hdlt : d < p := by omega
     by_cases hd1 : d = 1
     · exact hd1
-    · have hd2 : 2 ≤ d := by omega
+    · have hd2 : 2 ≤ d := by
+        have hdpos : 0 < d := Nat.pos_of_dvd_of_pos hdp (by omega)
+        omega
       have hnot := hp.2 d hd2 hdlt
       exact (hnot (Nat.mod_eq_zero_of_dvd hdp)).elim
   rw [Nat.coprime_comm]
   exact hgcd
+'''
 
+probes = {
+'norm_head_bounds': norm_helpers + r'''
+theorem norm_head_bounds (p a : Nat) (as : List Nat)
+    (hp : Galoistools.PrimeField p) (hn : Galoistools.IsNorm p (a :: as)) :
+    a ≠ 0 ∧ a < p := by
+  have ha0 := norm_head_nonzero_mul p a as hn
+  have hmod := norm_head_mod_eq_mul p a as hn
+  have hp0 : 0 < p := by omega
+  constructor
+  · exact ha0
+  · rw [← hmod]
+    exact Nat.mod_lt _ hp0
+''',
+'primefield_coprime_lt': coprime_helper + r'''
+theorem primefield_coprime_lt (p a : Nat) (hp : Galoistools.PrimeField p)
+    (ha0 : a ≠ 0) (ha : a < p) : p.Coprime a :=
+  primefield_coprime_lt_local p a hp ha0 ha
+''',
+'mul_mod_nonzero': coprime_helper + r'''
 theorem mul_mod_nonzero (p a b : Nat) (hp : Galoistools.PrimeField p)
     (ha0 : a ≠ 0) (hb0 : b ≠ 0) (ha : a < p) (hb : b < p) :
     (a * b) % p ≠ 0 := by
