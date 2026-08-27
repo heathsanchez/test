@@ -31,7 +31,7 @@ set_slot('Galoistools/Impl/Division.lean','code','gfGcd', '''  fun f g p =>
     else
       let h := (Galoistools.gfMonic (gcdLoop p (f.length + g.length + 1) f g) p).2
       if h = [] then [1]
-      else if Galoistools.refLeadCoeff h = 1 then h else [1]''')
+      else if Galoistools.leadCoeff h = 1 then h else [1]''')
 set_slot('Galoistools/Proof/Division.lean','proof','prove_gcd_self', '''  intro f p hp hf
   by_cases h0 : f = []
   · subst f
@@ -173,7 +173,7 @@ for name, ok, pf in proofs:
     candidate = f'  simp [{spec}, canonical]'
     pf.write_text(replace_slot_body(original, name, candidate))
     rel = str(pf.relative_to(out))
-    q = subprocess.run(['lake','lean',rel], cwd=out, text=True, capture_output=True)
+    q = subprocess.run(['lake','lean',rel], cwd=out, text=True,capture_output=True)
     raw = q.stdout + '\n' + q.stderr
     errs = [x for x in raw.splitlines() if 'error:' in x or 'error(' in x]
     goals=[]
