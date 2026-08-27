@@ -13,6 +13,7 @@ on:
       - '.github/scripts/vero_div_identity_lift.py'
       - '.github/scripts/vero_div_identity_invariant.py'
       - '.github/scripts/vero_divcore_coeff_bound.py'
+      - '.github/scripts/vero_quotient_bridge.py'
 
 jobs:
   developmental:
@@ -58,6 +59,9 @@ jobs:
       - name: Recursive remainder coefficient probes
         working-directory: vero
         run: uv run python ../.github/scripts/vero_divcore_coeff_bound.py
+      - name: Quotient term bridge probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_quotient_bridge.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
@@ -105,6 +109,13 @@ jobs:
         with:
           name: vero-galoistools-divcore-coeff
           path: vero/divcore_coeff/
+          if-no-files-found: warn
+      - name: Upload quotient bridge census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-quotient-bridge
+          path: vero/quotient_bridge/
           if-no-files-found: warn
       - name: Upload all-in result
         if: always()
