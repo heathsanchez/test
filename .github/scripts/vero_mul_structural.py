@@ -16,54 +16,115 @@ namespace GaloistoolsMulStructural
 '''
 footer = '\nend GaloistoolsMulStructural\n'
 
+norm_helpers = r'''
+theorem ref_strip_ne_zero_head_mul (xs ys : List Nat) :
+    Galoistools.refGfStrip xs ≠ 0 :: ys := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a as ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases h : a = 0
+      · simp [h, ih]
+      · simp [h]
+
+theorem norm_head_nonzero_mul (p a : Nat) (as : List Nat)
+    (hn : Galoistools.IsNorm p (a :: as)) : a ≠ 0 := by
+  intro ha
+  subst a
+  have h : Galoistools.refGfTrunc p (0 :: as) = 0 :: as := hn
+  simp only [Galoistools.refGfTrunc, List.map_cons, Nat.zero_mod] at h
+  exact ref_strip_ne_zero_head_mul (0 :: as.map (fun x => x % p)) as h
+
+theorem strip_len_mul (xs : List Nat) :
+    (Galoistools.refGfStrip xs).length ≤ xs.length := by
+  induction xs with
+  | nil => simp [Galoistools.refGfStrip]
+  | cons a as ih =>
+      simp only [Galoistools.refGfStrip]
+      by_cases ha : a = 0
+      · simp [ha]
+        omega
+      · simp [ha]
+
+theorem norm_head_mod_eq_mul (p a : Nat) (as : List Nat)
+    (hn : Galoistools.IsNorm p (a :: as)) : a % p = a := by
+  change Galoistools.refGfStrip ((a % p) :: as.map (fun x => x % p)) = a :: as at hn
+  by_cases hz : a % p = 0
+  · have hlen := congrArg List.length hn
+    have hle := strip_len_mul (as.map (fun x => x % p))
+    simp [Galoistools.refGfStrip, hz] at hlen
+    simp at hle
+    omega
+  · have heq : (a % p) :: as.map (fun x => x % p) = a :: as := by
+      simpa [Galoistools.refGfStrip, hz] using hn
+    exact (List.cons.inj heq).1
+'''
+
 probes = {
-'primefield_natprime': r'''
-theorem primefield_natprime (p : Nat) (hp : Galoistools.PrimeField p) : Nat.Prime p := by
-  by_contra hnp
-  have hp2 : 2 ≤ p := by omega
-  rw [Nat.not_prime_iff_exists_dvd_lt hp2] at hnp
-  rcases hnp with ⟨d, hdvd, hd2, hdlt⟩
-  exact hp.2 d hd2 hdlt (Nat.mod_eq_zero_of_dvd hdvd)
+'norm_head_bounds': norm_helpers + r'''
+theorem norm_head_bounds (p a : Nat) (as : List Nat)
+    (hp : Galoistools.PrimeField p) (hn : Galoistools.IsNorm p (a :: as)) :
+    a ≠ 0 ∧ a < p := by
+  have ha0 := norm_head_nonzero_mul p a as hn
+  have hmod := norm_head_mod_eq_mul p a as hn
+  constructor
+  · exact ha0
+  · rw [← hmod]
+    exact Nat.mod_lt _ (by omega)
+''',
+'primefield_coprime_lt': r'''
+theorem primefield_coprime_lt (p a : Nat) (hp : Galoistools.PrimeField p)
+    (ha0 : a ≠ 0) (ha : a < p) : p.Coprime a := by
+  have hgcd : Nat.gcd a p = 1 := by
+    let d := Nat.gcd a p
+    have hda : d ∣ a := Nat.gcd_dvd_left a p
+    have hdp : d ∣ p := Nat.gcd_dvd_right a p
+    have hdle : d ≤ a := Nat.le_of_dvd (Nat.pos_of_ne_zero ha0) hda
+    have hdlt : d < p := lt_of_le_of_lt hdle ha
+    have hd0 : d ≠ 0 := by
+      intro hd
+      subst d
+      simp at hdp
+      omega
+    by_cases hd1 : d = 1
+    · exact hd1
+    · have hd2 : 2 ≤ d := by omega
+      have hnot := hp.2 d hd2 hdlt
+      exact (hnot (Nat.mod_eq_zero_of_dvd hdp)).elim
+  rw [Nat.coprime_comm]
+  exact hgcd
 ''',
 'mul_mod_nonzero': r'''
-theorem primefield_natprime_local (p : Nat) (hp : Galoistools.PrimeField p) : Nat.Prime p := by
-  by_contra hnp
-  have hp2 : 2 ≤ p := by omega
-  rw [Nat.not_prime_iff_exists_dvd_lt hp2] at hnp
-  rcases hnp with ⟨d, hdvd, hd2, hdlt⟩
-  exact hp.2 d hd2 hdlt (Nat.mod_eq_zero_of_dvd hdvd)
+theorem primefield_coprime_lt_local (p a : Nat) (hp : Galoistools.PrimeField p)
+    (ha0 : a ≠ 0) (ha : a < p) : p.Coprime a := by
+  have hgcd : Nat.gcd a p = 1 := by
+    let d := Nat.gcd a p
+    have hda : d ∣ a := Nat.gcd_dvd_left a p
+    have hdp : d ∣ p := Nat.gcd_dvd_right a p
+    have hdle : d ≤ a := Nat.le_of_dvd (Nat.pos_of_ne_zero ha0) hda
+    have hdlt : d < p := lt_of_le_of_lt hdle ha
+    have hd0 : d ≠ 0 := by
+      intro hd
+      subst d
+      simp at hdp
+      omega
+    by_cases hd1 : d = 1
+    · exact hd1
+    · have hd2 : 2 ≤ d := by omega
+      have hnot := hp.2 d hd2 hdlt
+      exact (hnot (Nat.mod_eq_zero_of_dvd hdp)).elim
+  rw [Nat.coprime_comm]
+  exact hgcd
 
 theorem mul_mod_nonzero (p a b : Nat) (hp : Galoistools.PrimeField p)
     (ha0 : a ≠ 0) (hb0 : b ≠ 0) (ha : a < p) (hb : b < p) :
     (a * b) % p ≠ 0 := by
   intro hz
-  have hprime : Nat.Prime p := primefield_natprime_local p hp
+  have hcop : p.Coprime a := primefield_coprime_lt_local p a hp ha0 ha
   have hdvd : p ∣ a * b := Nat.dvd_of_mod_eq_zero hz
-  rcases hprime.dvd_or_dvd hdvd with hpa | hpb
-  · have hle : p ≤ a := Nat.le_of_dvd (by omega) hpa
-    omega
-  · have hle : p ≤ b := Nat.le_of_dvd (by omega) hpb
-    omega
-''',
-'norm_head_bounds': r'''
-theorem norm_head_bounds (p a : Nat) (as : List Nat)
-    (hn : Galoistools.IsNorm p (a :: as)) :
-    a ≠ 0 ∧ a < p := by
-  change Galoistools.refGfStrip ((a % p) :: as.map (fun x => x % p)) = a :: as at hn
-  by_cases hz : a % p = 0
-  · simp [Galoistools.refGfStrip, hz] at hn
-  · have heq : (a % p) :: as.map (fun x => x % p) = a :: as := by
-      simpa [Galoistools.refGfStrip, hz] using hn
-    have hmod : a % p = a := (List.cons.inj heq).1
-    constructor
-    · intro ha0
-      subst a
-      simp at hz
-    · rw [← hmod]
-      exact Nat.mod_lt _ (by
-        intro hp0
-        subst p
-        simp at hz)
+  have hpb : p ∣ b := hcop.dvd_of_dvd_mul_left hdvd
+  have hle : p ≤ b := Nat.le_of_dvd (Nat.pos_of_ne_zero hb0) hpb
+  omega
 '''
 }
 
