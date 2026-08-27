@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/vero-mul-leading-v1.yml'
       - '.github/scripts/vero_mul_leading_v1.py'
+      - '.github/scripts/vero_mul_last_v2.py'
 
 jobs:
   probe:
@@ -33,13 +34,13 @@ jobs:
       - name: Install Vero
         working-directory: vero
         run: uv sync
-      - name: Multiplication leading-term probes
+      - name: Multiplication last-coefficient probe
         working-directory: vero
-        run: uv run python ../.github/scripts/vero_mul_leading_v1.py
+        run: uv run python ../.github/scripts/vero_mul_last_v2.py
       - name: Upload census
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: vero-galoistools-mul-leading-v1
-          path: vero/mul_leading_v1/
+          name: vero-galoistools-mul-last-v2
+          path: vero/mul_last_v2/
           if-no-files-found: error
