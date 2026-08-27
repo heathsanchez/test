@@ -1,0 +1,45 @@
+name: Vero multiplication last coefficient
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vero-mul-last.yml'
+      - '.github/scripts/vero_mul_last.py'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - name: Download certified ratchet seed
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 32926602836
+          name: vero-galoistools-developmental-v1
+          path: baseline
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+      - name: Multiplication last-coefficient probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_mul_last.py
+      - name: Upload census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-mul-last
+          path: vero/mul_last/
+          if-no-files-found: error
