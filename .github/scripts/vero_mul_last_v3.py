@@ -12,7 +12,8 @@ for node in tree.body:
 assert code
 code = code.replace("""            simp at hl
           simp only [Galoistools.zipAddPad]
-""", """            exact hys' hl
+""", """            simp at hl
+            omega
           simp only [Galoistools.zipAddPad]
 """)
 bench=Path('benchmarks/galoistools').resolve(); seed=read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
