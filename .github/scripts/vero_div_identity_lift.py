@@ -52,7 +52,7 @@ theorem strip_zipAddPad_append_zero (p : Nat) (as bs : List Nat) :
   | cons a as ih =>
       cases bs with
       | nil =>
-          rw [hnil as]
+          simp [Galoistools.zipAddPad, hnil]
       | cons b bs =>
           simp only [Galoistools.zipAddPad, List.reverse_cons]
           calc
@@ -94,7 +94,7 @@ theorem gfAdd_strip_right (p : Nat) (a b : List Nat) :
     | cons x xs ih =>
         cases bs with
         | nil =>
-            rw [hnil xs]
+            simp [Galoistools.zipAddPad, hnil]
         | cons y ys =>
             simp only [Galoistools.zipAddPad, List.reverse_cons]
             calc
