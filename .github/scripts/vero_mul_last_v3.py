@@ -13,9 +13,9 @@ assert code
 old = """            simp at hl
           simp only [Galoistools.zipAddPad]
 """
-new = """            have hzero : ys.length = 0 := by simpa using hl
-            have hysempty : ys = [] := List.length_eq_zero.mp hzero
-            exact hys' hysempty
+new = """            cases ys with
+            | nil => exact hys' rfl
+            | cons z zs => simp at hl
           simp only [Galoistools.zipAddPad]
 """
 assert old in code, 'expected zipAddPad tail residual not found'
