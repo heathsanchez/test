@@ -1,0 +1,33 @@
+name: Vero multiplication leading V3
+on:
+  workflow_dispatch:
+  push:
+    paths: ['.github/scripts/vero_mul_leading_v3.py','.github/workflows/vero-mul-leading-v3.yml']
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    permissions: {actions: read, contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 32926602836
+          name: vero-galoistools-developmental-v1
+          path: baseline
+      - uses: astral-sh/setup-uv@v6
+      - run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - working-directory: vero
+        run: uv sync
+      - working-directory: vero
+        run: uv run python ../.github/scripts/vero_mul_leading_v3.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-mul-leading-v3
+          path: vero/mul_leading_v3/
