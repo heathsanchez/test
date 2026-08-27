@@ -96,7 +96,8 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
       rw [hmap0 ys]
       apply hzeros ys.length
       · simp [Nat.mod_mod]
-      · omega
+      · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_map]
+        omega
 ''',
 'quotient_term_mul': r'''
 theorem quotient_term_mul (p c s : Nat) (g : List Nat) :
