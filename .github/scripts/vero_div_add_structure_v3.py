@@ -20,7 +20,7 @@ new = '''  have hnil : ∀ xs : List Nat,
     | cons x xs ih =>
       simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
       by_cases hx : x = 0 <;> simp [hx, ih]
-  simp only [Galoistools.gfAdd]
+  simp only [Galoistools.gfAdd, List.reverse_nil]
   rw [hnil cur.reverse]
   rw [List.map_reverse]
   simp only [List.reverse_reverse]
