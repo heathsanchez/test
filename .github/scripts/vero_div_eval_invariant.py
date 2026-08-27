@@ -46,29 +46,27 @@ theorem eval_append_zero_local (p x : Nat) (f : List Nat) :
       (Galoistools.refPolyEval p f x * x) % p := by
   simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux, Nat.mul_comm]
 
-theorem replicate_succ_tail (n : Nat) :
-    List.replicate (n + 1) 0 = List.replicate n 0 ++ [0] := by
-  induction n with
-  | zero => rfl
-  | succ n ih => simp [List.replicate_succ, ih]
-
 theorem eval_append_zeros (p x n : Nat) (f : List Nat) (hp : 0 < p) :
     Galoistools.refPolyEval p (f ++ List.replicate n 0) x =
       (Galoistools.refPolyEval p f x * x^n) % p := by
-  induction n with
+  induction n generalizing f with
   | zero =>
       simp only [List.replicate_zero, List.append_nil, Nat.pow_zero, Nat.mul_one]
       exact (eval_reduced_local p x f).symm
   | succ n ih =>
-      rw [show n + 1 = Nat.succ n by omega]
-      rw [show List.replicate (Nat.succ n) 0 = List.replicate n 0 ++ [0] by
-        simpa [Nat.succ_eq_add_one] using replicate_succ_tail n]
-      rw [← List.append_assoc]
+      simp only [List.replicate_succ]
+      rw [show f ++ 0 :: List.replicate n 0 = (f ++ [0]) ++ List.replicate n 0 by simp]
+      rw [ih (f := f ++ [0])]
       rw [eval_append_zero_local]
-      rw [ih]
       rw [Nat.pow_succ]
-      simp only [Nat.mul_mod, Nat.mod_mod]
-      ac_rfl
+      have hmod : NatModEq p
+          (((Galoistools.refPolyEval p f x * x) % p) * x^n)
+          ((Galoistools.refPolyEval p f x * x) * x^n) := by
+        apply natModEq_mul
+        · exact natModEq_mod_left (by rfl)
+        · rfl
+      unfold NatModEq at hmod
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hmod
 '''
 }
 
