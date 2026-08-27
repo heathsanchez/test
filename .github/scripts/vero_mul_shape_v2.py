@@ -31,7 +31,16 @@ theorem zipAddPad_length_v2 (p : Nat) : ∀ xs ys : List Nat,
       | cons y ys =>
           simp only [Galoistools.zipAddPad, List.length_cons]
           rw [ih ys]
-          omega
+          by_cases h : xs.length ≤ ys.length
+          · have h1 : Nat.max xs.length ys.length = ys.length := Nat.max_eq_right h
+            have h2 : Nat.max (xs.length + 1) (ys.length + 1) = ys.length + 1 := by
+                exact Nat.max_eq_right (by omega)
+            rw [h1, h2]
+          · have hle : ys.length ≤ xs.length := by omega
+            have h1 : Nat.max xs.length ys.length = xs.length := Nat.max_eq_left hle
+            have h2 : Nat.max (xs.length + 1) (ys.length + 1) = xs.length + 1 := by
+                exact Nat.max_eq_left (by omega)
+            rw [h1, h2]
 
 theorem convolve_length_nonempty_v2 (p : Nat) (xs ys : List Nat)
     (hxs : xs ≠ []) (hys : ys ≠ []) :
@@ -49,6 +58,8 @@ theorem convolve_length_nonempty_v2 (p : Nat) (xs ys : List Nat)
           cases ys with
           | nil => contradiction
           | cons y ys => simp
+        have hm : Nat.max ys.length 1 = ys.length := Nat.max_eq_left hyl
+        rw [hm]
         omega
       · have iht := ih htail
         rw [iht]
@@ -60,6 +71,10 @@ theorem convolve_length_nonempty_v2 (p : Nat) (xs ys : List Nat)
           cases ys with
           | nil => contradiction
           | cons y ys => simp
+        have hle : ys.length ≤ xs.length + ys.length - 1 + 1 := by omega
+        have hm : Nat.max ys.length (xs.length + ys.length - 1 + 1) =
+            xs.length + ys.length - 1 + 1 := Nat.max_eq_right hle
+        rw [hm]
         omega
 '''
 
