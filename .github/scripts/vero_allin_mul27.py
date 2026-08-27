@@ -4,7 +4,7 @@ src = Path('../.github/scripts/vero_allin_mul26.py').read_text()
 marker = "\n'''\n\nbase = base.replace(needle, injection"
 assert marker in src
 
-addition = r'''
+addition = r"""
 set_slot('Galoistools/Proof/Ring.lean','proof_aux','prove_mul_zero_iff', _mul_aux)
 set_slot('Galoistools/Proof/Ring.lean','proof','prove_mul_zero_iff', '''  simp only [spec_mul_zero_iff, canonical]
   intro f g p hp hnf hng
@@ -28,7 +28,7 @@ set_slot('Galoistools/Proof/Ring.lean','proof','prove_mul_zero_iff', '''  simp o
       simp [Galoistools.gfMul]
     · subst g
       simp [Galoistools.gfMul]''')
-'''
+"""
 
 src = src.replace(marker, '\n' + addition + marker, 1)
 exec(compile(src, '.github/scripts/vero_allin_mul27_generated.py', 'exec'), {'__name__':'__main__'})
