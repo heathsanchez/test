@@ -60,7 +60,6 @@ theorem convolve_length_nonempty_v2 (p : Nat) (xs ys : List Nat)
           | cons y ys => simp
         have hm : Nat.max ys.length 1 = ys.length := Nat.max_eq_left hyl
         rw [hm]
-        omega
       · have iht := ih htail
         rw [iht]
         have hxl : 0 < xs.length := by
