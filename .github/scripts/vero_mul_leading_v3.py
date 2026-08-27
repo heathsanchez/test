@@ -95,7 +95,14 @@ new_zero_iff = """  constructor
     · exact Or.inl hf
     · by_cases hg : g = []
       · exact Or.inr hg
-      · exact (gfMul_nonempty p f g hp hnf hng hf hg h).elim
+      · have hlead := reversed_convolve_lead_nonzero p f g hp hnf hng hf hg
+        have hne : Galoistools.gfMul f g p ≠ [] := by
+          simp only [Galoistools.gfMul, hf, hg, false_or, if_false]
+          rw [gfStrip_self_of_leadCoeff_ne _ hlead]
+          intro hz
+          apply hlead
+          simpa [hz, Galoistools.leadCoeff]
+        exact (hne h).elim
   · intro h
     rcases h with hf | hg
     · subst f
