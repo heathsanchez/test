@@ -10,25 +10,15 @@ for node in tree.body:
     if isinstance(node, ast.Assign) and len(node.targets)==1 and isinstance(node.targets[0],ast.Name) and node.targets[0].id=='code':
         code = node.value.value
 assert code
-old = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
-            intro hz
-            have hl := congrArg List.length hz
-            rw [zipAddPad_length] at hl
-            simp at hl
-            have hmax := Nat.le_max_right xs.length ys.length
-            omega
+old = """            simp at hl
+          simp only [Galoistools.zipAddPad]
 """
-new = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
-            intro hz
-            have hl := congrArg List.length hz
-            rw [zipAddPad_length] at hl
-            have hle : xs.length ≤ ys.length := Nat.le_of_lt hlen
-            have hm : Nat.max xs.length ys.length = ys.length := Nat.max_eq_right hle
-            rw [hm] at hl
-            simp at hl
+new = """            simp at hl
             exact hys' hl
+          simp only [Galoistools.zipAddPad]
 """
-code = code.replace(old,new)
+assert old in code, 'expected zipAddPad tail residual not found'
+code = code.replace(old,new,1)
 bench=Path('benchmarks/galoistools').resolve(); seed=read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
 out=Path('mul_last_v3/source').resolve(); create_sandbox(bench,out,mode='codeproof',overwrite=True,seed_artifact=seed)
 p=out/'Probe.lean'; p.write_text(code)
