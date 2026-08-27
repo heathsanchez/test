@@ -74,6 +74,14 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
             simp only [List.map_cons] at hred
             injection hred with hx hxs
             simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]
+  have hmap0 : ∀ zs : List Nat,
+      zs.map (fun _ => 0) = List.replicate zs.length 0 := by
+    intro zs
+    induction zs with
+    | nil => rfl
+    | cons z zs ihz =>
+        simp only [List.map_cons, List.length_cons, List.replicate_succ]
+        rw [ihz]
   induction s with
   | zero =>
       simp only [List.replicate_zero, List.nil_append]
@@ -84,11 +92,8 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
   | succ s ih =>
       simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
       rw [ih]
-      have hmap0 : ys.map (fun _ => 0) = List.replicate ys.length 0 := by
-        induction ys with
-        | nil => rfl
-        | cons y ys ihys => simp [ihys, List.replicate_succ]
-      rw [hmap0]
+      simp only [Nat.zero_mul, Nat.zero_mod]
+      rw [hmap0 ys]
       apply hzeros ys.length
       · simp [Nat.mod_mod]
       · simp
