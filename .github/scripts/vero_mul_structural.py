@@ -80,6 +80,46 @@ theorem primefield_coprime_lt_local (p a : Nat) (hp : Galoistools.PrimeField p)
   exact hgcd
 '''
 
+shape_helpers = r'''
+theorem zipAddPad_length_mul (p : Nat) : ∀ xs ys : List Nat,
+    (Galoistools.zipAddPad p xs ys).length = Nat.max xs.length ys.length := by
+  intro xs
+  induction xs with
+  | nil =>
+      intro ys
+      simp [Galoistools.zipAddPad]
+  | cons x xs ih =>
+      intro ys
+      cases ys with
+      | nil => simp [Galoistools.zipAddPad]
+      | cons y ys => simp [Galoistools.zipAddPad, ih, Nat.max_succ_succ]
+
+theorem convolve_length_nonempty_mul (p : Nat) (xs ys : List Nat)
+    (hxs : xs ≠ []) (hys : ys ≠ []) :
+    (Galoistools.convolve p xs ys).length = xs.length + ys.length - 1 := by
+  induction xs with
+  | nil => contradiction
+  | cons x xs ih =>
+      rw [Galoistools.convolve]
+      rw [zipAddPad_length_mul]
+      simp only [List.length_map, List.length_cons]
+      by_cases htail : xs = []
+      · subst xs
+        simp [Galoistools.convolve]
+        have hyl : 1 ≤ ys.length := by
+          have : 0 < ys.length := List.length_pos.mpr hys
+          omega
+        rw [Nat.max_eq_left hyl]
+        omega
+      · have iht := ih htail
+        rw [iht]
+        have hxl : 0 < xs.length := List.length_pos.mpr htail
+        have hyl : 0 < ys.length := List.length_pos.mpr hys
+        rw [Nat.max_eq_right]
+        · omega
+        · omega
+'''
+
 probes = {
 'norm_head_bounds': norm_helpers + r'''
 theorem norm_head_bounds (p a : Nat) (as : List Nat)
@@ -87,6 +127,7 @@ theorem norm_head_bounds (p a : Nat) (as : List Nat)
     a ≠ 0 ∧ a < p := by
   have ha0 := norm_head_nonzero_mul p a as hn
   have hmod := norm_head_mod_eq_mul p a as hn
+  have hp1 : 1 < p := hp.1
   have hp0 : 0 < p := by omega
   constructor
   · exact ha0
@@ -108,6 +149,17 @@ theorem mul_mod_nonzero (p a b : Nat) (hp : Galoistools.PrimeField p)
   have hpb : p ∣ b := hcop.dvd_of_dvd_mul_left hdvd
   have hle : p ≤ b := Nat.le_of_dvd (Nat.pos_of_ne_zero hb0) hpb
   omega
+''',
+'zipAddPad_length': shape_helpers + r'''
+theorem zipAddPad_length (p : Nat) (xs ys : List Nat) :
+    (Galoistools.zipAddPad p xs ys).length = Nat.max xs.length ys.length :=
+  zipAddPad_length_mul p xs ys
+''',
+'convolve_length_nonempty': shape_helpers + r'''
+theorem convolve_length_nonempty (p : Nat) (xs ys : List Nat)
+    (hxs : xs ≠ []) (hys : ys ≠ []) :
+    (Galoistools.convolve p xs ys).length = xs.length + ys.length - 1 :=
+  convolve_length_nonempty_mul p xs ys hxs hys
 '''
 }
 
