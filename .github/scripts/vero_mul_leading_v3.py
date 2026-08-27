@@ -44,4 +44,25 @@ src = src.replace(
   simpa using (last0_reverse xs.reverse).symm
 """)
 
+old_reverse = """        | nil =>
+            have := List.reverse_ne_nil.mpr htail
+            contradiction
+"""
+new_reverse = """        | nil =>
+            have hh := congrArg List.reverse hrev
+            have hx : xs = [] := by simpa using hh
+            exact (htail hx).elim
+"""
+assert old_reverse in src, 'reverse nonempty residual not found'
+src = src.replace(old_reverse, new_reverse, 1)
+
+old_hmul = """          simp [last0_reverse, Galoistools.leadCoeff] at hmul ⊢
+          exact hmul
+"""
+new_hmul = """          rw [last0_reverse (a :: as), last0_reverse (b :: bs)]
+          exact hmul
+"""
+assert old_hmul in src, 'terminal coefficient normalization residual not found'
+src = src.replace(old_hmul, new_hmul, 1)
+
 exec(compile(src, '.github/scripts/vero_mul_leading_v3_generated.py', 'exec'), {'__name__': '__main__'})
