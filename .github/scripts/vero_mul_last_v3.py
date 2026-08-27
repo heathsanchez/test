@@ -10,12 +10,18 @@ for node in tree.body:
     if isinstance(node, ast.Assign) and len(node.targets)==1 and isinstance(node.targets[0],ast.Name) and node.targets[0].id=='code':
         code = node.value.value
 assert code
-code = code.replace("""            simp at hl
-          simp only [Galoistools.zipAddPad]
-""", """            simp at hl
-            exact hys' (List.length_eq_zero.mp hl)
-          simp only [Galoistools.zipAddPad]
-""")
+old = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
+            intro hz
+            have hl := congrArg List.length hz
+            rw [zipAddPad_length] at hl
+            simp at hl
+            have hmax := Nat.le_max_right xs.length ys.length
+            omega
+"""
+new = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
+            cases xs <;> cases ys <;> simp_all [Galoistools.zipAddPad]
+"""
+code = code.replace(old,new)
 bench=Path('benchmarks/galoistools').resolve(); seed=read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
 out=Path('mul_last_v3/source').resolve(); create_sandbox(bench,out,mode='codeproof',overwrite=True,seed_artifact=seed)
 p=out/'Probe.lean'; p.write_text(code)
