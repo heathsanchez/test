@@ -26,27 +26,35 @@ theorem shift_singleton_shape (s c : Nat) :
 theorem convolve_singleton_nonempty (p c : Nat) (ys : List Nat)
     (hys : ys ≠ []) :
     Galoistools.convolve p [c] ys = ys.map (fun y => (c * y) % p) := by
+  have hnil : ∀ xs : List Nat,
+      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
+    intro xs
+    cases xs <;> rfl
   cases ys with
   | nil => contradiction
   | cons y ys =>
-      simp [Galoistools.convolve, Galoistools.zipAddPad, Nat.mod_mod]
+      simp [Galoistools.convolve, Galoistools.zipAddPad, hnil, Nat.mod_mod]
 ''',
 'convolve_zero_prefix': r'''
 theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
     (hys : ys ≠ []) :
     Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
       List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
+  have hnil : ∀ xs : List Nat,
+      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
+    intro xs
+    cases xs <;> rfl
   induction s with
   | zero =>
       simp only [List.replicate_zero, List.nil_append]
       cases ys with
       | nil => contradiction
       | cons y ys =>
-          simp [Galoistools.convolve, Galoistools.zipAddPad, Nat.mod_mod]
+          simp [Galoistools.convolve, Galoistools.zipAddPad, hnil, Nat.mod_mod]
   | succ s ih =>
       simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
       rw [ih]
-      simp [Galoistools.zipAddPad, Nat.mod_mod]
+      simp [Galoistools.zipAddPad, hnil, Nat.mod_mod]
 ''',
 'quotient_term_mul': r'''
 theorem quotient_term_mul (p c s : Nat) (g : List Nat) :
