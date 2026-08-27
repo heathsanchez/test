@@ -97,14 +97,13 @@ have hstrip : ∀ xs : List Nat, ∀ n : Nat,
       · simp [Galoistools.gfStrip, hx]
 by_cases hg : g = []
 · subst g
-  simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul]
+  simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, Galoistools.gfStrip]
 · have hgr : g.reverse ≠ [] := by
     intro h
     apply hg
     have hh := congrArg List.reverse h
     simpa using hh
-  simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
-    if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
+  simp [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg]
   rw [hconv g.reverse hgr]
   simp only [List.reverse_append, List.map_reverse, List.reverse_replicate,
     List.reverse_reverse]
