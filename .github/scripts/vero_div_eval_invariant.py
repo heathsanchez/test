@@ -32,61 +32,43 @@ theorem eval_append_zero (p x : Nat) (f : List Nat) :
       (Galoistools.refPolyEval p f x * x) % p := by
   simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux, Nat.mul_comm]
 ''',
-'eval_zero_prefix_aux': r'''
-theorem aux_reduced (p x : Nat) : ∀ xs : List Nat,
-    Galoistools.refPolyEvalRevAux p x xs % p = Galoistools.refPolyEvalRevAux p x xs := by
-  intro xs
-  cases xs with
-  | nil => simp [Galoistools.refPolyEvalRevAux]
-  | cons a as => simp [Galoistools.refPolyEvalRevAux, Nat.mod_mod]
-
-theorem eval_zero_prefix_aux (p x n : Nat) (xs : List Nat) :
-    Galoistools.refPolyEvalRevAux p x (List.replicate n 0 ++ xs) =
-      (x^n * Galoistools.refPolyEvalRevAux p x xs) % p := by
-  induction n with
-  | zero =>
-      simp only [List.replicate_zero, List.nil_append, pow_zero, Nat.one_mul]
-      symm
-      exact aux_reduced p x xs
-  | succ n ih =>
-      simp only [List.replicate_succ, List.cons_append, Galoistools.refPolyEvalRevAux,
-        Nat.zero_add, ih, pow_succ]
-      rw [Nat.mul_mod]
-      rw [Nat.mul_mod]
-      simp only [Nat.mod_mod]
-      ac_rfl
-''',
 'eval_append_zeros': r'''
-theorem aux_reduced2 (p x : Nat) : ∀ xs : List Nat,
-    Galoistools.refPolyEvalRevAux p x xs % p = Galoistools.refPolyEvalRevAux p x xs := by
+theorem eval_reduced_local (p x : Nat) : ∀ xs : List Nat,
+    Galoistools.refPolyEval p xs x % p = Galoistools.refPolyEval p xs x := by
   intro xs
-  cases xs with
+  unfold Galoistools.refPolyEval
+  induction xs.reverse with
   | nil => simp [Galoistools.refPolyEvalRevAux]
-  | cons a as => simp [Galoistools.refPolyEvalRevAux, Nat.mod_mod]
+  | cons a as ih => simp [Galoistools.refPolyEvalRevAux, Nat.mod_mod]
 
-theorem zero_prefix_aux2 (p x n : Nat) (xs : List Nat) :
-    Galoistools.refPolyEvalRevAux p x (List.replicate n 0 ++ xs) =
-      (x^n * Galoistools.refPolyEvalRevAux p x xs) % p := by
+theorem eval_append_zero_local (p x : Nat) (f : List Nat) :
+    Galoistools.refPolyEval p (f ++ [0]) x =
+      (Galoistools.refPolyEval p f x * x) % p := by
+  simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux, Nat.mul_comm]
+
+theorem replicate_succ_tail (n : Nat) :
+    List.replicate (n + 1) 0 = List.replicate n 0 ++ [0] := by
   induction n with
-  | zero =>
-      simp only [List.replicate_zero, List.nil_append, pow_zero, Nat.one_mul]
-      symm
-      exact aux_reduced2 p x xs
-  | succ n ih =>
-      simp only [List.replicate_succ, List.cons_append, Galoistools.refPolyEvalRevAux,
-        Nat.zero_add, ih, pow_succ]
-      rw [Nat.mul_mod]
-      rw [Nat.mul_mod]
-      simp only [Nat.mod_mod]
-      ac_rfl
+  | zero => rfl
+  | succ n ih => simp [List.replicate_succ, ih]
 
-theorem eval_append_zeros (p x n : Nat) (f : List Nat) :
+theorem eval_append_zeros (p x n : Nat) (f : List Nat) (hp : 0 < p) :
     Galoistools.refPolyEval p (f ++ List.replicate n 0) x =
       (Galoistools.refPolyEval p f x * x^n) % p := by
-  unfold Galoistools.refPolyEval
-  rw [List.reverse_append, List.reverse_replicate]
-  rw [zero_prefix_aux2]
-  simp [Nat.mul_comm]
+  induction n with
+  | zero =>
+      simp only [List.replicate_zero, List.append_nil, Nat.pow_zero, Nat.mul_one]
+      exact (eval_reduced_local p x f).symm
+  | succ n ih =>
+      rw [show n + 1 = Nat.succ n by omega]
+      rw [show List.replicate (Nat.succ n) 0 = List.replicate n 0 ++ [0] by
+        simpa [Nat.succ_eq_add_one] using replicate_succ_tail n]
+      rw [← List.append_assoc]
+      rw [eval_append_zero_local]
+      rw [ih]
+      rw [Nat.pow_succ]
+      simp only [Nat.mul_mod, Nat.mod_mod]
+      ac_rfl
 '''
 }
 
