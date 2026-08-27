@@ -101,9 +101,14 @@ theorem zipAddPad_last_right (p : Nat) : ∀ xs ys : List Nat,
             intro hz
             have hl := congrArg List.length hz
             rw [zipAddPad_length] at hl
+            have hle : xs.length ≤ ys.length := Nat.le_of_lt hlen
+            have hm : Nat.max xs.length ys.length = ys.length := Nat.max_eq_right hle
+            rw [hm] at hl
+            have hypos : 0 < ys.length := by
+              cases ys with
+              | nil => contradiction
+              | cons z zs => simp
             simp at hl
-            have hmax := Nat.le_max_right xs.length ys.length
-            omega
           simp only [Galoistools.zipAddPad]
           simp [last0, htail, hys', ih ys hlen hys']
 
