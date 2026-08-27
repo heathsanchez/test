@@ -16,8 +16,8 @@ footer = '\nend GaloistoolsMonicMulSeparatorV1\n'
 
 probes = {
   'monic_mul_unfold': r'''
-theorem monic_mul_unfold : Galoistools.spec_monic_mul_associate Galoistools.canonical := by
-  simp only [Galoistools.spec_monic_mul_associate, Galoistools.canonical]
+theorem monic_mul_unfold : spec_monic_mul_associate canonical := by
+  simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
   cases f with
   | nil => contradiction
@@ -33,12 +33,12 @@ theorem monic_mul_unfold : Galoistools.spec_monic_mul_associate Galoistools.cano
             · simp [ha, hb]
 ''',
   'monic_mul_using_lead': r'''
-theorem monic_mul_using_lead : Galoistools.spec_monic_mul_associate Galoistools.canonical := by
-  simp only [Galoistools.spec_monic_mul_associate, Galoistools.canonical]
+theorem monic_mul_using_lead : spec_monic_mul_associate canonical := by
+  simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
-  have hprod := GaloistoolsMulLeadingV1.reversed_convolve_lead_nonzero p f g hp hnf hng hf hg
+  have hprod := reversed_convolve_lead_nonzero p f g hp hnf hng hf hg
   simp only [Galoistools.gfMul, hf, hg, false_or, if_false]
-  rw [GaloistoolsMulLeadingV1.gfStrip_self_of_leadCoeff_ne _ hprod]
+  rw [gfStrip_self_of_leadCoeff_ne _ hprod]
   cases f with
   | nil => contradiction
   | cons a as =>
