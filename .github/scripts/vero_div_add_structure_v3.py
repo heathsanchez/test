@@ -20,6 +20,7 @@ new = '''  have hnil : ∀ xs : List Nat,
     | cons x xs ih =>
       simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
       by_cases hx : x = 0 <;> simp [hx, ih]
+  simp only [Galoistools.gfAdd]
   rw [hnil cur.reverse]
   rw [List.map_reverse]
   simp only [List.reverse_reverse]
@@ -28,7 +29,7 @@ new = '''  have hnil : ∀ xs : List Nat,
 '''
 assert old in text
 p.write_text(text.replace(old, new, 1))
-cp = subprocess.run(['lake','lean',p.name], cwd=p.parent, text=True, capture_output=True)
+cp = subprocess.run(['lake','lean',p.name], cwd=p.parent, text=True,capture_output=True)
 raw = cp.stdout + '\n' + cp.stderr
 print('ADD_SUB_CANCEL_V3_EXIT', cp.returncode)
 if cp.returncode: print(raw[-20000:])
