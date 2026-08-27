@@ -8,6 +8,7 @@ on:
       - '.github/scripts/vero_batch_harvest.py'
       - '.github/scripts/vero_galoistools_allin.py'
       - '.github/scripts/vero_gcd_boundary_separator.py'
+      - '.github/scripts/vero_div_boundary_separator.py'
       - '.github/scripts/vero_divcore_step.py'
       - '.github/scripts/vero_div_identity_recursive.py'
       - '.github/scripts/vero_div_identity_lift.py'
@@ -69,6 +70,9 @@ jobs:
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
+      - name: Division boundary separator
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_div_boundary_separator.py
       - name: GCD boundary separator
         working-directory: vero
         run: uv run python ../.github/scripts/vero_gcd_boundary_separator.py
