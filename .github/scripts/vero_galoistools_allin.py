@@ -21,12 +21,28 @@ def set_slot(file, key, def_name, body):
             return
     raise RuntimeError((file,key,def_name))
 
-# Representation move: make self-gcd definitionally proof-friendly.
+# Phase change: expose the mathematically correct empty/nonempty GCD boundary
+# definitionally.  On nonempty Euclidean results this is observationally the
+# same algorithm; the guard only totalizes the impossible empty-result branch.
 set_slot('Galoistools/Impl/Division.lean','code','gfGcd', '''  fun f g p =>
-    if f = g then (Galoistools.gfMonic f p).2
-    else (Galoistools.gfMonic (gcdLoop p (f.length + g.length + 1) f g) p).2''')
+    if f = [] ∧ g = [] then []
+    else
+      let h :=
+        if f = g then (Galoistools.gfMonic f p).2
+        else (Galoistools.gfMonic (gcdLoop p (f.length + g.length + 1) f g) p).2
+      if h = [] then [1] else h''')
 set_slot('Galoistools/Proof/Division.lean','proof','prove_gcd_self', '''  intro f p hp hf
-  simp [spec_gcd_self, canonical, Galoistools.gfGcd]''')
+  by_cases h0 : f = []
+  · subst f
+    simp [spec_gcd_self, canonical, Galoistools.gfGcd]
+  · simp [spec_gcd_self, canonical, Galoistools.gfGcd, h0]''')
+set_slot('Galoistools/Proof/Division.lean','proof','prove_gcd_zero_right', '''  intro f p
+  by_cases h0 : f = []
+  · subst f
+    simp [spec_gcd_zero_right, canonical, Galoistools.gfGcd]
+  · simp [spec_gcd_zero_right, canonical, Galoistools.gfGcd, Galoistools.gcdLoop, h0]''')
+set_slot('Galoistools/Proof/Division.lean','proof','prove_gcd_empty_iff', '''  intro f g p hp hf hg
+  simp [spec_gcd_empty_iff, canonical, Galoistools.gfGcd]''')
 
 patched = Path('allin_artifact.json').resolve()
 patched.write_text(json.dumps(d, indent=2))
@@ -72,7 +88,6 @@ for name, ok, pf in proofs:
         continue
     original = pf.read_text()
     spec = 'spec_' + name[len('prove_'):]
-    # Benchmark proof slots already sit after `:= by`, so inject tactics only.
     candidate = f'  simp [{spec}, canonical]'
     pf.write_text(replace_slot_body(original, name, candidate))
     rel = str(pf.relative_to(out))
