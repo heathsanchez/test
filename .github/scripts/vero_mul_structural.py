@@ -92,29 +92,28 @@ theorem zipAddPad_length_mul (p : Nat) : ∀ xs ys : List Nat,
       intro ys
       cases ys with
       | nil => simp [Galoistools.zipAddPad]
-      | cons y ys => simp [Galoistools.zipAddPad, ih, Nat.max_succ_succ]
+      | cons y ys => simp [Galoistools.zipAddPad, ih, Nat.succ_max_succ]
 
 theorem convolve_length_nonempty_mul (p : Nat) (xs ys : List Nat)
     (hxs : xs ≠ []) (hys : ys ≠ []) :
     (Galoistools.convolve p xs ys).length = xs.length + ys.length - 1 := by
-  induction xs with
+  cases ys with
   | nil => contradiction
-  | cons x xs ih =>
+  | cons y ys =>
+    induction xs with
+    | nil => contradiction
+    | cons x xs ih =>
       rw [Galoistools.convolve]
       rw [zipAddPad_length_mul]
       simp only [List.length_map, List.length_cons]
       by_cases htail : xs = []
       · subst xs
         simp [Galoistools.convolve]
-        have hyl : 1 ≤ ys.length := by
-          have : 0 < ys.length := List.length_pos.mpr hys
-          omega
-        rw [Nat.max_eq_left hyl]
-        omega
+        rw [Nat.max_eq_left]
+        · omega
+        · omega
       · have iht := ih htail
         rw [iht]
-        have hxl : 0 < xs.length := List.length_pos.mpr htail
-        have hyl : 0 < ys.length := List.length_pos.mpr hys
         rw [Nat.max_eq_right]
         · omega
         · omega
