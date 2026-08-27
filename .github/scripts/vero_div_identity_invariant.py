@@ -99,6 +99,18 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
       · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_map]
         omega
 ''',
+'gfStrip_append_zeros': r'''
+theorem gfStrip_append_zeros (xs : List Nat) (s : Nat) :
+    Galoistools.gfStrip (xs ++ List.replicate s 0) =
+      if Galoistools.gfStrip xs = [] then []
+      else Galoistools.gfStrip xs ++ List.replicate s 0 := by
+  induction xs with
+  | nil => simp [Galoistools.gfStrip]
+  | cons x xs ih =>
+      by_cases hx : x = 0
+      · simp [Galoistools.gfStrip, hx, ih]
+      · simp [Galoistools.gfStrip, hx]
+''',
 'quotient_term_mul': r'''
 theorem quotient_term_mul (p c s : Nat) (g : List Nat) :
     Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =
