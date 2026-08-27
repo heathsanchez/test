@@ -35,6 +35,22 @@ theorem convolve_singleton_nonempty (p c : Nat) (ys : List Nat)
   | cons y ys =>
       simp [Galoistools.convolve, Galoistools.zipAddPad, hnil, Nat.mod_mod]
 ''',
+'zipAddPad_replicate_zero_left': r'''
+theorem zipAddPad_replicate_zero_left (p n : Nat) (xs : List Nat)
+    (hred : xs.map (· % p) = xs) (hlen : n ≤ xs.length) :
+    Galoistools.zipAddPad p (List.replicate n 0) xs = xs := by
+  induction n generalizing xs with
+  | zero =>
+      simpa [Galoistools.zipAddPad] using hred
+  | succ n ih =>
+      cases xs with
+      | nil => simp at hlen
+      | cons x xs =>
+          simp only [List.length_cons, Nat.succ_le_succ_iff] at hlen
+          simp only [List.map_cons] at hred
+          injection hred with hx hxs
+          simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]
+''',
 'convolve_zero_prefix': r'''
 theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
     (hys : ys ≠ []) :
@@ -44,6 +60,20 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
       Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
     intro xs
     cases xs <;> rfl
+  have hzeros : ∀ n : Nat, ∀ xs : List Nat,
+      xs.map (· % p) = xs → n ≤ xs.length →
+      Galoistools.zipAddPad p (List.replicate n 0) xs = xs := by
+    intro n xs hred hlen
+    induction n generalizing xs with
+    | zero => simpa [Galoistools.zipAddPad] using hred
+    | succ n ih =>
+        cases xs with
+        | nil => simp at hlen
+        | cons x xs =>
+            simp only [List.length_cons, Nat.succ_le_succ_iff] at hlen
+            simp only [List.map_cons] at hred
+            injection hred with hx hxs
+            simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]
   induction s with
   | zero =>
       simp only [List.replicate_zero, List.nil_append]
@@ -54,7 +84,14 @@ theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
   | succ s ih =>
       simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
       rw [ih]
-      simp [Galoistools.zipAddPad, hnil, Nat.mod_mod]
+      have hmap0 : ys.map (fun _ => 0) = List.replicate ys.length 0 := by
+        induction ys with
+        | nil => rfl
+        | cons y ys ihys => simp [ihys, List.replicate_succ]
+      rw [hmap0]
+      apply hzeros ys.length
+      · simp [Nat.mod_mod]
+      · simp
 ''',
 'quotient_term_mul': r'''
 theorem quotient_term_mul (p c s : Nat) (g : List Nat) :
