@@ -71,7 +71,7 @@ theorem convolve_zero_prefix_reuse (p c s : Nat) (ys : List Nat) (hys : ys ≠ [
     Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
       List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
 ''' + common + r'''
-  exact hconv ys hys
+exact hconv ys hys
 '''
 
 probes['quotient_term_mul_reuse'] = r'''
@@ -79,37 +79,37 @@ theorem quotient_term_mul_reuse (p c s : Nat) (g : List Nat) :
     Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =
       Galoistools.shiftUp s (Galoistools.scaleP p c g) := by
 ''' + common + r'''
-  have hz : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by
-    intro n
-    induction n with
-    | zero => rfl
-    | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
-  have hstrip : ∀ xs : List Nat, ∀ n : Nat,
-      Galoistools.gfStrip (xs ++ List.replicate n 0) =
-        if Galoistools.gfStrip xs = [] then []
-        else Galoistools.gfStrip xs ++ List.replicate n 0 := by
-    intro xs n
-    induction xs with
-    | nil => simpa [Galoistools.gfStrip] using hz n
-    | cons x xs ih =>
-        by_cases hx : x = 0
-        · simp [Galoistools.gfStrip, hx, ih]
-        · simp [Galoistools.gfStrip, hx]
-  by_cases hg : g = []
-  · subst g
-    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul]
-  · have hgr : g.reverse ≠ [] := by
-      intro h
-      apply hg
-      have hh := congrArg List.reverse h
-      simpa using hh
-    simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
-      if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
-    rw [hconv g.reverse hgr]
-    simp only [List.reverse_append, List.map_reverse, List.reverse_replicate,
-      List.reverse_reverse]
-    rw [hstrip (g.map (fun y => (c * y) % p)) s]
-    simp [Nat.mul_comm]
+have hz : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by
+  intro n
+  induction n with
+  | zero => rfl
+  | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
+have hstrip : ∀ xs : List Nat, ∀ n : Nat,
+    Galoistools.gfStrip (xs ++ List.replicate n 0) =
+      if Galoistools.gfStrip xs = [] then []
+      else Galoistools.gfStrip xs ++ List.replicate n 0 := by
+  intro xs n
+  induction xs with
+  | nil => simpa [Galoistools.gfStrip] using hz n
+  | cons x xs ih =>
+      by_cases hx : x = 0
+      · simp [Galoistools.gfStrip, hx, ih]
+      · simp [Galoistools.gfStrip, hx]
+by_cases hg : g = []
+· subst g
+  simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul]
+· have hgr : g.reverse ≠ [] := by
+    intro h
+    apply hg
+    have hh := congrArg List.reverse h
+    simpa using hh
+  simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
+    if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
+  rw [hconv g.reverse hgr]
+  simp only [List.reverse_append, List.map_reverse, List.reverse_replicate,
+    List.reverse_reverse]
+  rw [hstrip (g.map (fun y => (c * y) % p)) s]
+  simp [Nat.mul_comm]
 '''
 
 census=[]
