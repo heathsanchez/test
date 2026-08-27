@@ -42,13 +42,17 @@ theorem strip_zipAddPad_append_zero (p : Nat) (as bs : List Nat) :
         by_cases hx : x = 0
         · simp [Galoistools.gfStrip, hx, ih]
         · simp [Galoistools.gfStrip, hx]
+  have hnil : ∀ xs : List Nat,
+      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
+    intro xs
+    cases xs <;> rfl
   induction as generalizing bs with
   | nil =>
       simp [Galoistools.zipAddPad, Galoistools.gfStrip, List.map_append]
   | cons a as ih =>
       cases bs with
       | nil =>
-          simp [Galoistools.zipAddPad]
+          rw [hnil as]
       | cons b bs =>
           simp only [Galoistools.zipAddPad, List.reverse_cons]
           calc
@@ -59,6 +63,8 @@ theorem strip_zipAddPad_append_zero (p : Nat) (as bs : List Nat) :
               rw [ih bs]
             _ = Galoistools.gfStrip ((Galoistools.zipAddPad p as (bs ++ [0])).reverse ++ [(a + b) % p]) :=
               (hstrip _ _).symm
+            _ = Galoistools.gfStrip (Galoistools.zipAddPad p (a :: as) ((b :: bs) ++ [0])).reverse := by
+              simp [Galoistools.zipAddPad]
 ''',
 'gfAdd_strip_right': r'''
 theorem gfAdd_strip_right (p : Nat) (a b : List Nat) :
@@ -78,12 +84,17 @@ theorem gfAdd_strip_right (p : Nat) (a b : List Nat) :
           by_cases hx : x = 0
           · simp [Galoistools.gfStrip, hx, ih]
           · simp [Galoistools.gfStrip, hx]
+    have hnil : ∀ xs : List Nat,
+        Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
+      intro xs
+      cases xs <;> rfl
     induction as generalizing bs with
     | nil =>
         simp [Galoistools.zipAddPad, Galoistools.gfStrip, List.map_append]
     | cons x xs ih =>
         cases bs with
-        | nil => simp [Galoistools.zipAddPad]
+        | nil =>
+            rw [hnil xs]
         | cons y ys =>
             simp only [Galoistools.zipAddPad, List.reverse_cons]
             calc
@@ -91,6 +102,8 @@ theorem gfAdd_strip_right (p : Nat) (a b : List Nat) :
                   Galoistools.gfStrip (Galoistools.gfStrip (Galoistools.zipAddPad p xs ys).reverse ++ [(x + y) % p]) := hstrip _ _
               _ = Galoistools.gfStrip (Galoistools.gfStrip (Galoistools.zipAddPad p xs (ys ++ [0])).reverse ++ [(x + y) % p]) := by rw [ih ys]
               _ = Galoistools.gfStrip ((Galoistools.zipAddPad p xs (ys ++ [0])).reverse ++ [(x + y) % p]) := (hstrip _ _).symm
+              _ = Galoistools.gfStrip (Galoistools.zipAddPad p (x :: xs) ((y :: ys) ++ [0])).reverse := by
+                simp [Galoistools.zipAddPad]
   induction b with
   | nil => rfl
   | cons x xs ih =>
