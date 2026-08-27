@@ -10,10 +10,6 @@ create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 probe = r'''import Galoistools.Proof.Ring
 
-#check Nat.ModEq
-#check Nat.ModEq.cancel_left_of_coprime
-#check Nat.ModEq.eq_of_lt_of_lt
-
 theorem inv_correct_nonone (p a : Nat) (hp : 1 < p)
     (ha : a ≠ 1) (hcop : Nat.gcd a p = 1) :
     (a * Galoistools.invMod a p) % p = 1 := by
@@ -53,15 +49,23 @@ theorem inv_product_modeq (p a b : Nat) (hp : Galoistools.PrimeField p)
              ((b * Galoistools.invMod b p) % p)) % p := by
               rw [Nat.mul_mod]
       _ = 1 := by simp [hia, hib, Nat.mod_eq_of_lt hp1]
-  have hleft : (((a*b)%p) * Galoistools.invMod ((a*b)%p) p) % p = 1 := hic
   have hright : (((a*b)%p) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p = 1 := by
     simpa [Nat.mul_mod] using hpair
-  have hm : Nat.ModEq p
-      (((a*b)%p) * Galoistools.invMod ((a*b)%p) p)
-      (((a*b)%p) * (Galoistools.invMod a p * Galoistools.invMod b p)) := by
-    exact hleft.trans hright.symm
-  have hcancel := Nat.ModEq.cancel_left_of_coprime hcopC hm
-  exact hcancel
+  have hic' : (Galoistools.invMod ((a*b)%p) p * ((a*b)%p)) % p = 1 := by
+    simpa [Nat.mul_comm] using hic
+  change (Galoistools.invMod ((a*b)%p) p) % p =
+    (Galoistools.invMod a p * Galoistools.invMod b p) % p
+  calc
+    (Galoistools.invMod ((a*b)%p) p) % p
+        = (Galoistools.invMod ((a*b)%p) p * 1) % p := by simp
+    _ = (Galoistools.invMod ((a*b)%p) p *
+          ((((a*b)%p) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p)) % p := by
+          rw [hright]
+    _ = (((Galoistools.invMod ((a*b)%p) p * ((a*b)%p)) % p) *
+          ((Galoistools.invMod a p * Galoistools.invMod b p) % p)) % p := by
+          simp [Nat.mul_mod, Nat.mul_assoc]
+    _ = (Galoistools.invMod a p * Galoistools.invMod b p) % p := by
+          simp [hic', Nat.mod_mod]
 '''
 
 p = out/'Probe.lean'; p.write_text(probe)
