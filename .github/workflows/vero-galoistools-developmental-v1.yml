@@ -17,6 +17,7 @@ on:
       - '.github/scripts/vero_divcore_coeff_bound.py'
       - '.github/scripts/vero_quotient_bridge.py'
       - '.github/scripts/vero_quotient_bridge_v2.py'
+      - '.github/scripts/vero_mul_structural.py'
 
 jobs:
   developmental:
@@ -71,6 +72,9 @@ jobs:
       - name: Verified quotient bridge reuse probes
         working-directory: vero
         run: uv run python ../.github/scripts/vero_quotient_bridge_v2.py
+      - name: Multiplication structural probes
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_mul_structural.py
       - name: All-in frontier attempt
         working-directory: vero
         run: uv run python ../.github/scripts/vero_galoistools_allin.py
@@ -142,6 +146,13 @@ jobs:
         with:
           name: vero-galoistools-quotient-bridge-v2
           path: vero/quotient_bridge_v2/
+          if-no-files-found: warn
+      - name: Upload multiplication structural census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-mul-structural
+          path: vero/mul_structural/
           if-no-files-found: warn
       - name: Upload all-in result
         if: always()
