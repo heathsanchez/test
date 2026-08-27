@@ -25,6 +25,16 @@ src = src.replace(
 """)
 
 src = src.replace(
+"simp [last0, htail, ih ys hlen hys', Nat.mod_mod]",
+"simp [last0, htail, hys', ih ys hlen hys']")
+src = src.replace(
+"simp [last0, hcv, cv, ih xs htail ys hys, Nat.mod_mod]",
+"simp [last0, hcv, cv, htail, ih ys htail hys]")
+src = src.replace(
+"have iht := ih xs htail ys hys",
+"have iht := ih ys htail hys")
+
+src = src.replace(
 """theorem leadCoeff_reverse_eq_last0 (xs : List Nat) (hxs : xs ≠ []) :
     Galoistools.leadCoeff xs.reverse = last0 xs := by
   simpa using (last0_reverse xs.reverse)
