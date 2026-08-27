@@ -8,108 +8,16 @@ seed = read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
 source = Path('quotient_bridge_v2/source').resolve()
 create_sandbox(bench_dir, source, mode='codeproof', overwrite=True, seed_artifact=seed)
 
-header = '''import Galoistools.Proof.Ring
-import Galoistools.Impl.Division
-import Galoistools.Spec.Division
-
-namespace GaloistoolsQuotientBridgeV2
-'''
+header = 'import Galoistools.Proof.Ring\nimport Galoistools.Impl.Division\nimport Galoistools.Spec.Division\n\nnamespace GaloistoolsQuotientBridgeV2\n'
 footer = '\nend GaloistoolsQuotientBridgeV2\n'
 
-common = r'''
-have hconv : ∀ ys : List Nat, ys ≠ [] →
-    Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
-      List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
-  intro ys hys
-  have hnil : ∀ xs : List Nat,
-      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
-    intro xs
-    cases xs <;> rfl
-  have hzeros : ∀ n : Nat, ∀ xs : List Nat,
-      xs.map (· % p) = xs → n ≤ xs.length →
-      Galoistools.zipAddPad p (List.replicate n 0) xs = xs := by
-    intro n xs hred hlen
-    induction n generalizing xs with
-    | zero => simpa [Galoistools.zipAddPad] using hred
-    | succ n ih =>
-        cases xs with
-        | nil => simp at hlen
-        | cons x xs =>
-          simp only [List.length_cons, Nat.succ_le_succ_iff] at hlen
-          simp only [List.map_cons] at hred
-          injection hred with hx hxs
-          simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]
-  have hmap0 : ∀ zs : List Nat,
-      zs.map (fun _ => 0) = List.replicate zs.length 0 := by
-    intro zs
-    induction zs with
-    | nil => rfl
-    | cons z zs ihz =>
-      simp only [List.map_cons, List.length_cons, List.replicate_succ]
-      rw [ihz]
-  induction s with
-  | zero =>
-    simp only [List.replicate_zero, List.nil_append]
-    cases ys with
-    | nil => contradiction
-    | cons y ys =>
-      simp [Galoistools.convolve, Galoistools.zipAddPad, hnil, Nat.mod_mod]
-  | succ s ih =>
-    simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
-    rw [ih]
-    simp only [Nat.zero_mul, Nat.zero_mod]
-    rw [hmap0 ys]
-    apply hzeros ys.length
-    · simp [Nat.mod_mod]
-    · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_map]
-      omega
-'''
+convolve = 'theorem convolve_zero_prefix_reuse (p c s : Nat) (ys : List Nat) (hys : ys ≠ []) :\n    Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =\n      List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by\n  have hnil : ∀ xs : List Nat,\n      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by\n    intro xs\n    cases xs <;> rfl\n  have hzeros : ∀ n : Nat, ∀ xs : List Nat,\n      xs.map (· % p) = xs → n ≤ xs.length →\n      Galoistools.zipAddPad p (List.replicate n 0) xs = xs := by\n    intro n xs hred hlen\n    induction n generalizing xs with\n    | zero => simpa [Galoistools.zipAddPad] using hred\n    | succ n ih =>\n        cases xs with\n        | nil => simp at hlen\n        | cons x xs =>\n          simp only [List.length_cons, Nat.succ_le_succ_iff] at hlen\n          simp only [List.map_cons] at hred\n          injection hred with hx hxs\n          simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]\n  have hmap0 : ∀ zs : List Nat,\n      zs.map (fun _ => 0) = List.replicate zs.length 0 := by\n    intro zs\n    induction zs with\n    | nil => rfl\n    | cons z zs ihz =>\n      simp only [List.map_cons, List.length_cons, List.replicate_succ]\n      rw [ihz]\n  induction s with\n  | zero =>\n    simp only [List.replicate_zero, List.nil_append]\n    cases ys with\n    | nil => contradiction\n    | cons y ys =>\n      simp [Galoistools.convolve, Galoistools.zipAddPad, hnil]\n  | succ s ih =>\n    simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]\n    rw [ih]\n    simp only [Nat.zero_mul, Nat.zero_mod]\n    rw [hmap0 ys]\n    apply hzeros ys.length\n    · simp\n    · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_map]\n      omega\n'
+quotient = '\ntheorem quotient_term_mul_reuse (p c s : Nat) (g : List Nat) :\n    Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =\n      Galoistools.shiftUp s (Galoistools.scaleP p c g) := by\n  have hz : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by\n    intro n\n    induction n with\n    | zero => rfl\n    | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]\n  have hstrip : ∀ xs : List Nat, ∀ n : Nat,\n      Galoistools.gfStrip (xs ++ List.replicate n 0) =\n        if Galoistools.gfStrip xs = [] then []\n        else Galoistools.gfStrip xs ++ List.replicate n 0 := by\n    intro xs n\n    induction xs with\n    | nil => simpa [Galoistools.gfStrip] using hz n\n    | cons x xs ih =>\n        by_cases hx : x = 0\n        · simp [Galoistools.gfStrip, hx, ih]\n        · simp [Galoistools.gfStrip, hx]\n  by_cases hg : g = []\n  · subst g\n    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, Galoistools.gfStrip]\n  · have hgr : g.reverse ≠ [] := by\n      intro h\n      apply hg\n      have hh := congrArg List.reverse h\n      simpa using hh\n    simp [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg]\n    rw [convolve_zero_prefix_reuse p c s g.reverse hgr]\n    simp only [List.reverse_append, List.map_reverse, List.reverse_replicate,\n      List.reverse_reverse]\n    rw [hstrip (g.map (fun y => (c * y) % p)) s]\n    simp [Nat.mul_comm]\n'
 
-probes = {}
-probes['convolve_zero_prefix_reuse'] = r'''
-theorem convolve_zero_prefix_reuse (p c s : Nat) (ys : List Nat) (hys : ys ≠ []) :
-    Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
-      List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
-''' + common + r'''
-exact hconv ys hys
-'''
-
-probes['quotient_term_mul_reuse'] = r'''
-theorem quotient_term_mul_reuse (p c s : Nat) (g : List Nat) :
-    Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =
-      Galoistools.shiftUp s (Galoistools.scaleP p c g) := by
-''' + common + r'''
-have hz : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by
-  intro n
-  induction n with
-  | zero => rfl
-  | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
-have hstrip : ∀ xs : List Nat, ∀ n : Nat,
-    Galoistools.gfStrip (xs ++ List.replicate n 0) =
-      if Galoistools.gfStrip xs = [] then []
-      else Galoistools.gfStrip xs ++ List.replicate n 0 := by
-  intro xs n
-  induction xs with
-  | nil => simpa [Galoistools.gfStrip] using hz n
-  | cons x xs ih =>
-      by_cases hx : x = 0
-      · simp [Galoistools.gfStrip, hx, ih]
-      · simp [Galoistools.gfStrip, hx]
-by_cases hg : g = []
-· subst g
-  simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, Galoistools.gfStrip]
-· have hgr : g.reverse ≠ [] := by
-    intro h
-    apply hg
-    have hh := congrArg List.reverse h
-    simpa using hh
-  simp [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg]
-  rw [hconv g.reverse hgr]
-  simp only [List.reverse_append, List.map_reverse, List.reverse_replicate,
-    List.reverse_reverse]
-  rw [hstrip (g.map (fun y => (c * y) % p)) s]
-  simp [Nat.mul_comm]
-'''
+probes = {
+    'convolve_zero_prefix_reuse': convolve,
+    'quotient_term_mul_reuse': convolve + quotient,
+}
 
 census=[]
 for name, text in probes.items():
