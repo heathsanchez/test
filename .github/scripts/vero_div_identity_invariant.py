@@ -22,6 +22,32 @@ theorem shift_singleton_shape (s c : Nat) :
     Galoistools.shiftUp s [c] = [c] ++ List.replicate s 0 := by
   simp [Galoistools.shiftUp]
 ''',
+'convolve_singleton_nonempty': r'''
+theorem convolve_singleton_nonempty (p c : Nat) (ys : List Nat)
+    (hys : ys ≠ []) :
+    Galoistools.convolve p [c] ys = ys.map (fun y => (c * y) % p) := by
+  cases ys with
+  | nil => contradiction
+  | cons y ys =>
+      simp [Galoistools.convolve, Galoistools.zipAddPad, Nat.mod_mod]
+''',
+'convolve_zero_prefix': r'''
+theorem convolve_zero_prefix (p c s : Nat) (ys : List Nat)
+    (hys : ys ≠ []) :
+    Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
+      List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
+  induction s with
+  | zero =>
+      simp only [List.replicate_zero, List.nil_append]
+      cases ys with
+      | nil => contradiction
+      | cons y ys =>
+          simp [Galoistools.convolve, Galoistools.zipAddPad, Nat.mod_mod]
+  | succ s ih =>
+      simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
+      rw [ih]
+      simp [Galoistools.zipAddPad, Nat.mod_mod]
+''',
 'quotient_term_mul': r'''
 theorem quotient_term_mul (p c s : Nat) (g : List Nat) :
     Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =
