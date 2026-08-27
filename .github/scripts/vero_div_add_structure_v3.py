@@ -8,10 +8,23 @@ exec(compile(Path('../.github/scripts/vero_div_add_structure_v2.py').read_text()
 p = Path('div_add_structure_v2/source/Probe_add_sub_cancel_norm.lean')
 text = p.read_text()
 old = '  simp [Galoistools.gfAdd, Galoistools.zipAddPad, hstrip]\n'
-new = '''  have ht : Galoistools.gfTrunc p cur = cur := by
-    rw [Galoistools.gfTrunc, gfStrip_eq_refGfStrip]
-    exact hcur
-  simpa [Galoistools.gfTrunc, Galoistools.zipAddPad, List.map_reverse] using ht
+new = '''  have hnil : ∀ xs : List Nat,
+      Galoistools.zipAddPad p xs [] = xs.map (fun x => x % p) := by
+    intro xs
+    cases xs <;> rfl
+  have bridge : ∀ xs : List Nat,
+      Galoistools.gfStrip xs = Galoistools.refGfStrip xs := by
+    intro xs
+    induction xs with
+    | nil => rfl
+    | cons x xs ih =>
+      simp only [Galoistools.gfStrip, Galoistools.refGfStrip]
+      by_cases hx : x = 0 <;> simp [hx, ih]
+  rw [hnil cur.reverse]
+  rw [List.map_reverse]
+  simp only [List.reverse_reverse]
+  rw [bridge]
+  exact hcur
 '''
 assert old in text
 p.write_text(text.replace(old, new, 1))
