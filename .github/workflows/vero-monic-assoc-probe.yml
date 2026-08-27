@@ -1,0 +1,49 @@
+name: Vero monic associate probe
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vero-monic-assoc-probe.yml'
+      - '.github/scripts/vero_monic_assoc_probe.py'
+      - '.github/scripts/vero_mul_promote_v1.py'
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - name: Download gcd-zero ratchet
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 32926602836
+          name: vero-galoistools-developmental-v1
+          path: baseline
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+      - name: Materialize certified 27 ratchet
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_mul_promote_v1.py
+      - name: Probe monic multiplication association
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_monic_assoc_probe.py
+      - name: Upload probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-monic-assoc-probe
+          path: vero/monic_assoc_probe/
+          if-no-files-found: warn
