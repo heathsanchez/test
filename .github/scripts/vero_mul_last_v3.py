@@ -19,7 +19,14 @@ old = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
             omega
 """
 new = """          have htail : Galoistools.zipAddPad p xs ys ≠ [] := by
-            cases xs <;> cases ys <;> simp_all [Galoistools.zipAddPad]
+            intro hz
+            have hl := congrArg List.length hz
+            rw [zipAddPad_length] at hl
+            have hle : xs.length ≤ ys.length := Nat.le_of_lt hlen
+            have hm : Nat.max xs.length ys.length = ys.length := Nat.max_eq_right hle
+            rw [hm] at hl
+            simp at hl
+            exact hys' hl
 """
 code = code.replace(old,new)
 bench=Path('benchmarks/galoistools').resolve(); seed=read_artifact(Path('../baseline/ratchet/artifact.json').resolve())
