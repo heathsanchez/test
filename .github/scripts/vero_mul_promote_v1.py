@@ -74,7 +74,7 @@ assert _old in _mul_aux
 _mul_aux = _mul_aux.replace(_old, _new, 1)
 
 set_slot('Galoistools/Proof/Ring.lean', 'proof_aux', 'prove_mul_degree_add', _mul_aux)
-set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_degree_add', '''  simp only [spec_mul_degree_add, canonical]
+set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_degree_add', """  simp only [spec_mul_degree_add, canonical]
   intro f g p hp hnf hng hf hg
   simp only [Galoistools.gfMul, hf, hg, false_or, if_false]
   have hlead := reversed_convolve_lead_nonzero p f g hp hnf hng hf hg
@@ -86,9 +86,9 @@ set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_degree_add', '''  si
   simp only [List.length_reverse]
   have hfl : 0 < f.length := by cases f <;> simp_all
   have hgl : 0 < g.length := by cases g <;> simp_all
-  omega''')
+  omega""")
 
-set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_zero_iff', '''  simp only [spec_mul_zero_iff, canonical]
+set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_zero_iff', """  simp only [spec_mul_zero_iff, canonical]
   intro f g p hp hnf hng
   constructor
   · intro h
@@ -109,7 +109,7 @@ set_slot('Galoistools/Proof/Ring.lean', 'proof', 'prove_mul_zero_iff', '''  simp
     · subst f
       simp [Galoistools.gfMul]
     · subst g
-      simp [Galoistools.gfMul]''')
+      simp [Galoistools.gfMul]""")
 
 '''
 
