@@ -88,6 +88,20 @@ theorem convolve_length_nonempty_probe (p : Nat) (xs ys : List Nat)
     (hxs : xs ≠ []) (hys : ys ≠ []) :
     (Galoistools.convolve p xs ys).length = xs.length + ys.length - 1 :=
   convolve_length_nonempty_v2 p xs ys hxs hys
+''',
+'mul_nonempty_norm': helpers + r'''
+theorem mul_nonempty_norm (f g : List Nat) (p : Nat)
+    (hp : Galoistools.PrimeField p)
+    (hf : Galoistools.IsNorm p f) (hg : Galoistools.IsNorm p g)
+    (hf0 : f ≠ []) (hg0 : g ≠ []) :
+    Galoistools.gfMul f g p ≠ [] := by
+  simp only [Galoistools.gfMul, hf0, hg0, false_or, if_false]
+  intro hz
+  have hlen := convolve_length_nonempty_v2 p f.reverse g.reverse
+    (by simpa using hf0) (by simpa using hg0)
+  have hstrip := congrArg List.length hz
+  simp at hstrip
+  omega
 '''
 }
 
