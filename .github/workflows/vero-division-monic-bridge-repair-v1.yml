@@ -1,0 +1,33 @@
+name: Vero Division monic bridge repair V1
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_division_monic_bridge_repair_v1.py'
+      - '.github/workflows/vero-division-monic-bridge-repair-v1.yml'
+  workflow_dispatch:
+jobs:
+  repair:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download baseline28
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run strict Division monic bridge repair
+        run: python .github/scripts/vero_division_monic_bridge_repair_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-division-monic-bridge-repair-v1
+          path: division_monic_bridge_repair_v1
+          if-no-files-found: error
