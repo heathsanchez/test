@@ -1,0 +1,42 @@
+name: Vero MSI Cross-Family Compounding V1
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/scripts/vero_msi_cross_family_compounding_v1.py'
+      - '.github/workflows/vero-msi-cross-family-compounding-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  causal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Checkout Vero benchmark harness
+        uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/veronext
+          path: vero-src
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install Vero
+        run: pip install -e vero-src
+      - name: Wire benchmark and seed artifact
+        run: |
+          ln -s "$GITHUB_WORKSPACE/vero-src/benchmarks" benchmarks
+          if [ -d "$GITHUB_WORKSPACE/vero-src/baseline27" ]; then ln -s "$GITHUB_WORKSPACE/vero-src/baseline27" ../baseline27; fi
+          if [ ! -f ../baseline27/allin_artifact.json ]; then
+            find vero-src -name allin_artifact.json -print
+            P=$(find vero-src -name allin_artifact.json | head -1)
+            mkdir -p ../baseline27
+            cp "$P" ../baseline27/allin_artifact.json
+          fi
+      - name: Run source-distinct Lean compounding gate
+        run: python .github/scripts/vero_msi_cross_family_compounding_v1.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vero-msi-cross-family-compounding-v1
+          path: msi_cross_family_compounding_v1/result.json
