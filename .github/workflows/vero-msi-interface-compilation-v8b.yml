@@ -1,0 +1,29 @@
+name: Vero MSI interface compilation V8b
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_interface_compilation_v8b.py'
+      - '.github/workflows/vero-msi-interface-compilation-v8b.yml'
+  workflow_dispatch:
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: python .github/scripts/vero_msi_interface_compilation_v8b.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vero-msi-interface-compilation-v8b
+          path: vero_msi_interface_compilation_v8b
+          if-no-files-found: warn
