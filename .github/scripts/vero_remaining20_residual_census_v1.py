@@ -1,7 +1,7 @@
 from pathlib import Path
 import shutil, subprocess, json, re, collections
 
-BASE = Path('../baseline28/galoistools_allin28').resolve()
+BASE = Path('baseline28/galoistools_allin28').resolve()
 OUT = Path('remaining20_census_v1').resolve()
 OUT.mkdir(exist_ok=True)
 
