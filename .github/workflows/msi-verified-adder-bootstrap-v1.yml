@@ -1,0 +1,58 @@
+name: MSI verified adder bootstrap V1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/scripts/msi_verified_adder_bootstrap_v1.py'
+      - '.github/workflows/msi-verified-adder-bootstrap-v1.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download verified project substrate
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33154946001
+          name: vero-galoistools-full48-decontaminated-v1
+          path: full48
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Discover, promote, compound, and certify
+        run: python .github/scripts/msi_verified_adder_bootstrap_v1.py
+      - name: Publish bootstrap summary
+        if: always()
+        run: |
+          if [ -f adder_bootstrap_v1/result.json ]; then
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d=json.load(open('adder_bootstrap_v1/result.json'))
+          print('# MSI verified adder bootstrap V1')
+          print('')
+          print('**PASS**' if d['passed'] else '**RESIDUAL**')
+          print('')
+          for k,v in d['gates'].items(): print(f'- {k}: {v}')
+          print(f"- flat full-adder cost: {d['stage2']['flat_full_adder_total_cost']}")
+          print(f"- promoted-interface cost: {d['stage2']['warm_full_adder_total_cost']}")
+          print(f"- compression ratio: {d['stage2']['compression_ratio']:.3f}x")
+          PY
+          fi
+      - name: Upload generated Lean certificate and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: msi-verified-adder-bootstrap-v1
+          path: adder_bootstrap_v1
+          if-no-files-found: error
+
