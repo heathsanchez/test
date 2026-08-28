@@ -5,44 +5,47 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_unit_zero_bridge_v1/source').resolve()
+out = Path('msi_unit_zero_bridge_v2/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 probe = r'''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIUnitZeroBridgeV1
+namespace GaloistoolsMSIUnitZeroBridgeV2
 
-theorem map_mod_forall_lt (p : Nat) (hp : 0 < p) (xs : List Nat) :
-    (xs.map (fun x => x % p)).Forall (fun z => z < p) := by
-  induction xs with
-  | nil => simp
-  | cons x xs ih =>
-      simp [ih, Nat.mod_lt _ hp]
+theorem map_mod_all_lt (p : Nat) (hp : 0 < p) (xs : List Nat) :
+    ∀ z ∈ xs.map (fun x => x % p), z < p := by
+  intro z hz
+  simp only [List.mem_map] at hz
+  obtain ⟨x, hx, rfl⟩ := hz
+  exact Nat.mod_lt _ hp
 
-theorem zipAddPad_forall_lt (p : Nat) (hp : 0 < p) :
-    ∀ xs ys : List Nat,
-      (Galoistools.zipAddPad p xs ys).Forall (fun z => z < p) := by
+theorem zipAddPad_all_lt (p : Nat) (hp : 0 < p) :
+    ∀ xs ys : List Nat, ∀ z ∈ Galoistools.zipAddPad p xs ys, z < p := by
   intro xs
   induction xs with
   | nil =>
-      intro ys
-      simpa [Galoistools.zipAddPad] using map_mod_forall_lt p hp ys
+      intro ys z hz
+      exact map_mod_all_lt p hp ys z (by simpa [Galoistools.zipAddPad] using hz)
   | cons x xs ih =>
-      intro ys
+      intro ys z hz
       cases ys with
       | nil =>
-          simpa [Galoistools.zipAddPad] using map_mod_forall_lt p hp (x :: xs)
+          exact map_mod_all_lt p hp (x :: xs) z (by simpa [Galoistools.zipAddPad] using hz)
       | cons y ys =>
-          simp [Galoistools.zipAddPad, Nat.mod_lt _ hp, ih ys]
+          simp only [Galoistools.zipAddPad, List.mem_cons] at hz
+          rcases hz with rfl | hz
+          · exact Nat.mod_lt _ hp
+          · exact ih ys z hz
 
-theorem convolve_forall_lt (p : Nat) (hp : 0 < p) (xs ys : List Nat) :
-    (Galoistools.convolve p xs ys).Forall (fun z => z < p) := by
+theorem convolve_all_lt (p : Nat) (hp : 0 < p) (xs ys : List Nat) :
+    ∀ z ∈ Galoistools.convolve p xs ys, z < p := by
+  intro z hz
   cases xs with
-  | nil => simp [Galoistools.convolve]
+  | nil => simp [Galoistools.convolve] at hz
   | cons x xs =>
-      simp only [Galoistools.convolve]
-      exact zipAddPad_forall_lt p hp _ _
+      simp only [Galoistools.convolve] at hz
+      exact zipAddPad_all_lt p hp _ _ z hz
 
 theorem mul_left_reduce (p a k : Nat) :
     (((a%p)*k)%p) = (a*k)%p := by
@@ -57,7 +60,6 @@ theorem unit_zero_exact_of_lt
     ((z*k)%p = 0 ↔ z = 0) := by
   constructor
   · intro hzk
-    have hzmod : z % p = z := Nat.mod_eq_of_lt hz
     have hkc : ((z*k)*c)%p = 0 := by
       calc
         ((z*k)*c)%p = (((z*k)%p)*c)%p := (mul_left_reduce p (z*k) c).symm
@@ -66,20 +68,25 @@ theorem unit_zero_exact_of_lt
       calc
         (z*(k*c))%p = ((z*k)*c)%p := by congr 1 <;> ac_rfl
         _ = 0 := hkc
-    have hz1 : (z*1)%p = 0 := by
-      simpa [hunit] using hzunit
-    simpa [hzmod] using hz1
+    have hzmodzero : z % p = 0 := by
+      calc
+        z % p = ((z % p) * 1) % p := by simp
+        _ = ((z % p) * ((k*c)%p)) % p := by rw [hunit]
+        _ = (z*(k*c))%p := (Nat.mul_mod z (k*c) p).symm
+        _ = 0 := hzunit
+    rw [Nat.mod_eq_of_lt hz] at hzmodzero
+    exact hzmodzero
   · intro hz0
     subst z
     simp
 
-end GaloistoolsMSIUnitZeroBridgeV1
+end GaloistoolsMSIUnitZeroBridgeV2
 '''
 
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MSI_UNIT_ZERO_BRIDGE_V1_EXIT',cp.returncode)
+print('MSI_UNIT_ZERO_BRIDGE_V2_EXIT',cp.returncode)
 print(raw[-24000:])
-Path('msi_unit_zero_bridge_v1').mkdir(exist_ok=True)
-Path('msi_unit_zero_bridge_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-32000:]},indent=2))
+Path('msi_unit_zero_bridge_v2').mkdir(exist_ok=True)
+Path('msi_unit_zero_bridge_v2/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-32000:]},indent=2))
