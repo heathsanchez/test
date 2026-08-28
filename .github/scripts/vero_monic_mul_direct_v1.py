@@ -8,17 +8,32 @@ seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
 out = Path('monic_mul_direct_v1/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
-# Extract the previously certified helper blocks from repository scripts.
-def extract_probe(path: str) -> str:
+# Extract literal probe blocks, with one composition-aware path for the certified unit lift.
+def extract_literal_probe(path: str) -> str:
     src = Path(path).read_text()
     m = re.search(r"probe = r'''(.*)'''\n\np = out", src, re.S)
     if not m:
-        raise RuntimeError(f'could not extract probe from {path}')
+        raise RuntimeError(f'could not extract literal probe from {path}')
     return m.group(1)
 
-unit_lift = extract_probe('../.github/scripts/vero_msi_gfmul_unit_lift_v1.py')
-unit_zero = extract_probe('../.github/scripts/vero_msi_unit_zero_bridge_v1.py')
-scalar = extract_probe('../.github/scripts/vero_monic_scalar_probe_v4.py')
+def extract_unit_lift(path: str) -> str:
+    src = Path(path).read_text()
+    # The unit-lift script constructs probe = base + extra. Reconstruct that exactly.
+    mbase = re.search(r"src = Path\('([^']+)'\)\.read_text\(\)", src)
+    mextra = re.search(r"extra = r'''(.*)'''\n\nprobe = base \+ extra", src, re.S)
+    if not mbase or not mextra:
+        raise RuntimeError(f'could not reconstruct composed probe from {path}')
+    base_path = str((Path(path).parent / mbase.group(1)).resolve())
+    base_src = Path(base_path).read_text()
+    m = re.search(r"probe = r'''(.*)'''\n\np = out", base_src, re.S)
+    if not m:
+        raise RuntimeError(f'could not extract base probe from {base_path}')
+    base = m.group(1).replace('\nend GaloistoolsMSIGfMulScaleBothV1\n', '\n')
+    return base + mextra.group(1)
+
+unit_lift = extract_unit_lift('../.github/scripts/vero_msi_gfmul_unit_lift_v1.py')
+unit_zero = extract_literal_probe('../.github/scripts/vero_msi_unit_zero_bridge_v1.py')
+scalar = extract_literal_probe('../.github/scripts/vero_monic_scalar_probe_v4.py')
 
 # Compile helpers as separate Lean modules, then import them into the direct theorem probe.
 (out/'MSIUnitLift.lean').write_text(unit_lift)
