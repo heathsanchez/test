@@ -1,0 +1,37 @@
+name: Vero MSI interface compilation V7
+
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_interface_compilation_v7.py'
+      - '.github/workflows/vero-msi-interface-compilation-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified cold source
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Measure quotient representative interface
+        run: python .github/scripts/vero_msi_interface_compilation_v7.py
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-msi-interface-compilation-v7
+          path: vero_msi_interface_compilation_v7
