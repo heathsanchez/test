@@ -1,5 +1,5 @@
 from pathlib import Path
-import shutil, subprocess, json
+import shutil, subprocess
 
 BASE=Path('baseline28/galoistools_allin28').resolve()
 OUT=Path('vero_msi_gcd_truth_census_v3').resolve()
@@ -28,10 +28,8 @@ private def norm (p : Nat) (f : List Nat) : Bool :=
   | [] => true
   | a::_ => a != 0 && f.all (fun c => c < p)
 
-private def primes : List Nat := [2,3,5,7]
-
-private def oneP (p : Nat) : Nat × Nat × Option (List Nat × List Nat × List Nat × List Nat × List Nat) :=
-  let ps := (allPolys p 4).filter (norm p)
+private def oneP (p maxLen : Nat) : Nat × Nat × Option (List Nat × List Nat × List Nat × List Nat × List Nat) :=
+  let ps := (allPolys p maxLen).filter (norm p)
   let pairs := ps.flatMap (fun f => ps.map (fun g => (f,g)))
   let bad := pairs.find? (fun fg =>
     let f:=fg.1; let g:=fg.2
@@ -43,7 +41,7 @@ private def oneP (p : Nat) : Nat × Nat × Option (List Nat × List Nat × List 
       let h:=gfGcd f g p
       (ps.length,pairs.length,some (f,g,h,gfRem f h p,gfRem g h p))
 
-#eval primes.map (fun p => (p, oneP p))
+#eval [(2, 4), (3, 4), (5, 4), (7, 3)].map (fun pm => (pm, oneP pm.1 pm.2))
 ''')
 cp=subprocess.run(['lake','lean','Galoistools/GcdTruthCensus.lean'],cwd=OUT,text=True,capture_output=True,timeout=240)
 raw=cp.stdout+'\n'+cp.stderr
