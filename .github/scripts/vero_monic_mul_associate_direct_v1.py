@@ -42,7 +42,7 @@ final = r'''
 
 namespace GaloistoolsMSIGfMulScaleBothV1
 
-theorem prove_monic_mul_associate_msi_v4 : spec_monic_mul_associate canonical := by
+theorem prove_monic_mul_associate_msi_v5 : spec_monic_mul_associate canonical := by
   simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
   cases f with
@@ -57,8 +57,8 @@ theorem prove_monic_mul_associate_msi_v4 : spec_monic_mul_associate canonical :=
       have hmulform :
           Galoistools.gfMul (a :: as) (b :: bs) p =
             (Galoistools.convolve p (a :: as).reverse (b :: bs).reverse).reverse := by
-        simp [Galoistools.gfMul]
-        rw [gfStrip_self_of_leadCoeff_ne _ hlead]
+        simp only [Galoistools.gfMul, List.cons_ne_nil, false_or, if_false]
+        exact gfStrip_self_of_leadCoeff_ne _ hlead
       have hfr : (a :: as).reverse ≠ [] := by simp
       have hgr : (b :: bs).reverse ≠ [] := by simp
       have hconvlen := convolve_length_local p (a :: as).reverse (b :: bs).reverse hfr hgr
@@ -85,7 +85,7 @@ probe = base + extra + unit + '\nend GaloistoolsMSIGfMulScaleBothV1\n\n' + scala
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MONIC_MUL_ASSOCIATE_DIRECT_V4_EXIT',cp.returncode)
+print('MONIC_MUL_ASSOCIATE_DIRECT_V5_EXIT',cp.returncode)
 print(raw[-36000:])
 Path('monic_mul_associate_direct_v1').mkdir(exist_ok=True)
 Path('monic_mul_associate_direct_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-46000:]},indent=2))
