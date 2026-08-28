@@ -1,0 +1,54 @@
+name: Vero monic mul associate promotion V1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vero-monic-mul-associate-promote-v1.yml'
+      - '.github/scripts/vero_monic_mul_associate_promote_v1.py'
+      - '.github/scripts/vero_monic_mul_associate_direct_v1.py'
+      - '.github/scripts/vero_selected_unit_mul_modeq_v1.py'
+      - '.github/scripts/vero_monic_scalar_probe_v4.py'
+      - '.github/scripts/vero_msi_gfmul_unit_lift_v1.py'
+      - '.github/scripts/vero_msi_gfmul_scale_both_v1.py'
+      - '.github/scripts/vero_msi_unit_zero_bridge_v1.py'
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - run: git clone --depth 1 https://github.com/sunblaze-ucb/vero.git vero
+      - name: Download 27-proof ratchet
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33053705380
+          name: vero-galoistools-mul-promote-v1
+          path: baseline28
+      - uses: astral-sh/setup-uv@v6
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install Vero
+        working-directory: vero
+        run: uv sync
+      - name: Promote monic multiplication theorem and full build
+        working-directory: vero
+        run: uv run python ../.github/scripts/vero_monic_mul_associate_promote_v1.py
+      - name: Upload 28-proof ratchet
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: |
+            vero/galoistools_allin28/
+            vero/allin28_artifact.json
+            vero/promotion_result.json
+          if-no-files-found: warn
