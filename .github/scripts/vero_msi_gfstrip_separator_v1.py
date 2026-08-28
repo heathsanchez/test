@@ -5,15 +5,15 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_gfstrip_separator_v3/source').resolve()
+out = Path('msi_gfstrip_separator_v4/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIGfStripSeparatorV3
+namespace GaloistoolsMSIGfStripSeparatorV4
 '''
-footer = '\nend GaloistoolsMSIGfStripSeparatorV3\n'
+footer = '\nend GaloistoolsMSIGfStripSeparatorV4\n'
 
 core = r'''
 theorem gfStrip_map_scale
@@ -42,7 +42,6 @@ theorem reverse_map_scale (p k : Nat) (f : List Nat) :
   | nil => rfl
   | cons a as ih =>
       simp only [List.map_cons, List.reverse_cons, List.map_append, ih, List.map_nil]
-      rfl
 '''
 
 probes = {
@@ -63,6 +62,6 @@ for name,text in probes.items():
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['tail'])
-Path('msi_gfstrip_separator_v3').mkdir(exist_ok=True)
-Path('msi_gfstrip_separator_v3/census.json').write_text(json.dumps(census,indent=2))
-print('MSI_GFSTRIP_SEPARATOR_V3', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
+Path('msi_gfstrip_separator_v4').mkdir(exist_ok=True)
+Path('msi_gfstrip_separator_v4/census.json').write_text(json.dumps(census,indent=2))
+print('MSI_GFSTRIP_SEPARATOR_V4', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
