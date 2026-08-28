@@ -1,0 +1,39 @@
+name: Vero remaining 20 residual census V1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/vero-remaining20-residual-census-v1.yml'
+      - '.github/scripts/vero_remaining20_residual_census_v1.py'
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified 28-proof baseline
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run residual census over all 20 remaining scored prove targets
+        run: python .github/scripts/vero_remaining20_residual_census_v1.py
+      - name: Upload census
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-remaining20-residual-census-v1
+          path: remaining20_census_v1/census.json
+          if-no-files-found: error
