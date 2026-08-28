@@ -1,6 +1,7 @@
 from pathlib import Path
 import shutil, subprocess, json
 
+# V7: quotient-representative interface census on the frozen structural frontier.
 ROOT=Path.cwd()
 SOURCE=(ROOT/'coldcert'/'project').resolve()
 OUT=(ROOT/'vero_msi_interface_compilation_v7').resolve()
