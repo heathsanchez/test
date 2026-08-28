@@ -80,7 +80,7 @@ ALPHA_PROOFS = [
           (a * (y + x * Galoistools.refPolyEvalRevAux p x ys)) :=
         natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
       unfold NatModEq
-      exact hsum.trans hfactor.symm""",
+      simpa only [Nat.mod_mod] using hsum.trans hfactor.symm""",
 ]
 
 BETA_PROOFS = [
