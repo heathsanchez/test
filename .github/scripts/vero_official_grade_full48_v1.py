@@ -14,7 +14,7 @@ bench = Benchmark(SOURCE)
 artifact = extract(PROMOTED, bench, mode='codeproof')
 write_artifact(artifact, OUT / 'artifact.json')
 
-result = run_evaluation(
+run_evaluation(
     benchmark_dir=SOURCE,
     artifact=artifact,
     mode='codeproof',
@@ -25,9 +25,10 @@ result = run_evaluation(
 
 report = json.loads((OUT / 'report' / 'report.json').read_text())
 summary = report['summary']
+build = report.get('build', {})
 marker = {
-    'build_ok': report['build_ok'],
-    'impl_broken': report.get('impl_broken', False),
+    'build_ok': bool(build.get('ok', False)),
+    'impl_broken': bool(report.get('impl_broken', False)),
     'total_specs': summary['total_specs'],
     'passed_specs': summary['passed_specs'],
     'unfilled_specs': summary['unfilled_specs'],
@@ -36,7 +37,15 @@ marker = {
     'failed_specs': summary['failed_specs'],
     'joint_status': summary.get('joint_status'),
 }
-print('VERO_OFFICIAL_GRADE_FULL48_V1', json.dumps(marker, sort_keys=True))
+print('VERO_OFFICIAL_GRADE_FULL48_V2', json.dumps(marker, sort_keys=True))
+
+# Emit compact failure census so every red run yields actionable residuals.
+from collections import Counter
+statuses = Counter(s.get('status') for s in report.get('specs', []))
+print('VERO_STATUS_CENSUS', json.dumps(statuses, sort_keys=True))
+for s in report.get('specs', []):
+    if s.get('status') != 'passed':
+        print('VERO_RESIDUAL', s.get('module'), s.get('spec'), s.get('status'), s.get('notes',''))
 
 ok = (
     marker['build_ok']
