@@ -1,0 +1,37 @@
+name: Vero MSI Sealed Residual Probe V2
+
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_sealed_residual_probe_v2.py'
+      - '.github/workflows/vero-msi-sealed-residual-probe-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  residual:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Extract exact sealed residual
+        run: python .github/scripts/vero_msi_sealed_residual_probe_v2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vero-msi-sealed-residual-probe-v2
+          path: |
+            sealed_residual_v2.txt
+            vero_msi_sealed_residual_probe_v2/Galoistools/Proof/Division.lean
