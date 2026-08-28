@@ -28,14 +28,14 @@ theorem selectedUnit_mul_modeq
   unfold selectedUnit
   by_cases ha1 : a = 1
   · subst a
-    have hp0 : 0 < p := by omega
     have hbmod : b % p = b := Nat.mod_eq_of_lt hb
     simp [hbmod]
+    rfl
   · by_cases hb1 : b = 1
     · subst b
-      have hp0 : 0 < p := by omega
       have hamod : a % p = a := Nat.mod_eq_of_lt ha
       simp [hamod]
+      rfl
     · by_cases hc1 : (a*b)%p = 1
       · simp [ha1, hb1, hc1]
         have hpair : ((a*b) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p = 1 := by
@@ -57,13 +57,11 @@ theorem selectedUnit_mul_modeq
                    ((b * Galoistools.invMod b p) % p)) % p := by
                     rw [Nat.mul_mod]
             _ = 1 := by simp [hia, hib, Nat.mod_eq_of_lt hp1]
+        have hpair' : (((a*b)%p) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p = 1 := by
+          simpa [Nat.mul_mod] using hpair
+        rw [hc1] at hpair'
         have hprod : (Galoistools.invMod a p * Galoistools.invMod b p) % p = 1 := by
-          calc
-            (Galoistools.invMod a p * Galoistools.invMod b p) % p
-                = (((a*b)%p) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p := by rw [hc1]; simp
-            _ = ((a*b) * (Galoistools.invMod a p * Galoistools.invMod b p)) % p := by
-                  rw [Nat.mul_mod]
-            _ = 1 := hpair
+          simpa [Nat.mod_eq_of_lt hp.1] using hpair'
         unfold NatModEq
         simpa [Nat.mod_eq_of_lt hp.1] using hprod.symm
       · simpa [ha1, hb1, hc1] using
@@ -74,7 +72,7 @@ probe = scalar + extra
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('SELECTED_UNIT_MUL_MODEQ_V1_EXIT',cp.returncode)
+print('SELECTED_UNIT_MUL_MODEQ_V2_EXIT',cp.returncode)
 print(raw[-26000:])
 Path('selected_unit_mul_modeq_v1').mkdir(exist_ok=True)
 Path('selected_unit_mul_modeq_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-36000:]},indent=2))
