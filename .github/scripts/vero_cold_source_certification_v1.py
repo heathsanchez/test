@@ -73,7 +73,9 @@ line_delta = [
     if line.startswith("- ") or line.startswith("+ ")
 ]
 
-blocks = prove_blocks(after)
+blocks = []
+for proof_file in sorted((PROJECT / "Galoistools" / "Proof").glob("*.lean")):
+    blocks.extend(prove_blocks(proof_file.read_text()))
 taint = {
     name: [token for token in FORBIDDEN if re.search(rf"\b{re.escape(token)}\b", body)]
     for name, body in blocks
