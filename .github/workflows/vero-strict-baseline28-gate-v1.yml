@@ -1,0 +1,33 @@
+name: Vero strict baseline28 gate V1
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_strict_baseline28_gate_v1.py'
+      - '.github/workflows/vero-strict-baseline28-gate-v1.yml'
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download baseline28
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile actual Proof modules
+        run: python .github/scripts/vero_strict_baseline28_gate_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-strict-baseline28-gate-v1
+          path: strict_baseline28_gate_v1
+          if-no-files-found: error
