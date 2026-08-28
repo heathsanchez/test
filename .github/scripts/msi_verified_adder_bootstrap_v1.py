@@ -117,6 +117,10 @@ theorem ripple8_exhaustive :
       (List.range 256).all (fun b => rippleCorrectAt 8 a b)) = true := by native_decide
 """
 LEAN.write_text(lean)
+substrate = subprocess.run(
+    ["lake", "build"], cwd=PROJECT,
+    text=True, capture_output=True, timeout=300
+)
 cp = subprocess.run(
     ["lake", "env", "lean", LEAN.name], cwd=PROJECT,
     text=True, capture_output=True, timeout=420
@@ -124,6 +128,7 @@ cp = subprocess.run(
 
 gates = {
     "nand_only_half_interface_discovered": xor2 in half and and2 in half,
+    "cold_substrate_builds": substrate.returncode == 0,
     "half_interface_strictly_compresses_full_adder": warm_cost < flat_cost,
     "compression_at_least_two_x": warm_cost * 2 <= flat_cost,
     "lean_certifies_half_adder": cp.returncode == 0,
@@ -152,6 +157,7 @@ payload = {
     },
     "stage3": {"certified_widths": [4, 8], "exhaustive_input_pairs": 256 + 65536},
     "lean": {"exit": cp.returncode, "tail": (cp.stdout + cp.stderr)[-20000:]},
+    "substrate": {"exit": substrate.returncode, "tail": (substrate.stdout + substrate.stderr)[-12000:]},
     "claim_scope": "verified closed-world interface discovery and recursive capability compounding; not open-world autonomous insight",
 }
 RESULT.write_text(json.dumps(payload, indent=2, sort_keys=True))
