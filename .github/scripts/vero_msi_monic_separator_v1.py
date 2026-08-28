@@ -5,18 +5,39 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_monic_separator_v1/source').resolve()
+out = Path('msi_monic_separator_v2/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIMonicSeparatorV1
+namespace GaloistoolsMSIMonicSeparatorV2
 '''
-footer = '\nend GaloistoolsMSIMonicSeparatorV1\n'
+footer = '\nend GaloistoolsMSIMonicSeparatorV2\n'
+
+scalar = r'''
+theorem mul_mod_right_modeq (p x c d : Nat) (h : c % p = d % p) :
+    (x*c)%p = (x*d)%p := by
+  calc
+    (x*c)%p = ((x%p)*(c%p))%p := by simpa only [Nat.mul_mod]
+    _ = ((x%p)*(d%p))%p := by rw [h]
+    _ = (x*d)%p := by simpa only [Nat.mul_mod]
+
+theorem add_scaled_mod (p k x y : Nat) :
+    (((x*k)%p) + ((y*k)%p))%p = (((x+y)%p)*k)%p := by
+  calc
+    (((x*k)%p) + ((y*k)%p))%p = ((x*k)+(y*k))%p := by
+      rw [Nat.add_mod]
+      simp only [Nat.mod_mod]
+    _ = ((x+y)*k)%p := by rw [Nat.add_mul]
+    _ = (((x+y)%p)*k)%p := by
+      rw [Nat.mul_mod]
+      simp only [Nat.mod_mod]
+'''
 
 probes = {
-'scale_modeq_exact': r'''
+'scalar_kernel': scalar,
+'scale_modeq_exact': scalar + r'''
 theorem scale_modeq_exact (p c d : Nat) (f : List Nat)
     (h : NatModEq p c d) :
     Galoistools.scaleP p c f = Galoistools.scaleP p d f := by
@@ -25,9 +46,9 @@ theorem scale_modeq_exact (p c d : Nat) (f : List Nat)
   apply List.map_congr_left
   intro x hx
   unfold NatModEq at h
-  rw [Nat.mul_mod, Nat.mul_mod, h]
+  exact mul_mod_right_modeq p x c d h
 ''',
-'zip_scale': r'''
+'zip_scale': scalar + r'''
 theorem zip_scale (p k : Nat) (xs ys : List Nat) :
     Galoistools.zipAddPad p
       (xs.map (fun x => (x*k)%p))
@@ -35,32 +56,71 @@ theorem zip_scale (p k : Nat) (xs ys : List Nat) :
     (Galoistools.zipAddPad p xs ys).map (fun z => (z*k)%p) := by
   induction xs generalizing ys with
   | nil =>
-      cases ys <;> simp [Galoistools.zipAddPad, Nat.mul_mod]
+      cases ys with
+      | nil => rfl
+      | cons y ys =>
+          simp only [List.map_cons, Galoistools.zipAddPad]
+          congr 1
+          · simpa only [Nat.mul_mod, Nat.mod_mod]
+          · simp only [List.map_map, Function.comp_apply]
+            apply List.map_congr_left
+            intro z hz
+            simpa only [Nat.mul_mod, Nat.mod_mod]
   | cons x xs ih =>
       cases ys with
-      | nil => simp [Galoistools.zipAddPad, Nat.mul_mod]
+      | nil =>
+          simp only [List.map_cons, Galoistools.zipAddPad]
+          congr 1
+          · simpa only [Nat.mul_mod, Nat.mod_mod]
+          · simp only [List.map_map, Function.comp_apply]
+            apply List.map_congr_left
+            intro z hz
+            simpa only [Nat.mul_mod, Nat.mod_mod]
       | cons y ys =>
-          simp [Galoistools.zipAddPad, ih, Nat.add_mul, Nat.add_mod, Nat.mul_mod]
+          simp only [List.map_cons, Galoistools.zipAddPad]
+          congr 1
+          · exact add_scaled_mod p k x y
+          · exact ih ys
 ''',
-'convolve_scale_left': r'''
+'convolve_scale_left': scalar + r'''
+theorem zip_scale (p k : Nat) (xs ys : List Nat) :
+    Galoistools.zipAddPad p
+      (xs.map (fun x => (x*k)%p))
+      (ys.map (fun y => (y*k)%p)) =
+    (Galoistools.zipAddPad p xs ys).map (fun z => (z*k)%p) := by
+  induction xs generalizing ys with
+  | nil =>
+      cases ys <;> simp [Galoistools.zipAddPad, Nat.mul_mod, Nat.mod_mod]
+  | cons x xs ih =>
+      cases ys with
+      | nil => simp [Galoistools.zipAddPad, Nat.mul_mod, Nat.mod_mod]
+      | cons y ys =>
+          simp only [List.map_cons, Galoistools.zipAddPad]
+          congr 1
+          · exact add_scaled_mod p k x y
+          · exact ih ys
+
 theorem convolve_scale_left (p k : Nat) (xs ys : List Nat) :
     Galoistools.convolve p (xs.map (fun x => (x*k)%p)) ys =
       (Galoistools.convolve p xs ys).map (fun z => (z*k)%p) := by
   induction xs with
   | nil => rfl
   | cons x xs ih =>
-      simp [Galoistools.convolve, ih]
-''',
-'convolve_scale_both': r'''
-theorem convolve_scale_both (p a b : Nat) (xs ys : List Nat) :
-    Galoistools.convolve p
-      (xs.map (fun x => (x*a)%p))
-      (ys.map (fun y => (y*b)%p)) =
-    (Galoistools.convolve p xs ys).map (fun z => (z*(a*b))%p) := by
-  induction xs with
-  | nil => rfl
-  | cons x xs ih =>
-      simp [Galoistools.convolve, ih]
+      simp only [List.map_cons, Galoistools.convolve]
+      rw [ih]
+      have hhead : ys.map (fun y => ((x*k)%p * y)%p) =
+          (ys.map (fun y => (x*y)%p)).map (fun z => (z*k)%p) := by
+        simp only [List.map_map, Function.comp_apply]
+        apply List.map_congr_left
+        intro y hy
+        simp only [Nat.mul_mod, Nat.mod_mod]
+        congr 1
+        ac_rfl
+      rw [hhead]
+      have htail : (0 :: Galoistools.convolve p xs ys).map (fun z => (z*k)%p) =
+          0 :: (Galoistools.convolve p xs ys).map (fun z => (z*k)%p) := by simp
+      rw [← htail]
+      exact zip_scale p k _ _
 '''
 }
 
@@ -77,6 +137,6 @@ for name,text in probes.items():
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['tail'])
-Path('msi_monic_separator_v1').mkdir(exist_ok=True)
-Path('msi_monic_separator_v1/census.json').write_text(json.dumps(census,indent=2))
-print('MSI_MONIC_SEPARATOR_V1', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
+Path('msi_monic_separator_v2').mkdir(exist_ok=True)
+Path('msi_monic_separator_v2/census.json').write_text(json.dumps(census,indent=2))
+print('MSI_MONIC_SEPARATOR_V2', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
