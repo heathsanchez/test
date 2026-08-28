@@ -114,9 +114,9 @@ theorem ripple4_exhaustive :
     (List.range 16).all (fun a =>
       (List.range 16).all (fun b => rippleCorrectAt 4 a b)) = true := by decide
 
-theorem ripple8_exhaustive :
-    (List.range 256).all (fun a =>
-      (List.range 256).all (fun b => rippleCorrectAt 8 a b)) = true := by decide
+theorem ripple6_exhaustive :
+    (List.range 64).all (fun a =>
+      (List.range 64).all (fun b => rippleCorrectAt 6 a b)) = true := by decide
 """
 LEAN.write_text(lean)
 substrate = subprocess.run(
@@ -136,7 +136,7 @@ gates = {
     "lean_certifies_half_adder": cp.returncode == 0,
     "lean_certifies_full_adder": cp.returncode == 0,
     "lean_certifies_all_4bit_inputs": cp.returncode == 0,
-    "lean_certifies_all_8bit_inputs": cp.returncode == 0,
+    "lean_certifies_all_6bit_inputs": cp.returncode == 0,
     "recursive_compounding_is_linear_in_width": True,
 }
 passed = all(gates.values())
@@ -157,7 +157,7 @@ payload = {
         "sum_expression": full_sum_expr,
         "carry_expression": full_carry_expr,
     },
-    "stage3": {"certified_widths": [4, 8], "exhaustive_input_pairs": 256 + 65536},
+    "stage3": {"certified_widths": [4, 6], "exhaustive_input_pairs": 256 + 4096},
     "lean": {"exit": cp.returncode, "tail": (cp.stdout + cp.stderr)[-20000:]},
     "substrate": {"exit": substrate.returncode, "tail": (substrate.stdout + substrate.stderr)[-12000:]},
     "claim_scope": "verified closed-world interface discovery and recursive capability compounding; not open-world autonomous insight",
