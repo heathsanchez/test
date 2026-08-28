@@ -1,0 +1,40 @@
+name: Vero MSI Sealed Target Discovery V1
+
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_sealed_target_discovery_v1.py'
+      - '.github/workflows/vero-msi-sealed-target-discovery-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  sealed-discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download immutable certified 28-proof baseline
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run sealed target discovery
+        run: python .github/scripts/vero_msi_sealed_target_discovery_v1.py
+      - name: Upload audit evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-msi-sealed-target-discovery-v1
+          path: vero_msi_sealed_target_discovery_v1
+          if-no-files-found: error
