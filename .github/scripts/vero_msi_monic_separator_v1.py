@@ -5,15 +5,15 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_monic_separator_v4/source').resolve()
+out = Path('msi_monic_separator_v5/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIMonicSeparatorV4
+namespace GaloistoolsMSIMonicSeparatorV5
 '''
-footer = '\nend GaloistoolsMSIMonicSeparatorV4\n'
+footer = '\nend GaloistoolsMSIMonicSeparatorV5\n'
 
 scalar = r'''
 theorem mul_mod_right_modeq (p x c d : Nat) (h : c % p = d % p) :
@@ -56,24 +56,22 @@ theorem zip_scale (p k : Nat) (xs ys : List Nat) :
       cases ys with
       | nil => rfl
       | cons y ys =>
-          simp only [List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
+          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
           congr 1
           · rw [Nat.mod_mod]
             exact (scale_after_mod p k y).symm
           · apply List.map_congr_left
             intro z hz
-            rw [Nat.mod_mod]
             exact (scale_after_mod p k z).symm
   | cons x xs ih =>
       cases ys with
       | nil =>
-          simp only [List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
+          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
           congr 1
           · rw [Nat.mod_mod]
             exact (scale_after_mod p k x).symm
           · apply List.map_congr_left
             intro z hz
-            rw [Nat.mod_mod]
             exact (scale_after_mod p k z).symm
       | cons y ys =>
           simp only [List.map_cons, Galoistools.zipAddPad]
@@ -140,6 +138,6 @@ for name,text in probes.items():
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['tail'])
-Path('msi_monic_separator_v4').mkdir(exist_ok=True)
-Path('msi_monic_separator_v4/census.json').write_text(json.dumps(census,indent=2))
-print('MSI_MONIC_SEPARATOR_V4', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
+Path('msi_monic_separator_v5').mkdir(exist_ok=True)
+Path('msi_monic_separator_v5/census.json').write_text(json.dumps(census,indent=2))
+print('MSI_MONIC_SEPARATOR_V5', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
