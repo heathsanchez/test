@@ -1,0 +1,33 @@
+name: Vero cold Division residual V1
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_cold_division_residual_v1.py'
+      - '.github/workflows/vero-cold-division-residual-v1.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified cold source
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile exact Division proof module
+        run: python .github/scripts/vero_cold_division_residual_v1.py
+      - name: Upload residual
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-cold-division-residual-v1
+          path: cold_division_residual_v1
+          if-no-files-found: error
