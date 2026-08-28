@@ -1,0 +1,59 @@
+name: Vero kernel-only proof regeneration V2
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/scripts/vero_kernel_only_proof_regeneration_v2.py'
+      - '.github/workflows/vero-kernel-only-proof-regeneration-v2.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  regenerate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download clean independent 48-proof state
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33154946001
+          name: vero-galoistools-full48-decontaminated-v1
+          path: full48
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Run bounded kernel-only regeneration
+        run: python .github/scripts/vero_kernel_only_proof_regeneration_v2.py
+      - name: Publish gate summary
+        if: always()
+        run: |
+          if [ -f kernel_regeneration_v2/result.json ]; then
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d=json.load(open('kernel_regeneration_v2/result.json'))
+          print('# Kernel-only proof regeneration V2')
+          print('')
+          print('**PASS**' if d['passed'] else '**BOUNDED SEARCH EXHAUSTED**')
+          print('')
+          print(d['claim_scope'])
+          print('')
+          for k,v in d['gates'].items(): print(f'- {k}: {v}')
+          print(f"- attempts: {d['attempt_count']}")
+          print(f"- winner: {d['winner_index']}")
+          PY
+          fi
+      - name: Upload complete evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-kernel-only-proof-regeneration-v2
+          path: kernel_regeneration_v2
+          if-no-files-found: error
+
