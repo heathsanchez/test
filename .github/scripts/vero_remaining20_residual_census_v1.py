@@ -46,18 +46,19 @@ for i,name in enumerate(TARGETS):
     pf = wd/'Galoistools/Proof/Division.lean'
     txt = pf.read_text()
     pf.write_text(patch_target(txt,name,tactic(name)))
-    cp = subprocess.run(['lake','env','lean','Galoistools/Proof/Division.lean'],cwd=wd,text=True,capture_output=True)
+    cp = subprocess.run(['lake','build'],cwd=wd,text=True,capture_output=True)
     raw = cp.stdout+'\n'+cp.stderr
     errs = [x.strip() for x in re.findall(r'error:(.*?)(?=\n[^\n]*?(?:error:|warning:)|\Z)', raw, re.S)]
-    tail = '\n'.join(errs[-4:])[-12000:]
+    tail = '\n'.join(errs[-6:])[-16000:]
+    if not tail and cp.returncode != 0:
+        tail = '\n'.join(raw.splitlines()[-120:])[-16000:]
     tokens = {}
     for k in ['gfDiv','gfRem','gfGcd','gfGcdex','gfPowMod','gfMul','gfAdd','refGfDegree','refPolyEval','IsNorm','leadCoeff']:
         tokens[k]=tail.count(k)
     rows.append({'target':name,'family':family(name),'exit':cp.returncode,'residual':tail,'tokens':tokens})
     print('CENSUS',i+1,len(TARGETS),name,'EXIT',cp.returncode)
-    if tail: print(tail[-1800:])
+    if tail: print(tail[-2200:])
 
-# rank shared interfaces by number of failed targets in which they occur
 failed=[r for r in rows if r['exit']!=0]
 fanout=collections.Counter()
 for r in failed:
