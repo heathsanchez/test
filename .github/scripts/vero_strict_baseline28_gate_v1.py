@@ -8,14 +8,16 @@ OUT.mkdir(exist_ok=True)
 def run(args):
     cp = subprocess.run(args,cwd=BASE,text=True,capture_output=True)
     raw = cp.stdout+'\n'+cp.stderr
-    return {'exit':cp.returncode,'tail':raw[-20000:]}
+    return {'exit':cp.returncode,'tail':raw[-30000:]}
 
-ring = run(['lake','env','lean','Galoistools/Proof/Ring.lean'])
-div = run(['lake','env','lean','Galoistools/Proof/Division.lean'])
+# Explicit Lake targets force compilation of the Proof modules while preserving
+# the package/module search path. Plain `lake build` does not include them.
+ring = run(['lake','build','Galoistools.Proof.Ring'])
+div = run(['lake','build','Galoistools.Proof.Division'])
 full = run(['lake','build'])
 res={'ring':ring,'division':div,'full':full}
 (OUT/'result.json').write_text(json.dumps(res,indent=2))
-print('STRICT_BASELINE28_GATE_V1', json.dumps({'ring_exit':ring['exit'],'division_exit':div['exit'],'full_exit':full['exit']}))
+print('STRICT_BASELINE28_GATE_V2', json.dumps({'ring_exit':ring['exit'],'division_exit':div['exit'],'full_exit':full['exit']}))
 if ring['exit']:
     print('RING_RESIDUAL\n'+ring['tail'])
 if div['exit']:
