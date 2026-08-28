@@ -5,15 +5,15 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_monic_separator_v5/source').resolve()
+out = Path('msi_monic_separator_v6/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIMonicSeparatorV5
+namespace GaloistoolsMSIMonicSeparatorV6
 '''
-footer = '\nend GaloistoolsMSIMonicSeparatorV5\n'
+footer = '\nend GaloistoolsMSIMonicSeparatorV6\n'
 
 scalar = r'''
 theorem mul_mod_right_modeq (p x c d : Nat) (h : c % p = d % p) :
@@ -43,6 +43,11 @@ theorem add_scaled_mod (p k x y : Nat) :
 
 theorem scale_after_mod (p k z : Nat) :
     (((z % p) * k) % p) = ((z*k)%p) := mul_left_reduce p z k
+
+theorem mod_after_scale_eq_scale_after_mod (p k z : Nat) :
+    (((z*k)%p)%p) = (((z%p)*k)%p) := by
+  rw [Nat.mod_mod]
+  exact (scale_after_mod p k z).symm
 '''
 
 zip = r'''
@@ -56,23 +61,25 @@ theorem zip_scale (p k : Nat) (xs ys : List Nat) :
       cases ys with
       | nil => rfl
       | cons y ys =>
-          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
+          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map]
           congr 1
           · rw [Nat.mod_mod]
             exact (scale_after_mod p k y).symm
           · apply List.map_congr_left
             intro z hz
-            exact (scale_after_mod p k z).symm
+            change (((z*k)%p)%p) = (((z%p)*k)%p)
+            exact mod_after_scale_eq_scale_after_mod p k z
   | cons x xs ih =>
       cases ys with
       | nil =>
-          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
+          simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map]
           congr 1
           · rw [Nat.mod_mod]
             exact (scale_after_mod p k x).symm
           · apply List.map_congr_left
             intro z hz
-            exact (scale_after_mod p k z).symm
+            change (((z*k)%p)%p) = (((z%p)*k)%p)
+            exact mod_after_scale_eq_scale_after_mod p k z
       | cons y ys =>
           simp only [List.map_cons, Galoistools.zipAddPad]
           congr 1
@@ -91,7 +98,7 @@ theorem convolve_scale_left (p k : Nat) (xs ys : List Nat) :
       rw [ih]
       have hhead : ys.map (fun y => ((x*k)%p * y)%p) =
           (ys.map (fun y => (x*y)%p)).map (fun z => (z*k)%p) := by
-        simp only [List.map_map, Function.comp_apply]
+        simp only [List.map_map]
         apply List.map_congr_left
         intro y hy
         calc
@@ -138,6 +145,6 @@ for name,text in probes.items():
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['tail'])
-Path('msi_monic_separator_v5').mkdir(exist_ok=True)
-Path('msi_monic_separator_v5/census.json').write_text(json.dumps(census,indent=2))
-print('MSI_MONIC_SEPARATOR_V5', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
+Path('msi_monic_separator_v6').mkdir(exist_ok=True)
+Path('msi_monic_separator_v6/census.json').write_text(json.dumps(census,indent=2))
+print('MSI_MONIC_SEPARATOR_V6', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
