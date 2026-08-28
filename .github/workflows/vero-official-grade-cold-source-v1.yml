@@ -1,0 +1,40 @@
+name: Vero official grade cold source V1
+on:
+  push:
+    paths:
+      - '.github/workflows/vero-official-grade-cold-source-v1.yml'
+      - '.github/scripts/vero_official_grade_cold_source_v1.py'
+  workflow_dispatch:
+jobs:
+  grade:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified cold source artifact
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - name: Checkout Vero benchmark and grader
+        uses: actions/checkout@v4
+        with:
+          repository: sunblaze-ucb/vero
+          path: vero
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Install Vero
+        run: python -m pip install -e ./vero
+      - name: Run official grader on certified cold source
+        run: python .github/scripts/vero_official_grade_cold_source_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-official-grade-cold-source-v1
+          path: official_grade_cold_source_v1
+          if-no-files-found: error
