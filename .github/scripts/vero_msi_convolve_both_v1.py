@@ -5,13 +5,13 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_convolve_both_v1/source').resolve()
+out = Path('msi_convolve_both_v2/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 probe = r'''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIConvolveBothV1
+namespace GaloistoolsMSIConvolveBothV2
 
 theorem add_mod_unreduce (p a b : Nat) :
     ((a%p) + (b%p))%p = (a+b)%p := (Nat.add_mod a b p).symm
@@ -30,6 +30,14 @@ theorem add_scaled_mod (p k x y : Nat) :
     _ = ((x+y)*k)%p := by rw [Nat.add_mul]
     _ = (((x+y)%p)*k)%p := (mul_left_reduce p (x+y) k).symm
 
+theorem scale_after_mod (p k z : Nat) :
+    (((z % p) * k) % p) = ((z*k)%p) := mul_left_reduce p z k
+
+theorem mod_after_scale_eq_scale_after_mod (p k z : Nat) :
+    (((z*k)%p)%p) = (((z%p)*k)%p) := by
+  rw [Nat.mod_mod]
+  exact (scale_after_mod p k z).symm
+
 theorem zip_scale (p k : Nat) (xs ys : List Nat) :
     Galoistools.zipAddPad p (xs.map (fun x => (x*k)%p)) (ys.map (fun y => (y*k)%p)) =
       (Galoistools.zipAddPad p xs ys).map (fun z => (z*k)%p) := by
@@ -41,22 +49,22 @@ theorem zip_scale (p k : Nat) (xs ys : List Nat) :
           simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map]
           congr 1
           · rw [Nat.mod_mod]
-            exact (mul_left_reduce p y k).symm
+            exact (scale_after_mod p k y).symm
           · apply List.map_congr_left
             intro z hz
-            rw [Nat.mod_mod]
-            exact (mul_left_reduce p z k).symm
+            change (((z*k)%p)%p) = (((z%p)*k)%p)
+            exact mod_after_scale_eq_scale_after_mod p k z
   | cons x xs ih =>
       cases ys with
       | nil =>
           simp only [List.map_nil, List.map_cons, Galoistools.zipAddPad, List.map_map]
           congr 1
           · rw [Nat.mod_mod]
-            exact (mul_left_reduce p x k).symm
+            exact (scale_after_mod p k x).symm
           · apply List.map_congr_left
             intro z hz
-            rw [Nat.mod_mod]
-            exact (mul_left_reduce p z k).symm
+            change (((z*k)%p)%p) = (((z%p)*k)%p)
+            exact mod_after_scale_eq_scale_after_mod p k z
       | cons y ys =>
           simp only [List.map_cons, Galoistools.zipAddPad]
           congr 1
@@ -127,13 +135,13 @@ theorem convolve_scale_both (p a b : Nat) (xs ys : List Nat) :
     ((((z*b)%p)*a)%p) = ((z*b)*a)%p := mul_left_reduce p (z*b) a
     _ = (z*(a*b))%p := by congr 1; ac_rfl
 
-end GaloistoolsMSIConvolveBothV1
+end GaloistoolsMSIConvolveBothV2
 '''
 
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MSI_CONVOLVE_BOTH_V1_EXIT',cp.returncode)
+print('MSI_CONVOLVE_BOTH_V2_EXIT',cp.returncode)
 print(raw[-24000:])
-Path('msi_convolve_both_v1').mkdir(exist_ok=True)
-Path('msi_convolve_both_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-32000:]},indent=2))
+Path('msi_convolve_both_v2').mkdir(exist_ok=True)
+Path('msi_convolve_both_v2/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-32000:]},indent=2))
