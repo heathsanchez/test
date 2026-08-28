@@ -1,0 +1,55 @@
+name: Vero cold source certification V1
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/scripts/vero_cold_source_certification_v1.py'
+      - '.github/workflows/vero-cold-source-certification-v1.yml'
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download promoted 48-proof source artifact
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33154946001
+          name: vero-galoistools-full48-decontaminated-v1
+          path: full48
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Repair captured arguments and certify cold source
+        run: python .github/scripts/vero_cold_source_certification_v1.py
+      - name: Publish certification summary
+        if: always()
+        run: |
+          if [ -f cold_source_certification_v1/result.json ]; then
+            python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          d=json.load(open('cold_source_certification_v1/result.json'))
+          print('# Vero cold source certification V1')
+          print('')
+          print('**CERTIFIED**' if d['passed'] else '**RESIDUAL REMAINS**')
+          print('')
+          for k,v in d['gates'].items(): print(f'- {k}: {v}')
+          PY
+          fi
+      - name: Upload repaired source and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-cold-source-certification-v1
+          path: cold_source_certification_v1
+          if-no-files-found: error
+
