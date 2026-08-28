@@ -60,12 +60,59 @@ ALPHA_PROOFS = [
     "by aesop",
     "by induction ys <;> simp_all [Galoistools.refPolyEvalRevAux, NatModEq, Nat.add_mod, Nat.mul_mod, Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]",
     "by induction ys <;> simp_all [Galoistools.refPolyEvalRevAux, NatModEq, Nat.add_mod, Nat.mul_mod, Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] <;> omega",
+    """by
+  induction ys with
+  | nil => rfl
+  | cons y ys ih =>
+      simp only [List.map_cons, Galoistools.refPolyEvalRevAux]
+      have hhead : NatModEq p ((a * y) % p) (a * y) := natModEq_mod_left (by rfl)
+      have htail : NatModEq p
+          (x * Galoistools.refPolyEvalRevAux p x (ys.map (fun y => (a * y) % p)))
+          (x * (a * Galoistools.refPolyEvalRevAux p x ys)) :=
+        natModEq_mul (by rfl) ih
+      have hsum := natModEq_add hhead htail
+      have halg : a * y + x * (a * Galoistools.refPolyEvalRevAux p x ys) =
+          a * (y + x * Galoistools.refPolyEvalRevAux p x ys) := by
+        simp [Nat.mul_add, Nat.mul_left_comm]
+      rw [halg] at hsum
+      have hfactor : NatModEq p
+          (a * ((y + x * Galoistools.refPolyEvalRevAux p x ys) % p))
+          (a * (y + x * Galoistools.refPolyEvalRevAux p x ys)) :=
+        natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
+      exact hsum.trans hfactor.symm""",
 ]
 
 BETA_PROOFS = [
     "by aesop",
     "by induction xs <;> simp_all [Galoistools.convolve, Galoistools.refPolyEvalRevAux, Galoistools.zipAddPad, NatModEq, Nat.add_mod, Nat.mul_mod, Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]",
     "by induction xs <;> simp_all [Galoistools.convolve, Galoistools.refPolyEvalRevAux, Galoistools.zipAddPad, NatModEq, Nat.add_mod, Nat.mul_mod, Nat.add_mul, Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm] <;> omega",
+    f"""by
+  induction xs with
+  | nil => simp [NatModEq, Galoistools.convolve, Galoistools.refPolyEvalRevAux]
+  | cons a xs ih =>
+      simp only [Galoistools.convolve]
+      let head := ys.map (fun y => (a * y) % p)
+      let tail := 0 :: Galoistools.convolve p xs ys
+      have hzip := natModEq_refPolyEvalRevAux_zipAddPad p x head tail
+      have hhead : NatModEq p (Galoistools.refPolyEvalRevAux p x head)
+          (a * Galoistools.refPolyEvalRevAux p x ys) := by
+        simpa [head] using {ALPHA} p x a ys
+      have htail : NatModEq p (Galoistools.refPolyEvalRevAux p x tail)
+          (x * (Galoistools.refPolyEvalRevAux p x xs * Galoistools.refPolyEvalRevAux p x ys)) := by
+        simp only [tail, Galoistools.refPolyEvalRevAux, Nat.zero_add]
+        exact natModEq_mod_left (natModEq_mul (by rfl) ih)
+      have hchain := hzip.trans (natModEq_add hhead htail)
+      have halg : a * Galoistools.refPolyEvalRevAux p x ys +
+          x * (Galoistools.refPolyEvalRevAux p x xs * Galoistools.refPolyEvalRevAux p x ys) =
+          (a + x * Galoistools.refPolyEvalRevAux p x xs) * Galoistools.refPolyEvalRevAux p x ys := by
+        simp [Nat.add_mul, Nat.mul_assoc]
+      rw [halg] at hchain
+      have hfactor : NatModEq p
+          (Galoistools.refPolyEvalRevAux p x (a :: xs) * Galoistools.refPolyEvalRevAux p x ys)
+          ((a + x * Galoistools.refPolyEvalRevAux p x xs) * Galoistools.refPolyEvalRevAux p x ys) := by
+        simp only [Galoistools.refPolyEvalRevAux]
+        exact natModEq_mul (natModEq_mod_left (by rfl)) (by rfl)
+      exact hchain.trans hfactor.symm""",
 ]
 
 
