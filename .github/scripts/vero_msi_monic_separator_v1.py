@@ -5,15 +5,15 @@ from vero.generation.sandbox import create_sandbox
 
 bench = Path('benchmarks/galoistools').resolve()
 seed = read_artifact(Path('../baseline27/allin_artifact.json').resolve())
-out = Path('msi_monic_separator_v3/source').resolve()
+out = Path('msi_monic_separator_v4/source').resolve()
 create_sandbox(bench, out, mode='codeproof', overwrite=True, seed_artifact=seed)
 
 header = '''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
 
-namespace GaloistoolsMSIMonicSeparatorV3
+namespace GaloistoolsMSIMonicSeparatorV4
 '''
-footer = '\nend GaloistoolsMSIMonicSeparatorV3\n'
+footer = '\nend GaloistoolsMSIMonicSeparatorV4\n'
 
 scalar = r'''
 theorem mul_mod_right_modeq (p x c d : Nat) (h : c % p = d % p) :
@@ -40,6 +40,9 @@ theorem add_scaled_mod (p k x y : Nat) :
     (((x*k)%p) + ((y*k)%p))%p = ((x*k)+(y*k))%p := add_mod_unreduce p (x*k) (y*k)
     _ = ((x+y)*k)%p := by rw [Nat.add_mul]
     _ = (((x+y)%p)*k)%p := (mul_left_reduce p (x+y) k).symm
+
+theorem scale_after_mod (p k z : Nat) :
+    (((z % p) * k) % p) = ((z*k)%p) := mul_left_reduce p z k
 '''
 
 zip = r'''
@@ -53,23 +56,25 @@ theorem zip_scale (p k : Nat) (xs ys : List Nat) :
       cases ys with
       | nil => rfl
       | cons y ys =>
-          simp only [List.map_cons, Galoistools.zipAddPad]
+          simp only [List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
           congr 1
-          · exact mul_left_reduce p y k
-          · simp only [List.map_map, Function.comp_apply]
-            apply List.map_congr_left
+          · rw [Nat.mod_mod]
+            exact (scale_after_mod p k y).symm
+          · apply List.map_congr_left
             intro z hz
-            exact mul_left_reduce p z k
+            rw [Nat.mod_mod]
+            exact (scale_after_mod p k z).symm
   | cons x xs ih =>
       cases ys with
       | nil =>
-          simp only [List.map_cons, Galoistools.zipAddPad]
+          simp only [List.map_cons, Galoistools.zipAddPad, List.map_map, Function.comp_apply]
           congr 1
-          · exact mul_left_reduce p x k
-          · simp only [List.map_map, Function.comp_apply]
-            apply List.map_congr_left
+          · rw [Nat.mod_mod]
+            exact (scale_after_mod p k x).symm
+          · apply List.map_congr_left
             intro z hz
-            exact mul_left_reduce p z k
+            rw [Nat.mod_mod]
+            exact (scale_after_mod p k z).symm
       | cons y ys =>
           simp only [List.map_cons, Galoistools.zipAddPad]
           congr 1
@@ -100,7 +105,7 @@ theorem convolve_scale_left (p k : Nat) (xs ys : List Nat) :
       rw [hhead]
       have htail : (0 :: Galoistools.convolve p xs ys).map (fun z => (z*k)%p) =
           0 :: (Galoistools.convolve p xs ys).map (fun z => (z*k)%p) := by
-        rfl
+        simp only [List.map_cons, Nat.zero_mul, Nat.zero_mod]
       rw [← htail]
       exact zip_scale p k _ _
 '''
@@ -135,6 +140,6 @@ for name,text in probes.items():
     census.append(item)
     print(f'=== {name} EXIT {cp.returncode} ===')
     if cp.returncode: print(item['tail'])
-Path('msi_monic_separator_v3').mkdir(exist_ok=True)
-Path('msi_monic_separator_v3/census.json').write_text(json.dumps(census,indent=2))
-print('MSI_MONIC_SEPARATOR_V3', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
+Path('msi_monic_separator_v4').mkdir(exist_ok=True)
+Path('msi_monic_separator_v4/census.json').write_text(json.dumps(census,indent=2))
+print('MSI_MONIC_SEPARATOR_V4', json.dumps([{'probe':x['probe'],'exit':x['exit']} for x in census]))
