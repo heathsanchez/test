@@ -1,0 +1,38 @@
+name: Vero MSI interface compilation V4
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_interface_compilation_v4.py'
+      - '.github/workflows/vero-msi-interface-compilation-v4.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified cold source
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Measure GCD monic infrastructure repair
+        run: python .github/scripts/vero_msi_interface_compilation_v4.py
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-msi-interface-compilation-v4
+          path: vero_msi_interface_compilation_v4
+          if-no-files-found: error
