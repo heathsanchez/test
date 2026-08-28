@@ -61,9 +61,6 @@ if old_gcd not in s: raise RuntimeError('gfGcd source drift')
 s=s.replace(old_gcd,new_gcd)
 impl.write_text(s)
 
-# Isolate every other prove benchmark, leaving the hash-sealed theorem as the
-# sole proof obligation.  This is evaluation isolation, not a source change to
-# implementation/specification.
 pf=ROOT/'Galoistools/Proof/Division.lean'
 ps=pf.read_text()
 TARGET='prove_gcd_divides_both'
@@ -72,15 +69,12 @@ BLOCK_RE=re.compile(
  r'(?P<body>.*?)(?P<tail>\n-- !benchmark @end proof def=(?P=name))', re.S)
 def repl(m):
     if m.group('name')==TARGET:
-        body='''  simp only [spec_gcd_divides_both, canonical]\n  intros f g p hp hf hg\n  simp only [Galoistools.gfGcd]\n  split\n  · simp_all [Galoistools.gfRem, Galoistools.gfDiv]\n  · dsimp only\n    split\n    · simp_all\n    · simp_all [Galoistools.gfRem, Galoistools.gfDiv]'''
+        body='''  simp only [spec_gcd_divides_both, canonical]\n  intros f g p hp hf hg\n  simp only [Galoistools.gfGcd]\n  split\n  · simp_all [Galoistools.gfRem, Galoistools.gfDiv]\n  · split\n    · simp_all\n    · simp_all [Galoistools.gfRem, Galoistools.gfDiv]'''
         return m.group('head')+body+m.group('tail')
     return m.group('head')+'  sorry'+m.group('tail')
 ps=BLOCK_RE.sub(repl,ps)
 pf.write_text(ps)
 
-# Preserve old implementation for an extensional finite-regression oracle.
-# It is embedded under a fresh namespace and compared against the revised
-# public API on a normalized bounded census.
 reg=ROOT/'Galoistools/GcdRevisionRegression.lean'
 reg.write_text(r'''
 import Galoistools.Harness
@@ -115,7 +109,7 @@ private def polysLen (p : Nat) : Nat → List (List Nat)
   | 0 => [[]]
   | n+1 => let tails:=polysLen p n; (List.range p).flatMap (fun a => tails.map (fun t => a::t))
 private def polys (p L : Nat) := (List.range (L+1)).flatMap (polysLen p)
-private def norm (p : Nat) (f : List Nat) : Bool := match f with | []=>true | a::_ => a!=0 && f.all (fun c=>c<p)
+private def norm (p : Nat) (f : List Nat) : Bool := match f with | [] => true | a::_ => a != 0 && f.all (fun c => c < p)
 private def check (p L : Nat) :=
   let ps := (polys p L).filter (norm p)
   let pairs := ps.flatMap (fun f => ps.map (fun g => (f,g)))
