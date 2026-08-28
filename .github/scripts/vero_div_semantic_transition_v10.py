@@ -7,6 +7,15 @@ shutil.copytree(SOURCE,OUT)
 for c in OUT.rglob('.lake'):
     if c.is_dir(): shutil.rmtree(c)
 
+# Rebuild the imported project modules before compiling the standalone probe.
+build=subprocess.run(['lake','build','Galoistools.Proof.Ring'],cwd=OUT,text=True,capture_output=True,timeout=300)
+if build.returncode != 0:
+    raw=build.stdout+'\n'+build.stderr
+    result={'stage':'build_ring','exit':build.returncode,'raw':raw[-24000:]}
+    (ROOT/'vero_div_semantic_transition_v10_result.json').write_text(json.dumps(result,indent=2))
+    print('VERO_DIV_SEMANTIC_TRANSITION_V10',json.dumps({'stage':'build_ring','exit':build.returncode,'tail':raw[-4000:]}))
+    raise SystemExit(build.returncode)
+
 probe=OUT/'SemanticTransitionV10.lean'
 probe.write_text(r'''import Galoistools.Proof.Ring
 import Galoistools.Impl.Division
@@ -43,7 +52,7 @@ end SemanticTransitionV10
 ''')
 cp=subprocess.run(['lake','env','lean','SemanticTransitionV10.lean'],cwd=OUT,text=True,capture_output=True,timeout=300)
 raw=cp.stdout+'\n'+cp.stderr
-result={'exit':cp.returncode,'raw':raw[-24000:]}
+result={'stage':'probe','exit':cp.returncode,'raw':raw[-24000:]}
 (ROOT/'vero_div_semantic_transition_v10_result.json').write_text(json.dumps(result,indent=2))
-print('VERO_DIV_SEMANTIC_TRANSITION_V10',json.dumps({'exit':cp.returncode,'tail':raw[-4000:]}))
+print('VERO_DIV_SEMANTIC_TRANSITION_V10',json.dumps({'stage':'probe','exit':cp.returncode,'tail':raw[-4000:]}))
 raise SystemExit(cp.returncode)
