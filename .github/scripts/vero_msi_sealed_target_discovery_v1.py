@@ -52,8 +52,23 @@ CANDIDATES = CANDIDATES[:BUDGET]
 def patch_target(src: str, name: str, body: str) -> str:
     pat = re.compile(rf'(theorem {re.escape(name)} : [^\n]+ := by\n-- !benchmark @start proof def={re.escape(name)} kind=prove target=[^\n]+\n)(.*?)(\n-- !benchmark @end proof def={re.escape(name)})', re.S)
     m = pat.search(src)
-    if not m: raise RuntimeError(f'cannot locate sealed target {name}')
+    if not m: raise RuntimeError(f'cannot locate benchmark target {name}')
     return src[:m.start()] + m.group(1) + body + m.group(3) + src[m.end():]
+
+
+def isolate_selected(original: str) -> str:
+    """Neutralize only the other pre-existing unsolved benchmark targets.
+
+    V1 initially compiled the whole 20-residual file, so unrelated unsolved
+    targets made every candidate red.  This harness fix changes no selected
+    target, candidate, budget, or oracle.  `sorry` is used only for the other
+    19 benchmark holes so process success is exactly the selected theorem gate.
+    """
+    src = original
+    for name in TARGETS:
+        if name != TARGET:
+            src = patch_target(src, name, '  sorry')
+    return src
 
 
 def run_candidate(i, label, body):
@@ -62,8 +77,8 @@ def run_candidate(i, label, body):
     for c in wd.rglob('.lake'):
         if c.is_dir(): shutil.rmtree(c)
     pf = wd/'Galoistools/Proof/Division.lean'
-    original = pf.read_text()
-    pf.write_text(patch_target(original, TARGET, body))
+    isolated = isolate_selected(pf.read_text())
+    pf.write_text(patch_target(isolated, TARGET, body))
     cp = subprocess.run(['lake','lean','Galoistools/Proof/Division.lean'], cwd=wd, text=True, capture_output=True, timeout=180)
     raw = cp.stdout + '\n' + cp.stderr
     # Diagnostics are recorded only after the run for scientific audit; the
@@ -82,9 +97,10 @@ for i,(label,body) in enumerate(CANDIDATES,1):
         break
 
 result={
- 'schema':'msi.vero-sealed-target-discovery.v1',
+ 'schema':'msi.vero-sealed-target-discovery.v1-isolated',
  'selection':{'seed':SEED,'sha256':DIGEST,'index':INDEX,'target':TARGET},
  'candidate_policy':'frozen target-agnostic push + systematic interface expansion; compiler diagnostics not read by policy',
+ 'harness_fix':'other 19 pre-existing residual targets replaced by sorry solely to isolate selected theorem exit status',
  'budget':BUDGET,
  'queries_used':len(rows),
  'success':winner is not None,
