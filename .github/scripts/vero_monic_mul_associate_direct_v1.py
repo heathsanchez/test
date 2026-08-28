@@ -42,7 +42,29 @@ final = r'''
 
 namespace GaloistoolsMSIGfMulScaleBothV1
 
-theorem prove_monic_mul_associate_msi_v5 : spec_monic_mul_associate canonical := by
+theorem norm_map_mod_self_nonempty
+    (p a : Nat) (as : List Nat)
+    (hn : Galoistools.IsNorm p (a :: as)) :
+    (a :: as).map (fun x => x % p) = a :: as := by
+  have ha0 := norm_head_nonzero_local p a as hn
+  have hamod := norm_head_mod_eq_local p a as hn
+  have hamod0 : a % p ≠ 0 := by
+    rw [hamod]
+    exact ha0
+  change Galoistools.refGfStrip ((a % p) :: as.map (fun x => x % p)) = a :: as at hn
+  simpa [Galoistools.refGfStrip, hamod0] using hn
+
+theorem gfMonic_second_as_selected_scale
+    (p a : Nat) (as : List Nat)
+    (hn : Galoistools.IsNorm p (a :: as)) :
+    (Galoistools.gfMonic (a :: as) p).2 =
+      (a :: as).map (fun x => (x * (if a = 1 then 1 else Galoistools.invMod a p)) % p) := by
+  by_cases ha1 : a = 1
+  · have hmap := norm_map_mod_self_nonempty p a as hn
+    simp [Galoistools.gfMonic, ha1, hmap]
+  · simp [Galoistools.gfMonic, Galoistools.gfQuoGround, ha1]
+
+theorem prove_monic_mul_associate_msi_v6 : spec_monic_mul_associate canonical := by
   simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
   cases f with
@@ -74,8 +96,13 @@ theorem prove_monic_mul_associate_msi_v5 : spec_monic_mul_associate canonical :=
         rw [convolve_last0 p _ _ hfr hgr]
         simp only [List.reverse_cons]
         rw [last0_append_singleton, last0_append_singleton]
-      simp only [Galoistools.gfMonic]
+      have hmulne : Galoistools.gfMul (a :: as) (b :: bs) p ≠ [] := by
+        rw [hmulform]
+        simpa using hconvne
+      rw [gfMonic_second_as_selected_scale p a as hnf]
+      rw [gfMonic_second_as_selected_scale p b bs hng]
       trace_state
+      simp only [Galoistools.gfMonic]
       simp [Galoistools.gfMul]
 
 end GaloistoolsMSIGfMulScaleBothV1
@@ -85,7 +112,7 @@ probe = base + extra + unit + '\nend GaloistoolsMSIGfMulScaleBothV1\n\n' + scala
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MONIC_MUL_ASSOCIATE_DIRECT_V5_EXIT',cp.returncode)
-print(raw[-36000:])
+print('MONIC_MUL_ASSOCIATE_DIRECT_V6_EXIT',cp.returncode)
+print(raw[-40000:])
 Path('monic_mul_associate_direct_v1').mkdir(exist_ok=True)
-Path('monic_mul_associate_direct_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-46000:]},indent=2))
+Path('monic_mul_associate_direct_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-50000:]},indent=2))
