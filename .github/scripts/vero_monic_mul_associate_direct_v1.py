@@ -29,7 +29,6 @@ if not mu:
 unit = strip_imports(mu.group(1))
 unit = unit.replace('namespace GaloistoolsMSIUnitZeroBridgeV2', 'namespace GaloistoolsMSIGfMulScaleBothV1')
 unit = unit.replace('end GaloistoolsMSIUnitZeroBridgeV2', '')
-# Avoid the one helper already present in the certified gfMul block.
 unit = unit.replace('theorem mul_left_reduce (p a k : Nat) :', 'theorem unit_mul_left_reduce (p a k : Nat) :')
 unit = unit.replace('(mul_left_reduce p (z*k) c).symm', '(unit_mul_left_reduce p (z*k) c).symm')
 
@@ -43,7 +42,7 @@ final = r'''
 
 namespace GaloistoolsMSIGfMulScaleBothV1
 
-theorem prove_monic_mul_associate_msi_v3 : spec_monic_mul_associate canonical := by
+theorem prove_monic_mul_associate_msi_v4 : spec_monic_mul_associate canonical := by
   simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
   cases f with
@@ -58,7 +57,7 @@ theorem prove_monic_mul_associate_msi_v3 : spec_monic_mul_associate canonical :=
       have hmulform :
           Galoistools.gfMul (a :: as) (b :: bs) p =
             (Galoistools.convolve p (a :: as).reverse (b :: bs).reverse).reverse := by
-        simp only [Galoistools.gfMul, false_or, if_false]
+        simp [Galoistools.gfMul]
         rw [gfStrip_self_of_leadCoeff_ne _ hlead]
       have hfr : (a :: as).reverse ≠ [] := by simp
       have hgr : (b :: bs).reverse ≠ [] := by simp
@@ -73,7 +72,8 @@ theorem prove_monic_mul_associate_msi_v3 : spec_monic_mul_associate canonical :=
         rw [hmulform]
         rw [leadCoeff_reverse_eq_last0 _ hconvne]
         rw [convolve_last0 p _ _ hfr hgr]
-        simp [last0_reverse, Galoistools.leadCoeff]
+        simp only [List.reverse_cons]
+        rw [last0_append_singleton, last0_append_singleton]
       simp only [Galoistools.gfMonic]
       trace_state
       simp [Galoistools.gfMul]
@@ -85,7 +85,7 @@ probe = base + extra + unit + '\nend GaloistoolsMSIGfMulScaleBothV1\n\n' + scala
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MONIC_MUL_ASSOCIATE_DIRECT_V3_EXIT',cp.returncode)
+print('MONIC_MUL_ASSOCIATE_DIRECT_V4_EXIT',cp.returncode)
 print(raw[-36000:])
 Path('monic_mul_associate_direct_v1').mkdir(exist_ok=True)
 Path('monic_mul_associate_direct_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-46000:]},indent=2))
