@@ -72,7 +72,9 @@ for cache in PROJECT.rglob(".lake"):
     if cache.is_dir(): shutil.rmtree(cache)
 
 lean = f"""import Galoistools.Harness
-import Std.Tactic.NativeDecide
+
+set_option maxHeartbeats 0
+set_option maxRecDepth 100000
 
 def nand (a b : Bool) : Bool := !(a && b)
 
@@ -83,7 +85,7 @@ def hc (a b : Bool) : Bool := {half_carry_expr}
 theorem halfAdder_exhaustive :
     (List.range 2).all (fun a => (List.range 2).all (fun b =>
       hs (a == 1) (b == 1) == ((a + b) % 2 == 1) &&
-      hc (a == 1) (b == 1) == (a + b >= 2))) = true := by native_decide
+      hc (a == 1) (b == 1) == (a + b >= 2))) = true := by decide
 
 -- Stage 2: minimum expressions after promotion of the Stage-1 interface.
 def faSum (a b c : Bool) : Bool := {full_sum_expr}
@@ -93,7 +95,7 @@ theorem fullAdder_exhaustive :
     (List.range 2).all (fun a => (List.range 2).all (fun b =>
       (List.range 2).all (fun c =>
         faSum (a == 1) (b == 1) (c == 1) == ((a + b + c) % 2 == 1) &&
-        faCarry (a == 1) (b == 1) (c == 1) == (a + b + c >= 2)))) = true := by native_decide
+        faCarry (a == 1) (b == 1) (c == 1) == (a + b + c >= 2)))) = true := by decide
 
 def bitsLE (n width : Nat) : List Bool :=
   (List.range width).map (fun i => n.testBit i)
@@ -110,11 +112,11 @@ def rippleCorrectAt (width a b : Nat) : Bool :=
 -- Stage 3: recursive reuse; every input is checked by Lean's native decision procedure.
 theorem ripple4_exhaustive :
     (List.range 16).all (fun a =>
-      (List.range 16).all (fun b => rippleCorrectAt 4 a b)) = true := by native_decide
+      (List.range 16).all (fun b => rippleCorrectAt 4 a b)) = true := by decide
 
 theorem ripple8_exhaustive :
     (List.range 256).all (fun a =>
-      (List.range 256).all (fun b => rippleCorrectAt 8 a b)) = true := by native_decide
+      (List.range 256).all (fun b => rippleCorrectAt 8 a b)) = true := by decide
 """
 LEAN.write_text(lean)
 substrate = subprocess.run(
