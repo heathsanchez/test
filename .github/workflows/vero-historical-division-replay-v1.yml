@@ -1,0 +1,33 @@
+name: Vero historical Division replay V1
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_historical_division_replay_v1.py'
+      - '.github/workflows/vero-historical-division-replay-v1.yml'
+  workflow_dispatch:
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download certified cold source
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Replay historical proofs against explicit Division target
+        run: python .github/scripts/vero_historical_division_replay_v1.py
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-historical-division-replay-v1
+          path: historical_division_replay_v1
+          if-no-files-found: error
