@@ -103,9 +103,9 @@ theorem selectedUnit_is_unit
   · have hcopA : Nat.gcd a p = 1 := by
       have h := primefield_coprime_lt_local2 p a hp ha0 ha
       simpa [Nat.coprime_comm] using h
-    exact inv_correct_nonone p a hp.1 ha1 hcopA
+    simpa [ha1] using inv_correct_nonone p a hp.1 ha1 hcopA
 
-theorem prove_monic_mul_associate_msi_v7 : spec_monic_mul_associate canonical := by
+theorem prove_monic_mul_associate_msi_v8 : spec_monic_mul_associate canonical := by
   simp only [spec_monic_mul_associate, canonical]
   intro f g p hp hnf hng hf hg
   cases f with
@@ -168,7 +168,7 @@ theorem prove_monic_mul_associate_msi_v7 : spec_monic_mul_associate canonical :=
         calc
           (c * (ua*ub)) % p = ((c%p) * ((ua*ub)%p)) % p := by rw [Nat.mul_mod]
           _ = ((c%p) * (uc%p)) % p := by rw [hsel]
-          _ = (c * uc) % p := by rw [Nat.mul_mod]
+          _ = (c * uc) % p := by simpa [Nat.mod_mod] using (Nat.mul_mod c uc p).symm
           _ = 1 := hcunit
       have hzero : ∀ z : Nat,
           z ∈ Galoistools.convolve p (a :: as).reverse (b :: bs).reverse →
@@ -208,7 +208,7 @@ theorem prove_monic_mul_associate_msi_v7 : spec_monic_mul_associate canonical :=
           calc
             (z*uc)%p = ((z%p)*(uc%p))%p := by rw [Nat.mul_mod]
             _ = ((z%p)*((ua*ub)%p))%p := by rw [hsel]
-            _ = (z*(ua*ub))%p := by rw [Nat.mul_mod]
+            _ = (z*(ua*ub))%p := by simpa [Nat.mod_mod] using (Nat.mul_mod z (ua*ub) p).symm
         simpa [hP] using hmapEq
 
 end GaloistoolsMSIGfMulScaleBothV1
@@ -218,7 +218,7 @@ probe = base + extra + unit + '\nend GaloistoolsMSIGfMulScaleBothV1\n\n' + scala
 p = out/'Probe.lean'; p.write_text(probe)
 cp=subprocess.run(['lake','lean',p.name],cwd=out,text=True,capture_output=True)
 raw=cp.stdout+'\n'+cp.stderr
-print('MONIC_MUL_ASSOCIATE_DIRECT_V7_EXIT',cp.returncode)
+print('MONIC_MUL_ASSOCIATE_DIRECT_V8_EXIT',cp.returncode)
 print(raw[-50000:])
 Path('monic_mul_associate_direct_v1').mkdir(exist_ok=True)
 Path('monic_mul_associate_direct_v1/result.json').write_text(json.dumps({'exit':cp.returncode,'tail':raw[-60000:]},indent=2))
