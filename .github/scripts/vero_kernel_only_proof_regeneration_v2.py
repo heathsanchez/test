@@ -79,6 +79,7 @@ ALPHA_PROOFS = [
           (a * ((y + x * Galoistools.refPolyEvalRevAux p x ys) % p))
           (a * (y + x * Galoistools.refPolyEvalRevAux p x ys)) :=
         natModEq_mul (by rfl) (natModEq_mod_left (by rfl))
+      unfold NatModEq
       exact hsum.trans hfactor.symm""",
 ]
 
@@ -130,7 +131,9 @@ cold = run(base)
 
 attempts = []
 winner = None
-for index, (alpha_proof, beta_proof) in enumerate(itertools.product(ALPHA_PROOFS, BETA_PROOFS), 1):
+for index, (alpha_proof, beta_proof) in enumerate(
+    itertools.product(reversed(ALPHA_PROOFS), reversed(BETA_PROOFS)), 1
+):
     project = OUT / f"attempt_{index:02d}"
     shutil.copytree(base, project)
     body = ALPHA_STATEMENT.format(proof=alpha_proof) + "\n" + BETA_STATEMENT.format(proof=beta_proof)
