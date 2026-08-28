@@ -1,0 +1,37 @@
+name: Vero MSI GCD Truth Census V3
+
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_msi_gcd_truth_census_v3.py'
+      - '.github/workflows/vero-msi-gcd-truth-census-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33151050152
+          name: vero-galoistools-monic-mul-associate-promote-v1
+          path: baseline28
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Exhaustive finite GCD divisibility census
+        run: python .github/scripts/vero_msi_gcd_truth_census_v3.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vero-msi-gcd-truth-census-v3
+          path: gcd_truth_census_v3.txt
