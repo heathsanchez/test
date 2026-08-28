@@ -71,7 +71,8 @@ shutil.copytree(SOURCE, PROJECT)
 for cache in PROJECT.rglob(".lake"):
     if cache.is_dir(): shutil.rmtree(cache)
 
-lean = f"""import Mathlib
+lean = f"""import Galoistools.Harness
+import Std.Tactic.NativeDecide
 
 def nand (a b : Bool) : Bool := !(a && b)
 
