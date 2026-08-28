@@ -45,7 +45,7 @@ private def oneP (p : Nat) : Nat × Nat × Option (List Nat × List Nat × List 
 
 #eval primes.map (fun p => (p, oneP p))
 ''')
-cp=subprocess.run(['lake','env','lean','Galoistools/GcdTruthCensus.lean'],cwd=OUT,text=True,capture_output=True,timeout=240)
+cp=subprocess.run(['lake','lean','Galoistools/GcdTruthCensus.lean'],cwd=OUT,text=True,capture_output=True,timeout=240)
 raw=cp.stdout+'\n'+cp.stderr
 Path('gcd_truth_census_v3.txt').write_text(raw)
 print('GCD_TRUTH_CENSUS_V3_EXIT',cp.returncode)
