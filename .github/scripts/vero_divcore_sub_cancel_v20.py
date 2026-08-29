@@ -97,37 +97,48 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
             Galoistools.refPolyEvalRevAux, List.map_cons]
           simp only [List.map_map, Function.comp_def, Nat.mod_mod]
           have htail := revaux_map_mod p x as
-          calc
-            ((a % p + x * Galoistools.refPolyEvalRevAux p x
-                (as.map (fun z => z % p))) % p)
-                = ((a % p + x *
-                    (Galoistools.refPolyEvalRevAux p x
-                      (as.map (fun z => z % p)) % p)) % p) := by
-                    simp [Nat.add_mod, Nat.mul_mod]
-            _ = ((a % p + x *
-                    (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
-                    rw [htail]
-            _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
-                    simp [Nat.add_mod, Nat.mul_mod]
+          have hcore :
+              ((a % p + x * Galoistools.refPolyEvalRevAux p x
+                (as.map (fun z => z % p))) % p) =
+              ((a + x * Galoistools.refPolyEvalRevAux p x as) % p) := by
+            calc
+              ((a % p + x * Galoistools.refPolyEvalRevAux p x
+                  (as.map (fun z => z % p))) % p)
+                  = ((a % p + x *
+                      (Galoistools.refPolyEvalRevAux p x
+                        (as.map (fun z => z % p)) % p)) % p) := by
+                      simp [Nat.add_mod, Nat.mul_mod]
+              _ = ((a % p + x *
+                      (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
+                      rw [htail]
+              _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
+                      simp [Nat.add_mod, Nat.mul_mod]
+          simpa [Nat.mod_mod] using hcore
       | cons b bs =>
           simp only [Galoistools.zipSubPad, Galoistools.zipAddPad,
             Galoistools.refPolyEvalRevAux]
           rw [sub_add_coeff_mod p a b hp]
           have htail := ih bs
-          calc
-            ((a % p + x * Galoistools.refPolyEvalRevAux p x
+          have hcore :
+              ((a % p + x * Galoistools.refPolyEvalRevAux p x
                 (Galoistools.zipAddPad p
-                  (Galoistools.zipSubPad p as bs) bs)) % p)
-                = ((a % p + x *
-                    (Galoistools.refPolyEvalRevAux p x
-                      (Galoistools.zipAddPad p
-                        (Galoistools.zipSubPad p as bs) bs) % p)) % p) := by
-                    simp [Nat.add_mod, Nat.mul_mod]
-            _ = ((a % p + x *
-                    (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
-                    rw [htail]
-            _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
-                    simp [Nat.add_mod, Nat.mul_mod]
+                  (Galoistools.zipSubPad p as bs) bs)) % p) =
+              ((a + x * Galoistools.refPolyEvalRevAux p x as) % p) := by
+            calc
+              ((a % p + x * Galoistools.refPolyEvalRevAux p x
+                  (Galoistools.zipAddPad p
+                    (Galoistools.zipSubPad p as bs) bs)) % p)
+                  = ((a % p + x *
+                      (Galoistools.refPolyEvalRevAux p x
+                        (Galoistools.zipAddPad p
+                          (Galoistools.zipSubPad p as bs) bs) % p)) % p) := by
+                      simp [Nat.add_mod, Nat.mul_mod]
+              _ = ((a % p + x *
+                      (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
+                      rw [htail]
+              _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
+                      simp [Nat.add_mod, Nat.mul_mod]
+          simpa [Nat.mod_mod] using hcore
 
 end VeroDivCoreSubCancelV20
 '''
