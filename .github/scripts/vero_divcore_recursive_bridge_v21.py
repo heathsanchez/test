@@ -79,7 +79,7 @@ theorem scaleP_eval_mod (p x c : Nat) (g : List Nat) :
   unfold Galoistools.scaleP
   rw [refPolyEval_gfStrip]
   unfold Galoistools.refPolyEval
-  rw [List.map_reverse]
+  rw [← List.map_reverse]
   have h := natModEq_refPolyEvalRevAux_map_mul p x c g.reverse
   simpa [Nat.mul_comm] using h
 
@@ -112,15 +112,16 @@ theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) (hp : 0 < p) :
     · rfl
   unfold NatModEq at hmono hscale hscaledShift hscaleMul ⊢
   rw [mul_eval_hom]
-  simp [Galoistools.shiftUp, eval_append_zeros, hp] at hmono
   calc
     ((Galoistools.refPolyEval p (Galoistools.shiftUp s [c]) x *
         Galoistools.refPolyEval p g x) % p) % p =
-      ((((c * x^s) % p) * Galoistools.refPolyEval p g x) % p) := by
-        rw [Nat.mod_mod]
-        exact congrArg (fun z => (z * Galoistools.refPolyEval p g x) % p) hmono
+      ((Galoistools.refPolyEval p (Galoistools.shiftUp s [c]) x % p) *
+        Galoistools.refPolyEval p g x) % p := by simp [Nat.mul_mod]
+    _ = (((Galoistools.refPolyEval p [c] x * x^s) % p) *
+        Galoistools.refPolyEval p g x) % p := by rw [hmono]
     _ = (((c * Galoistools.refPolyEval p g x) * x^s) % p) := by
-      simp [Nat.mul_mod, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux,
+        Nat.mul_mod, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
     _ = (Galoistools.refPolyEval p (Galoistools.scaleP p c g) x * x^s) % p := hscaleMul.symm
     _ = Galoistools.refPolyEval p (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x % p := hscaledShift.symm
 
