@@ -42,7 +42,7 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
         rw [gfStrip_cons_zero]
         simp only [List.reverse_cons]
         rw [ih]
-        exact (revaux_append_zero_mod p x as).symm
+        exact (revaux_append_zero_mod p x as.reverse).symm
       · simp [Galoistools.gfStrip, h]
 
 end VeroDivCorePrimitiveSemanticsV18
