@@ -1,0 +1,31 @@
+name: Vero divCore step invariant V14
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_divcore_step_invariant_v14.py'
+      - '.github/workflows/vero-divcore-step-invariant-v14.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: python .github/scripts/vero_divcore_step_invariant_v14.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: vero-divcore-step-invariant-v14
+          path: vero_divcore_step_invariant_v14
