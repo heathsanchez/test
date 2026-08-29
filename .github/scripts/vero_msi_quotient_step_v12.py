@@ -18,7 +18,7 @@ v8b=ROOT/'.github/scripts/vero_msi_interface_compilation_v8b.py'
 GEN2=literal_assign(v8b,'GEN2'); STRUCT=literal_assign(v8b,'STRUCT')
 probes=literal_assign(ROOT/'.github/scripts/vero_div_identity_invariant.py','probes')
 QUOTIENT_STEP=probes['quotient_term_mul'].replace('theorem quotient_term_mul','@[simp] theorem msi_quotient_step_mul',1)
-# Repair only the three proof-shape residuals exposed by the clean V12 gate.
+# Repair only proof-shape residuals exposed by the clean V12 gate.
 QUOTIENT_STEP=QUOTIENT_STEP.replace(
 '''  have hstrip : ∀ xs : List Nat, ∀ n : Nat,
       Galoistools.gfStrip (xs ++ List.replicate n 0) =''',
@@ -34,12 +34,16 @@ QUOTIENT_STEP=QUOTIENT_STEP.replace(
       induction n with
       | zero => rfl
       | succ n ihn => simp [List.replicate_succ, Galoistools.gfStrip, ihn]''',
-'''    | nil => simp [stripZeros]''',1)
+'''    | nil =>
+      have hnilstrip : Galoistools.gfStrip [] = [] := rfl
+      rw [List.nil_append, stripZeros n]
+      simp [hnilstrip]''',1)
 QUOTIENT_STEP=QUOTIENT_STEP.replace(
 '''  · subst g
     simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul]''',
 '''  · subst g
-    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, stripZeros]''',1)
+    have hnilstrip : Galoistools.gfStrip [] = [] := rfl
+    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, stripZeros, hnilstrip]''',1)
 QUOTIENT_STEP=QUOTIENT_STEP.replace(
 '''    simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
       if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
