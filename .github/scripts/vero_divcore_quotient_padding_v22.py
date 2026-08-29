@@ -64,9 +64,19 @@ theorem quotient_padding_delta (p x c gap s : Nat) (q : List Nat) (hp : 0 < p) :
   rw [show q ++ List.replicate gap 0 ++ [0] ++ List.replicate s 0 =
       (pre ++ [0]) ++ List.replicate s 0 by simp [pre]]
   rw [hnew, hold, eval_append_coeff, eval_append_coeff]
+  have hdist :
+      x^s * (Galoistools.refPolyEval p pre x * x + c) =
+        x^s * (Galoistools.refPolyEval p pre x * x) + c * x^s := by
+    rw [Nat.mul_add]
+    simp [Nat.mul_comm]
   unfold NatModEq
-  simp [Nat.add_mul, Nat.mul_add, Nat.mul_mod, Nat.add_mod,
-    Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+  calc
+    ((((Galoistools.refPolyEval p pre x * x + c) % p) * x^s) % p) % p =
+      ((x^s * (Galoistools.refPolyEval p pre x * x + c)) % p) := by
+        simp [Nat.mul_mod, Nat.mul_comm]
+    _ = ((x^s * (Galoistools.refPolyEval p pre x * x) + c * x^s) % p) := by rw [hdist]
+    _ = (((((Galoistools.refPolyEval p pre x * x + 0) % p) * x^s) % p) + c * x^s) % p := by
+      simp [Nat.mul_mod, Nat.add_mod, Nat.mul_comm, Nat.mul_assoc]
 
 end VeroDivCoreQuotientPaddingV22
 '''
