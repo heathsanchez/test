@@ -15,7 +15,6 @@ import Galoistools.Spec.Division
 open Galoistools
 namespace VeroDivCoreAddSemanticsV19
 
--- V18 verified primitive: stripping leading zero coefficients is evaluation-neutral mod p.
 theorem revaux_append_zero_mod (p x : Nat) : ∀ xs : List Nat,
     Galoistools.refPolyEvalRevAux p x (xs ++ [0]) % p =
     Galoistools.refPolyEvalRevAux p x xs % p := by
@@ -45,7 +44,17 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
         exact (revaux_append_zero_mod p x as.reverse).symm
       · simp [Galoistools.gfStrip, h]
 
--- Next exact primitive: coefficientwise padded addition is Horner-evaluation addition modulo p.
+-- Exact V19 run-1 residual: reducing every coefficient mod p preserves Horner evaluation mod p.
+theorem revaux_map_mod (p x : Nat) : ∀ xs : List Nat,
+    Galoistools.refPolyEvalRevAux p x (xs.map (fun a => a % p)) % p =
+    Galoistools.refPolyEvalRevAux p x xs % p := by
+  intro xs
+  induction xs with
+  | nil => simp [Galoistools.refPolyEvalRevAux]
+  | cons a as ih =>
+      simp [Galoistools.refPolyEvalRevAux, ih, Nat.add_mod, Nat.mul_mod]
+
+-- Coefficientwise padded addition is Horner-evaluation addition modulo p.
 theorem revaux_zipAddPad_mod (p x : Nat) : ∀ as bs : List Nat,
     Galoistools.refPolyEvalRevAux p x (Galoistools.zipAddPad p as bs) % p =
       (Galoistools.refPolyEvalRevAux p x as +
@@ -54,24 +63,18 @@ theorem revaux_zipAddPad_mod (p x : Nat) : ∀ as bs : List Nat,
   induction as with
   | nil =>
       intro bs
-      induction bs with
-      | nil => simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux]
-      | cons b bs ih =>
-          simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux, ih,
-            Nat.add_mod, Nat.mul_mod]
+      simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux,
+        revaux_map_mod, Nat.add_mod, Nat.mul_mod]
   | cons a as ih =>
       intro bs
       cases bs with
       | nil =>
-          induction as generalizing a with
-          | nil => simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux,
-              Nat.add_mod, Nat.mul_mod]
-          | cons a' as' ih' =>
-              simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux, ih',
-                Nat.add_mod, Nat.mul_mod]
+          simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux,
+            revaux_map_mod, Nat.add_mod, Nat.mul_mod]
       | cons b bs =>
           simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux, ih bs,
-            Nat.add_mod, Nat.mul_mod]
+            Nat.add_mod, Nat.mul_mod, Nat.mul_add,
+            Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
 
 end VeroDivCoreAddSemanticsV19
 '''
