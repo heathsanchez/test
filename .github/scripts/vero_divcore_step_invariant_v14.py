@@ -15,14 +15,13 @@ import Galoistools.Spec.Division
 open Galoistools
 namespace VeroDivCoreStepInvariantV14
 
--- Algebraic hinge for the recursive divCore invariant: one subtraction step
--- can be exactly reversed by adding the same eliminated term back.
+-- Source-pure algebraic hinge for the recursive divCore invariant.
+-- Do not use the historical canonical.galoistools bridge: it is a distinct
+-- namespace and cannot rewrite the benchmark-native Galoistools.gfSub.
 theorem divcore_step_cancel (p : Nat) (cur sub : List Nat)
     (hp : 1 < p) (hn : Galoistools.IsNorm p cur) :
     Galoistools.gfAdd (Galoistools.gfSub cur sub p) sub p = cur := by
-  rw [prove_sub_eq_add_neg cur sub p hp]
-  -- Ring-level normalization/cancellation should now decide the residual.
-  simp [hn]
+  simp only [Galoistools.gfAdd, Galoistools.gfSub]
 
 end VeroDivCoreStepInvariantV14
 '''
