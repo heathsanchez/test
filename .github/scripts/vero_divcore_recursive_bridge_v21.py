@@ -20,7 +20,7 @@ namespace VeroDivCoreRecursiveBridgeV21
   intro xs; unfold Galoistools.refPolyEval
   induction xs.reverse with
   | nil => simp [Galoistools.refPolyEvalRevAux]
-  | cons a as ih => simp [Galoistools.refPolyEvalRevAux, Nat.mod_mod]
+  | cons a as ih => simp [Galoistools.refPolyEvalRevAux]
 
 @[simp] theorem eval_append_zero (p x : Nat) (f : List Nat) :
     Galoistools.refPolyEval p (f ++ [0]) x = (Galoistools.refPolyEval p f x * x) % p := by
@@ -79,7 +79,7 @@ theorem scaleP_eval_mod (p x c : Nat) (g : List Nat) :
   unfold Galoistools.scaleP
   rw [refPolyEval_gfStrip]
   unfold Galoistools.refPolyEval
-  rw [List.reverse_map]
+  rw [List.map_reverse]
   have h := natModEq_refPolyEvalRevAux_map_mul p x c g.reverse
   simpa [Nat.mul_comm] using h
 
@@ -90,6 +90,7 @@ theorem shiftUp_eval_mod (p x s : Nat) (f : List Nat) (hp : 0 < p) :
   unfold Galoistools.shiftUp
   by_cases hf : f = []
   · subst f
+    unfold NatModEq
     simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux]
   · rw [if_neg hf, eval_append_zeros p x s f hp]
     exact natModEq_mod_left (by rfl)
@@ -100,18 +101,28 @@ theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) (hp : 0 < p) :
         (Galoistools.gfMul (Galoistools.shiftUp s [c]) g p) x)
       (Galoistools.refPolyEval p
         (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x) := by
-  unfold NatModEq
+  have hmono := shiftUp_eval_mod p x s [c] hp
+  have hscale := scaleP_eval_mod p x c g
+  have hscaledShift := shiftUp_eval_mod p x s (Galoistools.scaleP p c g) hp
+  have hscaleMul : NatModEq p
+      (Galoistools.refPolyEval p (Galoistools.scaleP p c g) x * x^s)
+      ((c * Galoistools.refPolyEval p g x) * x^s) := by
+    apply natModEq_mul
+    · exact hscale
+    · rfl
+  unfold NatModEq at hmono hscale hscaledShift hscaleMul ⊢
   rw [mul_eval_hom]
-  have hs := scaleP_eval_mod p x c g
-  have hshift := shiftUp_eval_mod p x s (Galoistools.scaleP p c g) hp
-  unfold NatModEq at hs hshift
-  simp [Galoistools.shiftUp, eval_append_zeros, hp] at *
+  simp [Galoistools.shiftUp, eval_append_zeros, hp] at hmono
   calc
-    (c % p * Galoistools.refPolyEval p g x) % p =
-        (c * Galoistools.refPolyEval p g x) % p := by simp [Nat.mul_mod]
-    _ = ((c * Galoistools.refPolyEval p g x) % p * x^s) % p := by
-      simp [Nat.mul_mod]
-    _ = Galoistools.refPolyEval p (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x % p := hshift.symm
+    ((Galoistools.refPolyEval p (Galoistools.shiftUp s [c]) x *
+        Galoistools.refPolyEval p g x) % p) % p =
+      ((((c * x^s) % p) * Galoistools.refPolyEval p g x) % p) := by
+        rw [Nat.mod_mod]
+        exact congrArg (fun z => (z * Galoistools.refPolyEval p g x) % p) hmono
+    _ = (((c * Galoistools.refPolyEval p g x) * x^s) % p) := by
+      simp [Nat.mul_mod, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+    _ = (Galoistools.refPolyEval p (Galoistools.scaleP p c g) x * x^s) % p := hscaleMul.symm
+    _ = Galoistools.refPolyEval p (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x % p := hscaledShift.symm
 
 end VeroDivCoreRecursiveBridgeV21
 '''
