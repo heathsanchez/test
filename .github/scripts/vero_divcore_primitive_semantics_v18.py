@@ -37,7 +37,8 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
   | cons a as ih =>
       by_cases h : a = 0
       · subst a
-        simp only [Galoistools.gfStrip, if_pos rfl]
+        change Galoistools.refPolyEvalRevAux p x (Galoistools.gfStrip as).reverse % p =
+          Galoistools.refPolyEvalRevAux p x (as.reverse ++ [0]) % p
         rw [ih]
         exact (revaux_append_zero_mod p x as).symm
       · simp [Galoistools.gfStrip, h]
