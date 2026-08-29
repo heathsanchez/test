@@ -37,7 +37,7 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
   | cons a as ih =>
       by_cases h : a = 0
       · subst a
-        simp only [Galoistools.gfStrip]
+        simp only [Galoistools.gfStrip, if_pos rfl]
         rw [ih]
         exact (revaux_append_zero_mod p x as).symm
       · simp [Galoistools.gfStrip, h]
