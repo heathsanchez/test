@@ -45,10 +45,11 @@ for c in gate.rglob('.lake'):
     if c.is_dir(): shutil.rmtree(c)
 probe=gate/'QuotientStepV12.lean'
 probe.write_text('import Galoistools.Proof.Ring\nimport Galoistools.Impl.Division\nimport Galoistools.Spec.Division\n\n'+QUOTIENT_STEP)
-build=subprocess.run(['lake','build','Galoistools.Proof.Ring'],cwd=gate,text=True,capture_output=True,timeout=300)
+# Build the complete explicit import closure before invoking lean directly.
+build=subprocess.run(['lake','build','Galoistools.Proof.Ring','Galoistools.Impl.Division','Galoistools.Spec.Division'],cwd=gate,text=True,capture_output=True,timeout=300)
 if build.returncode:
     raw=build.stdout+'\n'+build.stderr
-    print('V12_PROOF_GATE',json.dumps({'stage':'ring_build','exit':build.returncode,'tail':raw[-5000:]})); raise SystemExit(1)
+    print('V12_PROOF_GATE',json.dumps({'stage':'import_build','exit':build.returncode,'tail':raw[-5000:]})); raise SystemExit(1)
 cp=subprocess.run(['lake','env','lean','QuotientStepV12.lean'],cwd=gate,text=True,capture_output=True,timeout=300)
 raw=cp.stdout+'\n'+cp.stderr
 print('V12_PROOF_GATE',json.dumps({'stage':'lemma','exit':cp.returncode,'tail':raw[-9000:]}))
