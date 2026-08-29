@@ -37,12 +37,9 @@ theorem gfSub_add_eval_mod (p x : Nat) (cur sub : List Nat) (hp : 0 < p) :
       = (Galoistools.refPolyEvalRevAux p x
           (Galoistools.zipSubPad p cur.reverse sub.reverse) +
         Galoistools.refPolyEvalRevAux p x sub.reverse) % p := by
-          rw [show Galoistools.refPolyEvalRevAux p x
-              (Galoistools.gfStrip
-                (Galoistools.zipSubPad p cur.reverse sub.reverse).reverse).reverse % p =
-              Galoistools.refPolyEvalRevAux p x
-                (Galoistools.zipSubPad p cur.reverse sub.reverse) % p from hs]
-          simp [Nat.add_mod]
+          simpa [Nat.add_mod] using congrArg
+            (fun z => (z +
+              (Galoistools.refPolyEvalRevAux p x sub.reverse % p)) % p) hs
     _ = Galoistools.refPolyEvalRevAux p x
           (Galoistools.zipAddPad p
             (Galoistools.zipSubPad p cur.reverse sub.reverse) sub.reverse) % p := by
