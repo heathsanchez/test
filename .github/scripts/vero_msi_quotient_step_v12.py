@@ -18,6 +18,34 @@ v8b=ROOT/'.github/scripts/vero_msi_interface_compilation_v8b.py'
 GEN2=literal_assign(v8b,'GEN2'); STRUCT=literal_assign(v8b,'STRUCT')
 probes=literal_assign(ROOT/'.github/scripts/vero_div_identity_invariant.py','probes')
 QUOTIENT_STEP=probes['quotient_term_mul'].replace('theorem quotient_term_mul','@[simp] theorem msi_quotient_step_mul',1)
+# Repair only the three proof-shape residuals exposed by the clean V12 gate.
+QUOTIENT_STEP=QUOTIENT_STEP.replace(
+'''  have hstrip : ∀ xs : List Nat, ∀ n : Nat,
+      Galoistools.gfStrip (xs ++ List.replicate n 0) =''',
+'''  have stripZeros : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by
+    intro n
+    induction n with
+    | zero => rfl
+    | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
+  have hstrip : ∀ xs : List Nat, ∀ n : Nat,
+      Galoistools.gfStrip (xs ++ List.replicate n 0) =''',1)
+QUOTIENT_STEP=QUOTIENT_STEP.replace(
+'''    | nil =>
+      induction n with
+      | zero => rfl
+      | succ n ihn => simp [List.replicate_succ, Galoistools.gfStrip, ihn]''',
+'''    | nil => simp [stripZeros]''',1)
+QUOTIENT_STEP=QUOTIENT_STEP.replace(
+'''  · subst g
+    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul]''',
+'''  · subst g
+    simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, stripZeros]''',1)
+QUOTIENT_STEP=QUOTIENT_STEP.replace(
+'''    simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
+      if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
+    rw [hconv g.reverse hgr]''',
+'''    simp [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg]
+    rw [hconv g.reverse hgr]''',1)
 
 def add_ring_import(src):
     if 'import Galoistools.Proof.Ring\n' in src: return src
@@ -39,13 +67,12 @@ def patch_struct(src):
         src=src.replace(a,b,1)
     return src
 
-# Hard proof gate: exact historical theorem, isolated from benchmark residuals.
+# Hard proof gate: theorem must compile before any benchmark replay.
 gate=OUT/'proof_gate'; shutil.copytree(SOURCE,gate)
 for c in gate.rglob('.lake'):
     if c.is_dir(): shutil.rmtree(c)
 probe=gate/'QuotientStepV12.lean'
 probe.write_text('import Galoistools.Proof.Ring\nimport Galoistools.Impl.Division\nimport Galoistools.Spec.Division\n\n'+QUOTIENT_STEP)
-# Build the complete explicit import closure before invoking lean directly.
 build=subprocess.run(['lake','build','Galoistools.Proof.Ring','Galoistools.Impl.Division','Galoistools.Spec.Division'],cwd=gate,text=True,capture_output=True,timeout=300)
 if build.returncode:
     raw=build.stdout+'\n'+build.stderr
