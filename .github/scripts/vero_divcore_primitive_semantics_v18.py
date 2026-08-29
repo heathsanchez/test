@@ -15,8 +15,6 @@ import Galoistools.Spec.Division
 open Galoistools
 namespace VeroDivCorePrimitiveSemanticsV18
 
--- Exact residual from V17: a trailing zero in the reversed/Horner list
--- does not change evaluation modulo p.
 theorem revaux_append_zero_mod (p x : Nat) : ∀ xs : List Nat,
     Galoistools.refPolyEvalRevAux p x (xs ++ [0]) % p =
     Galoistools.refPolyEvalRevAux p x xs % p := by
@@ -26,7 +24,11 @@ theorem revaux_append_zero_mod (p x : Nat) : ∀ xs : List Nat,
   | cons a as ih =>
       simp [Galoistools.refPolyEvalRevAux, ih, Nat.add_mod, Nat.mul_mod]
 
--- First primitive semantic interface: canonical stripping is evaluation-neutral mod p.
+-- Exact structural bridge exposed by V18 run 3.
+theorem gfStrip_cons_zero (as : List Nat) :
+    Galoistools.gfStrip (0 :: as) = Galoistools.gfStrip as := by
+  simp [Galoistools.gfStrip]
+
 theorem strip_eval_mod (p x : Nat) (f : List Nat) :
     NatModEq p
       (Galoistools.refPolyEval p (Galoistools.gfStrip f) x)
@@ -37,8 +39,8 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
   | cons a as ih =>
       by_cases h : a = 0
       · subst a
-        change Galoistools.refPolyEvalRevAux p x (Galoistools.gfStrip as).reverse % p =
-          Galoistools.refPolyEvalRevAux p x (as.reverse ++ [0]) % p
+        rw [gfStrip_cons_zero]
+        simp only [List.reverse_cons]
         rw [ih]
         exact (revaux_append_zero_mod p x as).symm
       · simp [Galoistools.gfStrip, h]
