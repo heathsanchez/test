@@ -99,7 +99,7 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
           have htail := revaux_map_mod p x as
           calc
             ((a % p + x * Galoistools.refPolyEvalRevAux p x
-                (as.map (fun z => z % p))) % p) % p
+                (as.map (fun z => z % p))) % p)
                 = ((a % p + x *
                     (Galoistools.refPolyEvalRevAux p x
                       (as.map (fun z => z % p)) % p)) % p) := by
@@ -107,7 +107,7 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
             _ = ((a % p + x *
                     (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
                     rw [htail]
-            _ = ((a + x * Galoistools.refPolyEvalRevAux p x as) % p) % p := by
+            _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
                     simp [Nat.add_mod, Nat.mul_mod]
       | cons b bs =>
           simp only [Galoistools.zipSubPad, Galoistools.zipAddPad,
@@ -117,7 +117,7 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
           calc
             ((a % p + x * Galoistools.refPolyEvalRevAux p x
                 (Galoistools.zipAddPad p
-                  (Galoistools.zipSubPad p as bs) bs)) % p) % p
+                  (Galoistools.zipSubPad p as bs) bs)) % p)
                 = ((a % p + x *
                     (Galoistools.refPolyEvalRevAux p x
                       (Galoistools.zipAddPad p
@@ -128,8 +128,6 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
                     rw [htail]
             _ = (a + x * Galoistools.refPolyEvalRevAux p x as) % p := by
                     simp [Nat.add_mod, Nat.mul_mod]
-            _ = ((a + x * Galoistools.refPolyEvalRevAux p x as) % p) % p := by
-                    simp
 
 end VeroDivCoreSubCancelV20
 '''
