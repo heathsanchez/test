@@ -29,7 +29,6 @@ theorem gfSub_add_eval_mod (p x : Nat) (cur sub : List Nat) (hp : 0 < p) :
   unfold Galoistools.refPolyEval
   simp only [List.reverse_reverse] at hs ⊢
   unfold Galoistools.gfSub
-  simp only [List.reverse_reverse]
   calc
     (Galoistools.refPolyEvalRevAux p x
         (Galoistools.gfStrip
