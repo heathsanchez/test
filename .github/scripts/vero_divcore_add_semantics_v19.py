@@ -100,6 +100,26 @@ theorem revaux_zipAddPad_mod (p x : Nat) : ∀ as bs : List Nat,
                       (Galoistools.refPolyEvalRevAux p x as)
                       (Galoistools.refPolyEvalRevAux p x bs)
 
+-- Lift the verified padded-Horner theorem through gfAdd's strip/reverse representation.
+theorem gfAdd_eval_mod (p x : Nat) (f g : List Nat) :
+    NatModEq p
+      (Galoistools.refPolyEval p (Galoistools.gfAdd f g p) x)
+      (Galoistools.refPolyEval p f x + Galoistools.refPolyEval p g x) := by
+  unfold Galoistools.gfAdd
+  have hs := strip_eval_mod p x
+    (Galoistools.zipAddPad p f.reverse g.reverse).reverse
+  unfold NatModEq Galoistools.refPolyEval at hs ⊢
+  simp only [List.reverse_reverse] at hs ⊢
+  calc
+    Galoistools.refPolyEvalRevAux p x
+        (Galoistools.gfStrip
+          (Galoistools.zipAddPad p f.reverse g.reverse).reverse).reverse % p
+        = Galoistools.refPolyEvalRevAux p x
+            (Galoistools.zipAddPad p f.reverse g.reverse) % p := hs
+    _ = (Galoistools.refPolyEvalRevAux p x f.reverse +
+          Galoistools.refPolyEvalRevAux p x g.reverse) % p :=
+          revaux_zipAddPad_mod p x f.reverse g.reverse
+
 end VeroDivCoreAddSemanticsV19
 '''
 (P/'DivCoreAddSemanticsV19.lean').write_text(probe)
