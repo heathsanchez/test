@@ -15,6 +15,36 @@ import Galoistools.Spec.Division
 open Galoistools
 namespace VeroDivCoreRecursiveBridgeV21
 
+@[simp] theorem eval_reduced (p x : Nat) (hp : 0 < p) : ∀ xs : List Nat,
+    Galoistools.refPolyEval p xs x % p = Galoistools.refPolyEval p xs x := by
+  intro xs; unfold Galoistools.refPolyEval
+  induction xs.reverse with
+  | nil => simp [Galoistools.refPolyEvalRevAux]
+  | cons a as ih => simp [Galoistools.refPolyEvalRevAux, Nat.mod_mod]
+
+@[simp] theorem eval_append_zero (p x : Nat) (f : List Nat) :
+    Galoistools.refPolyEval p (f ++ [0]) x = (Galoistools.refPolyEval p f x * x) % p := by
+  simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux, Nat.mul_comm]
+
+@[simp] theorem eval_append_zeros (p x n : Nat) (f : List Nat) (hp : 0 < p) :
+    Galoistools.refPolyEval p (f ++ List.replicate n 0) x =
+      (Galoistools.refPolyEval p f x * x^n) % p := by
+  induction n generalizing f with
+  | zero =>
+      simp only [List.replicate_zero, List.append_nil, Nat.pow_zero, Nat.mul_one]
+      exact (eval_reduced p x hp f).symm
+  | succ n ih =>
+      simp only [List.replicate_succ]
+      rw [show f ++ 0 :: List.replicate n 0 = (f ++ [0]) ++ List.replicate n 0 by simp]
+      rw [ih (f := f ++ [0]), eval_append_zero, Nat.pow_succ]
+      have hmod : NatModEq p (((Galoistools.refPolyEval p f x * x) % p) * x^n)
+          ((Galoistools.refPolyEval p f x * x) * x^n) := by
+        apply natModEq_mul
+        · exact natModEq_mod_left (by rfl)
+        · rfl
+      unfold NatModEq at hmod
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hmod
+
 @[simp] theorem mul_eval_hom (p x : Nat) (u v : List Nat) :
     Galoistools.refPolyEval p (Galoistools.gfMul u v p) x =
       (Galoistools.refPolyEval p u x * Galoistools.refPolyEval p v x) % p := by
@@ -42,7 +72,29 @@ namespace VeroDivCoreRecursiveBridgeV21
       _ = (Galoistools.refPolyEvalRevAux p x u.reverse *
             Galoistools.refPolyEvalRevAux p x v.reverse) % p := hconv
 
-theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) :
+theorem scaleP_eval_mod (p x c : Nat) (g : List Nat) :
+    NatModEq p
+      (Galoistools.refPolyEval p (Galoistools.scaleP p c g) x)
+      (c * Galoistools.refPolyEval p g x) := by
+  unfold Galoistools.scaleP
+  rw [refPolyEval_gfStrip]
+  unfold Galoistools.refPolyEval
+  rw [List.reverse_map]
+  have h := natModEq_refPolyEvalRevAux_map_mul p x c g.reverse
+  simpa [Nat.mul_comm] using h
+
+theorem shiftUp_eval_mod (p x s : Nat) (f : List Nat) (hp : 0 < p) :
+    NatModEq p
+      (Galoistools.refPolyEval p (Galoistools.shiftUp s f) x)
+      (Galoistools.refPolyEval p f x * x^s) := by
+  unfold Galoistools.shiftUp
+  by_cases hf : f = []
+  · subst f
+    simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux]
+  · rw [if_neg hf, eval_append_zeros p x s f hp]
+    exact natModEq_mod_left (by rfl)
+
+theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) (hp : 0 < p) :
     NatModEq p
       (Galoistools.refPolyEval p
         (Galoistools.gfMul (Galoistools.shiftUp s [c]) g p) x)
@@ -50,9 +102,16 @@ theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) :
         (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x) := by
   unfold NatModEq
   rw [mul_eval_hom]
-  simp [Galoistools.shiftUp, Galoistools.scaleP,
-    Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux,
-    Nat.add_mod, Nat.mul_mod]
+  have hs := scaleP_eval_mod p x c g
+  have hshift := shiftUp_eval_mod p x s (Galoistools.scaleP p c g) hp
+  unfold NatModEq at hs hshift
+  simp [Galoistools.shiftUp, eval_append_zeros, hp] at *
+  calc
+    (c % p * Galoistools.refPolyEval p g x) % p =
+        (c * Galoistools.refPolyEval p g x) % p := by simp [Nat.mul_mod]
+    _ = ((c * Galoistools.refPolyEval p g x) % p * x^s) % p := by
+      simp [Nat.mul_mod]
+    _ = Galoistools.refPolyEval p (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x % p := hshift.symm
 
 end VeroDivCoreRecursiveBridgeV21
 '''
