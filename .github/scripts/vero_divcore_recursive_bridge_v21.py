@@ -120,8 +120,13 @@ theorem quotient_sub_bridge (p x c s : Nat) (g : List Nat) (hp : 0 < p) :
     _ = (((Galoistools.refPolyEval p [c] x * x^s) % p) *
         Galoistools.refPolyEval p g x) % p := by rw [hmono]
     _ = (((c * Galoistools.refPolyEval p g x) * x^s) % p) := by
-      simp [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux,
-        Nat.mul_mod, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      have hreassoc :
+          (c * x^s) * Galoistools.refPolyEval p g x =
+            (c * Galoistools.refPolyEval p g x) * x^s := by
+        simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      have hmod := congrArg (fun z : Nat => z % p) hreassoc
+      simpa [Galoistools.refPolyEval, Galoistools.refPolyEvalRevAux,
+        Nat.mul_mod] using hmod
     _ = (Galoistools.refPolyEval p (Galoistools.scaleP p c g) x * x^s) % p := hscaleMul.symm
     _ = Galoistools.refPolyEval p (Galoistools.shiftUp s (Galoistools.scaleP p c g)) x % p := hscaledShift.symm
 
