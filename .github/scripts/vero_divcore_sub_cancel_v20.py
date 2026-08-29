@@ -45,10 +45,31 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
         exact (revaux_append_zero_mod p x as.reverse).symm
       · simp [Galoistools.gfStrip, h]
 
--- Scalar core of subtract-then-add in GF(p).
+-- V19: coefficient normalization is semantically neutral modulo p.
+theorem revaux_map_mod (p x : Nat) : ∀ xs : List Nat,
+    Galoistools.refPolyEvalRevAux p x (xs.map (fun a => a % p)) % p =
+    Galoistools.refPolyEvalRevAux p x xs % p := by
+  intro xs
+  induction xs with
+  | nil => simp [Galoistools.refPolyEvalRevAux]
+  | cons a as ih =>
+      simp [Galoistools.refPolyEvalRevAux, ih, Nat.add_mod, Nat.mul_mod]
+
+-- Scalar core of subtract-then-add in GF(p), proved by exposing the residue bound.
 theorem sub_add_coeff_mod (p a b : Nat) (hp : 0 < p) :
     ((((a + (p - b % p)) % p) % p + b) % p) = a % p := by
-  omega
+  have hb : b % p ≤ p := Nat.le_of_lt (Nat.mod_lt b hp)
+  have hcancel : (p - b % p) + b % p = p := Nat.sub_add_cancel hb
+  calc
+    ((((a + (p - b % p)) % p) % p + b) % p)
+        = ((a + (p - b % p)) + b) % p := by
+            simp [Nat.add_mod]
+    _ = ((a + (p - b % p)) + b % p) % p := by
+            simp [Nat.add_mod]
+    _ = (a + ((p - b % p) + b % p)) % p := by
+            rw [Nat.add_assoc]
+    _ = (a + p) % p := by rw [hcancel]
+    _ = a % p := by simp [Nat.add_mod]
 
 -- Strong interface needed by V16: subtracting then adding back preserves Horner evaluation.
 theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Nat,
@@ -70,7 +91,8 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
       cases bs with
       | nil =>
           simp [Galoistools.zipSubPad, Galoistools.zipAddPad,
-            Galoistools.refPolyEvalRevAux, Nat.add_mod, Nat.mul_mod]
+            Galoistools.refPolyEvalRevAux, revaux_map_mod,
+            Nat.add_mod, Nat.mul_mod]
       | cons b bs =>
           simp [Galoistools.zipSubPad, Galoistools.zipAddPad,
             Galoistools.refPolyEvalRevAux, ih bs, sub_add_coeff_mod, hp,
