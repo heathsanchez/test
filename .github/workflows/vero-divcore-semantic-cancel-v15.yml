@@ -1,0 +1,30 @@
+name: Vero divCore semantic cancellation V15
+
+on:
+  push:
+    paths:
+      - '.github/scripts/vero_divcore_semantic_cancel_v15.py'
+      - '.github/workflows/vero-divcore-semantic-cancel-v15.yml'
+  workflow_dispatch:
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 33159291952
+          name: vero-cold-source-certification-v1
+          path: coldcert
+      - run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: python .github/scripts/vero_divcore_semantic_cancel_v15.py
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: vero-divcore-semantic-cancel-v15
+          path: vero_divcore_semantic_cancel_v15
