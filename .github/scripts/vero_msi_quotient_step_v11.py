@@ -1,0 +1,143 @@
+from pathlib import Path
+import ast, json, shutil, subprocess
+
+ROOT=Path.cwd(); SOURCE=(ROOT/'coldcert'/'project').resolve(); OUT=(ROOT/'vero_msi_quotient_step_v11').resolve()
+if OUT.exists(): shutil.rmtree(OUT)
+OUT.mkdir(); DIV=Path('Galoistools/Proof/Division.lean')
+
+def literal_assign(path, name):
+    tree=ast.parse(path.read_text())
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for t in node.targets:
+                if isinstance(t, ast.Name) and t.id == name:
+                    return ast.literal_eval(node.value)
+    raise RuntimeError(f'missing {name}')
+
+v8b=ROOT/'.github/scripts/vero_msi_interface_compilation_v8b.py'
+GEN2=literal_assign(v8b,'GEN2'); STRUCT=literal_assign(v8b,'STRUCT')
+
+QUOTIENT_STEP=r'''
+@[simp] theorem msi_quotient_step_mul (p c s : Nat) (g : List Nat) :
+    Galoistools.gfMul (Galoistools.shiftUp s [c]) g p =
+      Galoistools.shiftUp s (Galoistools.scaleP p c g) := by
+  have hnil : ∀ xs : List Nat,
+      Galoistools.zipAddPad p xs [] = xs.map (· % p) := by
+    intro xs; cases xs <;> rfl
+  have hzeros : ∀ n : Nat, ∀ xs : List Nat,
+      xs.map (· % p) = xs → n ≤ xs.length →
+      Galoistools.zipAddPad p (List.replicate n 0) xs = xs := by
+    intro n xs hred hlen
+    induction n generalizing xs with
+    | zero => simpa [Galoistools.zipAddPad] using hred
+    | succ n ih =>
+      cases xs with
+      | nil => simp at hlen
+      | cons x xs =>
+        simp only [List.length_cons, Nat.succ_le_succ_iff] at hlen
+        simp only [List.map_cons] at hred
+        injection hred with hx hxs
+        simp [List.replicate_succ, Galoistools.zipAddPad, hx, ih xs hxs hlen]
+  have hmap0 : ∀ zs : List Nat,
+      zs.map (fun _ => 0) = List.replicate zs.length 0 := by
+    intro zs; induction zs with
+    | nil => rfl
+    | cons z zs ih => simp only [List.map_cons, List.length_cons, List.replicate_succ]; rw [ih]
+  have hconv : ∀ ys : List Nat, ys ≠ [] →
+      Galoistools.convolve p (List.replicate s 0 ++ [c]) ys =
+        List.replicate s 0 ++ ys.map (fun y => (c * y) % p) := by
+    intro ys hys
+    induction s with
+    | zero =>
+      simp only [List.replicate_zero, List.nil_append]
+      cases ys with
+      | nil => contradiction
+      | cons y ys => simp [Galoistools.convolve, Galoistools.zipAddPad, hnil, Nat.mod_mod]
+    | succ s ih =>
+      simp only [List.replicate_succ, List.cons_append, Galoistools.convolve]
+      rw [ih]
+      simp only [Nat.zero_mul, Nat.zero_mod]
+      rw [hmap0 ys]
+      apply hzeros ys.length
+      · simp [Nat.mod_mod]
+      · simp only [List.length_cons, List.length_append, List.length_replicate, List.length_map]; omega
+  have stripZeros : ∀ n : Nat, Galoistools.gfStrip (List.replicate n 0) = [] := by
+    intro n; induction n with
+    | zero => rfl
+    | succ n ih => simp [List.replicate_succ, Galoistools.gfStrip, ih]
+  have hstrip : ∀ xs : List Nat, ∀ n : Nat,
+      Galoistools.gfStrip (xs ++ List.replicate n 0) =
+        if Galoistools.gfStrip xs = [] then []
+        else Galoistools.gfStrip xs ++ List.replicate n 0 := by
+    intro xs n
+    induction xs with
+    | nil => simp [stripZeros]
+    | cons x xs ih =>
+      by_cases hx : x = 0
+      · simp [Galoistools.gfStrip, hx, ih]
+      · simp [Galoistools.gfStrip, hx]
+  by_cases hg : g = []
+  · subst g; simp [Galoistools.shiftUp, Galoistools.scaleP, Galoistools.gfMul, Galoistools.gfStrip]
+  · have hgr : g.reverse ≠ [] := by simpa using List.reverse_ne_nil.mpr hg
+    simp only [Galoistools.gfMul, Galoistools.shiftUp, Galoistools.scaleP, hg,
+      if_false, List.reverse_append, List.reverse_replicate, List.reverse_singleton]
+    change Galoistools.gfStrip ((Galoistools.convolve p (List.replicate s 0 ++ [c]) g.reverse).reverse) = _
+    rw [hconv g.reverse hgr]
+    simp only [List.reverse_append, List.map_reverse, List.reverse_replicate, List.reverse_reverse]
+    rw [hstrip (g.map (fun y => (c * y) % p)) s]
+    simp [Galoistools.shiftUp, Nat.mul_comm]
+'''
+
+def add_ring_import(src):
+    if 'import Galoistools.Proof.Ring\n' in src: return src
+    return src.replace('import Galoistools.Spec.Division\n','import Galoistools.Spec.Division\nimport Galoistools.Proof.Ring\n',1)
+
+def inject(src,extra):
+    m='-- !benchmark @end global_aux'; i=src.find(m)
+    if i<0: raise RuntimeError('global_aux marker missing')
+    return src[:i]+'\n'+extra+'\n'+src[i:]
+
+def patch_struct(src):
+    reps=[
+      ('exact Nat.mod_lt _ (by omega)','exact Nat.mod_lt _ (Nat.zero_lt_of_lt hp.1)'),
+      ('have hdlt : d < p := lt_of_le_of_lt hdle hlt','have hdlt : d < p := Nat.lt_of_le_of_lt hdle hlt'),
+      ('''        have ha0 : a ≠ 0 := by\n          intro ha\n          subst a\n          simp at hmod\n          omega''','''        have ha0 : a ≠ 0 := by\n          exact msi_norm_cons_head_ne_zero p a as hn'''),
+      ('''        have hd0 : d ≠ 0 := by\n          intro hd\n          subst d\n          simp at hdp\n          omega''','''        have hd0 : d ≠ 0 := by\n          intro hd\n          rcases hda with ⟨k, hk⟩\n          rw [hd] at hk\n          simp at hk\n          exact ha0 hk''')]
+    for a,b in reps:
+        if a not in src: raise RuntimeError('missing structural patch')
+        src=src.replace(a,b,1)
+    return src
+
+# Gate: theorem must compile standalone before benchmark replay.
+gate=OUT/'proof_gate'; shutil.copytree(SOURCE,gate)
+for c in gate.rglob('.lake'):
+    if c.is_dir(): shutil.rmtree(c)
+probe=gate/'QuotientStepV11.lean'
+probe.write_text('import Galoistools.Proof.Ring\nimport Galoistools.Impl.Division\n\n'+QUOTIENT_STEP)
+build=subprocess.run(['lake','build','Galoistools.Proof.Ring'],cwd=gate,text=True,capture_output=True,timeout=300)
+if build.returncode:
+    raw=build.stdout+'\n'+build.stderr
+    print('V11_PROOF_GATE',json.dumps({'stage':'ring_build','exit':build.returncode,'tail':raw[-5000:]})); raise SystemExit(1)
+cp=subprocess.run(['lake','env','lean','QuotientStepV11.lean'],cwd=gate,text=True,capture_output=True,timeout=300)
+raw=cp.stdout+'\n'+cp.stderr
+print('V11_PROOF_GATE',json.dumps({'stage':'lemma','exit':cp.returncode,'tail':raw[-9000:]}))
+if cp.returncode:
+    (OUT/'result.json').write_text(json.dumps({'proof_gate':{'exit':cp.returncode,'tail':raw[-30000:]}},indent=2)); raise SystemExit(1)
+
+def run(label, quotient=False, sham=False):
+    p=OUT/label; shutil.copytree(SOURCE,p)
+    for c in p.rglob('.lake'):
+        if c.is_dir(): shutil.rmtree(c)
+    pf=p/DIV; s=add_ring_import(pf.read_text())
+    extra=GEN2+STRUCT+(QUOTIENT_STEP if quotient else '')+(r'@[simp] theorem msi_v11_sham (n : Nat) : n + 0 = n := by simp' if sham else '')
+    s=patch_struct(inject(s,extra)); pf.write_text(s)
+    cp=subprocess.run(['lake','build','Galoistools.Proof.Division'],cwd=p,text=True,capture_output=True,timeout=300)
+    raw=cp.stdout+'\n'+cp.stderr; errs=[x for x in raw.splitlines() if 'error:' in x]
+    return {'exit':cp.returncode,'error_count':len(errs),'error_lines':errs,'tail':raw[-50000:]}
+
+matrix={'control':run('control'),'sham':run('sham',sham=True),'quotient_step':run('quotient_step',quotient=True)}
+for k,v in matrix.items(): print('MSI_V11_ARM',k,json.dumps({'exit':v['exit'],'error_count':v['error_count']}))
+base=matrix['control']['error_count']; gains={k:base-v['error_count'] for k,v in matrix.items()}
+payload={'schema':'msi.vero-quotient-step.v11','proof_gate':'passed','matrix':matrix,'gains':gains}
+(OUT/'result.json').write_text(json.dumps(payload,indent=2))
+print('VERO_MSI_QUOTIENT_STEP_V11',json.dumps(gains))
