@@ -63,19 +63,22 @@ theorem sub_add_coeff_mod (p a b : Nat) (hp : 0 < p) :
     _ = ((a + (p - b % p)) + b % p) % p := by simp [Nat.add_mod]
     _ = (a + ((p - b % p) + b % p)) % p := by rw [Nat.add_assoc]
     _ = (a + p) % p := by rw [hcancel]
-    _ = a % p := by simp [Nat.add_mod]
+    _ = a % p := by simp
 
--- Exact normalized coefficient shape emitted by zipSubPad followed by zipAddPad.
-theorem sub_add_coeff_mod_norm (p a b : Nat) (hp : 0 < p) :
-    (((a % p + (p - b % p) % p) % p + b % p) % p) = a % p := by
-  calc
-    (((a % p + (p - b % p) % p) % p + b % p) % p)
-        = (((a + (p - b % p)) % p + b) % p) := by
-            simp [Nat.add_mod]
-    _ = a % p := by
-            simpa [Nat.mod_mod] using sub_add_coeff_mod p a b hp
+theorem revaux_neg_add_zero_mod (p x : Nat) (hp : 0 < p) : ∀ bs : List Nat,
+    Galoistools.refPolyEvalRevAux p x
+      (Galoistools.zipAddPad p
+        (bs.map (fun y => (p - y % p) % p)) bs) % p = 0 := by
+  intro bs
+  induction bs with
+  | nil => simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux]
+  | cons b bs ih =>
+      simp only [List.map_cons, Galoistools.zipAddPad,
+        Galoistools.refPolyEvalRevAux]
+      rw [show (((p - b % p) % p + b) % p) = 0 by
+        simpa using sub_add_coeff_mod p 0 b hp]
+      simp [ih, Nat.add_mod, Nat.mul_mod]
 
--- Strong interface needed by V16: subtracting then adding back preserves Horner evaluation.
 theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Nat,
     Galoistools.refPolyEvalRevAux p x
       (Galoistools.zipAddPad p (Galoistools.zipSubPad p as bs) bs) % p =
@@ -84,27 +87,8 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
   induction as with
   | nil =>
       intro bs
-      induction bs with
-      | nil => simp [Galoistools.zipSubPad, Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux]
-      | cons b bs ih =>
-          simp only [Galoistools.zipSubPad, Galoistools.zipAddPad,
-            Galoistools.refPolyEvalRevAux, List.map_cons]
-          calc
-            ((((p - b % p) % p + b) % p +
-                x * Galoistools.refPolyEvalRevAux p x
-                  (Galoistools.zipAddPad p
-                    (bs.map (fun y => (p - y % p) % p)) bs)) % p) % p)
-                = ((0 + x * 0) % p) := by
-                    rw [show ((p - b % p) % p + b) % p = 0 by
-                      simpa using sub_add_coeff_mod_norm p 0 b hp]
-                    have htail :
-                        Galoistools.refPolyEvalRevAux p x
-                          (Galoistools.zipAddPad p
-                            (Galoistools.zipSubPad p [] bs) bs) % p = 0 := by
-                      simpa [Galoistools.refPolyEvalRevAux] using ih
-                    simpa [Galoistools.zipSubPad, Nat.add_mod, Nat.mul_mod] using htail
-            _ = Galoistools.refPolyEvalRevAux p x [] % p := by
-                    simp [Galoistools.refPolyEvalRevAux]
+      simp [Galoistools.zipSubPad, revaux_neg_add_zero_mod p x hp,
+        Galoistools.refPolyEvalRevAux]
   | cons a as ih =>
       intro bs
       cases bs with
@@ -117,17 +101,16 @@ theorem revaux_sub_add_cancel_mod (p x : Nat) (hp : 0 < p) : ∀ as bs : List Na
       | cons b bs =>
           simp only [Galoistools.zipSubPad, Galoistools.zipAddPad,
             Galoistools.refPolyEvalRevAux]
+          rw [sub_add_coeff_mod p a b hp]
           have htail := ih bs
           calc
-            (((((a + (p - b % p)) % p) % p + b) % p +
-                x * Galoistools.refPolyEvalRevAux p x
-                  (Galoistools.zipAddPad p
-                    (Galoistools.zipSubPad p as bs) bs)) % p) % p)
+            ((a % p + x * Galoistools.refPolyEvalRevAux p x
+                (Galoistools.zipAddPad p
+                  (Galoistools.zipSubPad p as bs) bs)) % p) % p
                 = ((a % p + x *
                     (Galoistools.refPolyEvalRevAux p x
                       (Galoistools.zipAddPad p
                         (Galoistools.zipSubPad p as bs) bs) % p)) % p) := by
-                    rw [sub_add_coeff_mod p a b hp]
                     simp [Nat.add_mod, Nat.mul_mod]
             _ = ((a % p + x *
                     (Galoistools.refPolyEvalRevAux p x as % p)) % p) := by
