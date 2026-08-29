@@ -44,7 +44,6 @@ theorem strip_eval_mod (p x : Nat) (f : List Nat) :
         exact (revaux_append_zero_mod p x as.reverse).symm
       · simp [Galoistools.gfStrip, h]
 
--- Exact V19 run-1 residual: reducing every coefficient mod p preserves Horner evaluation mod p.
 theorem revaux_map_mod (p x : Nat) : ∀ xs : List Nat,
     Galoistools.refPolyEvalRevAux p x (xs.map (fun a => a % p)) % p =
     Galoistools.refPolyEvalRevAux p x xs % p := by
@@ -53,6 +52,19 @@ theorem revaux_map_mod (p x : Nat) : ∀ xs : List Nat,
   | nil => simp [Galoistools.refPolyEvalRevAux]
   | cons a as ih =>
       simp [Galoistools.refPolyEvalRevAux, ih, Nat.add_mod, Nat.mul_mod]
+
+-- Run-2 isolated the final obstruction to this elementary modular Horner identity.
+theorem horner_add_mod (p x a b A B : Nat) :
+    (((a + b) % p + x * ((A + B) % p)) % p) =
+      (((a + x * A) % p + (b + x * B) % p) % p) := by
+  calc
+    (((a + b) % p + x * ((A + B) % p)) % p)
+        = ((a + b) + x * (A + B)) % p := by
+            simp [Nat.add_mod, Nat.mul_mod]
+    _ = ((a + x * A) + (b + x * B)) % p := by
+            simp [Nat.mul_add, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+    _ = (((a + x * A) % p + (b + x * B) % p) % p) := by
+            simp [Nat.add_mod]
 
 -- Coefficientwise padded addition is Horner-evaluation addition modulo p.
 theorem revaux_zipAddPad_mod (p x : Nat) : ∀ as bs : List Nat,
@@ -72,9 +84,12 @@ theorem revaux_zipAddPad_mod (p x : Nat) : ∀ as bs : List Nat,
           simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux,
             revaux_map_mod, Nat.add_mod, Nat.mul_mod]
       | cons b bs =>
-          simp [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux, ih bs,
-            Nat.add_mod, Nat.mul_mod, Nat.mul_add,
-            Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+          simp only [Galoistools.zipAddPad, Galoistools.refPolyEvalRevAux]
+          rw [ih bs]
+          simpa [Nat.mod_mod, Nat.add_mod, Nat.mul_mod] using
+            horner_add_mod p x a b
+              (Galoistools.refPolyEvalRevAux p x as)
+              (Galoistools.refPolyEvalRevAux p x bs)
 
 end VeroDivCoreAddSemanticsV19
 '''
