@@ -1,0 +1,78 @@
+name: Stage2 behavioural future 798 gate
+on:
+  push:
+    paths:
+      - .github/workflows/stage2-behavioural-future-798-gate.yml
+jobs:
+  causal-six:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: heathsanchez/equational-theories-lean-stage2
+          ref: fc59ebc329b6cf488ec775e2f59208437cd5f0a2
+          path: stage2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Build exact frozen single-file candidate
+        working-directory: stage2
+        run: |
+          python experiments/mathgraph/build_behavioural_future_specialist.py \
+            --base submissions/mathgraph/solver.py \
+            --output /tmp/mathgraph-behavioural-solver.py
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('/tmp/mathgraph-behavioural-solver.py')
+          s=p.read_text()
+          old1='frontier_seconds = min(12.0, max(0.5, timeout / 40.0))'
+          old2='given_seconds = min(5.0, max(0.5, timeout / 80.0))'
+          assert s.count(old1)==1
+          assert s.count(old2)==1
+          s=s.replace(old1,'frontier_seconds = 12.0')
+          s=s.replace(old2,'given_seconds = 5.0')
+          p.write_text(s)
+          PY
+          cp /tmp/mathgraph-behavioural-solver.py submissions/mathgraph/solver.py
+          python -m py_compile submissions/mathgraph/solver.py
+          rm -rf submissions/mathgraph/__pycache__
+          test "$(find submissions/mathgraph -mindepth 1 -maxdepth 1 -type f | wc -l)" -eq 1
+          test "$(wc -c < submissions/mathgraph/solver.py)" -le 500000
+      - name: Setup judge
+        working-directory: stage2
+        env:
+          SKIP_DOCKER: '1'
+        run: bash scripts/setup.sh
+      - name: Install proxy dependency
+        run: python -m pip install 'openai>=1,<3'
+      - name: Fetch residual sets
+        working-directory: stage2
+        run: |
+          mkdir -p /tmp/sair_eval
+          base='https://huggingface.co/datasets/SAIRfoundation/equational-theories-selected-problems/resolve/main/data'
+          curl -fL --retry 3 "$base/evaluation_normal.jsonl" -o /tmp/sair_eval/evaluation_normal.jsonl
+          curl -fL --retry 3 "$base/evaluation_hard.jsonl" -o /tmp/sair_eval/evaluation_hard.jsonl
+          curl -fL --retry 3 "$base/evaluation_order5.jsonl" -o /tmp/sair_eval/evaluation_order5.jsonl
+      - name: Official causal-six gate
+        working-directory: stage2
+        shell: bash
+        run: |
+          set -euo pipefail
+          source .env.judge
+          python experiments/mathgraph/run_796_six_residual_probe.py \
+            --normal /tmp/sair_eval/evaluation_normal.jsonl \
+            --hard /tmp/sair_eval/evaluation_hard.jsonl \
+            --order5 /tmp/sair_eval/evaluation_order5.jsonl \
+            --timeout 180 \
+            --output /tmp/behavioural-future-six.json
+          cat /tmp/behavioural-future-six.json
+          python - <<'PY'
+          import json
+          d=json.load(open('/tmp/behavioural-future-six.json'))
+          solved=set(d['solved'])
+          need={'evaluation_hard_0196','evaluation_normal_0036','evaluation_normal_0040','evaluation_normal_0158'}
+          if not need <= solved:
+              raise SystemExit(f'missing={sorted(need-solved)} solved={sorted(solved)}')
+          print('CAUSAL_SIX_798_GATE_PASS', sorted(solved))
+          PY
