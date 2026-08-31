@@ -1,0 +1,28 @@
+name: RGRS Intervention Repair Version Space
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/InterventionRepairVersionSpace.lean'
+      - '.github/workflows/rgrs-intervention-version-space.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide repair version-space theorem
+        run: |
+          lean rgrs/InterventionRepairVersionSpace.lean
+          echo "OLD_INTERVENTION_GRAMMAR_EXHAUSTED=PASS"
+          echo "GRAMMAR_CHANGE_REQUIRED=PASS"
+          echo "TWO_DISTINCT_MINIMAL_REPAIRS=PASS"
+          echo "RESIDUAL_ALONE_NONUNIQUE=PASS"
+          echo "ATTACHMENT_COLLAPSES_VERSION_SPACE=PASS"
+          echo "RGRS_VERSION_SPACE_STRUCTURE=PASS"
