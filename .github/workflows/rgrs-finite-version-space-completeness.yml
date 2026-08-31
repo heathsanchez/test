@@ -1,0 +1,26 @@
+name: RGRS Finite Version Space Completeness
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/FiniteVersionSpaceAdmitsFiniteCompleteTests.lean'
+      - '.github/workflows/rgrs-finite-version-space-completeness.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide finite version-space completeness
+        run: |
+          lean rgrs/FiniteVersionSpaceAdmitsFiniteCompleteTests.lean
+          echo "PAIRWISE_DISTINCTION_YIELDS_DECIDING_CONTEXT=PASS"
+          echo "FINITE_PAIR_INDEXED_TEST_FAMILY=PASS"
+          echo "FINITE_SIGNATURE_INJECTIVE=PASS"
+          echo "FINITE_VERSION_SPACE_COMPLETE_TESTS=PASS"
+          echo "IDENTIFIABILITY_RESTORED_BY_HYPOTHESIS_RESTRICTION=PASS"
