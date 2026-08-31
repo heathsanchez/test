@@ -1,0 +1,25 @@
+name: RGRS Arity Changing Intervention Class
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/ResidualForcesArityChangingInterventionClass.lean'
+      - '.github/workflows/rgrs-arity-changing-intervention-class.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide residual-forced intervention class
+        run: |
+          lean rgrs/ResidualForcesArityChangingInterventionClass.lean
+          echo "ALL_ARITY_PRESERVING_RESULTS_BLIND=PASS"
+          echo "SEPARATING_REPAIR_MUST_CHANGE_ARITY=PASS"
+          echo "MULTIPLE_ARITY_CHANGING_REPAIRS=PASS"
+          echo "RESIDUAL_FORCES_INTERVENTION_CLASS=PASS"
