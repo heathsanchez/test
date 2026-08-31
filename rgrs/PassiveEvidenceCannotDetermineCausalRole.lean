@@ -34,11 +34,17 @@ def Necessary (V : List Bool → Bool) (p : PairRole) : Prop :=
 
 theorem verifierA_requires_p0 :
     Necessary verifierA .p0 ∧ ¬ Necessary verifierA .p1 := by
-  decide
+  constructor
+  · rfl
+  · intro h
+    cases h
 
 theorem verifierB_requires_p1 :
     Necessary verifierB .p1 ∧ ¬ Necessary verifierB .p0 := by
-  decide
+  constructor
+  · rfl
+  · intro h
+    cases h
 
 structure PassiveView where
   trace : List Bool
