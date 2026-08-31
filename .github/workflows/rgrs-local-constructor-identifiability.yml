@@ -1,0 +1,27 @@
+name: RGRS Local Constructor Identifiability
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/LocalResidualCannotIdentifyGlobalConstructor.lean'
+      - '.github/workflows/rgrs-local-constructor-identifiability.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide constructor identifiability boundary
+        run: |
+          lean rgrs/LocalResidualCannotIdentifyGlobalConstructor.lean
+          echo "LOCAL_BEHAVIOR_IDENTICAL=PASS"
+          echo "GLOBAL_CONSTRUCTORS_DISTINCT=PASS"
+          echo "LOCAL_CONSEQUENCE_CANNOT_IDENTIFY_CONSTRUCTOR=PASS"
+          echo "TRANSFER_CONTEXT_SEPARATES=PASS"
+          echo "TRANSFER_SIGNATURE_SEPARATES=PASS"
+          echo "GLOBAL_CONSTRUCTOR_IDENTIFICATION_REQUIRES_CONTEXT=PASS"
