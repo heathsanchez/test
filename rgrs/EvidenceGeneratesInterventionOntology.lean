@@ -1,4 +1,4 @@
-import Std
+import Std.Tactic
 
 universe u
 
@@ -112,8 +112,14 @@ theorem pair_interventions_are_verifier_distinct :
   refine ⟨pos0, by decide, ?_⟩
   intro p hp
   apply Fin.ext
-  have hlt : p.val < 2 := p.isLt
-  interval_cases p.val <;> simp [response, deleteAt, pairVerifier, pos0, pos1] at hp ⊢
+  have hv : p.val = 0 := by
+    by_contra h0
+    have h1 : p.val = 1 := by omega
+    have hptrue : response pairVerifier pairEvidence p = true := by
+      simp [response, deleteAt, pairEvidence, h1, pairVerifier]
+    rw [hp] at hptrue
+    contradiction
+  exact hv
 
 /-- End-to-end result: evidence generates the experiment candidates, verifier
     consequence generates their ontology, and a unique counterfactual failure
