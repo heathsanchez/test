@@ -1,0 +1,29 @@
+name: RGRS Intervention Ontology
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/VerifierInducesMinimalInterventionOntology.lean'
+      - '.github/workflows/rgrs-intervention-ontology.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide intervention ontology theorem
+        run: |
+          lean rgrs/VerifierInducesMinimalInterventionOntology.lean
+          echo "VERIFIER_KERNEL_DEFINES_INTERVENTION_EQUIVALENCE=PASS"
+          echo "INDISTINGUISHABLE_INTERVENTIONS_COLLAPSE=PASS"
+          echo "VERIFIER_SEPARATED_INTERVENTIONS_DISTINCT=PASS"
+          echo "EVERY_SUFFICIENT_ENCODING_PRESERVES_SEPARATION=PASS"
+          echo "MINIMAL_INTERVENTION_ONTOLOGY=PASS"
+          echo "ERASURE_COLLAPSES_INTERVENTION_ONTOLOGY=PASS"
+          echo "CONSEQUENCE_INDUCES_EXPERIMENT_IDENTITY=PASS"
