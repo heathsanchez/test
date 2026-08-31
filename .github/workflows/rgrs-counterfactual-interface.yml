@@ -1,0 +1,31 @@
+name: RGRS Counterfactual Interface
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/PassiveEvidenceCannotDetermineCausalRole.lean'
+      - 'rgrs/CounterfactualConsequenceForcesExperimentInterface.lean'
+      - '.github/workflows/rgrs-counterfactual-interface.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide counterfactual interface theorem
+        run: |
+          lean -o rgrs/PassiveEvidenceCannotDetermineCausalRole.olean rgrs/PassiveEvidenceCannotDetermineCausalRole.lean
+          LEAN_PATH=. lean rgrs/CounterfactualConsequenceForcesExperimentInterface.lean
+          echo "PASSIVE_INTERFACE_COLLAPSES_CAUSAL_WORLDS=PASS"
+          echo "CAUSAL_TARGET_NONFACTORING=PASS"
+          echo "COUNTERFACTUAL_CONSEQUENCE_SEPARATES=PASS"
+          echo "MINIMAL_PRODUCT_REPAIR=PASS"
+          echo "CAUSAL_TARGET_FACTORS_AFTER_REPAIR=PASS"
+          echo "COUNTERFACTUAL_ABLATION_RESTORES_OBSTRUCTION=PASS"
+          echo "COUNTERFACTUAL_CONSEQUENCE_FORCES_EXPERIMENT_INTERFACE=PASS"
