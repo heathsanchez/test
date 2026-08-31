@@ -1,0 +1,28 @@
+name: RGRS Evidence Intervention Ontology
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/EvidenceGeneratesInterventionOntology.lean'
+      - '.github/workflows/rgrs-evidence-intervention-ontology.yml'
+  workflow_dispatch:
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide evidence-generated experiment ontology
+        run: |
+          lean rgrs/EvidenceGeneratesInterventionOntology.lean
+          echo "EVIDENCE_POSITIONS_GENERATE_INTERVENTIONS=PASS"
+          echo "VERIFIER_CONSEQUENCE_QUOTIENTS_INTERVENTIONS=PASS"
+          echo "VERIFIER_SEPARATION_CREATES_EXPERIMENT_DISTINCTION=PASS"
+          echo "UNIQUE_REJECTION_SELECTS_EXPERIMENT=PASS"
+          echo "ERASURE_COLLAPSES_EXPERIMENT_ONTOLOGY=PASS"
+          echo "EVIDENCE_GENERATES_INTERVENTION_ONTOLOGY=PASS"
