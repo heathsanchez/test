@@ -1,4 +1,4 @@
-import «rgrs/PassiveEvidenceCannotDetermineCausalRole»
+import rgrs.PassiveEvidenceCannotDetermineCausalRole
 
 namespace CounterfactualConsequenceForcesExperimentInterface
 
