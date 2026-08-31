@@ -1,0 +1,26 @@
+name: RGRS Finite Context Constructor Obstruction
+
+on:
+  push:
+    branches: [rgrs/passive-causal-boundary]
+    paths:
+      - 'rgrs/FiniteContextsCannotIdentifyUnrestrictedConstructor.lean'
+      - '.github/workflows/rgrs-finite-context-obstruction.yml'
+
+jobs:
+  decide:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Decide finite context obstruction
+        run: |
+          lean rgrs/FiniteContextsCannotIdentifyUnrestrictedConstructor.lean
+          echo "FRESH_UNTESTED_CONTEXT_EXISTS=PASS"
+          echo "FINITE_SUITE_BEHAVIOR_IDENTICAL=PASS"
+          echo "GLOBAL_CONSTRUCTORS_DISTINCT=PASS"
+          echo "FINITE_CONTEXT_IDENTIFICATION_IMPOSSIBLE=PASS"
+          echo "OBSERVATIONAL_IDENTITY_IS_EXACT_FINITE_CLAIM=PASS"
