@@ -1,0 +1,76 @@
+name: MathGraph fluid closure qualification
+on:
+  push:
+    branches: [mathgraph/fluid-closure-v1]
+    paths:
+      - .github/workflows/fluid-closure.yml
+      - audits/navier_stokes/closure_experiment/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: audits/navier_stokes/closure_experiment
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen residual search and ablations
+        run: |
+          set -euo pipefail
+          python -m unittest experiment -v
+          python experiment.py --report
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain leanprover/lean4:v4.24.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check exact mathematical obligations
+        run: |
+          set -euo pipefail
+          lean --version | tee lean-version.txt
+          lean -o FluidClosure.olean FluidClosure.lean 2>&1 | tee lean-build.log
+          cat > Check.lean <<'LEAN'
+          import FluidClosure
+          #print axioms FluidClosure.stress_identity
+          #print axioms FluidClosure.reconstructed_flux
+          #print axioms FluidClosure.factorization_iff
+          #print axioms FluidClosure.least_consequence_refinement
+          #print axioms FluidClosure.all_proper_masks_fail
+          #print axioms FluidClosure.full_interface_sufficient
+          #print axioms FluidClosure.burgers_mass_conserved
+          #print axioms FluidClosure.no_mass_q_dynamics
+          LEAN
+          LEAN_PATH=. lean Check.lean 2>&1 | tee axioms.log
+          python - <<'PY'
+          import pathlib, re
+          text=pathlib.Path('axioms.log').read_text()
+          allowed={'propext','Quot.sound','Classical.choice'}
+          names=['stress_identity','reconstructed_flux','factorization_iff','least_consequence_refinement','all_proper_masks_fail','full_interface_sufficient','burgers_mass_conserved','no_mass_q_dynamics']
+          for name in names:
+              pattern=r'FluidClosure\.'+name+r'[^\n]*depends on axioms: \[([^\]]*)\]'
+              match=re.search(pattern,text)
+              if match:
+                  axioms={x.strip() for x in match.group(1).split(',') if x.strip()}
+                  assert axioms <= allowed,(name,axioms-allowed)
+              else:
+                  assert re.search(r'FluidClosure\.'+name+r'[^\n]*does not depend on any axioms',text), 'Missing axiom report: '+name
+          print('FLUID_CLOSURE_LEAN=PASS')
+          PY
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fluid-closure-evidence
+          path: |
+            audits/navier_stokes/closure_experiment/result.json
+            audits/navier_stokes/closure_experiment/lean-version.txt
+            audits/navier_stokes/closure_experiment/lean-build.log
+            audits/navier_stokes/closure_experiment/axioms.log
+          if-no-files-found: warn
