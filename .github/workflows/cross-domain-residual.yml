@@ -77,22 +77,44 @@ jobs:
           mkdir -p "$GITHUB_WORKSPACE/evidence"
           test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
           git rev-parse HEAD > "$GITHUB_WORKSPACE/evidence/source-commit.txt"
+          cp lean-toolchain "$GITHUB_WORKSPACE/evidence/source-toolchain.txt"
+          cp lake-manifest.json "$GITHUB_WORKSPACE/evidence/source-manifest.json"
           curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
           sh /tmp/elan-init.sh -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
           "$HOME/.elan/bin/elan" default "$(cat lean-toolchain)"
-          "$HOME/.elan/bin/lean" --version | tee "$GITHUB_WORKSPACE/evidence/lean-version.txt"
+          "$HOME/.elan/bin/lean" --version | tee "$GITHUB_WORKSPACE/evidence/source-lean-version.txt"
       - name: Fetch pinned dependencies and check rank-one theorem
         shell: bash
         working-directory: upstream/${{ matrix.project }}
         run: |
           set -euo pipefail
-          lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cache.log"
+          if lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cache-first.log"; then
+            echo SOURCE_TOOLCHAIN_CACHE=PASS | tee "$GITHUB_WORKSPACE/evidence/cache-status.txt"
+          else
+            # An upstream project may pin a patch release different from the
+            # toolchain used to publish its exact Mathlib dependency cache.
+            # Retry only this diagnosed mismatch, retaining the original pin,
+            # manifest and dependency revision as evidence.
+            grep -q 'Dependency Mathlib uses a different lean-toolchain' "$GITHUB_WORKSPACE/evidence/cache-first.log"
+            test -f .lake/packages/mathlib/lean-toolchain
+            git -C .lake/packages/mathlib rev-parse HEAD | tee "$GITHUB_WORKSPACE/evidence/mathlib-commit.txt"
+            cp .lake/packages/mathlib/lean-toolchain "$GITHUB_WORKSPACE/evidence/runtime-toolchain.txt"
+            cp .lake/packages/mathlib/lean-toolchain lean-toolchain
+            "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+            "$HOME/.elan/bin/elan" default "$(cat lean-toolchain)"
+            echo MATHLIB_CACHE_COMPATIBILITY_REPLAY | tee "$GITHUB_WORKSPACE/evidence/cache-status.txt"
+            lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cache.log"
+          fi
+          lean --version | tee "$GITHUB_WORKSPACE/evidence/runtime-lean-version.txt"
+          git rev-parse HEAD | tee "$GITHUB_WORKSPACE/evidence/source-commit-after.txt"
+          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+          git -C .lake/packages/mathlib rev-parse HEAD | tee "$GITHUB_WORKSPACE/evidence/mathlib-commit.txt"
           lake env lean "$GITHUB_WORKSPACE/audit/audits/cross_domain/RankOneStress.lean" 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lean.log"
           python - <<'PY'
-          import pathlib, re
-          text=pathlib.Path(__import__('os').environ['GITHUB_WORKSPACE']+'/evidence/lean.log').read_text()
+          import pathlib, re, os
+          text=(pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'evidence/lean.log').read_text()
           allowed={'propext','Quot.sound','Classical.choice'}
           for name in ('rankOne_fiber','twoCell_flux_determined','sign_ambiguity'):
               pattern=r"'CrossDomainResidual\."+name+r"' depends on axioms: \[([^\]]*)\]"
