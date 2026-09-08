@@ -44,7 +44,7 @@ theorem stress_identity (u : Field) :
     stress u = ⟨(u.ax-u.bx)*(u.ax-u.bx),
                 (u.ax-u.bx)*(u.ay-u.bY),
                 (u.ay-u.bY)*(u.ay-u.bY)⟩ := by
-  apply Tensor2.ext <;> simp [stress, flux, mean, sub_eq_add_neg, mul_add, add_mul] <;> omega
+  apply Tensor2.ext <;> simp [stress, flux, mean, Int.sub_eq_add_neg, Int.mul_add, Int.add_mul, Int.mul_neg, Int.neg_mul] <;> omega
 
 /-- The recovered interface reconstructs the complete symmetric quadratic flux. -/
 def reconstruct (m : Vector2) (t : Tensor2) : Tensor2 :=
