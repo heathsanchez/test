@@ -15,18 +15,24 @@ structure Tensor2 where
   yy : Int
   deriving DecidableEq, Repr
 
+theorem Tensor2.ext {a b : Tensor2}
+    (hxx : a.xx = b.xx) (hxy : a.xy = b.xy) (hyy : a.yy = b.yy) : a = b := by
+  cases a
+  cases b
+  simp_all
+
 structure Field where
   ax : Int
   ay : Int
   bx : Int
-  by : Int
+  bY : Int
   deriving DecidableEq, Repr
 
 /-- Unnormalised two-cell mean and symmetric quadratic flux. -/
-def mean (u : Field) : Vector2 := ⟨u.ax + u.bx, u.ay + u.by⟩
+def mean (u : Field) : Vector2 := ⟨u.ax + u.bx, u.ay + u.bY⟩
 def flux (u : Field) : Tensor2 :=
-  ⟨u.ax*u.ax + u.bx*u.bx, u.ax*u.ay + u.bx*u.by,
-   u.ay*u.ay + u.by*u.by⟩
+  ⟨u.ax*u.ax + u.bx*u.bx, u.ax*u.ay + u.bx*u.bY,
+   u.ay*u.ay + u.bY*u.bY⟩
 
 /-- The three independent components of twice the usual Reynolds stress. -/
 def stress (u : Field) : Tensor2 :=
@@ -36,8 +42,8 @@ def stress (u : Field) : Tensor2 :=
 
 theorem stress_identity (u : Field) :
     stress u = ⟨(u.ax-u.bx)*(u.ax-u.bx),
-                (u.ax-u.bx)*(u.ay-u.by),
-                (u.ay-u.by)*(u.ay-u.by)⟩ := by
+                (u.ax-u.bx)*(u.ay-u.bY),
+                (u.ay-u.bY)*(u.ay-u.bY)⟩ := by
   apply Tensor2.ext <;> simp [stress, flux, mean, sub_eq_add_neg, mul_add, add_mul] <;> omega
 
 /-- The recovered interface reconstructs the complete symmetric quadratic flux. -/
@@ -110,56 +116,56 @@ def observe : Mask → Field → Vector2 × (Int × Int × Int)
   | .xy_yy, u => (mean u, (0,(flux u).xy,(flux u).yy))
   | .all, u => (mean u, ((flux u).xx,(flux u).xy,(flux u).yy))
 
-private def witness_none_a : Field := { ax := -2, ay := -2, bx := -2, by := 0 }
-private def witness_none_b : Field := { ax := -2, ay := -1, bx := -2, by := -1 }
+private def witness_none_a : Field := { ax := -2, ay := -2, bx := -2, bY := 0 }
+private def witness_none_b : Field := { ax := -2, ay := -1, bx := -2, bY := -1 }
 
 theorem obstruction_none : ¬ Factors (observe .none) flux := by
   apply failure_of_witness (observe .none) flux witness_none_a witness_none_b
   · decide
   · decide
 
-private def witness_xx_a : Field := { ax := -2, ay := -2, bx := -2, by := 0 }
-private def witness_xx_b : Field := { ax := -2, ay := -1, bx := -2, by := -1 }
+private def witness_xx_a : Field := { ax := -2, ay := -2, bx := -2, bY := 0 }
+private def witness_xx_b : Field := { ax := -2, ay := -1, bx := -2, bY := -1 }
 
 theorem obstruction_xx : ¬ Factors (observe .xx) flux := by
   apply failure_of_witness (observe .xx) flux witness_xx_a witness_xx_b
   · decide
   · decide
 
-private def witness_xy_a : Field := { ax := -2, ay := -2, bx := -2, by := 0 }
-private def witness_xy_b : Field := { ax := -2, ay := -1, bx := -2, by := -1 }
+private def witness_xy_a : Field := { ax := -2, ay := -2, bx := -2, bY := 0 }
+private def witness_xy_b : Field := { ax := -2, ay := -1, bx := -2, bY := -1 }
 
 theorem obstruction_xy : ¬ Factors (observe .xy) flux := by
   apply failure_of_witness (observe .xy) flux witness_xy_a witness_xy_b
   · decide
   · decide
 
-private def witness_yy_a : Field := { ax := -2, ay := -2, bx := -1, by := -1 }
-private def witness_yy_b : Field := { ax := -2, ay := -1, bx := -1, by := -2 }
+private def witness_yy_a : Field := { ax := -2, ay := -2, bx := -1, bY := -1 }
+private def witness_yy_b : Field := { ax := -2, ay := -1, bx := -1, bY := -2 }
 
 theorem obstruction_yy : ¬ Factors (observe .yy) flux := by
   apply failure_of_witness (observe .yy) flux witness_yy_a witness_yy_b
   · decide
   · decide
 
-private def witness_xx_xy_a : Field := { ax := -2, ay := -2, bx := -2, by := 0 }
-private def witness_xx_xy_b : Field := { ax := -2, ay := -1, bx := -2, by := -1 }
+private def witness_xx_xy_a : Field := { ax := -2, ay := -2, bx := -2, bY := 0 }
+private def witness_xx_xy_b : Field := { ax := -2, ay := -1, bx := -2, bY := -1 }
 
 theorem obstruction_xx_xy : ¬ Factors (observe .xx_xy) flux := by
   apply failure_of_witness (observe .xx_xy) flux witness_xx_xy_a witness_xx_xy_b
   · decide
   · decide
 
-private def witness_xx_yy_a : Field := { ax := -2, ay := -2, bx := -1, by := -1 }
-private def witness_xx_yy_b : Field := { ax := -2, ay := -1, bx := -1, by := -2 }
+private def witness_xx_yy_a : Field := { ax := -2, ay := -2, bx := -1, bY := -1 }
+private def witness_xx_yy_b : Field := { ax := -2, ay := -1, bx := -1, bY := -2 }
 
 theorem obstruction_xx_yy : ¬ Factors (observe .xx_yy) flux := by
   apply failure_of_witness (observe .xx_yy) flux witness_xx_yy_a witness_xx_yy_b
   · decide
   · decide
 
-private def witness_xy_yy_a : Field := { ax := -2, ay := -2, bx := 0, by := -2 }
-private def witness_xy_yy_b : Field := { ax := -1, ay := -2, bx := -1, by := -2 }
+private def witness_xy_yy_a : Field := { ax := -2, ay := -2, bx := 0, bY := -2 }
+private def witness_xy_yy_b : Field := { ax := -1, ay := -2, bx := -1, bY := -2 }
 
 theorem obstruction_xy_yy : ¬ Factors (observe .xy_yy) flux := by
   apply failure_of_witness (observe .xy_yy) flux witness_xy_yy_a witness_xy_yy_b
@@ -201,8 +207,7 @@ def dq (u : Int × Int × Int) : Int :=
 
 theorem burgers_mass_conserved (u : Int × Int × Int) :
     mass (burgers u) = 0 := by
-  simp [mass, burgers]
-  omega
+  simp [mass, burgers] <;> omega
 
 private def dynamicA : Int × Int × Int := (1,1,-2)
 private def dynamicB : Int × Int × Int := (-1,-1,2)
