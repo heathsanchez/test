@@ -1,0 +1,48 @@
+name: Fluid closure discovery
+on:
+  push:
+    branches: [mathgraph/fluid-closure-discovery]
+    paths:
+      - .github/workflows/fluid-closure-discovery.yml
+      - audits/navier_stokes/closure_discovery.py
+      - audits/navier_stokes/FluidClosure.lean
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Exact symbolic qualification
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m unittest discover -s audits/navier_stokes -p closure_discovery.py -v 2>&1 | tee evidence/python-tests.log
+          python audits/navier_stokes/closure_discovery.py | tee evidence/discovery.json
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.24.0
+      - name: Independently check all-state theorems
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean --version | tee evidence/lean-version.txt
+          lean audits/navier_stokes/FluidClosure.lean 2>&1 | tee evidence/lean.log
+          echo FLUID_CLOSURE_LEAN=PASS
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: fluid-closure-evidence
+          path: evidence/
+          if-no-files-found: warn
