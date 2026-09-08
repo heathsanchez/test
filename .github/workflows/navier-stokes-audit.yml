@@ -1,0 +1,125 @@
+name: MathGraph Navier-Stokes audit
+on:
+  push:
+    branches: [mathgraph/navier-stokes-audit]
+    paths:
+      - .github/workflows/navier-stokes-audit.yml
+      - audits/navier_stokes/**
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: navier-stokes-audit-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  source-comparison:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: openai-source
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: ab-source
+          persist-credentials: false
+      - name: Verify pins and audit the source
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 audit/audits/navier_stokes/source_audit.py --selftest
+          python3 audit/audits/navier_stokes/source_audit.py --openai openai-source --ab ab-source --output audit-results
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: navier-source-comparison
+          path: audit-results/
+          if-no-files-found: warn
+  lean-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Prepare isolated evidence directory
+        run: |
+          mkdir -p evidence
+          df -h . | tee evidence/disk-before.txt
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /usr/local/share/powershell
+          df -h . | tee evidence/disk-after.txt
+      - name: Install pinned Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.34.0-rc2
+          cd upstream
+          "$HOME/.elan/bin/lean" --version | tee ../evidence/lean-version.txt
+          git rev-parse HEAD | tee ../evidence/upstream-commit.txt
+          test "$(git rev-parse HEAD)" = 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+      - name: Fetch dependencies and build the actual final theorem
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake exe cache get 2>&1 | tee ../evidence/cache.log
+          lake build NavierStokes.ComparatorSolution 2>&1 | tee ../evidence/build.log
+      - name: Inspect the actual theorem types and transitive axioms
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat > Audit.lean <<'LEAN'
+          import NavierStokes.ComparatorSolution
+          set_option pp.universes true
+          set_option pp.explicit true
+          #check NavierStokes.Comparator.navier_stokes_breakdown_R3
+          #check NavierStokes.Comparator.navier_stokes_breakdown_periodic
+          #print axioms NavierStokes.Comparator.navier_stokes_breakdown_R3
+          #print axioms NavierStokes.Comparator.navier_stokes_breakdown_periodic
+          #print NavierStokes.Comparator.InitialVelocityConditionDecay
+          #print NavierStokes.Comparator.ForceConditionDecay
+          #print NavierStokes.Comparator.ForceConditionPeriodic
+          #print NavierStokes.Comparator.NavierStokesExistenceAndSmoothnessRn
+          #print NavierStokes.Comparator.NavierStokesExistenceAndSmoothnessPeriodic
+          LEAN
+          lake env lean Audit.lean 2>&1 | tee ../evidence/axioms-and-types.log
+          python3 - <<'PY'
+          import json, pathlib, re
+          text = pathlib.Path('../evidence/axioms-and-types.log').read_text()
+          allowed = {'propext', 'Quot.sound', 'Classical.choice'}
+          names = ['NavierStokes.Comparator.navier_stokes_breakdown_R3', 'NavierStokes.Comparator.navier_stokes_breakdown_periodic']
+          results = {}
+          for name in names:
+              pattern = r'\b' + re.escape(name) + r'\b[^\n]*?depends on axioms: \[([^\]]*)\]'
+              match = re.search(pattern, text)
+              if not match:
+                  raise SystemExit('AXIOM_REPORT_MISSING: ' + name)
+              axioms = {x.strip() for x in match.group(1).split(',') if x.strip()}
+              results[name] = sorted(axioms)
+              if not axioms <= allowed:
+                  raise SystemExit('UNPERMITTED_AXIOMS: ' + name + ' ' + repr(sorted(axioms-allowed)))
+          pathlib.Path('../evidence/axioms.json').write_text(json.dumps(results, indent=2)+'\n')
+          print('FINAL_THEOREM_AXIOMS_PASS', json.dumps(results))
+          PY
+      - name: Upload independent replay evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: navier-lean-replay
+          path: evidence/
+          if-no-files-found: warn
