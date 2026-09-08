@@ -74,8 +74,10 @@ class Tests(unittest.TestCase):
         r=report()
         self.assertEqual(sum(r['orderings']['residual'].values()),720)
         self.assertEqual(sum(r['orderings']['blind'].values()),720)
+    def test_json_report(self):
+        self.assertEqual(json.loads(json.dumps(report(),default=str))['residual']['status'],'PASS')
 
 if __name__=='__main__':
     import sys
     if '--test' in sys.argv: unittest.main(argv=[sys.argv[0]])
-    else: print(json.dumps(report(),indent=2,default=list))
+    else: print(json.dumps(report(),indent=2,default=str))
