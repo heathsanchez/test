@@ -1,0 +1,113 @@
+name: Cross-domain residual qualification
+on:
+  push:
+    branches: [mathgraph/cross-domain-residual-v1]
+    paths:
+      - .github/workflows/cross-domain-residual.yml
+      - audits/cross_domain/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen controller and information ablation
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/tests.log
+          python audits/cross_domain/experiment.py > evidence/result.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/result.json'))
+          assert len(r['results']) == 2
+          for world in r['results']:
+              assert world['residual']['status'] == 'PASS'
+              assert world['heldout'] == 'PASS'
+              assert world['final_witness'] is None
+              assert sum(world['all_orderings']['residual'].values()) == 720
+              assert sum(world['all_orderings']['blind'].values()) == 720
+              print(world['world'], 'residual', world['all_orderings']['residual'], 'blind', world['all_orderings']['blind'])
+          print('FINITE_QUALIFICATION_PASS')
+          PY
+          sha256sum audits/cross_domain/experiment.py evidence/result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cross-domain-finite
+          path: evidence/
+          if-no-files-found: warn
+  rank-one:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - source: openai
+            repository: openai/NavierStokesAndEuler
+            ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+            project: .
+          - source: alpoge-buckmaster
+            repository: tristanbuckmaster/fluid_lean
+            ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+            project: euler-blowup
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          path: upstream
+          persist-credentials: false
+      - name: Install source-pinned Lean
+        shell: bash
+        working-directory: upstream/${{ matrix.project }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence"
+          test "$(git rev-parse HEAD)" = "${{ matrix.ref }}"
+          git rev-parse HEAD > "$GITHUB_WORKSPACE/evidence/source-commit.txt"
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
+          sh /tmp/elan-init.sh -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/elan" toolchain install "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/elan" default "$(cat lean-toolchain)"
+          "$HOME/.elan/bin/lean" --version | tee "$GITHUB_WORKSPACE/evidence/lean-version.txt"
+      - name: Fetch pinned dependencies and check rank-one theorem
+        shell: bash
+        working-directory: upstream/${{ matrix.project }}
+        run: |
+          set -euo pipefail
+          lake exe cache get 2>&1 | tee "$GITHUB_WORKSPACE/evidence/cache.log"
+          lake env lean "$GITHUB_WORKSPACE/audit/audits/cross_domain/RankOneStress.lean" 2>&1 | tee "$GITHUB_WORKSPACE/evidence/lean.log"
+          python - <<'PY'
+          import pathlib, re
+          text=pathlib.Path(__import__('os').environ['GITHUB_WORKSPACE']+'/evidence/lean.log').read_text()
+          allowed={'propext','Quot.sound','Classical.choice'}
+          for name in ('rankOne_fiber','twoCell_flux_determined','sign_ambiguity'):
+              pattern=r"'CrossDomainResidual\."+name+r"' depends on axioms: \[([^\]]*)\]"
+              match=re.search(pattern,text)
+              if match:
+                  axioms={x.strip() for x in match.group(1).split(',') if x.strip()}
+                  assert axioms <= allowed, (name,axioms)
+              else:
+                  assert re.search(r"'CrossDomainResidual\."+name+r"' does not depend on any axioms",text),name
+          print('RANK_ONE_AXIOMS_PASS')
+          PY
+          sha256sum "$GITHUB_WORKSPACE/audit/audits/cross_domain/RankOneStress.lean" > "$GITHUB_WORKSPACE/evidence/source-hash.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rank-one-${{ matrix.source }}
+          path: evidence/
+          if-no-files-found: warn
