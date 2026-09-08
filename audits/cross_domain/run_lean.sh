@@ -39,26 +39,30 @@ lean --version | tee "$EVIDENCE/runtime-lean-version.txt"
 test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 git -C .lake/packages/mathlib rev-parse HEAD | tee "$EVIDENCE/mathlib-commit.txt"
 
-# Lake supplies the upstream dependency paths; the additional directory
-# contains only independently compiled MathGraph audit modules.
+# Lean 4.34 requires source files to be inside the project root. Copy only
+# the frozen audit modules into an untracked directory; retain their hashes.
+# No upstream source, dependency revision, or mathematical statement changes.
+LOCAL_AUDIT="$PWD/.mathgraph-audit"
+mkdir -p "$LOCAL_AUDIT"
+cp "$AUDIT"/*.lean "$LOCAL_AUDIT/"
 run_audit() {
-  lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; shift; exec lean "$@"' bash "$AUDIT" "$@"
+  lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; shift; exec lean "$@"' bash "$LOCAL_AUDIT" "$@"
 }
 
 case "$TASK" in
   minimum)
-    run_audit -o "$AUDIT/RankOneStress.olean" "$AUDIT/RankOneStress.lean" > "$EVIDENCE/rank-one.log" 2>&1
-    run_audit "$AUDIT/Minimum.lean" > "$EVIDENCE/lean.log" 2>&1
+    run_audit -o "$LOCAL_AUDIT/RankOneStress.olean" "$LOCAL_AUDIT/RankOneStress.lean" > "$EVIDENCE/rank-one.log" 2>&1
+    run_audit "$LOCAL_AUDIT/Minimum.lean" > "$EVIDENCE/lean.log" 2>&1
     NAMES='CrossDomainResidual.Minimum.minimum_two' ;;
   source-check)
     lake build EulerBlowup.Elementary > "$EVIDENCE/source-build.log" 2>&1
-    run_audit -o "$AUDIT/ABAngleBounds.olean" "$AUDIT/ABAngleBounds.lean" > "$EVIDENCE/extraction.log" 2>&1
-    run_audit "$AUDIT/SourceCapabilityCheck.lean" > "$EVIDENCE/lean.log" 2>&1
+    run_audit -o "$LOCAL_AUDIT/ABAngleBounds.olean" "$LOCAL_AUDIT/ABAngleBounds.lean" > "$EVIDENCE/extraction.log" 2>&1
+    run_audit "$LOCAL_AUDIT/SourceCapabilityCheck.lean" > "$EVIDENCE/lean.log" 2>&1
     NAMES='CrossDomainResidual.SourceCapabilityCheck.source_tilt_replay CrossDomainResidual.SourceCapabilityCheck.extracted_tilt_replay' ;;
   polar-transfer)
     lake build NavierStokes.PolarCharts > "$EVIDENCE/source-build.log" 2>&1
-    run_audit -o "$AUDIT/ABAngleBounds.olean" "$AUDIT/ABAngleBounds.lean" > "$EVIDENCE/extraction.log" 2>&1
-    run_audit "$AUDIT/PolarChartTransfer.lean" > "$EVIDENCE/lean.log" 2>&1
+    run_audit -o "$LOCAL_AUDIT/ABAngleBounds.olean" "$LOCAL_AUDIT/ABAngleBounds.lean" > "$EVIDENCE/extraction.log" 2>&1
+    run_audit "$LOCAL_AUDIT/PolarChartTransfer.lean" > "$EVIDENCE/lean.log" 2>&1
     NAMES='CrossDomainResidual.PolarChartTransfer.baseChart_angle_bounds CrossDomainResidual.PolarChartTransfer.localChart_angle_bounds' ;;
   *) echo "Unknown task: $TASK" >&2; exit 2 ;;
 esac
