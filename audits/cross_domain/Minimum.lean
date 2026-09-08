@@ -1,4 +1,4 @@
-import Mathlib.Tactic
+import RankOneStress
 
 /-! All-state minimality relative to the six-feature grammar frozen in
 experiment.py at 2ea0ad0. The two cell means are always retained. This is a
@@ -31,8 +31,6 @@ def Determines (fs : List Feature) : Prop :=
   ∀ s t : State, means s = means t →
     (∀ f ∈ fs, value f s = value f t) → flux s = flux t
 
-/-- The already established sufficient interface, now stated as a grammar
-membership result. -/
 theorem two_features_suffice : Determines [.xy, .difference] := by
   intro s t hm hf
   have hxy := hf .xy (by simp)
@@ -47,10 +45,6 @@ private def xPair : State := ⟨1,0,-1,0⟩
 private def yPair : State := ⟨0,1,0,-1⟩
 private def diagonal : State := ⟨1,1,-1,-1⟩
 
-/-- An explicit all-real counterexample for every admissible singleton.
-The trace witness rotates the rank-one fluctuation without changing its
-trace; the difference witness changes its magnitude while preserving zero
-diagonal difference. -/
 def witness : Feature → State × State
   | .mean_x => (xPair, zero)
   | .trace => (xPair, yPair)
@@ -80,9 +74,6 @@ theorem no_zero_features : ¬ Determines [] := by
   have hw := witness_sound Feature.xx
   exact hw.2.2 (h (witness .xx).1 (witness .xx).2 hw.1 (by simp))
 
-/-- Exactly two added scalar features are necessary and sufficient in the
-frozen grammar. No claim is made about arbitrary encodings or unrestricted
-real-valued feature languages. -/
 theorem minimum_two :
     Determines [.xy, .difference] ∧
     ¬ Determines [] ∧
