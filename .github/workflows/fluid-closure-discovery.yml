@@ -32,6 +32,7 @@ jobs:
           sh /tmp/elan-init.sh -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           "$HOME/.elan/bin/elan" toolchain install leanprover/lean4:v4.24.0
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.24.0
       - name: Independently check all-state theorems
         shell: bash
         run: |
