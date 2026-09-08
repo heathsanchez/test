@@ -75,9 +75,6 @@ theorem repair_necessary (F : Int → Int)
     contrast, yet require different derivatives of that contrast. -/
 def witnessC : State4 := ⟨2,-1,0,0⟩
 
-def nextResidual (F : Int → Int) (s : State4) : Int :=
-  (F s.d - F s.b) -- placeholder replaced by the actual directional derivative below
-
 def squareContrastDerivative (s : State4) : Int :=
   2*s.d*(square s.c - square s.d) -
     2*s.b*(square s.a - square s.b)
@@ -88,7 +85,8 @@ theorem square_contrast_derivative (s : State4) :
   rfl
 
 theorem same_first_refinement : Repair4 square witnessA witnessC := by
-  decide
+  unfold Repair4
+  constructor <;> decide
 
 theorem different_second_consequence :
     squareContrastDerivative witnessA ≠ squareContrastDerivative witnessC := by
