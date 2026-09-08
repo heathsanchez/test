@@ -1,0 +1,96 @@
+name: Proof-interface transfer qualification
+on:
+  push:
+    branches: [mathgraph/proof-interface-transfer-v2]
+    paths:
+      - .github/workflows/proof-interface-transfer.yml
+      - audits/cross_domain/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run unchanged controller and source-estimate selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/cross_domain/proof_bridge.py --test 2>&1 | tee evidence/bridge-tests.log
+          python audits/cross_domain/proof_bridge.py > evidence/bridge-result.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/bridge-result.json'))
+          assert set(r['selected_capabilities']) == {'lower','upper'}
+          assert r['residual']['status'] == 'PASS'
+          assert sum(r['orderings']['residual'].values()) == 720
+          assert sum(r['orderings']['blind'].values()) == 720
+          print('SELECTED_CAPABILITIES',r['selected_capabilities'])
+          print('ORDERINGS',r['orderings'])
+          print('FINITE_BRIDGE_PASS')
+          PY
+          sha256sum audits/cross_domain/experiment.py audits/cross_domain/proof_bridge.py evidence/bridge-result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-interface-finite
+          path: evidence/
+          if-no-files-found: warn
+  lean:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - task: minimum
+            source: openai
+            repository: openai/NavierStokesAndEuler
+            ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+            project: .
+          - task: minimum
+            source: alpoge-buckmaster
+            repository: tristanbuckmaster/fluid_lean
+            ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+            project: euler-blowup
+          - task: source-check
+            source: alpoge-buckmaster
+            repository: tristanbuckmaster/fluid_lean
+            ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+            project: euler-blowup
+          - task: polar-transfer
+            source: openai
+            repository: openai/NavierStokesAndEuler
+            ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+            project: .
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          path: upstream
+          persist-credentials: false
+      - name: Check source-pinned theorem and standard axioms
+        shell: bash
+        working-directory: upstream/${{ matrix.project }}
+        env:
+          TASK: ${{ matrix.task }}
+          SOURCE: ${{ matrix.source }}
+          EXPECTED_REF: ${{ matrix.ref }}
+        run: bash "$GITHUB_WORKSPACE/audit/audits/cross_domain/run_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: proof-interface-${{ matrix.task }}-${{ matrix.source }}
+          path: evidence/
+          if-no-files-found: warn
