@@ -146,6 +146,16 @@ jobs:
                                   'exact rational polynomial domain']}, indent=2))
               store.close()
           PYGROWTH
+      - name: Build and validate release evidence
+        run: |
+          python -m open_development.release \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-commit "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --finite open-development-result.json \
+            --proof proof-procedure-result.json \
+            --growth capability-growth-result.json \
+            --output release-evidence.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -154,6 +164,7 @@ jobs:
             open-development-result.json
             proof-procedure-result.json
             capability-growth-result.json
+            release-evidence.json
           if-no-files-found: ignore
 
   proof-program-semantics:
