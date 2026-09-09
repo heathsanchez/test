@@ -1,5 +1,26 @@
 # Open Development — bounded executable core v1
 
+## Executable parent intervention
+
+`python -m open_development.causal_reuse` qualifies a narrow causal claim:
+the retained affine procedure is executed on the quotient polynomial while
+acquiring a new `lift-x` procedure. That child stores an actual call to its
+parent admission ID. After restart, a coefficient-distinct target executes
+child then parent and independently replays the resulting polynomial certificate.
+
+Changing only the parent's executable body to the wrong-domain procedure,
+while keeping its ID, status and dependency records present, prevents both the
+later construction and reuse. Removing the body also prevents execution;
+removing an unrelated ray program does not. Restoring the body restores execution.
+These are surgical evaluator controls on copied state, not forged ledger
+admissions. Normal revocation removes parent and child while preserving history.
+
+This strengthens the former shape-only admission dependency into an executable
+procedure dependency. It does not make the supplied primitive fitters learned,
+prove the Python interpreter in Lean, or constitute independently authored
+exaptation. Acquisition budget counts proposals, not total compute. CI publishes
+the executable trace and control outcomes as `executable-causal-reuse`.
+
 This is a small implementation of the existing MSI/UVRM programme, not a new universal theorem or a replacement for the production Lean kernel. It reuses the V30 developmental runtime for finite commitment routing and probe synthesis. The new wrapper supplies durable evidence, scoped admission, exact dependency revocation, and a single object/method development entry point.
 
 ## Native mathematical core

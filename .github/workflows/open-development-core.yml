@@ -23,6 +23,13 @@ jobs:
           python-version: '3.12'
       - name: Python contract tests
         run: python -m unittest discover -s open_development/tests -v
+      - name: Qualify executable retained-parent intervention
+        run: python -m open_development.causal_reuse > causal-reuse-result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: executable-causal-reuse
+          path: causal-reuse-result.json
+          if-no-files-found: error
       - name: Install Lean via elan
         run: |
           curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
