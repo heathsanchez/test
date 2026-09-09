@@ -1,0 +1,1 @@
+The next qualification must retain the original constructor grammar and use a separately frozen 128-check budget. The 64-check pilot is negative. Neither result should be described as unrestricted self-development or an essential Navier–Stokes repair.
