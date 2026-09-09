@@ -6,8 +6,10 @@ import argparse, hashlib, json, sys
 from fractions import Fraction as Q
 from pathlib import Path
 ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(ROOT.parent / 'cross_domain'))
 sys.path.insert(0, str(ROOT.parent / 'procedure_repair'))
+sys.path.insert(0, str(ROOT.parent / 'cross_domain'))
+import experiment
+assert Path(experiment.__file__).resolve() == (ROOT.parent / 'cross_domain' / 'experiment.py').resolve()
 import checker
 import composition
 import emit as calculus
@@ -112,7 +114,6 @@ def emit(source,out):
     (out/'RecoveredProcedures.lean').write_text(render_lower(*composition.stages()[0],certs[0]))
     (out/'HeldoutProcedure.lean').write_text(render_interval(*composition.stages()[1],certs[1]))
     (out/'certificate.json').write_text(json.dumps(records,indent=2)+'\n')
-    import subprocess
     names=['RecoveredProcedures.lean','HeldoutProcedure.lean']
     with (out/'source.sha256').open('w') as f:
         for name in names:f.write(hashlib.sha256((out/name).read_bytes()).hexdigest()+'  '+name+'\n')
