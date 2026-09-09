@@ -1,0 +1,1 @@
+The 64-check experiment is resource-limited. Local execution did not complete both stages. The independent generic soundness gate is separate from finite search success. The next experiment must use a new version and a separately frozen larger budget, not reinterpret the original result.
