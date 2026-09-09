@@ -65,12 +65,16 @@ def build_release(*, repository: str, source_commit: str, run_id: int,
              and reference.get("transfer") == "verified"
              and reference.get("dependent_acquisition") == "verified"
              and reference.get("heldout_zero_budget") == "verified"
+             and reference.get("graph_lineage") == ["scc", "condensation", "generations", "semiconnected"]
+             and reference.get("lineage_acquisitions") == 4
+             and reference.get("heldout_semiconnected_zero_budget") == "verified"
              and reference.get("first_restart") is True
              and reference.get("second_restart") is True
              and reference.get("no_memo_control") is False
              and reference.get("tag_key_control") is False
              and reference.get("postorder_control") is False
-             and reference.get("ablation") == "unknown",
+             and reference.get("ablation") == "unknown"
+             and reference.get("lineage_ablation") == "unknown",
              "reference identity integration gate failed")
     body = {
         "schema": SCHEMA,

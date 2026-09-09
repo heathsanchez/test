@@ -14,9 +14,13 @@ class ReleaseEvidenceTests(unittest.TestCase):
     reference = {"cold": "unknown", "candidate_count": 12, "unique_survivors": 1,
                  "source": "verified", "transfer": "verified",
                  "dependent_acquisition": "verified", "heldout_zero_budget": "verified",
+                 "graph_lineage": ["scc", "condensation", "generations", "semiconnected"],
+                 "lineage_acquisitions": 4,
+                 "heldout_semiconnected_zero_budget": "verified",
                  "first_restart": True, "second_restart": True,
                  "no_memo_control": False, "tag_key_control": False,
-                 "postorder_control": False, "ablation": "unknown"}
+                 "postorder_control": False, "ablation": "unknown",
+                 "lineage_ablation": "unknown"}
 
     def evidence(self):
         return build_release(

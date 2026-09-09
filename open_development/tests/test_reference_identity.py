@@ -17,6 +17,8 @@ DEPENDENT = {"labels": ["r", "a", "b", "sink"],
              "edges": [[1, 2], [2], [1, 3], [3]], "root": 0}
 HELDOUT = {"labels": ["p", "q", "r", "u", "v"],
            "edges": [[1], [2], [0, 3], [4], [3]], "root": 0}
+HELDOUT_FORK = {"labels": ["root", "left", "right"],
+                "edges": [[1, 2], [], []], "root": 0}
 
 
 class ReferenceIdentityIntegrationTests(unittest.TestCase):
@@ -65,16 +67,39 @@ class ReferenceIdentityIntegrationTests(unittest.TestCase):
                              [constructor])
             store.close()
 
+            lineage = []
+            stages = [
+                ("acquire-condensation", (3, [(0, 1), (1, 2)])),
+                ("acquire-generations", [[0], [1], [2]]),
+                ("acquire-semiconnected", True),
+            ]
+            for task, expected in stages:
+                store = EvidenceStore(path)
+                result = Developer(store, adapter).run(self.obligation(
+                    {"task": task, "graph": DEPENDENT, "expected": expected}, 1))
+                self.assertEqual(result.verdict, "verified")
+                self.assertEqual(len(result.retained), 1)
+                lineage.extend(result.retained)
+                store.close()
+
             store = EvidenceStore(path)
             heldout = Developer(store, adapter).run(self.obligation(
                 {"task": "heldout-scc", "graph": HELDOUT, "expected": [2, 3]}, 0))
             self.assertEqual(heldout.verdict, "verified")
             self.assertEqual(heldout.retained, ())
+            heldout_lineage = Developer(store, adapter).run(self.obligation(
+                {"task": "heldout-semiconnected", "graph": HELDOUT_FORK,
+                 "expected": False}, 0))
+            self.assertEqual(heldout_lineage.verdict, "verified")
             removed = store.revoke(constructor, "reference constructor ancestor ablation")
-            self.assertEqual(set(removed), {constructor, procedure})
+            self.assertEqual(set(removed), {constructor, procedure, *lineage})
             again = Developer(store, adapter).run(self.obligation(
                 {"task": "heldout-scc", "graph": HELDOUT, "expected": [2, 3]}, 0))
             self.assertEqual(again.verdict, "unknown")
+            again_lineage = Developer(store, adapter).run(self.obligation(
+                {"task": "heldout-semiconnected", "graph": HELDOUT_FORK,
+                 "expected": False}, 0))
+            self.assertEqual(again_lineage.verdict, "unknown")
             store.close()
 
 

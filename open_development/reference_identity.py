@@ -175,6 +175,61 @@ def scc_sizes(root: RefNode) -> list[int]:
     return sorted(sizes)
 
 
+def scc_partition(root: RefNode) -> tuple[list[RefNode], list[list[int]], list[int]]:
+    nodes, positions, queue = [], {}, [root]
+    while queue:
+        node = queue.pop(0)
+        if id(node) in positions:
+            continue
+        positions[id(node)] = len(nodes); nodes.append(node); queue.extend(node.children)
+    edges = [[positions[id(c)] for c in n.children] for n in nodes]
+    reach = lambda s: _reachable(edges, s)
+    remaining, parts = set(range(len(nodes))), []
+    while remaining:
+        v = min(remaining)
+        part = sorted(w for w in remaining if w in reach(v) and v in reach(w))
+        parts.append(part); remaining -= set(part)
+    owner = [0] * len(nodes)
+    for i, part in enumerate(parts):
+        for v in part: owner[v] = i
+    return nodes, parts, owner
+
+
+def _reachable(edges: list[list[int]], start: int) -> set[int]:
+    seen, stack = set(), [start]
+    while stack:
+        v = stack.pop()
+        if v not in seen: seen.add(v); stack.extend(edges[v])
+    return seen
+
+
+def condensation(root: RefNode) -> tuple[int, list[tuple[int, int]]]:
+    nodes, parts, owner = scc_partition(root)
+    links = {(owner[i], owner[id_to_index]) for i, node in enumerate(nodes)
+             for child in node.children
+             for id_to_index in [next(j for j, n in enumerate(nodes) if n is child)]
+             if owner[i] != owner[id_to_index]}
+    return len(parts), sorted(links)
+
+
+def topological_generations(root: RefNode) -> list[list[int]]:
+    count, links = condensation(root)
+    remaining, generations = set(range(count)), []
+    while remaining:
+        ready = sorted(v for v in remaining if not any(b == v and a in remaining for a, b in links))
+        if not ready: raise ValueError("condensation is cyclic")
+        generations.append(ready); remaining -= set(ready)
+    return generations
+
+
+def semiconnected(root: RefNode) -> bool:
+    count, links = condensation(root)
+    edges = [[] for _ in range(count)]
+    for a, b in links: edges[a].append(b)
+    order = [v for generation in topological_generations(root) for v in generation]
+    return all(b in _reachable(edges, a) for a, b in zip(order, order[1:]))
+
+
 class ReferenceIdentityAdapter:
     name = "reference-identity"
     contract = IRContract(
@@ -186,6 +241,9 @@ class ReferenceIdentityAdapter:
     scc_contract = CapabilityContract(
         "ReferenceGraph", "List(Natural)", "Tarjan SCC over retained identity graph",
         "ReferenceSCCReplayCertificate")
+    graph_contract = CapabilityContract(
+        "CondensedGraph", "CondensedGraph|Generations|Boolean",
+        "verified dependent graph transformation", "GraphCompoundingReplayCertificate")
     verifier_id = "machine-insight-v6-persistent-v1:" + digest({
         "source": sha256(Path(__file__).read_bytes()).hexdigest(),
         "primitive": PRIMITIVE, "contract": contract.id,
@@ -204,6 +262,10 @@ class ReferenceIdentityAdapter:
     def _scc(self, state: Mapping[str, Any]):
         return next((rid for rid, record in self._records(state)
                      if record["repair"]["payload"].get("role") == "scc"), None)
+
+    def _role(self, state: Mapping[str, Any], role: str):
+        return next((rid for rid, record in self._records(state)
+                     if record["repair"]["payload"].get("role") == role), None)
 
     def assess(self, state: Mapping[str, Any], obligation: Obligation) -> Evidence:
         claim, task = assessment_claim(state, obligation), obligation.target["task"]
@@ -248,6 +310,33 @@ class ReferenceIdentityAdapter:
                             claim, self.verifier_id,
                             {"procedure": procedure, "actual": actual,
                              "expected": obligation.target["expected"]}, scope=self.name)
+        lineage = {"acquire-condensation": ("scc", "condensation", condensation),
+                   "acquire-generations": ("condensation", "generations", topological_generations),
+                   "acquire-semiconnected": ("generations", "semiconnected", semiconnected)}
+        if task in lineage:
+            parent_role, role, operation = lineage[task]
+            parent = self._role(state, parent_role)
+            if parent is None:
+                return Evidence("unknown", claim, self.verifier_id, {"parent": None},
+                                {"class": "MISSING_GRAPH_ANCESTOR", "parent_role": parent_role}, self.name)
+            actual = operation(decode_graph(obligation.target["graph"]))
+            existing = self._role(state, role)
+            if existing is None:
+                return Evidence("unknown", claim, self.verifier_id, {"parent": parent, "actual": actual},
+                                {"class": "GRAPH_PROCEDURE_CONSTRUCTED", "parent": parent,
+                                 "role": role}, self.name)
+            return Evidence("verified" if actual == obligation.target["expected"] else "refuted",
+                            claim, self.verifier_id, {"procedure": existing, "actual": actual,
+                                                     "expected": obligation.target["expected"]}, scope=self.name)
+        if task == "heldout-semiconnected":
+            procedure = self._role(state, "semiconnected")
+            if procedure is None:
+                return Evidence("unknown", claim, self.verifier_id, {"procedure": None},
+                                {"class": "MISSING_SEMICONNECTED_PROCEDURE"}, self.name)
+            actual = semiconnected(decode_graph(obligation.target["graph"]))
+            return Evidence("verified" if actual == obligation.target["expected"] else "refuted",
+                            claim, self.verifier_id, {"procedure": procedure, "actual": actual,
+                                                     "expected": obligation.target["expected"]}, scope=self.name)
         raise ValueError("unknown reference identity task")
 
     def propose(self, state: Mapping[str, Any], obligation: Obligation, residual: Any):
@@ -259,6 +348,9 @@ class ReferenceIdentityAdapter:
         elif residual.get("class") == "SCC_PROCEDURE_CONSTRUCTED":
             yield Repair("capability", "identity-aware-scc", {"role": "scc"}, self.name,
                          (residual["constructor"],), self.scc_contract)
+        elif residual.get("class") == "GRAPH_PROCEDURE_CONSTRUCTED":
+            yield Repair("capability", residual["role"], {"role": residual["role"]}, self.name,
+                         (residual["parent"],), self.graph_contract)
 
     def verify(self, state: Mapping[str, Any], obligation: Obligation, repair: Repair) -> Evidence:
         survivors = unique_survivors()
@@ -277,11 +369,23 @@ class ReferenceIdentityAdapter:
                   and repair.contract == self.scc_contract and constructor is not None
                   and repair.dependencies == (constructor,)
                   and actual == obligation.target["expected"])
-        if not (is_constructor or is_scc):
+        graph_ops = {"condensation": condensation, "generations": topological_generations,
+                     "semiconnected": semiconnected}
+        role = repair.payload.get("role")
+        is_graph = False
+        if role in graph_ops and obligation.target["task"] == "acquire-" + role:
+            expected_parent = {"condensation": "scc", "generations": "condensation",
+                               "semiconnected": "generations"}[role]
+            parent = self._role(state, expected_parent)
+            is_graph = (repair.kind == "capability" and repair.contract == self.graph_contract
+                        and parent is not None and repair.dependencies == (parent,)
+                        and graph_ops[role](decode_graph(obligation.target["graph"]))
+                        == obligation.target["expected"])
+        if not (is_constructor or is_scc or is_graph):
             return Evidence("refuted", repair.id, self.verifier_id,
                             {"accepted": False}, scope=self.name)
         return Evidence("verified", repair.id, self.verifier_id,
-                        {"accepted": True, "object": "constructor" if is_constructor else "scc",
+                        {"accepted": True, "object": "constructor" if is_constructor else role,
                          "candidate_count": len(candidates()),
                          "unique_survivors": len(survivors),
                          "residual_controls": {
