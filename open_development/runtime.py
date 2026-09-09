@@ -78,6 +78,16 @@ def assessment_claim(state: Mapping[str, Any], obligation: Obligation) -> str:
     return digest({"state": state, "obligation": asdict(obligation)})
 
 
+def admission_id(repair: Repair, verifier: str) -> str:
+    """Identity of an admitted repair under one exact authority.
+
+    Proposal identity remains ``repair.id`` for certificate claims. Admission
+    identity additionally binds the verifier so a stale capability is never
+    silently reused, while the same repair can be explicitly requalified.
+    """
+    return digest({"repair": repair.id, "verifier": verifier})
+
+
 class Adapter(Protocol):
     """Domain authority. A proposed repair is not a certificate."""
     name: str
@@ -185,7 +195,7 @@ class Developer:
         # record is admitted; arbitrary proposals never become executable.
         attachment = dict(self.adapter.attach(state, repair, evidence))
         canonical(attachment)
-        rid = repair.id
+        rid = admission_id(repair, evidence.verifier)
         existing = state["capabilities"].get(rid)
         if existing is not None:
             return rid
@@ -220,7 +230,8 @@ class Developer:
             progressed = False
             for repair in islice(self.adapter.propose(state, obligation, last.residual), remaining):
                 remaining -= 1
-                if repair.id in attempted or repair.id in state["capabilities"]:
+                rid = admission_id(repair, self.adapter.verifier_id)
+                if repair.id in attempted or rid in state["capabilities"]:
                     continue
                 attempted.add(repair.id)
                 if repair.scope != obligation.domain:

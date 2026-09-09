@@ -61,9 +61,83 @@ jobs:
                   'evidence_head': store.events()[-1]['type']}, indent=2))
               store.close()
           PYDEMO
+      - name: Qualify proof-procedure self-application
+        run: |
+          python - <<'PYPROOF'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ProofProcedureAdapter
+          stages = json.loads(Path('open_development/examples/proof.json').read_text())['stages']
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'proof.sqlite'
+              store = EvidenceStore(path)
+              adapter = ProofProcedureAdapter()
+              cold_first = Developer(store, adapter).run(Obligation('proof-procedure', stages[0], 0, 'method'))
+              first = Developer(store, adapter).run(Obligation('proof-procedure', stages[0], 3, 'method'))
+              store.close()
+              store = EvidenceStore(path)
+              cold_second = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 0, 'method'))
+              second = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 3, 'method'))
+              assert (cold_first.verdict, first.verdict, cold_second.verdict, second.verdict) == (
+                  'unknown', 'verified', 'unknown', 'verified')
+              procedures = [store.state()['capabilities'][rid]['attachment']['procedure']
+                            for rid in first.retained + second.retained]
+              assert procedures == ['half_line_square', 'interval_affine']
+              store.revoke(second.retained[0], 'exact held-out procedure ablation')
+              ablated = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 0, 'method'))
+              assert ablated.verdict == 'unknown'
+              Path('proof-procedure-result.json').write_text(json.dumps({
+                  'claim': 'bounded verifier-guided proof-procedure development',
+                  'cold': [cold_first.verdict, cold_second.verdict],
+                  'warm': [first.verdict, second.verdict],
+                  'procedures': procedures, 'restart': True,
+                  'exact_ablation': ablated.verdict,
+                  'verifier': adapter.verifier_id,
+                  'limitations': ['supplied finite constructor grammar',
+                                  'exact rational polynomial domain only',
+                                  'not unrestricted self-development']}, indent=2))
+              store.close()
+          PYPROOF
+      - name: Qualify constructor-enabled capability growth
+        run: |
+          python - <<'PYGROWTH'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ProofCompositionAdapter
+          stages = json.loads(Path('open_development/examples/proof.json').read_text())['stages']
+          def obligation(stage, budget):
+              return Obligation('proof-composition', stage, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'growth.sqlite'
+              store = EvidenceStore(path)
+              adapter = ProofCompositionAdapter()
+              cold = Developer(store, adapter).run(obligation(stages[1], 0))
+              first = Developer(store, adapter).run(obligation(stages[0], 1))
+              store.close()
+              store = EvidenceStore(path)
+              warm = Developer(store, adapter).run(obligation(stages[1], 0))
+              assert cold.verdict == 'unknown' and first.verdict == 'verified'
+              assert warm.verdict == 'verified' and not warm.retained
+              removed = store.revoke(first.retained[0], 'constructor removal ablation')
+              ablated = Developer(store, adapter).run(obligation(stages[1], 0))
+              assert ablated.verdict == 'unknown' and removed == first.retained
+              Path('capability-growth-result.json').write_text(json.dumps({
+                  'claim': 'bounded constructor-enabled capability growth',
+                  'cold_O2': cold.verdict, 'O1': first.verdict,
+                  'retained_constructor': first.retained[0],
+                  'restart': True, 'warm_O2_zero_acquisition_budget': warm.verdict,
+                  'O2_program': warm.evidence.certificate['program'],
+                  'removal_ablation': ablated.verdict,
+                  'limitations': ['supplied primitive nodes', 'binary product only',
+                                  'exact rational polynomial domain']}, indent=2))
+              store.close()
+          PYGROWTH
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: open-development-core-v1
-          path: open-development-result.json
+          path: |
+            open-development-result.json
+            proof-procedure-result.json
+            capability-growth-result.json
           if-no-files-found: ignore

@@ -195,6 +195,25 @@ class RuntimeTests(unittest.TestCase):
             Obligation("finite", {"task": "first", "actual_world": "1"}, 0))
         self.assertEqual(cold.verdict, "unknown")
 
+    def test_same_repair_can_be_requalified_under_new_authority(self):
+        plain = FiniteAdapter(SPEC)
+        old = Developer(self.store, plain).run(
+            Obligation("finite", {"task": "first", "actual_world": "1"}, 1))
+        class AcceptingGate:
+            verifier_id = "rotated-lean-test-gate"
+            def verify(self, tables, old, candidate):
+                return {"authority": self.verifier_id, "candidate": candidate}
+        strict = FiniteAdapter(SPEC, AcceptingGate())
+        new = Developer(self.store, strict).run(
+            Obligation("finite", {"task": "first", "actual_world": "1"}, 1))
+        self.assertEqual(new.verdict, "verified")
+        self.assertEqual(len(new.retained), 1)
+        self.assertNotEqual(old.retained[0], new.retained[0])
+        records = self.store.state()["capabilities"]
+        self.assertEqual(len(records), 2)
+        self.assertNotEqual(records[old.retained[0]]["evidence"]["verifier"],
+                            records[new.retained[0]]["evidence"]["verifier"])
+
     def test_canonical_outcomes_and_generated_certificate(self):
         spec = json.loads(json.dumps(SPEC))
         spec["probes"]["identity"] = [False, 0, 1]
