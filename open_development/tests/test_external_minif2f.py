@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from open_development.external_minif2f import (
+from open_development.external_minif2f_entry import (
     ExternalMiniF2FAdapter, extract_candidates, freeze_source,
 )
 from open_development.runtime import Developer, EvidenceStore, Obligation

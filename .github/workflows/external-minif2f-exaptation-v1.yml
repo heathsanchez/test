@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euo pipefail
           test ! -e external
-          python -m open_development.external_minif2f freeze-source \
+          python -m open_development.external_minif2f_entry freeze-source \
             --state external-source-state.sqlite \
             --freeze-sha "$GITHUB_SHA" \
             --output external-source-freeze.json
@@ -61,7 +61,7 @@ jobs:
 
       - name: Select B after freeze and run unchanged developmental transition
         run: |
-          python -m open_development.external_minif2f qualify \
+          python -m open_development.external_minif2f_entry qualify \
             --state external-source-state.sqlite \
             --source-manifest external-source-freeze.json \
             --test external/MiniF2F/Test.lean \
