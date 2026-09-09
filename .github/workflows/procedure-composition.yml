@@ -30,14 +30,15 @@ jobs:
           EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
         run: |
           set -euo pipefail
+          test "$(git -C "$GITHUB_WORKSPACE/audit" hash-object audits/procedure_composition/composition.py)" = cc446af6339b9f6adf1c828fb940b0bd3cf965a7
           bash "$GITHUB_WORKSPACE/audit/audits/procedure_repair/run_procedure_lean.sh"
           export PATH="$HOME/.elan/bin:$PATH"
           cp "$GITHUB_WORKSPACE/audit/audits/procedure_composition/ProgramRules.lean" .mathgraph-procedure/ProgramRules.lean
           lake env bash -c 'export LEAN_PATH="$PWD/.mathgraph-procedure:$LEAN_PATH"; exec lean -o .mathgraph-procedure/ProgramRules.olean .mathgraph-procedure/ProgramRules.lean' > "$GITHUB_WORKSPACE/evidence/program-soundness.log" 2>&1
           cat "$GITHUB_WORKSPACE/evidence/program-soundness.log"
           python - <<'PY'
-          import pathlib,re
-          text=(pathlib.Path(__import__('os').environ['GITHUB_WORKSPACE'])/'evidence/program-soundness.log').read_text()
+          import pathlib,re,os
+          text=(pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'evidence/program-soundness.log').read_text()
           m=re.search(r"'CrossDomainResidual.ProgramRules.sound' depends on axioms: \[([^\]]*)\]",text)
           assert m is not None,text
           assert {x.strip() for x in m.group(1).split(',')} <= {'propext','Classical.choice','Quot.sound'}
@@ -58,31 +59,51 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Run frozen program construction and equal-check controls
+      - name: Run frozen 128-check replication and matched control
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p evidence
+          mkdir -p evidence recovered
           test "$(git hash-object audits/procedure_composition/PROTOCOL.md)" = 14e7ddecbb017b9d5d2499fb6bf820700c0a9a8d
+          test "$(git hash-object audits/procedure_composition/composition.py)" = cc446af6339b9f6adf1c828fb940b0bd3cf965a7
           test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          python - <<'PY'
+          import json
+          l=json.load(open('audits/procedure_composition/LIMITS.json'))
+          assert l['version']==2 and l['total_semantic_checks']==128
+          assert l['maximum_tree_nodes']==3 and l['maximum_promotions_per_stage']==1
+          PY
           python -m pip install 'sympy==1.14.0'
           export PYTHONPATH="$PWD/audits/cross_domain:$PWD/audits/procedure_composition"
           python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
           python audits/procedure_composition/composition.py --test 2>&1 | tee evidence/composition-tests.log
           python audits/procedure_composition/composition.py > evidence/result.json
           python - <<'PY'
-          import json
+          import json,pathlib
           r=json.load(open('evidence/result.json'))
           for mode in ('residual','blind'):
               x=r[mode]
-              assert x['checks']<=r['limits']['total_semantic_checks']
+              assert x['checks']<=128 and len(x['trace'])==x['checks']
+              assert [e['check'] for e in x['trace']]==list(range(1,x['checks']+1))
               print(mode,x['status'],'checks',x['checks'],'cpu_seconds',x['cpu_seconds'])
-          print('PROCEDURE_COMPOSITION_FINITE_COMPLETE',r['status'])
+          assert r['status']=='PASS' and len(r['residual']['stages'])==2
+          s=r['residual']['stages']
+          assert s[0]['program']!=s[1]['program']
+          assert all(len(t['reuse'])==2 and t['ablation']=='FAIL_WITHOUT_NEW_PROGRAM' for t in s)
+          pathlib.Path('recovered/programs.json').write_text(json.dumps([t['program'] for t in s],indent=2)+'\n')
+          pathlib.Path('recovered/certificates.json').write_text(json.dumps([t['certificate'] for t in s],indent=2)+'\n')
+          print('PROCEDURE_COMPOSITION_V2_PASS')
           PY
-          sha256sum audits/procedure_composition/*.py audits/procedure_composition/*.lean audits/procedure_composition/LIMITS.json evidence/result.json > evidence/hashes.txt
+          sha256sum audits/procedure_composition/*.py audits/procedure_composition/*.lean audits/procedure_composition/LIMITS.json audits/procedure_composition/PROTOCOL*.md evidence/result.json recovered/*.json > evidence/hashes.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: composition-finite-evidence
           path: evidence/
           if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: composition-generated
+          path: recovered/
+          if-no-files-found: error
