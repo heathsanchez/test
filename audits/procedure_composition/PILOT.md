@@ -1,0 +1,5 @@
+# Frozen v1 pilot — negative
+
+The locally executed frozen 64-check qualification exhausted the budget in both arms. The residual arm completed the first program and reached the second stage; the blind arm also exhausted the budget. Four local unit tests passed after correcting the monomial matcher to include power zero, which is part of the supplied nonnegative-monomial primitive. The first failed local fixture had required a quadratic to match a program that excluded degree-zero monomials; that implementation defect was corrected without changing the frozen grammar or budget.
+
+The diagnostic continuation with an in-memory budget of 128 completed both stages: residual 71 semantic checks, blind 113. This diagnostic was performed after observing the 64-check failure, so it is not a pre-registered v1 success. The next version must freeze its new budget separately and retain the same mathematical grammar. No Lean qualification is claimed by this pilot record. The GitHub Actions qualification is the external evidence source.
