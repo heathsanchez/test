@@ -2,7 +2,7 @@
 set -euo pipefail
 AUDIT="$GITHUB_WORKSPACE/audit/audits/cross_domain"
 EVIDENCE="$GITHUB_WORKSPACE/evidence"
-AUDIT_BUILD="$GITHUB_WORKSPACE/audit-build"
+AUDIT_BUILD="$PWD/.mathgraph-recovery"
 mkdir -p "$EVIDENCE" "$AUDIT_BUILD"
 test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 git rev-parse HEAD > "$EVIDENCE/source-commit.txt"
@@ -39,7 +39,8 @@ fi
 lean --version | tee "$EVIDENCE/runtime-lean-version.txt"
 test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 git -C .lake/packages/mathlib rev-parse HEAD | tee "$EVIDENCE/mathlib-commit.txt"
-# Do not prepend the upstream project root: that shadows Lake's OLean paths.
+# The compiler requires source files inside the project root. Only the
+# private audit module directory is added; Lake retains its dependency paths.
 run_audit() {
   lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; shift; exec lean "$@"' bash "$AUDIT_BUILD" "$@"
 }
