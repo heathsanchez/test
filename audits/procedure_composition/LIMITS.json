@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "parent": "c4356c25a9e94f4b1e79d0c2bf53705694ec51f6",
+  "primitive_order": ["constant", "monomial", "square", "affine"],
+  "combinator_order": ["product", "sum"],
+  "maximum_tree_nodes": 3,
+  "maximum_polynomial_degree": 4,
+  "maximum_factor_options": 16,
+  "maximum_sum_options": 12,
+  "total_semantic_checks": 64,
+  "maximum_promotions_per_stage": 1,
+  "rational_arithmetic": "exact",
+  "algebra": "sympy==1.14.0, rational polynomial factorization and exact coefficient matching",
+  "enumeration": "increasing tree size; ordered primitive leaves; canonical commutative children; product before sum",
+  "parameter_solver": "exact leaf matching; rational factor partitions with scalar allocation for products; positive monomial subtraction and exact square-factor subtraction for sums",
+  "residual_pruning": "domain admissibility; possible degree; negative-coefficient necessity; nonzero-constant necessity",
+  "initial_checker": "coefficientwise nonnegative rational coefficients",
+  "stages": ["arctangent derivative numerator on the nonnegative ray", "1-x^2 on [0,1]"],
+  "success_requirement": "generated reusable program, independent exact replay, generic Lean soundness, held-out reuse, removal ablation, and same-budget comparison",
+  "scope": "bounded constructor composition, not invention of primitive operations or an essential fluid proof repair"
+}
