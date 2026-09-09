@@ -56,10 +56,11 @@ class Candidate:
         x,y=state
         return y>=self.evaluate(x)
     def record(self):
+        def encoded(p):return {str(k):str(v) for k,v in sorted(p.items())}
         return {'name':self.name,'slope':str(self.slope),'exponent':self.exponent,
                 'coefficient':str(self.coefficient),
-                'expression':self.polynomial(),
-                'certificate':dict(self.certificate)}
+                'expression':encoded(self.polynomial()),
+                'certificate':encoded(dict(self.certificate))}
 
 def certify(slope,exponent):
     # P = (1+x²)*(atan' - L') = 1 - (1+x²)*L'.
