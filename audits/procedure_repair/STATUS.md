@@ -1,1 +1,1 @@
-Status: protocol frozen; qualification not yet run. No mathematical discovery or successful CI is claimed by this file.
+Implementation committed for qualification. The frozen protocol and original controller are unchanged. No new scientific success is claimed until the finite, generic-soundness, target, and source jobs have been inspected.
