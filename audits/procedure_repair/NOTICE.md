@@ -1,0 +1,1 @@
+This branch is an experimental certificate-procedure repair, not a claim of unrestricted self-development or a Navier–Stokes breakthrough.
