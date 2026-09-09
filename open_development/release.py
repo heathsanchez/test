@@ -14,6 +14,7 @@ CLAIM = "bounded verifier-governed developmental machine"
 LIMITATIONS = [
     "finite supplied constructor grammars",
     "exact rational polynomial proof domain",
+    "reference-identity qualification uses a supplied allocation/identity/table/link substrate",
     "no unrestricted grammar invention or completeness claim",
     "generated proof certificates use the exact-rational checker; generic rules and qualified programs have separate Lean evidence",
 ]
@@ -26,7 +27,8 @@ def _require(condition: bool, message: str) -> None:
 
 def build_release(*, repository: str, source_commit: str, run_id: int,
                   finite: Mapping[str, Any], proof: Mapping[str, Any],
-                  growth: Mapping[str, Any], native: Mapping[str, Any]) -> dict[str, Any]:
+                  growth: Mapping[str, Any], native: Mapping[str, Any],
+                  reference: Mapping[str, Any]) -> dict[str, Any]:
     _require(re.fullmatch(r"[0-9a-f]{40}", source_commit) is not None,
              "source commit must be a full lowercase Git SHA")
     _require(run_id > 0 and re.fullmatch(r"[^/]+/[^/]+", repository) is not None,
@@ -56,10 +58,24 @@ def build_release(*, repository: str, source_commit: str, run_id: int,
              and native.get("heldout_zero_budget") == "verified"
              and native.get("restart") is True and native.get("ablation") == "unknown",
              "native constructor integration gate failed")
+    _require(reference.get("cold") == "unknown"
+             and reference.get("candidate_count") == 12
+             and reference.get("unique_survivors") == 1
+             and reference.get("source") == "verified"
+             and reference.get("transfer") == "verified"
+             and reference.get("dependent_acquisition") == "verified"
+             and reference.get("heldout_zero_budget") == "verified"
+             and reference.get("first_restart") is True
+             and reference.get("second_restart") is True
+             and reference.get("no_memo_control") is False
+             and reference.get("tag_key_control") is False
+             and reference.get("postorder_control") is False
+             and reference.get("ablation") == "unknown",
+             "reference identity integration gate failed")
     body = {
         "schema": SCHEMA,
         "claim": CLAIM,
-        "scope": "finite observational, exact-rational proof-program, and native recursive-type development",
+        "scope": "finite observational, exact-rational proof-program, native recursive-type, and reference-identity development",
         "source_commit": source_commit,
         "run_id": run_id,
         "run_url": f"https://github.com/{repository}/actions/runs/{run_id}",
@@ -67,10 +83,12 @@ def build_release(*, repository: str, source_commit: str, run_id: int,
             "finite": dict(finite), "proof_procedure": dict(proof),
             "capability_growth": dict(growth),
             "native_constructor": dict(native),
+            "reference_identity": dict(reference),
         },
         "formal_authorities": [
             "Lean 4.24.0 MSI/developmental bridge and finite realization",
             "Lean nested-fixpoint roundtrip and variable-arity realization",
+            "Lean reference-identity graph observation and tree-language obstruction",
             "pinned Mathlib generic proof-program rules and concrete O2/O3 semantics",
         ],
         "limitations": LIMITATIONS,
@@ -91,7 +109,8 @@ def validate_release(manifest: Mapping[str, Any]) -> None:
         finite=manifest["controls"]["finite"],
         proof=manifest["controls"]["proof_procedure"],
         growth=manifest["controls"]["capability_growth"],
-        native=manifest["controls"]["native_constructor"])
+        native=manifest["controls"]["native_constructor"],
+        reference=manifest["controls"]["reference_identity"])
     _require(rebuilt == dict(manifest), "release evidence does not match its declared run")
 
 
@@ -104,13 +123,14 @@ def main() -> None:
     parser.add_argument("--proof", type=Path, required=True)
     parser.add_argument("--growth", type=Path, required=True)
     parser.add_argument("--native", type=Path, required=True)
+    parser.add_argument("--reference", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     load = lambda path: json.loads(path.read_text())
     manifest = build_release(repository=args.repository, source_commit=args.source_commit,
                              run_id=args.run_id, finite=load(args.finite),
                              proof=load(args.proof), growth=load(args.growth),
-                             native=load(args.native))
+                             native=load(args.native), reference=load(args.reference))
     validate_release(manifest)
     args.output.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     print("RELEASE_EVIDENCE_PASS", manifest["evidence_digest"])

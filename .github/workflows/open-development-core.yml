@@ -213,6 +213,75 @@ jobs:
                                   'narrow recursive ordered-array family']}, indent=2))
               store.close()
           PYNATIVE
+      - name: Qualify persistent reference-identity genesis
+        run: |
+          python - <<'PYREFERENCE'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ReferenceIdentityAdapter
+          from open_development.reference_identity import candidate_passes
+          source_graph = {'labels': ['root', 'same', 'same', 'shared'],
+                          'edges': [[1, 2], [3], [3], [0]], 'root': 0}
+          transfer_graph = {'labels': ['entry', 'left', 'right', 'loop'],
+                            'edges': [[1, 2], [3], [3], [3]], 'root': 0}
+          dependent_graph = {'labels': ['r', 'a', 'b', 'sink'],
+                             'edges': [[1, 2], [2], [1, 3], [3]], 'root': 0}
+          heldout_graph = {'labels': ['p', 'q', 'r', 'u', 'v'],
+                           'edges': [[1], [2], [0, 3], [4], [3]], 'root': 0}
+          def obligation(target, budget):
+              return Obligation('reference-identity', target, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'reference.sqlite'
+              adapter = ReferenceIdentityAdapter()
+              store = EvidenceStore(path)
+              source_target = {'task': 'source', 'oracle': 'pickle-protocol-5',
+                               'graph': source_graph}
+              cold = Developer(store, adapter).run(obligation(source_target, 0))
+              source = Developer(store, adapter).run(obligation(source_target, 12))
+              constructor = source.retained[0]
+              store.close()
+              store = EvidenceStore(path)
+              transfer = Developer(store, adapter).run(obligation(
+                  {'task': 'transfer', 'oracle': 'deepcopy', 'graph': transfer_graph}, 0))
+              dependent = Developer(store, adapter).run(obligation(
+                  {'task': 'acquire-scc', 'graph': dependent_graph,
+                   'expected': [1, 1, 2]}, 1))
+              procedure = dependent.retained[0]
+              assert store.state()['capabilities'][procedure]['repair']['dependencies'] == [constructor]
+              store.close()
+              store = EvidenceStore(path)
+              heldout = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-scc', 'graph': heldout_graph, 'expected': [2, 3]}, 0))
+              removed = store.revoke(constructor, 'reference constructor ancestor ablation')
+              ablated = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-scc', 'graph': heldout_graph, 'expected': [2, 3]}, 0))
+              no_memo = candidate_passes(('identity', 'none', False))
+              tag_key = candidate_passes(('tag', 'preorder', True))
+              postorder = candidate_passes(('identity', 'postorder', True))
+              assert cold.verdict == 'unknown' and source.verdict == 'verified'
+              assert transfer.verdict == dependent.verdict == heldout.verdict == 'verified'
+              assert not no_memo and not tag_key and not postorder
+              assert ablated.verdict == 'unknown' and set(removed) == {constructor, procedure}
+              Path('reference-identity-result.json').write_text(json.dumps({
+                  'claim': 'prospective persistent reference-identity constructor growth',
+                  'cold': cold.verdict, 'candidate_count': 12, 'unique_survivors': 1,
+                  'source': source.verdict, 'source_oracle': 'pickle protocol 5',
+                  'transfer': transfer.verdict, 'transfer_oracle': 'copy.deepcopy',
+                  'dependent_acquisition': dependent.verdict,
+                  'heldout_zero_budget': heldout.verdict,
+                  'first_restart': True, 'second_restart': True,
+                  'no_memo_control': no_memo, 'tag_key_control': tag_key,
+                  'postorder_control': postorder, 'ablation': ablated.verdict,
+                  'cascade_size': len(removed),
+                  'historical_evidence_identity': {
+                      'deepcopy_cases': 3000, 'cloudpickle_cases': 3000,
+                      'networkx_scc_cases': 5000,
+                      'tree_only_failures': [939, 1000]},
+                  'limitations': ['supplied allocation/identity/table/link substrate',
+                                  'new stdlib tasks designed in this integration',
+                                  'historical external corpora not rerun']}, indent=2))
+              store.close()
+          PYREFERENCE
       - name: Build and validate release evidence
         run: |
           python -m open_development.release \
@@ -223,6 +292,7 @@ jobs:
             --proof proof-procedure-result.json \
             --growth capability-growth-result.json \
             --native native-constructor-result.json \
+            --reference reference-identity-result.json \
             --output release-evidence.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -233,6 +303,7 @@ jobs:
             proof-procedure-result.json
             capability-growth-result.json
             native-constructor-result.json
+            reference-identity-result.json
             release-evidence.json
           if-no-files-found: ignore
 

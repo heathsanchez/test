@@ -11,6 +11,12 @@ class ReleaseEvidenceTests(unittest.TestCase):
               "source": "verified", "transfer": "verified",
               "dependent_acquisition": "verified", "heldout_zero_budget": "verified",
               "restart": True, "ablation": "unknown"}
+    reference = {"cold": "unknown", "candidate_count": 12, "unique_survivors": 1,
+                 "source": "verified", "transfer": "verified",
+                 "dependent_acquisition": "verified", "heldout_zero_budget": "verified",
+                 "first_restart": True, "second_restart": True,
+                 "no_memo_control": False, "tag_key_control": False,
+                 "postorder_control": False, "ablation": "unknown"}
 
     def evidence(self):
         return build_release(
@@ -22,7 +28,8 @@ class ReleaseEvidenceTests(unittest.TestCase):
                     "cold_O3": "unknown", "O3_acquired": "verified",
                     "unlisted_O4_zero_acquisition_budget": "verified",
                     "second_restart": True, "third_restart": True,
-                    "removal_ablation": "unknown"}, native=self.native)
+                    "removal_ablation": "unknown"}, native=self.native,
+            reference=self.reference)
 
     def test_round_trip(self):
         validate_release(self.evidence())
@@ -40,7 +47,8 @@ class ReleaseEvidenceTests(unittest.TestCase):
                           run_id=123, finite=evidence["controls"]["finite"],
                           proof=evidence["controls"]["proof_procedure"],
                           growth={**evidence["controls"]["capability_growth"],
-                                  "removal_ablation": "verified"}, native=self.native)
+                          "removal_ablation": "verified"}, native=self.native,
+                          reference=self.reference)
 
     def test_rehashed_native_obstruction_claim_is_rejected(self):
         evidence = self.evidence()
@@ -49,7 +57,18 @@ class ReleaseEvidenceTests(unittest.TestCase):
                           run_id=123, finite=evidence["controls"]["finite"],
                           proof=evidence["controls"]["proof_procedure"],
                           growth=evidence["controls"]["capability_growth"],
-                          native={**self.native, "old_ast_count": 7881})
+                          native={**self.native, "old_ast_count": 7881},
+                          reference=self.reference)
+
+    def test_rehashed_reference_causal_claim_is_rejected(self):
+        evidence = self.evidence()
+        with self.assertRaisesRegex(ValueError, "reference identity"):
+            build_release(repository="heathsanchez/test", source_commit="a" * 40,
+                          run_id=123, finite=evidence["controls"]["finite"],
+                          proof=evidence["controls"]["proof_procedure"],
+                          growth=evidence["controls"]["capability_growth"],
+                          native=self.native,
+                          reference={**self.reference, "tag_key_control": True})
 
 
 if __name__ == "__main__":
