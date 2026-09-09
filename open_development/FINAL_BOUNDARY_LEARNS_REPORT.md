@@ -4,7 +4,8 @@
 **Repository:** `heathsanchez/test`  
 **Branch:** `open-development-core-v1`  
 **Deciding exaptation commit:** `17057ab3667bbc2296a8307cd9e125f863e8deb4`  
-**Regression-integration commit:** `eff60776f64a901d83828285161677a723a7d7ee`
+**Regression-integration commit:** `eff60776f64a901d83828285161677a723a7d7ee`  
+**Strict completion-delta commit:** `0d577320a5b6da94ee8fc2542b7d512ea69859d0`
 
 ## 1. Claim boundary
 
@@ -75,7 +76,7 @@ The workload contains no encoded answer/program/certificate fields. Runtime orde
 
 ## 5. Developmental cost accounting
 
-For the prospective B development the emitted counted-operation vector is:
+For the original prospective B development the emitted counted-operation vector is:
 
 ```text
 construction  = 2
@@ -96,13 +97,13 @@ The ten convergence requirements are audited against actual executable evidence 
 | Gate | Status | Evidence / boundary |
 |---|---|---|
 | **G1 — One typed developmental transition** | **PASS (bounded)** | `Developer.run` is the sole admission transition across object/method obligations; adapters and executable capabilities carry typed contracts and fail closed when untyped. |
-| **G2 — Verifier-certified residual drives change** | **PASS (bounded)** | Cold finite/proof/native/reference cases and the new B case return typed `UNKNOWN` residuals; proposals are not their own authority and are independently replayed before admission. |
+| **G2 — Verifier-certified residual drives change** | **PASS (bounded)** | Cold finite/proof/native/reference cases and the B case return typed `UNKNOWN` residuals; the strict gate wraps B in `ResidualEnvelope/v1` with diagnosis, certified witness, closure/budget identities, necessary constraint, version-space identity and evidence strength. Proposals are not their own authority. |
 | **G3 — Effective language can expand when old closure is inadequate** | **PASS (bounded)** | Native-constructor qualification freezes a 7,882-program old closure with maximum direct arity 5, identifies deciding arity 6, checks 237 supplied lower-substrate candidates with one survivor, then transfers and supports dependent acquisition. This is not unrestricted grammar invention. |
 | **G4 — Behavioral identity can be source-independent** | **PASS (bounded)** | The exaptation source and a source-distinct direct Vieta realization agree under the protected factor-interface observations; reference-identity work separately transfers across `pickle` and `deepcopy` semantic oracles. Identity is protected-behavior relative, not source-code identity. |
-| **G5 — Verified exaptation / adjacent possible** | **PASS (bounded)** | `K_A` does not directly solve B. A certified B residual forces a new typed role; `K_B = alpha(K_A)` is admitted with exact source dependency and enables dependent `K_C`; held-out zero-acquisition execution succeeds through `K_C -> K_B -> K_A`. |
-| **G6 — Persistence is causal, not archival** | **PASS (bounded)** | Prior executable-parent intervention and the new source-body ablation show later computation fails when only the learned executable cause is removed/corrupted while identity/dependency records remain. Unrelated removal does not fail. |
+| **G5 — Verified exaptation / adjacent possible** | **PASS (bounded)** | `K_A` does not directly solve B. A certified B residual forces a new typed role; `K_B = alpha(K_A)` is admitted with exact source dependency and enables dependent `K_C`; held-out zero-acquisition execution succeeds through `K_C -> K_B -> K_A`. Strict controls preserve the same classification: reuse false, exaptation true, expansion false. |
+| **G6 — Persistence is causal, not archival** | **PASS (bounded)** | Prior executable-parent intervention and the source-body ablation show later computation fails when only the learned executable cause is removed/corrupted while identity/dependency records remain. Unrelated removal does not fail. |
 | **G7 — Development applies to its own means of solving** | **PASS (bounded)** | The same transition acquires proof procedures, constructors, composed programs, and method-scoped capabilities; later procedures execute retained earlier procedures. Supplied meta-operations remain a boundary. |
-| **G8 — Opposing controls and cost are explicit** | **PASS WITH BOUNDARY** | Fixed/zero-budget, indiscriminate-retention, sham-body, wrong-direction, unrelated-removal, raw-history, restoration, and exact-revocation controls pass. Acquisition budgets are matched where claimed; the cost vector is counted operations, not a full hardware-normalized economic comparison. |
+| **G8 — Opposing controls and cost are explicit** | **PASS WITH BOUNDARY** | The strict gate adds a same-serialized-size sham `K_B`, a wrong-direction adapter, a no-requalification fixed-policy baseline with the same B acquisition budget, source-body removal, unrelated removal, raw-history reconstruction, restoration, and exact revocation. Cost is a counted-event identity, not hardware-normalized economics. |
 | **G9 — Retained gains compound across restart/transfer** | **PASS (bounded)** | Proof composition, native constructor, reference identity/graph lineage, and exaptation each show restart plus dependent acquisition and/or held-out zero-acquisition reuse; ancestral revocation collapses descendants. |
 | **G10 — Authority, provenance, revocation and claim boundary remain explicit** | **PASS (bounded)** | Evidence is content/verifier bound, append-only history is preserved, active state is revocable, `UNKNOWN` is not promoted to impossibility, existing mathematical contracts are Lean checked where stated, and the Python exaptation interpreter is explicitly outside the Lean trust claim. |
 
@@ -143,9 +144,78 @@ Commit `eff60776f64a901d83828285161677a723a7d7ee` adds the prospective exaptatio
 
 - Run: https://github.com/heathsanchez/test/actions/runs/34410876901
 - Core job: https://github.com/heathsanchez/test/actions/runs/34410876901/job/102664732315
+- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34410876901/job/102664851442
 - Causal-reuse artifact: https://github.com/heathsanchez/test/actions/runs/34410876901/artifacts/10127165647
 - Core artifact: https://github.com/heathsanchez/test/actions/runs/34410876901/artifacts/10127174791
 - Release evidence digest: `45d0ad8f7947fd370a7e61b5357ec9f5ddd2c9b5aa6f87546d104f751754c4ba`
+
+### Strict completion-delta qualification
+
+Commit `0d577320a5b6da94ee8fc2542b7d512ea69859d0` hardens the deciding evidence contract without changing the task or controller. It reuses the workload frozen in parent checkpoint `17057ab3667bbc2296a8307cd9e125f863e8deb4`.
+
+Push runs:
+
+- Strict controls: https://github.com/heathsanchez/test/actions/runs/34411147189
+- Strict job: https://github.com/heathsanchez/test/actions/runs/34411147189/job/102665599531
+- Open Development Core: https://github.com/heathsanchez/test/actions/runs/34411146878
+- Core job: https://github.com/heathsanchez/test/actions/runs/34411146878/job/102665599197
+- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34411146878/job/102665734924
+
+PR-triggered runs:
+
+- Strict controls: https://github.com/heathsanchez/test/actions/runs/34411152665
+- Strict job: https://github.com/heathsanchez/test/actions/runs/34411152665/job/102665617543
+- Original prospective qualification: https://github.com/heathsanchez/test/actions/runs/34411152649
+- Original prospective job: https://github.com/heathsanchez/test/actions/runs/34411152649/job/102665617158
+- Open Development Core: https://github.com/heathsanchez/test/actions/runs/34411170494
+- Core job: https://github.com/heathsanchez/test/actions/runs/34411170494/job/102665677086
+- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34411170494/job/102665811617
+
+Strict artifact:
+
+- https://github.com/heathsanchez/test/actions/runs/34411152665/artifacts/10127266169
+- ZIP SHA256: `6d210bf376bdf29e7bc8fd032a338435a6103f7ad5d45d3c1883ed6dc8730b96`
+
+The strict artifact records:
+
+```text
+outcome = VERIFIED_EXAPTATION_STRICT
+cold B = UNKNOWN
+residual = ResidualEnvelope/v1 / capability_failure
+B acquisition budget = 2
+held-out acquisition budget = 0
+held-out = VERIFIED
+execution = K_C -> K_B -> K_A
+same-size sham K_B = REFUTED
+wrong-direction adapter = REFUTED
+missing K_A executable body = UNKNOWN
+unrelated removal = VERIFIED
+raw-history reconstruction at same B budget = UNKNOWN
+matched fixed policy at B budget 2 = UNKNOWN
+restored lineage = VERIFIED
+```
+
+For the strict verifier identity the emitted lineage is:
+
+```text
+K_A = d2a362fecb86094819cdad31d180b08f6992b2d687b03af20c2e007a2bbdb186
+K_B = 0aa6cc4d184996e800843b198968a815a43723d786360b758cbc5331d239bf99
+K_C = 77e97ceb26277f22bfa6db37efdd74fd2c6e04dd6ad0e919c05e1f2ecb7e7314
+```
+
+Its counted-event cost identity is:
+
+```text
+C_construction = 2
+C_verification = 5
+C_activation   = 2
+C_execution    = 23
+C_memory       = 2
+C_recovery     = 3
+C_total        = 37
+```
+
+Again, this is an explicit counted-event/accounting identity, not a wall-clock or hardware-normalized scalar cost.
 
 ## 9. Deciding interpretation
 
@@ -153,8 +223,8 @@ Within the qualified regime, the completed chain is:
 
 ```text
 external consequence
-    -> certified residual
-    -> typed role constraint
+    -> certified typed residual
+    -> necessary role constraint
     -> requalification of retained executable learning
     -> dependent capability
     -> held-out future success
