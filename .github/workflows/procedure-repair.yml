@@ -1,0 +1,160 @@
+name: Procedure repair qualification
+on:
+  push:
+    branches: [mathgraph/procedure-repair-v1]
+    paths:
+      - .github/workflows/procedure-repair.yml
+      - audits/procedure_repair/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  soundness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Independently check generic certificate rules before promotion
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: soundness
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_repair/run_procedure_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedure-soundness
+          path: evidence/
+          if-no-files-found: warn
+  finite:
+    needs: soundness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen controller, procedure repairs and matched controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered evidence
+          test "$(git hash-object audits/procedure_repair/PROTOCOL.md)" = 4d14e03c850f08b1bcaa81331aa3e5dae3db95db
+          test "$(git hash-object audits/procedure_repair/IMPLEMENTATION.md)" = 760d29bc4014857e7c8f6b669b10446eff0a01c4
+          test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          test "$(git hash-object audits/form_recovery/form_synthesis.py)" = 43143befff502cfe36ce5ad01aea2f8c69416c09
+          export PYTHONPATH="$PWD/audits/procedure_repair:$PWD/audits/certificate_genesis:$PWD/audits/form_recovery:$PWD/audits/cross_domain"
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/cross_domain/proof_bridge.py --test 2>&1 | tee evidence/baseline-tests.log
+          python audits/cross_domain/heldout_recovery.py --test 2>&1 | tee evidence/coefficient-tests.log
+          python audits/form_recovery/form_experiment.py --test 2>&1 | tee evidence/form-tests.log
+          python audits/certificate_genesis/genesis_experiment.py --test 2>&1 | tee evidence/genesis-baseline-tests.log
+          python audits/procedure_repair/experiment.py --test 2>&1 | tee evidence/procedure-tests.log
+          python audits/procedure_repair/experiment.py > evidence/procedure-result.json
+          python audits/procedure_repair/emit.py --result evidence/procedure-result.json --out recovered | tee evidence/synthesis.log
+          (cd recovered && sha256sum RecoveredProcedures.lean HeldoutProcedure.lean > source.sha256)
+          python - <<'PY'
+          import json,pathlib
+          r=json.load(open('evidence/procedure-result.json'))
+          c=json.load(open('recovered/certificate.json'))
+          assert r['status']=='PASS' and len(r['stages'])==2
+          assert all(s['before']['status']=='GRAMMAR_INSUFFICIENT' for s in r['stages'])
+          assert all(s['residual']['status']=='PASS' and s['residual']['heldout_witness'] is None for s in r['stages'])
+          assert all(all(a['witness'] is not None for a in s['residual']['ablation']) for s in r['stages'])
+          assert c[0]['certificate']['kind']=='square'
+          assert c[1]['certificate']['kind']=='product'
+          assert r['orderings']['residual']['PASS']==24
+          assert sum(r['orderings']['blind'].values())==24
+          for name in ('RecoveredProcedures.lean','HeldoutProcedure.lean'):
+              text=(pathlib.Path('recovered')/name).read_text()
+              assert 'import ABAngleBounds' not in text
+              assert 'self_sub_cube_le_arctan' not in text
+              assert '\nsorry' not in text and '\nadmit' not in text
+          print('PROCEDURE_REPAIR_FINITE_PASS')
+          print('ORDERINGS',r['orderings'])
+          print('PROMOTIONS',c)
+          PY
+          sha256sum audits/procedure_repair/PROTOCOL.md audits/procedure_repair/IMPLEMENTATION.md audits/cross_domain/experiment.py audits/form_recovery/form_synthesis.py audits/procedure_repair/*.py audits/procedure_repair/*.lean recovered/*.lean recovered/certificate.json evidence/procedure-result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedure-finite-evidence
+          path: evidence/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: procedure-generated
+          path: recovered/
+          if-no-files-found: error
+  target:
+    needs: finite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: procedure-generated
+          path: recovered
+      - name: Check generated mathematics and genuine polar-chart transfer
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: target
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_repair/run_procedure_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedure-target
+          path: evidence/
+          if-no-files-found: warn
+  source:
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: procedure-generated
+          path: recovered
+      - name: Check held-out constructor and original source comparison
+        shell: bash
+        working-directory: upstream/euler-blowup
+        env:
+          TASK: source
+          EXPECTED_REF: d0124689230b58b4f86e7b90ac59de06404b3b6b
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_repair/run_procedure_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: procedure-source
+          path: evidence/
+          if-no-files-found: warn
