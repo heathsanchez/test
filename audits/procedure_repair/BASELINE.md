@@ -1,0 +1,1 @@
+The certificate-genesis baseline is run 34298868890 at commit 534cf7f5f5d981d7a44f6dcdc4a01355638b3612. Its generated certificate and independent Lean checks are preserved unchanged. The successor must not reinterpret its one-candidate comparison as a causal search advantage.
