@@ -65,14 +65,18 @@ import os,pathlib,re
 root=pathlib.Path(os.environ['GITHUB_WORKSPACE'])/'evidence'
 text=(root/'recovered-form.log').read_text()+'\n'+(root/'lean.log').read_text()
 allowed={'propext','Quot.sound','Classical.choice'}
+records=[]
+for actual,axioms in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",text):
+    records.append((actual,{x.strip() for x in axioms.split(',') if x.strip()}))
+for actual in re.findall(r"'([^']+)' does not depend on any axioms",text):
+    records.append((actual,set()))
 for name in os.environ['NAMES'].split():
-    pattern=r"'"+re.escape(name)+r"' depends on axioms: \[([^\]]*)\]"
-    match=re.search(pattern,text)
-    if match:
-        axioms={x.strip() for x in match.group(1).split(',') if x.strip()}
-        assert axioms <= allowed,(name,axioms)
-    else:
-        assert re.search(r"'"+re.escape(name)+r"' does not depend on any axioms",text),name
-    print(name,'AXIOMS_PASS')
+    # Lean elaborates private theorem names with a file-specific prefix.
+    matches=[(actual,axioms) for actual,axioms in records
+             if actual==name or actual.endswith('.'+name)]
+    assert len(matches)==1,(name,matches)
+    actual,axioms=matches[0]
+    assert axioms <= allowed,(actual,axioms)
+    print(actual,'AXIOMS_PASS')
 print('FORM_RECOVERY_LEAN_QUALIFICATION_PASS')
 PY
