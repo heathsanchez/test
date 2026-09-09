@@ -36,6 +36,7 @@ theorem recovered_angle_gt_seven_tenths :
     (7 / 10 : ℝ) < Real.arctan 1 := by
   have h := CertificateGenesis.recovered_lower (show (0 : ℝ) ≤ 1 by norm_num)
   norm_num at h
+  rw [Real.arctan_one]
   linarith
 
 #print axioms baseChart_angle_bounds
