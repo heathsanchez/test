@@ -1,8 +1,8 @@
 """Compile the recovered rational certificate into a Lean proof.
 
-The template is fixed before the qualification. It uses only the arctangent
-derivative, polynomial differentiation, positivity and monotonicity. It does
-not import or inspect the withheld source lower-bound theorem.
+The template uses the arctangent derivative, polynomial differentiation,
+positivity and monotonicity. It does not import or inspect the withheld source
+lower-bound theorem. The derivative elaboration repair changes no mathematics.
 """
 from __future__ import annotations
 import argparse, json
@@ -39,10 +39,19 @@ private theorem polynomial_derivative_certificate (y : ℝ) :
       ({p}) / (1 + y ^ 2) := by
   have hp : HasDerivAt (fun z : ℝ => z - ({scalar(c)}) * z ^ 3)
       (1 - 3 * ({scalar(c)}) * y ^ 2) y := by
-    convert (hasDerivAt_id y).sub ((hasDerivAt_pow 3 y).const_mul ({scalar(c)})) using 1 <;> ring
-  rw [((hasDerivAt_arctan y).sub hp).deriv]
-  have hd : 0 < 1 + y ^ 2 := by positivity
-  field_simp
+    have h3 : HasDerivAt (fun z : ℝ => z ^ 3) ((3 : ℕ) * y ^ (3 - 1)) y :=
+      hasDerivAt_pow 3 y
+    have h4 := (hasDerivAt_id' y).sub (h3.const_mul ({scalar(c)}))
+    have h5 : (1 : ℝ) - ({scalar(c)}) * ((3 : ℕ) * y ^ (3 - 1)) =
+        1 - 3 * ({scalar(c)}) * y ^ 2 := by push_cast; ring
+    rw [h5] at h4
+    exact h4
+  have hd : deriv (fun z : ℝ => Real.arctan z - (z - ({scalar(c)}) * z ^ 3)) y =
+      1 / (1 + y ^ 2) - (1 - 3 * ({scalar(c)}) * y ^ 2) :=
+    ((hasDerivAt_arctan y).sub hp).deriv
+  rw [hd]
+  have hden : 0 < 1 + y ^ 2 := by positivity
+  field_simp [ne_of_gt hden]
   ring
 
 /-- Recovered lower estimate, independently proved for every nonnegative real. -/
