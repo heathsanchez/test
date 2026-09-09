@@ -1,0 +1,118 @@
+name: Held-out angle recovery
+on:
+  push:
+    branches: [mathgraph/heldout-angle-recovery-v1]
+    paths:
+      - .github/workflows/heldout-angle-recovery.yml
+      - audits/cross_domain/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Recover exact coefficient without the source proof
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered evidence
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/cross_domain/proof_bridge.py --test 2>&1 | tee evidence/baseline-tests.log
+          python audits/cross_domain/heldout_recovery.py --test 2>&1 | tee evidence/recovery-tests.log
+          python audits/cross_domain/heldout_recovery.py > evidence/recovery-result.json
+          python audits/cross_domain/emit_recovered.py --output recovered/RecoveredLower.lean --certificate recovered/certificate.json | tee evidence/synthesis.log
+          python - <<'PY'
+          import json,pathlib
+          r=json.load(open('evidence/recovery-result.json'))
+          c=json.load(open('recovered/certificate.json'))
+          assert r['before']['status']=='GRAMMAR_INSUFFICIENT'
+          assert r['after']['status']=='PASS'
+          assert r['heldout']=='PASS'
+          assert c['coefficient']==r['synthesis']['coefficient']
+          text=pathlib.Path('recovered/RecoveredLower.lean').read_text()
+          assert 'import Mathlib' in text
+          assert 'import ABAngleBounds' not in text
+          assert 'self_sub_cube_le_arctan' not in text
+          assert '\nsorry' not in text and '\nadmit' not in text
+          print('FROZEN_RECOVERY_PASS')
+          PY
+          sha256sum audits/cross_domain/experiment.py audits/cross_domain/proof_bridge.py audits/cross_domain/heldout_recovery.py audits/cross_domain/emit_recovered.py recovered/RecoveredLower.lean recovered/certificate.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-recovery-evidence
+          path: evidence/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: heldout-recovered-source
+          path: recovered/
+          if-no-files-found: error
+  target:
+    needs: finite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: heldout-recovered-source
+          path: recovered
+      - name: Check generated theorem and genuine polar-chart transfer
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: target
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/cross_domain/run_recovery_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-recovery-target
+          path: evidence/
+          if-no-files-found: warn
+  source:
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: heldout-recovered-source
+          path: recovered
+      - name: Compare frozen recovered theorem with original source
+        shell: bash
+        working-directory: upstream/euler-blowup
+        env:
+          TASK: source
+          EXPECTED_REF: d0124689230b58b4f86e7b90ac59de06404b3b6b
+        run: bash "$GITHUB_WORKSPACE/audit/audits/cross_domain/run_recovery_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: heldout-recovery-source
+          path: evidence/
+          if-no-files-found: warn
