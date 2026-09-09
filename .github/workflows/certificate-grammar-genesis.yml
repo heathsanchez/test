@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p recovered evidence
-          test "$(git hash-object audits/certificate_genesis/PROTOCOL.md)" =  $(git rev-parse 56b0dfa0ced532aac3fd9d50a2d81bf1d99aa13f:audits/certificate_genesis/PROTOCOL.md)
+          test "$(git hash-object audits/certificate_genesis/PROTOCOL.md)" = 8095d6dd8f67b0654afd4d76c8ffba891a6ac61c
           test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
           test "$(git hash-object audits/form_recovery/form_synthesis.py)" = 43143befff502cfe36ce5ad01aea2f8c69416c09
           export PYTHONPATH="$PWD/audits/certificate_genesis:$PWD/audits/form_recovery:$PWD/audits/cross_domain"
