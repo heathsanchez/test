@@ -15,7 +15,7 @@ from developmental_runtime import (
     lawful, route,
 )
 
-from .runtime import Evidence, Obligation, Repair, assessment_claim, canonical, digest
+from .runtime import Evidence, IRContract, Obligation, Repair, assessment_claim, canonical, digest
 from .lean_gate import LeanGate
 
 
@@ -86,13 +86,18 @@ class FiniteTableDomain:
 
 class FiniteAdapter:
     name = "finite"
+    contract = IRContract(
+        "FiniteCommitmentObligation", "ProbeOrContinuation", "FiniteTransitionResult",
+        "exact supplied finite transition table", "probe outcome and lawful action",
+        "LeanRefinementCertificate|FiniteReplayCertificate")
 
     def __init__(self, spec: Mapping[str, Any], gate: LeanGate | None = None):
         self.domain = FiniteTableDomain(spec)
         self.gate = gate
         authority = gate.verifier_id if gate is not None else "finite-only-v1"
         self.verifier_id = "finite-table-v2:" + digest(
-            {"model": self.domain.model_hash, "authority": authority})
+            {"model": self.domain.model_hash, "authority": authority,
+             "ir_contract": self.contract.id})
         self.registry = SynthesisRegistry()
         self.registry.register_probe_generator(lambda _d, _s: self.domain.candidates)
         self.engine = DevelopmentalRuntime(self.domain, self.registry)

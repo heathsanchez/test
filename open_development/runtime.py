@@ -31,18 +31,56 @@ class Obligation:
 
 
 @dataclass(frozen=True)
+class IRContract:
+    """Nominal typed boundary shared by every domain realization."""
+    obligation_type: str
+    program_type: str
+    result_type: str
+    semantics: str
+    observation: str
+    certificate_type: str
+
+    def __post_init__(self) -> None:
+        if any(not isinstance(value, str) or not value.strip()
+               for value in asdict(self).values()):
+            raise ValueError("IR contract fields must be nonempty type/semantic identities")
+
+    @property
+    def id(self) -> str:
+        return digest(asdict(self))
+
+
+@dataclass(frozen=True)
+class CapabilityContract:
+    input_type: str
+    output_type: str
+    semantics: str
+    certificate_type: str
+
+    def __post_init__(self) -> None:
+        if any(not isinstance(value, str) or not value.strip()
+               for value in asdict(self).values()):
+            raise ValueError("capability contract fields must be nonempty")
+
+
+@dataclass(frozen=True)
 class Repair:
     kind: str  # observation, capability, policy
     name: str
     payload: Any
     scope: str
     dependencies: tuple[str, ...] = ()
+    contract: CapabilityContract | None = None
 
     def __post_init__(self) -> None:
         if self.kind not in {"observation", "capability", "policy"}:
             raise ValueError("unknown repair kind")
         if not self.name or not self.scope or len(set(self.dependencies)) != len(self.dependencies):
             raise ValueError("invalid repair identity or dependencies")
+        if self.kind == "capability" and self.contract is None:
+            raise ValueError("executable capability requires a typed contract")
+        if self.kind != "capability" and self.contract is not None:
+            raise ValueError("only capabilities carry executable contracts")
         canonical(asdict(self))
 
     @property
@@ -92,6 +130,7 @@ class Adapter(Protocol):
     """Domain authority. A proposed repair is not a certificate."""
     name: str
     verifier_id: str
+    contract: IRContract
 
     def assess(self, state: Mapping[str, Any], obligation: Obligation) -> Evidence: ...
     def propose(self, state: Mapping[str, Any], obligation: Obligation,
@@ -177,6 +216,8 @@ class EvidenceStore:
 class Developer:
     """One transition for object, constructor and policy obligations."""
     def __init__(self, store: EvidenceStore, adapter: Adapter):
+        if not isinstance(getattr(adapter, "contract", None), IRContract):
+            raise ValueError("adapter requires a typed IR contract")
         self.store, self.adapter = store, adapter
 
     def _bound(self, evidence: Evidence, claim: str) -> bool:

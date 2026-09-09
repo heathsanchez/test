@@ -3,7 +3,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from open_development import Developer, EvidenceStore, Obligation, ProofCompositionAdapter
+from open_development import (Developer, EvidenceStore, Obligation,
+                              ProofCompositionAdapter)
 
 STAGES = json.loads((Path(__file__).resolve().parents[1] / "examples/proof.json").read_text())["stages"]
 
@@ -67,14 +68,20 @@ class CompositionGrowthTests(unittest.TestCase):
         self.assertEqual(len(adapter.verifier_id.rsplit(":", 1)[1]), 64)
 
     def test_program_cannot_claim_an_unrelated_dependency(self):
-        from open_development import Repair
+        from open_development import CapabilityContract, Repair
         with tempfile.TemporaryDirectory() as tmp:
             store = EvidenceStore(Path(tmp) / "dependency.sqlite")
             adapter = ProofCompositionAdapter()
             first = Developer(store, adapter).run(self.obligation(STAGES[0], 1))
             self.assertEqual(len(first.retained), 1)  # constructor only at this budget
             forged = Repair("capability", "forged", {"program_shape": "product(monomial,square)"},
-                            adapter.name, ("unrelated",))
+                            adapter.name, ("unrelated",), adapter.program_contract)
             evidence = adapter.verify(store.state(), self.obligation(STAGES[0], 1), forged)
+            self.assertEqual(evidence.verdict, "refuted")
+            wrong_type = Repair("capability", "wrong-type",
+                                {"program_shape": "product(monomial,square)"}, adapter.name,
+                                (first.retained[0],),
+                                CapabilityContract("Wrong", "Wrong", "Wrong", "Wrong"))
+            evidence = adapter.verify(store.state(), self.obligation(STAGES[0], 1), wrong_type)
             self.assertEqual(evidence.verdict, "refuted")
             store.close()

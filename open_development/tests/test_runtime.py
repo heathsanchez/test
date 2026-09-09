@@ -7,7 +7,8 @@ import sqlite3
 import tempfile
 import unittest
 
-from open_development import Developer, Evidence, EvidenceStore, Obligation, Repair
+from open_development import (CapabilityContract, Developer, Evidence, EvidenceStore,
+                              IRContract, Obligation, Repair)
 from open_development.finite import FiniteAdapter
 from open_development.runtime import assessment_claim, digest
 from open_development.lean_gate import certificate_source
@@ -20,6 +21,10 @@ class ToyAdapter:
     """A deterministic contract fixture, not an external scientific result."""
     name = "toy"
     verifier_id = "toy-exhaustive-v1"
+    contract = IRContract("ToyObligation", "ToyOperation", "ToyResult",
+                          "deterministic fixture", "fixture witness", "ToyCertificate")
+    capability_contract = CapabilityContract("ToyInput", "ToyOutput",
+                                             "fixture operation", "ToyCertificate")
 
     def __init__(self):
         self.calls = 0
@@ -37,7 +42,8 @@ class ToyAdapter:
     def propose(self, state, obligation, residual):
         kind = residual["missing"]
         dependencies = tuple(state["policies"].values()) if kind == "capability" else ()
-        yield Repair(kind, kind + "-v1", {"operation": kind}, self.name, dependencies)
+        contract = self.capability_contract if kind == "capability" else None
+        yield Repair(kind, kind + "-v1", {"operation": kind}, self.name, dependencies, contract)
 
     def verify(self, state, obligation, repair):
         self.calls += 1
@@ -227,11 +233,20 @@ class RuntimeTests(unittest.TestCase):
             certificate_source(adapter.domain.probes, (), "missing")
 
     def test_repair_identity_is_content_addressed(self):
-        a = Repair("capability", "x", {"b": 2, "a": 1}, "toy")
-        b = Repair("capability", "x", {"a": 1, "b": 2}, "toy")
+        contract = CapabilityContract("In", "Out", "identity", "Certificate")
+        a = Repair("capability", "x", {"b": 2, "a": 1}, "toy", contract=contract)
+        b = Repair("capability", "x", {"a": 1, "b": 2}, "toy", contract=contract)
         self.assertEqual(a.id, b.id)
         with self.assertRaises(ValueError):
             Repair("arbitrary", "x", {}, "toy")
+
+    def test_untyped_capability_and_adapter_are_rejected(self):
+        with self.assertRaises(ValueError):
+            Repair("capability", "x", {}, "toy")
+        class Untyped(ToyAdapter):
+            contract = None
+        with self.assertRaises(ValueError):
+            Developer(self.store, Untyped())
 
 
 if __name__ == "__main__":

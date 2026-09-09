@@ -12,7 +12,8 @@ from math import isqrt
 from pathlib import Path
 from typing import Any, Mapping
 
-from .runtime import Evidence, Obligation, Repair, assessment_claim, digest
+from .runtime import (CapabilityContract, Evidence, IRContract, Obligation, Repair,
+                      assessment_claim, digest)
 
 
 def norm(poly: Mapping[Any, Any]) -> dict[int, Q]:
@@ -134,6 +135,13 @@ BUILDERS = {"coefficientwise": coefficientwise,
 
 class ProofProcedureAdapter:
     name = "proof-procedure"
+    contract = IRContract(
+        "PolynomialNonnegativityObligation", "CertificateProcedure",
+        "VerifiedNonnegativity|Unknown", "exact rational polynomial replay",
+        "replayed polynomial equals obligation polynomial", "RationalCertificate")
+    procedure_contract = CapabilityContract(
+        "Polynomial×Domain", "Certificate", "exact certificate replay preserves polynomial",
+        "RationalCertificate")
 
     def __init__(self, candidates: tuple[str, ...] = tuple(BUILDERS)):
         if not candidates or any(name not in BUILDERS for name in candidates):
@@ -141,7 +149,8 @@ class ProofProcedureAdapter:
         self.candidates = candidates
         source = sha256(Path(__file__).read_bytes()).hexdigest()
         self.verifier_id = "exact-rational-certificate-v1:" + digest(
-            {"checker_source": source, "candidates": candidates})
+            {"checker_source": source, "candidates": candidates,
+             "ir_contract": self.contract.id})
 
     def _problem(self, obligation: Obligation):
         poly = norm(obligation.target["polynomial"])
@@ -181,10 +190,12 @@ class ProofProcedureAdapter:
         active = set(self._active(state))
         for name in self.candidates:
             if name not in active:
-                yield Repair("capability", name, {"procedure": name}, self.name)
+                yield Repair("capability", name, {"procedure": name}, self.name,
+                             contract=self.procedure_contract)
 
     def verify(self, state: Mapping[str, Any], obligation: Obligation, repair: Repair) -> Evidence:
-        if repair.kind != "capability" or repair.payload.get("procedure") not in BUILDERS:
+        if (repair.kind != "capability" or repair.payload.get("procedure") not in BUILDERS
+                or repair.contract != self.procedure_contract):
             return Evidence("unknown", repair.id, self.verifier_id)
         poly, domain = self._problem(obligation)
         certificate = BUILDERS[repair.payload["procedure"]](poly, domain)

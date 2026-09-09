@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Any, Mapping
 
 from .proof import half_line_square, interval_affine, mul, norm
-from .runtime import Evidence, Obligation, Repair, assessment_claim, digest
+from .runtime import (CapabilityContract, Evidence, IRContract, Obligation, Repair,
+                      assessment_claim, digest)
 
 
 def replay_program(program: Mapping[str, Any], domain: tuple[Any, ...]) -> dict[int, Q]:
@@ -69,9 +70,20 @@ def program_shape(program: Mapping[str, Any]) -> str:
 class ProofCompositionAdapter:
     """Develop a product constructor, then use it as retained executable means."""
     name = "proof-composition"
+    contract = IRContract(
+        "PolynomialNonnegativityObligation", "CertificateProgramTemplate",
+        "VerifiedNonnegativity|Unknown", "typed certificate-program interpretation",
+        "program replay equals obligation polynomial", "ProofProgramReplayCertificate")
+    constructor_contract = CapabilityContract(
+        "PrimitiveCertificate×PrimitiveCertificate", "ProductCertificateProgram",
+        "product of certified nonnegative programs is nonnegative", "ProductReplayCertificate")
+    program_contract = CapabilityContract(
+        "Polynomial×Domain", "CertificateProgram", "template instantiation preserves shape and replay",
+        "ProofProgramReplayCertificate")
     verifier_id = "exact-proof-program-replay-v1:" + digest({
         "nodes": ["monomial", "square", "affine", "product"], "arity": 2,
-        "checker_source": sha256(Path(__file__).read_bytes()).hexdigest()})
+        "checker_source": sha256(Path(__file__).read_bytes()).hexdigest(),
+        "ir_contract": contract.id})
 
     def _problem(self, obligation: Obligation):
         poly = norm(obligation.target["polynomial"])
@@ -116,20 +128,23 @@ class ProofCompositionAdapter:
 
     def propose(self, state: Mapping[str, Any], obligation: Obligation, residual: Any):
         if residual.get("class") == "MISSING_COMPOSITION":
-            yield Repair("capability", "binary-product", {"constructor": "binary_product"}, self.name)
+            yield Repair("capability", "binary-product", {"constructor": "binary_product"}, self.name,
+                         contract=self.constructor_contract)
         elif residual.get("class") == "PROGRAM_CONSTRUCTED":
             yield Repair("capability", residual["program_shape"],
                          {"program_shape": residual["program_shape"]}, self.name,
-                         (residual["constructor"],))
+                         (residual["constructor"],), self.program_contract)
 
     def verify(self, state: Mapping[str, Any], obligation: Obligation, repair: Repair) -> Evidence:
         poly, domain = self._problem(obligation)
         program = construct_product(poly, domain)
         constructor = self._constructor(state)
         is_constructor = (repair.payload.get("constructor") == "binary_product"
-                          and not repair.dependencies)
+                          and not repair.dependencies
+                          and repair.contract == self.constructor_contract)
         is_program = (program is not None and repair.payload.get("program_shape") == program_shape(program)
-                      and constructor is not None and repair.dependencies == (constructor,))
+                      and constructor is not None and repair.dependencies == (constructor,)
+                      and repair.contract == self.program_contract)
         valid = (repair.kind == "capability" and (is_constructor or is_program)
                  and program is not None and check_program(poly, domain, program))
         if not valid:
