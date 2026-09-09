@@ -1,0 +1,414 @@
+name: Open Development Core
+
+on:
+  push:
+    branches: [open-development-core-v1]
+  pull_request:
+    paths:
+      - 'open_development/**'
+      - '.github/workflows/open-development-core.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python contract tests
+        run: python -m unittest discover -s open_development/tests -v
+      - name: Qualify executable retained-parent intervention
+        run: python -m open_development.causal_reuse > causal-reuse-result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: executable-causal-reuse
+          path: causal-reuse-result.json
+          if-no-files-found: error
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check pinned MSI kernel and developmental bridge
+        run: bash open_development/lean/check.sh
+      - name: Verify retained finite development through Lean
+        run: |
+          python - <<'PYDEMO'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation
+          from open_development.finite import FiniteAdapter
+          from open_development.lean_gate import LeanGate
+          spec = json.loads(Path('open_development/examples/finite.json').read_text())
+          with tempfile.TemporaryDirectory() as tmp:
+              store = EvidenceStore(Path(tmp) / 'state.sqlite')
+              gate = LeanGate()
+              adapter = FiniteAdapter(spec, gate)
+              dev = Developer(store, adapter)
+              first = dev.run(Obligation('finite', {'task': 'first', 'actual_world': '1'}, 1))
+              assert first.verdict == 'verified' and len(first.retained) == 1, {
+                  'verdict': first.verdict, 'residual': first.evidence.residual,
+                  'lean_error': gate.last_error}
+              cert = store.state()['capabilities'][first.retained[0]]['evidence']['certificate']['lean']
+              assert cert['theorems'] == ['candidate_refines', 'candidate_admitted']
+              second = dev.run(Obligation('finite', {'task': 'second', 'actual_world': '1'}, 0))
+              assert second.verdict == 'verified' and not second.retained
+              store.revoke(first.retained[0], 'exact ancestor ablation')
+              cold = dev.run(Obligation('finite', {'task': 'first', 'actual_world': '1'}, 0))
+              assert cold.verdict == 'unknown'
+              Path('open-development-result.json').write_text(json.dumps({
+                  'first': first.verdict, 'retained': first.retained,
+                  'second': second.verdict, 'second_new_capabilities': second.retained,
+                  'ablated': cold.verdict, 'lean': cert['verifier'],
+                  'evidence_head': store.events()[-1]['type']}, indent=2))
+              store.close()
+          PYDEMO
+      - name: Qualify proof-procedure self-application
+        run: |
+          python - <<'PYPROOF'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ProofProcedureAdapter
+          stages = json.loads(Path('open_development/examples/proof.json').read_text())['stages']
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'proof.sqlite'
+              store = EvidenceStore(path)
+              adapter = ProofProcedureAdapter()
+              cold_first = Developer(store, adapter).run(Obligation('proof-procedure', stages[0], 0, 'method'))
+              first = Developer(store, adapter).run(Obligation('proof-procedure', stages[0], 3, 'method'))
+              store.close()
+              store = EvidenceStore(path)
+              cold_second = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 0, 'method'))
+              second = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 3, 'method'))
+              assert (cold_first.verdict, first.verdict, cold_second.verdict, second.verdict) == (
+                  'unknown', 'verified', 'unknown', 'verified')
+              procedures = [store.state()['capabilities'][rid]['attachment']['procedure']
+                            for rid in first.retained + second.retained]
+              assert procedures == ['half_line_square', 'interval_affine']
+              store.revoke(second.retained[0], 'exact held-out procedure ablation')
+              ablated = Developer(store, adapter).run(Obligation('proof-procedure', stages[1], 0, 'method'))
+              assert ablated.verdict == 'unknown'
+              Path('proof-procedure-result.json').write_text(json.dumps({
+                  'claim': 'bounded verifier-guided proof-procedure development',
+                  'cold': [cold_first.verdict, cold_second.verdict],
+                  'warm': [first.verdict, second.verdict],
+                  'procedures': procedures, 'restart': True,
+                  'exact_ablation': ablated.verdict,
+                  'verifier': adapter.verifier_id,
+                  'limitations': ['supplied finite constructor grammar',
+                                  'exact rational polynomial domain only',
+                                  'not unrestricted self-development']}, indent=2))
+              store.close()
+          PYPROOF
+      - name: Qualify constructor-enabled capability growth
+        run: |
+          python - <<'PYGROWTH'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ProofCompositionAdapter
+          stages = json.loads(Path('open_development/examples/proof.json').read_text())['stages']
+          def obligation(stage, budget):
+              return Obligation('proof-composition', stage, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'growth.sqlite'
+              store = EvidenceStore(path)
+              adapter = ProofCompositionAdapter()
+              cold = Developer(store, adapter).run(obligation(stages[1], 0))
+              first = Developer(store, adapter).run(obligation(stages[0], 2))
+              store.close()
+              store = EvidenceStore(path)
+              second = Developer(store, adapter).run(obligation(stages[1], 1))
+              assert cold.verdict == 'unknown' and first.verdict == 'verified'
+              assert second.verdict == 'verified' and len(second.retained) == 1
+              program_record = store.state()['capabilities'][second.retained[0]]
+              assert program_record['repair']['dependencies'] == [first.retained[0]]
+              third = {'polynomial': {'1': '1', '3': '-1'},
+                       'domain': ['interval', '0', '1']}
+              store.close()
+              store = EvidenceStore(path)
+              cold_third = Developer(store, adapter).run(obligation(third, 0))
+              third_result = Developer(store, adapter).run(obligation(third, 1))
+              assert cold_third.verdict == 'unknown'
+              assert third_result.verdict == 'verified' and len(third_result.retained) == 1
+              third_record = store.state()['capabilities'][third_result.retained[0]]
+              assert third_record['repair']['dependencies'] == [second.retained[0]]
+              fourth = {'polynomial': {'1': '2', '2': '1', '3': '-1'},
+                        'domain': ['interval', '0', '1']}
+              store.close()
+              store = EvidenceStore(path)
+              fourth_result = Developer(store, adapter).run(obligation(fourth, 0))
+              assert fourth_result.verdict == 'verified' and not fourth_result.retained
+              assert fourth_result.evidence.certificate['retained_program'] == third_result.retained[0]
+              removed = store.revoke(first.retained[0], 'constructor removal ablation')
+              ablated = Developer(store, adapter).run(obligation(fourth, 0))
+              assert ablated.verdict == 'unknown'
+              assert set(removed) == set(first.retained + second.retained + third_result.retained)
+              Path('capability-growth-result.json').write_text(json.dumps({
+                  'claim': 'bounded four-generation dependent capability growth',
+                  'cold_O2': cold.verdict, 'O1': first.verdict,
+                  'retained_constructor': first.retained[0],
+                  'retained_O1_program': first.retained[1],
+                  'O2': second.verdict, 'retained_O2_program': second.retained[0],
+                  'O2_program_dependency': program_record['repair']['dependencies'],
+                  'second_restart': True,
+                  'cold_O3': cold_third.verdict,
+                  'O3_acquired': third_result.verdict,
+                  'retained_O3_program': third_result.retained[0],
+                  'O3_program_dependency': third_record['repair']['dependencies'],
+                  'third_restart': True,
+                  'unlisted_O4_zero_acquisition_budget': fourth_result.verdict,
+                  'O4_reused_program': fourth_result.evidence.certificate['retained_program'],
+                  'removal_ablation': ablated.verdict,
+                  'limitations': ['supplied primitive nodes', 'binary product only',
+                                  'exact rational polynomial domain']}, indent=2))
+              store.close()
+          PYGROWTH
+      - name: Qualify persistent native constructor genesis
+        run: |
+          python - <<'PYNATIVE'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, NativeConstructorAdapter, Obligation
+          from open_development.native_constructor import old_closure_certificate
+          tree = {'label': 'root', 'children': [
+              {'label': 'b', 'children': []},
+              {'label': 'a', 'children': [{'label': 'leaf', 'children': []}]}]}
+          def obligation(target, budget):
+              return Obligation('native-constructor', target, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'native.sqlite'
+              store = EvidenceStore(path)
+              adapter = NativeConstructorAdapter()
+              source_target = {'task': 'source', 'package': '@esri/arcgis-rest-portal@4.11.0'}
+              cold = Developer(store, adapter).run(obligation(source_target, 0))
+              source = Developer(store, adapter).run(obligation(source_target, 237))
+              constructor = source.retained[0]
+              store.close()
+              store = EvidenceStore(path)
+              transfer = Developer(store, adapter).run(obligation(
+                  {'task': 'transfer', 'package': 'tdesign-vue-next@1.20.5'}, 0))
+              fold = Developer(store, adapter).run(obligation(
+                  {'task': 'acquire-fold', 'tree': tree, 'expected': 4}, 1))
+              store.close()
+              heldout_tree = {'label': 'x', 'children': [tree, {'label': 'z', 'children': []}]}
+              store = EvidenceStore(path)
+              heldout = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-fold', 'tree': heldout_tree, 'expected': 6}, 0))
+              removed = store.revoke(constructor, 'native constructor ancestor ablation')
+              ablated = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-fold', 'tree': heldout_tree, 'expected': 6}, 0))
+              closure = old_closure_certificate()
+              Path('native-constructor-result.json').write_text(json.dumps({
+                  'claim': 'persistent integration of frozen bounded native constructor genesis',
+                  'cold': cold.verdict, 'old_ast_count': closure['enumerated'],
+                  'old_max_direct_arity': closure['maximum_direct_arity'],
+                  'deciding_arity': closure['deciding_array_arity'],
+                  'candidate_count': 237, 'unique_survivors': 1,
+                  'source': source.verdict, 'transfer': transfer.verdict,
+                  'dependent_acquisition': fold.verdict,
+                  'heldout_zero_budget': heldout.verdict, 'restart': True,
+                  'ablation': ablated.verdict, 'cascade_size': len(removed),
+                  'historical_precommit': adapter.verifier_id,
+                  'historical_proposal_sha256': '02adbed53296089e71385b5a03513f08396566eac5929982fce1cd7c56dae62d',
+                  'limitations': ['frozen FRESH_VAR/MU/ONE/SUM/PROD/PARAM substrate',
+                                  'historical npm selection not rerun',
+                                  'narrow recursive ordered-array family']}, indent=2))
+              store.close()
+          PYNATIVE
+      - name: Qualify persistent reference-identity genesis
+        run: |
+          python - <<'PYREFERENCE'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation, ReferenceIdentityAdapter
+          from open_development.reference_identity import candidate_passes
+          source_graph = {'labels': ['root', 'same', 'same', 'shared'],
+                          'edges': [[1, 2], [3], [3], [0]], 'root': 0}
+          transfer_graph = {'labels': ['entry', 'left', 'right', 'loop'],
+                            'edges': [[1, 2], [3], [3], [3]], 'root': 0}
+          dependent_graph = {'labels': ['r', 'a', 'b', 'sink'],
+                             'edges': [[1, 2], [2], [1, 3], [3]], 'root': 0}
+          heldout_graph = {'labels': ['p', 'q', 'r', 'u', 'v'],
+                           'edges': [[1], [2], [0, 3], [4], [3]], 'root': 0}
+          heldout_fork = {'labels': ['root', 'left', 'right'],
+                          'edges': [[1, 2], [], []], 'root': 0}
+          def obligation(target, budget):
+              return Obligation('reference-identity', target, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'reference.sqlite'
+              adapter = ReferenceIdentityAdapter()
+              store = EvidenceStore(path)
+              source_target = {'task': 'source', 'oracle': 'pickle-protocol-5',
+                               'graph': source_graph}
+              cold = Developer(store, adapter).run(obligation(source_target, 0))
+              source = Developer(store, adapter).run(obligation(source_target, 12))
+              constructor = source.retained[0]
+              store.close()
+              store = EvidenceStore(path)
+              transfer = Developer(store, adapter).run(obligation(
+                  {'task': 'transfer', 'oracle': 'deepcopy', 'graph': transfer_graph}, 0))
+              dependent = Developer(store, adapter).run(obligation(
+                  {'task': 'acquire-scc', 'graph': dependent_graph,
+                   'expected': [1, 1, 2]}, 1))
+              procedure = dependent.retained[0]
+              assert store.state()['capabilities'][procedure]['repair']['dependencies'] == [constructor]
+              store.close()
+              lineage = []
+              for task, expected in [
+                  ('acquire-condensation', (3, [(0, 1), (1, 2)])),
+                  ('acquire-generations', [[0], [1], [2]]),
+                  ('acquire-semiconnected', True)]:
+                  store = EvidenceStore(path)
+                  result = Developer(store, adapter).run(obligation(
+                      {'task': task, 'graph': dependent_graph, 'expected': expected}, 1))
+                  assert result.verdict == 'verified' and len(result.retained) == 1
+                  lineage.extend(result.retained)
+                  store.close()
+              store = EvidenceStore(path)
+              heldout = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-scc', 'graph': heldout_graph, 'expected': [2, 3]}, 0))
+              heldout_lineage = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-semiconnected', 'graph': heldout_fork,
+                   'expected': False}, 0))
+              removed = store.revoke(constructor, 'reference constructor ancestor ablation')
+              ablated = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-scc', 'graph': heldout_graph, 'expected': [2, 3]}, 0))
+              ablated_lineage = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-semiconnected', 'graph': heldout_fork,
+                   'expected': False}, 0))
+              no_memo = candidate_passes(('identity', 'none', False))
+              tag_key = candidate_passes(('tag', 'preorder', True))
+              postorder = candidate_passes(('identity', 'postorder', True))
+              assert cold.verdict == 'unknown' and source.verdict == 'verified'
+              assert transfer.verdict == dependent.verdict == heldout.verdict == 'verified'
+              assert heldout_lineage.verdict == 'verified'
+              assert not no_memo and not tag_key and not postorder
+              assert ablated.verdict == ablated_lineage.verdict == 'unknown'
+              assert set(removed) == {constructor, procedure, *lineage}
+              Path('reference-identity-result.json').write_text(json.dumps({
+                  'claim': 'prospective persistent reference-identity constructor growth',
+                  'cold': cold.verdict, 'candidate_count': 12, 'unique_survivors': 1,
+                  'source': source.verdict, 'source_oracle': 'pickle protocol 5',
+                  'transfer': transfer.verdict, 'transfer_oracle': 'copy.deepcopy',
+                  'dependent_acquisition': dependent.verdict,
+                  'heldout_zero_budget': heldout.verdict,
+                  'graph_lineage': ['scc', 'condensation', 'generations', 'semiconnected'],
+                  'lineage_acquisitions': 4,
+                  'heldout_semiconnected_zero_budget': heldout_lineage.verdict,
+                  'first_restart': True, 'second_restart': True,
+                  'no_memo_control': no_memo, 'tag_key_control': tag_key,
+                  'postorder_control': postorder, 'ablation': ablated.verdict,
+                  'lineage_ablation': ablated_lineage.verdict,
+                  'cascade_size': len(removed),
+                  'historical_evidence_identity': {
+                      'deepcopy_cases': 3000, 'cloudpickle_cases': 3000,
+                      'networkx_scc_cases': 5000,
+                      'tree_only_failures': [939, 1000]},
+                  'limitations': ['supplied allocation/identity/table/link substrate',
+                                  'new stdlib tasks designed in this integration',
+                                  'historical external corpora not rerun']}, indent=2))
+              store.close()
+          PYREFERENCE
+      - name: Build and validate release evidence
+        run: |
+          python -m open_development.release \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-commit "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --finite open-development-result.json \
+            --proof proof-procedure-result.json \
+            --growth capability-growth-result.json \
+            --native native-constructor-result.json \
+            --reference reference-identity-result.json \
+            --output release-evidence.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: open-development-core-v1
+          path: |
+            open-development-result.json
+            proof-procedure-result.json
+            capability-growth-result.json
+            native-constructor-result.json
+            reference-identity-result.json
+            release-evidence.json
+          if-no-files-found: ignore
+
+  proof-program-semantics:
+    needs: core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Check typed proof-program semantics in Lean
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence" .open-development
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/open-development-elan.sh
+          sh /tmp/open-development-elan.sh -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$(cat lean-toolchain)"
+          elan default "$(cat lean-toolchain)"
+          if ! lake exe cache get > "$GITHUB_WORKSPACE/evidence/cache-first.log" 2>&1; then
+            grep -q 'Dependency Mathlib uses a different lean-toolchain' "$GITHUB_WORKSPACE/evidence/cache-first.log"
+            cp .lake/packages/mathlib/lean-toolchain lean-toolchain
+            elan toolchain install "$(cat lean-toolchain)"
+            elan default "$(cat lean-toolchain)"
+            lake exe cache get > "$GITHUB_WORKSPACE/evidence/cache.log" 2>&1
+          fi
+          cp "$GITHUB_WORKSPACE/audit/open_development/lean_mathlib/"*.lean .open-development/
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean -o "$1/ProcedureRules.olean" "$1/ProcedureRules.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/procedure-rules.log" 2>&1
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean -o "$1/ProgramRules.olean" "$1/ProgramRules.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/program-rules.log" 2>&1
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean "$1/TypedProgramSemantics.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/typed-program.log" 2>&1
+          cat "$GITHUB_WORKSPACE/evidence/"*-rules.log "$GITHUB_WORKSPACE/evidence/typed-program.log"
+          python - <<'PYLEAN'
+          import pathlib,re
+          root=pathlib.Path.cwd().parent/'evidence'
+          text='\n'.join(p.read_text() for p in root.glob('*.log'))
+          names=[
+            'OpenDevelopment.ProcedureRules.intervalAffine_sound',
+            'OpenDevelopment.ProcedureRules.product_sound',
+            'OpenDevelopment.ProgramRules.sound',
+            'OpenDevelopment.TypedProgramSemantics.o2_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o3_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o2_sound',
+            'OpenDevelopment.TypedProgramSemantics.o3_sound']
+          names += [
+            'OpenDevelopment.TypedProgramSemantics.acquiredO3_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o4_commutes',
+            'OpenDevelopment.TypedProgramSemantics.acquiredO3_sound',
+            'OpenDevelopment.TypedProgramSemantics.o4_sound']
+          allowed={'propext','Quot.sound','Classical.choice'}
+          records={name:{x.strip() for x in raw.split(',') if x.strip()}
+                   for name,raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",text)}
+          records.update({name:set() for name in re.findall(r"'([^']+)' does not depend on any axioms",text)})
+          for name in names:
+            assert name in records,(name,sorted(records))
+            assert records[name] <= allowed,(name,records[name])
+            print(name,'AXIOMS_PASS')
+          print('TYPED_PROGRAM_SEMANTICS_LEAN_PASS')
+          PYLEAN
+          lean --version > "$GITHUB_WORKSPACE/evidence/lean-version.txt"
+          git -C .lake/packages/mathlib rev-parse HEAD > "$GITHUB_WORKSPACE/evidence/mathlib-commit.txt"
+          sha256sum "$GITHUB_WORKSPACE/audit/open_development/lean_mathlib/"*.lean > "$GITHUB_WORKSPACE/evidence/source-hashes.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: typed-program-semantics
+          path: evidence/
+          if-no-files-found: error

@@ -1,0 +1,65 @@
+name: Prospective Exaptation Strict Controls
+
+on:
+  push:
+    branches: [open-development-core-v1]
+    paths:
+      - 'open_development/exaptation_strict.py'
+      - 'open_development/STRICT_EXAPTATION_PROTOCOL_V1.md'
+      - '.github/workflows/prospective-exaptation-strict.yml'
+      - 'open_development/FINAL_BOUNDED_CONVERGENCE_REPORT.md'
+  pull_request:
+    paths:
+      - 'open_development/exaptation_strict.py'
+      - 'open_development/STRICT_EXAPTATION_PROTOCOL_V1.md'
+      - '.github/workflows/prospective-exaptation-strict.yml'
+      - 'open_development/FINAL_BOUNDED_CONVERGENCE_REPORT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  strict-exaptation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run strict prospective exaptation controls
+        run: python -m open_development.exaptation_strict > strict-exaptation-result.json
+      - name: Validate completion-delta invariants
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d = json.loads(Path('strict-exaptation-result.json').read_text())
+          assert d['outcome'] == 'VERIFIED_EXAPTATION_STRICT'
+          assert d['workload_was_frozen_in_parent_commit'] is True
+          assert d['classification'] == {'reuse': False, 'exaptation': True, 'expansion': False}
+          assert d['B']['cold'] == 'unknown'
+          r = d['B']['typed_residual']
+          assert r['type'] == 'ResidualEnvelope/v1'
+          assert r['diagnosis'] == 'capability_failure'
+          assert r['necessary_constraint']
+          assert d['heldout']['acquisition_budget'] == 0
+          assert d['heldout']['verdict'] == 'verified'
+          assert d['controls']['same_size_sham_K_B'] == 'refuted'
+          assert d['controls']['wrong_direction_adapter'] == 'refuted'
+          assert d['controls']['missing_K_A_executable_body'] == 'unknown'
+          assert d['controls']['unrelated_removal'] == 'verified'
+          assert d['controls']['raw_history_reconstruction_same_B_budget'] == 'unknown'
+          assert d['controls']['fixed_policy_matched_B_budget']['B_acquisition_budget'] == 2
+          assert d['controls']['fixed_policy_matched_B_budget']['verdict'] == 'unknown'
+          assert d['controls']['restored_lineage'] == 'verified'
+          c = d['developmental_cost']
+          assert c['C_total'] == sum(c[k] for k in (
+              'C_construction','C_verification','C_activation','C_execution','C_memory','C_recovery'))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-exaptation-strict-v1
+          path: strict-exaptation-result.json
+          if-no-files-found: error

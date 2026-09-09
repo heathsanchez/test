@@ -1,0 +1,140 @@
+name: Open Development Release V2
+
+on:
+  push:
+    branches: [open-development-core-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  release-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run contract tests
+        run: python -m unittest discover -s open_development/tests -v
+
+      - name: Re-run executable causal and strict exaptation gates
+        run: |
+          python -m open_development.causal_reuse > causal-reuse-result.json
+          python -m open_development.exaptation_strict > strict-exaptation-result.json
+
+      - name: Wait for same-commit core authority
+        id: core
+        shell: bash
+        run: |
+          set -euo pipefail
+          core_id=""
+          for _ in $(seq 1 90); do
+            payload="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/open-development-core.yml/runs?head_sha=$GITHUB_SHA&event=push&per_page=10")"
+            failed="$(jq -r '[.workflow_runs[] | select(.head_sha==env.GITHUB_SHA and .status=="completed" and .conclusion!="success")] | length' <<<"$payload")"
+            if [ "$failed" -gt 0 ]; then
+              jq -r '.workflow_runs[] | select(.head_sha==env.GITHUB_SHA) | [.id,.status,.conclusion] | @tsv' <<<"$payload"
+              echo "same-commit Open Development Core authority failed"
+              exit 1
+            fi
+            core_id="$(jq -r '.workflow_runs[] | select(.head_sha==env.GITHUB_SHA and .status=="completed" and .conclusion=="success") | .id' <<<"$payload" | head -n1)"
+            if [ -n "$core_id" ] && [ "$core_id" != "null" ]; then
+              break
+            fi
+            sleep 10
+          done
+          test -n "$core_id" && test "$core_id" != "null"
+          echo "core_run_id=$core_id" >> "$GITHUB_OUTPUT"
+          echo "$core_id" > core-run-id.txt
+          gh run download "$core_id" -n open-development-core-v1 -D core-authority
+          gh run download "$core_id" -n typed-program-semantics -D proof-semantics-authority
+          test -f core-authority/release-evidence.json
+          test -f proof-semantics-authority/typed-program.log
+
+      - name: Summarize independent proof-semantics authority
+        run: |
+          python - <<'PY'
+          import hashlib, json, pathlib, re
+          root = pathlib.Path('proof-semantics-authority')
+          text = '\n'.join(p.read_text() for p in root.glob('*.log'))
+          names = [
+              'OpenDevelopment.ProcedureRules.intervalAffine_sound',
+              'OpenDevelopment.ProcedureRules.product_sound',
+              'OpenDevelopment.ProgramRules.sound',
+              'OpenDevelopment.TypedProgramSemantics.o2_commutes',
+              'OpenDevelopment.TypedProgramSemantics.o3_commutes',
+              'OpenDevelopment.TypedProgramSemantics.o2_sound',
+              'OpenDevelopment.TypedProgramSemantics.o3_sound',
+              'OpenDevelopment.TypedProgramSemantics.acquiredO3_commutes',
+              'OpenDevelopment.TypedProgramSemantics.o4_commutes',
+              'OpenDevelopment.TypedProgramSemantics.acquiredO3_sound',
+              'OpenDevelopment.TypedProgramSemantics.o4_sound',
+          ]
+          allowed = {'propext', 'Quot.sound', 'Classical.choice'}
+          records = {name: {x.strip() for x in raw.split(',') if x.strip()}
+                     for name, raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]", text)}
+          records.update({name: set() for name in re.findall(r"'([^']+)' does not depend on any axioms", text)})
+          for name in names:
+              assert name in records, (name, sorted(records))
+              assert records[name] <= allowed, (name, records[name])
+          lean_version = (root / 'lean-version.txt').read_text().strip()
+          mathlib_commit = (root / 'mathlib-commit.txt').read_text().strip()
+          source_hashes = (root / 'source-hashes.txt').read_bytes()
+          out = {
+              'result': 'TYPED_PROGRAM_SEMANTICS_LEAN_PASS',
+              'axioms_pass_count': len(names),
+              'theorems': names,
+              'allowed_axioms': ['Classical.choice', 'Quot.sound', 'propext'],
+              'lean_version': lean_version,
+              'mathlib_commit': mathlib_commit,
+              'source_hashes_sha256': hashlib.sha256(source_hashes).hexdigest(),
+          }
+          pathlib.Path('proof-semantics-summary.json').write_text(json.dumps(out, indent=2, sort_keys=True) + '\n')
+          print(out['result'], out['source_hashes_sha256'])
+          PY
+
+      - name: Build one fail-closed release v2 authority
+        run: |
+          python -m open_development.release \
+            --repository "$GITHUB_REPOSITORY" \
+            --source-commit "$GITHUB_SHA" \
+            --run-id "$GITHUB_RUN_ID" \
+            --core-run-id "${{ steps.core.outputs.core_run_id }}" \
+            --core-release core-authority/release-evidence.json \
+            --causal causal-reuse-result.json \
+            --exaptation strict-exaptation-result.json \
+            --semantics proof-semantics-summary.json \
+            --output release-evidence-v2.json
+
+      - name: Verify frozen release identity
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          from open_development.release import validate_release_v2
+          m = json.loads(Path('release-evidence-v2.json').read_text())
+          validate_release_v2(m)
+          assert m['source_commit'] == '${{ github.sha }}'
+          print('OPEN_DEVELOPMENT_RELEASE_V2_PASS', m['evidence_digest'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open-development-release-v2
+          path: |
+            release-evidence-v2.json
+            core-run-id.txt
+            causal-reuse-result.json
+            strict-exaptation-result.json
+            proof-semantics-summary.json
+            core-authority/release-evidence.json
+            proof-semantics-authority/lean-version.txt
+            proof-semantics-authority/mathlib-commit.txt
+            proof-semantics-authority/source-hashes.txt
+          if-no-files-found: error
