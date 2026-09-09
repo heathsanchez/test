@@ -1,0 +1,128 @@
+name: External MiniF2F Post-Freeze Exaptation
+
+on:
+  push:
+    branches: [open-development-core-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-exaptation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Check out frozen developer
+        uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check pre-frozen protocol implementation
+        run: |
+          python -m unittest open_development.tests.test_external_minif2f -v
+          python -m unittest open_development.tests.test_residual -v
+
+      - name: Acquire and freeze source before external test bytes exist
+        run: |
+          set -euo pipefail
+          test ! -e external
+          python -m open_development.external_minif2f freeze-source \
+            --state external-source-state.sqlite \
+            --freeze-sha "$GITHUB_SHA" \
+            --output external-source-freeze.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('external-source-freeze.json').read_text())
+          assert d['freeze_commit'] == '${{ github.sha }}'
+          assert d['external_test_bytes_seen'] is False
+          assert d['K_A_scope'] == 'proof-procedure'
+          print('EXTERNAL_SOURCE_FREEZE_PASS', d['K_A'], d['freeze_digest'])
+          PY
+
+      - name: Check out independently maintained test corpus after source freeze
+        uses: actions/checkout@v4
+        with:
+          repository: google-deepmind/miniF2F
+          ref: f0a20e14c1eeccd859d51bb4c2b3ee487889c303
+          path: external
+          persist-credentials: false
+
+      - name: Verify external corpus identity
+        run: |
+          set -euo pipefail
+          test "$(git -C external rev-parse HEAD)" = "f0a20e14c1eeccd859d51bb4c2b3ee487889c303"
+          test "$(git -C external hash-object MiniF2F/Test.lean)" = "7d3a756cb3da856fc26096c8da440f086653cfc1"
+          printf '%s\n' "$(sha256sum external/MiniF2F/Test.lean)" > external-test-sha256.txt
+          cat external-test-sha256.txt
+
+      - name: Select B after freeze and run unchanged developmental transition
+        run: |
+          python -m open_development.external_minif2f qualify \
+            --state external-source-state.sqlite \
+            --source-manifest external-source-freeze.json \
+            --test external/MiniF2F/Test.lean \
+            --freeze-sha "$GITHUB_SHA" \
+            --selection-nonce "$GITHUB_RUN_ID" \
+            --corpus-commit f0a20e14c1eeccd859d51bb4c2b3ee487889c303 \
+            --test-blob-sha1 7d3a756cb3da856fc26096c8da440f086653cfc1 \
+            --output external-minif2f-result.json
+
+      - name: Validate protocol outcome without promoting UNKNOWN
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('external-minif2f-result.json').read_text())
+          allowed={
+            'VERIFIED_EXTERNALLY_SELECTED_EXAPTATION',
+            'UNKNOWN_EXTERNAL_CORPUS_INSUFFICIENT',
+            'UNKNOWN_EXTERNAL_DEVELOPMENT',
+          }
+          assert d['outcome'] in allowed, d['outcome']
+          assert d['freeze_commit'] == '${{ github.sha }}'
+          assert d['selection_nonce'] == '${{ github.run_id }}'
+          if d['outcome'] == 'VERIFIED_EXTERNALLY_SELECTED_EXAPTATION':
+            assert d['source_external_bytes_seen_at_freeze'] is False
+            assert d['external_repository'] == 'google-deepmind/miniF2F'
+            assert d['external_commit'] == 'f0a20e14c1eeccd859d51bb4c2b3ee487889c303'
+            assert d['external_test_blob_sha1'] == '7d3a756cb3da856fc26096c8da440f086653cfc1'
+            assert d['candidate_count'] >= 2
+            assert d['B_index'] != d['heldout_index']
+            assert d['classification'] == {'reuse': False, 'exaptation': True, 'expansion': False}
+            assert d['cold'] == 'unknown'
+            assert d['typed_residual']['type'] == 'ResidualEnvelope/v1'
+            assert d['typed_residual']['class'] == 'GLOBAL_ROLE_REQUALIFICATION_REQUIRED'
+            assert d['warm'] == 'verified'
+            assert d['heldout_acquisition_budget'] == 0
+            assert d['heldout_verdict'] == 'verified'
+            assert d['heldout_execution_trace'] == [d['K_C'], d['K_B'], d['K_A']]
+            c=d['controls']
+            assert c['same_size_sham_K_B'] == 'refuted'
+            assert c['wrong_direction_adapter'] == 'refuted'
+            assert c['missing_K_A_executable_identity'] == 'unknown'
+            assert c['unrelated_removal'] == 'verified'
+            assert c['ancestor_revocation_heldout'] == 'unknown'
+            assert c['raw_history_reconstruction_same_B_budget'] == 'unknown'
+            assert c['matched_fixed_policy']['B_acquisition_budget'] == 2
+            assert c['matched_fixed_policy']['verdict'] == 'unknown'
+            assert c['restored_source_same_identity'] is True
+            assert c['restored_development'] == 'verified'
+            assert c['restored_heldout'] == 'verified'
+            assert c['history_preserved'] is True
+            print('EXTERNAL_MINIF2F_EXAPTATION_PASS', d['B']['name'], '->', d['heldout']['name'])
+          else:
+            print('EXTERNAL_MINIF2F_PROTOCOL_PASS_SCIENTIFIC_UNKNOWN', d['outcome'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: external-minif2f-post-freeze-v1
+          path: |
+            external-source-freeze.json
+            external-minif2f-result.json
+            external-test-sha256.txt
+          if-no-files-found: error
