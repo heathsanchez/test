@@ -3,29 +3,43 @@
 **Programme:** Open Development / MSI executable core  
 **Repository:** `heathsanchez/test`  
 **Branch:** `open-development-core-v1`  
-**Deciding exaptation commit:** `17057ab3667bbc2296a8307cd9e125f863e8deb4`  
-**Regression-integration commit:** `eff60776f64a901d83828285161677a723a7d7ee`  
-**Strict completion-delta commit:** `0d577320a5b6da94ee8fc2542b7d512ea69859d0`
+**Deciding implementation commit:** `0a81965cc6faac3ee6e67ed4f8060e92e6458f7e`  
+**Release schema:** `open-development-release/v3`
 
-## 1. Claim boundary
+## 1. Final supported claim
 
-The strongest result licensed by the present evidence is:
+The strongest claim licensed by the present evidence is:
 
-> A verifier-governed developer can retain executable learning that causally changes later computation, and a later certified residual can requalify that retained learning into a previously unassigned role which opens a dependent future capability.
+> A verifier-governed developer can retain executable learning that causally changes later computation, and after that learning is frozen, an independently maintained external task stream can expose a certified residual that requalifies the retained learning into a previously unassigned role, opening a dependent future capability that persists across restart and disappears under exact ancestor ablation.
 
-This is a **bounded causal/exaptation result**. It is not a proof of unrestricted self-development, universal adequacy, or a metaphysical claim that the newly reachable possibility either pre-existed or was created. The later workload is internally authored and frozen; it is not an externally blinded administration. The proof-program substrate is finite and supplied. The Python interpreter is not Lean-verified.
+This is a **bounded causal, developmental, and externally selected exaptation result**. It is not unrestricted self-development, universal theorem proving, completeness, arbitrary grammar invention, or evidence for a metaphysical claim about whether possibilities are discovered or created.
 
-## 2. Deciding prospective experiment
+The central scientific change from the earlier report is that **external validity is no longer merely the next proposed separator**. A post-freeze MiniF2F administration has now passed and is bound into a fail-closed v3 release authority.
 
-The experiment deliberately distinguishes **REUSE**, **EXAPTATION**, and **EXPANSION**.
+## 2. Native developmental object
 
-A proof-composition capability `K_A` is first acquired for purpose A and frozen with its original scope, contract, verifier identity, executable body, and a source fingerprint. Only after this source is frozen is the later B workload loaded.
+The qualified mechanism remains one persistent verifier-governed transition over retained state. Operationally the programme can be read as:
 
-Cold B returns `UNKNOWN` with residual `ROLE_REQUALIFICATION_REQUIRED`. The residual induces a typed constraint: an adequate repair must execute the retained source on a quadratic interval obligation, expose exactly two affine factors, replay their product exactly, and preserve endpoint nonnegativity.
+```text
+current effective interface / capabilities
+    -> attempt under current reachability
+    -> verifier-certified residual
+    -> necessary constraint
+    -> minimal admissible change
+    -> independent replay/admission
+    -> retained executable capability
+    -> changed future reachability
+```
 
-The admitted role `K_B` is an explicit requalification of `K_A`; it does not mutate the original source scope. A dependent executable capability `K_C` then calls `K_B`, which calls `K_A`.
+The external experiment makes the central distinction explicit:
 
-The observed classification is:
+```text
+REUSE      existing retained capability already satisfies the new contract
+EXAPTATION retained capability does not directly satisfy it, but a newly certified role does
+EXPANSION  no admissible realization in the current effective language suffices, so language growth is required
+```
+
+For the deciding external run the observed classification is:
 
 ```text
 REUSE      false
@@ -33,208 +47,210 @@ EXAPTATION true
 EXPANSION  false
 ```
 
-After restart, a held-out coefficient-distinct obligation succeeds at **zero acquisition budget** with actual execution trace
+The system therefore did not merely replay an old answer and did not need to expand its constructor language. A protected consequence exposed a new lawful use of already retained executable structure.
+
+## 3. Post-freeze external MiniF2F qualification
+
+The protocol is implemented in `open_development/external_minif2f.py` and `.github/workflows/external-minif2f-exaptation-v1.yml`.
+
+The externally maintained corpus is pinned to:
+
+```text
+repository = google-deepmind/miniF2F
+commit     = f0a20e14c1eeccd859d51bb4c2b3ee487889c303
+file       = MiniF2F/Test.lean
+blob sha1  = 7d3a756cb3da856fc26096c8da440f086653cfc1
+file sha256= 8e135204947654a6f5234ee3da830ea7b72337f33dc29229fd8be6c69ac1c0b7
+```
+
+The workflow first checks out only this repository, runs the frozen protocol tests, acquires source capability `K_A`, writes a source-freeze manifest, and asserts that the external checkout path does not yet exist. Only **after that freeze** does it check out the pinned MiniF2F corpus. The later B and held-out tasks are then selected from the externally supplied candidate pool using the GitHub Actions run identity, which did not exist when the source code was committed.
+
+At deciding implementation commit `0a81965cc6faac3ee6e67ed4f8060e92e6458f7e`, the external push run was:
+
+- Run: https://github.com/heathsanchez/test/actions/runs/34418346758
+- Job: https://github.com/heathsanchez/test/actions/runs/34418346758/job/102688120433
+- Artifact: https://github.com/heathsanchez/test/actions/runs/34418346758/artifacts/10129944767
+- Artifact ZIP SHA256: `5ca91f7529462a127f594efcde4ecc490ad13602bee6ad4364754937ee52bc51`
+
+It completed with:
+
+```text
+VERIFIED_EXTERNALLY_SELECTED_EXAPTATION
+```
+
+For this run the post-freeze nonce reversed the two admissible external examples relative to the earlier successful administration:
+
+```text
+B       = algebra_sqineq_at2malt1
+heldout = mathd_algebra_113
+```
+
+The candidate pool had exactly two tasks satisfying the deliberately narrow precommitted parser/verifier boundary. Both are one-variable globally nonnegative rational quadratics. This is therefore **not a claim about arbitrary MiniF2F**.
+
+## 4. What changed causally
+
+`K_A` is acquired before external bytes are present and retains the original proof-procedure scope. It does not directly satisfy the later global-quadratic contract.
+
+Cold B returns `UNKNOWN` with a shared typed `ResidualEnvelope/v1` whose class is:
+
+```text
+GLOBAL_ROLE_REQUALIFICATION_REQUIRED
+```
+
+The residual requires any admissible repair to depend on the frozen source, preserve its source fingerprint, and independently reverify the relevant power-zero square decomposition on all reals. The admitted `K_B` is therefore an explicit role requalification of `K_A`, not a mutation of A's original scope and not direct reuse.
+
+A dependent capability `K_C` is then acquired through `K_B`. After restart, the coefficient-distinct held-out external theorem succeeds at **zero acquisition budget** with an actual retained execution trace:
 
 ```text
 K_C -> K_B -> K_A
 ```
 
-A source-distinct direct Vieta factorization implementation, never offered to the developer, falls into the same protected behavioral class under exact replay, factor-count, shape, and endpoint-safety observations.
+The bounded causal statement is therefore stronger than “the ledger contains learning.” The retained executable lineage participates in the later computation.
 
-## 3. Causal and opposing controls
+## 5. Opposing controls
 
-All of the following outcomes are part of the deciding qualification:
+The external administration preserves the decisive counterfactual controls:
 
-| Intervention | Outcome |
+| Intervention | Result |
 |---|---|
-| Fixed-policy / zero-budget B before role requalification | `UNKNOWN` |
-| Retain all A capabilities indiscriminately but do not requalify | `UNKNOWN` |
-| Same-length sham source body (`fit-square` vs `fit-affine`) | `UNKNOWN` |
+| Cold external B before requalification | `UNKNOWN` |
+| Same-serialized-size sham `K_B` | `REFUTED` |
 | Wrong-direction role adapter | `REFUTED` |
-| Remove only `K_A` executable body while preserving IDs/dependencies | `UNKNOWN` |
-| Remove unrelated capability | `VERIFIED` |
-| Keep raw immutable history but revoke active source lineage, same B acquisition budget | `UNKNOWN` |
-| Restore/requalify source and dependent lineage | `VERIFIED` |
-| Revoke `K_A` normally | `K_A`, `K_B`, and `K_C` removed; future obligation `UNKNOWN` |
+| Matched fixed-policy baseline at the same B acquisition budget | `UNKNOWN` |
+| Raw-history reconstruction at the same B acquisition budget | `UNKNOWN` |
+| Remove `K_A` executable identity while preserving surrounding records | `UNKNOWN` |
+| Remove unrelated retained capability | `VERIFIED` |
+| Revoke the source ancestor and its dependent lineage | held-out becomes `UNKNOWN` |
+| Restore source under the same identity and rebuild/requalify lineage | `VERIFIED` |
+| History preservation after revocation/restoration | true |
 
-Thus the later result is not explained by record presence, raw history, indiscriminate retention, an unrelated capability, or declared dependency edges alone. The retained executable source participates in the later computation.
+A source-distinct implementation that is not available to the developer is also checked against the frozen protected observations. Agreement is therefore behavioral only under those observations; source identity is not being equated with behavioral identity.
 
-## 4. Frozen identities
+## 6. Earlier internally prospective qualification remains useful
 
-The deciding run emitted:
+Before the external MiniF2F administration, the repository had already qualified a stricter internally authored prospective exaptation lineage with frozen A-before-B ordering, exact source fingerprinting, sham/wrong-direction/fixed-policy/raw-history controls, restart, zero-acquisition held-out reuse, source-body intervention, restoration, and revocation.
+
+That result remains part of `open-development-release/v2`. Its purpose is now different: it is a same-repository controlled causal qualification. The external MiniF2F gate supplies the additional independent-maintainer/post-freeze selection evidence that v2 itself explicitly lacked.
+
+## 7. Language growth and recursive capability development
+
+The external MiniF2F result is exaptation, not expansion. Separate qualified experiments establish bounded effective-language growth:
+
+- proof-procedure development acquires distinct exact certificate procedures and loses their held-out effect under exact revocation;
+- proof composition develops a product constructor, then retained executable proof programs that call earlier parents, with a four-generation dependent lineage and zero-acquisition held-out reuse;
+- native constructor genesis freezes a 7,882-program old closure with maximum direct arity 5, exposes deciding arity 6, searches 237 supplied lower-substrate candidates, admits one survivor, transfers it, and uses it for later dependent acquisition;
+- reference-identity genesis admits one survivor among 12 supplied allocation/identity/table/link strategies, transfers across independent stdlib semantic oracles, and supports SCC -> condensation -> generations -> semiconnected dependent development.
+
+These experiments establish bounded constructor/procedure/capability growth under declared substrates. They do **not** establish unrestricted invention beyond every supplied substrate.
+
+## 8. Causal retention
+
+Executable-parent intervention closes the archival-versus-causal gap. Later acquisition and reuse execute persisted procedure bodies. Removing or replacing the learned parent body while preserving identity/dependency records breaks the later result; unrelated removal does not; restoration recovers it; normal ancestor revocation cascades through descendants while preserving immutable history.
+
+This is the operational content of:
 
 ```text
-K_A = d2a362fecb86094819cdad31d180b08f6992b2d687b03af20c2e007a2bbdb186
-K_A fingerprint = 80bc72cf5af552b1f0fddd611f21d0e8106b7f77e1d779cfedc38a05c8395b43
-source freeze digest = 68958c03f6af8e7786accd62b582e166f8185e481f38216e3e3530f700f216ca
-later workload sha256 = 267a097bdd592b6602215c096ef01dd1a4280e438aeed98f683d80f7f432e2c8
-K_B = d6f754d54b4d994f1ef3c06e77384179449a2b6ccdeccf9cf5b29302834b0483
-K_C = bb3ef0b7913b7bbbcd2a6497322012a1a85a4a90e0d8340835e3d407730e4356
+externally corrected
+    + internally retained
+    + causally executed
+    + recursively repurposed
 ```
 
-The workload contains no encoded answer/program/certificate fields. Runtime order is source acquisition/freeze first, later workload load second. Historically, the source capability and executable-parent qualification also predate the exaptation workload commit.
+## 9. Formal and replay authorities
 
-## 5. Developmental cost accounting
+The ordinary Open Development core at deciding commit `0a81965cc6faac3ee6e67ed4f8060e92e6458f7e` passed **48/48 Python contract tests** and all existing finite/proof/growth/native/reference/release gates.
 
-For the original prospective B development the emitted counted-operation vector is:
+- Core run: https://github.com/heathsanchez/test/actions/runs/34418346767
+- Core job: https://github.com/heathsanchez/test/actions/runs/34418346767/job/102688120697
+- Proof-program semantics job: https://github.com/heathsanchez/test/actions/runs/34418346767/job/102688240185
+- Core artifact: https://github.com/heathsanchez/test/actions/runs/34418346767/artifacts/10129953486
+- Core artifact ZIP SHA256: `e47772aee7d63880e5b99b29673e5ef7076e6d6d7d92eb3dbb25b121332faf89`
+- Typed-program-semantics artifact: https://github.com/heathsanchez/test/actions/runs/34418346767/artifacts/10130009998
+- Typed-program-semantics ZIP SHA256: `d44756b642473a725fcebed68feabcf3c35a06e7ec040659306287f210271497`
+- Executable-causal-reuse artifact: https://github.com/heathsanchez/test/actions/runs/34418346767/artifacts/10129945191
+- Executable-causal-reuse ZIP SHA256: `ee3a0a24692afd87cfbc3ccbc5a5a53cf639fe5190117394d094bab2c13e2704`
+- Core v1 release evidence digest: `2ffcde298d0ec5420136fbceb7038a2caa293cb4371ba952efc059ddbf11d819`
 
-```text
-construction  = 2
-verification  = 4
-activation    = 2
-execution     = 11
-memory        = 2
-recovery      = 0
-total counted = 21
-```
+The independent Mathlib-backed proof-program-semantics job completed successfully. The generic proof rules and qualified O2/O3/O4 commuting/soundness statements were checked under the repository's declared allowed-axiom boundary. The exact-rational external exaptation interpreter itself remains Python and is **not** claimed to be Lean-verified.
 
-This is an explicit accounting vector in counted prospective-B operations/capability records, **not wall-clock time or a claim that heterogeneous costs share a natural scalar unit**. Zero acquisition budget is not zero execution cost.
+## 10. Release authorities
 
-## 6. Ten-gate convergence audit
+`open-development-release/v2` composes same-commit core evidence, executable causality, the internally prospective strict exaptation gate, and independent proof-program semantics into one fail-closed release identity.
 
-The ten convergence requirements are audited against actual executable evidence rather than rerun gratuitously.
+At the deciding implementation commit:
 
-| Gate | Status | Evidence / boundary |
+- v2 run: https://github.com/heathsanchez/test/actions/runs/34418346757
+- v2 job: https://github.com/heathsanchez/test/actions/runs/34418346757/job/102688120196
+- v2 artifact: https://github.com/heathsanchez/test/actions/runs/34418346757/artifacts/10130012099
+- v2 artifact ZIP SHA256: `609167a58799ae0e45e529aadddb1aa06f6985ac084291f636712d0cedbb1b7d`
+
+`open-development-release/v3` adds the post-freeze external MiniF2F authority. Its validator checks the exact source commit, external run/selection nonce, corpus commit/blob/file hashes, absence of external bytes at source freeze, candidate-pool/provenance digests, REUSE/EXAPTATION/EXPANSION classification, typed residual constraint, `K_A -> K_B -> K_C` dependency structure, restart/zero-acquisition execution trace, source-distinct behavioral check, sham/wrong-direction/fixed-policy/raw-history/unrelated-removal controls, and revocation/restoration lineage.
+
+The v3 release passed:
+
+- v3 run: https://github.com/heathsanchez/test/actions/runs/34418346871
+- v3 job: https://github.com/heathsanchez/test/actions/runs/34418346871/job/102688120552
+- v3 artifact: https://github.com/heathsanchez/test/actions/runs/34418346871/artifacts/10130015910
+- v3 artifact ZIP SHA256: `7fbede4de5010cceb9e05172573f3e92167eab43f39e44346db940343f5fdec5`
+- v3 evidence digest: `4cf17d64c7aec314a7cad559be1cd3da5a59f496b7c403f6ce8f61aaf38ab9b7`
+- bound v2 run: `34418346757`
+- bound external run: `34418346758`
+
+The v3 workflow rejects a release unless those same-commit upstream authorities are themselves successful and downloadable.
+
+## 11. Ten-gate convergence audit
+
+| Gate | Status | Current evidence / exact boundary |
 |---|---|---|
-| **G1 — One typed developmental transition** | **PASS (bounded)** | `Developer.run` is the sole admission transition across object/method obligations; adapters and executable capabilities carry typed contracts and fail closed when untyped. |
-| **G2 — Verifier-certified residual drives change** | **PASS (bounded)** | Cold finite/proof/native/reference cases and the B case return typed `UNKNOWN` residuals; the strict gate wraps B in `ResidualEnvelope/v1` with diagnosis, certified witness, closure/budget identities, necessary constraint, version-space identity and evidence strength. Proposals are not their own authority. |
-| **G3 — Effective language can expand when old closure is inadequate** | **PASS (bounded)** | Native-constructor qualification freezes a 7,882-program old closure with maximum direct arity 5, identifies deciding arity 6, checks 237 supplied lower-substrate candidates with one survivor, then transfers and supports dependent acquisition. This is not unrestricted grammar invention. |
-| **G4 — Behavioral identity can be source-independent** | **PASS (bounded)** | The exaptation source and a source-distinct direct Vieta realization agree under the protected factor-interface observations; reference-identity work separately transfers across `pickle` and `deepcopy` semantic oracles. Identity is protected-behavior relative, not source-code identity. |
-| **G5 — Verified exaptation / adjacent possible** | **PASS (bounded)** | `K_A` does not directly solve B. A certified B residual forces a new typed role; `K_B = alpha(K_A)` is admitted with exact source dependency and enables dependent `K_C`; held-out zero-acquisition execution succeeds through `K_C -> K_B -> K_A`. Strict controls preserve the same classification: reuse false, exaptation true, expansion false. |
-| **G6 — Persistence is causal, not archival** | **PASS (bounded)** | Prior executable-parent intervention and the source-body ablation show later computation fails when only the learned executable cause is removed/corrupted while identity/dependency records remain. Unrelated removal does not fail. |
-| **G7 — Development applies to its own means of solving** | **PASS (bounded)** | The same transition acquires proof procedures, constructors, composed programs, and method-scoped capabilities; later procedures execute retained earlier procedures. Supplied meta-operations remain a boundary. |
-| **G8 — Opposing controls and cost are explicit** | **PASS WITH BOUNDARY** | The strict gate adds a same-serialized-size sham `K_B`, a wrong-direction adapter, a no-requalification fixed-policy baseline with the same B acquisition budget, source-body removal, unrelated removal, raw-history reconstruction, restoration, and exact revocation. Cost is a counted-event identity, not hardware-normalized economics. |
-| **G9 — Retained gains compound across restart/transfer** | **PASS (bounded)** | Proof composition, native constructor, reference identity/graph lineage, and exaptation each show restart plus dependent acquisition and/or held-out zero-acquisition reuse; ancestral revocation collapses descendants. |
-| **G10 — Authority, provenance, revocation and claim boundary remain explicit** | **PASS (bounded)** | Evidence is content/verifier bound, append-only history is preserved, active state is revocable, `UNKNOWN` is not promoted to impossibility, existing mathematical contracts are Lean checked where stated, and the Python exaptation interpreter is explicitly outside the Lean trust claim. |
+| G1 — one typed developmental transition | **PASS (bounded)** | `Developer.run` remains the shared admission transition; typed contracts and fail-closed evidence govern retained changes. |
+| G2 — consequential residual drives lawful change | **PASS (bounded)** | shared `ResidualEnvelope/v1`; external B produces a certified role-requalification constraint rather than generic failure. |
+| G3 — effective language growth | **PASS (bounded)** | native constructor and proof-composition qualifications establish certified growth relative to frozen supplied substrates. |
+| G4 — behavioral identity distinct from source identity | **PASS (bounded)** | source-distinct realization is compared only under protected observations; reference-identity transfer gives a separate oracle-transfer qualification. |
+| G5 — exaptation / adjacent possible | **PASS (externally selected, bounded)** | frozen `K_A`, post-freeze external B, cold `UNKNOWN`, admitted new role `K_B`, dependent `K_C`, held-out restart/zero-acquisition success. |
+| G6 — persistence is causal | **PASS (bounded)** | executable-body removal/replacement destroys later reachability while unrelated removal does not; restoration recovers it. |
+| G7 — development applies to means of solving | **PASS (bounded)** | procedures, constructors, composed programs and method capabilities are developed and later executed; meta-operations/substrates remain supplied. |
+| G8 — controls and cost boundary | **PASS WITH BOUNDARY** | sham, wrong-direction, fixed-policy, raw-history, exact ancestor, unrelated-removal and restoration controls pass; zero acquisition is not zero compute. |
+| G9 — restart, transfer and compounding | **PASS (bounded)** | multiple domains show persistent downstream acquisition/reuse with ancestor-ablation collapse. |
+| G10 — fail-closed reproducible authority | **PASS (bounded)** | v1/v2/v3 release validators bind exact runs/artifacts/contracts/provenance and preserve `UNKNOWN`; Lean authority is stated only where actually checked. |
 
-The audit therefore closes the present **bounded convergence programme**, not the open-ended research programme. The most important remaining external-validity separator is an independently administered later workload/domain in which the prior learned artifact was created before the exaptation target was known to the experiment designer.
+These gates close the **current bounded convergence programme**. They do not close the open-ended scientific programme.
 
-## 7. Formal / executable authorities
+## 12. Exact remaining boundary
 
-The deciding source commit ran alongside the existing Open Development qualification. The main core checks passed, and the independent Mathlib-backed job emitted `AXIOMS_PASS` for the generic interval-affine/product/program soundness results and the O2/O3/O4 commuting/soundness theorems, ending with `TYPED_PROGRAM_SEMANTICS_LEAN_PASS`.
+The previous primary separator was external validity: could the later task be supplied after the earlier learning had already been frozen rather than being designed together with it? The MiniF2F experiment now answers that question positively **within its narrow precommitted family**.
 
-The prospective role requalification itself is checked by exact rational replay plus source-fingerprint/contract/dependency binding. That Python interpreter is **not** asserted to be Lean-verified.
+The strongest next separator is therefore different:
 
-## 8. Reproduction evidence
+> Can one frozen developer receive a genuinely external stream containing qualitatively different obligations and, from verifier-certified consequences alone, correctly route each case as REUSE, EXAPTATION, EXPANSION, or UNKNOWN — including a case where EXPANSION is supported by a real certified old-language obstruction rather than by search failure?
 
-### Deciding prospective-exaptation push run
+That experiment would test whether the developmental controller learns not merely a new role but **which kind of boundary change is required**. It should not manufacture an expansion case: if no sound old-language obstruction can be certified, the correct result is `UNKNOWN`.
 
-- Run: https://github.com/heathsanchez/test/actions/runs/34410369617
-- Job: https://github.com/heathsanchez/test/actions/runs/34410369617/job/102663125321
+A second remaining boundary is breadth. The MiniF2F parser admits only a narrow one-variable global-quadratic family. General theorem parsing, arbitrary Lean obligations, externally authored adapter synthesis, and broader constructor-language development remain open.
 
-### Deciding Open Development push run
+## 13. Final interpretation
 
-- Run: https://github.com/heathsanchez/test/actions/runs/34410369616
-- Core job: https://github.com/heathsanchez/test/actions/runs/34410369616/job/102663125250
-- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34410369616/job/102663255888
-- Typed-semantics artifact: https://github.com/heathsanchez/test/actions/runs/34410369616/artifacts/10127060931
-- Typed-semantics artifact SHA256: `d236cd6edaf0976dd2ab466a41c55cb9fd2be65e2bcc694a588c59c4251a1617`
-
-### Duplicate PR-triggered deciding runs
-
-- Prospective exaptation: https://github.com/heathsanchez/test/actions/runs/34410374395
-- Exaptation job: https://github.com/heathsanchez/test/actions/runs/34410374395/job/102663140112
-- Open Development Core: https://github.com/heathsanchez/test/actions/runs/34410374383
-- Core job: https://github.com/heathsanchez/test/actions/runs/34410374383/job/102663140003
-- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34410374383/job/102663265555
-
-### Integrated regression
-
-Commit `eff60776f64a901d83828285161677a723a7d7ee` adds the prospective exaptation qualification to the ordinary Python regression suite. Its core job ran **34/34 tests**, including `test_requalification_opens_causal_heldout_lineage`, and all existing finite/proof/growth/native/reference/release and Lean-core gates remained green.
-
-- Run: https://github.com/heathsanchez/test/actions/runs/34410876901
-- Core job: https://github.com/heathsanchez/test/actions/runs/34410876901/job/102664732315
-- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34410876901/job/102664851442
-- Causal-reuse artifact: https://github.com/heathsanchez/test/actions/runs/34410876901/artifacts/10127165647
-- Core artifact: https://github.com/heathsanchez/test/actions/runs/34410876901/artifacts/10127174791
-- Release evidence digest: `45d0ad8f7947fd370a7e61b5357ec9f5ddd2c9b5aa6f87546d104f751754c4ba`
-
-### Strict completion-delta qualification
-
-Commit `0d577320a5b6da94ee8fc2542b7d512ea69859d0` hardens the deciding evidence contract without changing the task or controller. It reuses the workload frozen in parent checkpoint `17057ab3667bbc2296a8307cd9e125f863e8deb4`.
-
-Push runs:
-
-- Strict controls: https://github.com/heathsanchez/test/actions/runs/34411147189
-- Strict job: https://github.com/heathsanchez/test/actions/runs/34411147189/job/102665599531
-- Open Development Core: https://github.com/heathsanchez/test/actions/runs/34411146878
-- Core job: https://github.com/heathsanchez/test/actions/runs/34411146878/job/102665599197
-- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34411146878/job/102665734924
-
-PR-triggered runs:
-
-- Strict controls: https://github.com/heathsanchez/test/actions/runs/34411152665
-- Strict job: https://github.com/heathsanchez/test/actions/runs/34411152665/job/102665617543
-- Original prospective qualification: https://github.com/heathsanchez/test/actions/runs/34411152649
-- Original prospective job: https://github.com/heathsanchez/test/actions/runs/34411152649/job/102665617158
-- Open Development Core: https://github.com/heathsanchez/test/actions/runs/34411170494
-- Core job: https://github.com/heathsanchez/test/actions/runs/34411170494/job/102665677086
-- Proof-semantics job: https://github.com/heathsanchez/test/actions/runs/34411170494/job/102665811617
-
-Strict artifact:
-
-- https://github.com/heathsanchez/test/actions/runs/34411152665/artifacts/10127266169
-- ZIP SHA256: `6d210bf376bdf29e7bc8fd032a338435a6103f7ad5d45d3c1883ed6dc8730b96`
-
-The strict artifact records:
+Within the qualified regime, the completed causal chain is:
 
 ```text
-outcome = VERIFIED_EXAPTATION_STRICT
-cold B = UNKNOWN
-residual = ResidualEnvelope/v1 / capability_failure
-B acquisition budget = 2
-held-out acquisition budget = 0
-held-out = VERIFIED
-execution = K_C -> K_B -> K_A
-same-size sham K_B = REFUTED
-wrong-direction adapter = REFUTED
-missing K_A executable body = UNKNOWN
-unrelated removal = VERIFIED
-raw-history reconstruction at same B budget = UNKNOWN
-matched fixed policy at B budget 2 = UNKNOWN
-restored lineage = VERIFIED
-```
-
-For the strict verifier identity the emitted lineage is:
-
-```text
-K_A = d2a362fecb86094819cdad31d180b08f6992b2d687b03af20c2e007a2bbdb186
-K_B = 0aa6cc4d184996e800843b198968a815a43723d786360b758cbc5331d239bf99
-K_C = 77e97ceb26277f22bfa6db37efdd74fd2c6e04dd6ad0e919c05e1f2ecb7e7314
-```
-
-Its counted-event cost identity is:
-
-```text
-C_construction = 2
-C_verification = 5
-C_activation   = 2
-C_execution    = 23
-C_memory       = 2
-C_recovery     = 3
-C_total        = 37
-```
-
-Again, this is an explicit counted-event/accounting identity, not a wall-clock or hardware-normalized scalar cost.
-
-## 9. Deciding interpretation
-
-Within the qualified regime, the completed chain is:
-
-```text
-external consequence
+retained executable learning K_A
+    -> source frozen before external task bytes
+    -> external consequence distinguishes an unmet future
     -> certified typed residual
     -> necessary role constraint
-    -> requalification of retained executable learning
-    -> dependent capability
-    -> held-out future success
+    -> K_B = qualified new role of K_A
+    -> K_C = dependent future capability
+    -> restart
+    -> zero-acquisition held-out success through K_C -> K_B -> K_A
 ```
 
-The corresponding counterfactual is also present:
+And the counterfactual is equally important:
 
 ```text
-same identities + same declared dependencies + learned executable cause removed
-    -> future capability disappears
+same history / surrounding records
+    + learned executable ancestor removed
+    -> future reachability disappears
 ```
 
-That is the operational content of **the boundary learns** in this release.
+The result does not decide whether the new possibility was metaphysically discovered or created. Operationally it shows something sharper and testable: **the verifier-certified consequence changes the effective interface between retained structure and future action.**
+
+That is the present executable meaning of **the boundary learns**.
