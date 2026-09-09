@@ -1,0 +1,9 @@
+# Constructor-composition transfer replay
+
+Parent qualification: commit 6dea20718aefe21c6c7ad657c28441ffd926e756, run 34305818938. Its 128-check success followed the disclosed 64-check failure and exploratory 128-check diagnostic. This replay does not constitute a fresh independent synthesis trial.
+
+Read only the immutable composition-generated artifact 10086642134 (SHA256 f3c32367fb9b8ddcf02bdbc50899be3b7cfa80b9d3d30f95083d9eebed8aa907). Retain its two program ASTs and exact certificate data. Do not rerun synthesis to replace either certificate. Independently replay identities and side conditions, then compile the data into Lean using the already-proved generic ProgramRules.sound theorem. No target-specific theorem or source lower estimate may be used to justify a certificate.
+
+The first generated certificate must prove the derivative numerator x(x-1)^2/2 and recover x-x^2/4 <= arctan x for x>=0. The second must prove 1-x^2>=0 on [0,1]. Reuse the original calculus template and actual pinned OpenAI polar-chart interface; compare with the pinned Alpöge–Buckmaster source only after the generated target passes. Preserve original source pins, toolchain and Mathlib provenance. Check the dependency axioms of the generic interpreter, generated theorems, transfer and source comparison. Ordinary three axioms only.
+
+The original two program trees, primitive grammar, controller, solver, and 128-check result are immutable. This is a proof-interface replay and audit extension, not a change to the synthesis experiment. It establishes neither invention of primitive operations nor an essential fluid-proof repair. Any change to mathematical claims or search policy requires a separate version.
