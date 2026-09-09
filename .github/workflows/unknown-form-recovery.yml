@@ -1,0 +1,126 @@
+name: Unknown-form recovery qualification
+on:
+  push:
+    branches: [mathgraph/unknown-form-recovery-v1]
+    paths:
+      - .github/workflows/unknown-form-recovery.yml
+      - audits/form_recovery/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen grammar, residual and no-residual controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered evidence
+          test "$(git hash-object audits/form_recovery/PROTOCOL.md)" = e14bc73904a4f6993a778270d52cedce932c1de6
+          test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          export PYTHONPATH="$PWD/audits/form_recovery:$PWD/audits/cross_domain"
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/cross_domain/proof_bridge.py --test 2>&1 | tee evidence/baseline-tests.log
+          python audits/cross_domain/heldout_recovery.py --test 2>&1 | tee evidence/coefficient-tests.log
+          python audits/form_recovery/form_experiment.py --test 2>&1 | tee evidence/form-tests.log
+          python audits/form_recovery/form_experiment.py > evidence/form-result.json
+          python audits/form_recovery/emit_form.py --result evidence/form-result.json --output recovered/RecoveredForm.lean --certificate recovered/certificate.json | tee evidence/synthesis.log
+          (cd recovered && sha256sum RecoveredForm.lean > source.sha256)
+          python - <<'PY'
+          import json,pathlib
+          r=json.load(open('evidence/form-result.json'))
+          c=json.load(open('recovered/certificate.json'))
+          assert r['status']=='PASS'
+          assert r['before']['status']=='GRAMMAR_INSUFFICIENT'
+          assert r['heldout_witness'] is None
+          assert len(r['selected'])==1 and r['selected'][0]==c
+          assert all(x['witness'] is not None for x in r['ablation'])
+          text=pathlib.Path('recovered/RecoveredForm.lean').read_text()
+          assert 'import Mathlib' in text
+          assert 'import ABAngleBounds' not in text
+          assert 'self_sub_cube_le_arctan' not in text
+          assert '\nsorry' not in text and '\nadmit' not in text
+          print('UNKNOWN_FORM_FINITE_PASS')
+          print('SELECTED_EXPRESSION',c)
+          print('ORDERINGS',r['orderings'])
+          PY
+          sha256sum audits/form_recovery/PROTOCOL.md audits/cross_domain/experiment.py audits/form_recovery/*.py recovered/RecoveredForm.lean recovered/certificate.json evidence/form-result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unknown-form-evidence
+          path: evidence/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unknown-form-generated
+          path: recovered/
+          if-no-files-found: error
+  target:
+    needs: finite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: unknown-form-generated
+          path: recovered
+      - name: Check generated theorem and held-out polar-chart transfer
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: target
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/form_recovery/run_form_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unknown-form-target
+          path: evidence/
+          if-no-files-found: warn
+  source:
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: unknown-form-generated
+          path: recovered
+      - name: Compare frozen recovered form with original source theorem
+        shell: bash
+        working-directory: upstream/euler-blowup
+        env:
+          TASK: source
+          EXPECTED_REF: d0124689230b58b4f86e7b90ac59de06404b3b6b
+        run: bash "$GITHUB_WORKSPACE/audit/audits/form_recovery/run_form_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: unknown-form-source
+          path: evidence/
+          if-no-files-found: warn
