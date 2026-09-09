@@ -2,7 +2,9 @@ from .runtime import (Adapter, CapabilityContract, Developer, Evidence, Evidence
                       IRContract, Obligation, Repair, Result)
 from .proof import ProofProcedureAdapter
 from .composition import ProofCompositionAdapter
+from .native_constructor import NativeConstructorAdapter
 
 __all__ = ["Adapter", "Developer", "Evidence", "EvidenceStore", "Obligation", "Repair", "Result",
            "ProofProcedureAdapter", "IRContract", "CapabilityContract"]
 __all__.append("ProofCompositionAdapter")
+__all__.append("NativeConstructorAdapter")

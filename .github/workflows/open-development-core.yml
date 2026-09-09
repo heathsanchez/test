@@ -161,6 +161,58 @@ jobs:
                                   'exact rational polynomial domain']}, indent=2))
               store.close()
           PYGROWTH
+      - name: Qualify persistent native constructor genesis
+        run: |
+          python - <<'PYNATIVE'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, NativeConstructorAdapter, Obligation
+          from open_development.native_constructor import old_closure_certificate
+          tree = {'label': 'root', 'children': [
+              {'label': 'b', 'children': []},
+              {'label': 'a', 'children': [{'label': 'leaf', 'children': []}]}]}
+          def obligation(target, budget):
+              return Obligation('native-constructor', target, budget, 'method')
+          with tempfile.TemporaryDirectory() as tmp:
+              path = Path(tmp) / 'native.sqlite'
+              store = EvidenceStore(path)
+              adapter = NativeConstructorAdapter()
+              source_target = {'task': 'source', 'package': '@esri/arcgis-rest-portal@4.11.0'}
+              cold = Developer(store, adapter).run(obligation(source_target, 0))
+              source = Developer(store, adapter).run(obligation(source_target, 237))
+              constructor = source.retained[0]
+              store.close()
+              store = EvidenceStore(path)
+              transfer = Developer(store, adapter).run(obligation(
+                  {'task': 'transfer', 'package': 'tdesign-vue-next@1.20.5'}, 0))
+              fold = Developer(store, adapter).run(obligation(
+                  {'task': 'acquire-fold', 'tree': tree, 'expected': 4}, 1))
+              store.close()
+              heldout_tree = {'label': 'x', 'children': [tree, {'label': 'z', 'children': []}]}
+              store = EvidenceStore(path)
+              heldout = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-fold', 'tree': heldout_tree, 'expected': 6}, 0))
+              removed = store.revoke(constructor, 'native constructor ancestor ablation')
+              ablated = Developer(store, adapter).run(obligation(
+                  {'task': 'heldout-fold', 'tree': heldout_tree, 'expected': 6}, 0))
+              closure = old_closure_certificate()
+              Path('native-constructor-result.json').write_text(json.dumps({
+                  'claim': 'persistent integration of frozen bounded native constructor genesis',
+                  'cold': cold.verdict, 'old_ast_count': closure['enumerated'],
+                  'old_max_direct_arity': closure['maximum_direct_arity'],
+                  'deciding_arity': closure['deciding_array_arity'],
+                  'candidate_count': 237, 'unique_survivors': 1,
+                  'source': source.verdict, 'transfer': transfer.verdict,
+                  'dependent_acquisition': fold.verdict,
+                  'heldout_zero_budget': heldout.verdict, 'restart': True,
+                  'ablation': ablated.verdict, 'cascade_size': len(removed),
+                  'historical_precommit': adapter.verifier_id,
+                  'historical_proposal_sha256': '02adbed53296089e71385b5a03513f08396566eac5929982fce1cd7c56dae62d',
+                  'limitations': ['frozen FRESH_VAR/MU/ONE/SUM/PROD/PARAM substrate',
+                                  'historical npm selection not rerun',
+                                  'narrow recursive ordered-array family']}, indent=2))
+              store.close()
+          PYNATIVE
       - name: Build and validate release evidence
         run: |
           python -m open_development.release \
@@ -170,6 +222,7 @@ jobs:
             --finite open-development-result.json \
             --proof proof-procedure-result.json \
             --growth capability-growth-result.json \
+            --native native-constructor-result.json \
             --output release-evidence.json
       - uses: actions/upload-artifact@v4
         if: always()
@@ -179,6 +232,7 @@ jobs:
             open-development-result.json
             proof-procedure-result.json
             capability-growth-result.json
+            native-constructor-result.json
             release-evidence.json
           if-no-files-found: ignore
 
