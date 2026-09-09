@@ -1,0 +1,1 @@
+A successful result would show a verifier-guided change in a supplied certificate language, with independently checked proof-rule soundness and a held-out different constructor. It would not show that the system invented its own primitive operations, nor that the new procedure repairs a missing step in the Navier–Stokes blow-up construction.
