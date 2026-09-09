@@ -5,7 +5,7 @@ import RecoveredLower
 /-! The target imports no withheld source lower-bound theorem. Its lower
 estimate comes from the generated certificate; its upper estimate is the
 allowed source capability. This is a new quantitative chart lemma, not a
-repair of the original Navier--Stokes blow-up construction. -/
+repair of the original Navier-Stokes blow-up construction. -/
 noncomputable section
 namespace CrossDomainResidual.RecoveredPolarTransfer
 open NavierStokes.PolarCharts
@@ -13,8 +13,7 @@ open NavierStokes.PolarCharts
 private theorem scalar_angle_bounds {x : ℝ} (hx : 0 ≤ x) :
     x - x ^ 3 / 3 ≤ Real.arctan x ∧ Real.arctan x ≤ x := by
   constructor
-  · simpa only [one_div, div_eq_mul_inv, mul_comm] using
-      RecoveredLower.recovered_arctan_lower hx
+  · convert RecoveredLower.recovered_arctan_lower hx using 1 <;> ring
   · exact KnownUpper.arctan_le_self hx
 
 theorem baseChart_angle_bounds {p : Plane}
