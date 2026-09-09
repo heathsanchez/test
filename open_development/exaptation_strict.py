@@ -21,16 +21,15 @@ from .exaptation import (
     _assert_workload_has_no_answer,
     _direct_equivalence,
     _problem,
-    _quotient_x,
     _source_fingerprint,
 )
+from .residual import ResidualEnvelope
 from .runtime import (
     Developer,
     Evidence,
     EvidenceStore,
     Obligation,
     Repair,
-    assessment_claim,
     canonical,
     digest,
 )
@@ -40,7 +39,7 @@ WORKLOAD = Path(__file__).parent / "examples" / "exaptation_workload.json"
 
 
 class StrictExaptationAdapter(ExaptationAdapter):
-    """Same exaptation semantics with a fully typed residual and optional fixed policy."""
+    """Same exaptation semantics with a shared typed residual and optional fixed policy."""
 
     def __init__(self, *, allow_requalification: bool = True):
         super().__init__()
@@ -59,31 +58,30 @@ class StrictExaptationAdapter(ExaptationAdapter):
                 and residual.get("class") == "ROLE_REQUALIFICATION_REQUIRED"):
             constraint = residual["constraint"]
             source = residual["source"]
-            envelope = {
-                "type": "ResidualEnvelope/v1",
-                "class": "ROLE_REQUALIFICATION_REQUIRED",
-                "diagnosis": "capability_failure",
-                "verifier_certified_witness": deepcopy(evidence.certificate),
-                "closure_id": digest({
+            envelope = ResidualEnvelope(
+                residual_class="ROLE_REQUALIFICATION_REQUIRED",
+                diagnosis="capability_failure",
+                verifier_certified_witness=deepcopy(evidence.certificate),
+                closure_id=digest({
                     "scope": self.name,
                     "active": sorted(state["capabilities"]),
                 }),
-                "budget_id": digest({
+                budget_id=digest({
                     "budget": obligation.budget,
                     "kind": obligation.kind,
                     "domain": obligation.domain,
                 }),
-                "necessary_constraint": deepcopy(constraint),
-                "version_space_id": digest({
+                necessary_constraint=deepcopy(constraint),
+                version_space_id=digest({
                     "source": source,
                     "candidate_role": "requalify-affine-factors",
                 }),
-                "evidence_strength": "replay-certified",
-                "domain_payload": {"class": "ROLE_REQUALIFICATION_REQUIRED"},
-                "source": source,
-                "source_fingerprint": residual["source_fingerprint"],
-                "constraint": deepcopy(constraint),
-            }
+                evidence_strength="replay-certified",
+                domain_payload={"class": "ROLE_REQUALIFICATION_REQUIRED"},
+                source=source,
+                source_fingerprint=residual["source_fingerprint"],
+                constraint=deepcopy(constraint),
+            ).to_mapping()
             return Evidence(evidence.verdict, evidence.claim, self.verifier_id,
                             deepcopy(evidence.certificate), envelope, self.name,
                             deepcopy(evidence.cost))
@@ -178,10 +176,10 @@ def qualify_strict():
         cold = Developer(store, adapter).run(obligation(train, 0))
         assert cold.verdict == "unknown"
         residual = cold.evidence.residual
-        assert residual["type"] == "ResidualEnvelope/v1"
-        assert residual["diagnosis"] == "capability_failure"
-        assert residual["evidence_strength"] == "replay-certified"
-        assert residual["necessary_constraint"] == residual["constraint"]
+        parsed = ResidualEnvelope.from_mapping(residual)
+        assert parsed.diagnosis == "capability_failure"
+        assert parsed.evidence_strength == "replay-certified"
+        assert parsed.necessary_constraint == parsed.constraint
 
         real = next(adapter.propose(store.state(), obligation(train, 2), residual))
         sham_payload = deepcopy(real.payload)
