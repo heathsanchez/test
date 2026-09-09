@@ -34,50 +34,93 @@ def certificate_source(tables: Mapping[str, tuple[Any, ...]], old: tuple[str, ..
     values = sorted({canonical(value) for row in tables.values() for value in row})
     codes = {value: i for i, value in enumerate(values)}
     rows = [[codes[canonical(value)] for value in tables[name]] for name in names]
+
     def row_expr(row):
         expr = "0"
         for i in range(n - 1, -1, -1):
             expr = f"if x.val == {i} then {row[i]} else ({expr})"
         return expr
+
     table_expr = "0"
     for i in range(len(names) - 1, -1, -1):
         table_expr = f"if c.val == {i} then ({row_expr(rows[i])}) else ({table_expr})"
-    old_expr = ", ".join(f"({names.index(name)} : Fin {len(names)})" for name in old)
+    k = len(names)
+    indices = tuple(names.index(name) for name in old)
     c = names.index(candidate)
+    witness = next(((x, y) for x in range(n) for y in range(x + 1, n)
+                    if all(rows[i][x] == rows[i][y] for i in indices)
+                    and rows[c][x] != rows[c][y]), None)
+    if witness is None:
+        raise ValueError("candidate does not strictly refine the retained interface")
+    x, y = witness
+
+    def list_expr(items):
+        return "[" + ", ".join(f"({i} : Fin {k})" for i in items) + "]"
+
+    def old_proof(items, indent="  "):
+        if not items:
+            return indent + f"exact EquivalentOn.nil observation ({x} : Fin {n}) ({y} : Fin {n})"
+        head, *tail = items
+        rest = list_expr(tail)
+        return (indent + f"apply (EquivalentOn.cons observation ({head} : Fin {k}) {rest} ({x} : Fin {n}) ({y} : Fin {n})).2\n"
+                + indent + "constructor\n" + indent + "· decide\n"
+                + indent + "·\n" + old_proof(tail, indent + "  "))
+
     return f'''import Core
 
 namespace FiniteCertificate
 open OpenDevelopment
 
 -- Every number below is generated from the frozen input table.
-def observation (x : Fin {n}) (c : Fin {len(names)}) : Nat :=
+def observation (x : Fin {n}) (c : Fin {k}) : Nat :=
   {table_expr}
 
-def initial : State (Fin {len(names)}) :=
-  {{ observations := [{old_expr}] }}
+def initial : State (Fin {k}) :=
+  {{ observations := {list_expr(indices)} }}
 
-def valid : Repair (Fin {len(names)}) → Prop
-  | .observe c => c = ({c} : Fin {len(names)}) ∧
-      ∃ x y : Fin {n},
-        Interface observation initial x y ∧
-        ¬ Interface observation (apply initial (.observe c)) x y
+theorem old_same :
+    Interface observation initial ({x} : Fin {n}) ({y} : Fin {n}) := by
+  change EquivalentOn observation {list_expr(indices)} ({x} : Fin {n}) ({y} : Fin {n})
+{old_proof(list(indices))}
+
+theorem new_diff :
+    ¬ Interface observation (apply initial (.observe ({c} : Fin {k})))
+      ({x} : Fin {n}) ({y} : Fin {n}) := by
+  intro h
+  have heq := ((observe_meet observation initial ({c} : Fin {k}) ({x} : Fin {n}) ({y} : Fin {n})).mp h).1
+  exact (by decide : observation ({x} : Fin {n}) ({c} : Fin {k}) ≠ observation ({y} : Fin {n}) ({c} : Fin {k})) heq
+
+def valid : Repair (Fin {k}) → Prop
+  | .observe c => c = ({c} : Fin {k}) ∧
+      Interface observation initial ({x} : Fin {n}) ({y} : Fin {n}) ∧
+      ¬ Interface observation (apply initial (.observe c)) ({x} : Fin {n}) ({y} : Fin {n})
   | _ => False
 
-def authority : Authority (Fin {len(names)}) where
+def check : Repair (Fin {k}) → Bool
+  | .observe c => decide (c = ({c} : Fin {k}))
+  | _ => false
+
+def authority : Authority (Fin {k}) where
   valid := valid
-  check := fun r => decide (valid r)
+  check := check
   sound := by
     intro r h
-    exact of_decide_true h
+    cases r with
+    | observe c =>
+        have hc : c = ({c} : Fin {k}) := of_decide_eq_true (by simpa [check] using h)
+        subst c
+        exact ⟨rfl, old_same, new_diff⟩
+    | acquire c => simp [check] at h
+    | revisePolicy p => simp [check] at h
 
-def checked : CheckedRepair (Fin {len(names)}) valid :=
-  ⟨.observe {c}, by decide⟩
+def checked : CheckedRepair (Fin {k}) valid :=
+  ⟨.observe {c}, authority.sound _ (by decide)⟩
 
 theorem candidate_refines :
     ∃ x y : Fin {n},
       Interface observation initial x y ∧
       ¬ Interface observation (applyChecked initial checked) x y := by
-  decide
+  exact ⟨{x}, {y}, old_same, new_diff⟩
 
 theorem candidate_admitted :
     develop authority initial (.observe {c}) =
@@ -94,6 +137,7 @@ class LeanGate:
         self.timeout = timeout
         self.root = Path(root).resolve()
         self._version: str | None = None
+        self.last_error: str | None = None
 
     def _run(self, args: list[str], **kwargs):
         env = os.environ.copy()
@@ -132,12 +176,18 @@ class LeanGate:
     def verify(self, tables: Mapping[str, tuple[Any, ...]], old: tuple[str, ...],
                candidate: str) -> dict[str, Any] | None:
         self.prepare()
-        source = certificate_source(tables, old, candidate)
+        self.last_error = None
+        try:
+            source = certificate_source(tables, old, candidate)
+        except ValueError as exc:
+            self.last_error = str(exc)
+            return None
         with tempfile.TemporaryDirectory(prefix="open-development-") as tmp:
             path = Path(tmp) / "Candidate.lean"
             path.write_text(source)
             result = self._run([self.lean, str(path)])
         if result.returncode != 0:
+            self.last_error = (result.stdout + "\n" + result.stderr).strip()
             return None
         return {"source": source, "source_sha256": sha256(source.encode()).hexdigest(),
                 "verifier": self.verifier_id, "lean_version": self._version,
