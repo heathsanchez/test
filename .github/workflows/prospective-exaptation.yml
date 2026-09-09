@@ -1,0 +1,38 @@
+name: Prospective Exaptation
+
+on:
+  push:
+    branches: [open-development-core-v1]
+    paths:
+      - 'open_development/exaptation.py'
+      - 'open_development/examples/exaptation_workload.json'
+      - '.github/workflows/prospective-exaptation.yml'
+  pull_request:
+    paths:
+      - 'open_development/exaptation.py'
+      - 'open_development/examples/exaptation_workload.json'
+      - '.github/workflows/prospective-exaptation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exaptation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run prospective exaptation qualification
+        run: python -m open_development.exaptation > prospective-exaptation-result.json
+      - name: Show qualification result
+        run: cat prospective-exaptation-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prospective-exaptation-v1
+          path: prospective-exaptation-result.json
+          if-no-files-found: error
