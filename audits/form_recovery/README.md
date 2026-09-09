@@ -1,0 +1,1 @@
+The frozen unknown-form protocol is in PROTOCOL.md. The prior coefficient-recovery qualification remains reproducible at commit 37c271a746842caf907d4555c7de8b3ae5615efe. Implementation and results for the new experiment live on mathgraph/unknown-form-recovery-v1; no prior proof or controller is modified.
