@@ -40,10 +40,13 @@ jobs:
           spec = json.loads(Path('open_development/examples/finite.json').read_text())
           with tempfile.TemporaryDirectory() as tmp:
               store = EvidenceStore(Path(tmp) / 'state.sqlite')
-              adapter = FiniteAdapter(spec, LeanGate())
+              gate = LeanGate()
+              adapter = FiniteAdapter(spec, gate)
               dev = Developer(store, adapter)
               first = dev.run(Obligation('finite', {'task': 'first', 'actual_world': '1'}, 1))
-              assert first.verdict == 'verified' and len(first.retained) == 1
+              assert first.verdict == 'verified' and len(first.retained) == 1, {
+                  'verdict': first.verdict, 'residual': first.evidence.residual,
+                  'lean_error': gate.last_error}
               cert = store.state()['capabilities'][first.retained[0]]['evidence']['certificate']['lean']
               assert cert['theorems'] == ['candidate_refines', 'candidate_admitted']
               second = dev.run(Obligation('finite', {'task': 'second', 'actual_world': '1'}, 0))
