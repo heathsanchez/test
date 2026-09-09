@@ -114,7 +114,7 @@ def authority : Authority (Fin {k}) where
     | revisePolicy p => simp [check] at h
 
 def checked : CheckedRepair (Fin {k}) valid :=
-  ⟨.observe {c}, authority.sound _ (by decide)⟩
+  ⟨.observe {c}, authority.sound (.observe ({c} : Fin {k})) (by decide)⟩
 
 theorem candidate_refines :
     ∃ x y : Fin {n},
