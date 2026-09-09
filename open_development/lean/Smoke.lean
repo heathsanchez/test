@@ -2,6 +2,24 @@ import Core
 
 open OpenDevelopment
 
+def natIdentityRealization : Realization Nat Nat Nat Nat Nat Nat Nat where
+  encodeProgram := id
+  encodeInput := id
+  runDomain := fun p x => p + x
+  runIR := fun p x => p + x
+  observeDomain := id
+  observeIR := id
+  preserves := by intro p x; rfl
+
+example (p x : Nat) :
+    natIdentityRealization.observeIR
+        (natIdentityRealization.runIR
+          (natIdentityRealization.encodeProgram p)
+          (natIdentityRealization.encodeInput x)) =
+      natIdentityRealization.observeDomain
+        (natIdentityRealization.runDomain p x) := by
+  exact realization_commutes natIdentityRealization p x
+
 -- A concrete finite realization, not a claim about arbitrary external worlds.
 def observation (x c : Fin 4) : Nat := (x.val + c.val) % 2
 

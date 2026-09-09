@@ -5,6 +5,32 @@ namespace OpenDevelopment
 
 universe u v w
 
+/-- A typed domain-to-IR realization. Encoding alone is insufficient: the
+observation square is an explicit proof obligation. -/
+structure Realization
+    (DProgram : Type u) (DInput : Type v) (DResult : Type w)
+    (IProgram : Type u) (IInput : Type v) (IResult : Type w)
+    (Observation : Type w) where
+  encodeProgram : DProgram → IProgram
+  encodeInput : DInput → IInput
+  runDomain : DProgram → DInput → DResult
+  runIR : IProgram → IInput → IResult
+  observeDomain : DResult → Observation
+  observeIR : IResult → Observation
+  preserves : ∀ p x,
+    observeIR (runIR (encodeProgram p) (encodeInput x)) =
+      observeDomain (runDomain p x)
+
+theorem realization_commutes
+    {DProgram : Type u} {DInput : Type v} {DResult : Type w}
+    {IProgram : Type u} {IInput : Type v} {IResult : Type w}
+    {Observation : Type w}
+    (r : Realization DProgram DInput DResult IProgram IInput IResult Observation)
+    (p : DProgram) (x : DInput) :
+    r.observeIR (r.runIR (r.encodeProgram p) (r.encodeInput x)) =
+      r.observeDomain (r.runDomain p x) :=
+  r.preserves p x
+
 /-- The state distinguishes observations, executable means, and revisable policy. -/
 structure State (C : Type u) where
   observations : List C := []

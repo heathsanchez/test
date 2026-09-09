@@ -155,3 +155,72 @@ jobs:
             proof-procedure-result.json
             capability-growth-result.json
           if-no-files-found: ignore
+
+  proof-program-semantics:
+    needs: core
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Check typed proof-program semantics in Lean
+        working-directory: upstream
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/evidence" .open-development
+          curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/open-development-elan.sh
+          sh /tmp/open-development-elan.sh -y --default-toolchain none
+          export PATH="$HOME/.elan/bin:$PATH"
+          elan toolchain install "$(cat lean-toolchain)"
+          elan default "$(cat lean-toolchain)"
+          if ! lake exe cache get > "$GITHUB_WORKSPACE/evidence/cache-first.log" 2>&1; then
+            grep -q 'Dependency Mathlib uses a different lean-toolchain' "$GITHUB_WORKSPACE/evidence/cache-first.log"
+            cp .lake/packages/mathlib/lean-toolchain lean-toolchain
+            elan toolchain install "$(cat lean-toolchain)"
+            elan default "$(cat lean-toolchain)"
+            lake exe cache get > "$GITHUB_WORKSPACE/evidence/cache.log" 2>&1
+          fi
+          cp "$GITHUB_WORKSPACE/audit/open_development/lean_mathlib/"*.lean .open-development/
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean -o "$1/ProcedureRules.olean" "$1/ProcedureRules.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/procedure-rules.log" 2>&1
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean -o "$1/ProgramRules.olean" "$1/ProgramRules.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/program-rules.log" 2>&1
+          lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; lean "$1/TypedProgramSemantics.lean"' bash "$PWD/.open-development" > "$GITHUB_WORKSPACE/evidence/typed-program.log" 2>&1
+          cat "$GITHUB_WORKSPACE/evidence/"*-rules.log "$GITHUB_WORKSPACE/evidence/typed-program.log"
+          python - <<'PYLEAN'
+          import pathlib,re
+          root=pathlib.Path.cwd().parent/'evidence'
+          text='\n'.join(p.read_text() for p in root.glob('*.log'))
+          names=[
+            'OpenDevelopment.ProcedureRules.intervalAffine_sound',
+            'OpenDevelopment.ProcedureRules.product_sound',
+            'OpenDevelopment.ProgramRules.sound',
+            'OpenDevelopment.TypedProgramSemantics.o2_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o3_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o2_sound',
+            'OpenDevelopment.TypedProgramSemantics.o3_sound']
+          allowed={'propext','Quot.sound','Classical.choice'}
+          records={name:{x.strip() for x in raw.split(',') if x.strip()}
+                   for name,raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",text)}
+          records.update({name:set() for name in re.findall(r"'([^']+)' does not depend on any axioms",text)})
+          for name in names:
+            assert name in records,(name,sorted(records))
+            assert records[name] <= allowed,(name,records[name])
+            print(name,'AXIOMS_PASS')
+          print('TYPED_PROGRAM_SEMANTICS_LEAN_PASS')
+          PYLEAN
+          lean --version > "$GITHUB_WORKSPACE/evidence/lean-version.txt"
+          git -C .lake/packages/mathlib rev-parse HEAD > "$GITHUB_WORKSPACE/evidence/mathlib-commit.txt"
+          sha256sum "$GITHUB_WORKSPACE/audit/open_development/lean_mathlib/"*.lean > "$GITHUB_WORKSPACE/evidence/source-hashes.txt"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: typed-program-semantics
+          path: evidence/
+          if-no-files-found: error
