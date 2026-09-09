@@ -2,7 +2,8 @@
 set -euo pipefail
 AUDIT="$GITHUB_WORKSPACE/audit/audits/cross_domain"
 EVIDENCE="$GITHUB_WORKSPACE/evidence"
-mkdir -p "$EVIDENCE"
+AUDIT_BUILD="$GITHUB_WORKSPACE/audit-build"
+mkdir -p "$EVIDENCE" "$AUDIT_BUILD"
 test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 git rev-parse HEAD > "$EVIDENCE/source-commit.txt"
 cp lean-toolchain "$EVIDENCE/source-toolchain.txt"
@@ -14,9 +15,9 @@ else
 fi
 # The generated source is the immutable finite-job artifact, not a new synthesis.
 test -s "$GITHUB_WORKSPACE/recovered/RecoveredLower.lean"
-cp "$GITHUB_WORKSPACE/recovered/RecoveredLower.lean" RecoveredLower.lean
+cp "$GITHUB_WORKSPACE/recovered/RecoveredLower.lean" "$AUDIT_BUILD/RecoveredLower.lean"
 cp "$GITHUB_WORKSPACE/recovered/certificate.json" "$EVIDENCE/certificate.json"
-sha256sum RecoveredLower.lean > "$EVIDENCE/generated-source-hash.txt"
+sha256sum "$AUDIT_BUILD/RecoveredLower.lean" > "$EVIDENCE/generated-source-hash.txt"
 curl -fsSL https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -o /tmp/elan-init.sh
 sh /tmp/elan-init.sh -y --default-toolchain none
 export PATH="$HOME/.elan/bin:$PATH"
@@ -38,21 +39,22 @@ fi
 lean --version | tee "$EVIDENCE/runtime-lean-version.txt"
 test "$(git rev-parse HEAD)" = "$EXPECTED_REF"
 git -C .lake/packages/mathlib rev-parse HEAD | tee "$EVIDENCE/mathlib-commit.txt"
+# Do not prepend the upstream project root: that shadows Lake's OLean paths.
 run_audit() {
-  lake env bash -c 'export LEAN_PATH="$PWD:$LEAN_PATH"; exec lean "$@"' bash "$@"
+  lake env bash -c 'export LEAN_PATH="$1:$LEAN_PATH"; shift; exec lean "$@"' bash "$AUDIT_BUILD" "$@"
 }
-run_audit -o RecoveredLower.olean RecoveredLower.lean > "$EVIDENCE/recovered-lower.log" 2>&1
+run_audit -o "$AUDIT_BUILD/RecoveredLower.olean" "$AUDIT_BUILD/RecoveredLower.lean" > "$EVIDENCE/recovered-lower.log" 2>&1
 if [ "$TASK" = target ]; then
   lake build NavierStokes.PolarCharts > "$EVIDENCE/source-build.log" 2>&1
-  cp "$AUDIT/KnownUpper.lean" KnownUpper.lean
-  cp "$AUDIT/RecoveredPolarTransfer.lean" RecoveredPolarTransfer.lean
-  run_audit -o KnownUpper.olean KnownUpper.lean > "$EVIDENCE/known-upper.log" 2>&1
-  run_audit RecoveredPolarTransfer.lean > "$EVIDENCE/lean.log" 2>&1
+  cp "$AUDIT/KnownUpper.lean" "$AUDIT_BUILD/KnownUpper.lean"
+  cp "$AUDIT/RecoveredPolarTransfer.lean" "$AUDIT_BUILD/RecoveredPolarTransfer.lean"
+  run_audit -o "$AUDIT_BUILD/KnownUpper.olean" "$AUDIT_BUILD/KnownUpper.lean" > "$EVIDENCE/known-upper.log" 2>&1
+  run_audit "$AUDIT_BUILD/RecoveredPolarTransfer.lean" > "$EVIDENCE/lean.log" 2>&1
   NAMES='CrossDomainResidual.RecoveredLower.recovered_arctan_lower CrossDomainResidual.RecoveredPolarTransfer.baseChart_angle_bounds CrossDomainResidual.RecoveredPolarTransfer.localChart_angle_bounds'
 else
   lake build EulerBlowup.Elementary > "$EVIDENCE/source-build.log" 2>&1
-  cp "$AUDIT/RecoveredSourceCheck.lean" RecoveredSourceCheck.lean
-  run_audit RecoveredSourceCheck.lean > "$EVIDENCE/lean.log" 2>&1
+  cp "$AUDIT/RecoveredSourceCheck.lean" "$AUDIT_BUILD/RecoveredSourceCheck.lean"
+  run_audit "$AUDIT_BUILD/RecoveredSourceCheck.lean" > "$EVIDENCE/lean.log" 2>&1
   NAMES='CrossDomainResidual.RecoveredLower.recovered_arctan_lower CrossDomainResidual.RecoveredSourceCheck.recovered_implies_source CrossDomainResidual.RecoveredSourceCheck.source_implies_recovered'
 fi
 cat "$EVIDENCE/recovered-lower.log" "$EVIDENCE/lean.log"
