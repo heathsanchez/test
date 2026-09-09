@@ -12,7 +12,7 @@ class CompositionGrowthTests(unittest.TestCase):
     def obligation(self, stage, budget):
         return Obligation("proof-composition", stage, budget, "method")
 
-    def test_first_acquisition_makes_heldout_task_reachable(self):
+    def test_three_generation_constructor_program_reuse(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "growth.sqlite"
             store = EvidenceStore(path)
@@ -20,21 +20,34 @@ class CompositionGrowthTests(unittest.TestCase):
             # Matched cold crystal: O2 cannot be reached even with search budget.
             cold = Developer(store, adapter).run(self.obligation(STAGES[1], 0))
             self.assertEqual(cold.verdict, "unknown")
-            first = Developer(store, adapter).run(self.obligation(STAGES[0], 1))
+            first = Developer(store, adapter).run(self.obligation(STAGES[0], 2))
             self.assertEqual(first.verdict, "verified")
-            self.assertEqual(len(first.retained), 1)
+            self.assertEqual(len(first.retained), 2)
             store.close()
 
-            # Restarted warm crystal: O2 uses the retained constructor to build
-            # a different program, with zero further acquisition budget.
+            # The retained constructor builds a distinct O2 program, which is
+            # independently admitted as C2 and depends on C1.
             store = EvidenceStore(path)
-            warm = Developer(store, adapter).run(self.obligation(STAGES[1], 0))
+            warm = Developer(store, adapter).run(self.obligation(STAGES[1], 1))
             self.assertEqual(warm.verdict, "verified")
-            self.assertEqual(warm.retained, ())
+            self.assertEqual(len(warm.retained), 1)
             self.assertEqual(warm.evidence.certificate["program"]["kind"], "product")
-            removed = store.revoke(first.retained[0], "constructor removal ablation")
-            self.assertEqual(removed, first.retained)
-            again = Developer(store, adapter).run(self.obligation(STAGES[1], 0))
+            c2 = store.state()["capabilities"][warm.retained[0]]
+            self.assertEqual(c2["repair"]["dependencies"], [first.retained[0]])
+
+            # Unlisted O3 reuses C2 after another restart with no acquisition.
+            third = {"polynomial": {"0": "-6", "1": "5", "2": "-1"},
+                     "domain": ["interval", "2", "3"]}
+            store.close()
+            store = EvidenceStore(path)
+            reuse = Developer(store, adapter).run(self.obligation(third, 0))
+            self.assertEqual(reuse.verdict, "verified")
+            self.assertEqual(reuse.retained, ())
+            self.assertEqual(reuse.evidence.certificate["retained_program"], warm.retained[0])
+
+            removed = store.revoke(first.retained[0], "constructor ancestry ablation")
+            self.assertEqual(set(removed), set(first.retained + warm.retained))
+            again = Developer(store, adapter).run(self.obligation(third, 0))
             self.assertEqual(again.verdict, "unknown")
             store.close()
 
@@ -52,3 +65,16 @@ class CompositionGrowthTests(unittest.TestCase):
         adapter = ProofCompositionAdapter()
         self.assertTrue(adapter.verifier_id.startswith("exact-proof-program-replay-v1:"))
         self.assertEqual(len(adapter.verifier_id.rsplit(":", 1)[1]), 64)
+
+    def test_program_cannot_claim_an_unrelated_dependency(self):
+        from open_development import Repair
+        with tempfile.TemporaryDirectory() as tmp:
+            store = EvidenceStore(Path(tmp) / "dependency.sqlite")
+            adapter = ProofCompositionAdapter()
+            first = Developer(store, adapter).run(self.obligation(STAGES[0], 1))
+            self.assertEqual(len(first.retained), 1)  # constructor only at this budget
+            forged = Repair("capability", "forged", {"program_shape": "product(monomial,square)"},
+                            adapter.name, ("unrelated",))
+            evidence = adapter.verify(store.state(), self.obligation(STAGES[0], 1), forged)
+            self.assertEqual(evidence.verdict, "refuted")
+            store.close()

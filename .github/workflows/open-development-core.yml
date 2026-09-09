@@ -112,21 +112,35 @@ jobs:
               store = EvidenceStore(path)
               adapter = ProofCompositionAdapter()
               cold = Developer(store, adapter).run(obligation(stages[1], 0))
-              first = Developer(store, adapter).run(obligation(stages[0], 1))
+              first = Developer(store, adapter).run(obligation(stages[0], 2))
               store.close()
               store = EvidenceStore(path)
-              warm = Developer(store, adapter).run(obligation(stages[1], 0))
+              second = Developer(store, adapter).run(obligation(stages[1], 1))
               assert cold.verdict == 'unknown' and first.verdict == 'verified'
-              assert warm.verdict == 'verified' and not warm.retained
+              assert second.verdict == 'verified' and len(second.retained) == 1
+              program_record = store.state()['capabilities'][second.retained[0]]
+              assert program_record['repair']['dependencies'] == [first.retained[0]]
+              third = {'polynomial': {'0': '-6', '1': '5', '2': '-1'},
+                       'domain': ['interval', '2', '3']}
+              store.close()
+              store = EvidenceStore(path)
+              third_result = Developer(store, adapter).run(obligation(third, 0))
+              assert third_result.verdict == 'verified' and not third_result.retained
+              assert third_result.evidence.certificate['retained_program'] == second.retained[0]
               removed = store.revoke(first.retained[0], 'constructor removal ablation')
-              ablated = Developer(store, adapter).run(obligation(stages[1], 0))
-              assert ablated.verdict == 'unknown' and removed == first.retained
+              ablated = Developer(store, adapter).run(obligation(third, 0))
+              assert ablated.verdict == 'unknown'
+              assert set(removed) == set(first.retained + second.retained)
               Path('capability-growth-result.json').write_text(json.dumps({
-                  'claim': 'bounded constructor-enabled capability growth',
+                  'claim': 'bounded three-generation constructor-enabled capability growth',
                   'cold_O2': cold.verdict, 'O1': first.verdict,
                   'retained_constructor': first.retained[0],
-                  'restart': True, 'warm_O2_zero_acquisition_budget': warm.verdict,
-                  'O2_program': warm.evidence.certificate['program'],
+                  'retained_O1_program': first.retained[1],
+                  'O2': second.verdict, 'retained_O2_program': second.retained[0],
+                  'O2_program_dependency': program_record['repair']['dependencies'],
+                  'second_restart': True,
+                  'unlisted_O3_zero_acquisition_budget': third_result.verdict,
+                  'O3_reused_program': third_result.evidence.certificate['retained_program'],
                   'removal_ablation': ablated.verdict,
                   'limitations': ['supplied primitive nodes', 'binary product only',
                                   'exact rational polynomial domain']}, indent=2))

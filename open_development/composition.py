@@ -60,6 +60,12 @@ def construct_product(poly: Mapping[Any, Any], domain: tuple[Any, ...]):
     return program if check_program(poly, domain, program) else None
 
 
+def program_shape(program: Mapping[str, Any]) -> str:
+    if program["kind"] != "product" or len(program.get("children", ())) != 2:
+        raise ValueError("unsupported program shape")
+    return "product(" + ",".join(child["kind"] for child in program["children"]) + ")"
+
+
 class ProofCompositionAdapter:
     """Develop a product constructor, then use it as retained executable means."""
     name = "proof-composition"
@@ -78,6 +84,13 @@ class ProofCompositionAdapter:
                      and record["repair"]["payload"].get("constructor") == "binary_product"
                      and record["evidence"]["verifier"] == self.verifier_id), None)
 
+    def _programs(self, state: Mapping[str, Any]):
+        return {record["repair"]["payload"]["program_shape"]: rid
+                for rid, record in state["capabilities"].items()
+                if record["repair"]["scope"] == self.name
+                and "program_shape" in record["repair"]["payload"]
+                and record["evidence"]["verifier"] == self.verifier_id}
+
     def assess(self, state: Mapping[str, Any], obligation: Obligation) -> Evidence:
         claim = assessment_claim(state, obligation)
         constructor = self._constructor(state)
@@ -89,28 +102,49 @@ class ProofCompositionAdapter:
         if program is None:
             return Evidence("unknown", claim, self.verifier_id, {"constructor": constructor},
                             {"class": "BOUNDED_PROGRAM_NOT_FOUND"}, self.name)
+        shape = program_shape(program)
+        retained = self._programs(state).get(shape)
+        if retained is None:
+            return Evidence("unknown", claim, self.verifier_id,
+                            {"constructor": constructor, "candidate_program": program},
+                            {"class": "PROGRAM_CONSTRUCTED", "program_shape": shape,
+                             "constructor": constructor}, self.name)
         return Evidence("verified", claim, self.verifier_id,
-                        {"constructor": constructor, "program": program,
+                        {"constructor": constructor, "retained_program": retained,
+                         "program": program, "program_shape": shape,
                          "semantics": "replay_program(program, domain) = polynomial"}, scope=self.name)
 
     def propose(self, state: Mapping[str, Any], obligation: Obligation, residual: Any):
         if residual.get("class") == "MISSING_COMPOSITION":
             yield Repair("capability", "binary-product", {"constructor": "binary_product"}, self.name)
+        elif residual.get("class") == "PROGRAM_CONSTRUCTED":
+            yield Repair("capability", residual["program_shape"],
+                         {"program_shape": residual["program_shape"]}, self.name,
+                         (residual["constructor"],))
 
     def verify(self, state: Mapping[str, Any], obligation: Obligation, repair: Repair) -> Evidence:
         poly, domain = self._problem(obligation)
         program = construct_product(poly, domain)
-        valid = (repair.kind == "capability" and repair.payload.get("constructor") == "binary_product"
+        constructor = self._constructor(state)
+        is_constructor = (repair.payload.get("constructor") == "binary_product"
+                          and not repair.dependencies)
+        is_program = (program is not None and repair.payload.get("program_shape") == program_shape(program)
+                      and constructor is not None and repair.dependencies == (constructor,))
+        valid = (repair.kind == "capability" and (is_constructor or is_program)
                  and program is not None and check_program(poly, domain, program))
         if not valid:
             return Evidence("refuted", repair.id, self.verifier_id,
                             {"accepted": False}, scope=self.name)
         return Evidence("verified", repair.id, self.verifier_id,
                         {"accepted": True, "witness_program": program,
+                         "object": "constructor" if is_constructor else "program",
                          "semantics": "binary product preserves certified nonnegativity"}, scope=self.name)
 
     def attach(self, state: Mapping[str, Any], repair: Repair, evidence: Evidence):
         if evidence.verdict != "verified" or evidence.claim != repair.id or not evidence.certificate["accepted"]:
             raise ValueError("unverified constructor")
-        return {"constructor": "binary_product", "executable": True,
+        if repair.payload.get("constructor") == "binary_product":
+            return {"constructor": "binary_product", "executable": True,
+                    "semantic_contract": evidence.certificate["semantics"]}
+        return {"program_shape": repair.payload["program_shape"], "executable": True,
                 "semantic_contract": evidence.certificate["semantics"]}
