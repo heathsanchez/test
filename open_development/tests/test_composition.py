@@ -36,19 +36,32 @@ class CompositionGrowthTests(unittest.TestCase):
             c2 = store.state()["capabilities"][warm.retained[0]]
             self.assertEqual(c2["repair"]["dependencies"], [first.retained[0]])
 
-            # Unlisted O3 reuses C2 after another restart with no acquisition.
-            third = {"polynomial": {"0": "-6", "1": "5", "2": "-1"},
-                     "domain": ["interval", "2", "3"]}
+            # Unlisted O3 needs C2 itself to construct a new nested program.
+            third = {"polynomial": {"1": "1", "3": "-1"},
+                     "domain": ["interval", "0", "1"]}
             store.close()
             store = EvidenceStore(path)
-            reuse = Developer(store, adapter).run(self.obligation(third, 0))
+            cold_third = Developer(store, adapter).run(self.obligation(third, 0))
+            self.assertEqual(cold_third.verdict, "unknown")
+            acquire = Developer(store, adapter).run(self.obligation(third, 1))
+            self.assertEqual(acquire.verdict, "verified")
+            self.assertEqual(len(acquire.retained), 1)
+            c3 = store.state()["capabilities"][acquire.retained[0]]
+            self.assertEqual(c3["repair"]["dependencies"], [warm.retained[0]])
+
+            # A coefficient-distinct O4 reuses C3 after another restart at zero budget.
+            fourth = {"polynomial": {"1": "2", "2": "1", "3": "-1"},
+                      "domain": ["interval", "0", "1"]}
+            store.close()
+            store = EvidenceStore(path)
+            reuse = Developer(store, adapter).run(self.obligation(fourth, 0))
             self.assertEqual(reuse.verdict, "verified")
             self.assertEqual(reuse.retained, ())
-            self.assertEqual(reuse.evidence.certificate["retained_program"], warm.retained[0])
+            self.assertEqual(reuse.evidence.certificate["retained_program"], acquire.retained[0])
 
             removed = store.revoke(first.retained[0], "constructor ancestry ablation")
-            self.assertEqual(set(removed), set(first.retained + warm.retained))
-            again = Developer(store, adapter).run(self.obligation(third, 0))
+            self.assertEqual(set(removed), set(first.retained + warm.retained + acquire.retained))
+            again = Developer(store, adapter).run(self.obligation(fourth, 0))
             self.assertEqual(again.verdict, "unknown")
             store.close()
 

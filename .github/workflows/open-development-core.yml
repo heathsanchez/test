@@ -120,27 +120,42 @@ jobs:
               assert second.verdict == 'verified' and len(second.retained) == 1
               program_record = store.state()['capabilities'][second.retained[0]]
               assert program_record['repair']['dependencies'] == [first.retained[0]]
-              third = {'polynomial': {'0': '-6', '1': '5', '2': '-1'},
-                       'domain': ['interval', '2', '3']}
+              third = {'polynomial': {'1': '1', '3': '-1'},
+                       'domain': ['interval', '0', '1']}
               store.close()
               store = EvidenceStore(path)
-              third_result = Developer(store, adapter).run(obligation(third, 0))
-              assert third_result.verdict == 'verified' and not third_result.retained
-              assert third_result.evidence.certificate['retained_program'] == second.retained[0]
+              cold_third = Developer(store, adapter).run(obligation(third, 0))
+              third_result = Developer(store, adapter).run(obligation(third, 1))
+              assert cold_third.verdict == 'unknown'
+              assert third_result.verdict == 'verified' and len(third_result.retained) == 1
+              third_record = store.state()['capabilities'][third_result.retained[0]]
+              assert third_record['repair']['dependencies'] == [second.retained[0]]
+              fourth = {'polynomial': {'1': '2', '2': '1', '3': '-1'},
+                        'domain': ['interval', '0', '1']}
+              store.close()
+              store = EvidenceStore(path)
+              fourth_result = Developer(store, adapter).run(obligation(fourth, 0))
+              assert fourth_result.verdict == 'verified' and not fourth_result.retained
+              assert fourth_result.evidence.certificate['retained_program'] == third_result.retained[0]
               removed = store.revoke(first.retained[0], 'constructor removal ablation')
-              ablated = Developer(store, adapter).run(obligation(third, 0))
+              ablated = Developer(store, adapter).run(obligation(fourth, 0))
               assert ablated.verdict == 'unknown'
-              assert set(removed) == set(first.retained + second.retained)
+              assert set(removed) == set(first.retained + second.retained + third_result.retained)
               Path('capability-growth-result.json').write_text(json.dumps({
-                  'claim': 'bounded three-generation constructor-enabled capability growth',
+                  'claim': 'bounded four-generation dependent capability growth',
                   'cold_O2': cold.verdict, 'O1': first.verdict,
                   'retained_constructor': first.retained[0],
                   'retained_O1_program': first.retained[1],
                   'O2': second.verdict, 'retained_O2_program': second.retained[0],
                   'O2_program_dependency': program_record['repair']['dependencies'],
                   'second_restart': True,
-                  'unlisted_O3_zero_acquisition_budget': third_result.verdict,
-                  'O3_reused_program': third_result.evidence.certificate['retained_program'],
+                  'cold_O3': cold_third.verdict,
+                  'O3_acquired': third_result.verdict,
+                  'retained_O3_program': third_result.retained[0],
+                  'O3_program_dependency': third_record['repair']['dependencies'],
+                  'third_restart': True,
+                  'unlisted_O4_zero_acquisition_budget': fourth_result.verdict,
+                  'O4_reused_program': fourth_result.evidence.certificate['retained_program'],
                   'removal_ablation': ablated.verdict,
                   'limitations': ['supplied primitive nodes', 'binary product only',
                                   'exact rational polynomial domain']}, indent=2))
@@ -216,6 +231,11 @@ jobs:
             'OpenDevelopment.TypedProgramSemantics.o3_commutes',
             'OpenDevelopment.TypedProgramSemantics.o2_sound',
             'OpenDevelopment.TypedProgramSemantics.o3_sound']
+          names += [
+            'OpenDevelopment.TypedProgramSemantics.acquiredO3_commutes',
+            'OpenDevelopment.TypedProgramSemantics.o4_commutes',
+            'OpenDevelopment.TypedProgramSemantics.acquiredO3_sound',
+            'OpenDevelopment.TypedProgramSemantics.o4_sound']
           allowed={'propext','Quot.sound','Classical.choice'}
           records={name:{x.strip() for x in raw.split(',') if x.strip()}
                    for name,raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",text)}

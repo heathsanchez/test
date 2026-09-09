@@ -12,8 +12,10 @@ class ReleaseEvidenceTests(unittest.TestCase):
             proof={"cold": ["unknown", "unknown"], "warm": ["verified", "verified"],
                    "restart": True, "exact_ablation": "unknown"},
             growth={"cold_O2": "unknown", "O1": "verified", "O2": "verified",
-                    "unlisted_O3_zero_acquisition_budget": "verified",
-                    "second_restart": True, "removal_ablation": "unknown"})
+                    "cold_O3": "unknown", "O3_acquired": "verified",
+                    "unlisted_O4_zero_acquisition_budget": "verified",
+                    "second_restart": True, "third_restart": True,
+                    "removal_ablation": "unknown"})
 
     def test_round_trip(self):
         validate_release(self.evidence())

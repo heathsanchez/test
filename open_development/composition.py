@@ -61,10 +61,34 @@ def construct_product(poly: Mapping[Any, Any], domain: tuple[Any, ...]):
     return program if check_program(poly, domain, program) else None
 
 
+def construct_nested_product(poly: Mapping[Any, Any], domain: tuple[Any, ...]):
+    """Extend a retained affine-product program by a nonnegative monomial.
+
+    This is deliberately generic over the coefficients: divisibility by x is
+    detected from the obligation, and the remaining quadratic is replayed
+    through the existing interval-affine constructor.
+    """
+    p = norm(poly)
+    if domain[0] != "interval" or p.get(0, Q(0)) != 0 or not p:
+        return None
+    quotient = norm({power - 1: coefficient for power, coefficient in p.items()
+                     if power > 0})
+    factors = interval_affine(quotient, domain)
+    if factors is None:
+        return None
+    program = {"kind": "product", "children": [
+        {"kind": "monomial", "power": 1, "coefficient": "1"}, factors]}
+    return program if check_program(poly, domain, program) else None
+
+
 def program_shape(program: Mapping[str, Any]) -> str:
-    if program["kind"] != "product" or len(program.get("children", ())) != 2:
-        raise ValueError("unsupported program shape")
-    return "product(" + ",".join(child["kind"] for child in program["children"]) + ")"
+    kind = program["kind"]
+    if kind != "product":
+        return kind
+    children = program.get("children", ())
+    if len(children) != 2:
+        raise ValueError("binary product required")
+    return "product(" + ",".join(program_shape(child) for child in children) + ")"
 
 
 class ProofCompositionAdapter:
@@ -110,17 +134,24 @@ class ProofCompositionAdapter:
         if constructor is None:
             return Evidence("unknown", claim, self.verifier_id, {"closure": "primitive-only"},
                             {"class": "MISSING_COMPOSITION", "operation": "product"}, self.name)
+        programs = self._programs(state)
         program = construct_product(poly, domain)
+        dependency = constructor
+        if program is None:
+            parent_shape = "product(affine,affine)"
+            dependency = programs.get(parent_shape)
+            if dependency is not None:
+                program = construct_nested_product(poly, domain)
         if program is None:
             return Evidence("unknown", claim, self.verifier_id, {"constructor": constructor},
                             {"class": "BOUNDED_PROGRAM_NOT_FOUND"}, self.name)
         shape = program_shape(program)
-        retained = self._programs(state).get(shape)
+        retained = programs.get(shape)
         if retained is None:
             return Evidence("unknown", claim, self.verifier_id,
                             {"constructor": constructor, "candidate_program": program},
                             {"class": "PROGRAM_CONSTRUCTED", "program_shape": shape,
-                             "constructor": constructor}, self.name)
+                             "dependency": dependency}, self.name)
         return Evidence("verified", claim, self.verifier_id,
                         {"constructor": constructor, "retained_program": retained,
                          "program": program, "program_shape": shape,
@@ -133,7 +164,7 @@ class ProofCompositionAdapter:
         elif residual.get("class") == "PROGRAM_CONSTRUCTED":
             yield Repair("capability", residual["program_shape"],
                          {"program_shape": residual["program_shape"]}, self.name,
-                         (residual["constructor"],), self.program_contract)
+                         (residual["dependency"],), self.program_contract)
 
     def verify(self, state: Mapping[str, Any], obligation: Obligation, repair: Repair) -> Evidence:
         poly, domain = self._problem(obligation)
@@ -142,8 +173,15 @@ class ProofCompositionAdapter:
         is_constructor = (repair.payload.get("constructor") == "binary_product"
                           and not repair.dependencies
                           and repair.contract == self.constructor_contract)
+        expected_dependency = constructor
+        if program is None:
+            parent = self._programs(state).get("product(affine,affine)")
+            if parent is not None:
+                program = construct_nested_product(poly, domain)
+                expected_dependency = parent
         is_program = (program is not None and repair.payload.get("program_shape") == program_shape(program)
-                      and constructor is not None and repair.dependencies == (constructor,)
+                      and expected_dependency is not None
+                      and repair.dependencies == (expected_dependency,)
                       and repair.contract == self.program_contract)
         valid = (repair.kind == "capability" and (is_constructor or is_program)
                  and program is not None and check_program(poly, domain, program))

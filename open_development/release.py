@@ -39,8 +39,11 @@ def build_release(*, repository: str, source_commit: str, run_id: int,
              and proof.get("exact_ablation") == "unknown", "proof self-application gate failed")
     _require(growth.get("cold_O2") == "unknown" and growth.get("O1") == "verified"
              and growth.get("O2") == "verified"
-             and growth.get("unlisted_O3_zero_acquisition_budget") == "verified"
+             and growth.get("cold_O3") == "unknown"
+             and growth.get("O3_acquired") == "verified"
+             and growth.get("unlisted_O4_zero_acquisition_budget") == "verified"
              and growth.get("second_restart") is True
+             and growth.get("third_restart") is True
              and growth.get("removal_ablation") == "unknown",
              "capability-growth causal gate failed")
     body = {
