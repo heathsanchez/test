@@ -1,0 +1,129 @@
+name: Certificate grammar genesis
+on:
+  push:
+    branches: [mathgraph/certificate-grammar-genesis-v1]
+    paths:
+      - .github/workflows/certificate-grammar-genesis.yml
+      - audits/certificate_genesis/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  finite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen old grammar, new certificate and matched controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered evidence
+          test "$(git hash-object audits/certificate_genesis/PROTOCOL.md)" =  $(git rev-parse 56b0dfa0ced532aac3fd9d50a2d81bf1d99aa13f:audits/certificate_genesis/PROTOCOL.md)
+          test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          test "$(git hash-object audits/form_recovery/form_synthesis.py)" = 43143befff502cfe36ce5ad01aea2f8c69416c09
+          export PYTHONPATH="$PWD/audits/certificate_genesis:$PWD/audits/form_recovery:$PWD/audits/cross_domain"
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/cross_domain/proof_bridge.py --test 2>&1 | tee evidence/baseline-tests.log
+          python audits/cross_domain/heldout_recovery.py --test 2>&1 | tee evidence/coefficient-tests.log
+          python audits/form_recovery/form_experiment.py --test 2>&1 | tee evidence/form-tests.log
+          python audits/certificate_genesis/genesis_experiment.py --test 2>&1 | tee evidence/genesis-tests.log
+          python audits/certificate_genesis/genesis_experiment.py > evidence/genesis-result.json
+          python audits/certificate_genesis/emit_genesis.py --result evidence/genesis-result.json --output recovered/RecoveredGenesis.lean --certificate recovered/certificate.json | tee evidence/synthesis.log
+          (cd recovered && sha256sum RecoveredGenesis.lean > source.sha256)
+          python - <<'PY'
+          import json,pathlib
+          r=json.load(open('evidence/genesis-result.json'))
+          c=json.load(open('recovered/certificate.json'))
+          assert r['status']=='PASS' and r['before']['status']=='GRAMMAR_INSUFFICIENT'
+          assert r['old_maximum_at_one']=='2/3'
+          assert r['selected']==[c] and r['heldout_witness'] is None
+          assert all(a['witness'] is not None for a in r['ablation'])
+          assert c['certificate_kind']=='half_line_square'
+          assert c['square']=={'A':'1/2','r':'1','D':'0'}
+          text=pathlib.Path('recovered/RecoveredGenesis.lean').read_text()
+          assert 'import Mathlib' in text
+          assert 'import ABAngleBounds' not in text
+          assert 'self_sub_cube_le_arctan' not in text
+          assert '\nsorry' not in text and '\nadmit' not in text
+          print('CERTIFICATE_GENESIS_FINITE_PASS')
+          print('SELECTED_CERTIFICATE',c)
+          print('ORDERINGS',r['orderings'])
+          PY
+          sha256sum audits/certificate_genesis/PROTOCOL.md audits/cross_domain/experiment.py audits/form_recovery/form_synthesis.py audits/certificate_genesis/*.py recovered/RecoveredGenesis.lean recovered/certificate.json evidence/genesis-result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: certificate-genesis-evidence
+          path: evidence/
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        with:
+          name: certificate-genesis-generated
+          path: recovered/
+          if-no-files-found: error
+  target:
+    needs: finite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: certificate-genesis-generated
+          path: recovered
+      - name: Check generated universal estimate and genuine polar-chart transfer
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: target
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/certificate_genesis/run_genesis_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: certificate-genesis-target
+          path: evidence/
+          if-no-files-found: warn
+  source:
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: certificate-genesis-generated
+          path: recovered
+      - name: Check exact improvement against original AB source theorem
+        shell: bash
+        working-directory: upstream/euler-blowup
+        env:
+          TASK: source
+          EXPECTED_REF: d0124689230b58b4f86e7b90ac59de06404b3b6b
+        run: bash "$GITHUB_WORKSPACE/audit/audits/certificate_genesis/run_genesis_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: certificate-genesis-source
+          path: evidence/
+          if-no-files-found: warn
