@@ -1,0 +1,1 @@
+The v1 experiment is bounded by 64 semantic checks. Local execution exhausted that budget in both arms. The external workflow is the authoritative qualification; no broader discovery claim follows from a green infrastructure status alone.
