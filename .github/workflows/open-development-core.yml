@@ -1,0 +1,66 @@
+name: Open Development Core
+
+on:
+  push:
+    branches: [open-development-core-v1]
+  pull_request:
+    paths:
+      - 'open_development/**'
+      - '.github/workflows/open-development-core.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Python contract tests
+        run: python -m unittest discover -s open_development/tests -v
+      - name: Install Lean via elan
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check pinned MSI kernel and developmental bridge
+        run: bash open_development/lean/check.sh
+      - name: Verify retained finite development through Lean
+        run: |
+          python - <<'PYDEMO'
+          import json, tempfile
+          from pathlib import Path
+          from open_development import Developer, EvidenceStore, Obligation
+          from open_development.finite import FiniteAdapter
+          from open_development.lean_gate import LeanGate
+          spec = json.loads(Path('open_development/examples/finite.json').read_text())
+          with tempfile.TemporaryDirectory() as tmp:
+              store = EvidenceStore(Path(tmp) / 'state.sqlite')
+              adapter = FiniteAdapter(spec, LeanGate())
+              dev = Developer(store, adapter)
+              first = dev.run(Obligation('finite', {'task': 'first', 'actual_world': '1'}, 1))
+              assert first.verdict == 'verified' and len(first.retained) == 1
+              cert = store.state()['capabilities'][first.retained[0]]['evidence']['certificate']['lean']
+              assert cert['theorems'] == ['candidate_refines', 'candidate_admitted']
+              second = dev.run(Obligation('finite', {'task': 'second', 'actual_world': '1'}, 0))
+              assert second.verdict == 'verified' and not second.retained
+              store.revoke(first.retained[0], 'exact ancestor ablation')
+              cold = dev.run(Obligation('finite', {'task': 'first', 'actual_world': '1'}, 0))
+              assert cold.verdict == 'unknown'
+              Path('open-development-result.json').write_text(json.dumps({
+                  'first': first.verdict, 'retained': first.retained,
+                  'second': second.verdict, 'second_new_capabilities': second.retained,
+                  'ablated': cold.verdict, 'lean': cert['verifier'],
+                  'evidence_head': store.events()[-1]['type']}, indent=2))
+              store.close()
+          PYDEMO
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: open-development-core-v1
+          path: open-development-result.json
+          if-no-files-found: ignore

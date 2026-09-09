@@ -1,0 +1,14 @@
+{
+  "worlds": ["0", "1", "2"],
+  "probes": {
+    "constant": [0, 0, 0],
+    "split": [0, 1, 1],
+    "identity": [0, 1, 2]
+  },
+  "initial_probes": ["constant"],
+  "candidate_probes": ["split", "identity"],
+  "tasks": {
+    "first": {"a": ["0"], "b": ["1", "2"]},
+    "second": {"c": ["0", "1"], "d": ["2"]}
+  }
+}
