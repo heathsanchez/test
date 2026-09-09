@@ -1,0 +1,138 @@
+name: Procedure composition transfer
+on:
+  push:
+    branches: [mathgraph/procedure-composition-transfer-v1]
+    paths:
+      - .github/workflows/procedure-composition-transfer.yml
+      - audits/procedure_composition/emit_transfer.py
+      - audits/procedure_composition/run_transfer_lean.sh
+      - audits/procedure_composition/TRANSFER_PROTOCOL.md
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  soundness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Check generic interpreter before generated mathematics
+        working-directory: upstream
+        env:
+          TASK: soundness
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_composition/run_transfer_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-soundness
+          path: evidence/
+  finite:
+    needs: soundness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: composition-generated
+          repository: heathsanchez/test
+          run-id: 34305818938
+          github-token: ${{ github.token }}
+          path: input
+      - name: Replay immutable programs and emit Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p recovered evidence
+          echo '2518a941beb0f4092c7edc824e43cfd0a9860e63aab326f69973563f6a8eaea5  input/certificates.json' | sha256sum -c -
+          echo '738cb1ac37852cde8e4e04be14f91f0d4e779fa232cf0015297872bc300ed7b4  input/programs.json' | sha256sum -c -
+          test "$(git hash-object audits/procedure_composition/composition.py)" = cc446af6339b9f6adf1c828fb940b0bd3cf965a7
+          test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          test "$(git hash-object audits/procedure_repair/emit.py)" = 2c4a63abdeddc748bbc08b9539bba45bec7f4f08
+          python -m pip install 'sympy==1.14.0'
+          export PYTHONPATH="$PWD/audits/cross_domain:$PWD/audits/procedure_composition:$PWD/audits/procedure_repair"
+          python audits/procedure_composition/emit_transfer.py --source input --out recovered | tee evidence/replay.log
+          (cd recovered && sha256sum -c source.sha256)
+          sha256sum input/*.json recovered/*.lean recovered/*.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-finite
+          path: evidence/
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: transfer-generated
+          path: recovered/
+          if-no-files-found: error
+  target:
+    needs: finite
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: transfer-generated
+          path: recovered
+      - name: Check recovered mathematics and actual polar charts
+        working-directory: upstream
+        env:
+          TASK: target
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_composition/run_transfer_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-target
+          path: evidence/
+  source:
+    needs: target
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: tristanbuckmaster/fluid_lean
+          ref: d0124689230b58b4f86e7b90ac59de06404b3b6b
+          path: upstream
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: transfer-generated
+          path: recovered
+      - name: Check held-out constructor and original source comparison
+        working-directory: upstream/euler-blowup
+        env:
+          TASK: source
+          EXPECTED_REF: d0124689230b58b4f86e7b90ac59de06404b3b6b
+        run: bash "$GITHUB_WORKSPACE/audit/audits/procedure_composition/run_transfer_lean.sh"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: transfer-source
+          path: evidence/
