@@ -1,0 +1,1 @@
+The frozen 64-check pilot did not complete both stages. This is a resource-bound failure, not a counterexample to the mathematical obligations or a proof of expressivity insufficiency. The original protocol and source code remain preserved. A separately frozen continuation is required before claiming success at a larger budget.
