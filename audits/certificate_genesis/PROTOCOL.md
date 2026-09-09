@@ -1,0 +1,21 @@
+# Certificate-grammar genesis v1 — frozen experiment
+
+This is a new experiment, not a modification of the successful unknown-form qualification at c27251dc8d0f9ba22b54ae5442a78bbaa0219919. The prior source grammar and coefficientwise certificate solver remain unchanged. The specific frontier is its rejection of the quadratic correction family despite the possibility that a different positivity certificate could certify it. The experiment tests construction of a proof-certificate language, not unrestricted expression or ontology invention.
+
+## Protected task and isolation
+
+The independently specified quantitative obligation is arctan(1) > 7/10. Its truth must be checked separately in Lean using pi > 3 and arctan(1)=pi/4; this check is not available to synthesis. The finite selection oracle uses the corresponding rational threshold predicate at x=1, together with the known upper bound. The generator never imports the target oracle, the source lower theorem, or a named target expression. Its inputs are the original rejected certificate records and exact derivative polynomials. No source comparison may feed back into generation.
+
+## Frozen grammar and budget
+
+The initial expression grammar is exactly the previous 20 syntax choices a*x-c*x^n, with slopes {0,1/4,1/2,3/4,1}, exponents {2,3,4,5}, and nonnegative rational c. The old certificate language accepts only coefficientwise nonnegative P=(1+x^2)*(1-L'). The new meta-operator may introduce one generic certificate constructor: factor a nonnegative monomial x^k and complete the square of a residual quadratic, solving the exact rational coefficient conditions. The certificate has the form x^k*(A*(x-r)^2+D), with A,D nonnegative rationals. Rational square roots are accepted only when exact. No new expression constructors, exponent ranges, target-specific formulas, or arbitrary proof lemmas may be introduced. The coefficient solver seeks the least nonnegative c admitted by the new certificate and verifies the resulting polynomial identity exactly. Failure of either certificate procedure is not mathematical nonexistence.
+
+The meta-operator is invoked only after the old grammar fails the protected obligation. It enumerates the original rejected syntax choices in their original order and retains only independently certified extensions. The unchanged experiment.develop selector receives the resulting features. The residual and pass/fail-only controls get the same candidates, order, initial upper capability, and two-feature budget. Exhaust all orderings of the retained extensions, and record the old failure, new certificate, selection, ablation, and all counts. A zero- or one-candidate comparison must not be presented as evidence of a causal search advantage.
+
+## Qualification and transfer
+
+The training valuations are (1,7/10), (1,2/3), (1,1), and (1,2); held-out valuations are (1,a) for a in {0,1/2,7/12,2/3,7/10,3/4,1,3/2,2}. The exact oracle is a>=7/10 and a<=1. A successful finite result must distinguish the protected pair and survive removal ablation. The mathematical result requires a generated universal lower estimate for all real x>=0, a Lean proof using the generated certificate rather than the withheld source lower theorem, and standard-axiom checks. Transfer the generated result to the genuine baseChart and localChart definitions at openai/NavierStokesAndEuler@8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538. Separately check the independent target truth and compare the new estimate with the original Alpöge–Buckmaster cubic lower estimate at tristanbuckmaster/fluid_lean@d0124689230b58b4f86e7b90ac59de06404b3b6b. Prove any claimed improvement only on its stated domain.
+
+The generated source is an immutable CI artifact passed to independent target and source jobs. Preserve upstream files and manifests; record any toolchain compatibility replay. Preserve all earlier qualifications. Implementation and build repairs may be rerun without changing the frozen mathematical grammar, oracle, or budget. Any mathematical change requires a new named experiment.
+
+The intended claim is bounded certificate-language extension and a verified estimate not certified by the old procedure. It does not establish a new Navier–Stokes blow-up theorem, a missing step in either large proof, a globally stronger bound, or unrestricted grammar discovery.
