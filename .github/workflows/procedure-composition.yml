@@ -1,0 +1,88 @@
+name: Procedure composition qualification
+on:
+  push:
+    branches: [mathgraph/procedure-composition-v1, mathgraph/procedure-composition-v2]
+    paths:
+      - .github/workflows/procedure-composition.yml
+      - audits/procedure_composition/**
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  soundness:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: audit
+      - uses: actions/checkout@v4
+        with:
+          repository: openai/NavierStokesAndEuler
+          ref: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+          path: upstream
+          persist-credentials: false
+      - name: Check generic interpreter soundness before synthesis
+        shell: bash
+        working-directory: upstream
+        env:
+          TASK: soundness
+          EXPECTED_REF: 8937a8f4cbc7abaab5e9e97d1cc7f5d2319d9538
+        run: |
+          set -euo pipefail
+          bash "$GITHUB_WORKSPACE/audit/audits/procedure_repair/run_procedure_lean.sh"
+          export PATH="$HOME/.elan/bin:$PATH"
+          cp "$GITHUB_WORKSPACE/audit/audits/procedure_composition/ProgramRules.lean" .mathgraph-procedure/ProgramRules.lean
+          lake env bash -c 'export LEAN_PATH="$PWD/.mathgraph-procedure:$LEAN_PATH"; exec lean -o .mathgraph-procedure/ProgramRules.olean .mathgraph-procedure/ProgramRules.lean' > "$GITHUB_WORKSPACE/evidence/program-soundness.log" 2>&1
+          cat "$GITHUB_WORKSPACE/evidence/program-soundness.log"
+          python - <<'PY'
+          import pathlib,re
+          text=(pathlib.Path(__import__('os').environ['GITHUB_WORKSPACE'])/'evidence/program-soundness.log').read_text()
+          m=re.search(r"'CrossDomainResidual.ProgramRules.sound' depends on axioms: \[([^\]]*)\]",text)
+          assert m is not None,text
+          assert {x.strip() for x in m.group(1).split(',')} <= {'propext','Classical.choice','Quot.sound'}
+          print('PROGRAM_INTERPRETER_SOUNDNESS_PASS')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composition-soundness
+          path: evidence/
+          if-no-files-found: warn
+  finite:
+    needs: soundness
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen program construction and equal-check controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          test "$(git hash-object audits/procedure_composition/PROTOCOL.md)" = 14e7ddecbb017b9d5d2499fb6bf820700c0a9a8d
+          test "$(git hash-object audits/cross_domain/experiment.py)" = 5d28426f2ce50032a5b291d20c93bc7acd0ff4b5
+          python -m pip install 'sympy==1.14.0'
+          export PYTHONPATH="$PWD/audits/cross_domain:$PWD/audits/procedure_composition"
+          python -m unittest discover -s audits/cross_domain -p experiment.py -v 2>&1 | tee evidence/original-tests.log
+          python audits/procedure_composition/composition.py --test 2>&1 | tee evidence/composition-tests.log
+          python audits/procedure_composition/composition.py > evidence/result.json
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence/result.json'))
+          for mode in ('residual','blind'):
+              x=r[mode]
+              assert x['checks']<=r['limits']['total_semantic_checks']
+              print(mode,x['status'],'checks',x['checks'],'cpu_seconds',x['cpu_seconds'])
+          print('PROCEDURE_COMPOSITION_FINITE_COMPLETE',r['status'])
+          PY
+          sha256sum audits/procedure_composition/*.py audits/procedure_composition/*.lean audits/procedure_composition/LIMITS.json evidence/result.json > evidence/hashes.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: composition-finite-evidence
+          path: evidence/
+          if-no-files-found: warn
