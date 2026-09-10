@@ -71,7 +71,6 @@ jobs:
               exact hax.symm
           termination_by sz c
           decreasing_by
-            simp only [sz]
             omega
 
           theorem root_semantic
