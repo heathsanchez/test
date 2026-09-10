@@ -1,0 +1,71 @@
+name: E6878 Lean superposition probe v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-lean-superposition-probe-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install elan and ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          git -C /tmp/etp checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          cd /tmp/etp
+          lake exe cache get
+          lake build equational_theories.Superposition equational_theories.Magma
+
+      - name: Probe direct self-superpositions
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/etp/E6878Probe.lean <<'LEAN'
+          import equational_theories.Superposition
+          import equational_theories.Magma
+
+          namespace E6878Probe
+
+          theorem source {G : Type} [Magma G] :
+              (∀ x y z : G,
+                y ◇ (y ◇ ((z ◇ x) ◇ (x ◇ y))) = x) →
+              True := by
+            intro _
+            trivial
+
+          theorem r2_direct {G : Type} [Magma G]
+              (h : ∀ x y z : G,
+                y ◇ (y ◇ ((z ◇ x) ◇ (x ◇ y))) = x) :
+              ∀ a b c : G, a ◇ (a ◇ (b ◇ (c ◇ a))) = c := by
+            exact superpose h h
+
+          theorem r5_direct {G : Type} [Magma G]
+              (h : ∀ x y z : G,
+                y ◇ (y ◇ ((z ◇ x) ◇ (x ◇ y))) = x) :
+              ∀ a b c : G, (a ◇ b) ◇ ((a ◇ b) ◇ c) = a := by
+            exact superpose h h
+
+          #print axioms r2_direct
+          #print axioms r5_direct
+
+          end E6878Probe
+          LEAN
+          set +e
+          lake env lean E6878Probe.lean 2>&1 | tee /tmp/probe.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo LEAN_RC=$rc
+          grep -E 'r2_direct|r5_direct|error:' /tmp/probe.log || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-lean-superposition-probe-v1
+          path: /tmp/probe.log
