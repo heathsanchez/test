@@ -37,7 +37,7 @@ jobs:
         run: |
           set -euxo pipefail
           mkdir -p /tmp/sweep
-          base64 -d experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 > /tmp/sweep/Sweep.lean
+          base64 -d experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 > /tmp/sweep/Sweep.lean\n          echo 'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582  /tmp/sweep/Sweep.lean' | sha256sum -c -
           python3 - <<'PY'
           import json, re, urllib.request
           from itertools import product
@@ -149,7 +149,7 @@ jobs:
             intro h
             have hh := h {args}
             have hne : {xcon} ≠ {concrete} := by
-              native_decide
+              decide
             exact hne hh
           """)
 
@@ -203,7 +203,7 @@ jobs:
           cp /tmp/sweep/Sweep.lean /tmp/mathlib4/E11116AustinCorpusSweep.lean
           cd /tmp/mathlib4
           lake env lean E11116AustinCorpusSweep.lean | tee /tmp/sweep/lean.log
-          grep -q 'submission.C.corpus_not_4916' /tmp/sweep/lean.log
+          grep -q 'submission.C.corpus_not_4916' /tmp/sweep/lean.log\n          ! grep -q 'sorryAx' /tmp/sweep/lean.log\n          ! grep -q '_native.native_decide' /tmp/sweep/lean.log
           echo 'PASS: released E11116 model satisfies E11116 and refutes all other 129 corpus laws'
 
       - name: Publish evidence bundle
