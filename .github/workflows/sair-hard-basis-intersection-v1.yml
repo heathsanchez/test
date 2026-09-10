@@ -1,0 +1,59 @@
+name: SAIR hard basis intersection v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/sair-hard-basis-intersection-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  intersect:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Freeze public sources and intersect
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+          curl -fsSL https://huggingface.co/datasets/SAIRfoundation/equational-theories-selected-problems/resolve/main/data/research_order5_hard.jsonl -o /tmp/research.jsonl
+          python3 - <<'PY'
+          import json,re,pathlib,collections
+          idx=json.loads(pathlib.Path('/tmp/austin/proofs/index.json').read_text())
+          model={}
+          family={}
+          for e in idx['equations']:
+            ip=e.get('infinite_model_proof')
+            if not ip:continue
+            n=int(e['equation'].replace('Equation',''))
+            model[n]=ip['path']
+            s=pathlib.Path('/tmp/austin',ip['path']).read_text(errors='replace')
+            if 'inductive Code' in s:
+              i=s.index('inductive Code');j=s.find('\ntheorem ',i);b=s[i:j if j>=0 else i+9000]
+              family[n]='recursive_code' if ('inductive Step' in b or re.search(r'\bStep\b',b)) else 'direct_code'
+            elif 'Sum Nat Nat' in s: family[n]='sum_nat'
+            elif 'ℚ' in s or 'Rat' in s: family[n]='rational'
+            elif 'Fin ' in s: family[n]='finite'
+            else: family[n]='other'
+          rows=[json.loads(x) for x in pathlib.Path('/tmp/research.jsonl').read_text().splitlines() if x.strip()]
+          covered=[r for r in rows if int(r['eq1_id']) in model]
+          miss=[r for r in rows if int(r['eq1_id']) not in model]
+          out={
+            'total':len(rows),
+            'source_has_archived_model':len(covered),
+            'source_missing_model':len(miss),
+            'family_counts':dict(collections.Counter(family[int(r['eq1_id'])] for r in covered)),
+            'target_counts_covered':dict(collections.Counter(str(r['eq2_id']) for r in covered)),
+            'covered_ids':[r['id'] for r in covered],
+            'missing':[{k:r[k] for k in ['id','eq1_id','eq2_id','equation1','equation2']} for r in miss],
+          }
+          pathlib.Path('/tmp/intersection.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps({k:v for k,v in out.items() if k not in ['covered_ids','missing']},indent=2))
+          print('MISSING_EQ1',sorted(set(int(r['eq1_id']) for r in miss)))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sair-hard-basis-intersection-v1
+          path: /tmp/intersection.json
