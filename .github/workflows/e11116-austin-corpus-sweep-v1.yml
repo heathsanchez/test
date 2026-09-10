@@ -149,9 +149,7 @@ jobs:
           theorem corpus_not_{n} : ¬ CorpusLaw{n} := by
             intro h
             have hh := h {args}
-            have hne : {xcon} ≠ {concrete} := by
-              decide
-            exact hne hh
+            simpa [mul, root, linked, baseLink] using hh
           """)
 
           survivors = [r["equation"] for r in rows if not r["refuted"]]
