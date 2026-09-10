@@ -79,6 +79,7 @@ jobs:
               ∀ t : FreeMagma Nat,
                 C.lift hΓ ρ (C.canonical t) =
                   FreeMagma.evalInMagma ρ t := by
+            letI : Magma C.Carrier := C.instMagma
             intro t
             induction t with
             | Leaf n =>
@@ -98,6 +99,7 @@ jobs:
               (F : NatMagmaLaw) :
               Γ ⊧ F ↔
                 C.canonical F.lhs = C.canonical F.rhs := by
+            letI : Magma C.Carrier := C.instMagma
             constructor
             · intro h
               have hF : @satisfies Nat C.Carrier C.instMagma F :=
