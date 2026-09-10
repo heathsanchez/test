@@ -59,9 +59,13 @@ jobs:
             · rcases hbase with ⟨z, rfl⟩
               exact ⟨denote star ρ z, rfl⟩
             · rcases hstep with ⟨r, a, hc, hqr⟩
-              subst c
+              have hlt : sz q < sz c := by
+                rw [hc]
+                simp only [sz]
+                omega
               rcases linked_semantic star ρ hLaw q r hqr with ⟨z, hz⟩
               refine ⟨denote star ρ a, ?_⟩
+              rw [hc]
               have hax := hLaw (denote star ρ q) (denote star ρ a) z
               change denote star ρ q =
                 star (denote star ρ a)
@@ -71,7 +75,7 @@ jobs:
               exact hax.symm
           termination_by sz c
           decreasing_by
-            omega
+            exact hlt
 
           theorem root_semantic
               {α : Type} (star : α → α → α) (ρ : Nat → α)
