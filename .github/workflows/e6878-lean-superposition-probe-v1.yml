@@ -45,12 +45,14 @@ jobs:
               (h : ∀ x y z : G,
                 y ◇ (y ◇ ((z ◇ x) ◇ (x ◇ y))) = x) :
               ∀ a b c : G, a ◇ (a ◇ (b ◇ (c ◇ a))) = c := by
+            intro a b c
             exact superpose h h
 
           theorem r5_direct {G : Type} [Magma G]
               (h : ∀ x y z : G,
                 y ◇ (y ◇ ((z ◇ x) ◇ (x ◇ y))) = x) :
               ∀ a b c : G, (a ◇ b) ◇ ((a ◇ b) ◇ c) = a := by
+            intro a b c
             exact superpose h h
 
           #print axioms r2_direct
