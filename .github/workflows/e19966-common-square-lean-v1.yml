@@ -1,0 +1,114 @@
+name: E19966 common-square Lean proof v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e19966-common-square-lean-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Superposition
+
+      - name: Write replay
+        shell: bash
+        run: |
+          cat > /tmp/etp/E19966CommonSquare.lean <<'LEAN'
+          import equational_theories.Superposition
+
+          namespace E19966CommonSquare
+
+          theorem common_square
+              (G : Type*) [Magma G]
+              (h : ∀ x y z : G,
+                (y ◇ y) ◇ ((x ◇ (x ◇ z)) ◇ z) = x) :
+              ∀ x y : G, x ◇ x = y ◇ y := by
+            intro x y
+            let a : G := y ◇ y
+            let b : G := x ◇ x
+            have f15 (u v : G) :
+                a ◇ ((u ◇ (u ◇ v)) ◇ v) = u := by
+              simpa [a] using h u y v
+            have f16 (u v : G) :
+                b ◇ ((u ◇ (u ◇ v)) ◇ v) = u := by
+              simpa [b] using h u x v
+            have f21 :
+                x = a ◇ ((x ◇ b) ◇ x) := by
+              simpa [b] using (f15 x x).symm
+            have f25 :
+                a = a ◇ ((a ◇ x) ◇ ((x ◇ b) ◇ x)) :=
+              superpose f21 f15
+            have f26 (u : G) :
+                a = (u ◇ u) ◇ ((a ◇ x) ◇ ((x ◇ b) ◇ x)) :=
+              superpose f21 h
+            have f54 :
+                a = b ◇ ((a ◇ a) ◇ ((a ◇ x) ◇ ((x ◇ b) ◇ x))) :=
+              superpose f25 f16
+            have f55 :
+                a = a ◇ ((a ◇ a) ◇ ((a ◇ x) ◇ ((x ◇ b) ◇ x))) :=
+              superpose f25 f15
+            have f56 (u : G) :
+                a = (u ◇ u) ◇ ((a ◇ a) ◇ ((a ◇ x) ◇ ((x ◇ b) ◇ x))) :=
+              superpose f25 h
+            have f57 (u : G) :
+                a = (u ◇ u) ◇ a :=
+              superpose f26 f56
+            have f58 :
+                a = a ◇ a :=
+              superpose f26 f55
+            have f59 :
+                a = b ◇ a :=
+              superpose f26 f54
+            have f71 (u : G) :
+                b = (u ◇ u) ◇ ((b ◇ a) ◇ a) :=
+              superpose f59 h
+            have f72 (u : G) :
+                b = (u ◇ u) ◇ (a ◇ a) :=
+              superpose f59 f71
+            have f75 (u : G) :
+                b = (u ◇ u) ◇ a :=
+              superpose f58 f72
+            have f78 : a = b :=
+              superpose f57 f75
+            simpa [a,b] using f78.symm
+
+          #print axioms common_square
+
+          end E19966CommonSquare
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean E19966CommonSquare.lean 2>&1 | tee /tmp/proof.log
+          ! grep -q sorryAx /tmp/proof.log
+          grep -q E19966CommonSquare.common_square /tmp/proof.log
+          echo E19966_COMMON_SQUARE_LEAN_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e19966-common-square-lean-v1
+          path: |
+            /tmp/etp/E19966CommonSquare.lean
+            /tmp/proof.log
