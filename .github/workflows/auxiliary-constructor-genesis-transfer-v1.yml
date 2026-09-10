@@ -1,0 +1,124 @@
+name: Auxiliary constructor genesis transfer v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/auxiliary-constructor-genesis-transfer-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  transfer:
+    strategy:
+      fail-fast: false
+      matrix:
+        equation: [41082, 30591, 26105]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install Vampire and freeze archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          git -C /tmp/austin checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Frozen genesis and obligation compiler
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,pathlib
+          eq='${{ matrix.equation }}'
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          rec=next(x for x in idx['equations'] if x['equation']==f'Equation{eq}')
+          s=(root/rec['infinite_model_proof']['path']).read_text()
+          i=s.index('inductive Code')
+          ends=[j for j in [s.find('\ndef CodeCases',i),s.find('\ndef CodeShape',i),
+                            s.find('\ntheorem code_',i),s.find('\ndef NF',i)] if j>i]
+          block=s[i:(min(ends) if ends else i+16000)]
+          rule=next((ln.strip() for ln in block.splitlines()
+                     if re.search(r'Code\s+(\w+)\s+\1\s+e$',ln.strip())),None)
+          if rule is None:
+              raise SystemExit('FROZEN_GENESIS_NO_E_CANDIDATE')
+
+          formula=rec['formula'].replace(' ','').replace('⋆','*').replace('◇','*').replace('∘','*')
+          def parse_term(text):
+              text=text.strip()
+              while text.startswith('(') and text.endswith(')'):
+                  depth=0; ok=True
+                  for k,ch in enumerate(text):
+                      if ch=='(': depth+=1
+                      elif ch==')': depth-=1
+                      if depth==0 and k<len(text)-1: ok=False; break
+                  if ok: text=text[1:-1]
+                  else: break
+              depth=0
+              for k in range(len(text)-1,-1,-1):
+                  ch=text[k]
+                  if ch==')': depth+=1
+                  elif ch=='(': depth-=1
+                  elif ch=='*' and depth==0:
+                      return f'f({parse_term(text[:k])},{parse_term(text[k+1:])})'
+              if text in 'xyzw':
+                  return text.upper()
+              raise ValueError(text)
+          l,r=formula.split('=',1)
+          src=f'{parse_term(l)} = {parse_term(r)}'
+          pathlib.Path('/tmp/problem.p').write_text(
+              f'fof(source,axiom,![X,Y,Z,W]: {src}).\n'
+              'fof(goal,conjecture,![X,Y]: f(X,X) = f(Y,Y)).\n')
+          pathlib.Path('/tmp/genesis.json').write_text(json.dumps({
+              'equation':eq,'formula':rec['formula'],'defining_rule':rule,
+              'candidate':{'constructor':'e','meaning':'x*x'},
+              'obligation':'forall x y, x*x = y*y'
+          },indent=2))
+          print('GENESIS',eq,rule)
+          print('SOURCE_TPTP',src)
+          PY
+
+      - name: Verify generated obligation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          timeout 180s /tmp/vampire/vampire --mode casc --time_limit 160 --proof tptp /tmp/problem.p > /tmp/out.txt 2>&1
+          rc=$?
+          set -e
+          if grep -q 'SZS status Theorem' /tmp/out.txt; then
+            verdict=ACCEPT
+          elif grep -q 'SZS status CounterSatisfiable' /tmp/out.txt; then
+            verdict=REJECT
+          else
+            verdict=UNKNOWN
+          fi
+          echo "E${{ matrix.equation }} VERDICT=$verdict RC=$rc"
+          grep -E 'SZS status|Termination reason' /tmp/out.txt || true
+          echo "$verdict" > /tmp/verdict.txt
+
+      - name: Check precommitted transfer prediction
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "${{ matrix.equation }}" in
+            41082) expected=REJECT ;;
+            30591) expected=ACCEPT ;;
+            26105) expected=ACCEPT ;;
+          esac
+          actual=$(cat /tmp/verdict.txt)
+          echo "EXPECTED=$expected ACTUAL=$actual"
+          test "$actual" = "$expected"
+          echo HELD_OUT_CONSTRUCTOR_ADMISSION_TRANSFER_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auxiliary-genesis-transfer-${{ matrix.equation }}
+          path: |
+            /tmp/genesis.json
+            /tmp/problem.p
+            /tmp/out.txt
+            /tmp/verdict.txt
