@@ -35,6 +35,7 @@ jobs:
           cd /tmp/etp
           git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
           lake exe cache get
+          lake build equational_theories.Preorder
 
       - name: Build ETP-native bridge
         shell: bash
