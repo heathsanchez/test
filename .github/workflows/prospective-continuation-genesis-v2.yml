@@ -1,5 +1,6 @@
 name: Prospective Continuation Genesis V2
-# The workflow is introduced only after the complete V2 source is present.
+# The workflow is introduced only after the complete V2 source is present;
+# the evaluator independently reconstructs zero-survivor claims for every task.
 on:
   push:
     branches: [prospective-continuation-genesis-v2]
