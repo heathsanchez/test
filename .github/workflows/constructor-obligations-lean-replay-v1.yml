@@ -54,6 +54,7 @@ jobs:
           EOF
           /tmp/vampire/vampire --proof_extra full --time_limit 60 /tmp/problem.p > /tmp/vampire_full.txt
           grep -Eq 'Refutation found|SZS status Theorem|Termination reason: Refutation' /tmp/vampire_full.txt
+          cat /tmp/vampire_full.txt
 
       - name: Translate Vampire proof to Lean
         shell: bash
@@ -96,7 +97,10 @@ jobs:
           body.append('  obtain ⟨sK0, sK1, nh⟩ := nh')
           found=0
           for eqnum,statement,p in re.findall(r'(\d+)\. ([^[]+) \[([^\]]+)\]',proof):
-              if p.startswith('X') or p.startswith('skolemisation'):
+              if (p.startswith('X') or p.startswith('skolemisation')
+                  or p.startswith('skolemize') or p.startswith('rectify')
+                  or p.startswith('ennf transformation')
+                  or p.startswith('negated conjecture')):
                   continue
               if p.startswith('cnf transformation'):
                   if '!=' in statement:
@@ -153,6 +157,7 @@ jobs:
           echo CONSTRUCTOR_OBLIGATION_LEAN_REPLAY_PASS
 
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: constructor-replay-${{ matrix.case }}
           path: |
