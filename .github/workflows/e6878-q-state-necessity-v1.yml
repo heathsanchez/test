@@ -1,0 +1,150 @@
+name: E6878 q-state necessity v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-q-state-necessity-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen E6878 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean > /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeMagma.Magma','',1)
+          s=s.replace('import JudgeProblem','',1)
+          s=s.replace('import Lean.Elab.Tactic.Omega', '''import Lean.Elab.Tactic.Omega
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission.CM\nnoncomputable def submission.unifiedOriginalWitness'
+          if marker not in s: raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E6878QState.lean').write_text(s)
+          PY
+
+      - name: Add erasure ablation
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E6878QState.lean <<'LEAN'
+
+          namespace E6878QState
+          open submission
+          open submission.CM
+
+          /-- Naive semantics that forgets the auxiliary q/r state tags. -/
+          def erase : CM → CM
+            | .e => .e
+            | .k a => .k (erase a)
+            | .p a b => .p (erase a) (erase b)
+            | .q a b => .p (erase a) (erase b)
+            | .r a b => .p (erase a) (.p (erase b) (erase a))
+
+          abbrev sQ : CM := .q .e .e
+          abbrev sP : CM := .p .e .e
+          abbrev u : CM := .q (.q .e .e) .e
+
+          theorem erasure_collapses_states : erase sQ = erase sP := by
+            rfl
+
+          theorem q_state_future : eval sQ u = .e := by
+            have h := eval_cases sQ u
+            simp [EvalCases, Rule, sQ, u] at h
+            exact h
+
+          theorem p_state_future :
+              eval sP u = .q sP u := by
+            have h := eval_cases sP u
+            simp [EvalCases, Rule, sP, u] at h
+            exact h
+
+          theorem erased_futures_separate :
+              erase (eval sQ u) ≠ erase (eval sP u) := by
+            rw [q_state_future, p_state_future]
+            decide
+
+          /--
+          No binary operation on the erased representation can make erase
+          compositional for the frozen E6878 evaluator.
+          -/
+          theorem no_compositional_erasure :
+              ¬ ∃ opE : CM → CM → CM,
+                ∀ a b : CM, erase (eval a b) = opE (erase a) (erase b) := by
+            rintro ⟨opE, hop⟩
+            have hQ := hop sQ u
+            have hP := hop sP u
+            have hin : erase sQ = erase sP := erasure_collapses_states
+            have hs :
+                erase (eval sQ u) = erase (eval sP u) := by
+              calc
+                erase (eval sQ u) = opE (erase sQ) (erase u) := hQ
+                _ = opE (erase sP) (erase u) := by rw [hin]
+                _ = erase (eval sP u) := hP.symm
+            exact erased_futures_separate hs
+
+          #print axioms erasure_collapses_states
+          #print axioms q_state_future
+          #print axioms p_state_future
+          #print axioms erased_futures_separate
+          #print axioms no_compositional_erasure
+
+          end E6878QState
+          LEAN
+
+      - name: Kernel check q-state necessity
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E6878QState.lean 2>&1 | tee /tmp/qstate.log
+          ! grep -q sorryAx /tmp/qstate.log
+          ! grep -q _native.native_decide /tmp/qstate.log
+          grep -q E6878QState.no_compositional_erasure /tmp/qstate.log
+          echo E6878_Q_STATE_NECESSITY_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E6878QState.lean /tmp/out/
+          cp /tmp/qstate.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The q constructor in the frozen E6878 evaluator carries consequential guarded state: q(e,e) and p(e,e) have identical naive erased meaning, but the same future input separates their evaluator behavior. Therefore no binary operation on the erased representation can make the erasure compositional.",
+            "witness_states": ["q(e,e)", "p(e,e)"],
+            "future_input": "q(q(e,e),e)",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "developmental_role": "total derived constructor -> guarded state constructor",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-q-state-necessity-v1
+          path: /tmp/out/
