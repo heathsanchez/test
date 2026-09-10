@@ -21,8 +21,8 @@ jobs:
           git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
           git -C /tmp/etp checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
           cd /tmp/etp
-          lake exe cache get
-          lake build equational_theories.Superposition equational_theories.Magma
+          "$HOME/.elan/bin/lake" exe cache get
+          "$HOME/.elan/bin/lake" build equational_theories.Superposition equational_theories.Magma
 
       - name: Probe direct self-superpositions
         shell: bash
