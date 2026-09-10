@@ -1,0 +1,182 @@
+name: ETP universal semantic compiler interface v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/etp-universal-semantic-compiler-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Preorder
+
+      - name: Write universal semantic compiler interface
+        shell: bash
+        run: |
+          cat > /tmp/etp/SemanticCompiler.lean <<'LEAN'
+          import equational_theories.Preorder
+          import equational_theories.Homomorphisms
+
+          open FreeMagma
+          open Law
+          open Law.MagmaLaw
+
+          namespace SemanticCompiler
+
+          /--
+          A semantic compiler certificate for an equational theory Γ.
+          Carrier is a retained semantic world; gen interprets source variables.
+          modelsTheory says the world satisfies Γ. lift supplies a generator-preserving
+          magma homomorphism into every Γ-model under every valuation.
+          No rewrite system, confluence theorem, normal forms, or syntax representation
+          is assumed here.
+          -/
+          structure Certificate (Γ : Ctx Nat) where
+            Carrier : Type
+            instMagma : Magma Carrier
+            gen : Nat → Carrier
+            modelsTheory : @satisfiesSet Nat Carrier instMagma Γ
+            lift :
+              ∀ {G : Type} [Magma G],
+                G ⊧ Γ →
+                (ρ : Nat → G) →
+                Carrier →◇ G
+            lift_gen :
+              ∀ {G : Type} [Magma G]
+                (hΓ : G ⊧ Γ) (ρ : Nat → G) (n : Nat),
+                (lift hΓ ρ) (gen n) = ρ n
+
+          namespace Certificate
+
+          def canonical
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              (t : FreeMagma Nat) : C.Carrier :=
+            @FreeMagma.evalInMagma Nat C.Carrier C.instMagma C.gen t
+
+          theorem lift_canonical
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              {G : Type} [Magma G]
+              (hΓ : G ⊧ Γ) (ρ : Nat → G) :
+              ∀ t : FreeMagma Nat,
+                C.lift hΓ ρ (C.canonical t) =
+                  FreeMagma.evalInMagma ρ t := by
+            intro t
+            induction t with
+            | Leaf n =>
+                exact C.lift_gen hΓ ρ n
+            | Fork a b iha ihb =>
+                change
+                  C.lift hΓ ρ
+                    (@Magma.op C.Carrier C.instMagma
+                      (C.canonical a) (C.canonical b)) =
+                  FreeMagma.evalInMagma ρ (.Fork a b)
+                rw [(C.lift hΓ ρ).map_op]
+                simp only [FreeMagma.evalInMagma]
+                rw [iha, ihb]
+
+          theorem models_iff_canonical_eq
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              (F : NatMagmaLaw) :
+              Γ ⊧ F ↔
+                C.canonical F.lhs = C.canonical F.rhs := by
+            constructor
+            · intro h
+              have hF : @satisfies Nat C.Carrier C.instMagma F :=
+                h C.Carrier C.modelsTheory
+              exact hF C.gen
+            · intro h G inst hΓ ρ
+              change FreeMagma.evalInMagma ρ F.lhs =
+                FreeMagma.evalInMagma ρ F.rhs
+              rw [← C.lift_canonical hΓ ρ F.lhs,
+                  ← C.lift_canonical hΓ ρ F.rhs,
+                  h]
+
+          def decidesModels
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              (F : NatMagmaLaw)
+              [DecidableEq C.Carrier] :
+              Decidable (Γ ⊧ F) :=
+            decidable_of_iff
+              (C.canonical F.lhs = C.canonical F.rhs)
+              (C.models_iff_canonical_eq F).symm
+
+          theorem not_models_of_canonical_ne
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              (F : NatMagmaLaw)
+              (hne : C.canonical F.lhs ≠ C.canonical F.rhs) :
+              ¬ Γ ⊧ F :=
+            fun h => hne ((C.models_iff_canonical_eq F).mp h)
+
+          theorem same_canonical_iff_indistinguishable
+              {Γ : Ctx Nat} (C : Certificate Γ)
+              (s t : FreeMagma Nat) :
+              C.canonical s = C.canonical t ↔
+                ∀ {G : Type} [Magma G],
+                  G ⊧ Γ →
+                  ∀ ρ : Nat → G,
+                    FreeMagma.evalInMagma ρ s =
+                      FreeMagma.evalInMagma ρ t := by
+            let F : NatMagmaLaw := ⟨s,t⟩
+            exact (C.models_iff_canonical_eq F).symm
+
+          #print axioms lift_canonical
+          #print axioms models_iff_canonical_eq
+          #print axioms decidesModels
+          #print axioms not_models_of_canonical_ne
+          #print axioms same_canonical_iff_indistinguishable
+
+          end Certificate
+          end SemanticCompiler
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean SemanticCompiler.lean 2>&1 | tee /tmp/semantic_compiler.log
+          ! grep -q sorryAx /tmp/semantic_compiler.log
+          ! grep -q _native.native_decide /tmp/semantic_compiler.log
+          grep -q SemanticCompiler.Certificate.models_iff_canonical_eq /tmp/semantic_compiler.log
+          echo UNIVERSAL_SEMANTIC_COMPILER_INTERFACE_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/SemanticCompiler.lean /tmp/out/
+          cp /tmp/semantic_compiler.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "A compiled Γ-model equipped with generator-preserving magma lifts into every Γ-model is consequence-complete for arbitrary target laws.",
+            "significance": "This abstracts away the internal grammar/rewrite representation: auxiliary constructors and richer trace languages are admissible if they support the universal semantic lift.",
+            "etp_commit": "bb5a9b5fe78c376ce1725529f235f8d574630b9f",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etp-universal-semantic-compiler-interface-v1
+          path: /tmp/out/
