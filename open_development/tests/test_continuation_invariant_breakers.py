@@ -11,9 +11,13 @@ from dataclasses import dataclass
 from fractions import Fraction
 from itertools import product
 from math import inf, log
+from pathlib import Path
+import tempfile
 import unittest
 
 from open_development.arc_discrimination import form, grid
+from open_development.prospective_genesis import (ProspectiveARCAdapter, develop_stream, freeze_state)
+from open_development.runtime import Developer, EvidenceStore, Obligation, digest
 
 
 @dataclass(frozen=True)
@@ -386,7 +390,198 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
         target_value = separator[0] * target[0] + separator[1] * target[1]
         self.assertGreater(target_value, reachable_sup)
 
-    def test_16_breaker_summary(self):
+
+    def test_16_actual_kernel_has_order_dependent_development_on_chain_fixture(self):
+        # This uses the real ProspectiveARCAdapter/Developer path, not a toy
+        # transition. A is a generated prerequisite for B under the frozen
+        # size/depth grammar. Processing A then B therefore changes the future
+        # continuation available for C; processing B then A does not retroactively
+        # revisit B.
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+        second = lambda g: form(first(g), g, "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": example["input"]} for example in task["test"]],
+            }
+
+        task_a = full_task([[1, 2, 3], [4, 5, 6]], first)
+        task_b = full_task([[7, 1, 3], [2, 8, 4]], second)
+        task_c = full_task([[9, 2, 5], [6, 3, 7]], second)
+
+        def make_stream(named_tasks):
+            rows = [
+                {"task_id": name, "task_sha256": digest(task), "task": public(task)}
+                for name, task in named_tasks
+            ]
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "breaker-order",
+                "tasks": rows,
+                "route_labels_present": False,
+            }
+            return {**body, "stream_digest": digest(body)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            ab_path = root / "ab.sqlite"
+            ba_path = root / "ba.sqlite"
+            freeze_state(ab_path)
+            freeze_state(ba_path)
+
+            ab = develop_stream(make_stream((("a", task_a), ("b", task_b))), ab_path)
+            ba = develop_stream(make_stream((("b", task_b), ("a", task_a))), ba_path)
+
+            self.assertEqual(
+                [row["predicted_route"] for row in ab["results"]],
+                ["EXPANSION", "EXPANSION"],
+            )
+            self.assertEqual(
+                [row["predicted_route"] for row in ba["results"]],
+                ["UNKNOWN", "EXPANSION"],
+            )
+
+            ab_store = EvidenceStore(ab_path)
+            ba_store = EvidenceStore(ba_path)
+            ab_state = ab_store.state()
+            ba_state = ba_store.state()
+            ab_store.close()
+            ba_store.close()
+            self.assertNotEqual(digest(ab_state), digest(ba_state))
+
+            adapter = ProspectiveARCAdapter()
+            c_row = {"task_id": "c", "task_sha256": digest(task_c), "task": public(task_c)}
+            c_obligation = Obligation(adapter.name, c_row, 0, "method")
+            self.assertEqual(adapter.assess(ab_state, c_obligation).verdict, "verified")
+            self.assertNotEqual(adapter.assess(ba_state, c_obligation).verdict, "verified")
+            print(
+                "ACTUAL_DEVELOPMENTAL_COMMUTATOR",
+                "AB_routes", [row["predicted_route"] for row in ab["results"]],
+                "BA_routes", [row["predicted_route"] for row in ba["results"]],
+                "qC_after_AB", adapter.assess(ab_state, c_obligation).verdict,
+                "qC_after_BA", adapter.assess(ba_state, c_obligation).verdict,
+            )
+
+    def test_17_exact_recursive_revocation_returns_chain_fixture_to_cold_behavior(self):
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+        second = lambda g: form(first(g), g, "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": example["input"]} for example in task["test"]],
+            }
+
+        task_a = full_task([[1, 2, 3], [4, 5, 6]], first)
+        task_b = full_task([[7, 1, 3], [2, 8, 4]], second)
+        task_c = full_task([[9, 2, 5], [6, 3, 7]], second)
+        rows = [
+            {"task_id": name, "task_sha256": digest(task), "task": public(task)}
+            for name, task in (("a", task_a), ("b", task_b))
+        ]
+        body = {
+            "schema": "prospective-route-neutral-stream/v1",
+            "selection_nonce": "breaker-revoke",
+            "tasks": rows,
+            "route_labels_present": False,
+        }
+        stream = {**body, "stream_digest": digest(body)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            baseline_store = EvidenceStore(path)
+            baseline = baseline_store.state()
+            baseline_events = len(baseline_store.events())
+            baseline_store.close()
+
+            decisions = develop_stream(stream, path)
+            g1 = decisions["results"][0]["generated_admissions"][0]
+            g2 = decisions["results"][1]["generated_admissions"][0]
+
+            store = EvidenceStore(path)
+            removed = store.revoke(g1, "breaker exact recursive closure")
+            restored_active = store.state()
+            history_is_longer = len(store.events()) > baseline_events
+            store.close()
+
+            self.assertIn(g1, removed)
+            self.assertIn(g2, removed)
+            self.assertEqual(restored_active, baseline)
+            self.assertTrue(history_is_longer)
+
+            adapter = ProspectiveARCAdapter()
+            c_row = {"task_id": "c", "task_sha256": digest(task_c), "task": public(task_c)}
+            c_obligation = Obligation(adapter.name, c_row, 0, "method")
+            self.assertNotEqual(adapter.assess(restored_active, c_obligation).verdict, "verified")
+            print(
+                "REVOCATION_LOOP",
+                "active_state_returns_to_baseline", True,
+                "provenance_history_persists", history_is_longer,
+                "qC_after_revoke", adapter.assess(restored_active, c_obligation).verdict,
+            )
+
+    def test_18_repeated_verified_encounter_is_active_state_idempotent(self):
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": example["input"]} for example in task["test"]],
+            }
+
+        task = full_task([[1, 2, 3], [4, 5, 6]], first)
+        row = {"task_id": "a", "task_sha256": digest(task), "task": public(task)}
+        body = {
+            "schema": "prospective-route-neutral-stream/v1",
+            "selection_nonce": "breaker-idempotence",
+            "tasks": [row],
+            "route_labels_present": False,
+        }
+        stream = {**body, "stream_digest": digest(body)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            decisions = develop_stream(stream, path)
+            self.assertEqual(decisions["results"][0]["predicted_route"], "EXPANSION")
+
+            store = EvidenceStore(path)
+            before = store.state()
+            result = Developer(store, ProspectiveARCAdapter()).run(
+                Obligation(ProspectiveARCAdapter.name, row, 0, "method")
+            )
+            after = store.state()
+            store.close()
+
+            self.assertEqual(result.verdict, "verified")
+            self.assertEqual(result.retained, ())
+            self.assertEqual(before, after)
+            print("REPEATED_ENCOUNTER_IDEMPOTENT", digest(before), digest(after))
+
+    def test_19_breaker_summary(self):
         print("CONTINUATION_INVARIANT_BREAKERS_V1_COMPLETE")
         print(
             "BREAKS: execution-behavior equivalence alone is not a "
