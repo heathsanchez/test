@@ -1,0 +1,80 @@
+name: E6878 auxiliary obligations finite separation v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-auxiliary-finite-separation-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    strategy:
+      fail-fast: false
+      matrix:
+        goal: [r2, r5]
+        n: [6,7,8,9,10]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install Z3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y z3
+
+      - name: Search bit-vector model
+        env:
+          GOAL: ${{ matrix.goal }}
+          N: ${{ matrix.n }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os,math,pathlib
+          n=int(os.environ['N']); goal=os.environ['GOAL']
+          w=max(1,(n-1).bit_length())
+          def bv(i): return f'(_ bv{i} {w})'
+          o=['(set-logic QF_UFBV)',f'(declare-fun op ((_ BitVec {w}) (_ BitVec {w})) (_ BitVec {w}))']
+          # Range only needs constraining on in-domain argument pairs.
+          for a in range(n):
+            for b in range(n):
+              o.append(f'(assert (bvult (op {bv(a)} {bv(b)}) {bv(n)}))')
+          # Universal source over finite carrier.
+          for x in range(n):
+            for y in range(n):
+              for z in range(n):
+                lhs=f'(op {bv(y)} (op {bv(y)} (op (op {bv(z)} {bv(x)}) (op {bv(x)} {bv(y)}))))'
+                o.append(f'(assert (= {lhs} {bv(x)}))')
+          bad=[]
+          for a in range(n):
+            for b in range(n):
+              for c in range(n):
+                if goal=='r2':
+                  lhs=f'(op {bv(a)} (op {bv(a)} (op {bv(b)} (op {bv(c)} {bv(a)}))))'
+                  rhs=bv(c)
+                else:
+                  ab=f'(op {bv(a)} {bv(b)})'
+                  lhs=f'(op {ab} (op {ab} {bv(c)}))'
+                  rhs=bv(a)
+                bad.append(f'(not (= {lhs} {rhs}))')
+          o.append('(assert (or '+' '.join(bad)+'))')
+          o.append('(check-sat)')
+          p=pathlib.Path('/tmp/problem.smt2');p.write_text('\n'.join(o))
+          print('GOAL',goal,'N',n,'WIDTH',w,'ASSERTIONS',len(o))
+          PY
+          set +e
+          timeout 300s z3 /tmp/problem.smt2 > /tmp/result.txt 2>&1
+          rc=$?
+          set -e
+          status=$(head -1 /tmp/result.txt || true)
+          echo "GOAL=$GOAL N=$N STATUS=$status RC=$rc"
+          mkdir -p /tmp/out
+          cp /tmp/result.txt /tmp/out/
+          printf '{"goal":"%s","n":%s,"status":"%s","rc":%s}\n' "$GOAL" "$N" "$status" "$rc" > /tmp/out/verdict.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-${{ matrix.goal }}-n${{ matrix.n }}-finite-v2
+          path: /tmp/out/
