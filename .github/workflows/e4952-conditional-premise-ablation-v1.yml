@@ -1,0 +1,132 @@
+name: E4952 conditional premise ablation v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4952-conditional-premise-ablation-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen E4952 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation4952/InfiniteModel.lean -o /tmp/original.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''', 1)
+          marker='\nend submission\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
+          if marker not in s: raise SystemExit('wrapper not found')
+          s=s.split(marker,1)[0]+'\nend submission\n'
+          Path('/tmp/mathlib4/E4952Ablation.lean').write_text(s)
+          PY
+
+      - name: Add raw-only ablation and witness
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E4952Ablation.lean <<'LEAN'
+
+          namespace E4952Ablation
+          open submission
+          open submission.CM
+
+          /--
+          Ablated evaluator: retains only the direct/raw instance of the Code rule.
+          The recursive Step.hit pathway is removed.
+          -/
+          def evalRawOnly (a b : CM) : CM :=
+            match b with
+            | .p x (.p a1 (.p a2 (.p v1 a3))) =>
+                if a1 = a ∧ a2 = a ∧ a3 = a then x else .p a b
+            | _ => .p a b
+
+          def yWitness : CM :=
+            .p (.k .e) (.p .e (.p .e (.p .e .e)))
+
+          theorem inner_hit_is_needed :
+              evalRawOnly .e yWitness = .k .e := by
+            rfl
+
+          theorem raw_only_source_fails :
+              ¬ (∀ x y z : CM,
+                x =
+                  evalRawOnly y
+                    (evalRawOnly x
+                      (evalRawOnly y
+                        (evalRawOnly y
+                          (evalRawOnly z y))))) := by
+            intro h
+            have bad := h (.e) yWitness (.e)
+            native_decide at bad
+
+          /-- The unchanged archived evaluator satisfies the same source law universally. -/
+          theorem full_model_source_holds :
+              ∀ x y z : CM,
+                x =
+                  submission.CM.eval y
+                    (submission.CM.eval x
+                      (submission.CM.eval y
+                        (submission.CM.eval y
+                          (submission.CM.eval z y)))) := by
+            intro x y z
+            exact submission.CM.source_holds x y z
+
+          #print axioms inner_hit_is_needed
+          #print axioms raw_only_source_fails
+          #print axioms full_model_source_holds
+
+          end E4952Ablation
+          LEAN
+
+      - name: Kernel check ablation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E4952Ablation.lean 2>&1 | tee /tmp/ablation.log
+          ! grep -q sorryAx /tmp/ablation.log
+          grep -q E4952Ablation.raw_only_source_fails /tmp/ablation.log
+          grep -q E4952Ablation.full_model_source_holds /tmp/ablation.log
+          echo E4952_CONDITIONAL_PREMISE_ABLATION_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E4952Ablation.lean /tmp/out/
+          cp /tmp/ablation.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "Removing recursive Step.hit from the E4952 trace evaluator causes the source law itself to fail on an explicit constructor-tree witness, while the unchanged full evaluator satisfies the law universally.",
+            "scientific_role": "conditional-premise necessity / representation phase-change ablation",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4952-conditional-premise-ablation-v1
+          path: /tmp/out/
