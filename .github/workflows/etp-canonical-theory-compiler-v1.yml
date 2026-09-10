@@ -52,8 +52,21 @@ jobs:
 
           def denote
               {G : Type} (star : G → G → G) (ρ : Nat → G) :
-              Raw → G :=
-            FreeMagma.evalInMagma (G := G) (Magma := ⟨star⟩) ρ
+              Raw → G
+            | .Leaf n => ρ n
+            | .Fork a b => star (denote star ρ a) (denote star ρ b)
+
+          theorem denote_eq_eval
+              {G : Type} [Magma G] (ρ : Nat → G) :
+              ∀ t : Raw,
+                denote (fun a b : G => a ◇ b) ρ t =
+                  FreeMagma.evalInMagma ρ t := by
+            intro t
+            induction t with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp only [denote, FreeMagma.evalInMagma]
+                rw [iha, ihb]
 
           def ReductionsSound
               (E : NatMagmaLaw)
@@ -103,17 +116,10 @@ jobs:
             induction t with
             | Leaf n => rfl
             | Fork a b iha ihb =>
-                simp only [evalCanonical]
-                rw [compiledMul_semantic E reduce hsound star hE ρ]
-                change
-                  star
-                    (denote star ρ (evalCanonical reduce a))
-                    (denote star ρ (evalCanonical reduce b)) =
-                  star (denote star ρ a) (denote star ρ b)
-                rw [iha, ihb]
+                simp only [evalCanonical, denote]
+                rw [compiledMul_semantic E reduce hsound star hE ρ,
+                    iha, ihb]
 
-          /-- The concrete compiled magma, kept as a wrapper so it does not
-          conflict with the ordinary free-magma operation. -/
           structure Compiled (reduce : Raw → Raw → Option Raw) where
             raw : Raw
 
@@ -145,8 +151,15 @@ jobs:
             induction t with
             | Leaf n => rfl
             | Fork a b iha ihb =>
-                simp [FreeMagma.evalInMagma, gen, canonical, op,
-                  evalCanonical, iha, ihb]
+                change
+                  op reduce
+                    (@FreeMagma.evalInMagma Nat (Compiled reduce)
+                      (instMagma reduce) (gen reduce) a)
+                    (@FreeMagma.evalInMagma Nat (Compiled reduce)
+                      (instMagma reduce) (gen reduce) b) =
+                  canonical reduce (.Fork a b)
+                rw [iha, ihb]
+                rfl
 
           end Compiled
 
@@ -167,16 +180,25 @@ jobs:
                   (Compiled.instMagma reduce) (Compiled.gen reduce) F.lhs =
                 @FreeMagma.evalInMagma Nat (Compiled reduce)
                   (Compiled.instMagma reduce) (Compiled.gen reduce) F.rhs at hg
-              simpa [Compiled.eval_gen] using congrArg Compiled.raw hg
+              rw [Compiled.eval_gen, Compiled.eval_gen] at hg
+              exact congrArg Compiled.raw hg
             · intro hcanon G inst hE ρ
+              change FreeMagma.evalInMagma ρ F.lhs =
+                FreeMagma.evalInMagma ρ F.rhs
+              rw [← denote_eq_eval ρ F.lhs, ← denote_eq_eval ρ F.rhs]
+              let star : G → G → G := fun a b => a ◇ b
               have hl :=
                 evalCanonical_semantic E reduce hsound
-                  (fun a b : G => a ◇ b) hE ρ F.lhs
+                  star hE ρ F.lhs
               have hr :=
                 evalCanonical_semantic E reduce hsound
-                  (fun a b : G => a ◇ b) hE ρ F.rhs
-              change F.lhs ⬝ ρ = F.rhs ⬝ ρ
-              rw [← hl, hcanon, hr]
+                  star hE ρ F.rhs
+              calc
+                denote star ρ F.lhs =
+                    denote star ρ (evalCanonical reduce F.lhs) := hl.symm
+                _ = denote star ρ (evalCanonical reduce F.rhs) :=
+                    congrArg (denote star ρ) hcanon
+                _ = denote star ρ F.rhs := hr
 
           def decidesImplication
               (E F : NatMagmaLaw)
