@@ -1,0 +1,224 @@
+name: E40909 conditional trace completeness v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e40909-conditional-trace-completeness-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation40909/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean > /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''', 1)
+          marker='\nend submission\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
+          if marker not in s: raise SystemExit('terminal Goal wrapper not found')
+          s=s.split(marker,1)[0]+'\nend submission\n'
+          Path('/tmp/mathlib4/E40909Complete.lean').write_text(s)
+          PY
+
+      - name: Add mutual semantic proof and completeness
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E40909Complete.lean <<'LEAN'
+
+          namespace E40909Complete
+          open submission
+          open submission.CM
+
+          def denote {α : Type} (star : α → α → α)
+              (base : submission.CM → α) : submission.CM → α
+            | .p a b => star (denote star base a) (denote star base b)
+            | q => base q
+
+          def LawOn {α : Type} (star : α → α → α) : Prop :=
+            ∀ x y z : α,
+              star (star (star (star (star y x) y) y) z) y = x
+
+          mutual
+            def codeSemantic
+                {α : Type} (star : α → α → α)
+                (base : submission.CM → α)
+                (hLaw : LawOn star) :
+                ∀ {a b o : submission.CM},
+                  submission.CM.Code a b o →
+                  denote star base o =
+                    star (denote star base a) (denote star base b)
+              | _, _, _, .law x v0 v1 H0 s0 => by
+                  have hs := stepSemantic star base hLaw s0
+                  have hax :=
+                    hLaw (denote star base x)
+                      (denote star base v0) (denote star base v1)
+                  simpa [denote, hs] using hax.symm
+
+            def stepSemantic
+                {α : Type} (star : α → α → α)
+                (base : submission.CM → α)
+                (hLaw : LawOn star) :
+                ∀ {a b o : submission.CM},
+                  submission.CM.Step a b o →
+                  denote star base o =
+                    star (denote star base a) (denote star base b)
+              | _, _, _, .raw a b => rfl
+              | _, _, _, .hit h => codeSemantic star base hLaw h
+          end
+
+          theorem eval_semantic
+              {α : Type} (star : α → α → α)
+              (base : submission.CM → α)
+              (hLaw : LawOn star)
+              (a b : submission.CM) :
+              denote star base (submission.CM.eval a b) =
+                star (denote star base a) (denote star base b) := by
+            classical
+            by_cases h : ∃ o, submission.CM.Code a b o
+            · rcases h with ⟨o, hc⟩
+              rw [submission.CM.eval_hit hc]
+              exact codeSemantic star base hLaw hc
+            · rw [submission.CM.eval_raw h]
+              rfl
+
+          def tower : Nat → submission.CM
+            | 0 => .e
+            | n+1 => .k (tower n)
+
+          theorem tower_sz : ∀ n, submission.CM.sz (tower n) = n := by
+            intro n
+            induction n with
+            | zero => rfl
+            | succ n ih =>
+                simp [tower, submission.CM.sz, ih]
+
+          inductive Term where
+            | var : Nat → Term
+            | node : Term → Term → Term
+          deriving DecidableEq, Repr
+
+          def termDenote {α : Type} (star : α → α → α)
+              (ρ : Nat → α) : Term → α
+            | .var n => ρ n
+            | .node a b => star (termDenote star ρ a) (termDenote star ρ b)
+
+          noncomputable def canonical : Term → submission.CM
+            | .var n => tower n
+            | .node a b => submission.CM.eval (canonical a) (canonical b)
+
+          theorem denote_tower
+              {α : Type} (star : α → α → α)
+              (ρ : Nat → α) (n : Nat) :
+              denote star (fun q => ρ (submission.CM.sz q)) (tower n) = ρ n := by
+            cases n with
+            | zero => rfl
+            | succ n =>
+                simp [denote, tower, tower_sz, submission.CM.sz]
+
+          theorem map_canonical
+              {α : Type} (star : α → α → α)
+              (ρ : Nat → α) (hLaw : LawOn star) :
+              ∀ t : Term,
+                denote star (fun q => ρ (submission.CM.sz q)) (canonical t) =
+                  termDenote star ρ t := by
+            intro t
+            induction t with
+            | var n => exact denote_tower star ρ n
+            | node a b iha ihb =>
+                simp only [canonical, termDenote]
+                rw [eval_semantic star _ hLaw, iha, ihb]
+
+          theorem concrete_is_law : LawOn submission.CM.eval := by
+            intro x y z
+            exact (submission.CM.source_holds x y z).symm
+
+          theorem self_canonical :
+              ∀ t : Term,
+                termDenote submission.CM.eval tower t = canonical t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp [termDenote, canonical, iha, ihb]
+
+          def Consequence (s t : Term) : Prop :=
+            ∀ {α : Type} (star : α → α → α),
+              LawOn star →
+              ∀ ρ : Nat → α,
+                termDenote star ρ s = termDenote star ρ t
+
+          theorem consequence_iff_canonical_eq (s t : Term) :
+              Consequence s t ↔ canonical s = canonical t := by
+            constructor
+            · intro h
+              have hc := h submission.CM.eval concrete_is_law tower
+              simpa [self_canonical] using hc
+            · intro hc α star hLaw ρ
+              have hm := congrArg
+                (denote star (fun q => ρ (submission.CM.sz q))) hc
+              simpa [map_canonical star ρ hLaw] using hm
+
+          #print axioms codeSemantic
+          #print axioms stepSemantic
+          #print axioms eval_semantic
+          #print axioms consequence_iff_canonical_eq
+
+          end E40909Complete
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E40909Complete.lean 2>&1 | tee /tmp/e40909.log
+          ! grep -q sorryAx /tmp/e40909.log
+          ! grep -q _native.native_decide /tmp/e40909.log
+          grep -q E40909Complete.consequence_iff_canonical_eq /tmp/e40909.log
+          echo E40909_CONDITIONAL_TRACE_COMPLETE_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E40909Complete.lean /tmp/out/
+          cp /tmp/e40909.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The archived E40909 conditional Code/Step trace model is consequence-complete for E40909 by the same mutual semantic compiler schema as E4952.",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "class": "conditional_binary_rules",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e40909-conditional-trace-completeness-v1
+          path: /tmp/out/
