@@ -47,8 +47,6 @@ jobs:
           open Law
           open SemanticCompiler
 
-          namespace GeneratedSemanticWorld
-
           namespace SemanticCompiler.Certificate
 
           def Generated
@@ -81,6 +79,7 @@ jobs:
               (f g : @MagmaHom C.Carrier G C.instMagma inferInstance)
               (hgen : ∀ n, f (C.gen n) = g (C.gen n)) :
               f = g := by
+            letI : Magma C.Carrier := C.instMagma
             apply MagmaHom.ext
             intro c
             rcases hgenerated c with ⟨t, rfl⟩
@@ -121,7 +120,6 @@ jobs:
           #print axioms free_world_decides_all_consequences
 
           end SemanticCompiler.Certificate
-          end GeneratedSemanticWorld
           LEAN
 
       - name: Kernel check
