@@ -1,0 +1,206 @@
+name: E4916 concrete compiler rejection v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-concrete-compiler-rejection-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze mathlib and both released models
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation4916/InfiniteModel.lean -o /tmp/A.lean
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/completion_hybrid_soundfix_v5/E4916_to_E2__eea3658318c7.lean -o /tmp/B.lean
+          sha256sum /tmp/A.lean /tmp/B.lean | tee /tmp/model_sha256
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def strip(src, marker):
+              s=Path(src).read_text()
+              s=s.replace('import JudgeProblem','',1)
+              if marker not in s:
+                  raise SystemExit(f'marker not found in {src}')
+              return s.split(marker,1)[0]
+
+          a=strip('/tmp/A.lean',
+            '\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by')
+          b=strip('/tmp/B.lean',
+            '\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by')
+
+          out='''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+
+          namespace CandidateA
+          '''+a+'''
+          end CandidateA
+
+          namespace CandidateB
+          '''+b+'''
+          end CandidateB
+          '''
+          out='\n'.join(x[10:] if x.startswith('          ') else x for x in out.splitlines())
+          Path('/tmp/mathlib4/E4916ConcreteReject.lean').write_text(out)
+          PY
+
+      - name: Add concrete residual theorem
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E4916ConcreteReject.lean <<'LEAN'
+
+          namespace E4916ConcreteReject
+
+          namespace A
+          abbrev C := CandidateA.submission.CM.Carrier
+          abbrev op := CandidateA.submission.CM.op
+          abbrev ce := CandidateA.submission.CM.ce
+          abbrev ck := CandidateA.submission.CM.ck
+
+          theorem square_ce : op ce ce = ce := by
+            apply Subtype.ext
+            change CandidateA.submission.CM.eval
+              CandidateA.submission.CM.e CandidateA.submission.CM.e =
+              CandidateA.submission.CM.e
+            exact CandidateA.submission.CM.eval_hit
+              (CandidateA.submission.CM.Code.r1 CandidateA.submission.CM.e)
+
+          theorem square_ck : op (ck ce) (ck ce) = ce := by
+            apply Subtype.ext
+            change CandidateA.submission.CM.eval
+              (CandidateA.submission.CM.k CandidateA.submission.CM.e)
+              (CandidateA.submission.CM.k CandidateA.submission.CM.e) =
+              CandidateA.submission.CM.e
+            exact CandidateA.submission.CM.eval_hit
+              (CandidateA.submission.CM.Code.r1
+                (CandidateA.submission.CM.k CandidateA.submission.CM.e))
+
+          theorem collapsed_pair :
+              op ce ce = op (ck ce) (ck ce) :=
+            square_ce.trans square_ck.symm
+          end A
+
+          namespace B
+          abbrev C := CandidateB.submission.CM.Carrier
+          abbrev op := CandidateB.submission.CM.op
+          abbrev ce := CandidateB.submission.CM.ce
+          abbrev ck := CandidateB.submission.CM.ck
+
+          theorem no_code_ee :
+              ¬ ∃ o, CandidateB.submission.CM.Code
+                CandidateB.submission.CM.e CandidateB.submission.CM.e o := by
+            rintro ⟨o,h⟩
+            cases h
+
+          theorem no_code_kk :
+              ¬ ∃ o, CandidateB.submission.CM.Code
+                (CandidateB.submission.CM.k CandidateB.submission.CM.e)
+                (CandidateB.submission.CM.k CandidateB.submission.CM.e) o := by
+            rintro ⟨o,h⟩
+            cases h
+
+          theorem separated_pair :
+              op ce ce ≠ op (ck ce) (ck ce) := by
+            intro h
+            have hv := congrArg Subtype.val h
+            change
+              CandidateB.submission.CM.eval
+                CandidateB.submission.CM.e CandidateB.submission.CM.e =
+              CandidateB.submission.CM.eval
+                (CandidateB.submission.CM.k CandidateB.submission.CM.e)
+                (CandidateB.submission.CM.k CandidateB.submission.CM.e) at hv
+            rw [CandidateB.submission.CM.eval_raw no_code_ee,
+                CandidateB.submission.CM.eval_raw no_code_kk] at hv
+            cases hv
+          end B
+
+          /--
+          Candidate A cannot be the universal semantic world for E4916:
+          it collapses the square terms of the first two generators while
+          independently released candidate B, which also satisfies E4916,
+          separates them.
+          -/
+          theorem no_generator_preserving_semantic_map :
+              ¬ ∃ f : A.C → B.C,
+                (∀ x y, f (A.op x y) = B.op (f x) (f y)) ∧
+                f A.ce = B.ce ∧
+                f (A.ck A.ce) = B.ck B.ce := by
+            rintro ⟨f,hmap,h0,h1⟩
+            apply B.separated_pair
+            calc
+              B.op B.ce B.ce =
+                  B.op (f A.ce) (f A.ce) := by rw [h0]
+              _ = f (A.op A.ce A.ce) := (hmap A.ce A.ce).symm
+              _ = f (A.op (A.ck A.ce) (A.ck A.ce)) :=
+                    congrArg f A.collapsed_pair
+              _ = B.op (f (A.ck A.ce)) (f (A.ck A.ce)) :=
+                    hmap (A.ck A.ce) (A.ck A.ce)
+              _ = B.op (B.ck B.ce) (B.ck B.ce) := by rw [h1]
+
+          theorem witness_B_satisfies_E4916 :
+              ∀ x y z : B.C,
+                x = B.op y (B.op x (B.op x (B.op y (B.op z z)))) :=
+            CandidateB.submission.CM.source_holds
+
+          #print axioms A.collapsed_pair
+          #print axioms B.separated_pair
+          #print axioms no_generator_preserving_semantic_map
+          #print axioms witness_B_satisfies_E4916
+
+          end E4916ConcreteReject
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E4916ConcreteReject.lean 2>&1 | tee /tmp/reject.log
+          ! grep -q sorryAx /tmp/reject.log
+          ! grep -q _native.native_decide /tmp/reject.log
+          grep -q E4916ConcreteReject.no_generator_preserving_semantic_map /tmp/reject.log
+          echo E4916_CONCRETE_COMPILER_REJECTION_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E4916ConcreteReject.lean /tmp/out/
+          cp /tmp/reject.log /tmp/out/
+          cp /tmp/model_sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "For E4916, released candidate A collapses the square terms of two generators while independently released candidate B separates them and satisfies E4916. Hence no multiplication- and generator-preserving semantic map A→B exists.",
+            "role": "concrete residual rejecting an over-coarse semantic representation",
+            "candidate_A_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "witness_B_commit": "b013e8a635073c48c5aefd204b1b47c03b44a4ef",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-concrete-compiler-rejection-v1
+          path: /tmp/out/
