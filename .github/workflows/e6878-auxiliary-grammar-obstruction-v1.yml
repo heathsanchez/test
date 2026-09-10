@@ -1,0 +1,82 @@
+name: E6878 auxiliary grammar obstruction v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-auxiliary-grammar-obstruction-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install Z3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y z3
+
+      - name: Search finite separators against auxiliary-rule equations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,json
+          # E6878: x = y*(y*((z*x)*(x*y)))
+          # Auxiliary Code rules r2 and r5, after interpreting q as multiplication:
+          # r2: a*(a*(b*(c*a))) = c
+          # r5: (a*b)*((a*b)*c) = a
+          tests = {
+            'r2': lambda a,b,c: f'(= (op {a} (op {a} (op {b} (op {c} {a})))) {c})',
+            'r5': lambda a,b,c: f'(= (op (op {a} {b}) (op (op {a} {b}) {c})) {a})',
+          }
+          all_results={}
+          for name,eq in tests.items():
+            rows=[]
+            for n in range(2,7):
+              out=['(set-logic QF_UFLIA)','(declare-fun op (Int Int) Int)']
+              for a in range(n):
+                for b in range(n):
+                  out.append(f'(assert (and (<= 0 (op {a} {b})) (< (op {a} {b}) {n})))')
+              for x in range(n):
+                for y in range(n):
+                  for z in range(n):
+                    lhs=f'(op {y} (op {y} (op (op {z} {x}) (op {x} {y}))))'
+                    out.append(f'(assert (= {x} {lhs}))')
+              bad=[]
+              for a in range(n):
+                for b in range(n):
+                  for c in range(n):
+                    bad.append(f'(not {eq(a,b,c)})')
+              out.append('(assert (or '+ ' '.join(bad)+'))')
+              out.append('(check-sat)')
+              for a in range(n):
+                for b in range(n):
+                  out.append(f'(get-value ((op {a} {b})))')
+              p=pathlib.Path(f'/tmp/{name}_{n}.smt2');p.write_text('\n'.join(out))
+              cp=subprocess.run(['timeout','40s','z3',str(p)],text=True,capture_output=True)
+              status=cp.stdout.splitlines()[0].strip() if cp.stdout.strip() else 'NO_OUTPUT'
+              row={'n':n,'status':status,'rc':cp.returncode}
+              if status=='sat':
+                import re
+                vals=[]
+                for line in cp.stdout.splitlines()[1:]:
+                  m=re.search(r'\(\(op\s+\d+\s+\d+\)\s+(\d+)\)',line)
+                  if m: vals.append(int(m.group(1)))
+                row['table']=vals
+              rows.append(row)
+              print(name,'N',n,status)
+              if status=='sat':
+                print(name,'COUNTERMODEL_TABLE',vals)
+                break
+            all_results[name]=rows
+          pathlib.Path('/tmp/results.json').write_text(json.dumps(all_results,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-auxiliary-grammar-obstruction-v1
+          path: /tmp/results.json
