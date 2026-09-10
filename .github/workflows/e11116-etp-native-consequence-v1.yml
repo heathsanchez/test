@@ -47,6 +47,19 @@ jobs:
             echo 'import equational_theories.Preorder'
             tail -n +2 /tmp/universal/E11116Universal.lean
           } > E11116ETP.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('E11116ETP.lean')
+          s=p.read_text()
+          s=s.replace('denote star ρ (mul a b)', 'denote star ρ (submission.C.mul a b)')
+          s=s.replace('unfold mul', 'unfold submission.C.mul')
+          s=s.replace('| .op a b => mul (evalCanonical a) (evalCanonical b)',
+                      '| .op a b => submission.C.mul (evalCanonical a) (evalCanonical b)')
+          s=s.replace('Law11116On mul', 'Law11116On submission.C.mul')
+          s=s.replace('denote mul T.var', 'denote submission.C.mul T.var')
+          s=s.replace('(α := T) mul concrete_is_law', '(α := T) submission.C.mul concrete_is_law')
+          p.write_text(s)
+          PY
 
           cat >> E11116ETP.lean <<'LEAN'
 
@@ -90,11 +103,11 @@ jobs:
               let ρ : Nat → G := fun n =>
                 if n = 0 then x else if n = 1 then y else z
               have hh := h ρ
-              simpa [E11116Law, Law.satisfiesPhi,
+              simpa [E11116Law, satisfiesPhi,
                 FreeMagma.evalInMagma, ρ] using hh
             · intro h ρ
               have hh := h (ρ 0) (ρ 1) (ρ 2)
-              simpa [E11116Law, Law.satisfiesPhi,
+              simpa [E11116Law, satisfiesPhi,
                 FreeMagma.evalInMagma] using hh
 
           theorem evalInConcrete_eq_canonical (u : FreeMagma Nat) :
