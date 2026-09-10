@@ -20,6 +20,13 @@ jobs:
           repository: heathsanchez/test
           run-id: 34532997704
 
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
       - name: Freeze ETP
         shell: bash
         run: |
