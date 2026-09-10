@@ -30,8 +30,16 @@ jobs:
           fof(e40, conjecture,
             ![X,Y]: f(X,X) = f(Y,Y)).
           TPTP
-          set +e\n          eprover --auto --cpu-limit=30 --tstp-format /tmp/e4916_e40.p | tee /tmp/e4916_e40.proof\n          rc=\${PIPESTATUS[0]}\n          set -e\n          echo EPROVER_RC=\$rc
-          if grep -q 'SZS status Theorem' /tmp/e4916_e40.proof; then\n            echo E4916_IMPLIES_COMMON_SQUARE_PASS\n          else\n            echo E4916_COMMON_SQUARE_NOT_PROVED_YET\n          fi
+          set +e
+          eprover --auto --cpu-limit=30 --tstp-format /tmp/e4916_e40.p | tee /tmp/e4916_e40.proof
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo EPROVER_RC=$rc
+          if grep -q 'SZS status Theorem' /tmp/e4916_e40.proof; then
+            echo E4916_IMPLIES_COMMON_SQUARE_PASS
+          else
+            echo E4916_COMMON_SQUARE_NOT_PROVED_YET
+          fi
 
       - name: Test full observed background spectrum
         shell: bash
