@@ -1,0 +1,107 @@
+name: Canonical compiler grammar census v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/canonical-compiler-grammar-census-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Freeze archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Read generated grammars
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,pathlib,collections
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          rows=[]
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip: continue
+              s=(root/ip['path']).read_text(errors='replace')
+              row={'equation':e['equation'].replace('Equation',''),'dual':e['dual'].replace('Equation','')}
+              # Read constructors of the primary CM/T datatype.
+              ctors=[]
+              m=re.search(r'inductive\s+(?:CM|T)\s+where(.*?)(?=\n(?:def|theorem|inductive|namespace|end)\b)',s,re.S)
+              if m:
+                  for line in m.group(1).splitlines():
+                      mm=re.match(r'\s*\|\s*([A-Za-z_][A-Za-z0-9_]*)',line)
+                      if mm: ctors.append(mm.group(1))
+              row['carrier_constructors']=ctors
+
+              has_code='inductive Code' in s
+              has_step='inductive Step' in s
+              row['has_code']=has_code;row['has_step']=has_step
+              used=set()
+              code_rules=0
+              if has_code:
+                  i=s.index('inductive Code')
+                  ends=[j for j in [
+                    s.find('\ndef CodeCases',i),s.find('\ndef CodeShape',i),
+                    s.find('\ninductive Step',i),s.find('\ndef NF',i),
+                    s.find('\ntheorem code_',i)
+                  ] if j>=0]
+                  j=min(ends) if ends else min(len(s),i+16000)
+                  block=s[i:j]
+                  rule_lines=[x.strip() for x in block.splitlines() if x.strip().startswith('|')]
+                  code_rules=len(rule_lines)
+                  joined=' '.join(rule_lines)
+                  for c in ctors:
+                      if re.search(rf'(?<![A-Za-z0-9_])(?:\.{re.escape(c)}|{re.escape(c)})(?![A-Za-z0-9_])',joined):
+                          used.add(c)
+              row['code_rules']=code_rules
+              row['constructors_used_in_code']=sorted(used)
+              auxiliary=sorted(c for c in used if c not in {'p','op','pair'})
+              row['auxiliary_code_constructors']=auxiliary
+
+              # Operational class in increasing semantic obligation.
+              if has_code and not has_step and code_rules>0 and not auxiliary:
+                  cls='direct_binary_rules'
+              elif has_code and not has_step and auxiliary:
+                  cls='direct_auxiliary_grammar'
+              elif has_code and has_step and auxiliary:
+                  cls='conditional_auxiliary_grammar'
+              elif has_code and has_step:
+                  cls='conditional_binary_rules'
+              elif 'linked' in s and 'def root' in s:
+                  cls='recursive_relation_rules'
+              elif re.search(r'(?m)^(?:noncomputable\s+)?def\s+(?:mul|op)\b',s):
+                  cls='bespoke_operation'
+              else:
+                  cls='other'
+              row['compiler_class']=cls
+              rows.append(row)
+
+          counts=collections.Counter(r['compiler_class'] for r in rows)
+          constructor_patterns=collections.Counter(tuple(r['carrier_constructors']) for r in rows)
+          out={'model_count':len(rows),'class_counts':dict(counts),
+               'constructor_pattern_counts':{str(k):v for k,v in constructor_patterns.items()},
+               'rows':rows}
+          pathlib.Path('/tmp/census_v2.json').write_text(json.dumps(out,indent=2))
+          print('MODEL_COUNT',len(rows))
+          for k,v in counts.most_common():print('CLASS',k,v)
+          for cls in counts:
+              members=[r['equation'] for r in rows if r['compiler_class']==cls]
+              print('MEMBERS',cls,members)
+          print('CONSTRUCTOR_PATTERNS')
+          for k,v in constructor_patterns.most_common():print(v,k)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-compiler-grammar-census-v2
+          path: /tmp/census_v2.json
