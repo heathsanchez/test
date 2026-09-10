@@ -63,7 +63,12 @@ jobs:
               rcases linked_semantic star ρ hLaw q r hqr with ⟨z, hz⟩
               refine ⟨denote star ρ a, ?_⟩
               have hax := hLaw (denote star ρ q) (denote star ρ a) z
-              simpa [denote, hz] using hax.symm
+              change denote star ρ q =
+                star (denote star ρ a)
+                  (star (star (denote star ρ q) (denote star ρ r))
+                    (star (denote star ρ a) (denote star ρ a)))
+              rw [hz]
+              exact hax.symm
           termination_by sz c
           decreasing_by
             simp only [sz]
