@@ -1,0 +1,228 @@
+name: Direct trace order-5 spectra v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/direct-trace-order5-spectra-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  spectra:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Freeze corpora
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          sed 's/^EQ_SIZE = 4$/EQ_SIZE = 5/' scripts/generate_eqs_list.py > /tmp/generate5.py
+          python3 /tmp/generate5.py > /tmp/order5_all.txt 2>/tmp/generate.log
+          test "$(wc -l < /tmp/order5_all.txt)" -eq 62576
+
+      - name: Compute complete fingerprints for directly interpretable trace models
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,pathlib,itertools,collections,time
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+
+          E=('e',)
+          def K(x):return ('k',x)
+          def P(x,y):return ('p',x,y)
+
+          tok_re=re.compile(r'[A-Za-z_][A-Za-z0-9_]*|[()]')
+          def parse_prefix_terms(s,nterms=3):
+              toks=tok_re.findall(s);i=0
+              def term():
+                  nonlocal i
+                  if i>=len(toks):raise ValueError('EOF')
+                  t=toks[i];i+=1
+                  if t=='(':
+                      q=term()
+                      if i>=len(toks) or toks[i]!=')':raise ValueError(')')
+                      i+=1;return q
+                  if t=='p':return ('p',term(),term())
+                  if t=='k':return ('k',term())
+                  if t=='e':return ('e',)
+                  return ('v',t)
+              out=[term() for _ in range(nterms)]
+              return out,toks[i:]
+
+          def match(pat,val,env):
+              if pat[0]=='v':
+                  n=pat[1]
+                  if n in env:return env[n]==val
+                  env[n]=val;return True
+              if pat[0]!=val[0]:return False
+              if pat[0]=='e':return True
+              if pat[0]=='k':return match(pat[1],val[1],env)
+              return match(pat[1],val[1],env) and match(pat[2],val[2],env)
+
+          def inst(pat,env):
+              if pat[0]=='v':return env[pat[1]]
+              if pat[0]=='e':return E
+              if pat[0]=='k':return K(inst(pat[1],env))
+              return P(inst(pat[1],env),inst(pat[2],env))
+
+          def get_rules(s):
+              i=s.index('inductive Code')
+              ends=[x for x in [s.find('\ndef CodeCases',i),s.find('\ntheorem code_cases',i),s.find('\ntheorem code_shape',i)] if x>=0]
+              j=min(ends) if ends else s.find('\ntheorem ',i)
+              block=s[i:j]
+              starts=[m.start() for m in re.finditer(r'(?m)^\s*\|\s*[A-Za-z_][A-Za-z0-9_]*',block)]
+              rules=[];errors=[]
+              for a,b in zip(starts,starts[1:]+[len(block)]):
+                  frag=block[a:b]
+                  m=re.search(r':\s*Code\s+(.+)',frag,re.S)
+                  if not m:continue
+                  try:
+                      ts,rest=parse_prefix_terms(m.group(1).strip(),3)
+                      bad=[x for x in rest if x!=')']
+                      if bad:errors.append(bad[:10])
+                      rules.append(tuple(ts))
+                  except Exception as ex:errors.append(repr(ex))
+              return rules,errors
+
+          def model(rules):
+              def op(a,b):
+                  outs=[]
+                  for pa,pb,po in rules:
+                      env={}
+                      if match(pa,a,env) and match(pb,b,env):outs.append(inst(po,env))
+                  if not outs:return P(a,b)
+                  if any(o!=outs[0] for o in outs[1:]):raise RuntimeError('nonfunctional')
+                  return outs[0]
+              return op
+
+          def parse_term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and s[i].isalpha():
+                      j=i+1
+                      while j<len(s) and s[j].isalnum():j+=1
+                      q=('v',s[i:j]);i=j;return q
+                  if i<len(s) and s[i]=='(':
+                      i+=1;q=expr();assert s[i]==')';i+=1;return q
+                  raise ValueError((s,i))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr();assert i==len(s);return q
+          def peq(s):
+              a,b=s.split('=',1);return parse_term(a),parse_term(b)
+          def vars_of(t):
+              if t[0]=='v':return {t[1]}
+              return vars_of(t[1])|vars_of(t[2])
+          def ev(t,e,op):
+              return e[t[1]] if t[0]=='v' else op(ev(t[1],e,op),ev(t[2],e,op))
+
+          lines=pathlib.Path('/tmp/order5_all.txt').read_text().splitlines()
+          laws=[peq(s) for s in lines]
+          lawvars=[sorted(vars_of(l)|vars_of(r)) for l,r in laws]
+          base=[E,K(E),K(K(E))]
+          wide=[E,K(E),K(K(E)),K(K(K(E))),P(E,E),P(K(E),E)]
+
+          # Exact syntactic variable-identification closure test up to alpha-renaming and side swap.
+          def rename_canon(t,mp=None,nextid=None):
+              if mp is None:mp={}
+              if nextid is None:nextid=[0]
+              if t[0]=='v':
+                  v=t[1]
+                  if v not in mp:mp[v]=nextid[0];nextid[0]+=1
+                  return ('v',mp[v])
+              return ('o',rename_canon(t[1],mp,nextid),rename_canon(t[2],mp,nextid))
+          def paircanon(l,r):
+              # shared alpha map across both sides
+              mp={};n=[0]
+              a=rename_canon(l,mp,n);b=rename_canon(r,mp,n)
+              return (a,b)
+          def subst(t,m):
+              if t[0]=='v':return ('v',m[t[1]])
+              return ('o',subst(t[1],m),subst(t[2],m))
+          def is_identification_instance(src,target):
+              sl,sr=src;tl,tr=target
+              sv=sorted(vars_of(sl)|vars_of(sr))
+              tv=sorted(vars_of(tl)|vars_of(tr))
+              # maps source vars to target variable names; allow identifications.
+              for vals in itertools.product(tv,repeat=len(sv)):
+                  m=dict(zip(sv,vals))
+                  a,b=subst(sl,m),subst(sr,m)
+                  if paircanon(a,b)==paircanon(tl,tr) or paircanon(b,a)==paircanon(tl,tr):
+                      return True
+              return False
+
+          rows=[]
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip:continue
+              s=(root/ip['path']).read_text(errors='replace')
+              if 'inductive Code' not in s:continue
+              i=s.index('inductive Code');j=s.find('\ntheorem ',i)
+              pre=s[i:j if j>=0 else i+8000]
+              if 'inductive Step' in pre or re.search(r'\bStep\b',pre):continue
+              rules,errs=get_rules(s)
+              if errs or not rules:continue
+              op=model(rules)
+              src=int(e['equation'].replace('Equation',''))
+              srcast=peq(e['formula'])
+              # Validate source on wide probes.
+              sv=sorted(vars_of(srcast[0])|vars_of(srcast[1]))
+              if any(ev(srcast[0],dict(zip(sv,xs)),op)!=ev(srcast[1],dict(zip(sv,xs)),op)
+                     for xs in itertools.product(wide,repeat=len(sv))):
+                  continue
+              candidates=[]
+              for n,((l,r),vs) in enumerate(zip(laws,lawvars),1):
+                  found=False
+                  for xs in itertools.product(base,repeat=len(vs)):
+                      env=dict(zip(vs,xs))
+                      if ev(l,env,op)!=ev(r,env,op):found=True;break
+                  if not found:candidates.append(n)
+              # Widen only survivors.
+              surv=[]
+              for n in candidates:
+                  l,r=laws[n-1];vs=lawvars[n-1];found=False
+                  for xs in itertools.product(wide,repeat=len(vs)):
+                      env=dict(zip(vs,xs))
+                      if ev(l,env,op)!=ev(r,env,op):found=True;break
+                  if not found:surv.append(n)
+              idclosure=[n for n in surv if is_identification_instance(srcast,laws[n-1])]
+              extra=[n for n in surv if n!=1 and n not in idclosure]
+              rows.append({
+                'source':src,'rules':len(rules),'survivor_count':len(surv),
+                'survivors':surv,
+                'survivor_formulas':{str(n):lines[n-1] for n in surv},
+                'identification_survivors':idclosure,
+                'extra_nontrivial_survivors':extra,
+                'minimal_spectrum_candidate':len(extra)==0,
+              })
+              print('SOURCE',src,'RULES',len(rules),'SURV',len(surv),
+                    'ID',len(idclosure),'EXTRA',extra)
+          out={
+            'universe_size':len(lines),
+            'probe_base':['e','k(e)','k2(e)'],
+            'probe_wide':['e','k(e)','k2(e)','k3(e)','p(e,e)','p(k(e),e)'],
+            'rows':rows,
+            'minimal_spectrum_candidates':sum(r['minimal_spectrum_candidate'] for r in rows),
+          }
+          pathlib.Path('/tmp/direct_o5_spectra.json').write_text(json.dumps(out,indent=2))
+          print('ROWS',len(rows))
+          print('MINIMAL_SPECTRUM_CANDIDATES',out['minimal_spectrum_candidates'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: direct-trace-order5-spectra-v1
+          path: /tmp/direct_o5_spectra.json
