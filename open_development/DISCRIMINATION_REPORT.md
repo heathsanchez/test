@@ -116,3 +116,163 @@ with SHA256 `cef01e2eb43b8b737688fc648d656eac877fbe12bb4b71fd612d68e6d19b80f9`.
 This results-only report update does not change the scientific freeze and must
 not be presented as a new administration. PR #99 records the successor; neither
 it nor PR #98 was merged.
+
+## V1b result — route-neutral ARC discrimination
+
+The corrected administration qualified on 10 September 2026. Its immutable
+scientific source is `7505fbf047b9684fbde417705528ef0d6b37895d`, descended
+from the exact canonical parent. The developmental kernel and `Developer.run`
+were not replaced. The external source was `fchollet/ARC-AGI` at
+`399030444e0ab0cc8b4e199870fb20b863846f34`, with all 400 files in
+`data/training` bound by corpus digest
+`cf0457d83413e70d79f425654319799b47138fcd11cf45e7d3054e6ea6c7f2d5`.
+
+Chronology was enforced by four jobs. The source, eight initial retained D4
+capabilities, verifier, role grammar, expansion grammar, evaluator, and workflow
+were frozen while the external path was absent. Only then did the administrator
+fetch ARC and apply route-neutral eligibility: valid JSON plus three declared
+shape/color invariants (same-shape pixel permutation, strict nonzero bounding-box
+shape, or doubled-axis shape). Eligibility never executed direct, role, or
+extension candidates. The nonce `34449939382:1` ordered all 36 eligible tasks;
+there was no route balancing or post-result sampling.
+
+The unlabelled stream contained training demonstrations and test inputs, but
+withheld test outputs and every route/evaluator field. The frozen developer
+emitted all route decisions and immutable state transitions before the evaluator
+job existed. A separately implemented evaluator then loaded the original ARC
+files, verified each source hash, exhaustively established the least justified
+route, and checked the hidden test outputs.
+
+### Task results
+
+Every predicted route equalled the independent ground truth. `held-out` is the
+external test-output check; UNKNOWN correctly emits no output and is shown as
+`—`, not as a solved task.
+
+| # | ARC task | predicted | ground truth | held-out |
+|---:|---|---|---|:---:|
+| 1 | `3c9b0459` | REUSE | REUSE | yes |
+| 2 | `05f2a901` | UNKNOWN | UNKNOWN | — |
+| 3 | `beb8660c` | UNKNOWN | UNKNOWN | — |
+| 4 | `7468f01a` | EXAPTATION | EXAPTATION | yes |
+| 5 | `228f6490` | UNKNOWN | UNKNOWN | — |
+| 6 | `1caeab9d` | UNKNOWN | UNKNOWN | — |
+| 7 | `a48eeaf7` | UNKNOWN | UNKNOWN | — |
+| 8 | `c9e6f938` | EXPANSION | EXPANSION | yes |
+| 9 | `74dd1130` | REUSE | REUSE | yes |
+| 10 | `6150a2bd` | REUSE | REUSE | yes |
+| 11 | `6855a6e4` | UNKNOWN | UNKNOWN | — |
+| 12 | `4c4377d9` | UNKNOWN | UNKNOWN | — |
+| 13 | `dc433765` | UNKNOWN | UNKNOWN | — |
+| 14 | `025d127b` | UNKNOWN | UNKNOWN | — |
+| 15 | `68b16354` | REUSE | REUSE | yes |
+| 16 | `5521c0d9` | UNKNOWN | UNKNOWN | — |
+| 17 | `1e0a9b12` | UNKNOWN | UNKNOWN | — |
+| 18 | `80af3007` | UNKNOWN | UNKNOWN | — |
+| 19 | `6d0aefbc` | REUSE | REUSE | yes |
+| 20 | `3906de3d` | UNKNOWN | UNKNOWN | — |
+| 21 | `5168d44c` | UNKNOWN | UNKNOWN | — |
+| 22 | `9dfd6313` | REUSE | REUSE | yes |
+| 23 | `e9afcf9a` | UNKNOWN | UNKNOWN | — |
+| 24 | `a1570a43` | UNKNOWN | UNKNOWN | — |
+| 25 | `25ff71a9` | UNKNOWN | UNKNOWN | — |
+| 26 | `8be77c9e` | EXPANSION | EXPANSION | yes |
+| 27 | `963e52fc` | UNKNOWN | UNKNOWN | — |
+| 28 | `ae3edfdc` | UNKNOWN | UNKNOWN | — |
+| 29 | `1cf80156` | EXAPTATION | EXAPTATION | yes |
+| 30 | `67a3c6ac` | REUSE | REUSE | yes |
+| 31 | `f8a8fe49` | UNKNOWN | UNKNOWN | — |
+| 32 | `a416b8f3` | EXPANSION | EXPANSION | yes |
+| 33 | `ed36ccf7` | REUSE | REUSE | yes |
+| 34 | `6fa7a44f` | REUSE | REUSE | yes |
+| 35 | `952a094c` | UNKNOWN | UNKNOWN | — |
+| 36 | `b94a9452` | UNKNOWN | UNKNOWN | — |
+
+The confusion matrix is diagonal: REUSE 9/9, EXAPTATION 2/2, EXPANSION
+3/3, UNKNOWN 22/22. Route accuracy is 36/36. All 14 non-UNKNOWN tasks also
+matched their hidden external test outputs.
+
+### Why the routes were earned
+
+REUSE required execution by an already retained capability under its unchanged
+contract and admitted nothing. EXAPTATION required all eight direct D4 programs
+to fail, while one of eight crop-then-D4 role programs succeeded; the admitted
+role explicitly depends on and calls the unchanged retained D4 capability.
+EXPANSION required an exact obstruction over the complete declared old language:
+all eight direct and all eight role behaviors failed before one of 24 declared
+concat/overlay formation rules could be admitted. Mere search exhaustion always
+remained UNKNOWN. The five developmental admissions were two role changes and
+three language changes.
+
+For every EXAPTATION and EXPANSION, hidden test output was unavailable before
+admission, available after admission and restart, unavailable after exact learned
+capability removal or necessary-ancestor removal, and restored on restoration.
+Unrelated removal preserved it. Same-size sham, wrong-direction, fixed-policy,
+and raw-history-without-admission controls remained UNKNOWN. Original ancestor
+scope and immutable history were preserved.
+
+### Cost and authority
+
+The run recorded the vector totals: construction 5; verification 46; activation
+5; execution 4,904 declared units; memory 370,492 cumulative active-state bytes;
+recovery 36; external interaction 116 examples; 1,440 candidate evaluations;
+46 verifier calls; 2.4851 seconds measured task wall time; 2.4105 seconds CPU;
+and 28,884 KiB maximum process RSS. These are bounded protocol costs, not a
+universal efficiency claim.
+
+The new ARC routing, exhaustive finite closure, hidden-output replay, causal
+controls, and release-v4 result are Python-qualified. The freeze job also passed
+57 Python tests and the existing Lean 4.24 core gate. The separate regression
+job passed the existing Lean 4.34.0-rc2 Mathlib proof-program semantics, including
+eleven axiom inspections restricted to `propext`, `Classical.choice`, and
+`Quot.sound`. Those Lean results cover the pre-existing generic semantics and
+constructor/reference theorems; they do not formalize ARC execution end to end.
+
+### Exact evidence
+
+- Scientific run: https://github.com/heathsanchez/test/actions/runs/34449939382
+- Freeze job: https://github.com/heathsanchez/test/actions/runs/34449939382/job/102783147009
+- Administrator job: https://github.com/heathsanchez/test/actions/runs/34449939382/job/102783242237
+- Developer job: https://github.com/heathsanchez/test/actions/runs/34449939382/job/102783281753
+- Evaluator/release job: https://github.com/heathsanchez/test/actions/runs/34449939382/job/102783325463
+- Freeze artifact: https://github.com/heathsanchez/test/actions/runs/34449939382/artifacts/10141121719 — SHA256 `a3922d1beee8c32796e8ee994afb49dcf5ad5d74117184a920c3d0d1cdfeb777`
+- Unlabelled administration artifact: https://github.com/heathsanchez/test/actions/runs/34449939382/artifacts/10141126887 — SHA256 `f83247749a404bc9982c383a736c3de355e084b223a451c5ccaa537e704a7aa1`
+- Frozen decisions artifact: https://github.com/heathsanchez/test/actions/runs/34449939382/artifacts/10141132651 — SHA256 `bee1bb593abe0c0780a19be08ffa22010c56d31e75bca94bef68bedd793123ad`
+- Final v4 artifact: https://github.com/heathsanchez/test/actions/runs/34449939382/artifacts/10141138082 — SHA256 `411e289fe70830682f75a3497981c5815491785cc712b89d20cff02276647b59`
+- Freeze digest: `4159d58b1f426ad7ee89ea6992015bfd8c3ca41776769a4dd07d174577210b61`
+- Stream digest: `dcdd87a95163411402a3bd705800321a8cd883e37fc1dd01122cab23f313c400`
+- Decisions digest: `abf99bedd920d32f606ecf1470488e26e8a0cc76db76fb583789b6a267f87b23`
+- Evaluation digest: `440b8505de1bac5360aa243c7e42792c1995f24b12cc2aa8b8d343a70427a9b1`
+- Release-v4 evidence digest: `7048224ec434bd3fc777444b83564b3e4952fcece729f0c06c3b3e4da274fda6`
+
+Current-head regression authority is
+https://github.com/heathsanchez/test/actions/runs/34449942767. Its core job
+https://github.com/heathsanchez/test/actions/runs/34449942767/job/102783156847
+passed all 57 tests, the operational gates, and emitted release evidence digest
+`3f09c9af685d5f06a2f3daac1b47069e02c7c7bf3b85fc3414c78a912a747260`.
+Its proof-semantics job
+https://github.com/heathsanchez/test/actions/runs/34449942767/job/102783292158
+ended with `TYPED_PROGRAM_SEMANTICS_LEAN_PASS` and eleven `AXIOMS_PASS` markers.
+The core, causal, and semantics artifact SHA256 values are respectively
+`2b493d48f00f9f5f16f793cb6f874bf8e8fb1c844cb2f753c644b3fcb1927ba6`,
+`8c2713e0f7b4f6e08327241ea0708f1bab225b2b462ed6a317caf2b613250d63`,
+and `85f03b4489a7ce5612bfc6677745ef8e6228b636d5f60c9817d878b794cfe498`.
+
+### Supported claim and boundary
+
+The earned claim is: **under this frozen finite ARC protocol, a verifier-governed
+developer inferred from unlabelled externally sourced consequences whether the
+least justified response was reuse, role-only exaptation, language expansion,
+or abstention, before evaluator disclosure, with exact finite obstruction and
+causal removal evidence.**
+
+This does not establish unrestricted grammar invention, universal adequacy,
+human blinding, biological open-endedness, or end-to-end Lean verification of
+Python execution. The externally maintained corpus supplied the tasks; the
+finite direct, role, and extension languages were predeclared. The next smallest
+separator is to let a certified residual generate the extension formation rule
+itself from a lower substrate, then test its prospective transfer under the same
+route-neutral and fail-closed administration.
+
+PR #99 remains open and unmerged. The canonical `open-development-core-v1`
+branch and PR #98 remain untouched.
