@@ -1,0 +1,85 @@
+name: E6878 Waldmeister proof search v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-waldmeister-proof-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        goal: [r2, r5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Install Waldmeister
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://www.mpi-inf.mpg.de/fileadmin/inf/rg1/Documents/wm-feb18-linux.tgz -o /tmp/wm.tgz
+          mkdir /tmp/wm
+          tar -xzf /tmp/wm.tgz -C /tmp/wm
+          find /tmp/wm -type f -name waldmeister -print
+          WM=$(find /tmp/wm -type f -name waldmeister | head -1)
+          chmod +x "$WM"
+          cp "$WM" /tmp/waldmeister
+          PROOF=$(find /tmp/wm -type f -name proof | head -1 || true)
+          if [ -n "$PROOF" ]; then chmod +x "$PROOF"; cp "$PROOF" /tmp/proof; fi
+
+      - name: Write equational problem
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          if [ "$GOAL" = r2 ]; then
+            CONCLUSION='f(a,f(a,f(b,f(c,a)))) = c'
+          else
+            CONCLUSION='f(f(a,b),f(f(a,b),c)) = a'
+          fi
+          cat > /tmp/problem.pr <<EOF
+          NAME E6878_$GOAL
+          MODE PROOF
+          SORTS
+          ANY
+          SIGNATURE
+          f: ANY ANY -> ANY
+          a: -> ANY
+          b: -> ANY
+          c: -> ANY
+          ORDERING
+          LPO
+          f > a > b > c
+          VARIABLES
+          x,y,z : ANY
+          EQUATIONS
+          f(y,f(y,f(f(z,x),f(x,y)))) = x
+          CONCLUSION
+          $CONCLUSION
+          EOF
+          cat /tmp/problem.pr
+
+      - name: Waldmeister completion search
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set +e
+          cd /tmp
+          timeout 600s ./waldmeister -f problem.pr > /tmp/waldmeister.txt 2>&1
+          rc=$?
+          set -e
+          echo "WALDMEISTER_RC=$rc"
+          tail -160 /tmp/waldmeister.txt
+          mkdir -p /tmp/out
+          cp /tmp/problem.pr /tmp/waldmeister.txt /tmp/out/
+          echo "$rc" > /tmp/out/rc.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-waldmeister-${{ matrix.goal }}
+          path: /tmp/out/
