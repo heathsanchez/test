@@ -30,7 +30,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          case "\${{ matrix.case }}" in
+          case "${{ matrix.case }}" in
             e4916_e40)
               SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
               GOAL='f(X,X) = f(Y,Y)'
@@ -76,7 +76,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: vampire-\${{ matrix.case }}
+          name: vampire-${{ matrix.case }}
           path: |
             /tmp/problem.p
             /tmp/out.txt
