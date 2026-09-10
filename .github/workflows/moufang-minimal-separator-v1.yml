@@ -85,9 +85,28 @@ jobs:
             ∀ x y z : Bool,
               f (f (f x y) z) y = f x (f y (f z y))
 
+          def op4 (a00 a01 a10 a11 : Bool) : Bool → Bool → Bool
+            | false, false => a00
+            | false, true  => a01
+            | true,  false => a10
+            | true,  true  => a11
+
+          theorem table_implication :
+              ∀ a00 a01 a10 a11 : Bool,
+                sourceBool (op4 a00 a01 a10 a11) →
+                targetBool (op4 a00 a01 a10 a11) := by
+            decide
+
+          theorem op_eq_op4 (f : Bool → Bool → Bool) :
+              f = op4 (f false false) (f false true) (f true false) (f true true) := by
+            funext x y
+            cases x <;> cases y <;> rfl
+
           theorem no_two_element_separator :
               ∀ f : Bool → Bool → Bool, sourceBool f → targetBool f := by
-            native_decide
+            intro f hs
+            rw [op_eq_op4 f] at hs ⊢
+            exact table_implication _ _ _ _ hs
 
           #print axioms source
           #print axioms target_fails
@@ -103,5 +122,5 @@ jobs:
           set -euxo pipefail
           cd /tmp/mathlib4
           lake env lean MoufangMinimal3.lean | tee /tmp/moufang-minimal.log
-          grep -q 'MoufangMinimal3.no_two_element_separator' /tmp/moufang-minimal.log
+          grep -q 'MoufangMinimal3.no_two_element_separator' /tmp/moufang-minimal.log\n          ! grep -q 'sorryAx' /tmp/moufang-minimal.log
           echo 'PASS: 3-element separator exists and no 2-element separator exists'
