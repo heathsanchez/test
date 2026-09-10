@@ -1,0 +1,171 @@
+name: ETP residual forces refinement v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/etp-residual-forces-refinement-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Preorder equational_theories.Homomorphisms
+
+      - name: Write residual theorem
+        shell: bash
+        run: |
+          cat > /tmp/etp/ResidualForcesRefinement.lean <<'LEAN'
+          import equational_theories.Preorder
+          import equational_theories.Homomorphisms
+
+          open FreeMagma
+          open Law
+
+          namespace ResidualForcesRefinement
+
+          def canonical
+              {C : Type} [Magma C]
+              (gen : Nat → C) (t : FreeMagma Nat) : C :=
+            FreeMagma.evalInMagma gen t
+
+          theorem hom_preserves_term_eval
+              {C G : Type} [Magma C] [Magma G]
+              (f : C →◇ G)
+              (gen : Nat → C) (ρ : Nat → G)
+              (hgen : ∀ n, f (gen n) = ρ n) :
+              ∀ t : FreeMagma Nat,
+                f (canonical gen t) = canonical ρ t := by
+            intro t
+            induction t with
+            | Leaf n =>
+                exact hgen n
+            | Fork a b iha ihb =>
+                change f (canonical gen a ◇ canonical gen b) =
+                  canonical ρ a ◇ canonical ρ b
+                rw [f.map_op, iha, ihb]
+
+          /--
+          If a candidate semantic world C identifies two terms that a verified
+          target world G distinguishes under the corresponding generators,
+          then no generator-preserving magma homomorphism C -> G can exist.
+          -/
+          theorem no_lift_of_separator
+              {C G : Type} [Magma C] [Magma G]
+              (gen : Nat → C) (ρ : Nat → G)
+              (s t : FreeMagma Nat)
+              (hcollapse : canonical gen s = canonical gen t)
+              (hsep : canonical ρ s ≠ canonical ρ t) :
+              ¬ ∃ f : C →◇ G, ∀ n, f (gen n) = ρ n := by
+            rintro ⟨f, hgen⟩
+            apply hsep
+            rw [← hom_preserves_term_eval f gen ρ hgen s,
+                ← hom_preserves_term_eval f gen ρ hgen t,
+                hcollapse]
+
+          /--
+          A separator imposes a necessary distinction on every future
+          representation D that can semantically lift to the separator world.
+          -/
+          theorem separator_forces_future_distinction
+              {D G : Type} [Magma D] [Magma G]
+              (genD : Nat → D) (ρ : Nat → G)
+              (s t : FreeMagma Nat)
+              (hsep : canonical ρ s ≠ canonical ρ t)
+              (f : D →◇ G)
+              (hgen : ∀ n, f (genD n) = ρ n) :
+              canonical genD s ≠ canonical genD t := by
+            intro hcollapse
+            exact no_lift_of_separator genD ρ s t hcollapse hsep
+              ⟨f, hgen⟩
+
+          /--
+          ETP-context form: a verified Γ-model separating s,t is a residual
+          against any proposed Γ compiler world that collapses s,t.
+          -/
+          theorem verified_residual_obstructs_universal_compiler
+              (Γ : Ctx Nat)
+              {C G : Type} [Magma C] [Magma G]
+              (gen : Nat → C) (ρ : Nat → G)
+              (s t : FreeMagma Nat)
+              (_hG : G ⊧ Γ)
+              (hcollapse : canonical gen s = canonical gen t)
+              (hsep : canonical ρ s ≠ canonical ρ t) :
+              ¬ ∃ f : C →◇ G, ∀ n, f (gen n) = ρ n :=
+            no_lift_of_separator gen ρ s t hcollapse hsep
+
+          /--
+          Kernel form of the boundary update: once a verified separator exists,
+          every semantically adequate next representation must lie outside the
+          old equality kernel on that pair.
+          -/
+          theorem residual_forces_refinement
+              (Γ : Ctx Nat)
+              {D G : Type} [Magma D] [Magma G]
+              (genD : Nat → D) (ρ : Nat → G)
+              (s t : FreeMagma Nat)
+              (_hG : G ⊧ Γ)
+              (hsep : canonical ρ s ≠ canonical ρ t)
+              (f : D →◇ G)
+              (hgen : ∀ n, f (genD n) = ρ n) :
+              canonical genD s ≠ canonical genD t :=
+            separator_forces_future_distinction genD ρ s t hsep f hgen
+
+          #print axioms hom_preserves_term_eval
+          #print axioms no_lift_of_separator
+          #print axioms separator_forces_future_distinction
+          #print axioms verified_residual_obstructs_universal_compiler
+          #print axioms residual_forces_refinement
+
+          end ResidualForcesRefinement
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean ResidualForcesRefinement.lean 2>&1 | tee /tmp/residual.log
+          ! grep -q sorryAx /tmp/residual.log
+          ! grep -q _native.native_decide /tmp/residual.log
+          grep -q ResidualForcesRefinement.residual_forces_refinement /tmp/residual.log
+          echo VERIFIED_RESIDUAL_FORCES_REFINEMENT_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/ResidualForcesRefinement.lean /tmp/out/
+          cp /tmp/residual.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "If a candidate semantic representation identifies s,t but a verified Γ-model separates them, no generator-preserving semantic lift to that witness exists; every adequate future representation admitting that lift must distinguish s,t.",
+            "etp_commit": "bb5a9b5fe78c376ce1725529f235f8d574630b9f",
+            "role": "verified residual -> necessary representation refinement",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etp-residual-forces-refinement-v1
+          path: /tmp/out/
