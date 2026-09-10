@@ -1,0 +1,176 @@
+name: Generic canonical model completeness v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/generic-canonical-model-completeness-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Install Lean
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          elan default leanprover/lean4:v4.33.1
+
+      - name: Write generic theorem
+        shell: bash
+        run: |
+          cat > /tmp/GenericCanonicalCompleteness.lean <<'LEAN'
+          inductive RawTerm where
+            | var : Nat → RawTerm
+            | node : RawTerm → RawTerm → RawTerm
+          deriving DecidableEq, Repr
+
+          namespace RawTerm
+
+          def denote {α : Type} (star : α → α → α) (ρ : Nat → α) : RawTerm → α
+            | .var n => ρ n
+            | .node a b => star (denote star ρ a) (denote star ρ b)
+
+          def compiledMul (reduce : RawTerm → RawTerm → Option RawTerm)
+              (a b : RawTerm) : RawTerm :=
+            match reduce a b with
+            | some c => c
+            | none => .node a b
+
+          def evalCanonical (reduce : RawTerm → RawTerm → Option RawTerm) : RawTerm → RawTerm
+            | .var n => .var n
+            | .node a b =>
+                compiledMul reduce (evalCanonical reduce a) (evalCanonical reduce b)
+
+          def ReductionsSound
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm) : Prop :=
+            ∀ {α : Type} (star : α → α → α),
+              Theory star →
+              ∀ (ρ : Nat → α) (a b c : RawTerm),
+                reduce a b = some c →
+                denote star ρ c =
+                  star (denote star ρ a) (denote star ρ b)
+
+          def Consequence
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (s t : RawTerm) : Prop :=
+            ∀ {α : Type} (star : α → α → α),
+              Theory star →
+              ∀ ρ : Nat → α,
+                denote star ρ s = denote star ρ t
+
+          theorem compiledMul_semantic
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm)
+              (hsound : ReductionsSound Theory reduce)
+              {α : Type} (star : α → α → α)
+              (hTheory : Theory star) (ρ : Nat → α) (a b : RawTerm) :
+              denote star ρ (compiledMul reduce a b) =
+                star (denote star ρ a) (denote star ρ b) := by
+            unfold compiledMul
+            cases h : reduce a b with
+            | none => rfl
+            | some c =>
+                exact hsound star hTheory ρ a b c h
+
+          theorem denote_evalCanonical
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm)
+              (hsound : ReductionsSound Theory reduce)
+              {α : Type} (star : α → α → α)
+              (hTheory : Theory star) (ρ : Nat → α) :
+              ∀ u : RawTerm,
+                denote star ρ (evalCanonical reduce u) =
+                  denote star ρ u := by
+            intro u
+            induction u with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp only [evalCanonical, denote]
+                rw [compiledMul_semantic Theory reduce hsound star hTheory ρ,
+                    iha, ihb]
+
+          theorem canonical_self_eval
+              (reduce : RawTerm → RawTerm → Option RawTerm) :
+              ∀ u : RawTerm,
+                denote (compiledMul reduce) RawTerm.var u =
+                  evalCanonical reduce u := by
+            intro u
+            induction u with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp [denote, evalCanonical, iha, ihb]
+
+          theorem consequence_iff_canonical_eq
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm)
+              (hsound : ReductionsSound Theory reduce)
+              (hmodel : Theory (compiledMul reduce))
+              (s t : RawTerm) :
+              Consequence Theory s t ↔
+                evalCanonical reduce s = evalCanonical reduce t := by
+            constructor
+            · intro h
+              have hc := h (compiledMul reduce) hmodel RawTerm.var
+              simpa [canonical_self_eval] using hc
+            · intro h α star hTheory ρ
+              rw [← denote_evalCanonical Theory reduce hsound star hTheory ρ s,
+                  ← denote_evalCanonical Theory reduce hsound star hTheory ρ t,
+                  h]
+
+          theorem canonical_idempotent
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm)
+              (hsound : ReductionsSound Theory reduce)
+              (hmodel : Theory (compiledMul reduce)) :
+              ∀ u : RawTerm,
+                evalCanonical reduce (evalCanonical reduce u) =
+                  evalCanonical reduce u := by
+            intro u
+            have hfac :=
+              denote_evalCanonical Theory reduce hsound
+                (compiledMul reduce) hmodel RawTerm.var
+                (evalCanonical reduce u)
+            simpa [canonical_self_eval] using hfac
+
+          theorem consequence_decidable
+              (Theory : {α : Type} → (α → α → α) → Prop)
+              (reduce : RawTerm → RawTerm → Option RawTerm)
+              (hsound : ReductionsSound Theory reduce)
+              (hmodel : Theory (compiledMul reduce))
+              (s t : RawTerm) :
+              Decidable (Consequence Theory s t) := by
+            exact decidable_of_iff
+              (evalCanonical reduce s = evalCanonical reduce t)
+              (consequence_iff_canonical_eq Theory reduce hsound hmodel s t).symm
+
+          #print axioms compiledMul_semantic
+          #print axioms consequence_iff_canonical_eq
+          #print axioms canonical_idempotent
+          #print axioms consequence_decidable
+
+          end RawTerm
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp
+          lean GenericCanonicalCompleteness.lean 2>&1 | tee generic.log
+          ! grep -q sorryAx generic.log
+          grep -q RawTerm.consequence_iff_canonical_eq generic.log
+          grep -q RawTerm.consequence_decidable generic.log
+          echo GENERIC_CANONICAL_COMPLETENESS_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generic-canonical-model-completeness-v1
+          path: |
+            /tmp/GenericCanonicalCompleteness.lean
+            /tmp/generic.log
