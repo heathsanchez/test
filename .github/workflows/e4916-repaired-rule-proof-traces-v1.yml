@@ -1,0 +1,49 @@
+name: E4916 repaired rule proof traces v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-repaired-rule-proof-traces-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  trace:
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [r1, r2, r3]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Install Vampire
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+
+      - name: Produce full proof trace
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
+          case "\${{ matrix.rule }}" in
+            r1) GOAL='f(f(A,A),f(A,A)) = f(A,A)' ;;
+            r2) GOAL='f(f(A,f(B,B)),f(A,f(A,f(B,B)))) = A' ;;
+            r3) GOAL='f(f(A,A),f(B,f(B,f(A,A)))) = B' ;;
+          esac
+          cat > /tmp/problem.p <<EOF
+          fof(lhs,axiom,![X,Y,Z]: $SRC).
+          fof(rhs,conjecture,![A,B]: $GOAL).
+          EOF
+          /tmp/vampire/vampire --proof_extra full --time_limit 60 /tmp/problem.p | tee /tmp/proof.txt
+          grep -Eq 'Refutation found|SZS status Theorem|Termination reason: Refutation' /tmp/proof.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-proof-\${{ matrix.rule }}
+          path: |
+            /tmp/problem.p
+            /tmp/proof.txt
