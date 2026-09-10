@@ -21,7 +21,7 @@ jobs:
         run: |
           set -euxo pipefail
           sudo apt-get update -qq
-          sudo apt-get install -y prover9 eprover
+          sudo apt-get install -y eprover
           curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
           unzip -q /tmp/vampire.zip -d /tmp/vampire
           chmod +x /tmp/vampire/vampire
@@ -75,23 +75,6 @@ jobs:
             echo "VAMPIRE_${GOAL}_NOT_PROVED"
           fi
 
-      - name: Prover9 proof search
-        env:
-          GOAL: ${{ matrix.goal }}
-        shell: bash
-        run: |
-          set +e
-          timeout 330s prover9 < /tmp/problem.in > /tmp/prover9.txt 2>&1
-          rc=$?
-          set -e
-          echo PROVER9_RC=$rc
-          grep -E 'THEOREM PROVED|SEARCH FAILED|Exiting with' /tmp/prover9.txt || true
-          if grep -q 'THEOREM PROVED' /tmp/prover9.txt; then
-            echo "PROVER9_${GOAL}_THEOREM"
-          else
-            echo "PROVER9_${GOAL}_NOT_PROVED"
-          fi
-
       - name: E prover proof search
         env:
           GOAL: ${{ matrix.goal }}
@@ -117,7 +100,6 @@ jobs:
           set -euxo pipefail
           theorem=0
           grep -q '^% SZS status Theorem' /tmp/vampire.txt && theorem=1 || true
-          grep -q 'THEOREM PROVED' /tmp/prover9.txt && theorem=1 || true
           grep -Eq 'SZS status Theorem|SZS status Unsatisfiable' /tmp/eprover.txt && theorem=1 || true
           mkdir -p /tmp/out
           printf '{"goal":"%s","proved":%s}\n' "$GOAL" "$theorem" > /tmp/out/verdict.json
@@ -126,7 +108,7 @@ jobs:
           else
             echo "E6878_${GOAL}_SEMANTIC_OBLIGATION_UNKNOWN"
           fi
-          cp /tmp/problem.p /tmp/problem.in /tmp/vampire.txt /tmp/prover9.txt /tmp/eprover.txt /tmp/out/
+          cp /tmp/problem.p /tmp/problem.in /tmp/vampire.txt /tmp/eprover.txt /tmp/out/
 
       - uses: actions/upload-artifact@v4
         with:
