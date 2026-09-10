@@ -38,7 +38,12 @@ jobs:
 
           url = "https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/cnf_nf16_reverse_ties_completed_first_sound_v3/E28770_to_E2__5bf1357b80e9.lean"
           text = urllib.request.urlopen(url).read().decode("utf-8")
-          text = text.replace("import JudgeProblem", "import Mathlib", 1)
+          replacement = """import Mathlib
+
+class Magma (α : Type u) where
+  op : α → α → α
+"""
+          text = text.replace("import JudgeProblem", replacement, 1)
           marker = "\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by"
           if marker not in text:
               raise SystemExit("could not locate frozen certificate Goal wrapper")
@@ -94,7 +99,7 @@ jobs:
           open("ReverseSeparation.lean", "w", encoding="utf-8").write(text)
           PY
           printf '%s\n' '--- appended reverse-separation theorem ---'
-          tail -n 60 ReverseSeparation.lean
+          tail -n 65 ReverseSeparation.lean
 
       - name: Kernel check
         shell: bash
