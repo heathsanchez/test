@@ -1,0 +1,162 @@
+name: Constructor obligations Lean replay v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/constructor-obligations-lean-replay-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  replay:
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [e15535_e40, e19966_e40]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install tools
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Superposition
+
+      - name: Generate Vampire full proof
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "\${{ matrix.case }}" in
+            e15535_e40)
+              SRC='f(Y,f(f(f(X,f(Z,Z)),Y),Y)) = X'
+              ;;
+            e19966_e40)
+              SRC='f(f(Y,Y),f(f(X,f(X,Z)),Z)) = X'
+              ;;
+          esac
+          cat > /tmp/problem.p <<EOF
+          fof(lhs,axiom,![X,Y,Z]: $SRC).
+          fof(rhs,conjecture,![X,Y]: f(X,X) = f(Y,Y)).
+          EOF
+          /tmp/vampire/vampire --proof_extra full --time_limit 60 /tmp/problem.p > /tmp/vampire_full.txt
+          grep -Eq 'Refutation found|SZS status Theorem|Termination reason: Refutation' /tmp/vampire_full.txt
+
+      - name: Translate Vampire proof to Lean
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import re, pathlib
+          case='\${{ matrix.case }}'
+          proof=pathlib.Path('/tmp/vampire_full.txt').read_text()
+          if case=='e15535_e40':
+              source_expr='y ◇ (((x ◇ (z ◇ z)) ◇ y) ◇ y) = x'
+          else:
+              source_expr='(y ◇ y) ◇ ((x ◇ (x ◇ z)) ◇ z) = x'
+
+          def natural_sort(l):
+              def convert(text):
+                  return int(text) if text.isdigit() else text.lower()
+              def key(x):
+                  return [convert(c) for c in re.split('([0-9]+)',x)]
+              return sorted(l,key=key)
+
+          def leanifyS(statement):
+              statement=re.sub('mul','',statement)
+              statement=re.sub(',', ' ◇ ', statement)
+              statement=re.sub('!=','≠',statement)
+              variables=natural_sort({x for x in re.findall(r'\w+',statement)
+                                      if 'sK' not in x})
+              variables=f'({" ".join(variables)} : G) ' if variables else ''
+              return f'{variables}: {statement}'
+
+          def leanifyP(p):
+              for kind in ['superposition','backward demodulation','forward demodulation']:
+                  m=re.match(kind+r' (\d+),(\d+)',p)
+                  if m: return f'superpose eq{m[2]} eq{m[1]}'
+              raise RuntimeError('unsupported proof step '+p)
+
+          body=[]
+          body.append('  by_contra nh')
+          body.append('  simp only [not_forall] at nh')
+          body.append('  obtain ⟨sK0, sK1, nh⟩ := nh')
+          found=0
+          for eqnum,statement,p in re.findall(r'(\d+)\. ([^[]+) \[([^\]]+)\]',proof):
+              if p.startswith('X') or p.startswith('skolemisation'):
+                  continue
+              if p.startswith('cnf transformation'):
+                  if '!=' in statement:
+                      body.append(f'  have eq{eqnum} {leanifyS(statement)} := mod_symm nh')
+                  else:
+                      body.append(f'  have eq{eqnum} {leanifyS(statement)} := mod_symm (h ..)')
+                  found+=1; continue
+              if statement=='$false':
+                  m=re.match(r'subsumption resolution (\d+),(\d+)',p)
+                  if m:
+                      body.append(f'  subsumption eq{m[1]} eq{m[2]}')
+                      found+=1; continue
+                  m=re.match(r'(?:trivial inequality removal|equality resolution) (\d+)',p)
+                  if m:
+                      body.append(f'  subsumption eq{m[1]} rfl')
+                      found+=1; continue
+                  raise RuntimeError('unsupported false step '+p)
+              body.append(f'  have eq{eqnum} {leanifyS(statement)} := {leanifyP(p)}')
+              found+=1
+
+          if found==0:
+              raise SystemExit('Vampire old-style numbered proof not found')
+
+          lean='''import equational_theories.Superposition
+          import Mathlib.Tactic.TypeStar
+          import Mathlib.Tactic.ByContra
+
+          namespace ConstructorReplay
+
+          theorem common_square
+              (G : Type*) [Magma G]
+              (h : ∀ x y z : G, SOURCE) :
+              ∀ x y : G, x ◇ x = y ◇ y := by
+          BODY
+
+          #print axioms common_square
+          end ConstructorReplay
+          '''
+          lean=lean.replace('SOURCE',source_expr).replace('BODY','\n'.join(body))
+          lean='\n'.join(x[10:] if x.startswith('          ') else x for x in lean.splitlines())
+          pathlib.Path('/tmp/etp/ConstructorReplay.lean').write_text(lean)
+          print('TRANSLATED_STEPS',found)
+          print(lean)
+          PY
+
+      - name: Kernel check translated proof
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean ConstructorReplay.lean 2>&1 | tee /tmp/replay.log
+          ! grep -q sorryAx /tmp/replay.log
+          grep -q ConstructorReplay.common_square /tmp/replay.log
+          echo CONSTRUCTOR_OBLIGATION_LEAN_REPLAY_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: constructor-replay-\${{ matrix.case }}
+          path: |
+            /tmp/problem.p
+            /tmp/vampire_full.txt
+            /tmp/etp/ConstructorReplay.lean
+            /tmp/replay.log
