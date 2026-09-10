@@ -824,7 +824,188 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
                 "warm_B", warm_result.verdict,
             )
 
-    def test_24_breaker_summary(self):
+
+    def test_24_bounded_behavior_set_is_unchanged_by_semantic_duplicate(self):
+        # Stronger full-abstraction breaker: duplicate syntax changes candidate
+        # multiplicity but not the extensional behavior set of the bounded
+        # generator on an exhaustive 2x2 binary probe domain.
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            duplicated = deepcopy(state)
+            duplicated["capabilities"]["gauge-copy-" + flip_id] = deepcopy(
+                duplicated["capabilities"][flip_id]
+            )
+
+            adapter = ProspectiveARCAdapter()
+            probes = [
+                [[a, b], [c, d]]
+                for a, b, c, d in product((0, 1), repeat=4)
+            ]
+
+            def behavior_set(local_state):
+                signatures = set()
+                for ast in generated_asts(local_state):
+                    signatures.add(tuple(
+                        adapter.execute_ast(local_state, ast, probe)
+                        for probe in probes
+                    ))
+                return signatures
+
+            baseline_behaviors = behavior_set(state)
+            duplicate_behaviors = behavior_set(duplicated)
+            self.assertEqual(baseline_behaviors, duplicate_behaviors)
+            self.assertNotEqual(
+                len(generated_asts(state)),
+                len(generated_asts(duplicated)),
+            )
+            print(
+                "FULL_ABSTRACTION_PRECONDITION",
+                "baseline_syntax", len(generated_asts(state)),
+                "duplicate_syntax", len(generated_asts(duplicated)),
+                "behavior_classes", len(baseline_behaviors),
+                "behavior_sets_equal", True,
+            )
+
+    def test_25_controller_is_not_fully_abstract_for_bounded_behavior(self):
+        # Same bounded extensional behavior set, different controller outcome:
+        # unique minimum becomes an unresolved syntactic tie. This pinpoints
+        # the representation dependence in selection/version-space accounting,
+        # not in the operational meaning of the generated programs.
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            duplicated = deepcopy(state)
+            duplicated["capabilities"]["gauge-copy-" + flip_id] = deepcopy(
+                duplicated["capabilities"][flip_id]
+            )
+
+            adapter = ProspectiveARCAdapter()
+            task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            baseline = adapter.generation_analysis(state, task)
+            changed = adapter.generation_analysis(duplicated, task)
+
+            self.assertEqual(baseline["minimum_survivor_count"], 1)
+            self.assertGreater(changed["minimum_survivor_count"], 1)
+
+            probes = [
+                [[a, b], [c, d]]
+                for a, b, c, d in product((0, 1), repeat=4)
+            ]
+            baseline_behaviors = {
+                tuple(adapter.execute_ast(state, ast, probe) for probe in probes)
+                for ast in generated_asts(state)
+            }
+            duplicate_behaviors = {
+                tuple(adapter.execute_ast(duplicated, ast, probe) for probe in probes)
+                for ast in generated_asts(duplicated)
+            }
+            self.assertEqual(baseline_behaviors, duplicate_behaviors)
+            print(
+                "CONTROLLER_FULL_ABSTRACTION_FAILURE",
+                "behavior_sets_equal", True,
+                "baseline_minima", baseline["minimum_survivor_count"],
+                "duplicate_minima", changed["minimum_survivor_count"],
+            )
+
+    def test_26_backward_revocation_probe_detects_causal_history(self):
+        # History-preserving semantics is stricter than present output behavior:
+        # after learning A, an identity task behaves exactly as before, yet the
+        # learned occurrence can be reversed; in the cold state that backward
+        # move does not exist.
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": example["input"]} for example in task["test"]],
+            }
+
+        task_a = full_task([[1, 2, 3], [4, 5, 6]], first)
+        identity_task = full_task([[1, 2], [3, 4]], lambda g: g)
+        row_a = {"task_id": "a", "task_sha256": digest(task_a), "task": public(task_a)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cold_path = root / "cold.sqlite"
+            warm_path = root / "warm.sqlite"
+            freeze_state(cold_path)
+            freeze_state(warm_path)
+
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "history-probe",
+                "tasks": [row_a],
+                "route_labels_present": False,
+            }
+            decisions = develop_stream(
+                {**body, "stream_digest": digest(body)}, warm_path
+            )
+            g1 = decisions["results"][0]["generated_admissions"][0]
+
+            adapter = ProspectiveARCAdapter()
+            cold_store = EvidenceStore(cold_path)
+            warm_store = EvidenceStore(warm_path)
+            cold_state = cold_store.state()
+            warm_state = warm_store.state()
+
+            identity_public = public(identity_task)
+            cold_id = adapter.solving_records(cold_state, identity_public)[0]
+            warm_id = adapter.solving_records(warm_state, identity_public)[0]
+            cold_out = adapter.execute(
+                cold_state, cold_id, identity_task["test"][0]["input"], []
+            )
+            warm_out = adapter.execute(
+                warm_state, warm_id, identity_task["test"][0]["input"], []
+            )
+            self.assertEqual(cold_out, warm_out)
+
+            with self.assertRaises(KeyError):
+                cold_store.revoke(g1, "backward probe cold")
+            removed = warm_store.revoke(g1, "backward probe warm")
+            self.assertIn(g1, removed)
+            cold_store.close()
+            warm_store.close()
+            print(
+                "HISTORY_PRESERVING_SEPARATOR",
+                "present_output_equal", True,
+                "cold_backward_move", False,
+                "warm_backward_move", True,
+            )
+
+    def test_27_breaker_summary(self):
         print("CONTINUATION_INVARIANT_BREAKERS_V1_COMPLETE")
         print(
             "BREAKS: execution-behavior equivalence alone is not a "
@@ -859,8 +1040,13 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
             "NO CURRENT BRST ANALOGUE ESTABLISHED: no nilpotent cohomological operator was defined or tested by the implementation"
         )
         print(
-            "STRONGER CANDIDATE: behavioral equivalence of the full "
-            "encounter-plus-development transition system"
+            "BREAKS IN REAL CONTROLLER: equal bounded generated behavior sets can yield different syntactic version-space outcomes"
+        )
+        print(
+            "SURVIVES: backward revocation distinguishes causal developmental history even when present task output agrees"
+        )
+        print(
+            "STRONGER CANDIDATE: a fully abstract, history-sensitive equivalence of the full encounter-plus-development process"
         )
 
 
