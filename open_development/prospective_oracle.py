@@ -6,10 +6,15 @@ and minimal-survivor checking rather than calling the developer's methods.
 from __future__ import annotations
 
 import json
+from hashlib import sha256
 from typing import Any, Mapping
 
 from .prospective_genesis import (D4, FORM_OPS, ITERATIONS, MAX_AST_DEPTH, MAX_AST_SIZE,
                                   OBJECT_MODES, PLACEMENTS, SELECTORS, SUBSTRATE)
+
+
+def D(value: Any) -> str:
+    return sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
 def G(value: Any) -> tuple[tuple[int, ...], ...]:
@@ -375,6 +380,31 @@ def analyze(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]
             "smaller_survivor_count": sum(len(v) for k, v in survivors.items()
                                           if minimum is not None and k < minimum),
             "minimum_survivors": winners, "minimum_survivor_count": len(winners)}
+
+
+def old_language_analysis(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]:
+    """Independently characterize the complete frozen direct/role closure."""
+    available = {record["repair"]["payload"]["body"]["name"]
+                 for record in state["capabilities"].values()
+                 if record["repair"]["payload"].get("body", {}).get("op") == "d4"}
+    candidates = tuple((kind, name) for kind in ("direct", "role")
+                       for name in D4 if name in available)
+    survivors = []
+    for kind, name in candidates:
+        try:
+            passed = all((T(G(example["input"]), name) if kind == "direct"
+                          else T(C(G(example["input"])), name)) == G(example["output"])
+                         for example in task["train"])
+        except Exception:
+            passed = False
+        if passed:
+            survivors.append({"kind": kind, "name": name})
+    return {"schema": "independent-old-language-closure/v2",
+            "complete": len(candidates) == 16,
+            "closure_cardinality": len(candidates),
+            "closure_identity": D(candidates),
+            "survivors": survivors,
+            "survivor_count": len(survivors)}
 
 
 def any_solves(state: Mapping[str, Any], task: Mapping[str, Any]) -> bool:

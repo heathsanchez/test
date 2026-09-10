@@ -871,6 +871,8 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
     expected_state = freeze["state"]["state_id"]
     checked: list[dict[str, Any]] = []
     generated_events: list[tuple[int, str]] = []
+    unadmitted_unique: list[int] = []
+    ambiguous_minima: list[int] = []
     for index, (source, decision) in enumerate(zip(stream["tasks"], decisions["results"])):
         if decision["decision_sequence"] != index or source["task_sha256"] != decision["task_sha256"]:
             raise ValueError("decision chronology mismatch")
@@ -882,11 +884,20 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
         public_expected = {"train": full["train"], "test": [{"input": x["input"]} for x in full["test"]]}
         if public_expected != source["task"]:
             raise ValueError("hidden output or source mismatch")
+        pre_state = oracle.state_at(decisions["final_events"], decision["events_before"])
+        old_language = oracle.old_language_analysis(pre_state, full)
+        analysis = oracle.analyze(pre_state, full)
+        if not old_language["complete"]:
+            raise ValueError("old-language closure incomplete")
+        if decision["cost"].get("candidate_evaluations") != analysis["normalized_candidate_count"]:
+            raise ValueError("developer/evaluator generation coverage mismatch")
+        if analysis["minimum_survivor_count"] == 1 and not decision["generated_admissions"]:
+            unadmitted_unique.append(index)
+        if analysis["minimum_survivor_count"] > 1 and not decision["generated_admissions"]:
+            ambiguous_minima.append(index)
         admission_checks = []
         for rid in decision["generated_admissions"]:
             record = decision["admitted_records"][rid]
-            pre_state = oracle.state_at(decisions["final_events"], decision["events_before"])
-            analysis = oracle.analyze(pre_state, full)
             ast = record["repair"]["payload"]["body"]["ast"]
             certificate = record["evidence"]["certificate"]
             valid = (analysis["minimum_survivor_count"] == 1
@@ -906,6 +917,7 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
         checked.append({"stream_index": index, "task_id": source["task_id"],
                         "route": decision["predicted_route"], "warm_verdict": decision["warm_verdict"],
                         "hidden": hidden, "generated": admission_checks,
+                        "old_language": old_language, "generation_analysis": analysis,
                         "preservation_training": decision["preservation"]})
         expected_state = decision["post_state_id"]
 
@@ -938,6 +950,10 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
     qualifying = next((chain for chain in chains if chain["passes"]), None)
     if qualifying:
         outcome = "PROSPECTIVE_CONTINUATION_GENESIS_V2_PASS"
+    elif unadmitted_unique:
+        outcome = "UNKNOWN_GENERATION_BOUNDARY"
+    elif ambiguous_minima and not generated_events:
+        outcome = "UNKNOWN_GENERATIVE_VERSION_SPACE"
     elif not generated_events:
         outcome = "UNKNOWN_PROSPECTIVE_CONTINUATION_COVERAGE"
     elif any(not item["valid"] for row in checked for item in row["generated"]):
