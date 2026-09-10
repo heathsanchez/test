@@ -1,0 +1,93 @@
+name: E4916 derived constant diagnostic v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-derived-constant-diagnostic-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install E prover
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y eprover
+
+      - name: Prove common-square consequence
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/e4916_e40.p <<'TPTP'
+          fof(e4916, axiom,
+            ![X,Y,Z]:
+              f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X).
+          fof(e40, conjecture,
+            ![X,Y]: f(X,X) = f(Y,Y)).
+          TPTP
+          eprover --auto --proof-object --tstp-format /tmp/e4916_e40.p | tee /tmp/e4916_e40.proof
+          grep -q 'SZS status Theorem' /tmp/e4916_e40.proof
+          echo E4916_IMPLIES_COMMON_SQUARE_PASS
+
+      - name: Test full observed background spectrum
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,json
+          # Formula strings from the frozen canonical order<=5 universe.
+          # Generate them from ETP rather than hardcode.
+          subprocess.run(['git','clone','-q','https://github.com/teorth/equational_theories.git','/tmp/etp'],check=True)
+          subprocess.run(['git','-C','/tmp/etp','checkout','-q','bb5a9b5fe78c376ce1725529f235f8d574630b9f'],check=True)
+          src=pathlib.Path('/tmp/etp/scripts/generate_eqs_list.py').read_text().replace('EQ_SIZE = 4','EQ_SIZE = 5')
+          pathlib.Path('/tmp/generate5.py').write_text(src)
+          with open('/tmp/o5.txt','w') as f:
+              subprocess.run(['python3','/tmp/generate5.py'],stdout=f,stderr=subprocess.DEVNULL,check=True)
+          lines=pathlib.Path('/tmp/o5.txt').read_text().splitlines()
+          ids=[40,3659,3662,3665,3677,3684,3688,3692,3700,4270,4341,4590,4622]
+          # Tiny parser to TPTP.
+          def parse_term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if s[i].isalpha():
+                      v=s[i].upper();i+=1;return v
+                  if s[i]=='(':
+                      i+=1;q=expr();assert s[i]==')';i+=1;return q
+                  raise ValueError((s,i))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=f'f({q},{atom()})'
+                  return q
+              q=expr();assert i==len(s);return q
+          def eq_tptp(formula):
+              a,b=formula.split('=',1)
+              vs=sorted(set(c.upper() for c in formula if c in 'xyzw'))
+              return f"![{','.join(vs)}]: {parse_term(a)} = {parse_term(b)}"
+          rows=[]
+          ax='![X,Y,Z]: f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
+          for n in ids:
+              goal=eq_tptp(lines[n-1])
+              p=f"fof(src,axiom,{ax}).\nfof(goal,conjecture,{goal}).\n"
+              path=f'/tmp/e4916_{n}.p';pathlib.Path(path).write_text(p)
+              cp=subprocess.run(['eprover','--auto','--cpu-limit=8',path],text=True,capture_output=True)
+              ok='SZS status Theorem' in cp.stdout
+              rows.append({'equation':n,'formula':lines[n-1],'theorem':ok})
+              print('E4916_IMPLIES',n,ok,lines[n-1])
+          pathlib.Path('/tmp/background.json').write_text(json.dumps(rows,indent=2))
+          print('PROVED',sum(r['theorem'] for r in rows),'OF',len(rows))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-derived-constant-diagnostic-v1
+          path: |
+            /tmp/e4916_e40.proof
+            /tmp/background.json
