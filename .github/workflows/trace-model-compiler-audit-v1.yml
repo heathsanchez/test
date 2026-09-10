@@ -1,0 +1,61 @@
+name: Trace model compiler audit v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/trace-model-compiler-audit-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Clone frozen corpus
+        run: |
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+      - name: Audit Horn syntax
+        run: |
+          python3 - <<'PY'
+          import json,re,pathlib,collections
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          rows=[]
+          toks=collections.Counter()
+          families=collections.Counter()
+          for e in idx['equations']:
+            ip=e.get('infinite_model_proof')
+            if not ip: continue
+            s=(root/ip['path']).read_text(errors='replace')
+            if 'inductive Code' not in s:
+              continue
+            # code block up to the next theorem/def after Step block-ish
+            i=s.index('inductive Code')
+            j=s.find('\ntheorem ',i)
+            if j<0: j=min(len(s),i+8000)
+            block=s[i:j]
+            fam='code_step' if 'inductive Step' in block or 'Step ' in block else 'code_only'
+            families[fam]+=1
+            # collect identifiers/functions appearing in Code/Step result/premise lines
+            ids=re.findall(r'\b[A-Za-z_][A-Za-z0-9_]*\b',block)
+            for x in ids: toks[x]+=1
+            rows.append({
+              'equation':e['equation'],
+              'family':fam,
+              'block':block[:3500],
+            })
+          print('CODE_MODELS',len(rows))
+          print('FAMILIES',dict(families))
+          common={'inductive','Code','Step','Prop','CM','T','where','mutual','end','Nat'}
+          print('TOKENS',[(k,v) for k,v in toks.most_common(100) if k not in common])
+          for r in rows[:18]:
+            print('\n###',r['equation'],r['family'])
+            print(r['block'][:1800].replace('\n',' | '))
+          pathlib.Path('/tmp/horn_audit.json').write_text(json.dumps(rows,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trace-model-compiler-audit-v1
+          path: /tmp/horn_audit.json
