@@ -1,0 +1,105 @@
+name: Future continuation blocks coarse quotient v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/future-continuation-blocks-quotient-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Install Lean
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Prove continuation separator theorem
+        shell: bash
+        run: |
+          cat > /tmp/FutureContinuation.lean <<'LEAN'
+          namespace FutureContinuation
+
+          /--
+          A quotient/abstraction is dynamically adequate only if the transition
+          descends to the quotient. If two states are currently identified but a
+          common future interaction separates their abstract outcomes, no such
+          descended transition can exist.
+          -/
+          theorem separator_blocks_descended_transition
+              {S A : Type}
+              (step : S → S → S)
+              (obs : S → A)
+              (s t u : S)
+              (hcollapse : obs s = obs t)
+              (hsep : obs (step s u) ≠ obs (step t u)) :
+              ¬ ∃ stepA : A → A → A,
+                  ∀ x y : S,
+                    obs (step x y) = stepA (obs x) (obs y) := by
+            rintro ⟨stepA, hdesc⟩
+            apply hsep
+            calc
+              obs (step s u) = stepA (obs s) (obs u) := hdesc s u
+              _ = stepA (obs t) (obs u) := by rw [hcollapse]
+              _ = obs (step t u) := (hdesc t u).symm
+
+          /--
+          Any adequate future abstraction must retain the separator: if its
+          transition descends and an observation factors through it, states with
+          distinguishable futures cannot remain identified.
+          -/
+          theorem future_separation_forces_state_distinction
+              {S A B : Type}
+              (step : S → S → S)
+              (abs : S → A)
+              (observe : A → B)
+              (stepA : A → A → A)
+              (hdesc : ∀ x y : S,
+                abs (step x y) = stepA (abs x) (abs y))
+              (s t u : S)
+              (hsep :
+                observe (abs (step s u)) ≠
+                observe (abs (step t u))) :
+              abs s ≠ abs t := by
+            intro h
+            apply hsep
+            rw [hdesc s u, hdesc t u, h]
+
+          /--
+          Operational identity under admitted futures is necessarily finer than
+          any relation that merges a pair separated by one admitted continuation.
+          -/
+          theorem one_future_is_enough_to_refine
+              {S O : Type}
+              (step : S → S → S)
+              (observe : S → O)
+              (s t u : S)
+              (hsep : observe (step s u) ≠ observe (step t u)) :
+              ¬ (∀ v : S,
+                    observe (step s v) = observe (step t v)) := by
+            intro hall
+            exact hsep (hall u)
+
+          #print axioms separator_blocks_descended_transition
+          #print axioms future_separation_forces_state_distinction
+          #print axioms one_future_is_enough_to_refine
+
+          end FutureContinuation
+          LEAN
+          lean /tmp/FutureContinuation.lean 2>&1 | tee /tmp/future.log
+          ! grep -q sorryAx /tmp/future.log
+          grep -q FutureContinuation.separator_blocks_descended_transition /tmp/future.log
+          echo FUTURE_CONTINUATION_BLOCKS_COARSE_QUOTIENT_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: future-continuation-blocks-quotient-v1
+          path: |
+            /tmp/FutureContinuation.lean
+            /tmp/future.log
