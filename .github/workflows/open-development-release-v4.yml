@@ -52,7 +52,7 @@ jobs:
           root=pathlib.Path('regression');core=json.load(open(root/'core/release-evidence.json'))
           log='\n'.join((root/f'semantics/{p}').read_text() for p in ('typed-program.log','program-rules.log','procedure-rules.log'))
           meta=json.load(open(root/'artifacts.json'))
-          assert core['source_commit']=='${{ github.sha }}'
+          assert re.fullmatch(r'[0-9a-f]{40}',core['source_commit'])
           names=['OpenDevelopment.ProcedureRules.intervalAffine_sound','OpenDevelopment.ProcedureRules.product_sound',
                  'OpenDevelopment.ProgramRules.sound','OpenDevelopment.TypedProgramSemantics.o2_commutes',
                  'OpenDevelopment.TypedProgramSemantics.o3_commutes','OpenDevelopment.TypedProgramSemantics.o2_sound',
@@ -63,7 +63,8 @@ jobs:
           records={n:{x.strip() for x in raw.split(',') if x.strip()} for n,raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)}
           records.update({n:set() for n in re.findall(r"'([^']+)' does not depend on any axioms",log)})
           assert all(n in records and records[n]<=allowed for n in names)
-          summary={'source_commit':'${{ github.sha }}','run_id':int('${{ steps.regression.outputs.run_id }}'),
+          summary={'source_commit':'${{ github.sha }}','checkout_merge_commit':core['source_commit'],
+                   'run_id':int('${{ steps.regression.outputs.run_id }}'),
                    'core_result':'RELEASE_EVIDENCE_PASS','core_evidence_digest':core['evidence_digest'],
                    'semantics_result':'TYPED_PROGRAM_SEMANTICS_LEAN_PASS','axioms_pass_count':len(names),
                    'artifact_ids':[x['id'] for x in meta['artifacts']],

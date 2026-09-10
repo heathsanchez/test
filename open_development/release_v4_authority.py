@@ -18,6 +18,7 @@ def build(repository,source_commit,run_id,science,freeze,stream,decisions,evalua
     validate_science(science,freeze,stream,decisions,evaluation)
     need(science["source_commit"]==SCIENCE_COMMIT and science["run_id"]==SCIENCE_RUN,"wrong scientific authority")
     need(regression.get("source_commit")==source_commit and regression.get("run_id",0)>0,"wrong current-head regression")
+    need(re.fullmatch(r"[0-9a-f]{40}",regression.get("checkout_merge_commit","")),"missing regression checkout identity")
     need(regression.get("core_result")=="RELEASE_EVIDENCE_PASS" and re.fullmatch(r"[0-9a-f]{64}",regression.get("core_evidence_digest","")),"core regression failed")
     need(regression.get("semantics_result")=="TYPED_PROGRAM_SEMANTICS_LEAN_PASS" and regression.get("axioms_pass_count")==11,"Lean semantics regression failed")
     need(all(re.fullmatch(r"sha256:[0-9a-f]{64}",x) for x in regression.get("artifact_digests",[])),"regression artifact identity failed")
