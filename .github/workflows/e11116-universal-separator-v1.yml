@@ -1,0 +1,191 @@
+name: E11116 universal separator theorem v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-universal-separator-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen public E11116 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/heathsanchez/test/e11116-austin-corpus-sweep-v1/experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 -o /tmp/e11116.b64
+          base64 -d /tmp/e11116.b64 > /tmp/model.lean
+          echo 'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582  /tmp/model.lean' | sha256sum -c -
+
+      - name: Add universal semantic completeness theorem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp /tmp/model.lean /tmp/mathlib4/E11116Universal.lean
+          cat >> /tmp/mathlib4/E11116Universal.lean <<'LEAN'
+
+          namespace E11116Universal
+          open submission.C
+          open submission.C.T
+
+          def denote {α : Type*} (star : α → α → α) (ρ : Nat → α) : T → α
+            | .var n => ρ n
+            | .op a b => star (denote star ρ a) (denote star ρ b)
+
+          def Law11116On {α : Type*} (star : α → α → α) : Prop :=
+            ∀ x y z : α,
+              star y (star (star x (star z x)) (star y y)) = x
+
+          theorem linked_semantic
+              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law11116On star) :
+              ∀ c q : T, linked c q = true →
+                ∃ z : α, denote star ρ q = star z (denote star ρ c) := by
+            intro c
+            induction hsz : sz c using Nat.strong_induction_on with
+            | h n ih =>
+              intro q hl
+              rcases linked_shape hl with hbase | hstep
+              · rcases hbase with ⟨z, rfl⟩
+                exact ⟨denote star ρ z, rfl⟩
+              · rcases hstep with ⟨r, a, hc, hqr⟩
+                subst c
+                have hlt : sz q < sz (.op (.op q r) (.op a a)) := by
+                  simp only [sz]
+                  omega
+                have hsem := ih (sz q) hlt q r rfl hqr
+                rcases hsem with ⟨z, hz⟩
+                refine ⟨denote star ρ a, ?_⟩
+                have hax := hLaw (denote star ρ q) (denote star ρ a) z
+                simpa [denote, hz] using hax.symm
+
+          theorem root_semantic
+              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law11116On star)
+              {a b c : T} (hr : root a b = some c) :
+              star (denote star ρ a) (denote star ρ b) = denote star ρ c := by
+            rcases root_shape hr with ⟨q, hb, hl⟩
+            subst b
+            rcases linked_semantic star ρ hLaw c q hl with ⟨z, hz⟩
+            have hax := hLaw (denote star ρ c) (denote star ρ a) z
+            simpa [denote, hz] using hax
+
+          theorem mul_semantic
+              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law11116On star) (a b : T) :
+              denote star ρ (mul a b) =
+                star (denote star ρ a) (denote star ρ b) := by
+            unfold mul
+            cases h : root a b with
+            | none =>
+                simp [h, denote]
+            | some c =>
+                simp [h]
+                exact (root_semantic star ρ hLaw h).symm
+
+          def evalCanonical : T → T
+            | .var n => .var n
+            | .op a b => mul (evalCanonical a) (evalCanonical b)
+
+          theorem denote_evalCanonical
+              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law11116On star) :
+              ∀ t : T, denote star ρ (evalCanonical t) = denote star ρ t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | op a b iha ihb =>
+                simp only [evalCanonical, denote]
+                rw [mul_semantic star ρ hLaw, iha, ihb]
+
+          theorem concrete_is_law : Law11116On mul := by
+            intro x y z
+            exact law11116 x y z
+
+          theorem denote_mul_vars_eq_evalCanonical :
+              ∀ t : T, denote mul T.var t = evalCanonical t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | op a b iha ihb =>
+                simp [denote, evalCanonical, iha, ihb]
+
+          theorem consequence_iff_canonical_eq (s t : T) :
+              (∀ {α : Type*} (star : α → α → α),
+                  Law11116On star →
+                  ∀ ρ : Nat → α, denote star ρ s = denote star ρ t)
+              ↔
+              evalCanonical s = evalCanonical t := by
+            constructor
+            · intro h
+              have hc := h (α := T) mul concrete_is_law T.var
+              simpa [denote_mul_vars_eq_evalCanonical] using hc
+            · intro h α star hLaw ρ
+              rw [← denote_evalCanonical star ρ hLaw s,
+                  ← denote_evalCanonical star ρ hLaw t,
+                  h]
+
+          theorem not_consequence_of_canonical_ne (s t : T)
+              (h : evalCanonical s ≠ evalCanonical t) :
+              ¬ (∀ {α : Type*} (star : α → α → α),
+                    Law11116On star →
+                    ∀ ρ : Nat → α, denote star ρ s = denote star ρ t) := by
+            intro hall
+            exact h ((consequence_iff_canonical_eq s t).mp hall)
+
+          #print axioms linked_semantic
+          #print axioms root_semantic
+          #print axioms mul_semantic
+          #print axioms consequence_iff_canonical_eq
+          #print axioms not_consequence_of_canonical_ne
+
+          end E11116Universal
+          LEAN
+
+      - name: Lean kernel check universal theorem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E11116Universal.lean 2>&1 | tee /tmp/universal.log
+          ! grep -q 'sorryAx' /tmp/universal.log
+          ! grep -q '_native.native_decide' /tmp/universal.log
+          grep -q 'E11116Universal.consequence_iff_canonical_eq' /tmp/universal.log
+          echo 'E11116_UNIVERSAL_SEPARATOR_COMPLETENESS_PASS'
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/authority
+          cp /tmp/mathlib4/E11116Universal.lean /tmp/authority/
+          cp /tmp/universal.log /tmp/authority/
+          cat > /tmp/authority/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The released E11116 tree magma is consequence-complete: every equational consequence of E11116 is equivalent to equality of canonical evaluations in this one model.",
+            "model_sha256": "a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582",
+            "lean_version": "4.33.1",
+            "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474",
+            "trust_guards": ["no sorryAx", "no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/authority/* | tee /tmp/authority/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-universal-separator-authority-v1
+          path: /tmp/authority/
