@@ -1,0 +1,151 @@
+name: E6878 substitution lemma search v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-substitution-lemma-search-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Search bounded equational derivations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/search.py <<'PY'
+          from functools import lru_cache
+          from collections import deque,defaultdict
+          import json
+
+          # Tiny first-order term engine.
+          # tuple ('v',name) or ('f',a,b)
+          def V(x): return ('v',x)
+          def F(a,b): return ('f',a,b)
+          def size(t): return 1 if t[0]=='v' else 1+size(t[1])+size(t[2])
+          def s(t):
+              if t[0]=='v': return t[1]
+              return '('+s(t[1])+'*'+s(t[2])+')'
+          def vars(t):
+              if t[0]=='v': return {t[1]}
+              return vars(t[1])|vars(t[2])
+          def subst(t,m):
+              if t[0]=='v': return m.get(t[1],t)
+              return F(subst(t[1],m),subst(t[2],m))
+          def positions(t,p=()):
+              yield p,t
+              if t[0]=='f':
+                  yield from positions(t[1],p+(1,))
+                  yield from positions(t[2],p+(2,))
+          def replace(t,p,u):
+              if not p:return u
+              assert t[0]=='f'
+              return F(replace(t[1],p[1:],u),t[2]) if p[0]==1 else F(t[1],replace(t[2],p[1:],u))
+          def match(pat,t,m=None):
+              if m is None:m={}
+              if pat[0]=='v':
+                  x=pat[1]
+                  if x in m:return m if m[x]==t else None
+                  m=dict(m);m[x]=t;return m
+              if t[0]!='f':return None
+              m=match(pat[1],t[1],m)
+              return None if m is None else match(pat[2],t[2],m)
+
+          x,y,z=A,B,C=map(V,['x','y','z'])
+          # S: y*(y*((z*x)*(x*y))) = x
+          L=F(y,F(y,F(F(z,x),F(x,y))))
+          R=x
+
+          # Generate a modest term universe over a,b,c with size <= 9
+          aa,bb,cc=map(V,['a','b','c'])
+          bysize={1:{aa,bb,cc}}
+          allterms={aa,bb,cc}
+          for n in range(3,12,2):
+              cur=set()
+              for i in range(1,n-1,2):
+                  j=n-1-i
+                  for u in bysize.get(i,()):
+                    for v in bysize.get(j,()):
+                      cur.add(F(u,v))
+              bysize[n]=cur
+              allterms|=cur
+          terms=sorted(allterms,key=lambda t:(size(t),s(t)))
+          print('TERM_UNIVERSE',len(terms),'MAXSIZE',max(map(size,terms)))
+
+          # All axiom instances using substitutions whose instantiated lhs <= 17.
+          eqs=[]
+          seen=set()
+          # Focus substitutions x,y,z from terms <= 7 initially.
+          small=[t for t in terms if size(t)<=7]
+          for X in small:
+            for Y in small:
+              # prune expensive pair before Z loop
+              for Z in small:
+                li=subst(L,{'x':X,'y':Y,'z':Z})
+                if size(li)>35: continue
+                ri=X
+                key=(li,ri)
+                if key not in seen:
+                  seen.add(key); eqs.append((li,ri,('S',s(X),s(Y),s(Z))))
+          print('AXIOM_INSTANCES',len(eqs))
+
+          targets={
+            'r2':(F(aa,F(aa,F(bb,F(cc,aa)))),cc),
+            'r5':(F(F(aa,bb),F(F(aa,bb),cc)),aa)
+          }
+
+          # Rewriting closure from target lhs, both directions, with max size.
+          # Store proof predecessor.
+          for name,(start,goal) in targets.items():
+              maxsz=39
+              q=deque([start]); prev={start:None}; why={}
+              found=False
+              while q and len(prev)<250000:
+                  t=q.popleft()
+                  if t==goal:
+                    found=True;break
+                  # instantiate source axiom by matching its LHS or RHS at every subterm.
+                  for pos,u in positions(t):
+                    # L -> R via pattern match
+                    m=match(L,u)
+                    if m is not None:
+                      v=replace(t,pos,subst(R,m))
+                      if size(v)<=maxsz and v not in prev:
+                        prev[v]=t;why[v]=('S->',pos,{k:s(vv) for k,vv in m.items()});q.append(v)
+                    # R -> L: x matches anything, but choose y,z from small terms,
+                    # only for shallow positions and bounded expansion.
+                    # Restrict to root/subterms size <=7 and y,z variables/size<=3.
+                    if u[0] in ('v','f') and len(pos)<=2:
+                      X=u
+                      yz=[aa,bb,cc]+[t0 for t0 in terms if size(t0)==3]
+                      for Y in yz:
+                        for Z in yz:
+                          v=replace(t,pos,subst(L,{'x':X,'y':Y,'z':Z}))
+                          if size(v)<=maxsz and v not in prev:
+                            prev[v]=t;why[v]=('S<-',pos,{'x':s(X),'y':s(Y),'z':s(Z)});q.append(v)
+              print(name,'FOUND',found,'VISITED',len(prev))
+              if found:
+                  path=[];cur=goal
+                  while prev[cur] is not None:
+                    path.append((s(prev[cur]),why[cur],s(cur)));cur=prev[cur]
+                  path.reverse()
+                  print('PATHLEN',len(path))
+                  for i,p in enumerate(path): print(i,p)
+                  open(f'/tmp/{name}_proof.json','w').write(json.dumps(path,indent=2))
+          PY
+          python3 /tmp/search.py | tee /tmp/search.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-substitution-lemma-search-v1
+          path: |
+            /tmp/search.log
+            /tmp/r2_proof.json
+            /tmp/r5_proof.json
+          if-no-files-found: ignore
