@@ -1,0 +1,55 @@
+name: E4916 common-square SMT diagnostic v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-common-square-smt-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Install solvers
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y cvc5 z3
+
+      - name: Check E4916 entails common-square
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/q.smt2 <<'SMT'
+          (set-logic ALL)
+          (declare-sort A 0)
+          (declare-fun f (A A) A)
+          (assert
+            (forall ((x A) (y A) (z A))
+              (= (f y (f x (f x (f y (f z z))))) x)))
+          (assert
+            (not
+              (forall ((x A) (y A))
+                (= (f x x) (f y y)))))
+          (check-sat)
+          SMT
+
+          set +e
+          timeout 60s cvc5 --lang=smt2 /tmp/q.smt2 | tee /tmp/cvc5.txt
+          echo CVC5_RC=$?
+          timeout 60s z3 /tmp/q.smt2 | tee /tmp/z3.txt
+          echo Z3_RC=$?
+          set -e
+          echo "CVC5=$(tail -1 /tmp/cvc5.txt)"
+          echo "Z3=$(tail -1 /tmp/z3.txt)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-common-square-smt-v1
+          path: |
+            /tmp/q.smt2
+            /tmp/cvc5.txt
+            /tmp/z3.txt
