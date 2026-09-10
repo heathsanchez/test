@@ -1,0 +1,216 @@
+name: E11116 Austin corpus separation sweep v1
+
+on:
+  push:
+    branches:
+      - e11116-austin-corpus-sweep-v1
+    paths:
+      - '.github/workflows/e11116-austin-corpus-sweep-v1.yml'
+      - 'experiments/e11116_austin_corpus_sweep_v1/**'
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce Lean 4.33.1 mathlib environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Generate 130-law fingerprint and 129 Lean refutations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/sweep
+          base64 -d experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 > /tmp/sweep/Sweep.lean
+          python3 - <<'PY'
+          import json, re, urllib.request
+          from itertools import product
+          from pathlib import Path
+
+          INDEX = "https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/index.json"
+          idx = json.load(urllib.request.urlopen(INDEX))
+
+          # Exact executable semantics of the released E11116 certificate.
+          def V(n): return ("v", n)
+          def O(a,b): return ("o", a,b)
+
+          def linked(c,q):
+              if q[0] == "o" and q[2] == c:
+                  return True
+              if c[0] == "o" and c[1][0] == "o" and c[2][0] == "o":
+                  qp, r = c[1][1], c[1][2]
+                  a, b = c[2][1], c[2][2]
+                  if qp == q and a == b:
+                      return linked(qp, r)
+              return False
+
+          def root(a,b):
+              if b[0] == "o" and b[1][0] == "o" and b[2][0] == "o":
+                  c, q = b[1][1], b[1][2]
+                  a1, a2 = b[2][1], b[2][2]
+                  if a1 == a and a2 == a and linked(c,q):
+                      return c
+              return None
+
+          def mul(a,b):
+              r = root(a,b)
+              return O(a,b) if r is None else r
+
+          def parse_formula(formula):
+              s = formula.split("=",1)[1].replace(" ","")
+              i = 0
+              def atom():
+                  nonlocal i
+                  if i < len(s) and s[i] in "xyzw":
+                      x = ("v", s[i]); i += 1; return x
+                  if i < len(s) and s[i] == "(":
+                      i += 1
+                      x = expr()
+                      assert s[i] == ")", (formula, i, s[i:])
+                      i += 1
+                      return x
+                  raise ValueError((formula, i, s[i:]))
+              def expr():
+                  nonlocal i
+                  x = atom()
+                  while i < len(s) and s[i] == "◇":
+                      i += 1
+                      x = ("o", x, atom())
+                  return x
+              out = expr()
+              assert i == len(s), (formula, i, s[i:])
+              return out
+
+          def ev(ast, env):
+              return env[ast[1]] if ast[0] == "v" else mul(ev(ast[1],env), ev(ast[2],env))
+
+          def lean_ast(ast, env=None):
+              if ast[0] == "v":
+                  if env is None:
+                      return ast[1]
+                  return f"(.var {env[ast[1]]})"
+              return f"(mul {lean_ast(ast[1],env)} {lean_ast(ast[2],env)})"
+
+          vals = [V(0),V(1),V(2),V(3)]
+          rows = []
+          generated = []
+
+          for e in idx["equations"]:
+              n = e["equation"].replace("Equation","")
+              ast = parse_formula(e["formula"])
+              vars_ = sorted(set(re.findall(r"[xyzw]", e["formula"])), key="xyzw".index)
+              witness = None
+              for xs in product(vals, repeat=len(vars_)):
+                  env = dict(zip(vars_, xs))
+                  rhs = ev(ast, env)
+                  if env["x"] != rhs:
+                      witness = {v: env[v][1] for v in vars_}
+                      break
+              rows.append({
+                  "equation": n,
+                  "dual": e["dual"].replace("Equation",""),
+                  "table": e["table"],
+                  "refuted": witness is not None,
+                  "witness": witness,
+              })
+
+              if n == "11116":
+                  assert witness is None
+                  continue
+              assert witness is not None, f"unexpected survivor E{n}"
+
+              qvars = " ".join(vars_)
+              target = lean_ast(ast)
+              concrete = lean_ast(ast, witness)
+              args = " ".join(f"(.var {witness[v]})" for v in vars_)
+              xcon = f"(.var {witness['x']} : T)"
+
+              generated.append(f"""
+          def CorpusLaw{n} : Prop :=
+            ∀ {qvars} : T, x = {target}
+
+          theorem corpus_not_{n} : ¬ CorpusLaw{n} := by
+            intro h
+            have hh := h {args}
+            have hne : {xcon} ≠ {concrete} := by
+              native_decide
+            exact hne hh
+          """)
+
+          survivors = [r["equation"] for r in rows if not r["refuted"]]
+          assert survivors == ["11116"], survivors
+          assert len(generated) == 129
+
+          Path("/tmp/sweep/manifest.json").write_text(json.dumps({
+              "source_model": "released E11116 constructive_compact_v4",
+              "corpus_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+              "total": len(rows),
+              "refuted": sum(r["refuted"] for r in rows),
+              "survivors": survivors,
+              "rows": rows,
+          }, indent=2))
+
+          with open("/tmp/sweep/Sweep.lean","a",encoding="utf-8") as f:
+              f.write("""
+          namespace submission.C
+          set_option maxRecDepth 100000
+          set_option maxHeartbeats 20000000
+
+          theorem corpus_source_11116 :
+              ∀ x y z : T,
+                x = mul y (mul (mul x (mul z x)) (mul y y)) := by
+            intro x y z
+            exact (law11116 x y z).symm
+          """)
+              f.write("\n".join(generated))
+              f.write("""
+          #print axioms corpus_source_11116
+          #print axioms corpus_not_4916
+          #print axioms corpus_not_28770
+          #print axioms corpus_not_34888
+          #print axioms corpus_not_21866
+
+          end submission.C
+          """)
+
+          print("TOTAL", len(rows))
+          print("REFUTED", sum(r["refuted"] for r in rows))
+          print("SURVIVORS", survivors)
+          PY
+          cat /tmp/sweep/manifest.json | head -40
+          wc -l /tmp/sweep/Sweep.lean
+
+      - name: Lean kernel check all 129 refutations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp /tmp/sweep/Sweep.lean /tmp/mathlib4/E11116AustinCorpusSweep.lean
+          cd /tmp/mathlib4
+          lake env lean E11116AustinCorpusSweep.lean | tee /tmp/sweep/lean.log
+          grep -q 'submission.C.corpus_not_4916' /tmp/sweep/lean.log
+          echo 'PASS: released E11116 model satisfies E11116 and refutes all other 129 corpus laws'
+
+      - name: Publish evidence bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: e11116-austin-corpus-sweep-v1
+          path: |
+            /tmp/sweep/manifest.json
+            /tmp/sweep/Sweep.lean
+            /tmp/sweep/lean.log
