@@ -1,0 +1,64 @@
+name: Continuation Invariant Breakers V1
+
+on:
+  push:
+    branches: [continuation-invariant-breakers-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  breaker-suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run continuation invariant breaker suite
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest open_development.tests.test_continuation_invariant_breakers -v 2>&1 | tee continuation-invariant-breakers-v1.log
+
+      - name: Run full Open Development regression suite
+        shell: bash
+        run: |
+          set -o pipefail
+          python -m unittest discover -s open_development/tests -v 2>&1 | tee open-development-regression.log
+
+      - name: Preserve existing Lean core gate
+        shell: bash
+        run: |
+          set -o pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          bash open_development/lean/check.sh 2>&1 | tee lean-core.log
+
+      - name: Record exact test authority
+        shell: bash
+        run: |
+          {
+            echo "CONTINUATION_INVARIANT_BREAKERS_V1_COMPLETE"
+            echo "source_commit=$(git rev-parse HEAD)"
+            sha256sum continuation-invariant-breakers-v1.log
+            sha256sum open-development-regression.log
+            sha256sum lean-core.log
+          } | tee continuation-invariant-authority.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: continuation-invariant-breakers-v1
+          path: |
+            continuation-invariant-breakers-v1.log
+            open-development-regression.log
+            lean-core.log
+            continuation-invariant-authority.txt
+          if-no-files-found: error
