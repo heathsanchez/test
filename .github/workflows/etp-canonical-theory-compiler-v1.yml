@@ -1,0 +1,244 @@
+name: ETP canonical theory compiler kernel v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/etp-canonical-theory-compiler-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Preorder
+
+      - name: Write native compiler theorem
+        shell: bash
+        run: |
+          cat > /tmp/etp/CanonicalTheoryCompiler.lean <<'LEAN'
+          import equational_theories.Preorder
+
+          open FreeMagma
+          open Law
+          open Law.MagmaLaw
+
+          namespace CanonicalTheoryCompiler
+
+          abbrev Raw := FreeMagma Nat
+
+          def compiledMul
+              (reduce : Raw → Raw → Option Raw)
+              (a b : Raw) : Raw :=
+            match reduce a b with
+            | some c => c
+            | none => a ⋆ b
+
+          def denote
+              {G : Type} (star : G → G → G) (ρ : Nat → G) :
+              Raw → G :=
+            FreeMagma.evalInMagma (G := G) (Magma := ⟨star⟩) ρ
+
+          def ReductionsSound
+              (E : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw) : Prop :=
+            ∀ {G : Type} (star : G → G → G),
+              @satisfies Nat G ⟨star⟩ E →
+              ∀ (ρ : Nat → G) (a b c : Raw),
+                reduce a b = some c →
+                denote star ρ c =
+                  star (denote star ρ a) (denote star ρ b)
+
+          def evalCanonical
+              (reduce : Raw → Raw → Option Raw) : Raw → Raw
+            | .Leaf n => .Leaf n
+            | .Fork a b =>
+                compiledMul reduce
+                  (evalCanonical reduce a)
+                  (evalCanonical reduce b)
+
+          theorem compiledMul_semantic
+              (E : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSound E reduce)
+              {G : Type} (star : G → G → G)
+              (hE : @satisfies Nat G ⟨star⟩ E)
+              (ρ : Nat → G) (a b : Raw) :
+              denote star ρ (compiledMul reduce a b) =
+                star (denote star ρ a) (denote star ρ b) := by
+            unfold compiledMul
+            cases h : reduce a b with
+            | none =>
+                rfl
+            | some c =>
+                exact hsound star hE ρ a b c h
+
+          theorem evalCanonical_semantic
+              (E : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSound E reduce)
+              {G : Type} (star : G → G → G)
+              (hE : @satisfies Nat G ⟨star⟩ E)
+              (ρ : Nat → G) :
+              ∀ t : Raw,
+                denote star ρ (evalCanonical reduce t) =
+                  denote star ρ t := by
+            intro t
+            induction t with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp only [evalCanonical]
+                rw [compiledMul_semantic E reduce hsound star hE ρ]
+                change
+                  star
+                    (denote star ρ (evalCanonical reduce a))
+                    (denote star ρ (evalCanonical reduce b)) =
+                  star (denote star ρ a) (denote star ρ b)
+                rw [iha, ihb]
+
+          /-- The concrete compiled magma, kept as a wrapper so it does not
+          conflict with the ordinary free-magma operation. -/
+          structure Compiled (reduce : Raw → Raw → Option Raw) where
+            raw : Raw
+
+          namespace Compiled
+
+          def op (reduce : Raw → Raw → Option Raw)
+              (a b : Compiled reduce) : Compiled reduce :=
+            ⟨compiledMul reduce a.raw b.raw⟩
+
+          instance instMagma (reduce : Raw → Raw → Option Raw) :
+              Magma (Compiled reduce) :=
+            ⟨op reduce⟩
+
+          def gen (reduce : Raw → Raw → Option Raw) (n : Nat) :
+              Compiled reduce :=
+            ⟨.Leaf n⟩
+
+          def canonical (reduce : Raw → Raw → Option Raw) (t : Raw) :
+              Compiled reduce :=
+            ⟨evalCanonical reduce t⟩
+
+          theorem eval_gen
+              (reduce : Raw → Raw → Option Raw) :
+              ∀ t : Raw,
+                @FreeMagma.evalInMagma Nat (Compiled reduce)
+                  (instMagma reduce) (gen reduce) t =
+                  canonical reduce t := by
+            intro t
+            induction t with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp [FreeMagma.evalInMagma, gen, canonical, op,
+                  evalCanonical, iha, ihb]
+
+          end Compiled
+
+          theorem implication_iff_canonical_eq
+              (E F : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSound E reduce)
+              (hmodel : Compiled reduce ⊧ E) :
+              E.implies F ↔
+                evalCanonical reduce F.lhs =
+                  evalCanonical reduce F.rhs := by
+            constructor
+            · intro himp
+              have hF : Compiled reduce ⊧ F := himp hmodel
+              have hg := hF (Compiled.gen reduce)
+              change
+                @FreeMagma.evalInMagma Nat (Compiled reduce)
+                  (Compiled.instMagma reduce) (Compiled.gen reduce) F.lhs =
+                @FreeMagma.evalInMagma Nat (Compiled reduce)
+                  (Compiled.instMagma reduce) (Compiled.gen reduce) F.rhs at hg
+              simpa [Compiled.eval_gen] using congrArg Compiled.raw hg
+            · intro hcanon G inst hE ρ
+              have hl :=
+                evalCanonical_semantic E reduce hsound
+                  (fun a b : G => a ◇ b) hE ρ F.lhs
+              have hr :=
+                evalCanonical_semantic E reduce hsound
+                  (fun a b : G => a ◇ b) hE ρ F.rhs
+              change F.lhs ⬝ ρ = F.rhs ⬝ ρ
+              rw [← hl, hcanon, hr]
+
+          def decidesImplication
+              (E F : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSound E reduce)
+              (hmodel : Compiled reduce ⊧ E) :
+              Decidable (E.implies F) :=
+            decidable_of_iff
+              (evalCanonical reduce F.lhs =
+                evalCanonical reduce F.rhs)
+              (implication_iff_canonical_eq E F reduce hsound hmodel).symm
+
+          theorem counterexample_of_canonical_ne
+              (E F : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSound E reduce)
+              (hmodel : Compiled reduce ⊧ E)
+              (hne :
+                evalCanonical reduce F.lhs ≠
+                  evalCanonical reduce F.rhs) :
+              ¬ E.implies F :=
+            fun h => hne
+              ((implication_iff_canonical_eq E F reduce hsound hmodel).mp h)
+
+          #print axioms compiledMul_semantic
+          #print axioms evalCanonical_semantic
+          #print axioms implication_iff_canonical_eq
+          #print axioms decidesImplication
+          #print axioms counterexample_of_canonical_ne
+
+          end CanonicalTheoryCompiler
+          LEAN
+
+      - name: Kernel check native theorem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean CanonicalTheoryCompiler.lean 2>&1 | tee /tmp/compiler.log
+          ! grep -q sorryAx /tmp/compiler.log
+          ! grep -q _native.native_decide /tmp/compiler.log
+          grep -q CanonicalTheoryCompiler.implication_iff_canonical_eq /tmp/compiler.log
+          echo ETP_CANONICAL_THEORY_COMPILER_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/CanonicalTheoryCompiler.lean /tmp/out/
+          cp /tmp/compiler.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "ETP-native generic theorem: any source-sound reduction compiler whose compiled magma satisfies source law E decides E.implies F for every NatMagmaLaw F by canonical equality.",
+            "etp_commit": "bb5a9b5fe78c376ce1725529f235f8d574630b9f",
+            "scope": "arbitrary target term size",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etp-canonical-theory-compiler-v1
+          path: /tmp/out/
