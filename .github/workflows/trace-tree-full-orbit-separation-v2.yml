@@ -1,0 +1,181 @@
+name: Trace-tree full orbit separation v2
+
+on:
+  push:
+    branches:
+      - trace-tree-reverse-separation-v1
+    paths:
+      - '.github/workflows/trace-tree-full-orbit-separation-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  crossed-separations:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Build crossed separation theorems
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          python3 - <<'PY'
+          import urllib.request
+
+          REPO = "https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs"
+
+          def load(eq):
+              url = f"{REPO}/Equation{eq}/InfiniteModel.lean"
+              s = urllib.request.urlopen(url).read().decode("utf-8")
+              # Use Mathlib plus the benchmark's minimal operation interface.
+              s = s.replace("import JudgeProblem", "import Mathlib\n\nclass Magma (α : Type u) where\n  op : α → α → α\n", 1)
+              # Strip the final benchmark Goal wrapper; retain the certified model/source theorem.
+              marker = "\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by"
+              if marker not in s:
+                  raise SystemExit(f"Goal wrapper not found for E{eq}")
+              return s.split(marker, 1)[0]
+
+          s11116 = load(11116)
+          s11116 += r'''
+
+          open submission
+          open submission.CM
+
+          namespace crossed_11116_to_17522
+
+          def Law17522 : Prop :=
+            ∀ x y z : CM,
+              x = eval (eval y z) (eval x (eval z (eval z z)))
+
+          theorem e11116_holds :
+              ∀ x y z : CM,
+                x = eval y (eval (eval x (eval z x)) (eval y y)) :=
+            source_holds
+
+          theorem ev_ee : eval e e = p e e := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_e_pee : eval e (p e e) = p e (p e e) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_e_pepee : eval e (p e (p e e)) = p e (p e (p e e)) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_cross_root :
+              eval (p e e) (p e (p e (p e e))) =
+                p (p e e) (p e (p e (p e e))) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem e17522_fails : ¬ Law17522 := by
+            intro h
+            have hh := h e e e
+            simp only [ev_ee, ev_e_pee, ev_e_pepee, ev_cross_root] at hh
+            cases hh
+
+          theorem crossed_separation :
+              (∀ x y z : CM,
+                x = eval y (eval (eval x (eval z x)) (eval y y))) ∧
+              ¬ Law17522 :=
+            ⟨e11116_holds, e17522_fails⟩
+
+          end crossed_11116_to_17522
+          '''
+          open("Cross11116to17522.lean", "w", encoding="utf-8").write(s11116)
+
+          s17522 = load(17522)
+          s17522 += r'''
+
+          open submission
+          open submission.CM
+
+          namespace crossed_17522_to_11116
+
+          def Law11116 : Prop :=
+            ∀ x y z : Carrier,
+              x = op y (op (op x (op z x)) (op y y))
+
+          theorem e17522_holds :
+              ∀ x y z : Carrier,
+                x = op (op y z) (op x (op z (op z z))) :=
+            source_holds
+
+          theorem ev_ee : eval e e = p e e := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_e_pee : eval e (p e e) = p e (p e e) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_middle :
+              eval (p e (p e e)) (p e e) =
+                p (p e (p e e)) (p e e) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem ev_root :
+              eval e (p (p e (p e e)) (p e e)) =
+                p e (p (p e (p e e)) (p e e)) := by
+            apply eval_raw
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem e11116_fails : ¬ Law11116 := by
+            intro h
+            have hh := congrArg Subtype.val (h ce ce ce)
+            change e = eval e (eval (eval e (eval e e)) (eval e e)) at hh
+            simp only [ev_ee, ev_e_pee, ev_middle, ev_root] at hh
+            cases hh
+
+          theorem crossed_separation :
+              (∀ x y z : Carrier,
+                x = op (op y z) (op x (op z (op z z)))) ∧
+              ¬ Law11116 :=
+            ⟨e17522_holds, e11116_fails⟩
+
+          end crossed_17522_to_11116
+          '''
+          open("Cross17522to11116.lean", "w", encoding="utf-8").write(s17522)
+          PY
+
+      - name: Kernel check E11116 not-imply E17522
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean Cross11116to17522.lean
+          echo 'PASS: E11116 satisfies its source law and refutes E17522'
+
+      - name: Kernel check E17522 not-imply E11116
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean Cross17522to11116.lean
+          echo 'PASS: E17522 satisfies its source law and refutes E11116'
