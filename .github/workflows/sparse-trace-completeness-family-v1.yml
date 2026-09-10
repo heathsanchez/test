@@ -1,0 +1,309 @@
+name: Sparse trace completeness family v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/sparse-trace-completeness-family-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen environment and models
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          mkdir -p /tmp/models /tmp/out
+          for id in 20034 22455 17260; do
+            curl -fsSL "https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation${id}/InfiniteModel.lean" -o "/tmp/models/E${id}.lean"
+            sha256sum "/tmp/models/E${id}.lean" >> /tmp/out/MODEL_SHA256SUMS
+          done
+
+      - name: Generate completeness theorems
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+
+          laws = {
+            "20034": "star (star y y) (star (star z (star x x)) z) = x",
+            "22455": "star (star y (star x x)) (star (star y z) y) = x",
+            "17260": "star (star y x) (star z (star x (star z z))) = x",
+          }
+
+          proofs = {}
+
+          proofs["20034"] = r'''
+            have cc := submission.CM.code_cases hc
+            unfold submission.CM.CodeCases at cc
+            rcases cc with h0 | hfalse
+            · rcases h0 with ⟨q1, q2, q0, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                hLaw (denote star base q0)
+                  (denote star base q1) (denote star base q2)
+            · contradiction
+          '''
+
+          proofs["22455"] = r'''
+            have cc := submission.CM.code_cases hc
+            unfold submission.CM.CodeCases at cc
+            rcases cc with h0 | h1 | hfalse
+            · rcases h0 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                hLaw (denote star base v1)
+                  (denote star base v0) (denote star base v2)
+            · rcases h1 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              let A : α :=
+                star (denote star base v0)
+                  (star (denote star base v1) (denote star base v1))
+              have hinner :
+                  star A
+                    (star (star (denote star base v0) (denote star base v2))
+                      (denote star base v0)) =
+                    denote star base v1 := by
+                simpa [A, denote] using
+                  hLaw (denote star base v1)
+                    (denote star base v0) (denote star base v2)
+              have houter :=
+                hLaw (denote star base v2) A
+                  (star (star (denote star base v0) (denote star base v2))
+                    (denote star base v0))
+              rw [hinner] at houter
+              simpa [A, denote] using houter
+            · contradiction
+          '''
+
+          proofs["17260"] = r'''
+            have cc := submission.CM.code_cases hc
+            unfold submission.CM.CodeCases at cc
+            rcases cc with h0 | h1 | hfalse
+            · rcases h0 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                hLaw (denote star base v1)
+                  (denote star base v0) (denote star base v2)
+            · rcases h1 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              let A : α :=
+                star (denote star base v2)
+                  (star (denote star base v0)
+                    (star (denote star base v2) (denote star base v2)))
+              have hinner :
+                  star
+                    (star (denote star base v2) (denote star base v0))
+                    A =
+                    denote star base v0 := by
+                simpa [A, denote] using
+                  hLaw (denote star base v0)
+                    (denote star base v2) (denote star base v2)
+              have houter :=
+                hLaw A
+                  (star (denote star base v2) (denote star base v0))
+                  (denote star base v1)
+              rw [hinner] at houter
+              simpa [A, denote] using houter
+            · contradiction
+          '''
+
+          common = r'''
+          theorem eval_semantic
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : LawOn star)
+              (a b : submission.CM) :
+              denote star base (submission.CM.eval a b) =
+                star (denote star base a) (denote star base b) := by
+            classical
+            by_cases h : ∃ o, submission.CM.Code a b o
+            · rw [submission.CM.eval, dif_pos h]
+              exact
+                (code_semantic star base hLaw (Classical.choose_spec h)).symm
+            · rw [submission.CM.eval_raw h]
+              rfl
+
+          def mapCarrier
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (x : submission.CM.Carrier) : α :=
+            denote star base x.1
+
+          theorem mapCarrier_op
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : LawOn star)
+              (x y : submission.CM.Carrier) :
+              mapCarrier star base (submission.CM.op x y) =
+                star (mapCarrier star base x) (mapCarrier star base y) := by
+            exact eval_semantic star base hLaw x.1 y.1
+
+          inductive Term where
+            | var : Nat → Term
+            | node : Term → Term → Term
+          deriving DecidableEq, Repr
+
+          def termDenote {α : Type} (star : α → α → α) (ρ : Nat → α) : Term → α
+            | .var n => ρ n
+            | .node a b => star (termDenote star ρ a) (termDenote star ρ b)
+
+          noncomputable def canonical : Term → submission.CM.Carrier
+            | .var n => submission.CM.tower n
+            | .node a b => submission.CM.op (canonical a) (canonical b)
+
+          theorem denote_tower
+              {α : Type} (star : α → α → α) (ρ : Nat → α) (n : Nat) :
+              denote star (fun q => ρ (submission.CM.sz q))
+                (submission.CM.tower n).1 = ρ n := by
+            cases n with
+            | zero => rfl
+            | succ n =>
+                simp [submission.CM.tower, submission.CM.ck, denote,
+                  submission.CM.sz, submission.CM.tower_sz]
+
+          theorem map_canonical
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : LawOn star) :
+              ∀ t : Term,
+                mapCarrier star (fun q => ρ (submission.CM.sz q)) (canonical t) =
+                  termDenote star ρ t := by
+            intro t
+            induction t with
+            | var n =>
+                exact denote_tower star ρ n
+            | node a b iha ihb =>
+                simp only [canonical, termDenote]
+                rw [mapCarrier_op star _ hLaw, iha, ihb]
+
+          theorem concrete_is_law : LawOn submission.CM.op := by
+            intro x y z
+            exact (submission.CM.source_holds x y z).symm
+
+          theorem self_canonical :
+              ∀ t : Term,
+                termDenote submission.CM.op submission.CM.tower t = canonical t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp [termDenote, canonical, iha, ihb]
+
+          def Consequence (s t : Term) : Prop :=
+            ∀ {α : Type} (star : α → α → α),
+              LawOn star →
+              ∀ ρ : Nat → α,
+                termDenote star ρ s = termDenote star ρ t
+
+          theorem consequence_iff_canonical_eq (s t : Term) :
+              Consequence s t ↔ canonical s = canonical t := by
+            constructor
+            · intro h
+              have hc := h submission.CM.op concrete_is_law submission.CM.tower
+              simpa [self_canonical] using hc
+            · intro hc α star hLaw ρ
+              have hm := congrArg
+                (mapCarrier star (fun q => ρ (submission.CM.sz q))) hc
+              simpa [map_canonical star ρ hLaw] using hm
+
+          #print axioms code_semantic
+          #print axioms eval_semantic
+          #print axioms consequence_iff_canonical_eq
+          '''
+
+          for id in ["20034","22455","17260"]:
+              s=Path(f"/tmp/models/E{id}.lean").read_text()
+              s=s.replace("import JudgeProblem", """import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          """,1)
+              marker="\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by"
+              if marker not in s:
+                  raise SystemExit(f"wrapper not found E{id}")
+              s=s.split(marker,1)[0]
+              append=f"""
+
+          namespace Complete{id}
+
+          def denote {{α : Type}} (star : α → α → α) (base : submission.CM → α) :
+              submission.CM → α
+            | .p a b => star (denote star base a) (denote star base b)
+            | q => base q
+
+          def LawOn {{α : Type}} (star : α → α → α) : Prop :=
+            ∀ x y z : α, {laws[id]}
+
+          theorem code_semantic
+              {{α : Type}} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : LawOn star)
+              {{a b o : submission.CM}}
+              (hc : submission.CM.Code a b o) :
+              star (denote star base a) (denote star base b) =
+                denote star base o := by
+          {proofs[id]}
+          {common}
+
+          end Complete{id}
+          """
+              Path(f"/tmp/mathlib4/E{id}Complete.lean").write_text(s+append)
+
+          PY
+
+      - name: Kernel check all three representatives
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          for id in 20034 22455 17260; do
+            lake env lean "E${id}Complete.lean" 2>&1 | tee "/tmp/out/E${id}.log"
+            ! grep -q sorryAx "/tmp/out/E${id}.log"
+            ! grep -q _native.native_decide "/tmp/out/E${id}.log"
+            grep -q "Complete${id}.consequence_iff_canonical_eq" "/tmp/out/E${id}.log"
+            cp "E${id}Complete.lean" /tmp/out/
+            echo "E${id}_CONSEQUENCE_COMPLETE_PASS"
+          done
+          echo SPARSE_TRACE_REPRESENTATIVES_COMPLETE_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "E20034, E22455, and E17260 archived trace models are each consequence-complete for their source law; together with E28770 and opposite-magma duality this covers the eight direct sparse-spectrum laws.",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "representatives": [20034,22455,17260],
+            "duals": [25964,22818,28740],
+            "already_proved_pair": [28770,17522],
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sparse-trace-completeness-family-v1
+          path: /tmp/out/
