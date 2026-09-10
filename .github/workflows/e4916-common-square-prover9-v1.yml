@@ -1,0 +1,49 @@
+name: E4916 common-square Prover9 diagnostic v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-common-square-prover9-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Install Prover9
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y prover9
+
+      - name: Prove E4916 implies common square
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/e4916.in <<'P9'
+          assign(max_seconds, 120).
+          set(auto).
+          formulas(assumptions).
+          all x all y all z
+            (f(y,f(x,f(x,f(y,f(z,z))))) = x).
+          end_of_list.
+          formulas(goals).
+          all x all y (f(x,x) = f(y,y)).
+          end_of_list.
+          P9
+          set +e
+          timeout 130s prover9 < /tmp/e4916.in | tee /tmp/prover9.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo PROVER9_RC=$rc
+          grep -E 'THEOREM PROVED|SEARCH FAILED|Exiting with' /tmp/prover9.log || true
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-common-square-prover9-v1
+          path: |
+            /tmp/e4916.in
+            /tmp/prover9.log
