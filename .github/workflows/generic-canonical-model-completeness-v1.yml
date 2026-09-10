@@ -123,36 +123,20 @@ jobs:
                   ← denote_evalCanonical Theory reduce hsound star hTheory ρ t,
                   h]
 
-          theorem canonical_idempotent
-              (Theory : {α : Type} → (α → α → α) → Prop)
-              (reduce : RawTerm → RawTerm → Option RawTerm)
-              (hsound : ReductionsSound Theory reduce)
-              (hmodel : Theory (compiledMul reduce)) :
-              ∀ u : RawTerm,
-                evalCanonical reduce (evalCanonical reduce u) =
-                  evalCanonical reduce u := by
-            intro u
-            have hfac :=
-              denote_evalCanonical Theory reduce hsound
-                (compiledMul reduce) hmodel RawTerm.var
-                (evalCanonical reduce u)
-            simpa [canonical_self_eval] using hfac
-
-          theorem consequence_decidable
+          def consequenceDecidable
               (Theory : {α : Type} → (α → α → α) → Prop)
               (reduce : RawTerm → RawTerm → Option RawTerm)
               (hsound : ReductionsSound Theory reduce)
               (hmodel : Theory (compiledMul reduce))
               (s t : RawTerm) :
-              Decidable (Consequence Theory s t) := by
-            exact decidable_of_iff
+              Decidable (Consequence Theory s t) :=
+            decidable_of_iff
               (evalCanonical reduce s = evalCanonical reduce t)
               (consequence_iff_canonical_eq Theory reduce hsound hmodel s t).symm
 
           #print axioms compiledMul_semantic
           #print axioms consequence_iff_canonical_eq
-          #print axioms canonical_idempotent
-          #print axioms consequence_decidable
+          #print axioms consequenceDecidable
 
           end RawTerm
           LEAN
@@ -165,7 +149,7 @@ jobs:
           lean GenericCanonicalCompleteness.lean 2>&1 | tee generic.log
           ! grep -q sorryAx generic.log
           grep -q RawTerm.consequence_iff_canonical_eq generic.log
-          grep -q RawTerm.consequence_decidable generic.log
+          grep -q RawTerm.consequenceDecidable generic.log
           echo GENERIC_CANONICAL_COMPLETENESS_PASS
 
       - uses: actions/upload-artifact@v4
