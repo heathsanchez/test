@@ -1,0 +1,145 @@
+name: E11116 complete order-5 universe fingerprint v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-order5-universe-fingerprint-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Freeze ETP generator and public model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          sed 's/^EQ_SIZE = 4$/EQ_SIZE = 5/' scripts/generate_eqs_list.py > /tmp/generate5.py
+          python3 /tmp/generate5.py > /tmp/order5_all.txt 2> /tmp/generate.log
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/index.json -o /tmp/austin_index.json
+
+      - name: Verify numbering and sweep exact public E11116 semantics
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/o5
+          python3 - <<'PY'
+          import json,re,itertools,pathlib,hashlib,time
+          lines=pathlib.Path('/tmp/order5_all.txt').read_text().splitlines()
+          idx=json.loads(pathlib.Path('/tmp/austin_index.json').read_text())
+          byid={int(e['equation'].replace('Equation','')):e['formula'] for e in idx['equations']}
+          def norm(s):
+              return re.sub(r'\s+','',s.replace('*','◇'))
+          mism=[]
+          for n in [4916,11116,17522,28770,34888,40909]:
+              if n>len(lines):mism.append((n,'out_of_range'));continue
+              if n in byid and norm(lines[n-1])!=norm(byid[n]):
+                  mism.append((n,lines[n-1],byid[n]))
+          if mism: raise SystemExit('NUMBERING_MISMATCH '+repr(mism))
+          print('NUMBERING_CHECK PASS')
+          print('CANONICAL_UP_TO_ORDER5',len(lines))
+          print('E11116',lines[11115])
+
+          def V(n):return ('v',n)
+          def O(a,b):return ('o',a,b)
+          def linked(c,q):
+              if q[0]=='o' and q[2]==c:return True
+              if c[0]=='o' and c[1][0]=='o' and c[2][0]=='o':
+                  qp,r=c[1][1],c[1][2];a,b=c[2][1],c[2][2]
+                  if qp==q and a==b:return linked(qp,r)
+              return False
+          def root(a,b):
+              if b[0]=='o' and b[1][0]=='o' and b[2][0]=='o':
+                  c,q=b[1][1],b[1][2];a1,a2=b[2][1],b[2][2]
+                  if a1==a and a2==a and linked(c,q):return c
+              return None
+          def mul(a,b):
+              c=root(a,b);return O(a,b) if c is None else c
+
+          def parse_term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and s[i].isalpha():
+                      j=i+1
+                      while j<len(s) and s[j].isalnum():j+=1
+                      q=('v',s[i:j]);i=j;return q
+                  if i<len(s) and s[i]=='(':
+                      i+=1;q=expr()
+                      if i>=len(s) or s[i]!=')':raise ValueError((s,i,s[i:]))
+                      i+=1;return q
+                  raise ValueError((s,i,s[i:i+8]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr()
+              if i!=len(s):raise ValueError((s,i,s[i:]))
+              return q
+          def parse_eq(s):
+              a,b=s.split('=',1);return parse_term(a),parse_term(b)
+          def vars_of(t):
+              if t[0]=='v':return {t[1]}
+              return vars_of(t[1])|vars_of(t[2])
+          def ev(t,e):
+              return e[t[1]] if t[0]=='v' else mul(ev(t[1],e),ev(t[2],e))
+
+          ast=[parse_eq(s) for s in lines]
+          pools=[[V(0),V(1)],[V(0),V(1),V(2)]]
+          rows=[]; survivors=[]
+          t0=time.time()
+          for n,(l,r) in enumerate(ast,1):
+              vs=sorted(vars_of(l)|vars_of(r))
+              w=None
+              for pool in pools:
+                  for xs in itertools.product(pool,repeat=len(vs)):
+                      env=dict(zip(vs,xs))
+                      if ev(l,env)!=ev(r,env):
+                          w={v:env[v][1] for v in vs};break
+                  if w is not None:break
+              if w is None:survivors.append(n)
+              rows.append({'equation':n,'refuted':w is not None,'witness':w})
+          # Widen only survivors, preserving exact negative evidence.
+          wide=[V(i) for i in range(5)]
+          final=[]
+          for n in survivors:
+              l,r=ast[n-1];vs=sorted(vars_of(l)|vars_of(r));w=None
+              for xs in itertools.product(wide,repeat=len(vs)):
+                  env=dict(zip(vs,xs))
+                  if ev(l,env)!=ev(r,env):
+                      w={v:env[v][1] for v in vs};break
+              if w is None:final.append(n)
+              else:
+                  rows[n-1]['refuted']=True;rows[n-1]['witness']=w
+
+          out={
+            'etp_generator_commit':'bb5a9b5fe78c376ce1725529f235f8d574630b9f',
+            'generator_eq_size':5,
+            'total':len(lines),
+            'refuted_count':sum(x['refuted'] for x in rows),
+            'survivor_count':len(final),
+            'survivors':final,
+            'survivor_formulas':{str(n):lines[n-1] for n in final},
+            'elapsed_seconds':time.time()-t0,
+            'rows':rows,
+          }
+          pathlib.Path('/tmp/o5/manifest.json').write_text(json.dumps(out,indent=2))
+          pathlib.Path('/tmp/o5/equations.txt').write_text('\n'.join(lines)+'\n')
+          print('REFUTED',out['refuted_count'])
+          print('SURVIVOR_COUNT',len(final))
+          for n in final:print('SURVIVOR',n,lines[n-1])
+          print('ELAPSED',out['elapsed_seconds'])
+          PY
+          sha256sum /tmp/order5_all.txt /tmp/o5/manifest.json | tee /tmp/o5/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-order5-universe-fingerprint-v1
+          path: /tmp/o5/
