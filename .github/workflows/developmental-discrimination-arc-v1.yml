@@ -1,8 +1,5 @@
 name: Developmental Discrimination ARC V1
-on:
-  push:
-    branches: [developmental-discrimination-v1]
-  workflow_dispatch:
+on: workflow_dispatch
 permissions:
   contents: read
   actions: read

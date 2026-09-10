@@ -1,9 +1,6 @@
 name: Developmental Discrimination V1 Coverage
 
-on:
-  push:
-    branches: [developmental-discrimination-v1]
-  workflow_dispatch:
+on: workflow_dispatch
 
 permissions:
   contents: read
