@@ -69,29 +69,38 @@ jobs:
               (hc : submission.CM.Code a b o) :
               star (denote star base a) (denote star base b) =
                 denote star base o := by
-            cases hc with
-            | r0 v0 v1 v2 =>
-                simpa [denote] using
+            have cc := submission.CM.code_cases hc
+            unfold submission.CM.CodeCases at cc
+            rcases cc with h0 | h1 | hfalse
+            · rcases h0 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                hLaw (denote star base v1)
+                  (denote star base v0) (denote star base v2)
+            · rcases h1 with ⟨v0, v1, v2, ha, hb, ho, _, _, _⟩
+              subst a
+              subst b
+              subst o
+              let A : α :=
+                star
+                  (star (star (denote star base v0) (denote star base v0))
+                    (denote star base v0))
+                  (denote star base v1)
+              have hinner :
+                  star A
+                    (star (denote star base v0) (denote star base v2)) =
+                    denote star base v1 := by
+                simpa [A, denote] using
                   hLaw (denote star base v1)
                     (denote star base v0) (denote star base v2)
-            | r1 v0 v1 v2 =>
-                let A : α :=
-                  star
-                    (star (star (denote star base v0) (denote star base v0))
-                      (denote star base v0))
-                    (denote star base v1)
-                have hinner :
-                    star A
-                      (star (denote star base v0) (denote star base v2)) =
-                      denote star base v1 := by
-                  simpa [A, denote] using
-                    hLaw (denote star base v1)
-                      (denote star base v0) (denote star base v2)
-                have houter :=
-                  hLaw (denote star base v2) A
-                    (star (denote star base v0) (denote star base v2))
-                rw [hinner] at houter
-                simpa [A, denote] using houter
+              have houter :=
+                hLaw (denote star base v2) A
+                  (star (denote star base v0) (denote star base v2))
+              rw [hinner] at houter
+              simpa [A, denote] using houter
+            · contradiction
 
           theorem eval_semantic
               {α : Type} (star : α → α → α) (base : submission.CM → α)
