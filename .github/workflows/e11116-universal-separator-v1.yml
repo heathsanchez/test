@@ -42,39 +42,35 @@ jobs:
           open submission.C
           open submission.C.T
 
-          def denote {α : Type*} (star : α → α → α) (ρ : Nat → α) : T → α
+          def denote {α : Type} (star : α → α → α) (ρ : Nat → α) : T → α
             | .var n => ρ n
             | .op a b => star (denote star ρ a) (denote star ρ b)
 
-          def Law11116On {α : Type*} (star : α → α → α) : Prop :=
+          def Law11116On {α : Type} (star : α → α → α) : Prop :=
             ∀ x y z : α,
               star y (star (star x (star z x)) (star y y)) = x
 
           theorem linked_semantic
-              {α : Type*} (star : α → α → α) (ρ : Nat → α)
-              (hLaw : Law11116On star) :
-              ∀ c q : T, linked c q = true →
-                ∃ z : α, denote star ρ q = star z (denote star ρ c) := by
-            intro c
-            induction hsz : sz c using Nat.strong_induction_on with
-            | h n ih =>
-              intro q hl
-              rcases linked_shape hl with hbase | hstep
-              · rcases hbase with ⟨z, rfl⟩
-                exact ⟨denote star ρ z, rfl⟩
-              · rcases hstep with ⟨r, a, hc, hqr⟩
-                subst c
-                have hlt : sz q < sz (.op (.op q r) (.op a a)) := by
-                  simp only [sz]
-                  omega
-                have hsem := ih (sz q) hlt q r rfl hqr
-                rcases hsem with ⟨z, hz⟩
-                refine ⟨denote star ρ a, ?_⟩
-                have hax := hLaw (denote star ρ q) (denote star ρ a) z
-                simpa [denote, hz] using hax.symm
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law11116On star)
+              (c q : T) (hl : linked c q = true) :
+              ∃ z : α, denote star ρ q = star z (denote star ρ c) := by
+            rcases linked_shape hl with hbase | hstep
+            · rcases hbase with ⟨z, rfl⟩
+              exact ⟨denote star ρ z, rfl⟩
+            · rcases hstep with ⟨r, a, hc, hqr⟩
+              subst c
+              rcases linked_semantic star ρ hLaw q r hqr with ⟨z, hz⟩
+              refine ⟨denote star ρ a, ?_⟩
+              have hax := hLaw (denote star ρ q) (denote star ρ a) z
+              simpa [denote, hz] using hax.symm
+          termination_by sz c
+          decreasing_by
+            simp only [sz]
+            omega
 
           theorem root_semantic
-              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
               (hLaw : Law11116On star)
               {a b c : T} (hr : root a b = some c) :
               star (denote star ρ a) (denote star ρ b) = denote star ρ c := by
@@ -85,7 +81,7 @@ jobs:
             simpa [denote, hz] using hax
 
           theorem mul_semantic
-              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
               (hLaw : Law11116On star) (a b : T) :
               denote star ρ (mul a b) =
                 star (denote star ρ a) (denote star ρ b) := by
@@ -102,7 +98,7 @@ jobs:
             | .op a b => mul (evalCanonical a) (evalCanonical b)
 
           theorem denote_evalCanonical
-              {α : Type*} (star : α → α → α) (ρ : Nat → α)
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
               (hLaw : Law11116On star) :
               ∀ t : T, denote star ρ (evalCanonical t) = denote star ρ t := by
             intro t
@@ -125,7 +121,7 @@ jobs:
                 simp [denote, evalCanonical, iha, ihb]
 
           theorem consequence_iff_canonical_eq (s t : T) :
-              (∀ {α : Type*} (star : α → α → α),
+              (∀ {α : Type} (star : α → α → α),
                   Law11116On star →
                   ∀ ρ : Nat → α, denote star ρ s = denote star ρ t)
               ↔
@@ -141,7 +137,7 @@ jobs:
 
           theorem not_consequence_of_canonical_ne (s t : T)
               (h : evalCanonical s ≠ evalCanonical t) :
-              ¬ (∀ {α : Type*} (star : α → α → α),
+              ¬ (∀ {α : Type} (star : α → α → α),
                     Law11116On star →
                     ∀ ρ : Nat → α, denote star ρ s = denote star ρ t) := by
             intro hall
