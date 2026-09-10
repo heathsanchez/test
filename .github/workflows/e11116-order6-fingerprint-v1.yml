@@ -1,0 +1,125 @@
+name: E11116 order-6 consequence fingerprint v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-order6-fingerprint-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  fingerprint:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Freeze ETP generator
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          sed 's/^EQ_SIZE = 4$/EQ_SIZE = 6/' scripts/generate_eqs_list.py > /tmp/generate6.py
+          /usr/bin/time -v python3 /tmp/generate6.py > /tmp/order6_all.txt 2> /tmp/generate6.log
+          echo "ORDER6_LINES $(wc -l < /tmp/order6_all.txt)"
+
+      - name: Sweep public E11116 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/o6
+          python3 - <<'PY'
+          import re,itertools,pathlib,json,time
+          lines=pathlib.Path('/tmp/order6_all.txt').read_text().splitlines()
+          assert len(lines)>=62576,len(lines)
+          assert lines[11115]=='x = y ◇ ((x ◇ (z ◇ x)) ◇ (y ◇ y))', lines[11115]
+          def V(n):return ('v',n)
+          def O(a,b):return ('o',a,b)
+          def linked(c,q):
+              if q[0]=='o' and q[2]==c:return True
+              if c[0]=='o' and c[1][0]=='o' and c[2][0]=='o':
+                  qp,r=c[1][1],c[1][2];a,b=c[2][1],c[2][2]
+                  if qp==q and a==b:return linked(qp,r)
+              return False
+          def root(a,b):
+              if b[0]=='o' and b[1][0]=='o' and b[2][0]=='o':
+                  c,q=b[1][1],b[1][2];a1,a2=b[2][1],b[2][2]
+                  if a1==a and a2==a and linked(c,q):return c
+              return None
+          def mul(a,b):
+              q=root(a,b);return O(a,b) if q is None else q
+          def term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and s[i].isalpha():
+                      j=i+1
+                      while j<len(s) and s[j].isalnum():j+=1
+                      q=('v',s[i:j]);i=j;return q
+                  if i<len(s) and s[i]=='(':
+                      i+=1;q=expr();assert s[i]==')';i+=1;return q
+                  raise ValueError((s,i,s[i:i+10]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr();assert i==len(s);return q
+          def eqn(s):
+              a,b=s.split('=',1);return term(a),term(b)
+          def vo(t):
+              if t[0]=='v':return {t[1]}
+              return vo(t[1])|vo(t[2])
+          def ev(t,e):
+              return e[t[1]] if t[0]=='v' else mul(ev(t[1],e),ev(t[2],e))
+          pools=[[V(0),V(1)],[V(0),V(1),V(2)]]
+          survivors=[];rows=[];t0=time.time()
+          for n,s in enumerate(lines,1):
+              l,r=eqn(s);vs=sorted(vo(l)|vo(r));w=None
+              for pool in pools:
+                  for xs in itertools.product(pool,repeat=len(vs)):
+                      e=dict(zip(vs,xs))
+                      if ev(l,e)!=ev(r,e):
+                          w={v:e[v][1] for v in vs};break
+                  if w is not None:break
+              if w is None:survivors.append((n,s))
+              rows.append({'equation':n,'refuted':w is not None,'witness':w})
+              if n%100000==0:print('PROGRESS',n,'survivors',len(survivors))
+          # Widen only survivors.
+          wide=[V(i) for i in range(5)]
+          final=[]
+          for n,s in survivors:
+              l,r=eqn(s);vs=sorted(vo(l)|vo(r));w=None
+              for xs in itertools.product(wide,repeat=len(vs)):
+                  e=dict(zip(vs,xs))
+                  if ev(l,e)!=ev(r,e):
+                      w={v:e[v][1] for v in vs};break
+              if w is None:final.append((n,s))
+              else:
+                  rows[n-1]['refuted']=True;rows[n-1]['witness']=w
+          out={
+            'etp_generator_commit':'bb5a9b5fe78c376ce1725529f235f8d574630b9f',
+            'eq_size':6,'total':len(lines),
+            'refuted_count':sum(r['refuted'] for r in rows),
+            'survivor_count':len(final),
+            'survivors':[{'id':n,'formula':s} for n,s in final],
+            'elapsed_seconds':time.time()-t0
+          }
+          pathlib.Path('/tmp/o6/summary.json').write_text(json.dumps(out,indent=2))
+          pathlib.Path('/tmp/o6/survivors.txt').write_text('\n'.join(f'{n}: {s}' for n,s in final)+'\n')
+          print('TOTAL',out['total'])
+          print('REFUTED',out['refuted_count'])
+          print('SURVIVOR_COUNT',out['survivor_count'])
+          print('ELAPSED',out['elapsed_seconds'])
+          print('FIRST_SURVIVORS')
+          for n,s in final[:100]:print(n,s)
+          PY
+          sha256sum /tmp/order6_all.txt /tmp/o6/summary.json /tmp/o6/survivors.txt | tee /tmp/o6/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-order6-fingerprint-v1
+          path: |
+            /tmp/o6/
+            /tmp/generate6.log
