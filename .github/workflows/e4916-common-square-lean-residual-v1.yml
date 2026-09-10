@@ -1,0 +1,139 @@
+name: E4916 common-square Lean residual v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-common-square-lean-residual-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze mathlib and released E4916 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/completion_hybrid_soundfix_v5/E4916_to_E2__eea3658318c7.lean -o /tmp/released.lean
+          sha256sum /tmp/released.lean | tee /tmp/released.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/released.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
+          if marker not in s:
+              raise SystemExit('terminal Judge wrapper not found')
+          s=s.split(marker,1)[0]
+          Path('/tmp/mathlib4/E4916SquareResidual.lean').write_text(s)
+          PY
+
+      - name: Add square separator theorem
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E4916SquareResidual.lean <<'LEAN'
+
+          namespace E4916SquareResidual
+          open submission
+          open submission.CM
+
+          theorem no_code_ee : ¬ ∃ o, Code e e o := by
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem no_code_kk : ¬ ∃ o, Code (k e) (k e) o := by
+            rintro ⟨o, h⟩
+            cases h
+
+          theorem square_ce_raw :
+              op ce ce = ⟨p e e, by
+                exact ⟨by trivial, by trivial, no_code_ee⟩⟩ := by
+            apply Subtype.ext
+            change eval e e = p e e
+            exact eval_raw no_code_ee
+
+          theorem square_ck_raw :
+              op (ck ce) (ck ce) =
+                ⟨p (k e) (k e), by
+                  exact ⟨by trivial, by trivial, no_code_kk⟩⟩ := by
+            apply Subtype.ext
+            change eval (k e) (k e) = p (k e) (k e)
+            exact eval_raw no_code_kk
+
+          theorem unequal_squares :
+              op ce ce ≠ op (ck ce) (ck ce) := by
+            rw [square_ce_raw, square_ck_raw]
+            intro h
+            have hv := congrArg Subtype.val h
+            cases hv
+
+          theorem source_still_holds :
+              ∀ x y z : Carrier,
+                x = op y (op x (op x (op y (op z z)))) :=
+            source_holds
+
+          theorem E4916_not_common_square :
+              ¬ (∀ x y : Carrier, op x x = op y y) := by
+            intro h
+            exact unequal_squares (h ce (ck ce))
+
+          #print axioms no_code_ee
+          #print axioms no_code_kk
+          #print axioms unequal_squares
+          #print axioms source_still_holds
+          #print axioms E4916_not_common_square
+
+          end E4916SquareResidual
+          LEAN
+
+      - name: Kernel check residual
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E4916SquareResidual.lean 2>&1 | tee /tmp/e4916_square.log
+          ! grep -q sorryAx /tmp/e4916_square.log
+          ! grep -q _native.native_decide /tmp/e4916_square.log
+          grep -q E4916SquareResidual.E4916_not_common_square /tmp/e4916_square.log
+          echo E4916_COMMON_SQUARE_LEAN_RESIDUAL_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E4916SquareResidual.lean /tmp/out/
+          cp /tmp/e4916_square.log /tmp/out/
+          cp /tmp/released.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The released E4916 completion-model satisfies E4916 and has two elements ce, ck ce with unequal squares; therefore E4916 does not imply the common-square identity.",
+            "source_model_repo": "YanbiaoLab/trace-tree-magmas",
+            "source_model_commit": "b013e8a635073c48c5aefd204b1b47c03b44a4ef",
+            "source_model_file": "E4916_to_E2__eea3658318c7.lean",
+            "scientific_role": "kernel-certified rejection of proposed derived constant e := x*x",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-common-square-lean-residual-v1
+          path: /tmp/out/
