@@ -1,0 +1,65 @@
+name: E4916 repaired compiler rule obligations v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-repaired-compiler-obligations-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        rule: [r0, r1, r2, r3]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install Vampire
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+
+      - name: Write semantic obligation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
+          case "\${{ matrix.rule }}" in
+            r0) GOAL='f(A,f(B,f(B,f(A,f(C,C))))) = B' ;;
+            r1) GOAL='f(f(A,A),f(A,A)) = f(A,A)' ;;
+            r2) GOAL='f(f(A,f(B,B)),f(A,f(A,f(B,B)))) = A' ;;
+            r3) GOAL='f(f(A,A),f(B,f(B,f(A,A)))) = B' ;;
+          esac
+          cat > /tmp/problem.p <<EOF
+          fof(source,axiom,![X,Y,Z]: $SRC).
+          fof(goal,conjecture,![A,B,C]: $GOAL).
+          EOF
+
+      - name: Verify obligation with Vampire
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          timeout 180s /tmp/vampire/vampire --mode casc --time_limit 160 --proof tptp /tmp/problem.p > /tmp/out.txt 2>&1
+          rc=$?
+          set -e
+          echo VAMPIRE_RC=$rc
+          grep -E 'SZS status|Termination reason|Refutation found' /tmp/out.txt || true
+          if grep -q 'SZS status Theorem' /tmp/out.txt; then
+            echo RULE_\${{ matrix.rule }}_SEMANTIC_THEOREM
+          else
+            echo RULE_\${{ matrix.rule }}_UNRESOLVED
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-repaired-\${{ matrix.rule }}
+          path: |
+            /tmp/problem.p
+            /tmp/out.txt
