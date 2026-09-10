@@ -55,6 +55,7 @@ jobs:
           theorem derived_r1
               (G : Type) [Magma G] (h : LawOn G) (a : G) :
               a ◇ a = (a ◇ a) ◇ (a ◇ a) := by
+            unfold LawOn at h
             have q : (a ◇ a) ◇ (a ◇ a) = a ◇ a := by
               exact superpose h h
             exact q.symm
@@ -63,6 +64,7 @@ jobs:
               (G : Type) [Magma G] (h : LawOn G) (a b : G) :
               a =
                 (a ◇ (b ◇ b)) ◇ (a ◇ (a ◇ (b ◇ b))) := by
+            unfold LawOn at h
             have q :
                 (a ◇ (b ◇ b)) ◇ (a ◇ (a ◇ (b ◇ b))) = a := by
               exact superpose h h
@@ -71,6 +73,7 @@ jobs:
           theorem derived_r3
               (G : Type) [Magma G] (h : LawOn G) (a b : G) :
               b = (a ◇ a) ◇ (b ◇ (b ◇ (a ◇ a))) := by
+            unfold LawOn at h
             have hr1 : ∀ u : G,
                 (u ◇ u) ◇ (u ◇ u) = u ◇ u := by
               intro u
@@ -113,27 +116,16 @@ jobs:
               (a b : submission.CM) :
               denote base (submission.CM.eval a b) =
                 denote base a ◇ denote base b := by
-            have ec := submission.CM.eval_cases a b
-            unfold submission.CM.EvalCases at ec
-            rcases ec with h0 | h1 | h2 | h3 | hraw
-            · rcases h0 with ⟨v00,v01,v02,ha,hb,ho,_,_,_⟩
-              rw [ho, ha, hb]
-              exact code_semantic base h
-                (submission.CM.Code.r0 v00 v01 v02)
-            · rcases h1 with ⟨v10,ha,hb,ho,_,_,_⟩
-              rw [ho, ha, hb]
-              exact code_semantic base h
-                (submission.CM.Code.r1 v10)
-            · rcases h2 with ⟨v20,v21,ha,hb,ho,_,_,_⟩
-              rw [ho, ha, hb]
-              exact code_semantic base h
-                (submission.CM.Code.r2 v20 v21)
-            · rcases h3 with ⟨v30,v31,ha,hb,ho,_,_,_⟩
-              rw [ho, ha, hb]
-              exact code_semantic base h
-                (submission.CM.Code.r3 v30 v31)
-            · rcases hraw with ⟨ho,_,_⟩
-              rw [ho]
+            classical
+            by_cases hex : ∃ o, submission.CM.Code a b o
+            · let o := Classical.choose hex
+              have hc : submission.CM.Code a b o :=
+                Classical.choose_spec hex
+              have hv : submission.CM.eval a b = o := by
+                rw [submission.CM.eval, dif_pos hex]
+              rw [hv]
+              exact code_semantic base h hc
+            · rw [submission.CM.eval_raw hex]
               rfl
 
           noncomputable def mapCarrier
@@ -213,7 +205,9 @@ jobs:
             induction t with
             | var n => rfl
             | node a b iha ihb =>
-                simp [termDenote, canonical, iha, ihb]
+                simp only [termDenote, canonical]
+                rw [iha, ihb]
+                rfl
 
           def Consequence (s t : Term) : Prop :=
             ∀ {G : Type} [Magma G],
