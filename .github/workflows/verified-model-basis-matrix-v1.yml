@@ -1,0 +1,204 @@
+name: Verified model basis matrix v1
+
+on:
+  push:
+    branches:
+      - verified-model-basis-v1
+    paths:
+      - '.github/workflows/verified-model-basis-matrix-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Clone frozen Austin corpus
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Parse trace-tree presentations and build evidence matrix
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,ast,collections,itertools,pathlib,sys
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          equations={e['equation'].replace('Equation',''):e for e in idx['equations']}
+
+          # ---------- term language for Austin formulas ----------
+          def parse_formula(formula):
+              s=formula.split('=',1)[1].replace(' ','')
+              i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and s[i] in 'xyzw':
+                      v=('v',s[i]); i+=1; return v
+                  if i<len(s) and s[i]=='(':
+                      i+=1; q=expr()
+                      if i>=len(s) or s[i]!=')': raise ValueError((formula,i,s[i:]))
+                      i+=1; return q
+                  raise ValueError((formula,i,s[i:]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1; q=('o',q,atom())
+                  return q
+              q=expr()
+              if i!=len(s): raise ValueError((formula,i,s[i:]))
+              return q
+          parsed_laws={n:parse_formula(e['formula']) for n,e in equations.items()}
+
+          # ---------- symbolic CM terms ----------
+          # tuple forms: ('e',), ('k',a), ('p',a,b), ('var',n)
+          E=('e',)
+          def K(a): return ('k',a)
+          def P(a,b): return ('p',a,b)
+          def V(n): return ('var',n)
+
+          def size(t):
+              if t[0] in ('e','var'): return 0 if t[0]=='e' else 1
+              if t[0]=='k': return size(t[1])+1
+              return size(t[1])+size(t[2])+2
+
+          def tkey(t): return repr(t)
+
+          # Parse a restricted subset of Lean constructor expressions used by generated Code rules.
+          tok_re=re.compile(r'\.?(?:e|k|p)|[A-Za-z_][A-Za-z0-9_]*|\(|\)')
+          def parse_cm_expr(s, env):
+              toks=tok_re.findall(s)
+              pos=0
+              def one():
+                  nonlocal pos
+                  if pos>=len(toks): raise ValueError('eof '+s)
+                  tok=toks[pos]; pos+=1
+                  if tok=='(':
+                      q=one()
+                      if pos>=len(toks) or toks[pos]!=')': raise ValueError(')')
+                      pos+=1; return q
+                  if tok in ('e','.e'): return E
+                  if tok in ('k','.k'):
+                      return K(one())
+                  if tok in ('p','.p'):
+                      return P(one(),one())
+                  if tok in env: return env[tok]
+                  # Constructor names can appear qualified as CM.e etc.; lexer strips dot poorly.
+                  raise ValueError(('unknown',tok,s,toks,pos))
+              q=one()
+              if pos!=len(toks): raise ValueError(('trail',s,toks[pos:]))
+              return q
+
+          # Lean patterns in Code constructors are parsed structurally. We support the dominant
+          # generated families whose constructors consist of variables + e/k/p expressions and
+          # optional Step premises. Step premises are interpreted recursively as raw-or-hit.
+          ctor_re=re.compile(r'\|\s*(\w+)\s*((?:\([^\n]*\)\s*)*):\s*Code\s+([^\n]+)')
+          binder_re=re.compile(r'\(([^:()]+)\s*:\s*CM\)')
+          step_binder_re=re.compile(r'\((\w+)\s*:\s*Step\s+([^\s()]+|\([^)]*\))\s+([^\s()]+|\([^)]*\))\s+([^\s()]+|\([^)]*\))\)')
+
+          def split_top_apps(s):
+              # whitespace split respecting parens
+              out=[]; cur=''; d=0
+              for ch in s.strip():
+                  if ch=='(': d+=1
+                  elif ch==')': d-=1
+                  if ch.isspace() and d==0:
+                      if cur: out.append(cur); cur=''
+                  else: cur+=ch
+              if cur: out.append(cur)
+              return out
+
+          def parse_trace_model(text):
+              # Require standard constructors and default-pair eval.
+              if 'inductive CM where' not in text or 'Code' not in text or 'def eval' not in text:
+                  return None
+              # Extract Code block only.
+              m=re.search(r'(?:mutual\s+)?inductive\s+Code\s*:\s*CM\s*→\s*CM\s*→\s*CM\s*→\s*Prop(.*?)(?:\ninductive\s+Step|\nend\n|\ntheorem\s+code_)',text,re.S)
+              if not m: return None
+              block=m.group(1)
+              ctors=[]
+              for line in block.splitlines():
+                  line=line.strip()
+                  if not line.startswith('|'): continue
+                  # Join only single-line constructors here; count unsupported otherwise.
+                  mm=re.match(r'\|\s*(\w+)\s*(.*?)\s*:\s*Code\s+(.+)$',line)
+                  if not mm: continue
+                  name,binders,args=mm.groups()
+                  vars=[]
+                  # binder groups such as (v0 v1 : CM)
+                  for bg in re.findall(r'\(([^()]*)\)',binders):
+                      if ': CM' in bg:
+                          lhs=bg.split(':')[0].strip()
+                          vars.extend(lhs.split())
+                  apps=split_top_apps(args)
+                  if len(apps)!=3: continue
+                  ctors.append((name,vars,apps))
+              if not ctors: return None
+              return ctors
+
+          # First, just quantify parseability of constructor-rule families.
+          model_rows=[]
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip: continue
+              p=root/ip['path']; s=p.read_text(errors='replace')
+              ct=parse_trace_model(s)
+              model_rows.append({
+                'equation':e['equation'].replace('Equation',''),
+                'path':ip['path'],
+                'trace_parseable':ct is not None,
+                'constructor_count':len(ct) if ct else 0,
+                'has_step':'inductive Step' in s,
+                'has_code':'inductive Code' in s,
+                'has_eval':'def eval' in s,
+                'has_mul':'def mul' in s,
+                'has_op':'def op' in s,
+              })
+
+          # Also include the two already independently certified high-coverage rows.
+          # These are authoritative from prior green Lean runs; encode as seed evidence.
+          all_ids=list(equations)
+          seed_profiles={
+            '11116': {'satisfied':['11116'], 'refuted':[x for x in all_ids if x!='11116'],
+                      'authority':'Lean run 34522428169 job 103022944649'},
+          }
+
+          # E48799 is outside the 130-law source set but is a valid separator for all 130 targets.
+          external_profiles={
+            '48799': {'satisfied':['48799'],'refuted':all_ids,
+                      'authority':'Lean run 34522020463 job 103021603281'}
+          }
+
+          out={
+            'corpus_commit':'b984287a1e5283e67b3709fe1e43f7734b360342',
+            'law_count':len(all_ids),
+            'archived_model_count':len(model_rows),
+            'trace_parseable_count':sum(r['trace_parseable'] for r in model_rows),
+            'rows':model_rows,
+            'seed_profiles':seed_profiles,
+            'external_profiles':external_profiles,
+          }
+          pathlib.Path('/tmp/model_matrix_recon.json').write_text(json.dumps(out,indent=2))
+          print('LAWS',len(all_ids))
+          print('MODELS',len(model_rows))
+          print('TRACE_PARSEABLE',out['trace_parseable_count'])
+          print('HAS_CODE',sum(r['has_code'] for r in model_rows))
+          print('HAS_STEP',sum(r['has_step'] for r in model_rows))
+          print('SEED_E11116_REFUTES',len(seed_profiles['11116']['refuted']))
+          print('EXTERNAL_E48799_REFUTES',len(external_profiles['48799']['refuted']))
+          # Distribution useful for next adapter pass.
+          dist=collections.Counter((r['has_code'],r['has_step'],r['has_eval'],r['has_mul'],r['has_op']) for r in model_rows)
+          for k,v in dist.most_common():
+              print('FAMILY',v,k)
+          PY
+
+      - name: Upload matrix reconnaissance
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-model-basis-matrix-v1
+          path: /tmp/model_matrix_recon.json
