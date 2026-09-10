@@ -1,0 +1,257 @@
+name: E11116 complete order-5 consequence spectrum v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-order5-consequence-spectrum-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP enumeration and model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          sed 's/^EQ_SIZE = 4$/EQ_SIZE = 5/' scripts/generate_eqs_list.py > /tmp/generate5.py
+          python3 /tmp/generate5.py > /tmp/order5_all.txt 2>/tmp/generate.log
+          test "$(wc -l < /tmp/order5_all.txt)" -eq 62576
+          test "$(sed -n '11116p' /tmp/order5_all.txt)" = 'x = y ◇ ((x ◇ (z ◇ x)) ◇ (y ◇ y))'
+          curl -fsSL https://raw.githubusercontent.com/heathsanchez/test/e11116-austin-corpus-sweep-v1/experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 -o /tmp/e11116.b64
+          base64 -d /tmp/e11116.b64 > /tmp/model.lean
+          echo 'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582  /tmp/model.lean' | sha256sum -c -
+
+      - name: Generate shard witnesses and Lean theorems
+        env:
+          SHARD: ${{ matrix.shard }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/o5proof
+          python3 - <<'PY'
+          import os,re,itertools,pathlib,json
+          shard=int(os.environ['SHARD'])
+          lines=pathlib.Path('/tmp/order5_all.txt').read_text().splitlines()
+          survivors={1,10834,10849,11041,11078,11116}
+
+          def V(n):return ('v',n)
+          def O(a,b):return ('o',a,b)
+          def linked(c,q):
+              if q[0]=='o' and q[2]==c:return True
+              if c[0]=='o' and c[1][0]=='o' and c[2][0]=='o':
+                  qp,r=c[1][1],c[1][2];a,b=c[2][1],c[2][2]
+                  if qp==q and a==b:return linked(qp,r)
+              return False
+          def root(a,b):
+              if b[0]=='o' and b[1][0]=='o' and b[2][0]=='o':
+                  c,q=b[1][1],b[1][2];a1,a2=b[2][1],b[2][2]
+                  if a1==a and a2==a and linked(c,q):return c
+              return None
+          def mul(a,b):
+              c=root(a,b);return O(a,b) if c is None else c
+
+          def parse_term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and s[i].isalpha():
+                      j=i+1
+                      while j<len(s) and s[j].isalnum():j+=1
+                      q=('v',s[i:j]);i=j;return q
+                  if i<len(s) and s[i]=='(':
+                      i+=1;q=expr();assert s[i]==')';i+=1;return q
+                  raise ValueError((s,i,s[i:i+10]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr();assert i==len(s);return q
+          def peq(s):
+              a,b=s.split('=',1);return parse_term(a),parse_term(b)
+          def vars_of(t):
+              if t[0]=='v':return {t[1]}
+              return vars_of(t[1])|vars_of(t[2])
+          def ev(t,e):
+              return e[t[1]] if t[0]=='v' else mul(ev(t[1],e),ev(t[2],e))
+          def lean(t,e=None):
+              if t[0]=='v':return t[1] if e is None else f'(.var {e[t[1]]})'
+              return f'(mul {lean(t[1],e)} {lean(t[2],e)})'
+
+          selected=[]
+          pools=[[V(0),V(1)],[V(0),V(1),V(2)],[V(i) for i in range(5)]]
+          for n,s in enumerate(lines,1):
+              if n in survivors or n%8!=shard:continue
+              l,r=peq(s);vs=sorted(vars_of(l)|vars_of(r));w=None
+              for pool in pools:
+                  for xs in itertools.product(pool,repeat=len(vs)):
+                      env=dict(zip(vs,xs))
+                      if ev(l,env)!=ev(r,env):
+                          w={v:env[v][1] for v in vs};break
+                  if w is not None:break
+              if w is None:raise SystemExit(f'NO_WITNESS {n} {s}')
+              selected.append((n,l,r,vs,w))
+
+          prefix=pathlib.Path('/tmp/model.lean').read_text()
+          for ci in range(0,len(selected),450):
+              chunk=selected[ci:ci+450]
+              out=[prefix,'\nnamespace submission.C\n',
+                   'set_option maxRecDepth 100000\nset_option maxHeartbeats 100000000\n']
+              for n,l,r,vs,w in chunk:
+                  q=' '.join(vs);args=' '.join(f'(.var {w[v]})' for v in vs)
+                  out.append(f'''
+          def O5_{n} : Prop :=
+            ∀ {q} : T, {lean(l)} = {lean(r)}
+
+          theorem o5_not_{n} : ¬ O5_{n} := by
+            intro h
+            have hh := h {args}
+            simpa [mul, root, linked, baseLink] using hh
+          ''')
+              if chunk:
+                  out.append(f'#print axioms o5_not_{chunk[0][0]}\n#print axioms o5_not_{chunk[-1][0]}\n')
+              out.append('\nend submission.C\n')
+              pathlib.Path(f'/tmp/o5proof/shard{shard}_chunk{ci//450:02}.lean').write_text(''.join(out))
+
+          meta={'shard':shard,'count':len(selected),'first':selected[0][0] if selected else None,
+                'last':selected[-1][0] if selected else None,
+                'survivors':sorted(survivors)}
+          pathlib.Path(f'/tmp/o5proof/shard_{shard}.json').write_text(json.dumps(meta,indent=2))
+          print('SHARD',shard,'NEGATIVE_COUNT',len(selected))
+
+          if shard==0:
+              p=prefix+'''
+          namespace submission.C
+          theorem entails_10834 : ∀ x : T,
+              x = mul x (mul (mul x (mul x x)) (mul x x)) := by
+            intro x
+            exact (law11116 x x x).symm
+
+          theorem entails_10849 : ∀ x y : T,
+              x = mul x (mul (mul x (mul y x)) (mul x x)) := by
+            intro x y
+            exact (law11116 x x y).symm
+
+          theorem entails_11041 : ∀ x y : T,
+              x = mul y (mul (mul x (mul x x)) (mul y y)) := by
+            intro x y
+            exact (law11116 x y x).symm
+
+          theorem entails_11078 : ∀ x y : T,
+              x = mul y (mul (mul x (mul y x)) (mul y y)) := by
+            intro x y
+            exact (law11116 x y y).symm
+
+          theorem entails_11116 : ∀ x y z : T,
+              x = mul y (mul (mul x (mul z x)) (mul y y)) := by
+            intro x y z
+            exact (law11116 x y z).symm
+
+          #print axioms entails_10834
+          #print axioms entails_10849
+          #print axioms entails_11041
+          #print axioms entails_11078
+          #print axioms entails_11116
+          end submission.C
+          '''
+              pathlib.Path('/tmp/o5proof/Positive.lean').write_text(p)
+          PY
+
+      - name: Reproduce Lean 4.33.1 environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Kernel check shard
+        env:
+          SHARD: ${{ matrix.shard }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          : > /tmp/o5proof/shard_${SHARD}.log
+          cd /tmp/mathlib4
+          for f in /tmp/o5proof/shard${SHARD}_chunk*.lean; do
+            lake env lean "$f" 2>&1 | tee -a /tmp/o5proof/shard_${SHARD}.log
+          done
+          if [ "${SHARD}" = "0" ]; then
+            lake env lean /tmp/o5proof/Positive.lean 2>&1 | tee -a /tmp/o5proof/shard_${SHARD}.log
+          fi
+          ! grep -q 'sorryAx' /tmp/o5proof/shard_${SHARD}.log
+          ! grep -q '_native.native_decide' /tmp/o5proof/shard_${SHARD}.log
+          echo "PASS_SHARD_${SHARD}" | tee /tmp/o5proof/PASS_${SHARD}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: o5-spectrum-shard-${{ matrix.shard }}
+          path: |
+            /tmp/o5proof/shard_*.json
+            /tmp/o5proof/shard_*.log
+            /tmp/o5proof/PASS_*
+            /tmp/o5proof/Positive.lean
+
+  authority:
+    needs: prove
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: o5-spectrum-shard-*
+          path: /tmp/all
+          merge-multiple: true
+      - name: Bind complete spectrum authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/all')
+          metas=[json.loads(p.read_text()) for p in sorted(root.glob('shard_*.json'))]
+          assert len(metas)==8, len(metas)
+          assert {m['shard'] for m in metas}==set(range(8))
+          total=sum(m['count'] for m in metas)
+          assert total==62570,total
+          for i in range(8):
+              assert (root/f'PASS_{i}').exists(),i
+          out={
+            'claim':'Complete canonical consequence spectrum of E11116 through operation order 5',
+            'universe_size':62576,
+            'entailed_canonical_ids':[1,10834,10849,11041,11078,11116],
+            'nontrivial_entailed_ids':[10834,10849,11041,11078,11116],
+            'kernel_checked_nonimplications':62570,
+            'negative_shard_counts':{str(m['shard']):m['count'] for m in metas},
+            'etp_generator_commit':'bb5a9b5fe78c376ce1725529f235f8d574630b9f',
+            'public_E11116_model_sha256':'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582',
+          }
+          (root/'AUTHORITY.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+          sha256sum /tmp/all/AUTHORITY.json /tmp/all/shard_*.json /tmp/all/PASS_* | tee /tmp/all/AUTHORITY_SHA256SUMS
+          echo COMPLETE_E11116_ORDER5_CONSEQUENCE_SPECTRUM_PASS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-complete-order5-spectrum-authority-v1
+          path: |
+            /tmp/all/AUTHORITY.json
+            /tmp/all/AUTHORITY_SHA256SUMS
