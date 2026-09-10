@@ -1,0 +1,86 @@
+name: Auxiliary grammar Vampire obligations v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/auxiliary-grammar-vampire-obligations-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Install Vampire 5.1.0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          find /tmp/vampire -type f -maxdepth 3 -print
+          V=$(find /tmp/vampire -type f -name 'vampire*' | head -1)
+          chmod +x "$V"
+          echo "VAMPIRE=$V" >> "$GITHUB_ENV"
+          "$V" --version || true
+
+      - name: Write source-theory obligations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/problems /tmp/results
+
+          cat > /tmp/problems/e4916_e40.p <<'TPTP'
+          fof(src,axiom,![X,Y,Z]: f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X).
+          fof(goal,conjecture,![X,Y]: f(X,X) = f(Y,Y)).
+          TPTP
+
+          cat > /tmp/problems/e6878_r2.p <<'TPTP'
+          fof(src,axiom,![X,Y,Z]: f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X).
+          fof(goal,conjecture,![A,B,C]: f(A,f(A,f(B,f(C,A)))) = C).
+          TPTP
+
+          cat > /tmp/problems/e6878_r5.p <<'TPTP'
+          fof(src,axiom,![X,Y,Z]: f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X).
+          fof(goal,conjecture,![A,B,C]: f(f(A,B),f(f(A,B),C)) = A).
+          TPTP
+
+      - name: Run Vampire
+        shell: bash
+        run: |
+          set -euxo pipefail
+          for p in /tmp/problems/*.p; do
+            name=$(basename "$p" .p)
+            set +e
+            timeout 120s "$VAMPIRE" --mode casc --time_limit 100 --proof tptp "$p" > "/tmp/results/$name.out" 2>&1
+            rc=$?
+            set -e
+            echo "=== $name rc=$rc ==="
+            tail -80 "/tmp/results/$name.out"
+            grep -E 'Termination reason|SZS status|Refutation|Proof found' "/tmp/results/$name.out" || true
+          done
+
+      - name: Summarize
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib,json,re
+          out={}
+          for p in pathlib.Path('/tmp/results').glob('*.out'):
+              s=p.read_text(errors='replace')
+              status='UNKNOWN'
+              if re.search(r'SZS status Theorem|Termination reason: Refutation',s):
+                  status='THEOREM'
+              elif re.search(r'SZS status CounterSatisfiable|Satisfiable',s):
+                  status='COUNTERSAT'
+              out[p.stem]=status
+              print(p.stem,status)
+          pathlib.Path('/tmp/results/summary.json').write_text(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auxiliary-grammar-vampire-obligations-v1
+          path: |
+            /tmp/problems/
+            /tmp/results/
