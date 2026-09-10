@@ -1,0 +1,122 @@
+name: Canonical compiler candidate census v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/canonical-compiler-candidate-census-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Freeze Austin model archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Classify semantic compiler obligations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,pathlib,collections
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          rows=[]
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip: continue
+              s=(root/ip['path']).read_text(errors='replace')
+              row={'equation':e['equation'].replace('Equation',''),'dual':e['dual'].replace('Equation',''),'path':ip['path']}
+              row['has_code']='inductive Code' in s
+              row['has_step']='inductive Step' in s
+              row['has_linked']='linked' in s
+              row['has_root']='def root' in s
+              row['has_eval']='def eval' in s
+              row['has_mul']='def mul' in s
+              row['has_op']='def op' in s
+              row['noncomputable_eval']=bool(re.search(r'noncomputable\s+def\s+eval',s))
+              row['classical_choose']='Classical.choose' in s
+              row['explicit_recursive_eval']=bool(re.search(r'(?m)^def\s+(?:mul|eval)\b',s))
+              row['code_rules']=0
+              row['code_special_e']=False
+              row['code_special_k']=False
+              row['code_step_premise']=False
+              row['pure_pair_variable_code']=False
+              if row['has_code']:
+                  i=s.index('inductive Code')
+                  candidates=[j for j in [s.find('\ndef CodeCases',i),s.find('\ntheorem code_cases',i),s.find('\ninductive Step',i),s.find('\ndef NF',i)] if j>=0]
+                  j=min(candidates) if candidates else min(len(s),i+12000)
+                  block=s[i:j]
+                  rule_lines=[x.strip() for x in block.splitlines() if x.strip().startswith('|')]
+                  row['code_rules']=len(rule_lines)
+                  joined=' '.join(rule_lines)
+                  # Constructors e/k in rules are semantic commitments beyond pair syntax.
+                  row['code_special_e']=bool(re.search(r'(?<![A-Za-z0-9_])(?:\.e|e)(?![A-Za-z0-9_])',joined))
+                  row['code_special_k']=bool(re.search(r'(?<![A-Za-z0-9_])(?:\.k|k)(?![A-Za-z0-9_])',joined))
+                  row['code_step_premise']='Step' in joined
+                  row['pure_pair_variable_code']=(
+                      row['code_rules']>0 and
+                      not row['code_special_e'] and
+                      not row['code_special_k'] and
+                      not row['code_step_premise']
+                  )
+              if row['has_linked'] and row['has_root'] and row['explicit_recursive_eval']:
+                  row['compiler_class']='recursive_semantic_reduction'
+              elif row['pure_pair_variable_code'] and not row['has_step']:
+                  row['compiler_class']='direct_pure_rules'
+              elif row['has_code'] and (row['code_special_e'] or row['code_special_k']):
+                  row['compiler_class']='derived_constructor_required'
+              elif row['has_code'] and row['has_step']:
+                  row['compiler_class']='premise_bearing_rules'
+              elif row['has_code']:
+                  row['compiler_class']='other_code'
+              elif row['has_mul'] or row['has_op']:
+                  row['compiler_class']='bespoke_operation'
+              else:
+                  row['compiler_class']='unknown'
+              rows.append(row)
+
+          counts=collections.Counter(r['compiler_class'] for r in rows)
+          dual_pairs=set()
+          byeq={r['equation']:r for r in rows}
+          for r in rows:
+              if r['dual'] in byeq:
+                  dual_pairs.add(tuple(sorted([r['equation'],r['dual']],key=int)))
+
+          pure=[r['equation'] for r in rows if r['compiler_class']=='direct_pure_rules']
+          derived=[r['equation'] for r in rows if r['compiler_class']=='derived_constructor_required']
+          premise=[r['equation'] for r in rows if r['compiler_class']=='premise_bearing_rules']
+          recursive=[r['equation'] for r in rows if r['compiler_class']=='recursive_semantic_reduction']
+
+          out={
+            'source_commit':'b984287a1e5283e67b3709fe1e43f7734b360342',
+            'model_count':len(rows),
+            'class_counts':dict(counts),
+            'direct_pure_rule_equations':pure,
+            'derived_constructor_required_equations':derived,
+            'premise_bearing_rule_equations':premise,
+            'recursive_semantic_reduction_equations':recursive,
+            'dual_pair_count_among_models':len(dual_pairs),
+            'rows':rows
+          }
+          pathlib.Path('/tmp/census.json').write_text(json.dumps(out,indent=2))
+          print('MODEL_COUNT',len(rows))
+          for k,v in counts.most_common(): print('CLASS',k,v)
+          print('DIRECT_PURE',len(pure),pure)
+          print('DERIVED_CONSTRUCTOR',len(derived),derived)
+          print('PREMISE_BEARING',len(premise),premise)
+          print('RECURSIVE_SEMANTIC',len(recursive),recursive)
+          print('DUAL_PAIRS',len(dual_pairs))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: canonical-compiler-candidate-census-v1
+          path: /tmp/census.json
