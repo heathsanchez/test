@@ -119,11 +119,13 @@ wrong-operation, fixed-policy, raw-history, ambiguity, chronology, and tamper
 controls. Those fixtures validate the mechanism but are not external scientific
 scoring tasks.
 
-The job also passed the existing pinned Lean core gate. No new Lean theorem was
-added. Lean supports the pre-existing generic semantics only; ARC parsing,
-candidate enumeration, Python execution, independence checks, and this UNKNOWN
-result remain Python-qualified. No claim of end-to-end Lean verification is
-made.
+The job also passed the existing Lean 4.24.0 core gate. No new Lean theorem was
+added. The inspected axiom output reported `propext` for the four existing
+native-constructor declarations and for the admitted reference constructor;
+the four inspected reference-identity/graph declarations were axiom-free.
+Lean supports those pre-existing generic semantics only; ARC parsing, candidate
+enumeration, Python execution, independence checks, and this UNKNOWN result
+remain Python-qualified. No claim of end-to-end Lean verification is made.
 
 ## Workflow evidence
 
@@ -175,4 +177,3 @@ must again be fixed route-neutrally before development, and its complete
 bounded enumeration/minimality policy must be frozen before external checkout.
 The present post-observation run must not be patched or retrospectively
 broadened.
-
