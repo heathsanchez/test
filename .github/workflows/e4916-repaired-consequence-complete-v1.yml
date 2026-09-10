@@ -74,13 +74,20 @@ jobs:
               (G : Type) [Magma G] (h : LawOn G) (a b : G) :
               b = (a ◇ a) ◇ (b ◇ (b ◇ (a ◇ a))) := by
             unfold LawOn at h
-            have hr1 : ∀ u : G,
-                (u ◇ u) ◇ (u ◇ u) = u ◇ u := by
+            have hs : ∀ x y z : G,
+                y ◇ (x ◇ (x ◇ (y ◇ (z ◇ z)))) = x := by
+              intro x y z
+              exact (h x y z).symm
+            have hsquare : ∀ u : G,
+                u ◇ u = (u ◇ u) ◇ (u ◇ u) := by
               intro u
-              exact (derived_r1 G h u).symm
+              exact derived_r1 G (by
+                unfold LawOn
+                intro x y z
+                exact (hs x y z).symm) u
             have q :
                 (a ◇ a) ◇ (b ◇ (b ◇ (a ◇ a))) = b := by
-              exact superpose h hr1
+              exact superpose hs hsquare
             exact q.symm
 
           def denote {G : Type} [Magma G]
@@ -95,19 +102,33 @@ jobs:
               {a b o : submission.CM}
               (hc : submission.CM.Code a b o) :
               denote base o = denote base a ◇ denote base b := by
-            cases hc with
-            | r0 v00 v01 v02 =>
-                simpa [denote] using
-                  h (denote base v01) (denote base v00) (denote base v02)
-            | r1 v10 =>
-                simpa [denote] using
-                  derived_r1 G h (denote base v10)
-            | r2 v20 v21 =>
-                simpa [denote] using
-                  derived_r2 G h (denote base v20) (denote base v21)
-            | r3 v30 v31 =>
-                simpa [denote] using
-                  derived_r3 G h (denote base v30) (denote base v31)
+            have cc := submission.CM.code_cases hc
+            unfold submission.CM.CodeCases at cc
+            rcases cc with h0 | h1 | h2 | h3
+            · rcases h0 with ⟨v00,v01,v02,ha,hb,ho,_,_,_⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                h (denote base v01) (denote base v00) (denote base v02)
+            · rcases h1 with ⟨v10,ha,hb,ho,_,_,_⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                derived_r1 G h (denote base v10)
+            · rcases h2 with ⟨v20,v21,ha,hb,ho,_,_,_⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                derived_r2 G h (denote base v20) (denote base v21)
+            · rcases h3 with ⟨v30,v31,ha,hb,ho,_,_,_⟩
+              subst a
+              subst b
+              subst o
+              simpa [denote] using
+                derived_r3 G h (denote base v30) (denote base v31)
 
           theorem eval_semantic
               {G : Type} [Magma G]
