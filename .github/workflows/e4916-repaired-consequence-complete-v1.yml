@@ -33,7 +33,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path('/tmp/released.lean').read_text()
-          s=s.replace('import JudgeProblem','import equational_theories.Superposition',1)
+          s=s.replace('import JudgeProblem','import equational_theories.Preorder\nimport equational_theories.Superposition',1)
           marker='\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
           if marker not in s: raise SystemExit('terminal wrapper not found')
           s=s.split(marker,1)[0]
