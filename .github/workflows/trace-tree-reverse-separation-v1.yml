@@ -1,0 +1,103 @@
+name: Trace-tree reverse separation E28770 vs E11116
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/trace-tree-reverse-separation-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  lean-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce paper Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover-community/mathlib4.git mathlib4
+          cd mathlib4
+          git checkout 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Build reverse-separation certificate from frozen E28770 artifact
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd mathlib4
+          python3 - <<'PY'
+          import urllib.request
+
+          url = "https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/cnf_nf16_reverse_ties_completed_first_sound_v3/E28770_to_E2__5bf1357b80e9.lean"
+          text = urllib.request.urlopen(url).read().decode("utf-8")
+          text = text.replace("import JudgeProblem", "import Mathlib", 1)
+          marker = "\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by"
+          if marker not in text:
+              raise SystemExit("could not locate frozen certificate Goal wrapper")
+          text = text.split(marker, 1)[0]
+          text += r'''
+
+          open submission
+          open submission.CM
+
+          namespace reverse_separation
+
+          theorem no_code_e_left (b o : CM) : ¬ Code .e b o := by
+            intro h
+            cases h
+
+          theorem eval_e_left (b : CM) : eval .e b = .p .e b := by
+            apply eval_raw
+            rintro ⟨o, ho⟩
+            exact no_code_e_left b o ho
+
+          theorem no_code_pe_left (a b o : CM) : ¬ Code (.p .e a) b o := by
+            intro h
+            cases h
+
+          theorem eval_pe_left (a b : CM) : eval (.p .e a) b = .p (.p .e a) b := by
+            apply eval_raw
+            rintro ⟨o, ho⟩
+            exact no_code_pe_left a b o ho
+
+          def Law11116 : Prop :=
+            ∀ x y z : Carrier,
+              x = op y (op (op x (op z x)) (op y y))
+
+          theorem e11116_fails : ¬ Law11116 := by
+            intro h
+            have hh := congrArg Subtype.val (h ce ce ce)
+            change .e = eval .e (eval (eval .e (eval .e .e)) (eval .e .e)) at hh
+            simp only [eval_e_left, eval_pe_left] at hh
+            cases hh
+
+          theorem e28770_holds :
+              ∀ x y z : Carrier,
+                x = op (op (op (op y y) y) x) (op y z) :=
+            source_holds
+
+          theorem e28770_not_imply_e11116 :
+              (∀ x y z : Carrier,
+                x = op (op (op (op y y) y) x) (op y z)) ∧ ¬ Law11116 :=
+            ⟨e28770_holds, e11116_fails⟩
+
+          end reverse_separation
+          '''
+          open("ReverseSeparation.lean", "w", encoding="utf-8").write(text)
+          PY
+          tail -n 60 ReverseSeparation.lean
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd mathlib4
+          lake env lean ReverseSeparation.lean
+          echo 'PASS: E28770 model satisfies E28770 and refutes E11116'
