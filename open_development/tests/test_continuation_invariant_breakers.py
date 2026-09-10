@@ -7,6 +7,7 @@ corresponding structure is actually present.
 """
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass
 from fractions import Fraction
 from itertools import product
@@ -16,7 +17,7 @@ import tempfile
 import unittest
 
 from open_development.arc_discrimination import form, grid
-from open_development.prospective_genesis import (ProspectiveARCAdapter, develop_stream, freeze_state)
+from open_development.prospective_genesis import (ProspectiveARCAdapter, ast_key, develop_stream, freeze_state, generated_asts)
 from open_development.runtime import Developer, EvidenceStore, Obligation, digest
 
 
@@ -581,7 +582,249 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
             self.assertEqual(before, after)
             print("REPEATED_ENCOUNTER_IDEMPOTENT", digest(before), digest(after))
 
-    def test_19_breaker_summary(self):
+
+    def test_19_semantic_duplicate_changes_actual_generator_version_space(self):
+        # A second retained capability with identical executable semantics but a
+        # different identifier should be representational redundancy if IDs are
+        # gauge-like. The current generator counts the two call ASTs separately.
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            adapter = ProspectiveARCAdapter()
+            task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            baseline = adapter.generation_analysis(state, task)
+            self.assertEqual(baseline["minimum_survivor_count"], 1)
+
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            duplicated = deepcopy(state)
+            duplicate_id = "gauge-copy-" + flip_id
+            duplicated["capabilities"][duplicate_id] = deepcopy(
+                duplicated["capabilities"][flip_id]
+            )
+
+            changed = adapter.generation_analysis(duplicated, task)
+            self.assertEqual(changed["minimum_size"], baseline["minimum_size"])
+            self.assertGreater(changed["minimum_survivor_count"], 1)
+
+            print(
+                "SEMANTIC_DUPLICATE_BREAKS_SYNTACTIC_VERSION_SPACE",
+                "baseline_minima", baseline["minimum_survivor_count"],
+                "duplicate_minima", changed["minimum_survivor_count"],
+                "baseline_candidates", baseline["candidate_count"],
+                "duplicate_candidates", changed["candidate_count"],
+            )
+
+    def test_20_behavioral_quotient_collapses_duplicate_generator_minima(self):
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            adapter = ProspectiveARCAdapter()
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            duplicated = deepcopy(state)
+            duplicated["capabilities"]["gauge-copy-" + flip_id] = deepcopy(
+                duplicated["capabilities"][flip_id]
+            )
+
+            task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            analysis = adapter.generation_analysis(duplicated, task)
+            self.assertGreater(analysis["minimum_survivor_count"], 1)
+
+            probes = [
+                [[0, 1], [2, 3]],
+                [[4, 0, 5], [6, 7, 8]],
+                [[9, 8], [7, 6], [5, 4]],
+            ]
+            signatures = set()
+            for ast in analysis["minimum_survivors"]:
+                signature = tuple(
+                    adapter.execute_ast(duplicated, ast, value) for value in probes
+                )
+                signatures.add(signature)
+
+            self.assertEqual(len(signatures), 1)
+            print(
+                "BEHAVIORAL_QUOTIENT_RECOVERS_ONE_MINIMUM_CLASS",
+                "syntactic_minima", analysis["minimum_survivor_count"],
+                "behavioral_classes", len(signatures),
+            )
+
+    def test_21_capability_map_reordering_is_harmless_in_actual_generator(self):
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            reordered = deepcopy(state)
+            reordered["capabilities"] = dict(
+                reversed(list(reordered["capabilities"].items()))
+            )
+
+            task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            adapter = ProspectiveARCAdapter()
+            left = adapter.generation_analysis(state, task)
+            right = adapter.generation_analysis(reordered, task)
+            self.assertEqual(left, right)
+            print("CAPABILITY_MAP_ORDER_INVARIANT", left["version_space_id"])
+
+    def test_22_overlay_operand_canonicalization_is_behavior_preserving(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            left = {"op": "input"}
+            right = {"op": "call", "callee": flip_id, "arg": {"op": "input"}}
+            raw_a = {"op": "overlay", "left": left, "right": right}
+            raw_b = {"op": "overlay", "left": right, "right": left}
+
+            adapter = ProspectiveARCAdapter()
+            probe = [[1, 0, 2], [3, 4, 0]]
+            self.assertEqual(
+                adapter.execute_ast(state, raw_a, probe),
+                adapter.execute_ast(state, raw_b, probe),
+            )
+
+            keys = {ast_key(ast) for ast in generated_asts(state)}
+            present = int(ast_key(raw_a) in keys) + int(ast_key(raw_b) in keys)
+            self.assertEqual(present, 1)
+            canonical = raw_a if ast_key(left) <= ast_key(right) else raw_b
+            self.assertIn(ast_key(canonical), keys)
+            print(
+                "OVERLAY_GAUGE_FIXING",
+                "raw_equivalent_representatives", 2,
+                "generated_representatives", present,
+            )
+
+    def test_23_same_current_task_behavior_can_hide_future_developmental_difference(self):
+        first = lambda g: form(g, tuple(tuple(reversed(row)) for row in g), "concat-h")
+        second = lambda g: form(first(g), g, "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": example["input"]} for example in task["test"]],
+            }
+
+        task_a = full_task([[1, 2, 3], [4, 5, 6]], first)
+        task_b = full_task([[7, 1, 3], [2, 8, 4]], second)
+        identity_task = full_task([[1, 2], [3, 4]], lambda g: g)
+
+        def row(name, task):
+            return {"task_id": name, "task_sha256": digest(task), "task": public(task)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cold_path = root / "cold.sqlite"
+            warm_path = root / "warm.sqlite"
+            freeze_state(cold_path)
+            freeze_state(warm_path)
+
+            # Develop only A in the warm history.
+            a_row = row("a", task_a)
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "gauge-minimality",
+                "tasks": [a_row],
+                "route_labels_present": False,
+            }
+            develop_stream({**body, "stream_digest": digest(body)}, warm_path)
+
+            cold_store = EvidenceStore(cold_path)
+            warm_store = EvidenceStore(warm_path)
+            cold_state = cold_store.state()
+            warm_state = warm_store.state()
+
+            adapter = ProspectiveARCAdapter()
+            identity_public = public(identity_task)
+            cold_solvers = adapter.solving_records(cold_state, identity_public)
+            warm_solvers = adapter.solving_records(warm_state, identity_public)
+            self.assertTrue(cold_solvers)
+            self.assertTrue(warm_solvers)
+            cold_output = adapter.execute(
+                cold_state, cold_solvers[0], identity_task["test"][0]["input"], []
+            )
+            warm_output = adapter.execute(
+                warm_state, warm_solvers[0], identity_task["test"][0]["input"], []
+            )
+            self.assertEqual(cold_output, warm_output)
+
+            b_row = row("b", task_b)
+            cold_result = Developer(cold_store, adapter).run(
+                Obligation(adapter.name, b_row, 1, "method")
+            )
+            warm_result = Developer(warm_store, adapter).run(
+                Obligation(adapter.name, b_row, 1, "method")
+            )
+            cold_store.close()
+            warm_store.close()
+
+            self.assertNotEqual(cold_result.verdict, "verified")
+            self.assertEqual(warm_result.verdict, "verified")
+            self.assertTrue(warm_result.retained)
+            print(
+                "CURRENT_BEHAVIOR_EQUAL_FUTURE_DEVELOPMENT_DIFFERS",
+                "identity_output_equal", True,
+                "cold_B", cold_result.verdict,
+                "warm_B", warm_result.verdict,
+            )
+
+    def test_24_breaker_summary(self):
         print("CONTINUATION_INVARIANT_BREAKERS_V1_COMPLETE")
         print(
             "BREAKS: execution-behavior equivalence alone is not a "
@@ -602,6 +845,18 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
         print(
             "SURVIVES CONDITIONALLY: holonomy, gauge and KL/support language "
             "are mathematically valid only when their extra structure exists"
+        )
+        print(
+            "BREAKS IN REAL GENERATOR: semantically duplicate capability IDs can turn one minimum into a syntactic version-space tie"
+        )
+        print(
+            "SURVIVES IN REAL GENERATOR: capability map ordering is irrelevant and commutative overlay admits canonical representative fixing"
+        )
+        print(
+            "NO CURRENT FP ANALOGUE ESTABLISHED: duplicate orbit multiplicity is not compensated; it changes the generator version space"
+        )
+        print(
+            "NO CURRENT BRST ANALOGUE ESTABLISHED: no nilpotent cohomological operator was defined or tested by the implementation"
         )
         print(
             "STRONGER CANDIDATE: behavioral equivalence of the full "
