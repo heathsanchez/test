@@ -1,0 +1,278 @@
+name: E4916 repaired consequence complete v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-repaired-consequence-complete-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP and released repaired model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Superposition
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/completion_hybrid_soundfix_v5/E4916_to_E2__eea3658318c7.lean -o /tmp/released.lean
+          sha256sum /tmp/released.lean | tee /tmp/released.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/released.lean').read_text()
+          s=s.replace('import JudgeProblem','import equational_theories.Superposition',1)
+          marker='\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
+          if marker not in s: raise SystemExit('terminal wrapper not found')
+          s=s.split(marker,1)[0]
+          Path('/tmp/etp/E4916RepairedComplete.lean').write_text(s)
+          PY
+
+      - name: Add source-derived rule semantics and completeness
+        shell: bash
+        run: |
+          cat >> /tmp/etp/E4916RepairedComplete.lean <<'LEAN'
+
+          namespace E4916RepairedComplete
+          open submission
+          open submission.CM
+
+          def LawOn (G : Type) [Magma G] : Prop :=
+            ∀ x y z : G, x = y ◇ (x ◇ (x ◇ (y ◇ (z ◇ z))))
+
+          theorem derived_r1
+              (G : Type) [Magma G] (h : LawOn G) (a : G) :
+              a ◇ a = (a ◇ a) ◇ (a ◇ a) := by
+            have q : (a ◇ a) ◇ (a ◇ a) = a ◇ a := by
+              exact superpose h h
+            exact q.symm
+
+          theorem derived_r2
+              (G : Type) [Magma G] (h : LawOn G) (a b : G) :
+              a =
+                (a ◇ (b ◇ b)) ◇ (a ◇ (a ◇ (b ◇ b))) := by
+            have q :
+                (a ◇ (b ◇ b)) ◇ (a ◇ (a ◇ (b ◇ b))) = a := by
+              exact superpose h h
+            exact q.symm
+
+          theorem derived_r3
+              (G : Type) [Magma G] (h : LawOn G) (a b : G) :
+              b = (a ◇ a) ◇ (b ◇ (b ◇ (a ◇ a))) := by
+            have hr1 : ∀ u : G,
+                (u ◇ u) ◇ (u ◇ u) = u ◇ u := by
+              intro u
+              exact (derived_r1 G h u).symm
+            have q :
+                (a ◇ a) ◇ (b ◇ (b ◇ (a ◇ a))) = b := by
+              exact superpose h hr1
+            exact q.symm
+
+          def denote {G : Type} [Magma G]
+              (base : submission.CM → G) : submission.CM → G
+            | .p a b => denote base a ◇ denote base b
+            | q => base q
+
+          theorem code_semantic
+              {G : Type} [Magma G]
+              (base : submission.CM → G)
+              (h : LawOn G)
+              {a b o : submission.CM}
+              (hc : submission.CM.Code a b o) :
+              denote base o = denote base a ◇ denote base b := by
+            cases hc with
+            | r0 v00 v01 v02 =>
+                simpa [denote] using
+                  h (denote base v01) (denote base v00) (denote base v02)
+            | r1 v10 =>
+                simpa [denote] using
+                  derived_r1 G h (denote base v10)
+            | r2 v20 v21 =>
+                simpa [denote] using
+                  derived_r2 G h (denote base v20) (denote base v21)
+            | r3 v30 v31 =>
+                simpa [denote] using
+                  derived_r3 G h (denote base v30) (denote base v31)
+
+          theorem eval_semantic
+              {G : Type} [Magma G]
+              (base : submission.CM → G)
+              (h : LawOn G)
+              (a b : submission.CM) :
+              denote base (submission.CM.eval a b) =
+                denote base a ◇ denote base b := by
+            have ec := submission.CM.eval_cases a b
+            unfold submission.CM.EvalCases at ec
+            rcases ec with h0 | h1 | h2 | h3 | hraw
+            · rcases h0 with ⟨v00,v01,v02,ha,hb,ho,_,_,_⟩
+              rw [ho, ha, hb]
+              exact code_semantic base h
+                (submission.CM.Code.r0 v00 v01 v02)
+            · rcases h1 with ⟨v10,ha,hb,ho,_,_,_⟩
+              rw [ho, ha, hb]
+              exact code_semantic base h
+                (submission.CM.Code.r1 v10)
+            · rcases h2 with ⟨v20,v21,ha,hb,ho,_,_,_⟩
+              rw [ho, ha, hb]
+              exact code_semantic base h
+                (submission.CM.Code.r2 v20 v21)
+            · rcases h3 with ⟨v30,v31,ha,hb,ho,_,_,_⟩
+              rw [ho, ha, hb]
+              exact code_semantic base h
+                (submission.CM.Code.r3 v30 v31)
+            · rcases hraw with ⟨ho,_,_⟩
+              rw [ho]
+              rfl
+
+          noncomputable def mapCarrier
+              {G : Type} [Magma G]
+              (base : submission.CM → G)
+              (x : submission.CM.Carrier) : G :=
+            denote base x.1
+
+          theorem mapCarrier_op
+              {G : Type} [Magma G]
+              (base : submission.CM → G)
+              (h : LawOn G)
+              (x y : submission.CM.Carrier) :
+              mapCarrier base (submission.CM.op x y) =
+                mapCarrier base x ◇ mapCarrier base y := by
+            exact eval_semantic base h x.1 y.1
+
+          def tower : Nat → submission.CM.Carrier
+            | 0 => submission.CM.ce
+            | n+1 => submission.CM.ck (tower n)
+
+          theorem tower_sz : ∀ n,
+              submission.CM.sz (tower n).1 = n := by
+            intro n
+            induction n with
+            | zero => rfl
+            | succ n ih =>
+                simp [tower, submission.CM.ck, submission.CM.sz, ih]
+
+          inductive Term where
+            | var : Nat → Term
+            | node : Term → Term → Term
+          deriving DecidableEq, Repr
+
+          def termDenote {G : Type} [Magma G]
+              (ρ : Nat → G) : Term → G
+            | .var n => ρ n
+            | .node a b => termDenote ρ a ◇ termDenote ρ b
+
+          noncomputable def canonical : Term → submission.CM.Carrier
+            | .var n => tower n
+            | .node a b => submission.CM.op (canonical a) (canonical b)
+
+          theorem denote_tower
+              {G : Type} [Magma G] (ρ : Nat → G) (n : Nat) :
+              denote (fun q => ρ (submission.CM.sz q)) (tower n).1 = ρ n := by
+            cases n with
+            | zero => rfl
+            | succ n =>
+                simp [tower, submission.CM.ck, denote,
+                  submission.CM.sz, tower_sz]
+
+          theorem map_canonical
+              {G : Type} [Magma G]
+              (ρ : Nat → G) (h : LawOn G) :
+              ∀ t : Term,
+                mapCarrier (fun q => ρ (submission.CM.sz q)) (canonical t) =
+                  termDenote ρ t := by
+            intro t
+            induction t with
+            | var n =>
+                exact denote_tower ρ n
+            | node a b iha ihb =>
+                simp only [canonical, termDenote]
+                rw [mapCarrier_op _ h, iha, ihb]
+
+          theorem concrete_is_law :
+              @LawOn submission.CM.Carrier submission.CM.instMagmaNF := by
+            intro x y z
+            exact submission.CM.source_holds x y z
+
+          theorem self_canonical :
+              ∀ t : Term,
+                @termDenote submission.CM.Carrier submission.CM.instMagmaNF tower t =
+                  canonical t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp [termDenote, canonical, iha, ihb]
+
+          def Consequence (s t : Term) : Prop :=
+            ∀ {G : Type} [Magma G],
+              LawOn G →
+              ∀ ρ : Nat → G,
+                termDenote ρ s = termDenote ρ t
+
+          theorem consequence_iff_canonical_eq (s t : Term) :
+              Consequence s t ↔ canonical s = canonical t := by
+            constructor
+            · intro hc
+              have q := @hc submission.CM.Carrier
+                submission.CM.instMagmaNF concrete_is_law tower
+              simpa [self_canonical] using q
+            · intro hc G inst h ρ
+              have q := congrArg
+                (mapCarrier (fun x => ρ (submission.CM.sz x))) hc
+              simpa [map_canonical ρ h] using q
+
+          #print axioms derived_r1
+          #print axioms derived_r2
+          #print axioms derived_r3
+          #print axioms code_semantic
+          #print axioms eval_semantic
+          #print axioms consequence_iff_canonical_eq
+
+          end E4916RepairedComplete
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean E4916RepairedComplete.lean 2>&1 | tee /tmp/e4916_repaired.log
+          ! grep -q sorryAx /tmp/e4916_repaired.log
+          ! grep -q _native.native_decide /tmp/e4916_repaired.log
+          grep -q E4916RepairedComplete.consequence_iff_canonical_eq /tmp/e4916_repaired.log
+          echo E4916_REPAIRED_CONSEQUENCE_COMPLETE_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/E4916RepairedComplete.lean /tmp/out/
+          cp /tmp/e4916_repaired.log /tmp/out/
+          cp /tmp/released.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The released E4916 completion model that preserves unequal squares is consequence-complete for E4916. Its four Code rules are source-derived; canonical equality exactly decides arbitrary E4916 consequences.",
+            "developmental_role": "replacement semantic world after common-square-collapse residual",
+            "source_model_commit": "b013e8a635073c48c5aefd204b1b47c03b44a4ef",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-repaired-consequence-complete-v1
+          path: /tmp/out/
