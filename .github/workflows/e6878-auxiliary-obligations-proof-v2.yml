@@ -1,0 +1,134 @@
+name: E6878 auxiliary obligations proof-required v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-auxiliary-obligations-proof-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        goal: [r2, r5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Install provers
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y prover9 eprover
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+
+      - name: Write obligation
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os,pathlib
+          g=os.environ['GOAL']
+          src='f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X'
+          goals={
+            'r2':'f(A,f(A,f(B,f(C,A)))) = C',
+            'r5':'f(f(A,B),f(f(A,B),C)) = A',
+          }
+          goal=goals[g]
+          pathlib.Path('/tmp/problem.p').write_text(
+            f'fof(source,axiom,![X,Y,Z]: {src}).\n'
+            f'fof(goal,conjecture,![A,B,C]: {goal}).\n')
+          # Prover9 syntax
+          def p9(t): return t
+          pathlib.Path('/tmp/problem.in').write_text(
+            'assign(max_seconds,300).\nset(auto).\n'
+            'formulas(assumptions).\n'
+            'all x all y all z (f(y,f(y,f(f(z,x),f(x,y)))) = x).\n'
+            'end_of_list.\nformulas(goals).\n'
+            + ('all a all b all c (f(a,f(a,f(b,f(c,a)))) = c).\n'
+               if g=='r2' else
+               'all a all b all c (f(f(a,b),f(f(a,b),c)) = a).\n')
+            + 'end_of_list.\n')
+          print('GOAL',g,goal)
+          PY
+
+      - name: Vampire default proof search
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set +e
+          timeout 330s /tmp/vampire/vampire --time_limit 300 --proof_extra full /tmp/problem.p > /tmp/vampire.txt 2>&1
+          rc=$?
+          set -e
+          echo VAMPIRE_RC=$rc
+          grep -E '^% SZS status|Refutation found|Termination reason' /tmp/vampire.txt || true
+          if grep -q '^% SZS status Theorem' /tmp/vampire.txt; then
+            echo "VAMPIRE_${GOAL}_THEOREM"
+          else
+            echo "VAMPIRE_${GOAL}_NOT_PROVED"
+          fi
+
+      - name: Prover9 proof search
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set +e
+          timeout 330s prover9 < /tmp/problem.in > /tmp/prover9.txt 2>&1
+          rc=$?
+          set -e
+          echo PROVER9_RC=$rc
+          grep -E 'THEOREM PROVED|SEARCH FAILED|Exiting with' /tmp/prover9.txt || true
+          if grep -q 'THEOREM PROVED' /tmp/prover9.txt; then
+            echo "PROVER9_${GOAL}_THEOREM"
+          else
+            echo "PROVER9_${GOAL}_NOT_PROVED"
+          fi
+
+      - name: E prover proof search
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set +e
+          timeout 330s eprover --auto --cpu-limit=300 --tstp-format /tmp/problem.p > /tmp/eprover.txt 2>&1
+          rc=$?
+          set -e
+          echo EPROVER_RC=$rc
+          grep -E '# SZS status|SZS status' /tmp/eprover.txt || true
+          if grep -Eq 'SZS status Theorem|SZS status Unsatisfiable' /tmp/eprover.txt; then
+            echo "EPROVER_${GOAL}_THEOREM"
+          else
+            echo "EPROVER_${GOAL}_NOT_PROVED"
+          fi
+
+      - name: Classify
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          theorem=0
+          grep -q '^% SZS status Theorem' /tmp/vampire.txt && theorem=1 || true
+          grep -q 'THEOREM PROVED' /tmp/prover9.txt && theorem=1 || true
+          grep -Eq 'SZS status Theorem|SZS status Unsatisfiable' /tmp/eprover.txt && theorem=1 || true
+          mkdir -p /tmp/out
+          printf '{"goal":"%s","proved":%s}\n' "$GOAL" "$theorem" > /tmp/out/verdict.json
+          if [ "$theorem" = 1 ]; then
+            echo "E6878_${GOAL}_SEMANTIC_OBLIGATION_PROVED"
+          else
+            echo "E6878_${GOAL}_SEMANTIC_OBLIGATION_UNKNOWN"
+          fi
+          cp /tmp/problem.p /tmp/problem.in /tmp/vampire.txt /tmp/prover9.txt /tmp/eprover.txt /tmp/out/
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-${{ matrix.goal }}-proof-v2
+          path: /tmp/out/
