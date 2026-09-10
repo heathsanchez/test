@@ -80,33 +80,26 @@ jobs:
           theorem eval_self_e (a : CandidateA.submission.CM) :
               CandidateA.submission.CM.eval a a =
                 CandidateA.submission.CM.e := by
-            have h := CandidateA.submission.CM.eval_cases a a
-            rcases h with ⟨v0, v1, h0⟩ | ⟨v0, h1⟩ | ⟨v0, h2⟩ |
-              ⟨v0, h3⟩ | ⟨v0, h4⟩ | ⟨hr, hn⟩
+            have B := CandidateA.submission.CM.eval_cases a a
+            rcases B with ⟨v0,v1,h0⟩ | ⟨v0,h1⟩ | ⟨v0,h2⟩ |
+              ⟨v0,h3⟩ | ⟨v0,h4⟩ | ⟨hr,hn⟩
             · unfold CandidateA.submission.CM.C0 at h0
-              rcases h0 with ⟨ha, hb, ho, _, _, _⟩
-              subst v0
-              have hs := congrArg CandidateA.submission.CM.sz hb
-              simp [CandidateA.submission.CM.sz] at hs
-              omega
+              grind [CandidateA.submission.CM.sz,
+                CandidateA.submission.CM.ne_p_left,
+                CandidateA.submission.CM.ne_p_right]
             · exact h1.2.2.1
             · unfold CandidateA.submission.CM.C2 at h2
-              rcases h2 with ⟨ha, hb, ho, _, _, _⟩
-              subst v0
-              have hs := congrArg CandidateA.submission.CM.sz hb
-              simp [CandidateA.submission.CM.sz] at hs
-              omega
+              grind [CandidateA.submission.CM.sz,
+                CandidateA.submission.CM.ne_p_left,
+                CandidateA.submission.CM.ne_p_right]
             · unfold CandidateA.submission.CM.C3 at h3
-              rcases h3 with ⟨ha, hb, ho, _, _, _⟩
-              have hs := congrArg CandidateA.submission.CM.sz hb
-              simp [CandidateA.submission.CM.sz] at hs
-              omega
+              grind [CandidateA.submission.CM.sz,
+                CandidateA.submission.CM.ne_p_left,
+                CandidateA.submission.CM.ne_p_right]
             · unfold CandidateA.submission.CM.C4 at h4
-              rcases h4 with ⟨ha, hb, ho, _, _, _⟩
-              have hs1 := congrArg CandidateA.submission.CM.sz ha
-              have hs2 := congrArg CandidateA.submission.CM.sz hb
-              simp [CandidateA.submission.CM.sz] at hs1 hs2
-              omega
+              grind [CandidateA.submission.CM.sz,
+                CandidateA.submission.CM.ne_p_left,
+                CandidateA.submission.CM.ne_p_right]
             · exfalso
               exact hn ⟨CandidateA.submission.CM.e,
                 CandidateA.submission.CM.Code.r1 a⟩
