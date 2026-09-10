@@ -73,27 +73,52 @@ jobs:
 
           namespace A
           abbrev C := CandidateA.submission.CM.Carrier
-          abbrev op := CandidateA.submission.CM.op
+          noncomputable abbrev op := CandidateA.submission.CM.op
           abbrev ce := CandidateA.submission.CM.ce
           abbrev ck := CandidateA.submission.CM.ck
 
+          theorem eval_self_e (a : CandidateA.submission.CM) :
+              CandidateA.submission.CM.eval a a =
+                CandidateA.submission.CM.e := by
+            have h := CandidateA.submission.CM.eval_cases a a
+            rcases h with ⟨v0, v1, h0⟩ | ⟨v0, h1⟩ | ⟨v0, h2⟩ |
+              ⟨v0, h3⟩ | ⟨v0, h4⟩ | ⟨hr, hn⟩
+            · unfold CandidateA.submission.CM.C0 at h0
+              rcases h0 with ⟨ha, hb, ho, _, _, _⟩
+              subst v0
+              have hs := congrArg CandidateA.submission.CM.sz hb
+              simp [CandidateA.submission.CM.sz] at hs
+              omega
+            · exact h1.2.2.1
+            · unfold CandidateA.submission.CM.C2 at h2
+              rcases h2 with ⟨ha, hb, ho, _, _, _⟩
+              subst v0
+              have hs := congrArg CandidateA.submission.CM.sz hb
+              simp [CandidateA.submission.CM.sz] at hs
+              omega
+            · unfold CandidateA.submission.CM.C3 at h3
+              rcases h3 with ⟨ha, hb, ho, _, _, _⟩
+              have hs := congrArg CandidateA.submission.CM.sz hb
+              simp [CandidateA.submission.CM.sz] at hs
+              omega
+            · unfold CandidateA.submission.CM.C4 at h4
+              rcases h4 with ⟨ha, hb, ho, _, _, _⟩
+              have hs1 := congrArg CandidateA.submission.CM.sz ha
+              have hs2 := congrArg CandidateA.submission.CM.sz hb
+              simp [CandidateA.submission.CM.sz] at hs1 hs2
+              omega
+            · exfalso
+              exact hn ⟨CandidateA.submission.CM.e,
+                CandidateA.submission.CM.Code.r1 a⟩
+
           theorem square_ce : op ce ce = ce := by
             apply Subtype.ext
-            change CandidateA.submission.CM.eval
-              CandidateA.submission.CM.e CandidateA.submission.CM.e =
-              CandidateA.submission.CM.e
-            exact CandidateA.submission.CM.eval_hit
-              (CandidateA.submission.CM.Code.r1 CandidateA.submission.CM.e)
+            exact eval_self_e CandidateA.submission.CM.e
 
           theorem square_ck : op (ck ce) (ck ce) = ce := by
             apply Subtype.ext
-            change CandidateA.submission.CM.eval
+            exact eval_self_e
               (CandidateA.submission.CM.k CandidateA.submission.CM.e)
-              (CandidateA.submission.CM.k CandidateA.submission.CM.e) =
-              CandidateA.submission.CM.e
-            exact CandidateA.submission.CM.eval_hit
-              (CandidateA.submission.CM.Code.r1
-                (CandidateA.submission.CM.k CandidateA.submission.CM.e))
 
           theorem collapsed_pair :
               op ce ce = op (ck ce) (ck ce) :=
@@ -102,7 +127,7 @@ jobs:
 
           namespace B
           abbrev C := CandidateB.submission.CM.Carrier
-          abbrev op := CandidateB.submission.CM.op
+          noncomputable abbrev op := CandidateB.submission.CM.op
           abbrev ce := CandidateB.submission.CM.ce
           abbrev ck := CandidateB.submission.CM.ck
 
