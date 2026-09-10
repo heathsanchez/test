@@ -59,7 +59,8 @@ jobs:
           end E6878Probe
           LEAN
           set +e
-          lake env lean E6878Probe.lean 2>&1 | tee /tmp/probe.log
+          cd /tmp/etp
+          "$HOME/.elan/bin/lake" env lean E6878Probe.lean 2>&1 | tee /tmp/probe.log
           rc=${PIPESTATUS[0]}
           set -e
           echo LEAN_RC=$rc
