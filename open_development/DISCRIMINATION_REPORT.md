@@ -63,3 +63,56 @@ boundary and a complete effective-language semantics before scoring. In
 particular, success under a proposed role must NOT be an eligibility prerequisite.
 No additional corpus was selected merely to supply a desired expansion label.
 Any broader protocol is a new scientific freeze, not a repair of this scoring run.
+
+## Executed result — 10 September 2026
+
+Scientific freeze: `a4cd703f67f37b9881fa4a7cb57093591f827ac3`.
+Selection nonce: `34427167972:1`.
+Source-freeze digest:
+`48fcf33c958cf2c3f98118838cca71afc7ddf5819a7a16a185a9b5d7aac25605`.
+
+The internal audit and recomputation both returned
+`UNKNOWN_EXTERNAL_ROUTE_COVERAGE`, with initial-state counts:
+
+| REUSE | EXAPTATION | EXPANSION | UNKNOWN |
+|---:|---:|---:|---:|
+| 0 | 2 | 0 | 0 |
+
+These are administrator eligibility/role-witness counts, NOT a confusion matrix
+or developer accuracy. The two candidate task identities and normalized exact
+square witnesses are in the artifact's `administrator_rows`. No scoring stream
+was emitted; route minimality, causal controls, and four-way discrimination were
+not evaluated. The result is stop condition C for the canonical external protocol,
+not a claim that a broader protocol cannot succeed. V4 was not created.
+
+- Coverage run: https://github.com/heathsanchez/test/actions/runs/34427167972
+- Freeze job: https://github.com/heathsanchez/test/actions/runs/34427167972/job/102714756831
+- Audit job: https://github.com/heathsanchez/test/actions/runs/34427167972/job/102714784403
+- Freeze artifact: https://github.com/heathsanchez/test/actions/runs/34427167972/artifacts/10133088297
+- Freeze artifact SHA256: `bb35c39e75154c8999ad6a94934ccb25f9f45ac699031bd89796c15c7596a457`
+- Result artifact: https://github.com/heathsanchez/test/actions/runs/34427167972/artifacts/10133092634
+- Result artifact SHA256: `6b56a88e5e46385fdf3d9bbf7e94126e59103ac93012135763662e1e8c8ac5e5`
+- Result evidence digest: `8aa6711bd994e11576fc2a1263095b422067952e1434f5df475c87dacdbdce31`
+
+The existing regression run is
+https://github.com/heathsanchez/test/actions/runs/34427169790.
+Its core job https://github.com/heathsanchez/test/actions/runs/34427169790/job/102714762741
+passed 53 tests, the pinned Lean 4.24.0 core checks, and the existing operational gates.
+Core artifact: https://github.com/heathsanchez/test/actions/runs/34427169790/artifacts/10133096066
+with SHA256 `f5ef5872de98522d0dae86aa7cb6e89ba70ebc3f02d660ac78036225fbaed1d1`.
+Core release evidence digest: `3a8e4fa261b889d4e3be50f1b6278357b1293d4d0d729c59a829f25cf096bc52`.
+Causal artifact: https://github.com/heathsanchez/test/actions/runs/34427169790/artifacts/10133088982
+with SHA256 `176006db1763f92c52a364017c198d6a83aa11d2794e98e13d119b2518b14a73`.
+
+Proof-semantics job:
+https://github.com/heathsanchez/test/actions/runs/34427169790/job/102714859666.
+Its actual log ended with `TYPED_PROGRAM_SEMANTICS_LEAN_PASS` and eleven
+`AXIOMS_PASS` checks, using Lean 4.34.0-rc2. These are the existing generic
+procedure/program soundness and O2/O3/O4 commuting/soundness statements, not
+the new coverage audit.
+Semantics artifact: https://github.com/heathsanchez/test/actions/runs/34427169790/artifacts/10133141263
+with SHA256 `cef01e2eb43b8b737688fc648d656eac877fbe12bb4b71fd612d68e6d19b80f9`.
+
+This results-only report update does not change the scientific freeze and must
+not be presented as a new administration. PR #99 records the successor; neither
+it nor PR #98 was merged.
