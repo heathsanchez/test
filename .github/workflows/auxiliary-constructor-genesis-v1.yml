@@ -1,0 +1,112 @@
+name: Auxiliary constructor genesis v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/auxiliary-constructor-genesis-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  derive:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Freeze Austin archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Infer constructor meanings from Code rules
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import re,json,pathlib
+          root=pathlib.Path('/tmp/austin')
+          reps=['4916','15535','6878','19966']
+
+          def code_lines(s):
+              i=s.index('inductive Code')
+              candidates=[x for x in [
+                  s.find('\ndef CodeCases',i),s.find('\ndef CodeShape',i),
+                  s.find('\ntheorem code_',i),s.find('\ndef NF',i)
+              ] if x>i]
+              j=min(candidates) if candidates else min(len(s),i+20000)
+              return [ln.strip() for ln in s[i:j].splitlines()
+                      if ln.strip().startswith('| r')]
+
+          def infer(lines):
+              defs={}
+              witnesses=[]
+              obligations=[]
+              # Fixed grammar-independent patterns:
+              # 1. Code x x e => e denotes x*x; requires x*x independent of x.
+              # 2. Code x y (q x y) => q denotes multiplication.
+              # 3. Code x (p y x) (r x y) => r(x,y)=x*(y*x).
+              for ln in lines:
+                  m=re.search(r'Code\s+(\w+)\s+\1\s+e$',ln)
+                  if m and 'e' not in defs:
+                      v=m.group(1)
+                      defs['e']={'arity':0,'semantic_template':f'op({v},{v})',
+                                 'derived_from':ln,
+                                 'well_definedness':'forall x y, op(x,x)=op(y,y)'}
+                      witnesses.append({'constructor':'e','rule':ln})
+                      continue
+                  m=re.search(r'Code\s+(\w+)\s+(\w+)\s+\(q\s+\1\s+\2\)$',ln)
+                  if m and 'q' not in defs:
+                      a,b=m.groups()
+                      defs['q']={'arity':2,'semantic_template':f'op({a},{b})',
+                                 'derived_from':ln,'well_definedness':None}
+                      witnesses.append({'constructor':'q','rule':ln})
+                      continue
+                  m=re.search(r'Code\s+(\w+)\s+\(p\s+(\w+)\s+\1\)\s+\(r\s+\1\s+\2\)$',ln)
+                  if m and 'r' not in defs:
+                      a,b=m.groups()
+                      defs['r']={'arity':2,'semantic_template':f'op({a},op({b},{a}))',
+                                 'derived_from':ln,'well_definedness':None}
+                      witnesses.append({'constructor':'r','rule':ln})
+                      continue
+              # Anything not used as a defining rule remains a semantic-soundness obligation.
+              defining={w['rule'] for w in witnesses}
+              obligations=[ln for ln in lines if ln not in defining]
+              return defs,witnesses,obligations
+
+          out={}
+          for id in reps:
+              p=root/f'proofs/Equation{id}/InfiniteModel.lean'
+              s=p.read_text(errors='replace')
+              lines=code_lines(s)
+              defs,wit,obs=infer(lines)
+              out[id]={
+                  'code_rule_count':len(lines),
+                  'inferred_constructors':defs,
+                  'defining_rules':wit,
+                  'remaining_rule_obligations':obs
+              }
+              print('SOURCE',id,'RULES',len(lines))
+              for k,v in defs.items():
+                  print('GENESIS',id,k,v['semantic_template'],
+                        'WD',v['well_definedness'])
+              print('REMAINING_OBLIGATIONS',id,len(obs))
+          pathlib.Path('/tmp/genesis.json').write_text(json.dumps(out,indent=2))
+
+          # Prospective expectations frozen before verifier results:
+          expected={
+            '4916':{'constructors':['e'],'expected_wd':'common-square'},
+            '15535':{'constructors':['e'],'expected_wd':'common-square'},
+            '6878':{'constructors':['q','r'],'expected_wd':None},
+            '19966':{'constructors':['e'],'expected_wd':'common-square'}
+          }
+          pathlib.Path('/tmp/expectations.json').write_text(json.dumps(expected,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: auxiliary-constructor-genesis-v1
+          path: |
+            /tmp/genesis.json
+            /tmp/expectations.json
