@@ -10,7 +10,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass
 from fractions import Fraction
-from itertools import product
+from itertools import permutations, product
 from math import inf, log
 from pathlib import Path
 import tempfile
@@ -1005,7 +1005,377 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
                 "warm_backward_move", True,
             )
 
-    def test_27_breaker_summary(self):
+
+    def test_27_actual_independent_development_square_commutes_behaviorally(self):
+        # Two generated capabilities with disjoint generated ancestry should
+        # commute operationally even though their admission certificates are
+        # produced in different histories.
+        horizontal = lambda g: form(
+            g, tuple(tuple(reversed(row)) for row in g), "concat-h"
+        )
+        vertical = lambda g: form(g, tuple(reversed(g)), "concat-v")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": x["input"]} for x in task["test"]],
+            }
+
+        tasks = {
+            "h": full_task([[1, 2, 3], [4, 5, 6]], horizontal),
+            "v": full_task([[7, 1, 3], [2, 8, 4]], vertical),
+        }
+
+        def run_order(root, order):
+            path = root / ("".join(order) + ".sqlite")
+            freeze_state(path)
+            rows = [
+                {"task_id": name, "task_sha256": digest(tasks[name]), "task": public(tasks[name])}
+                for name in order
+            ]
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "independence-square",
+                "tasks": rows,
+                "route_labels_present": False,
+            }
+            decisions = develop_stream({**body, "stream_digest": digest(body)}, path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+            return decisions, state
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            hv, state_hv = run_order(root, ("h", "v"))
+            vh, state_vh = run_order(root, ("v", "h"))
+            self.assertEqual(
+                [x["predicted_route"] for x in hv["results"]],
+                ["EXPANSION", "EXPANSION"],
+            )
+            self.assertEqual(
+                [x["predicted_route"] for x in vh["results"]],
+                ["EXPANSION", "EXPANSION"],
+            )
+            self.assertEqual(
+                set(state_hv["capabilities"]),
+                set(state_vh["capabilities"]),
+            )
+            adapter = ProspectiveARCAdapter()
+            for name, task in tasks.items():
+                self.assertTrue(adapter.solving_records(state_hv, public(task)))
+                self.assertTrue(adapter.solving_records(state_vh, public(task)))
+            print(
+                "ACTUAL_INDEPENDENCE_SQUARE",
+                "HV_routes", [x["predicted_route"] for x in hv["results"]],
+                "VH_routes", [x["predicted_route"] for x in vh["results"]],
+                "operational_capability_ids_equal", True,
+            )
+
+    def test_28_three_independent_developments_form_operational_cube(self):
+        horizontal_flip = lambda g: form(
+            g, tuple(tuple(reversed(row)) for row in g), "concat-h"
+        )
+        vertical_flip = lambda g: form(g, tuple(reversed(g)), "concat-v")
+        rotate_180 = lambda g: tuple(
+            tuple(reversed(row)) for row in reversed(g)
+        )
+        horizontal_rot = lambda g: form(g, rotate_180(g), "concat-h")
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": x["input"]} for x in task["test"]],
+            }
+
+        tasks = {
+            "a": full_task([[1, 2, 3], [4, 5, 6]], horizontal_flip),
+            "b": full_task([[7, 1, 3], [2, 8, 4]], vertical_flip),
+            "c": full_task([[9, 2, 5], [6, 3, 7]], horizontal_rot),
+        }
+
+        endpoints = []
+        routes = {}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            for order in permutations(("a", "b", "c")):
+                path = root / ("".join(order) + ".sqlite")
+                freeze_state(path)
+                rows = [
+                    {"task_id": name, "task_sha256": digest(tasks[name]), "task": public(tasks[name])}
+                    for name in order
+                ]
+                body = {
+                    "schema": "prospective-route-neutral-stream/v1",
+                    "selection_nonce": "independence-cube",
+                    "tasks": rows,
+                    "route_labels_present": False,
+                }
+                decisions = develop_stream({**body, "stream_digest": digest(body)}, path)
+                routes["".join(order)] = [x["predicted_route"] for x in decisions["results"]]
+                store = EvidenceStore(path)
+                state = store.state()
+                store.close()
+                endpoints.append(set(state["capabilities"]))
+
+            self.assertTrue(all(value == ["EXPANSION"] * 3 for value in routes.values()))
+            self.assertTrue(all(endpoint == endpoints[0] for endpoint in endpoints[1:]))
+            print(
+                "ACTUAL_OPERATIONAL_3_CUBE",
+                "permutations", len(routes),
+                "all_routes_expansion", True,
+                "all_operational_endpoints_equal", True,
+            )
+
+    def test_29_behavioral_class_quotient_repairs_duplicate_without_hiding_real_ambiguity(self):
+        # Prototype only: quotient minimum syntax by extensional signatures over
+        # an exhaustive small probe domain. A semantic duplicate should collapse;
+        # the known genuinely ambiguous training fixture should not.
+        first = lambda g: form(
+            g, tuple(tuple(reversed(row)) for row in g), "concat-h"
+        )
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        probes = [
+            [[a, b], [c, d]]
+            for a, b, c, d in product((0, 1), repeat=4)
+        ]
+
+        def quotient_count(adapter, state, survivors):
+            signatures = {
+                tuple(adapter.execute_ast(state, ast, probe) for probe in probes)
+                for ast in survivors
+            }
+            return len(signatures)
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            state = store.state()
+            store.close()
+            adapter = ProspectiveARCAdapter()
+
+            flip_id = next(
+                rid for rid, rec in state["capabilities"].items()
+                if rec["repair"]["payload"].get("body") == {"op": "d4", "name": "flip-h"}
+            )
+            duplicated = deepcopy(state)
+            duplicated["capabilities"]["gauge-copy-" + flip_id] = deepcopy(
+                duplicated["capabilities"][flip_id]
+            )
+            duplicate_task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            duplicate_analysis = adapter.generation_analysis(duplicated, duplicate_task)
+            self.assertGreater(duplicate_analysis["minimum_survivor_count"], 1)
+            duplicate_classes = quotient_count(
+                adapter, duplicated, duplicate_analysis["minimum_survivors"]
+            )
+            self.assertEqual(duplicate_classes, 1)
+
+            ambiguous_task = full_task(
+                [[0, 0], [0, 1]],
+                lambda g: form(
+                    g,
+                    tuple(zip(*g[::-1])),
+                    "concat-h",
+                ),
+            )
+            ambiguous_analysis = adapter.generation_analysis(state, ambiguous_task)
+            self.assertGreater(ambiguous_analysis["minimum_survivor_count"], 1)
+            ambiguity_classes = quotient_count(
+                adapter, state, ambiguous_analysis["minimum_survivors"]
+            )
+            self.assertGreater(ambiguity_classes, 1)
+            print(
+                "BEHAVIORAL_CLASS_VERSION_SPACE_SEPARATOR",
+                "duplicate_syntax", duplicate_analysis["minimum_survivor_count"],
+                "duplicate_classes", duplicate_classes,
+                "real_ambiguity_syntax", ambiguous_analysis["minimum_survivor_count"],
+                "real_ambiguity_classes", ambiguity_classes,
+            )
+
+    def test_30_actual_admission_is_conservative_on_old_operational_semantics(self):
+        # A real generated admission extends the active language. Verify
+        # exhaustively over 2x2 binary grids that all pre-existing D4
+        # capabilities preserve their exact semantics after the extension.
+        first = lambda g: form(
+            g, tuple(tuple(reversed(row)) for row in g), "concat-h"
+        )
+
+        def full_task(value, function):
+            output = [list(row) for row in function(grid(value))]
+            return {
+                "train": [{"input": value, "output": output}],
+                "test": [{"input": value, "output": output}],
+            }
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": x["input"]} for x in task["test"]],
+            }
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "state.sqlite"
+            freeze_state(path)
+            store = EvidenceStore(path)
+            before = store.state()
+            old_ids = tuple(sorted(before["capabilities"]))
+            store.close()
+
+            task = full_task([[1, 2, 3], [4, 5, 6]], first)
+            row = {"task_id": "a", "task_sha256": digest(task), "task": public(task)}
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "conservative-extension",
+                "tasks": [row],
+                "route_labels_present": False,
+            }
+            decisions = develop_stream({**body, "stream_digest": digest(body)}, path)
+            self.assertEqual(decisions["results"][0]["predicted_route"], "EXPANSION")
+
+            store = EvidenceStore(path)
+            after = store.state()
+            store.close()
+            adapter = ProspectiveARCAdapter()
+            probes = [
+                [[a, b], [c, d]]
+                for a, b, c, d in product((0, 1), repeat=4)
+            ]
+            for rid in old_ids:
+                for probe in probes:
+                    self.assertEqual(
+                        adapter.execute(before, rid, probe, []),
+                        adapter.execute(after, rid, probe, []),
+                    )
+            self.assertGreater(len(after["capabilities"]), len(before["capabilities"]))
+            print(
+                "ACTUAL_CONSERVATIVE_EXTENSION",
+                "old_capabilities", len(old_ids),
+                "new_capabilities", len(after["capabilities"]) - len(old_ids),
+                "old_semantics_preserved_on_probes", len(old_ids) * len(probes),
+            )
+
+    def test_31_automatic_minimal_developmental_separator_search(self):
+        # Search the warm generated language for the smallest two-example task
+        # that is generatively available after G1 but absent in the cold
+        # language. This is a finite analogue of finding a distinguishing
+        # experiment/formula rather than hand-naming the next task.
+        first = lambda g: form(
+            g, tuple(tuple(reversed(row)) for row in g), "concat-h"
+        )
+
+        def full_task(values, function):
+            train = []
+            for value in values:
+                output = function(grid(value))
+                train.append({"input": value, "output": [list(row) for row in output]})
+            return {"train": train, "test": [train[0]]}
+
+        def public(task):
+            return {
+                "train": task["train"],
+                "test": [{"input": x["input"]} for x in task["test"]],
+            }
+
+        task_a = full_task(
+            (
+                [[1, 2, 3], [4, 5, 6]],
+                [[7, 8, 9], [1, 3, 5]],
+            ),
+            first,
+        )
+        row_a = {"task_id": "a", "task_sha256": digest(task_a), "task": public(task_a)}
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            cold_path = root / "cold.sqlite"
+            warm_path = root / "warm.sqlite"
+            freeze_state(cold_path)
+            freeze_state(warm_path)
+            body = {
+                "schema": "prospective-route-neutral-stream/v1",
+                "selection_nonce": "automatic-separator",
+                "tasks": [row_a],
+                "route_labels_present": False,
+            }
+            decisions = develop_stream({**body, "stream_digest": digest(body)}, warm_path)
+            g1 = decisions["results"][0]["generated_admissions"][0]
+
+            cold_store = EvidenceStore(cold_path)
+            warm_store = EvidenceStore(warm_path)
+            cold = cold_store.state()
+            warm = warm_store.state()
+            cold_store.close()
+            warm_store.close()
+            adapter = ProspectiveARCAdapter()
+
+            probe_values = (
+                [[9, 2, 5], [6, 3, 7]],
+                [[4, 1, 8], [2, 9, 3]],
+            )
+            found = None
+            for ast in generated_asts(warm):
+                if g1 not in str(ast):
+                    continue
+                outputs = [
+                    adapter.execute_ast(warm, ast, value)
+                    for value in probe_values
+                ]
+                if any(output is None for output in outputs):
+                    continue
+                task = {
+                    "train": [
+                        {"input": value, "output": [list(row) for row in output]}
+                        for value, output in zip(probe_values, outputs)
+                    ],
+                    "test": [{"input": probe_values[0], "output": [list(row) for row in outputs[0]]}],
+                }
+                warm_analysis = adapter.generation_analysis(warm, task)
+                cold_analysis = adapter.generation_analysis(cold, task)
+                if (
+                    warm_analysis["minimum_survivor_count"] == 1
+                    and cold_analysis["minimum_size"] is None
+                ):
+                    found = (
+                        ast,
+                        warm_analysis["minimum_size"],
+                        warm_analysis["candidate_count"],
+                        cold_analysis["candidate_count"],
+                    )
+                    break
+
+            self.assertIsNotNone(found)
+            ast, size, warm_count, cold_count = found
+            print(
+                "AUTOMATIC_DEVELOPMENTAL_SEPARATOR",
+                "minimum_size", size,
+                "warm_candidates", warm_count,
+                "cold_candidates", cold_count,
+                "ast", ast_key(ast),
+            )
+
+    def test_32_breaker_summary(self):
         print("CONTINUATION_INVARIANT_BREAKERS_V1_COMPLETE")
         print(
             "BREAKS: execution-behavior equivalence alone is not a "
@@ -1044,6 +1414,15 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
         )
         print(
             "SURVIVES: backward revocation distinguishes causal developmental history even when present task output agrees"
+        )
+        print(
+            "TESTED NEXT: independent real developments commute operationally; three independent developments form a coherent finite cube if the fixture passes"
+        )
+        print(
+            "TESTED NEXT: behavioral-class quotient can remove pure duplicate syntax while retaining genuine ambiguity if the separator passes"
+        )
+        print(
+            "TESTED NEXT: real generated admission is an operational conservative extension on preserved capabilities if the preservation census passes"
         )
         print(
             "STRONGER CANDIDATE: a fully abstract, history-sensitive equivalence of the full encounter-plus-development process"
