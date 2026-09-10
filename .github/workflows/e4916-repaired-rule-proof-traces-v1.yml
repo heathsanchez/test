@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euxo pipefail
           SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
-          case "\${{ matrix.rule }}" in
+          case "${{ matrix.rule }}" in
             r1) GOAL='f(f(A,A),f(A,A)) = f(A,A)' ;;
             r2) GOAL='f(f(A,f(B,B)),f(A,f(A,f(B,B)))) = A' ;;
             r3) GOAL='f(f(A,A),f(B,f(B,f(A,A)))) = B' ;;
@@ -43,7 +43,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: e4916-proof-\${{ matrix.rule }}
+          name: e4916-proof-${{ matrix.rule }}
           path: |
             /tmp/problem.p
             /tmp/proof.txt
