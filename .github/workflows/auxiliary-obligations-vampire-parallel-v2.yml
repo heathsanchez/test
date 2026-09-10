@@ -1,0 +1,82 @@
+name: Auxiliary obligations Vampire parallel v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/auxiliary-obligations-vampire-parallel-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        case: [e4916_e40, e15535_e40, e19966_e40, e6878_r2, e6878_r5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install Vampire 5.1.0
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          V=$(find /tmp/vampire -type f -name 'vampire*' | head -1)
+          chmod +x "$V"
+          echo "VAMPIRE=$V" >> "$GITHUB_ENV"
+
+      - name: Write obligation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "\${{ matrix.case }}" in
+            e4916_e40)
+              SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
+              GOAL='f(X,X) = f(Y,Y)'
+              ;;
+            e15535_e40)
+              SRC='f(Y,f(f(f(X,f(Z,Z)),Y),Y)) = X'
+              GOAL='f(X,X) = f(Y,Y)'
+              ;;
+            e19966_e40)
+              SRC='f(f(Y,Y),f(f(X,f(X,Z)),Z)) = X'
+              GOAL='f(X,X) = f(Y,Y)'
+              ;;
+            e6878_r2)
+              SRC='f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X'
+              GOAL='f(A,f(A,f(B,f(C,A)))) = C'
+              ;;
+            e6878_r5)
+              SRC='f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X'
+              GOAL='f(f(A,B),f(f(A,B),C)) = A'
+              ;;
+          esac
+          cat > /tmp/problem.p <<EOF
+          fof(source,axiom,![X,Y,Z]: $SRC).
+          fof(goal,conjecture,![A,B,C,X,Y]: $GOAL).
+          EOF
+          cat /tmp/problem.p
+
+      - name: Vampire prove
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          timeout 180s "$VAMPIRE" --mode casc --time_limit 160 --proof tptp /tmp/problem.p > /tmp/out.txt 2>&1
+          rc=$?
+          set -e
+          echo "VAMPIRE_RC=$rc"
+          tail -120 /tmp/out.txt
+          if grep -Eq 'SZS status Theorem|Termination reason: Refutation|Refutation found' /tmp/out.txt; then
+            echo "VERDICT=THEOREM"
+          else
+            echo "VERDICT=UNKNOWN"
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vampire-\${{ matrix.case }}
+          path: |
+            /tmp/problem.p
+            /tmp/out.txt
