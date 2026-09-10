@@ -78,7 +78,7 @@ jobs:
                           (evalRawOnly z y))))) := by
             intro h
             have bad := h (.e) yWitness (.e)
-            native_decide at bad
+            simpa [evalRawOnly, yWitness] using bad
 
           /-- The unchanged archived evaluator satisfies the same source law universally. -/
           theorem full_model_source_holds :
