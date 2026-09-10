@@ -1,0 +1,74 @@
+name: E4916 versus common-square finite search v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e4916-e40-finite-search-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install Z3
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y z3
+
+      - name: Search finite countermodels
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess,json
+          results=[]
+          for n in range(2,9):
+              f=[]
+              f.append('(set-logic QF_UFLIA)')
+              f.append('(declare-fun op (Int Int) Int)')
+              for a in range(n):
+                for b in range(n):
+                  f.append(f'(assert (and (<= 0 (op {a} {b})) (< (op {a} {b}) {n})))')
+              # E4916: x = y ◇ (x ◇ (x ◇ (y ◇ (z ◇ z))))
+              for x in range(n):
+                for y in range(n):
+                  for z in range(n):
+                    rhs=f'(op {y} (op {x} (op {x} (op {y} (op {z} {z})))))'
+                    f.append(f'(assert (= {x} {rhs}))')
+              # Negate common-square law: there exist x,y with different squares.
+              disj=[]
+              for x in range(n):
+                for y in range(n):
+                  disj.append(f'(not (= (op {x} {x}) (op {y} {y})))')
+              f.append('(assert (or '+ ' '.join(disj)+'))')
+              f.append('(check-sat)')
+              for a in range(n):
+                for b in range(n):
+                  f.append(f'(get-value ((op {a} {b})))')
+              p=pathlib.Path(f'/tmp/e4916_n{n}.smt2');p.write_text('\n'.join(f))
+              cp=subprocess.run(['timeout','30s','z3',str(p)],text=True,capture_output=True)
+              first=cp.stdout.splitlines()[0].strip() if cp.stdout.strip() else 'NO_OUTPUT'
+              row={'n':n,'status':first,'rc':cp.returncode}
+              if first=='sat':
+                vals=[]
+                import re
+                for line in cp.stdout.splitlines()[1:]:
+                  m=re.search(r'\(\(op\s+\d+\s+\d+\)\s+(\d+)\)',line)
+                  if m: vals.append(int(m.group(1)))
+                row['table']=vals
+              results.append(row)
+              print('N',n,'STATUS',first,'RC',cp.returncode)
+              if first=='sat':
+                print('TABLE',vals)
+                break
+          pathlib.Path('/tmp/results.json').write_text(json.dumps(results,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e4916-e40-finite-search-v1
+          path: /tmp/results.json
