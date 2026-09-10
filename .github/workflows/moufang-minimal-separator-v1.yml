@@ -1,0 +1,107 @@
+name: Minimal bare-magma Moufang separator v1
+
+on:
+  push:
+    branches:
+      - moufang-minimal-separator-v1
+    paths:
+      - '.github/workflows/moufang-minimal-separator-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Write minimality certificate
+        shell: bash
+        run: |
+          cat > /tmp/mathlib4/MoufangMinimal3.lean <<'LEAN'
+          import Mathlib.Tactic
+
+          namespace MoufangMinimal3
+
+          inductive C where
+            | zero
+            | one
+            | two
+          deriving DecidableEq, Repr
+
+          open C
+
+          def op : C → C → C
+            | zero, _    => zero
+            | one,  _    => zero
+            | two, zero  => zero
+            | two, one   => one
+            | two, two   => one
+
+          local infixl:70 " ◇ " => op
+
+          def Source (f : C → C → C) : Prop :=
+            ∀ x y z : C,
+              f (f x y) (f z x) = f x (f (f y z) x)
+
+          def Target (f : C → C → C) : Prop :=
+            ∀ x y z : C,
+              f (f (f x y) z) y = f x (f y (f z y))
+
+          theorem source : Source op := by
+            intro x y z
+            cases x <;> cases y <;> cases z <;> rfl
+
+          theorem target_fails : ¬ Target op := by
+            intro h
+            have hh := h two two two
+            change zero = one at hh
+            cases hh
+
+          theorem separator : Source op ∧ ¬ Target op :=
+            ⟨source, target_fails⟩
+
+          -- Exhaust all 16 binary operations on Bool inside the kernel.
+          -- If this closes, no 2-element magma can separate these identities.
+          def sourceBool (f : Bool → Bool → Bool) : Prop :=
+            ∀ x y z : Bool,
+              f (f x y) (f z x) = f x (f (f y z) x)
+
+          def targetBool (f : Bool → Bool → Bool) : Prop :=
+            ∀ x y z : Bool,
+              f (f (f x y) z) y = f x (f y (f z y))
+
+          theorem no_two_element_separator :
+              ∀ f : Bool → Bool → Bool, sourceBool f → targetBool f := by
+            native_decide
+
+          #print axioms source
+          #print axioms target_fails
+          #print axioms separator
+          #print axioms no_two_element_separator
+
+          end MoufangMinimal3
+          LEAN
+
+      - name: Kernel check 3-element separator and 2-element impossibility
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean MoufangMinimal3.lean | tee /tmp/moufang-minimal.log
+          grep -q 'MoufangMinimal3.no_two_element_separator' /tmp/moufang-minimal.log
+          echo 'PASS: 3-element separator exists and no 2-element separator exists'
