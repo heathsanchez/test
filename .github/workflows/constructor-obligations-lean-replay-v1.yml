@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          case "\${{ matrix.case }}" in
+          case "${{ matrix.case }}" in
             e15535_e40)
               SRC='f(Y,f(f(f(X,f(Z,Z)),Y),Y)) = X'
               ;;
@@ -61,7 +61,7 @@ jobs:
           set -euxo pipefail
           python3 - <<'PY'
           import re, pathlib
-          case='\${{ matrix.case }}'
+          case='${{ matrix.case }}'
           proof=pathlib.Path('/tmp/vampire_full.txt').read_text()
           if case=='e15535_e40':
               source_expr='y ◇ (((x ◇ (z ◇ z)) ◇ y) ◇ y) = x'
@@ -154,7 +154,7 @@ jobs:
 
       - uses: actions/upload-artifact@v4
         with:
-          name: constructor-replay-\${{ matrix.case }}
+          name: constructor-replay-${{ matrix.case }}
           path: |
             /tmp/problem.p
             /tmp/vampire_full.txt
