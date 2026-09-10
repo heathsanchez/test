@@ -1,0 +1,71 @@
+name: Developmental Discrimination V1 Coverage
+
+on: workflow_dispatch
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Existing regressions and internal coverage fixtures
+        run: python -m unittest discover -s open_development/tests -v
+      - name: Freeze source and retained state before external checkout
+        run: >-
+          python -m open_development.discrimination_coverage freeze
+          --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discrimination-source-freeze
+          path: |
+            coverage-freeze.json
+            coverage-state.sqlite
+          if-no-files-found: error
+  external-coverage:
+    needs: freeze
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/download-artifact@v4
+        with:
+          name: discrimination-source-freeze
+      - name: Confirm external path absent before checkout
+        run: test ! -e external
+      - uses: actions/checkout@v4
+        with:
+          repository: google-deepmind/miniF2F
+          ref: f0a20e14c1eeccd859d51bb4c2b3ee487889c303
+          path: external
+          persist-credentials: false
+      - name: Audit complete declared candidate pool without developmental admission
+        run: >-
+          /usr/bin/time -v -o coverage-cost.txt
+          python -m open_development.discrimination_coverage audit
+          --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - name: Independently rerun coverage validation, never promote to V4
+        run: >-
+          python -m open_development.discrimination_coverage validate
+          --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-discrimination-coverage
+          path: |
+            coverage-result.json
+            coverage-freeze.json
+            coverage-cost.txt
+          if-no-files-found: error

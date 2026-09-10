@@ -1,0 +1,90 @@
+name: Open Development Release V4 Authority
+on:
+  push:
+    branches: [developmental-discrimination-v1]
+permissions:
+  contents: read
+  actions: read
+jobs:
+  release-v4:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env: {GH_TOKEN: '${{ github.token }}'}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Test release authority
+        run: python -m unittest open_development.tests.test_release_v4 open_development.tests.test_release_v4_authority -v
+      - name: Fetch and verify immutable scientific authority
+        run: |
+          gh api repos/heathsanchez/test/actions/artifacts/10141138082/zip > science.zip
+          test "$(sha256sum science.zip | cut -d' ' -f1)" = 411e289fe70830682f75a3497981c5815491785cc712b89d20cff02276647b59
+          mkdir science && unzip -q science.zip -d science
+          python - <<'PY'
+          import json
+          from open_development.release_v4 import validate
+          load=lambda p:json.load(open('science/'+p))
+          f,s,d,e=map(load,['arc-freeze.json','arc-stream.json','arc-decisions.json','arc-evaluation.json'])
+          validate(load('open-development-release-v4.json'),f,s,d,e)
+          PY
+      - name: Wait for exact current-head regression
+        id: regression
+        run: |
+          for _ in $(seq 1 120); do
+            payload="$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/open-development-core.yml/runs?head_sha=$GITHUB_SHA&event=pull_request&per_page=10")"
+            bad="$(jq '[.workflow_runs[]|select(.status=="completed" and .conclusion!="success")]|length' <<<"$payload")"
+            test "$bad" = 0
+            rid="$(jq -r '.workflow_runs[]|select(.status=="completed" and .conclusion=="success")|.id' <<<"$payload"|head -n1)"
+            if test -n "$rid" && test "$rid" != null; then break; fi
+            sleep 10
+          done
+          test -n "$rid" && test "$rid" != null
+          echo "run_id=$rid" >> "$GITHUB_OUTPUT"
+          gh run download "$rid" -n open-development-core-v1 -D regression/core
+          gh run download "$rid" -n typed-program-semantics -D regression/semantics
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$rid/artifacts" > regression/artifacts.json
+      - name: Build regression summary and final v4 authority
+        run: |
+          python - <<'PY'
+          import json,pathlib,re
+          root=pathlib.Path('regression');core=json.load(open(root/'core/release-evidence.json'))
+          log='\n'.join((root/f'semantics/{p}').read_text() for p in ('typed-program.log','program-rules.log','procedure-rules.log'))
+          meta=json.load(open(root/'artifacts.json'))
+          assert re.fullmatch(r'[0-9a-f]{40}',core['source_commit'])
+          names=['OpenDevelopment.ProcedureRules.intervalAffine_sound','OpenDevelopment.ProcedureRules.product_sound',
+                 'OpenDevelopment.ProgramRules.sound','OpenDevelopment.TypedProgramSemantics.o2_commutes',
+                 'OpenDevelopment.TypedProgramSemantics.o3_commutes','OpenDevelopment.TypedProgramSemantics.o2_sound',
+                 'OpenDevelopment.TypedProgramSemantics.o3_sound','OpenDevelopment.TypedProgramSemantics.acquiredO3_commutes',
+                 'OpenDevelopment.TypedProgramSemantics.o4_commutes','OpenDevelopment.TypedProgramSemantics.acquiredO3_sound',
+                 'OpenDevelopment.TypedProgramSemantics.o4_sound']
+          allowed={'propext','Quot.sound','Classical.choice'}
+          records={n:{x.strip() for x in raw.split(',') if x.strip()} for n,raw in re.findall(r"'([^']+)' depends on axioms: \[([^\]]*)\]",log)}
+          records.update({n:set() for n in re.findall(r"'([^']+)' does not depend on any axioms",log)})
+          assert all(n in records and records[n]<=allowed for n in names)
+          summary={'source_commit':'${{ github.sha }}','checkout_merge_commit':core['source_commit'],
+                   'run_id':int('${{ steps.regression.outputs.run_id }}'),
+                   'core_result':'RELEASE_EVIDENCE_PASS','core_evidence_digest':core['evidence_digest'],
+                   'semantics_result':'TYPED_PROGRAM_SEMANTICS_LEAN_PASS','axioms_pass_count':len(names),
+                   'artifact_ids':[x['id'] for x in meta['artifacts']],
+                   'artifact_digests':[x['digest'] for x in meta['artifacts']]}
+          assert summary['axioms_pass_count']==11
+          pathlib.Path('regression-summary.json').write_text(json.dumps(summary,indent=2)+'\n')
+          PY
+          python -m open_development.release_v4_authority --repository "$GITHUB_REPOSITORY" --source-commit "$GITHUB_SHA" --run-id "$GITHUB_RUN_ID" \
+            --science science/open-development-release-v4.json --freeze science/arc-freeze.json --stream science/arc-stream.json \
+            --decisions science/arc-decisions.json --evaluation science/arc-evaluation.json --regression regression-summary.json \
+            --output open-development-release-v4-authority.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: open-development-release-v4
+          path: |
+            open-development-release-v4-authority.json
+            regression-summary.json
+            science/open-development-release-v4.json
+            science/arc-freeze.json
+            science/arc-stream.json
+            science/arc-decisions.json
+            science/arc-evaluation.json
+          if-no-files-found: error

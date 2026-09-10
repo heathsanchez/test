@@ -1,0 +1,129 @@
+name: Developmental Discrimination ARC V1
+on: workflow_dispatch
+permissions:
+  contents: read
+  actions: read
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Test frozen protocol before external checkout
+        run: python -m unittest discover -s open_development/tests -v
+      - name: Install pinned Lean and run existing kernel gate
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          bash open_development/lean/check.sh
+      - name: Freeze source and initial capabilities while external path is absent
+        run: python -m open_development.arc_discrimination freeze --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-discrimination-freeze
+          path: |
+            arc-freeze.json
+            arc-state.sqlite
+          if-no-files-found: error
+  administrator:
+    needs: freeze
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: arc-discrimination-freeze}
+      - name: Assert post-freeze corpus chronology
+        run: test ! -e external
+      - uses: actions/checkout@v4
+        with:
+          repository: fchollet/ARC-AGI
+          ref: 399030444e0ab0cc8b4e199870fb20b863846f34
+          path: external
+          persist-credentials: false
+      - name: Emit route-neutral stream only
+        run: python -m open_development.arc_discrimination admin --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-unlabelled-administration
+          path: |
+            arc-freeze.json
+            arc-state.sqlite
+            arc-stream.json
+  developer:
+    needs: administrator
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: arc-unlabelled-administration}
+      - name: Frozen developer emits route decisions before evaluator
+        run: python -m open_development.arc_discrimination develop --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: arc-frozen-decisions
+          path: |
+            arc-freeze.json
+            arc-state.sqlite
+            arc-stream.json
+            arc-decisions.json
+  evaluator:
+    needs: developer
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: arc-frozen-decisions}
+      - uses: actions/checkout@v4
+        with:
+          repository: fchollet/ARC-AGI
+          ref: 399030444e0ab0cc8b4e199870fb20b863846f34
+          path: external
+          persist-credentials: false
+      - id: eval
+        name: Independently evaluate immutable decisions
+        run: |
+          python -m open_development.arc_discrimination evaluate --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          print('eligible=' + str(json.load(open('arc-evaluation.json'))['v4_eligible']).lower())
+          PY
+      - name: Verify canonical v3 artifact bytes
+        if: steps.eval.outputs.eligible == 'true'
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10130148685/zip -o v3.zip
+          test "$(sha256sum v3.zip | cut -d' ' -f1)" = 8501e4df13c6c9eddb1cf68fe0eabbd26c7ed60df639e17cee696e17dfc51651
+      - name: Build and replay fail-closed release v4
+        if: steps.eval.outputs.eligible == 'true'
+        run: |
+          python - <<'PY'
+          import json,os
+          from open_development.release_v4 import build,validate
+          load=lambda p:json.load(open(p))
+          f,s,d,e=map(load,['arc-freeze.json','arc-stream.json','arc-decisions.json','arc-evaluation.json'])
+          m=build(os.environ['GITHUB_SHA'],int(os.environ['GITHUB_RUN_ID']),f,s,d,e);validate(m,f,s,d,e)
+          open('open-development-release-v4.json','w').write(json.dumps(m,indent=2)+'\n')
+          print('OPEN_DEVELOPMENT_RELEASE_V4_PASS',m['evidence_digest'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-discrimination-arc-v1
+          path: |
+            arc-freeze.json
+            arc-stream.json
+            arc-decisions.json
+            arc-evaluation.json
+            open-development-release-v4.json
+          if-no-files-found: warn
