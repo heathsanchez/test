@@ -29,7 +29,7 @@ jobs:
         run: |
           set -euxo pipefail
           SRC='f(Y,f(X,f(X,f(Y,f(Z,Z))))) = X'
-          case "\${{ matrix.rule }}" in
+          case "${{ matrix.rule }}" in
             r0) GOAL='f(A,f(B,f(B,f(A,f(C,C))))) = B' ;;
             r1) GOAL='f(f(A,A),f(A,A)) = f(A,A)' ;;
             r2) GOAL='f(f(A,f(B,B)),f(A,f(A,f(B,B)))) = A' ;;
@@ -51,15 +51,15 @@ jobs:
           echo VAMPIRE_RC=$rc
           grep -E 'SZS status|Termination reason|Refutation found' /tmp/out.txt || true
           if grep -q 'SZS status Theorem' /tmp/out.txt; then
-            echo RULE_\${{ matrix.rule }}_SEMANTIC_THEOREM
+            echo RULE_${{ matrix.rule }}_SEMANTIC_THEOREM
           else
-            echo RULE_\${{ matrix.rule }}_UNRESOLVED
+            echo RULE_${{ matrix.rule }}_UNRESOLVED
             exit 1
           fi
 
       - uses: actions/upload-artifact@v4
         with:
-          name: e4916-repaired-\${{ matrix.rule }}
+          name: e4916-repaired-${{ matrix.rule }}
           path: |
             /tmp/problem.p
             /tmp/out.txt
