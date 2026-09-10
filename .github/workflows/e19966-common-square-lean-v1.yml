@@ -38,7 +38,7 @@ jobs:
           namespace E19966CommonSquare
 
           theorem common_square
-              (G : Type*) [Magma G]
+              (G : Type) [Magma G]
               (h : ∀ x y z : G,
                 (y ◇ y) ◇ ((x ◇ (x ◇ z)) ◇ z) = x) :
               ∀ x y : G, x ◇ x = y ◇ y := by
