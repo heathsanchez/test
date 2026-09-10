@@ -27,7 +27,7 @@ jobs:
           cd /tmp/etp
           git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
           lake exe cache get
-          lake build equational_theories.Superposition
+          lake build equational_theories.Preorder equational_theories.Superposition
           curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/trace-tree-magmas/b013e8a635073c48c5aefd204b1b47c03b44a4ef/arxiv-v1/experiments/unrestricted_four_search_20260904/results/certificates/completion_hybrid_soundfix_v5/E4916_to_E2__eea3658318c7.lean -o /tmp/released.lean
           sha256sum /tmp/released.lean | tee /tmp/released.sha256
           python3 - <<'PY'
