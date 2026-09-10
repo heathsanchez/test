@@ -1,0 +1,183 @@
+name: E6878 guarded auxiliary residual Lean v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-guarded-auxiliary-residual-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen E6878 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean > /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission.CM\nnoncomputable def submission.unifiedOriginalWitness'
+          if marker not in s:
+              raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E6878Residual.lean').write_text(s)
+          PY
+
+      - name: Add exact reduction witnesses
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E6878Residual.lean <<'LEAN'
+
+          namespace E6878Residual
+          open submission
+          open submission.CM
+
+          abbrev g0 : CM := .e
+          abbrev g1 : CM := .k .e
+          abbrev q00 : CM := .q .e .e
+          abbrev y521 : CM := .q (.k .e) (.q .e .e)
+
+          theorem eval_g0_g0 : eval g0 g0 = q00 := by
+            have h := eval_cases g0 g0
+            simp [EvalCases, Rule, g0, q00] at h
+            exact h
+
+          theorem eval_g1_q00 : eval g1 q00 = y521 := by
+            have h := eval_cases g1 q00
+            simp [EvalCases, Rule, g1, q00, y521] at h
+            exact h
+
+          theorem eval_g0_y521 :
+              eval g0 y521 = .q .e y521 := by
+            have h := eval_cases g0 y521
+            simp [EvalCases, Rule, g0, y521] at h
+            exact h
+
+          theorem eval_g0_qe_y521 :
+              eval g0 (.q .e y521) = g0 := by
+            have h := eval_cases g0 (.q .e y521)
+            simp [EvalCases, Rule, g0, y521] at h
+            exact h
+
+          theorem eval_y521_g0 :
+              eval y521 g0 = .q y521 .e := by
+            have h := eval_cases y521 g0
+            simp [EvalCases, Rule, g0, y521] at h
+            exact h
+
+          theorem eval_y521_qy_e :
+              eval y521 (.q y521 .e) = g1 := by
+            have h := eval_cases y521 (.q y521 .e)
+            simp [EvalCases, Rule, g1, y521] at h
+            exact h
+
+          theorem equation521_fails_in_E6878_model :
+              ¬ (∀ x y z : Carrier,
+                x = op y (op y (op z (op x y)))) := by
+            intro h
+            let x : Carrier := gen 0
+            let z : Carrier := gen 0
+            let t00 : Carrier := op (gen 0) (gen 0)
+            let y : Carrier := op (gen 1) t00
+            have bad := h x y z
+            apply_fun Subtype.val at bad
+            simp only [x, y, z, t00, gen, tower] at bad
+            simp only [op] at bad
+            rw [eval_g0_g0, eval_g1_q00, eval_g0_y521,
+                eval_g0_qe_y521, eval_y521_g0, eval_y521_qy_e] at bad
+            cases bad
+
+          theorem eval_q00_q00 :
+              eval q00 q00 = .q q00 q00 := by
+            have h := eval_cases q00 q00
+            simp [EvalCases, Rule, q00] at h
+            exact h
+
+          theorem eval_q00_qq :
+              eval q00 (.q q00 q00) =
+                .q q00 (.q q00 q00) := by
+            have h := eval_cases q00 (.q q00 q00)
+            simp [EvalCases, Rule, q00] at h
+            exact h
+
+          theorem equation1649_fails_in_E6878_model :
+              ¬ (∀ x y z : Carrier,
+                x = op (op x y) (op (op x y) z)) := by
+            intro h
+            let x : Carrier := gen 0
+            let y : Carrier := gen 0
+            let z : Carrier := op (gen 0) (gen 0)
+            have bad := h x y z
+            apply_fun Subtype.val at bad
+            simp only [x, y, z, gen, tower, op] at bad
+            rw [eval_g0_g0, eval_q00_q00, eval_q00_qq] at bad
+            cases bad
+
+          theorem source_still_holds :
+              ∀ x y z : Carrier,
+                x = op y (op y (op (op z x) (op x y))) :=
+            source_holds
+
+          #print axioms equation521_fails_in_E6878_model
+          #print axioms equation1649_fails_in_E6878_model
+          #print axioms source_still_holds
+
+          end E6878Residual
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E6878Residual.lean 2>&1 | tee /tmp/residual.log
+          ! grep -q sorryAx /tmp/residual.log
+          ! grep -q _native.native_decide /tmp/residual.log
+          grep -q E6878Residual.equation521_fails_in_E6878_model /tmp/residual.log
+          grep -q E6878Residual.equation1649_fails_in_E6878_model /tmp/residual.log
+          echo E6878_GUARDED_AUXILIARY_RESIDUAL_PASS
+
+      - name: Publish
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E6878Residual.lean /tmp/out/
+          cp /tmp/residual.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The frozen E6878 source model refutes the unconditional equations represented by naive global readings of auxiliary Code.r2 (Equation521) and Code.r5 (Equation1649), while satisfying E6878. Therefore q/r rule semantics are guarded/provenance-sensitive rather than unconditional source consequences.",
+            "equation521_witness": "x=z=gen 0; y=gen 1 * (gen 0 * gen 0)",
+            "equation1649_witness": "x=y=gen 0; z=gen 0 * gen 0",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-guarded-auxiliary-residual-v1
+          path: /tmp/out/
