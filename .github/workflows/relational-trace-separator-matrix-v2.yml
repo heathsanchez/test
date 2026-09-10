@@ -1,0 +1,263 @@
+name: Relational trace separator matrix v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/relational-trace-separator-matrix-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  matrix:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Clone frozen corpus
+        run: |
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Run least-relational Code-Step interpreter
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cat > /tmp/rel_matrix.py <<'PY'
+          import json,re,pathlib,itertools,sys
+          sys.setrecursionlimit(10000)
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          formulas={e['equation']:e['formula'] for e in idx['equations']}
+
+          E=('e',)
+          def K(x): return ('k',x)
+          def P(x,y): return ('p',x,y)
+          # Pattern variables are ('v', name_or_fresh_id)
+          tok_re=re.compile(r'[A-Za-z_][A-Za-z0-9_₀₁₂₃₄₅₆₇₈₉]*|[()]')
+
+          def parse_one(toks,i=0):
+              if i>=len(toks): raise ValueError('EOF')
+              t=toks[i];i+=1
+              if t=='(':
+                  q,i=parse_one(toks,i)
+                  if i>=len(toks) or toks[i]!=')': raise ValueError(('missing)',toks[i:i+10]))
+                  return q,i+1
+              if t=='p':
+                  a,i=parse_one(toks,i);b,i=parse_one(toks,i);return ('p',a,b),i
+              if t=='k':
+                  a,i=parse_one(toks,i);return ('k',a),i
+              if t=='e':return E,i
+              # reject other constructors/functions explicitly
+              if t in {'q','r','L','R','U','m','v'}: raise ValueError(('unsupported-fn',t))
+              return ('v',t),i
+
+          def parse_terms(s,n):
+              toks=tok_re.findall(s);i=0;out=[]
+              for _ in range(n):
+                  q,i=parse_one(toks,i);out.append(q)
+              return out,toks[i:]
+
+          def extract_rules(s):
+              i=s.index('inductive Code')
+              j=s.find('\ninductive Step',i)
+              if j<0: return [],['no Step split']
+              block=s[i:j]
+              starts=[m.start() for m in re.finditer(r'(?m)^\s*\|\s*[A-Za-z_][A-Za-z0-9_₀₁₂₃₄₅₆₇₈₉]*',block)]
+              rules=[];errs=[]
+              for a,b in zip(starts,starts[1:]+[len(block)]):
+                  frag=block[a:b]
+                  m=re.search(r':\s*Code\s+(.+)',frag,re.S)
+                  if not m: continue
+                  try:
+                      main,rest=parse_terms(m.group(1).strip(),3)
+                      if rest: raise ValueError(('head-rest',rest[:20]))
+                      premises=[]
+                      # Extract balanced parenthesized binders containing ': Step '.
+                      for st in re.finditer(r'\([A-Za-z_][A-Za-z0-9_₀₁₂₃₄₅₆₇₈₉]*\s*:\s*Step\s+',frag):
+                          pos=st.end(); depth=0; z=pos
+                          while z<len(frag):
+                              ch=frag[z]
+                              if ch=='(':depth+=1
+                              elif ch==')':
+                                  if depth==0:break
+                                  depth-=1
+                              z+=1
+                          ts,rr=parse_terms(frag[pos:z],3)
+                          if rr: raise ValueError(('premise-rest',rr[:20],frag[pos:z]))
+                          premises.append(tuple(ts))
+                      rules.append({'head':tuple(main),'premises':premises,'frag':frag.strip()})
+                  except Exception as ex:
+                      errs.append((frag.strip().replace('\n',' ')[:700],repr(ex)))
+              return rules,errs
+
+          def isvar(t): return isinstance(t,tuple) and t and t[0]=='v'
+          def walk(t,s):
+              while isvar(t) and t[1] in s:
+                  t=s[t[1]]
+              return t
+          def occurs(v,t,s):
+              t=walk(t,s)
+              if isvar(t): return t[1]==v
+              if t[0]=='e': return False
+              if t[0]=='k': return occurs(v,t[1],s)
+              return occurs(v,t[1],s) or occurs(v,t[2],s)
+          def unify(a,b,s):
+              a=walk(a,s);b=walk(b,s)
+              if a==b:return s
+              if isvar(a):
+                  if occurs(a[1],b,s): return None
+                  q=dict(s);q[a[1]]=b;return q
+              if isvar(b):
+                  if occurs(b[1],a,s): return None
+                  q=dict(s);q[b[1]]=a;return q
+              if a[0]!=b[0]:return None
+              if a[0]=='e':return s
+              if a[0]=='k':return unify(a[1],b[1],s)
+              q=unify(a[1],b[1],s)
+              return None if q is None else unify(a[2],b[2],q)
+
+          def ground(t,s):
+              t=walk(t,s)
+              if isvar(t): return None
+              if t[0]=='e': return E
+              if t[0]=='k':
+                  x=ground(t[1],s);return None if x is None else K(x)
+              x=ground(t[1],s);y=ground(t[2],s)
+              return None if x is None or y is None else P(x,y)
+
+          class LogicModel:
+              def __init__(self,rules):
+                  self.rules=rules;self.serial=0;self.memo={}
+              def fresh(self,t,m):
+                  if isvar(t):
+                      n=t[1]
+                      if n not in m:
+                          self.serial+=1;m[n]=('v',f'_g{self.serial}_{n}')
+                      return m[n]
+                  if t[0]=='e':return t
+                  if t[0]=='k':return K(self.fresh(t[1],m))
+                  return P(self.fresh(t[1],m),self.fresh(t[2],m))
+              def fresh_rule(self,r):
+                  m={}
+                  return {
+                    'head':tuple(self.fresh(x,m) for x in r['head']),
+                    'premises':[tuple(self.fresh(x,m) for x in p) for p in r['premises']]
+                  }
+              def solve_step(self,args,s,depth):
+                  if depth<=0:return
+                  # raw(a,b,p(a,b))
+                  self.serial+=1; va=('v',f'_rawa{self.serial}')
+                  self.serial+=1; vb=('v',f'_rawb{self.serial}')
+                  q=s
+                  for x,y in zip(args,(va,vb,P(va,vb))):
+                      q=unify(x,y,q)
+                      if q is None:break
+                  if q is not None: yield q
+                  yield from self.solve_code(args,s,depth-1)
+              def solve_code(self,args,s,depth):
+                  if depth<=0:return
+                  for rr in self.rules:
+                      r=self.fresh_rule(rr);q=s
+                      for x,y in zip(args,r['head']):
+                          q=unify(x,y,q)
+                          if q is None:break
+                      if q is None:continue
+                      states=[q]
+                      for prem in r['premises']:
+                          nxt=[]
+                          for st in states:
+                              nxt.extend(self.solve_step(prem,st,depth-1))
+                              if len(nxt)>200: break
+                          states=nxt
+                          if not states:break
+                      for st in states:yield st
+              def op(self,a,b):
+                  key=(a,b)
+                  if key in self.memo:return self.memo[key]
+                  self.serial+=1;o=('v',f'_out{self.serial}')
+                  outs=[]
+                  for s in self.solve_code((a,b,o),{},80):
+                      g=ground(o,s)
+                      if g is None: raise RuntimeError(('nonground output',a,b,s))
+                      if g not in outs:outs.append(g)
+                      if len(outs)>2:break
+                  if not outs:res=P(a,b)
+                  else:
+                      if any(x!=outs[0] for x in outs[1:]):
+                          raise RuntimeError(('nonfunctional',a,b,outs))
+                      res=outs[0]
+                  self.memo[key]=res;return res
+
+          def parse_formula(formula):
+              rhs=formula.split('=',1)[1].replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(rhs) and rhs[i] in 'xyzw':
+                      q=('v',rhs[i]);i+=1;return q
+                  if i<len(rhs) and rhs[i]=='(':
+                      i+=1;q=expr();assert rhs[i]==')';i+=1;return q
+                  raise ValueError((formula,i,rhs[i:]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(rhs) and rhs[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr();assert i==len(rhs);return q
+          asts={n:parse_formula(f) for n,f in formulas.items()}
+          def ev(a,env,M):
+              return env[a[1]] if a[0]=='v' else M.op(ev(a[1],env,M),ev(a[2],env,M))
+
+          pool=[E,K(E),K(K(E)),K(K(K(E)))]
+          rows=[];bad=[]
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip:continue
+              s=(root/ip['path']).read_text(errors='replace')
+              if 'inductive Code' not in s or 'inductive Step' not in s:continue
+              rules,errs=extract_rules(s)
+              if errs or not rules:
+                  bad.append({'equation':e['equation'],'errors':errs[:6],'rules':len(rules)});continue
+              M=LogicModel(rules)
+              src=e['equation'];vs=sorted(set(re.findall(r'[xyzw]',e['formula'])),key='xyzw'.index)
+              fail=None
+              try:
+                  for xs in itertools.product(pool,repeat=len(vs)):
+                      env=dict(zip(vs,xs))
+                      if env['x']!=ev(asts[src],env,M):
+                          fail={v:pool.index(env[v]) for v in vs};break
+              except Exception as ex:
+                  bad.append({'equation':src,'errors':['source-exception',repr(ex)],'rules':len(rules)});continue
+              if fail:
+                  bad.append({'equation':src,'errors':['source-probe-failed',fail],'rules':len(rules)});continue
+              refs=[];surv=[];wits={}
+              try:
+                  for t in idx['equations']:
+                      n=t['equation'];tv=sorted(set(re.findall(r'[xyzw]',t['formula'])),key='xyzw'.index)
+                      w=None
+                      for xs in itertools.product(pool,repeat=len(tv)):
+                          env=dict(zip(tv,xs))
+                          if env['x']!=ev(asts[n],env,M):
+                              w={v:pool.index(env[v]) for v in tv};break
+                      if w is None:surv.append(n)
+                      else:refs.append(n);wits[n]=w
+              except Exception as ex:
+                  bad.append({'equation':src,'errors':['sweep-exception',repr(ex)],'rules':len(rules)});continue
+              rows.append({'source':src,'rules':len(rules),'refuted_count':len(refs),'survivors':surv,'refuted':refs,'witnesses':wits})
+              print('ROW',src,'rules',len(rules),'refuted',len(refs),'survivors',','.join(surv))
+
+          pathlib.Path('/tmp/rel_matrix.json').write_text(json.dumps({'rows':rows,'unsupported':bad},indent=2))
+          print('SUPPORTED_ROWS',len(rows))
+          print('UNSUPPORTED',len(bad))
+          print('SOURCE_ONLY_ROWS',sum(r['survivors']==[r['source']] for r in rows))
+          print('REFUTATION_TOTAL',sum(r['refuted_count'] for r in rows))
+          for x in bad: print('UNSUPPORTED_ROW',x['equation'],str(x['errors'])[:800])
+          PY
+          python3 /tmp/rel_matrix.py | tee /tmp/rel_matrix.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: relational-trace-separator-matrix-v2
+          path: |
+            /tmp/rel_matrix.json
+            /tmp/rel_matrix.log
