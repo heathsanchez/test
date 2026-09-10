@@ -1,0 +1,61 @@
+name: E6878 Twee equational proof search v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-twee-proof-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        goal: [r2, r5]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Install Twee
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/nick8325/twee/releases/download/2.4.1/twee-2.4.1-linux-amd64 -o /tmp/twee
+          chmod +x /tmp/twee
+          /tmp/twee --version || true
+
+      - name: Write E6878 obligation
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          case "$GOAL" in
+            r2) G='f(A,f(A,f(B,f(C,A)))) = C' ;;
+            r5) G='f(f(A,B),f(f(A,B),C)) = A' ;;
+          esac
+          cat > /tmp/problem.p <<EOF
+          fof(source,axiom,![X,Y,Z]: f(Y,f(Y,f(f(Z,X),f(X,Y)))) = X).
+          fof(goal,conjecture,![A,B,C]: $G).
+          EOF
+          cat /tmp/problem.p
+
+      - name: Twee proof search
+        env:
+          GOAL: ${{ matrix.goal }}
+        shell: bash
+        run: |
+          set +e
+          timeout 360s /tmp/twee /tmp/problem.p > /tmp/twee.txt 2>&1
+          rc=$?
+          set -e
+          echo "TWEE_RC=$rc"
+          tail -120 /tmp/twee.txt
+          mkdir -p /tmp/out
+          cp /tmp/problem.p /tmp/twee.txt /tmp/out/
+          echo "$rc" > /tmp/out/rc.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-twee-${{ matrix.goal }}-v1
+          path: /tmp/out/
