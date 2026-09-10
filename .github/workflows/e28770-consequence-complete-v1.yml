@@ -1,0 +1,229 @@
+name: E28770 consequence-complete trace model v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e28770-consequence-complete-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce paper environment and frozen model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation28770/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean | tee /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem',
+          '''import Mathlib
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission\nopen submission.CM\nnoncomputable def submission : Goal := by'
+          if marker not in s: raise SystemExit('goal wrapper not found')
+          s=s.split(marker,1)[0]
+          Path('/tmp/mathlib4/E28770Complete.lean').write_text(s)
+          PY
+
+      - name: Add semantic completeness proof
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E28770Complete.lean <<'LEAN'
+
+          namespace E28770Complete
+          open submission
+          open submission.CM
+
+          def denote {α : Type} (star : α → α → α) (base : submission.CM → α) :
+              submission.CM → α
+            | .p a b => star (denote star base a) (denote star base b)
+            | q => base q
+
+          def Law28770On {α : Type} (star : α → α → α) : Prop :=
+            ∀ x y z : α,
+              star (star (star (star y y) y) x) (star y z) = x
+
+          theorem code_semantic
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : Law28770On star)
+              {a b o : submission.CM}
+              (hc : submission.CM.Code a b o) :
+              star (denote star base a) (denote star base b) =
+                denote star base o := by
+            cases hc with
+            | r0 v0 v1 v2 =>
+                simpa [denote] using
+                  hLaw (denote star base v1)
+                    (denote star base v0) (denote star base v2)
+            | r1 v0 v1 v2 =>
+                let A : α :=
+                  star
+                    (star (star (denote star base v0) (denote star base v0))
+                      (denote star base v0))
+                    (denote star base v1)
+                have hinner :
+                    star A
+                      (star (denote star base v0) (denote star base v2)) =
+                      denote star base v1 := by
+                  simpa [A, denote] using
+                    hLaw (denote star base v1)
+                      (denote star base v0) (denote star base v2)
+                have houter :=
+                  hLaw (denote star base v2) A
+                    (star (denote star base v0) (denote star base v2))
+                rw [hinner] at houter
+                simpa [A, denote] using houter
+
+          theorem eval_semantic
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : Law28770On star)
+              (a b : submission.CM) :
+              denote star base (submission.CM.eval a b) =
+                star (denote star base a) (denote star base b) := by
+            classical
+            by_cases h : ∃ o, submission.CM.Code a b o
+            · rw [submission.CM.eval, dif_pos h]
+              exact
+                (code_semantic star base hLaw (Classical.choose_spec h)).symm
+            · rw [submission.CM.eval_raw h]
+              rfl
+
+          def mapCarrier
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (x : submission.CM.Carrier) : α :=
+            denote star base x.1
+
+          theorem mapCarrier_op
+              {α : Type} (star : α → α → α) (base : submission.CM → α)
+              (hLaw : Law28770On star)
+              (x y : submission.CM.Carrier) :
+              mapCarrier star base (submission.CM.op x y) =
+                star (mapCarrier star base x) (mapCarrier star base y) := by
+            exact eval_semantic star base hLaw x.1 y.1
+
+          inductive Term where
+            | var : Nat → Term
+            | node : Term → Term → Term
+          deriving DecidableEq, Repr
+
+          def termDenote {α : Type} (star : α → α → α) (ρ : Nat → α) : Term → α
+            | .var n => ρ n
+            | .node a b => star (termDenote star ρ a) (termDenote star ρ b)
+
+          noncomputable def canonical : Term → submission.CM.Carrier
+            | .var n => submission.CM.tower n
+            | .node a b => submission.CM.op (canonical a) (canonical b)
+
+          theorem denote_tower
+              {α : Type} (star : α → α → α) (ρ : Nat → α) (n : Nat) :
+              denote star (fun q => ρ (submission.CM.sz q))
+                (submission.CM.tower n).1 = ρ n := by
+            cases n with
+            | zero => rfl
+            | succ n =>
+                simp [submission.CM.tower, submission.CM.ck, denote,
+                  submission.CM.sz, submission.CM.tower_sz]
+
+          theorem map_canonical
+              {α : Type} (star : α → α → α) (ρ : Nat → α)
+              (hLaw : Law28770On star) :
+              ∀ t : Term,
+                mapCarrier star (fun q => ρ (submission.CM.sz q)) (canonical t) =
+                  termDenote star ρ t := by
+            intro t
+            induction t with
+            | var n =>
+                exact denote_tower star ρ n
+            | node a b iha ihb =>
+                simp only [canonical, termDenote]
+                rw [mapCarrier_op star _ hLaw, iha, ihb]
+
+          theorem concrete_is_law : Law28770On submission.CM.op := by
+            intro x y z
+            exact (submission.CM.source_holds x y z).symm
+
+          theorem self_canonical :
+              ∀ t : Term,
+                termDenote submission.CM.op submission.CM.tower t = canonical t := by
+            intro t
+            induction t with
+            | var n => rfl
+            | node a b iha ihb =>
+                simp [termDenote, canonical, iha, ihb]
+
+          def Consequence28770 (s t : Term) : Prop :=
+            ∀ {α : Type} (star : α → α → α),
+              Law28770On star →
+              ∀ ρ : Nat → α,
+                termDenote star ρ s = termDenote star ρ t
+
+          theorem consequence_iff_canonical_eq (s t : Term) :
+              Consequence28770 s t ↔ canonical s = canonical t := by
+            constructor
+            · intro h
+              have hc := h submission.CM.op concrete_is_law submission.CM.tower
+              simpa [self_canonical] using hc
+            · intro hc α star hLaw ρ
+              have hm := congrArg
+                (mapCarrier star (fun q => ρ (submission.CM.sz q))) hc
+              simpa [map_canonical star ρ hLaw] using hm
+
+          #print axioms code_semantic
+          #print axioms eval_semantic
+          #print axioms mapCarrier_op
+          #print axioms consequence_iff_canonical_eq
+
+          end E28770Complete
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E28770Complete.lean 2>&1 | tee /tmp/e28770.log
+          ! grep -q sorryAx /tmp/e28770.log
+          ! grep -q _native.native_decide /tmp/e28770.log
+          grep -q E28770Complete.consequence_iff_canonical_eq /tmp/e28770.log
+          echo E28770_CONSEQUENCE_COMPLETE_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E28770Complete.lean /tmp/out/
+          cp /tmp/e28770.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The archived E28770 trace-tree model is semantically consequence-complete for E28770.",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "trust_guards": ["no sorryAx", "no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e28770-consequence-complete-authority-v1
+          path: /tmp/out/
