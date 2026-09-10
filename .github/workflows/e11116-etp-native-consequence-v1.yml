@@ -1,0 +1,185 @@
+name: E11116 ETP-native consequence decision v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-etp-native-consequence-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: e11116-universal-separator-authority-v1
+          path: /tmp/universal
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 34532997704
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+
+      - name: Build ETP-native bridge
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          {
+            head -n 1 /tmp/universal/E11116Universal.lean
+            echo 'import equational_theories.Preorder'
+            tail -n +2 /tmp/universal/E11116Universal.lean
+          } > E11116ETP.lean
+
+          cat >> E11116ETP.lean <<'LEAN'
+
+          open FreeMagma
+          open Law
+          open Law.MagmaLaw
+          open E11116Universal
+          open submission.C
+          open submission.C.T
+
+          namespace E11116ETP
+
+          def toTree : FreeMagma Nat → T
+            | .Leaf n => .var n
+            | .Fork a b => .op (toTree a) (toTree b)
+
+          theorem denote_toTree
+              {G : Type} (star : G → G → G) (ρ : Nat → G) :
+              ∀ u : FreeMagma Nat,
+                E11116Universal.denote star ρ (toTree u) =
+                  @FreeMagma.evalInMagma Nat G ⟨star⟩ ρ u := by
+            intro u
+            induction u with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp [toTree, E11116Universal.denote,
+                  FreeMagma.evalInMagma, iha, ihb]
+
+          def E11116Law : Law.NatMagmaLaw :=
+            let x : FreeMagma Nat := .Leaf 0
+            let y : FreeMagma Nat := .Leaf 1
+            let z : FreeMagma Nat := .Leaf 2
+            (y ⋆ ((x ⋆ (z ⋆ x)) ⋆ (y ⋆ y))) ≃ x
+
+          theorem satisfies_E11116Law_iff
+              {G : Type} [Magma G] :
+              G ⊧ E11116Law ↔
+                E11116Universal.Law11116On (fun a b : G => a ◇ b) := by
+            constructor
+            · intro h x y z
+              let ρ : Nat → G := fun n =>
+                if n = 0 then x else if n = 1 then y else z
+              have hh := h ρ
+              simpa [E11116Law, Law.satisfiesPhi,
+                FreeMagma.evalInMagma, ρ] using hh
+            · intro h ρ
+              have hh := h (ρ 0) (ρ 1) (ρ 2)
+              simpa [E11116Law, Law.satisfiesPhi,
+                FreeMagma.evalInMagma] using hh
+
+          theorem evalInConcrete_eq_canonical (u : FreeMagma Nat) :
+              @FreeMagma.evalInMagma Nat T ⟨submission.C.mul⟩ T.var u =
+                E11116Universal.evalCanonical (toTree u) := by
+            induction u with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp [FreeMagma.evalInMagma, toTree,
+                  E11116Universal.evalCanonical, iha, ihb]
+
+          theorem implies_iff_canonical_eq (E : Law.NatMagmaLaw) :
+              E11116Law.implies E ↔
+                E11116Universal.evalCanonical (toTree E.lhs) =
+                E11116Universal.evalCanonical (toTree E.rhs) := by
+            constructor
+            · intro himp
+              letI : Magma T := ⟨submission.C.mul⟩
+              have hs : T ⊧ E11116Law :=
+                satisfies_E11116Law_iff.mpr
+                  E11116Universal.concrete_is_law
+              have ht : T ⊧ E := himp hs
+              have hv := ht T.var
+              change
+                @FreeMagma.evalInMagma Nat T inferInstance T.var E.lhs =
+                @FreeMagma.evalInMagma Nat T inferInstance T.var E.rhs at hv
+              simpa [evalInConcrete_eq_canonical] using hv
+            · intro hcanon G inst hs
+              have hsource :
+                  E11116Universal.Law11116On
+                    (fun a b : G => a ◇ b) :=
+                satisfies_E11116Law_iff.mp hs
+              intro ρ
+              have hsem :=
+                (E11116Universal.consequence_iff_canonical_eq
+                  (toTree E.lhs) (toTree E.rhs)).mpr hcanon
+                  (fun a b : G => a ◇ b) hsource ρ
+              change E.lhs ⬝ ρ = E.rhs ⬝ ρ
+              simpa [denote_toTree] using hsem
+
+          def decidesImplication (E : Law.NatMagmaLaw) :
+              Decidable (E11116Law.implies E) :=
+            decidable_of_iff
+              (E11116Universal.evalCanonical (toTree E.lhs) =
+                E11116Universal.evalCanonical (toTree E.rhs))
+              (implies_iff_canonical_eq E).symm
+
+          theorem not_implies_of_canonical_ne
+              (E : Law.NatMagmaLaw)
+              (h :
+                E11116Universal.evalCanonical (toTree E.lhs) ≠
+                E11116Universal.evalCanonical (toTree E.rhs)) :
+              ¬ E11116Law.implies E :=
+            fun hi => h ((implies_iff_canonical_eq E).mp hi)
+
+          #print axioms satisfies_E11116Law_iff
+          #print axioms implies_iff_canonical_eq
+          #print axioms decidesImplication
+          #print axioms not_implies_of_canonical_ne
+
+          end E11116ETP
+          LEAN
+
+      - name: Kernel check ETP bridge
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean E11116ETP.lean 2>&1 | tee /tmp/etp_bridge.log
+          ! grep -q sorryAx /tmp/etp_bridge.log
+          ! grep -q _native.native_decide /tmp/etp_bridge.log
+          grep -q E11116ETP.implies_iff_canonical_eq /tmp/etp_bridge.log
+          echo E11116_ETP_NATIVE_DECISION_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/E11116ETP.lean /tmp/out/
+          cp /tmp/etp_bridge.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "For every ETP NatMagmaLaw E, E11116Law.implies E iff the two ETP terms have equal canonical evaluation in the released E11116 model.",
+            "unbounded_target_term_size": true,
+            "etp_commit": "bb5a9b5fe78c376ce1725529f235f8d574630b9f",
+            "universal_model_run": 34532997704,
+            "universal_model_job": 103057956918
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-etp-native-consequence-authority-v1
+          path: /tmp/out/
