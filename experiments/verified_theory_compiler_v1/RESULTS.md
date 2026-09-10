@@ -1,0 +1,251 @@
+# Verified Theory Compiler — Research Freeze v1
+
+Date: 2026-09-11 NZST
+Branch: `verified-model-basis-v1`
+
+## Core claim
+
+The experiments no longer support only a reusable-countermodel interpretation.
+
+They support a stronger architecture:
+
+[
+	ext{theory } Gamma
+	o
+	ext{retained semantic world } C_Gamma
+	o
+	ext{canonical evaluation}
+	o
+	ext{all future consequence queries}.
+]
+
+For a certified semantic world, arbitrary target consequence reduces to equality of canonical evaluations.
+
+The standard universal-algebra endpoint is the free/term model of a theory. The research contribution under test here is not the existence of free algebras as a mathematical concept; it is the **verified developmental synthesis of such consequence-complete semantic worlds from proof-producing countermodel machinery and verifier residuals**, including representation changes when a current compiler is too coarse.
+
+## Verified generic results
+
+### 1. ETP-native canonical theory compiler
+
+If a reduction compiler is sound in every model of source law E and its compiled magma satisfies E, then for every target NatMagmaLaw F:
+
+[
+E.implies(F)
+iff
+evalCanonical(F.lhs)=evalCanonical(F.rhs).
+]
+
+Run: https://github.com/heathsanchez/test/actions/runs/34535325073  
+Job: https://github.com/heathsanchez/test/actions/runs/34535325073/job/103065472443  
+Commit: `66c5e3a26868d613d707af38ddd16bc0d9f7d1e3`
+
+No `sorryAx`; no native-decision escape.
+
+### 2. Arbitrary ETP context
+
+The same result lifts from a single source law to arbitrary `Ctx Nat` Γ:
+
+[
+Gamma models F
+iff
+evalCanonical_Gamma(F.lhs)=evalCanonical_Gamma(F.rhs).
+]
+
+Run: https://github.com/heathsanchez/test/actions/runs/34535649375  
+Job: https://github.com/heathsanchez/test/actions/runs/34535649375/job/103066507129  
+Commit: `99871285c55f3897db36e1f5cf93ee24c63e6825`
+
+The central theorem and decision procedure are axiom-free.
+
+### 3. Representation-independent semantic compiler interface
+
+A compiler does not fundamentally need to expose a rewrite system. It is sufficient to retain:
+
+- a magma `Carrier`,
+- generators `gen`,
+- a proof that the carrier models Γ,
+- for every Γ-model G and valuation ρ, a generator-preserving magma homomorphism from the retained world into G.
+
+Then:
+
+[
+Gamma models F
+iff
+canonical(F.lhs)=canonical(F.rhs).
+]
+
+Run: https://github.com/heathsanchez/test/actions/runs/34538388152  
+Job: https://github.com/heathsanchez/test/actions/runs/34538388152/job/103075178850  
+Commit: `4b47fb69059b80bdd926887abe160ef13c6bb73d`
+
+Lean authority: `lift_canonical`, `models_iff_canonical_eq`, `decidesModels`, and `same_canonical_iff_indistinguishable` depend only on `propext`.
+
+### 4. Verified residual forces refinement
+
+If the current retained world identifies s and t, but a verified Γ-model under a valuation separates them, then no generator-preserving semantic lift from the current world to that witness can exist.
+
+Moreover, every future representation that does admit the required lift is forced to distinguish s and t.
+
+This is the domain-specific formal bridge:
+
+[
+	ext{verified separator}
+Rightarrow
+	ext{old semantic quotient too coarse}
+Rightarrow
+	ext{necessary future distinction}.
+]
+
+Run: https://github.com/heathsanchez/test/actions/runs/34538457732  
+Job: https://github.com/heathsanchez/test/actions/runs/34538457732/job/103075393247  
+Commit: `038059647e5f88a696c97f27b0477ddf9d2e3fc4`
+
+All reported theorems depend only on `propext`.
+
+## Concrete Austin evidence
+
+### E11116
+
+The released public E11116 trace-tree model is consequence-complete for arbitrary target term size:
+
+[
+E11116 models s=t
+iff
+canonical(s)=canonical(t).
+]
+
+Run: https://github.com/heathsanchez/test/actions/runs/34532997704  
+Job: https://github.com/heathsanchez/test/actions/runs/34532997704/job/103057956918  
+Commit: `723e5eae5241d544a8a138eccba9789c0043977a`
+
+This explains the earlier complete order<=5 spectrum rather than merely observing it.
+
+### Direct-rule family
+
+Consequence completeness was established for representatives E28770, E20034, E22455, E17260; opposite-magma duality covers E17522, E25964, E22818, E28740.
+
+Family run: https://github.com/heathsanchez/test/actions/runs/34534831253  
+Job: https://github.com/heathsanchez/test/actions/runs/34534831253/job/103063895565
+
+### Conditional-rule phase
+
+E4952 crosses into recursively premise-bearing Code/Step rules. Mutual semantic soundness of Code and Step yields consequence completeness.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34536586530  
+Job: https://github.com/heathsanchez/test/actions/runs/34536586530/job/103069520324  
+Commit: `e15e6b087e8f206c5a9545dff39784af92dfd56b`
+
+E40909 independently reproduces the conditional result with a structurally different placement of the recursive Step premise.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34538863365  
+Job: https://github.com/heathsanchez/test/actions/runs/34538863365/job/103076668696  
+Commit: `e51e1c8a74eac8c6ea4c8aa18e975e7c9a449e0e`
+
+### Conditional-premise ablation
+
+Removing recursive `Step.hit` from the E4952 architecture while retaining only the direct/raw rule causes the E4952 source law itself to fail on an explicit constructor-tree witness. The unchanged full evaluator satisfies the law universally.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34538778412  
+Job: https://github.com/heathsanchez/test/actions/runs/34538778412/job/103076399002  
+Commit: `52b138cb0353eedb240ff5a26207c65123061386`
+
+Thus the conditional premise machinery is causally necessary for this compiler architecture, not decorative.
+
+## Archive phase structure
+
+The frozen 100-model Austin archive separates operationally into:
+
+- 8 direct binary-rule models,
+- 8 direct auxiliary-grammar models,
+- 40 conditional binary-rule models,
+- 28 bespoke-operation models,
+- 16 other model families.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34536396307  
+Job: https://github.com/heathsanchez/test/actions/runs/34536396307/job/103068906664  
+Commit: `16de151c761bc0d4c24f00e30e8c4b1358687bbd`
+
+The eight direct binary-rule models are exactly the first family whose consequence-complete semantics have been proved. Conditional completeness has now been reproduced on E4952 and E40909.
+
+## Mathematical simplification
+
+Let T(X) be the free magma term algebra and define semantic equivalence
+
+[
+s equiv_Gamma t
+quadLongleftrightarrowquad
+orall GmodelsGamma, orallho:X	o G, 
+llbracket srbracket_ho=llbracket trbracket_ho.
+]
+
+A successful compiler supplies a canonical map
+
+[
+q_Gamma:T(X)	o C_Gamma
+]
+
+whose equality kernel is exactly (equiv_Gamma).
+
+A verified witness model that separates a pair currently collapsed by (q_Gamma) proves that the current kernel is too coarse. Any semantically adequate successor must separate that pair.
+
+This is the ETP realization of the MSI residual law:
+
+[
+E_{t+1}=E_tcapker(d_t).
+]
+
+## Dream endpoint
+
+The desired system is:
+
+[
+oxed{
+compile(Gamma)
+	o
+egin{cases}
+	ext{CERTIFIED SEMANTIC WORLD } C_Gamma,\
+	ext{VERIFIED RESIDUAL forcing the next representational distinction.}
+end{cases}
+}
+]
+
+A successful compiled world should provide:
+
+1. source-theory satisfaction;
+2. executable canonical evaluation where possible;
+3. a universal semantic-lift certificate;
+4. equality that exactly matches semantic consequence;
+5. if generated by its variables, the free-algebra universal property;
+6. provenance and replay authority.
+
+When admission fails, a separator is retained as a mandatory distinction. The developer may then add the least new constructor, relation, composition rule, conditional premise, or procedure sufficient to realize that distinction and retry.
+
+Thus the long-term loop is:
+
+[
+	ext{PROPOSE WORLD}
+	o
+	ext{VERIFY}
+	o
+	ext{RESIDUAL}
+	o
+	ext{FORCED DISTINCTION}
+	o
+	ext{REPRESENTATION GENESIS}
+	o
+	ext{RECOMPILE}
+	o
+	ext{ADMIT}.
+]
+
+The endpoint is not a completed implication graph. It is a **small verified developer that constructs executable semantic worlds and changes its representational means when verified consequences prove them insufficient.**
+
+## Boundary
+
+Free algebras, term models, semantic consequence, and universal properties are standard mathematics. The evidence here does not establish that every equational theory admits a computable decision procedure; many theories have undecidable word problems.
+
+The research claim worth pursuing is narrower and stronger empirically:
+
+> proof-producing model constructions can sometimes be upgraded from isolated counterexamples into consequence-complete semantic compilers; verified residuals formally characterize when the current compiler is too coarse and force the distinctions every adequate successor must retain.
+
+The open frontier is the developmental synthesis step: automatically generating the required semantic vocabulary and compiler rules across the auxiliary-grammar, conditional, bespoke, and other regimes.
