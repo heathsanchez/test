@@ -1,0 +1,185 @@
+name: ETP context theory compiler v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/etp-context-theory-compiler-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: etp-canonical-theory-compiler-v1
+          path: /tmp/base
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: heathsanchez/test
+          run-id: 34535325073
+
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Freeze ETP
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          lake exe cache get
+          lake build equational_theories.Preorder
+          cp /tmp/base/CanonicalTheoryCompiler.lean /tmp/etp/ContextTheoryCompiler.lean
+
+      - name: Add arbitrary-context theorem
+        shell: bash
+        run: |
+          cat >> /tmp/etp/ContextTheoryCompiler.lean <<'LEAN'
+
+          open FreeMagma
+          open Law
+          open Law.MagmaLaw
+          open CanonicalTheoryCompiler
+
+          namespace ContextTheoryCompiler
+
+          def ReductionsSoundCtx
+              (Γ : Ctx Nat)
+              (reduce : Raw → Raw → Option Raw) : Prop :=
+            ∀ {G : Type} (star : G → G → G),
+              @satisfiesSet Nat G ⟨star⟩ Γ →
+              ∀ (ρ : Nat → G) (a b c : Raw),
+                reduce a b = some c →
+                denote star ρ c =
+                  star (denote star ρ a) (denote star ρ b)
+
+          theorem compiledMul_semantic_ctx
+              (Γ : Ctx Nat)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSoundCtx Γ reduce)
+              {G : Type} (star : G → G → G)
+              (hΓ : @satisfiesSet Nat G ⟨star⟩ Γ)
+              (ρ : Nat → G) (a b : Raw) :
+              denote star ρ (compiledMul reduce a b) =
+                star (denote star ρ a) (denote star ρ b) := by
+            unfold compiledMul
+            cases h : reduce a b with
+            | none => rfl
+            | some c => exact hsound star hΓ ρ a b c h
+
+          theorem evalCanonical_semantic_ctx
+              (Γ : Ctx Nat)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSoundCtx Γ reduce)
+              {G : Type} (star : G → G → G)
+              (hΓ : @satisfiesSet Nat G ⟨star⟩ Γ)
+              (ρ : Nat → G) :
+              ∀ t : Raw,
+                denote star ρ (evalCanonical reduce t) =
+                  denote star ρ t := by
+            intro t
+            induction t with
+            | Leaf n => rfl
+            | Fork a b iha ihb =>
+                simp only [evalCanonical, denote]
+                rw [compiledMul_semantic_ctx Γ reduce hsound star hΓ ρ,
+                    iha, ihb]
+
+          theorem models_iff_canonical_eq
+              (Γ : Ctx Nat)
+              (F : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSoundCtx Γ reduce)
+              (hmodel : Compiled reduce ⊧ Γ) :
+              Γ ⊧ F ↔
+                evalCanonical reduce F.lhs =
+                  evalCanonical reduce F.rhs := by
+            constructor
+            · intro hmodels
+              have hF : Compiled reduce ⊧ F :=
+                hmodels (Compiled reduce) hmodel
+              have hg := hF (Compiled.gen reduce)
+              change
+                @FreeMagma.evalInMagma Nat (Compiled reduce)
+                  (Compiled.instMagma reduce) (Compiled.gen reduce) F.lhs =
+                @FreeMagma.evalInMagma Nat (Compiled reduce)
+                  (Compiled.instMagma reduce) (Compiled.gen reduce) F.rhs at hg
+              rw [Compiled.eval_gen, Compiled.eval_gen] at hg
+              exact congrArg Compiled.raw hg
+            · intro hcanon G inst hΓ ρ
+              change FreeMagma.evalInMagma ρ F.lhs =
+                FreeMagma.evalInMagma ρ F.rhs
+              rw [← denote_eq_eval ρ F.lhs, ← denote_eq_eval ρ F.rhs]
+              let star : G → G → G := fun a b => a ◇ b
+              have hl :=
+                evalCanonical_semantic_ctx Γ reduce hsound
+                  star hΓ ρ F.lhs
+              have hr :=
+                evalCanonical_semantic_ctx Γ reduce hsound
+                  star hΓ ρ F.rhs
+              calc
+                denote star ρ F.lhs =
+                    denote star ρ (evalCanonical reduce F.lhs) := hl.symm
+                _ = denote star ρ (evalCanonical reduce F.rhs) :=
+                    congrArg (denote star ρ) hcanon
+                _ = denote star ρ F.rhs := hr
+
+          def decidesModels
+              (Γ : Ctx Nat)
+              (F : NatMagmaLaw)
+              (reduce : Raw → Raw → Option Raw)
+              (hsound : ReductionsSoundCtx Γ reduce)
+              (hmodel : Compiled reduce ⊧ Γ) :
+              Decidable (Γ ⊧ F) :=
+            decidable_of_iff
+              (evalCanonical reduce F.lhs =
+                evalCanonical reduce F.rhs)
+              (models_iff_canonical_eq Γ F reduce hsound hmodel).symm
+
+          #print axioms compiledMul_semantic_ctx
+          #print axioms evalCanonical_semantic_ctx
+          #print axioms models_iff_canonical_eq
+          #print axioms decidesModels
+
+          end ContextTheoryCompiler
+          LEAN
+
+      - name: Kernel check context theorem
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/etp
+          lake env lean ContextTheoryCompiler.lean 2>&1 | tee /tmp/context.log
+          ! grep -q sorryAx /tmp/context.log
+          ! grep -q _native.native_decide /tmp/context.log
+          grep -q ContextTheoryCompiler.models_iff_canonical_eq /tmp/context.log
+          echo ETP_CONTEXT_THEORY_COMPILER_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/etp/ContextTheoryCompiler.lean /tmp/out/
+          cp /tmp/context.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "ETP-native arbitrary-context theorem: source-sound compiled reductions plus a compiled model of Γ decide Γ ⊧ F for every target law F by canonical equality.",
+            "etp_commit": "bb5a9b5fe78c376ce1725529f235f8d574630b9f",
+            "scope": "arbitrary Ctx Nat and arbitrary target term size",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: etp-context-theory-compiler-v1
+          path: /tmp/out/
