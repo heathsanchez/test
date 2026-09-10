@@ -95,7 +95,18 @@ jobs:
               ∀ a00 a01 a10 a11 : Bool,
                 sourceBool (op4 a00 a01 a10 a11) →
                 targetBool (op4 a00 a01 a10 a11) := by
-            decide
+            intro a00 a01 a10 a11 hs x y z
+            have h000 := hs false false false
+            have h001 := hs false false true
+            have h010 := hs false true false
+            have h011 := hs false true true
+            have h100 := hs true false false
+            have h101 := hs true false true
+            have h110 := hs true true false
+            have h111 := hs true true true
+            cases a00 <;> cases a01 <;> cases a10 <;> cases a11 <;>
+              cases x <;> cases y <;> cases z <;>
+              simp [op4] at h000 h001 h010 h011 h100 h101 h110 h111 ⊢
 
           theorem op_eq_op4 (f : Bool → Bool → Bool) :
               f = op4 (f false false) (f false true) (f true false) (f true true) := by
