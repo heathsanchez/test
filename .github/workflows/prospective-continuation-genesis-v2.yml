@@ -1,0 +1,141 @@
+name: Prospective Continuation Genesis V2
+# The workflow is introduced only after the complete V2 source is present;
+# the evaluator independently reconstructs zero-survivor claims for every task.
+on:
+  push:
+    branches: [prospective-continuation-genesis-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: read
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Test V2 protocol before external scoring checkout
+        run: python -m unittest discover -s open_development/tests -v
+      - name: Preserve existing Lean core authority
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          bash open_development/lean/check.sh
+      - name: Independently bind immutable release-v4 and V1 artifacts
+        env: {GH_TOKEN: '${{ github.token }}'}
+        run: |
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/heathsanchez/test/actions/artifacts/10141699676/zip -o release-v4.zip
+          test "$(sha256sum release-v4.zip | cut -d' ' -f1)" = 7594ac85ef51238f1198c51f73f337a7d0f03218e4e7f724ea8ea4c069b95de6
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/heathsanchez/test/actions/artifacts/10146571815/zip -o prospective-v1.zip
+          test "$(sha256sum prospective-v1.zip | cut -d' ' -f1)" = 10edc9918acf47075aa624c6dac6e459e6e1fb322741e72dc23d4237e8943102
+          unzip -q prospective-v1.zip -d prospective-v1
+          python - <<'PY'
+          import json
+          e=json.load(open('prospective-v1/prospective-evaluation.json'))
+          assert e['outcome']=='UNKNOWN_PROSPECTIVE_CONTINUATION_COVERAGE'
+          assert e['task_count']==400 and e['generated_count']==0
+          assert e['evidence_digest']=='c2c2f176d5d33bf5003a7492f332a1c2f8507dc1321e13a40a13e4b66fdb428c'
+          PY
+      - name: Freeze V2 source, object substrate, and initial ledger while corpus is absent
+        run: |
+          test ! -e external
+          python -m open_development.prospective_genesis freeze \
+            --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-continuation-v2-freeze
+          path: |
+            prospective-freeze.json
+            prospective-state.sqlite
+          if-no-files-found: error
+
+  administrator:
+    needs: freeze
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: prospective-continuation-v2-freeze}
+      - name: Assert post-freeze external chronology
+        run: test ! -e external
+      - uses: actions/checkout@v4
+        with:
+          repository: fchollet/ARC-AGI
+          ref: 399030444e0ab0cc8b4e199870fb20b863846f34
+          path: external
+          persist-credentials: false
+      - name: Commit complete matched route-neutral stream before task one
+        run: python -m open_development.prospective_genesis admin --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-v2-unlabelled-stream
+          path: |
+            prospective-freeze.json
+            prospective-state.sqlite
+            prospective-stream.json
+          if-no-files-found: error
+
+  developer:
+    needs: administrator
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: prospective-v2-unlabelled-stream}
+      - name: Run unchanged developer over the entire sealed V2 stream
+        run: |
+          test ! -e external
+          python -m open_development.prospective_genesis develop --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-v2-immutable-decisions
+          path: |
+            prospective-freeze.json
+            prospective-state.sqlite
+            prospective-stream.json
+            prospective-decisions.json
+          if-no-files-found: error
+
+  evaluator:
+    needs: developer
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+        with: {persist-credentials: false}
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - uses: actions/download-artifact@v4
+        with: {name: prospective-v2-immutable-decisions}
+      - name: Confirm decisions predate evaluator checkout
+        run: test ! -e external
+      - uses: actions/checkout@v4
+        with:
+          repository: fchollet/ARC-AGI
+          ref: 399030444e0ab0cc8b4e199870fb20b863846f34
+          path: external
+          persist-credentials: false
+      - name: Independently evaluate V2 generation, chronology, continuation, and controls
+        run: python -m open_development.prospective_genesis evaluate --source-commit "$GITHUB_SHA" --nonce "$GITHUB_RUN_ID:$GITHUB_RUN_ATTEMPT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-continuation-genesis-v2
+          path: |
+            prospective-freeze.json
+            prospective-stream.json
+            prospective-decisions.json
+            prospective-evaluation.json
+          if-no-files-found: error

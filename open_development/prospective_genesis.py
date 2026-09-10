@@ -1,4 +1,4 @@
-"""Prospective continuation genesis from a frozen lower grid substrate.
+"""Prospective continuation genesis from a frozen object-spatial substrate.
 
 The external stream is route-neutral and completely fixed before development.
 Concrete formation programs are generated only after a complete current-language
@@ -31,13 +31,23 @@ V4_AUTHORITY_RUN = 34451224397
 V4_AUTHORITY_ARTIFACT = 10141699676
 V4_AUTHORITY_ARTIFACT_SHA256 = "7594ac85ef51238f1198c51f73f337a7d0f03218e4e7f724ea8ea4c069b95de6"
 V4_AUTHORITY_EVIDENCE_DIGEST = "a3fafeddec722a32c20be4bb9ff6af9e361252d1ac200c366619f2367f71c7f9"
+V1_SCIENTIFIC_FREEZE = "0899dd0dcf52bf17865f5b75f313a9aea9db0233"
+V1_REPORT_HEAD = "8d690dc2a4b2dc0da1e50e05f7a28c6854175ed6"
+V1_RUN = 34462442628
+V1_ARTIFACT = 10146571815
+V1_ARTIFACT_SHA256 = "10edc9918acf47075aa624c6dac6e459e6e1fb322741e72dc23d4237e8943102"
+V1_EVIDENCE_DIGEST = "c2c2f176d5d33bf5003a7492f332a1c2f8507dc1321e13a40a13e4b66fdb428c"
 ARC_REPOSITORY = "fchollet/ARC-AGI"
 ARC_COMMIT = "399030444e0ab0cc8b4e199870fb20b863846f34"
 ARC_PATH = "data/evaluation"
 D4 = ("id", "r90", "r180", "r270", "flip-h", "flip-v", "transpose", "anti")
 FORM_OPS = ("concat-h", "concat-v", "overlay")
-MAX_AST_SIZE = 5
-MAX_AST_DEPTH = 3
+OBJECT_MODES = ("mono4", "mono8", "multi4", "multi8", "color-class")
+SELECTORS = ("only", "largest", "smallest", "topmost", "bottommost", "leftmost", "rightmost")
+PLACEMENTS = ("upper-left", "upper-right", "lower-left", "lower-right", "center")
+ITERATIONS = ("to-boundary-up", "to-boundary-down", "to-boundary-left", "to-boundary-right")
+MAX_AST_SIZE = 7
+MAX_AST_DEPTH = 7
 
 
 def ast_key(ast: Mapping[str, Any]) -> str:
@@ -48,7 +58,7 @@ def ast_size(ast: Mapping[str, Any]) -> int:
     op = ast["op"]
     if op == "input":
         return 1
-    if op in {"call", "crop"}:
+    if op in {"call", "crop", "objects", "select", "transform-object", "recolor-object", "render-object"}:
         return 1 + ast_size(ast["arg"])
     return 1 + ast_size(ast["left"]) + ast_size(ast["right"])
 
@@ -57,7 +67,7 @@ def ast_depth(ast: Mapping[str, Any]) -> int:
     op = ast["op"]
     if op == "input":
         return 1
-    if op in {"call", "crop"}:
+    if op in {"call", "crop", "objects", "select", "transform-object", "recolor-object", "render-object"}:
         return 1 + ast_depth(ast["arg"])
     return 1 + max(ast_depth(ast["left"]), ast_depth(ast["right"]))
 
@@ -70,7 +80,7 @@ def ast_dependencies(ast: Mapping[str, Any]) -> tuple[str, ...]:
             if node["callee"] not in out:
                 out.append(node["callee"])
             walk(node["arg"])
-        elif node["op"] == "crop":
+        elif node["op"] in {"crop", "objects", "select", "transform-object", "recolor-object", "render-object"}:
             walk(node["arg"])
         elif node["op"] in FORM_OPS:
             walk(node["left"])
@@ -82,8 +92,9 @@ def ast_dependencies(ast: Mapping[str, Any]) -> tuple[str, ...]:
 
 def substrate_manifest() -> dict[str, Any]:
     body = {
-        "schema": "grid-lower-substrate/v1",
-        "nodes": ["input", "call-retained", "crop", *FORM_OPS],
+        "schema": "object-spatial-substrate/v2",
+        "nodes": ["input", "call-retained", "crop", *FORM_OPS, "objects", "select",
+                  "transform-object", "recolor-object", "render-object"],
         "typing": {
             "input": "Grid",
             "call-retained": "(Grid->Grid) x Grid -> Grid",
@@ -91,6 +102,11 @@ def substrate_manifest() -> dict[str, Any]:
             "concat-h": "equal-height Grid x Grid -> Grid",
             "concat-v": "equal-width Grid x Grid -> Grid",
             "overlay": "equal-shape Grid x Grid -> Grid",
+            "objects": "Grid x ObjectMode -> ObjectSet",
+            "select": "ObjectSet x Selector -> Object",
+            "transform-object": "Object x D4 -> Object",
+            "recolor-object": "Object x observed Color -> Object",
+            "render-object": "Grid x Object x Placement x FiniteIteration -> Grid",
         },
         "maximum_ast_size": MAX_AST_SIZE,
         "maximum_ast_depth": MAX_AST_DEPTH,
@@ -99,8 +115,16 @@ def substrate_manifest() -> dict[str, Any]:
             "call retained identity on input -> input",
             "overlay operands canonicalized",
             "duplicate canonical JSON removed",
+            "identity object transforms omitted",
+            "preserve-color recolor nodes omitted",
+            "only well-typed pipelines emitted",
         ],
-        "equivalence": "normalized AST identity; no hidden-observation tie breaking",
+        "object_modes": list(OBJECT_MODES),
+        "selectors": list(SELECTORS),
+        "placements": list(PLACEMENTS),
+        "iterations": list(ITERATIONS),
+        "color_operands": "literal colors observed in public training inputs or outputs; no hidden values",
+        "equivalence": "normalized typed AST identity; no hidden-observation tie breaking",
     }
     return {**body, "substrate_id": digest(body)}
 
@@ -129,8 +153,91 @@ def generation_terms(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
     return tuple(unique[key] for key in sorted(unique))
 
 
-def generated_asts(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
-    """Complete bounded formation closure; no concrete combination is listed."""
+def _object_sources(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
+    values = [{"op": "input"}]
+    for rid, rec in sorted(state["capabilities"].items()):
+        body = rec["repair"]["payload"].get("body", {})
+        if _is_grid_capability(rec) and body.get("op") == "generated-ast":
+            values.append({"op": "call", "callee": rid, "arg": {"op": "input"}})
+    return tuple(values)
+
+
+def _observed_colors(task: Mapping[str, Any]) -> tuple[int, ...]:
+    return tuple(sorted({int(x) for example in task["train"]
+                         for side in ("input", "output")
+                         for row in example[side] for x in row}))
+
+
+def object_asts(state: Mapping[str, Any], task: Mapping[str, Any]) -> tuple[int, tuple[dict[str, Any], ...]]:
+    """Complete typed V2 object-program family and its pre-normalization count."""
+    values: dict[str, dict[str, Any]] = {}
+    raw = 0
+    colors: tuple[int | None, ...] = (None, *_observed_colors(task))
+    d4_ids = {rec["repair"]["payload"]["body"]["name"]: rid
+              for rid, rec in state["capabilities"].items()
+              if rec["repair"]["payload"].get("body", {}).get("op") == "d4"}
+    extraction_transforms = ("id", *(name for name in D4 if name != "id" and name in d4_ids))
+    for source in _object_sources(state):
+        for mode in OBJECT_MODES:
+            objs = {"op": "objects", "mode": mode, "arg": source}
+            for selector in SELECTORS:
+                selected = {"op": "select", "criterion": selector, "arg": objs}
+                # Object extraction: optional D4 and observed recoloring.
+                for transform in extraction_transforms:
+                    for color in colors:
+                        raw += 1
+                        obj = selected if color is None else {
+                            "op": "recolor-object", "color": color, "arg": selected}
+                        ast = {"op": "render-object", "canvas": "crop", "placement": "origin",
+                               "iteration": "once", "arg": obj}
+                        if transform != "id":
+                            ast = {"op": "call", "callee": d4_ids[transform], "arg": ast}
+                        if ast_size(ast) <= MAX_AST_SIZE and ast_depth(ast) <= MAX_AST_DEPTH:
+                            values[ast_key(ast)] = ast
+                # Same-grid keep/remove/recolor.
+                for canvas in ("input", "blank"):
+                    for color in colors:
+                        raw += 1
+                        obj = selected if color is None else {
+                            "op": "recolor-object", "color": color, "arg": selected}
+                        ast = {"op": "render-object", "canvas": canvas, "placement": "original",
+                               "iteration": "once", "arg": obj}
+                        values[ast_key(ast)] = ast
+                raw += 1
+                removal = {"op": "render-object", "canvas": "remove", "placement": "original",
+                           "iteration": "once", "arg": selected}
+                values[ast_key(removal)] = removal
+                # Spatial mapping with preserved color.
+                for transform in D4:
+                    transformed = selected if transform == "id" else {
+                        "op": "transform-object", "name": transform, "arg": selected}
+                    for canvas in ("input", "blank"):
+                        for placement in PLACEMENTS:
+                            raw += 1
+                            ast = {"op": "render-object", "canvas": canvas,
+                                   "placement": placement, "iteration": "once", "arg": transformed}
+                            if ast_size(ast) <= MAX_AST_SIZE and ast_depth(ast) <= MAX_AST_DEPTH:
+                                values[ast_key(ast)] = ast
+                # Explicit finite iteration to a boundary.
+                for canvas in ("input", "blank"):
+                    for iteration in ITERATIONS:
+                        for color in colors:
+                            raw += 1
+                            obj = selected if color is None else {
+                                "op": "recolor-object", "color": color, "arg": selected}
+                            ast = {"op": "render-object", "canvas": canvas,
+                                   "placement": "original", "iteration": iteration, "arg": obj}
+                            values[ast_key(ast)] = ast
+    # Raw syntax includes explicit identity-transform and preserve-color nodes;
+    # normalization maps those onto their omitted forms above.
+    raw = (len(_object_sources(state)) * len(OBJECT_MODES) * len(SELECTORS)
+           * (129 + 19 * len(_observed_colors(task))))
+    ordered = tuple(sorted(values.values(), key=lambda x: (ast_size(x), ast_key(x))))
+    return raw, ordered
+
+
+def generated_asts(state: Mapping[str, Any], task: Mapping[str, Any] | None = None) -> tuple[dict[str, Any], ...]:
+    """Complete bounded formation and typed object closure; no concrete repair is listed."""
     terms = generation_terms(state)
     values: dict[str, dict[str, Any]] = {}
     for op in FORM_OPS:
@@ -141,6 +248,9 @@ def generated_asts(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
                 ast = {"op": op, "left": left, "right": right}
                 if ast_size(ast) <= MAX_AST_SIZE and ast_depth(ast) <= MAX_AST_DEPTH:
                     values[ast_key(ast)] = ast
+    if task is not None:
+        _, object_values = object_asts(state, task)
+        values.update({ast_key(ast): ast for ast in object_values})
     return tuple(sorted(values.values(), key=lambda x: (ast_size(x), ast_key(x))))
 
 
@@ -152,8 +262,130 @@ def _valid_output(value: Any) -> bool:
     return value is not None
 
 
+def _background(g: tuple[tuple[int, ...], ...]) -> int:
+    counts = Counter(x for row in g for x in row)
+    return min(counts, key=lambda x: (-counts[x], x))
+
+
+def _objects(value: Any, mode: str) -> tuple[tuple[tuple[int, int, int], ...], ...]:
+    g = grid(value)
+    height, width = len(g), len(g[0])
+    background = _background(g)
+    if mode == "color-class":
+        return tuple(tuple((g[i][j], i, j) for i in range(height) for j in range(width)
+                           if g[i][j] == color)
+                     for color in sorted({x for row in g for x in row} - {background}))
+    diagonal = mode.endswith("8")
+    univalued = mode.startswith("mono")
+    directions = ((1, 0), (-1, 0), (0, 1), (0, -1))
+    if diagonal:
+        directions = tuple((di, dj) for di in (-1, 0, 1) for dj in (-1, 0, 1)
+                           if (di, dj) != (0, 0))
+    occupied: set[tuple[int, int]] = set()
+    output = []
+    for i in range(height):
+        for j in range(width):
+            if (i, j) in occupied or g[i][j] == background:
+                continue
+            seed_color = g[i][j]
+            stack, cells = [(i, j)], []
+            occupied.add((i, j))
+            while stack:
+                r, c = stack.pop()
+                cells.append((g[r][c], r, c))
+                for dr, dc in directions:
+                    nr, nc = r + dr, c + dc
+                    if not (0 <= nr < height and 0 <= nc < width) or (nr, nc) in occupied:
+                        continue
+                    if g[nr][nc] != background and (not univalued or g[nr][nc] == seed_color):
+                        occupied.add((nr, nc))
+                        stack.append((nr, nc))
+            output.append(tuple(sorted(cells)))
+    return tuple(sorted(output))
+
+
+def _select(objects: Any, criterion: str) -> Any:
+    if not objects:
+        return None
+    if criterion == "only":
+        return objects[0] if len(objects) == 1 else None
+    measures = {
+        "largest": lambda obj: len(obj), "smallest": lambda obj: len(obj),
+        "topmost": lambda obj: min(r for _, r, _ in obj),
+        "bottommost": lambda obj: max(r for _, r, _ in obj),
+        "leftmost": lambda obj: min(c for _, _, c in obj),
+        "rightmost": lambda obj: max(c for _, _, c in obj),
+    }
+    values = [(measures[criterion](obj), obj) for obj in objects]
+    target = (max(v for v, _ in values) if criterion in {"largest", "bottommost", "rightmost"}
+              else min(v for v, _ in values))
+    survivors = [obj for value, obj in values if value == target]
+    return survivors[0] if len(survivors) == 1 else None
+
+
+def _transform_object(obj: Any, name: str) -> Any:
+    if not obj:
+        return None
+    top, left = min(r for _, r, _ in obj), min(c for _, _, c in obj)
+    normalized = tuple((color, r - top, c - left) for color, r, c in obj)
+    height = max(r for _, r, _ in normalized) + 1
+    width = max(c for _, _, c in normalized) + 1
+    def point(r: int, c: int) -> tuple[int, int]:
+        return {
+            "id": (r, c), "r90": (c, height - 1 - r),
+            "r180": (height - 1 - r, width - 1 - c),
+            "r270": (width - 1 - c, r), "flip-h": (r, width - 1 - c),
+            "flip-v": (height - 1 - r, c), "transpose": (c, r),
+            "anti": (width - 1 - c, height - 1 - r),
+        }[name]
+    return tuple(sorted((color, top + point(r, c)[0], left + point(r, c)[1])
+                        for color, r, c in normalized))
+
+
+def _render_object(root: Any, obj: Any, canvas: str, placement: str, iteration: str) -> Any:
+    if not obj:
+        return None
+    g = grid(root)
+    bg = _background(g)
+    original_top, original_left = min(r for _, r, _ in obj), min(c for _, _, c in obj)
+    normalized = tuple((color, r - original_top, c - original_left) for color, r, c in obj)
+    oh, ow = max(r for _, r, _ in normalized) + 1, max(c for _, _, c in normalized) + 1
+    if canvas == "crop":
+        out = [[bg] * ow for _ in range(oh)]
+        for color, r, c in normalized:
+            out[r][c] = color
+        return grid(out)
+    height, width = len(g), len(g[0])
+    if canvas == "remove":
+        out = [list(row) for row in g]
+        for _, r, c in obj:
+            out[r][c] = bg
+        return grid(out)
+    out = [list(row) for row in g] if canvas == "input" else [[bg] * width for _ in range(height)]
+    anchors = {
+        "original": (original_top, original_left), "upper-left": (0, 0),
+        "upper-right": (0, width - ow), "lower-left": (height - oh, 0),
+        "lower-right": (height - oh, width - ow),
+        "center": ((height - oh) // 2, (width - ow) // 2),
+    }
+    start = anchors[placement]
+    anchors_to_paint = [start]
+    if iteration != "once":
+        direction = iteration.removeprefix("to-boundary-")
+        step = {"up": (-oh, 0), "down": (oh, 0), "left": (0, -ow), "right": (0, ow)}[direction]
+        cursor = (start[0] + step[0], start[1] + step[1])
+        while 0 <= cursor[0] and 0 <= cursor[1] and cursor[0] + oh <= height and cursor[1] + ow <= width:
+            anchors_to_paint.append(cursor)
+            cursor = (cursor[0] + step[0], cursor[1] + step[1])
+    for ar, ac in anchors_to_paint:
+        for color, r, c in normalized:
+            if 0 <= ar + r < height and 0 <= ac + c < width:
+                out[ar + r][ac + c] = color
+    return grid(out)
+
+
 class ProspectiveARCAdapter:
-    name = "prospective-continuation-genesis-v1"
+    name = "prospective-continuation-genesis-v2"
     contract = IRContract(
         "ARCTask", "GeneratedGridAST", "Verified|Unknown",
         "finite exact grid-program interpretation",
@@ -164,28 +396,50 @@ class ProspectiveARCAdapter:
         "NonzeroBoundingObject", "Grid", "crop then retained D4 transform", "ARCExactGridReplay")
     generated_contract = CapabilityContract(
         "Grid", "Grid", "frozen lower-substrate AST interpretation", "GeneratedGridASTReplayCertificate")
-    verifier_id = "prospective-grid-genesis-v1:" + digest({
+    verifier_id = "prospective-grid-genesis-v2:" + digest({
         "source": sha256(Path(__file__).read_bytes()).hexdigest(),
         "substrate": SUBSTRATE,
         "contract": contract.id,
     })
 
     def _exec_ast(self, state: Mapping[str, Any], ast: Mapping[str, Any], value: Any,
-                  trace: list[str], active: tuple[str, ...]) -> Any:
+                  trace: list[str], active: tuple[str, ...], cache: dict[str, Any] | None = None) -> Any:
+        cache_key = ast_key(ast) + ":" + digest(value)
+        if cache is not None and cache_key in cache:
+            return cache[cache_key]
         op = ast.get("op")
         if op == "input":
-            return grid(value)
-        if op == "crop":
-            child = self._exec_ast(state, ast["arg"], value, trace, active)
-            return None if child is None else crop(child)
-        if op == "call":
-            child = self._exec_ast(state, ast["arg"], value, trace, active)
-            return None if child is None else self.execute(state, ast["callee"], child, trace, active)
-        if op in FORM_OPS:
-            left = self._exec_ast(state, ast["left"], value, trace, active)
-            right = self._exec_ast(state, ast["right"], value, trace, active)
-            return None if left is None or right is None else form(left, right, op)
-        return None
+            result = grid(value)
+        elif op == "crop":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = None if child is None else crop(child)
+        elif op == "call":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = None if child is None else self.execute(state, ast["callee"], child, trace, active)
+        elif op in FORM_OPS:
+            left = self._exec_ast(state, ast["left"], value, trace, active, cache)
+            right = self._exec_ast(state, ast["right"], value, trace, active, cache)
+            result = None if left is None or right is None else form(left, right, op)
+        elif op == "objects":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = None if child is None else _objects(child, ast["mode"])
+        elif op == "select":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = _select(child, ast["criterion"])
+        elif op == "transform-object":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = _transform_object(child, ast["name"])
+        elif op == "recolor-object":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = None if child is None else tuple((ast["color"], r, c) for _, r, c in child)
+        elif op == "render-object":
+            child = self._exec_ast(state, ast["arg"], value, trace, active, cache)
+            result = _render_object(value, child, ast["canvas"], ast["placement"], ast["iteration"])
+        else:
+            result = None
+        if cache is not None:
+            cache[cache_key] = result
+        return result
 
     def execute(self, state: Mapping[str, Any], rid: str, value: Any,
                 trace: list[str] | None = None, active: tuple[str, ...] = ()) -> Any:
@@ -241,15 +495,17 @@ class ProspectiveARCAdapter:
         return self._exec_ast(state, ast, value, [], ())
 
     def generation_analysis(self, state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]:
-        candidates = generated_asts(state)
+        raw_object_count, _ = object_asts(state, task)
+        candidates = generated_asts(state, task)
         by_size: dict[int, list[dict[str, Any]]] = {}
         checked: dict[int, int] = {}
+        caches = [dict() for _ in examples(task)]
         for ast in candidates:
             size = ast_size(ast)
             checked[size] = checked.get(size, 0) + 1
             try:
-                ok = all(self.execute_ast(state, ast, e["input"]) == grid(e["output"])
-                         for e in examples(task))
+                ok = all(self._exec_ast(state, ast, e["input"], [], (), cache) == grid(e["output"])
+                         for e, cache in zip(examples(task), caches))
             except (KeyError, TypeError, ValueError, IndexError):
                 ok = False
             if ok:
@@ -258,6 +514,8 @@ class ProspectiveARCAdapter:
         survivors = by_size.get(minimum, []) if minimum is not None else []
         return {
             "candidate_count": len(candidates),
+            "raw_candidate_count": len(generated_asts(state)) + raw_object_count,
+            "normalized_candidate_count": len(candidates),
             "candidate_count_by_size": {str(k): checked[k] for k in sorted(checked)},
             "complete_through_size": MAX_AST_SIZE,
             "minimum_size": minimum,
@@ -384,6 +642,8 @@ class ProspectiveARCAdapter:
             certificate.update({
                 "substrate_id": SUBSTRATE["substrate_id"],
                 "candidate_count": analysis["candidate_count"],
+                "raw_candidate_count": analysis["raw_candidate_count"],
+                "normalized_candidate_count": analysis["normalized_candidate_count"],
                 "candidate_count_by_size": analysis["candidate_count_by_size"],
                 "minimum_size": analysis["minimum_size"],
                 "smaller_survivor_count": analysis["smaller_survivor_count"],
@@ -434,7 +694,7 @@ def select_stream(root: Path, nonce: str) -> dict[str, Any]:
             rows.append({"task_id": path.stem, "task_sha256": sha256(raw).hexdigest(),
                          "task": public})
     rows.sort(key=lambda row: digest({"nonce": nonce, "task_sha256": row["task_sha256"]}))
-    body = {"schema": "prospective-route-neutral-stream/v1",
+    body = {"schema": "prospective-route-neutral-stream/v2",
             "external_repository": ARC_REPOSITORY, "external_commit": ARC_COMMIT,
             "external_path": ARC_PATH, "selection_nonce": nonce,
             "eligibility": "ARC JSON schema, grid/color/resource bounds only",
@@ -455,7 +715,7 @@ def freeze_state(path: Path) -> dict[str, Any]:
         if result.verdict != "verified" or len(result.retained) != 1:
             raise RuntimeError("seed admission failed")
         ids.extend(result.retained)
-    body = {"schema": "prospective-initial-state/v1", "seed_ids": ids,
+    body = {"schema": "prospective-initial-state/v2", "seed_ids": ids,
             "state_id": digest(store.state()), "ledger_digest": digest(store.events()),
             "substrate": SUBSTRATE}
     store.close()
@@ -547,7 +807,7 @@ def develop_stream(stream: Mapping[str, Any], state_path: Path) -> dict[str, Any
     final = EvidenceStore(state_path)
     final_events, final_state = final.events(), final.state()
     final.close()
-    body = {"schema": "prospective-development-decisions/v1",
+    body = {"schema": "prospective-development-decisions/v2",
             "stream_digest": stream["stream_digest"], "labels_seen": False,
             "hidden_outputs_seen": False, "results": results,
             "final_state_id": digest(final_state), "final_events": final_events}
@@ -611,6 +871,8 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
     expected_state = freeze["state"]["state_id"]
     checked: list[dict[str, Any]] = []
     generated_events: list[tuple[int, str]] = []
+    unadmitted_unique: list[int] = []
+    ambiguous_minima: list[int] = []
     for index, (source, decision) in enumerate(zip(stream["tasks"], decisions["results"])):
         if decision["decision_sequence"] != index or source["task_sha256"] != decision["task_sha256"]:
             raise ValueError("decision chronology mismatch")
@@ -622,16 +884,28 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
         public_expected = {"train": full["train"], "test": [{"input": x["input"]} for x in full["test"]]}
         if public_expected != source["task"]:
             raise ValueError("hidden output or source mismatch")
+        pre_state = oracle.state_at(decisions["final_events"], decision["events_before"])
+        old_language = oracle.old_language_analysis(pre_state, full)
+        analysis = oracle.analyze(pre_state, full)
+        if not old_language["complete"]:
+            raise ValueError("old-language closure incomplete")
+        if decision["cost"].get("candidate_evaluations") != analysis["normalized_candidate_count"]:
+            raise ValueError("developer/evaluator generation coverage mismatch")
+        if analysis["minimum_survivor_count"] == 1 and not decision["generated_admissions"]:
+            unadmitted_unique.append(index)
+        if analysis["minimum_survivor_count"] > 1 and not decision["generated_admissions"]:
+            ambiguous_minima.append(index)
         admission_checks = []
         for rid in decision["generated_admissions"]:
             record = decision["admitted_records"][rid]
-            pre_state = oracle.state_at(decisions["final_events"], decision["events_before"])
-            analysis = oracle.analyze(pre_state, full)
             ast = record["repair"]["payload"]["body"]["ast"]
+            certificate = record["evidence"]["certificate"]
             valid = (analysis["minimum_survivor_count"] == 1
                      and analysis["minimum_survivors"][0] == ast
                      and analysis["smaller_survivor_count"] == 0
-                     and record["repair"]["dependencies"] == list(oracle.dependencies(ast)))
+                     and record["repair"]["dependencies"] == list(oracle.dependencies(ast))
+                     and certificate.get("raw_candidate_count") == analysis["raw_candidate_count"]
+                     and certificate.get("normalized_candidate_count") == analysis["normalized_candidate_count"])
             admission_checks.append({"capability": rid, "valid": valid, "analysis": analysis,
                                      "ast": ast, "dependencies": record["repair"]["dependencies"]})
             generated_events.append((index, rid))
@@ -643,6 +917,7 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
         checked.append({"stream_index": index, "task_id": source["task_id"],
                         "route": decision["predicted_route"], "warm_verdict": decision["warm_verdict"],
                         "hidden": hidden, "generated": admission_checks,
+                        "old_language": old_language, "generation_analysis": analysis,
                         "preservation_training": decision["preservation"]})
         expected_state = decision["post_state_id"]
 
@@ -674,14 +949,18 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
 
     qualifying = next((chain for chain in chains if chain["passes"]), None)
     if qualifying:
-        outcome = "PROSPECTIVE_CONTINUATION_GENESIS_V1_PASS"
+        outcome = "PROSPECTIVE_CONTINUATION_GENESIS_V2_PASS"
+    elif unadmitted_unique:
+        outcome = "UNKNOWN_GENERATION_BOUNDARY"
+    elif ambiguous_minima and not generated_events:
+        outcome = "UNKNOWN_GENERATIVE_VERSION_SPACE"
     elif not generated_events:
         outcome = "UNKNOWN_PROSPECTIVE_CONTINUATION_COVERAGE"
     elif any(not item["valid"] for row in checked for item in row["generated"]):
         outcome = "UNKNOWN_GENERATION_BOUNDARY"
     else:
         outcome = "UNKNOWN_PROSPECTIVE_CONTINUATION_COVERAGE"
-    body = {"schema": "prospective-continuation-evaluation/v1", "outcome": outcome,
+    body = {"schema": "prospective-continuation-evaluation/v2", "outcome": outcome,
             "external_identity": validate_external(external_root),
             "stream_digest": stream["stream_digest"], "decisions_digest": decisions["decisions_digest"],
             "task_count": len(checked), "generated_count": len(generated_events),
@@ -757,7 +1036,16 @@ def evaluate_chain(stream: Mapping[str, Any], decisions: Mapping[str, Any],
     # copied observation state; no altered record is admitted to the ledger.
     sham_state = deepcopy(state_c)
     g1_ast = sham_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"]
-    alternatives = [ast for ast in oracle.enumerate_asts(oracle.state_at(events, a_dec["events_before"]))
+    def render_node(ast: dict[str, Any]) -> dict[str, Any] | None:
+        cursor: Any = ast
+        while isinstance(cursor, dict):
+            if cursor.get("op") == "render-object":
+                return cursor
+            cursor = cursor.get("arg")
+        return None
+
+    alternatives = [ast for ast in oracle.enumerate_asts(
+                    oracle.state_at(events, a_dec["events_before"]), q_a)
                     if oracle.size(ast) == oracle.size(g1_ast) and ast != g1_ast]
     sham_ast = alternatives[0] if alternatives else {"op": "input"}
     sham_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"] = sham_ast
@@ -765,9 +1053,55 @@ def evaluate_chain(stream: Mapping[str, Any], decisions: Mapping[str, Any],
     sham = _hidden_execution(sham_state, g2, q_c, oracle)
     wrong_state = deepcopy(state_c)
     wrong_ast = deepcopy(g1_ast)
-    wrong_ast["op"] = next(op for op in FORM_OPS if op != g1_ast["op"])
+    if wrong_ast.get("op") in FORM_OPS:
+        wrong_ast["op"] = next(op for op in FORM_OPS if op != g1_ast["op"])
+    elif render_node(wrong_ast) is not None:
+        cursor = render_node(wrong_ast)
+        while isinstance(cursor, Mapping) and cursor.get("op") != "select":
+            cursor = cursor.get("arg")
+        if isinstance(cursor, dict) and cursor.get("op") == "select":
+            cursor["criterion"] = ("smallest" if cursor.get("criterion") != "smallest" else "largest")
+        else:
+            wrong_ast["canvas"] = "blank"
+    else:
+        wrong_ast = sham_ast
     wrong_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"] = wrong_ast
     wrong = _hidden_execution(wrong_state, g2, q_c, oracle)
+
+    recolor_state = deepcopy(state_c)
+    recolor_ast = deepcopy(g1_ast)
+    recolor_render = render_node(recolor_ast)
+    recolor_applicable = recolor_render is not None
+    if recolor_render is not None:
+        palette = sorted({x for row in grid(q_a["train"][0]["input"]) for x in row})
+        recolor_render["arg"] = {"op": "recolor-object", "color": palette[-1],
+                                 "arg": recolor_render["arg"]}
+    recolor_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"] = recolor_ast
+    wrong_recolor = (_hidden_execution(recolor_state, g2, q_c, oracle)
+                     if recolor_applicable else {"verified": False})
+
+    spatial_state = deepcopy(state_c)
+    spatial_ast = deepcopy(g1_ast)
+    spatial_render = render_node(spatial_ast)
+    spatial_applicable = spatial_render is not None
+    if spatial_render is not None:
+        spatial_render["canvas"] = "blank"
+        spatial_render["placement"] = "lower-right"
+    spatial_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"] = spatial_ast
+    wrong_spatial = (_hidden_execution(spatial_state, g2, q_c, oracle)
+                     if spatial_applicable else {"verified": False})
+
+    iteration_state = deepcopy(state_c)
+    iteration_ast = deepcopy(g1_ast)
+    iteration_render = render_node(iteration_ast)
+    iteration_applicable = (iteration_render is not None
+                            and iteration_render.get("iteration") != "once")
+    if iteration_applicable:
+        iteration_render["iteration"] = "once"
+        iteration_state["capabilities"][g1]["repair"]["payload"]["body"]["ast"] = iteration_ast
+        iteration_disabled = not _hidden_execution(iteration_state, g2, q_c, oracle)["verified"]
+    else:
+        iteration_disabled = True
 
     # Exact matched cold replay starts from the pre-qA ledger and sees the same
     # already-fixed suffix in the same order, with qA itself omitted.
@@ -807,6 +1141,9 @@ def evaluate_chain(stream: Mapping[str, Any], decisions: Mapping[str, Any],
         "necessary_ancestor_removal": bool(seed_ancestors and ancestor_result and ancestor_result.verdict != "verified" and g2 in ancestor_removed),
         "unrelated_removal": bool(unrelated_result and unrelated_result.verdict == "verified" and g2 not in unrelated_removed),
         "same_size_sham": not sham["verified"], "wrong_operation": not wrong["verified"],
+        "same_selector_wrong_recolor": not wrong_recolor["verified"],
+        "same_object_wrong_spatial_map": not wrong_spatial["verified"],
+        "iteration_disabled": iteration_disabled,
         "fixed_policy": cold_rows[0]["admissions"] != b_dec["admissions"],
         "raw_history_without_admission": g2 not in oracle.state_at(events, a_dec["events_before"])["capabilities"],
         "matched_cold_difference": actual_vs_cold,
@@ -835,7 +1172,10 @@ def evaluate_chain(stream: Mapping[str, Any], decisions: Mapping[str, Any],
                           "qC_capability": c_dec["restart_execution"]["capability"]},
         "cold_counterfactual": {"rows": cold_rows},
         "controls": controls, "preservation": preservation,
-        "sham_ast": sham_ast, "wrong_ast": wrong_ast, "passes": passes,
+        "sham_ast": sham_ast, "wrong_ast": wrong_ast,
+        "wrong_recolor_ast": recolor_ast, "wrong_spatial_ast": spatial_ast,
+        "iteration_disabled_ast": iteration_ast if iteration_applicable else None,
+        "passes": passes,
     }
 
 
@@ -850,15 +1190,19 @@ def freeze_manifest(root: Path, external: Path, state: Path,
     frozen = freeze_state(state)
     files = {str(path.relative_to(root)): sha256(path.read_bytes()).hexdigest()
              for path in sorted((root / "open_development").rglob("*.py"))}
-    workflow = root / ".github/workflows/prospective-continuation-genesis-v1.yml"
+    workflow = root / ".github/workflows/prospective-continuation-genesis-v2.yml"
     files[str(workflow.relative_to(root))] = sha256(workflow.read_bytes()).hexdigest()
-    body = {"schema": "prospective-continuation-freeze/v1", "v4_source": V4_SOURCE,
+    body = {"schema": "prospective-continuation-freeze/v2", "v4_source": V4_SOURCE,
             "v4_scientific_freeze": V4_SCIENTIFIC_FREEZE,
             "v4_scientific_run": V4_SCIENTIFIC_RUN,
             "v4_authority_run": V4_AUTHORITY_RUN,
             "v4_authority_artifact": V4_AUTHORITY_ARTIFACT,
             "v4_authority_artifact_sha256": V4_AUTHORITY_ARTIFACT_SHA256,
             "v4_authority_evidence_digest": V4_AUTHORITY_EVIDENCE_DIGEST,
+            "v1_scientific_freeze": V1_SCIENTIFIC_FREEZE,
+            "v1_report_head": V1_REPORT_HEAD, "v1_run": V1_RUN,
+            "v1_artifact": V1_ARTIFACT, "v1_artifact_sha256": V1_ARTIFACT_SHA256,
+            "v1_evidence_digest": V1_EVIDENCE_DIGEST,
             "source_commit": source_commit,
             "nonce": nonce, "external_absent": True, "files": files,
             "substrate": SUBSTRATE, "state": frozen}
