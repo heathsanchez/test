@@ -1,0 +1,108 @@
+name: Verified model basis reconnaissance v1
+
+on:
+  push:
+    branches:
+      - verified-model-basis-v1
+    paths:
+      - '.github/workflows/verified-model-basis-recon-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  recon:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Clone frozen Austin corpus
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          cd /tmp/austin
+          git checkout b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Classify archived model templates
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json,re,hashlib,collections,pathlib
+          root=pathlib.Path('/tmp/austin')
+          idx=json.loads((root/'proofs/index.json').read_text())
+          rows=[]
+          sigs=collections.Counter()
+          features=collections.Counter()
+          for e in idx['equations']:
+              ip=e.get('infinite_model_proof')
+              if not ip: continue
+              p=root/ip['path']
+              s=p.read_text(errors='replace')
+              # Normalize names/numerals/comments/whitespace to identify generated template families.
+              n=re.sub(r'Equation\d+','EquationN',s)
+              n=re.sub(r'\b\d+\b','N',n)
+              n=re.sub(r'--.*','',n)
+              n=re.sub(r'\s+',' ',n)
+              sig=hashlib.sha256(n.encode()).hexdigest()[:16]
+              feats={
+                'has_eval': bool(re.search(r'\bdef\s+eval\b',s)),
+                'has_mul': bool(re.search(r'\bdef\s+mul\b',s)),
+                'has_op': bool(re.search(r'\bdef\s+op\b',s)),
+                'noncomputable': 'noncomputable' in s,
+                'classical_choice': 'Classical.choose' in s or 'Classical.choice' in s,
+                'inductive_C': bool(re.search(r'inductive\s+C\b',s)),
+                'inductive_T': bool(re.search(r'inductive\s+T\b',s)),
+                'normal_form': 'Normal' in s or 'normal' in s,
+                'root_rules': 'root' in s,
+                'linked': 'linked' in s,
+                'sum_nat_nat': 'Sum Nat Nat' in s,
+                'fin_carrier': bool(re.search(r'Fin\s+\d+',s)),
+                'native_decide': 'native_decide' in s,
+              }
+              key=tuple(k for k,v in feats.items() if v)
+              sigs[(sig,key)] += 1
+              for k,v in feats.items():
+                  if v: features[k]+=1
+              carrier=[]
+              for pat in [
+                  r'(?:abbrev|def)\s+Carrier\s*:?=\s*([^\n]+)',
+                  r'(?:abbrev|def)\s+Carrier\s*:\s*Type[^=]*:=\s*([^\n]+)',
+                  r'inductive\s+([A-Z][A-Za-z0-9_]*)\s+where',
+              ]:
+                  m=re.search(pat,s)
+                  if m: carrier.append(m.group(1).strip())
+              ops=[]
+              for name in ['eval','mul','op']:
+                  if re.search(rf'\bdef\s+{name}\b',s): ops.append(name)
+              rows.append({
+                  'equation':e['equation'],
+                  'path':ip['path'],
+                  'bytes':len(s.encode()),
+                  'sig':sig,
+                  'features':[k for k,v in feats.items() if v],
+                  'carrier_candidates':carrier[:3],
+                  'ops':ops,
+              })
+          groups=[]
+          for (sig,key),count in sigs.most_common():
+              members=[r['equation'] for r in rows if r['sig']==sig and tuple(r['features'])==key]
+              groups.append({'signature':sig,'count':count,'features':list(key),'members':members})
+          out={
+            'corpus_commit':'b984287a1e5283e67b3709fe1e43f7734b360342',
+            'model_count':len(rows),
+            'feature_counts':dict(features),
+            'normalized_template_groups':groups,
+            'models':rows,
+          }
+          pathlib.Path('/tmp/model_recon.json').write_text(json.dumps(out,indent=2))
+          print('MODEL_COUNT',len(rows))
+          print('FEATURE_COUNTS',json.dumps(dict(features),sort_keys=True))
+          print('GROUP_COUNT',len(groups))
+          for g in groups[:30]:
+              print('GROUP',g['count'],g['signature'],','.join(g['features']),','.join(g['members'][:12]))
+          PY
+
+      - name: Upload reconnaissance
+        uses: actions/upload-artifact@v4
+        with:
+          name: verified-model-basis-recon-v1
+          path: /tmp/model_recon.json
