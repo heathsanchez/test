@@ -32,6 +32,7 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeMagma.Magma', '', 1)
           s=s.replace('import JudgeProblem', '''import Mathlib
 
           class Magma (α : Type u) where
