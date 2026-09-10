@@ -245,18 +245,39 @@ constructor/reference theorems; they do not formalize ARC execution end to end.
 - Evaluation digest: `440b8505de1bac5360aa243c7e42792c1995f24b12cc2aa8b8d343a70427a9b1`
 - Release-v4 evidence digest: `7048224ec434bd3fc777444b83564b3e4952fcece729f0c06c3b3e4da274fda6`
 
-Current-head regression authority is
-https://github.com/heathsanchez/test/actions/runs/34449942767. Its core job
-https://github.com/heathsanchez/test/actions/runs/34449942767/job/102783156847
-passed all 57 tests, the operational gates, and emitted release evidence digest
-`3f09c9af685d5f06a2f3daac1b47069e02c7c7bf3b85fc3414c78a912a747260`.
-Its proof-semantics job
-https://github.com/heathsanchez/test/actions/runs/34449942767/job/102783292158
-ended with `TYPED_PROGRAM_SEMANTICS_LEAN_PASS` and eleven `AXIOMS_PASS` markers.
-The core, causal, and semantics artifact SHA256 values are respectively
-`2b493d48f00f9f5f16f793cb6f874bf8e8fb1c844cb2f753c644b3fcb1927ba6`,
-`8c2713e0f7b4f6e08327241ea0708f1bab225b2b462ed6a317caf2b613250d63`,
-and `85f03b4489a7ce5612bfc6677745ef8e6228b636d5f60c9817d878b794cfe498`.
+Final same-head regression authority is
+https://github.com/heathsanchez/test/actions/runs/34451227802 at source commit
+`01088c9e67b11cc29342b5150a28050bdef16b29`. Its core job
+https://github.com/heathsanchez/test/actions/runs/34451227802/job/102787199655
+passed all 58 tests and the operational gates, and emitted release evidence
+digest `09a2ed666dfc742c6d4a6fc2c2fac2dd738b43ffd11658047eb5adf06760c4b7`.
+The core artifact records GitHub's distinct synthetic pull-request checkout
+commit `5f4b725fbce9b69afdcf42249401bd7f360ed1dd`; release authority binds that
+checkout identity separately from the branch source commit. The proof-semantics
+job https://github.com/heathsanchez/test/actions/runs/34451227802/job/102787351531
+used Lean 4.34.0-rc2 and ended with `TYPED_PROGRAM_SEMANTICS_LEAN_PASS` and
+eleven `AXIOMS_PASS` markers. The core, causal, and semantics artifacts are:
+
+- https://github.com/heathsanchez/test/actions/runs/34451227802/artifacts/10141623875 — SHA256 `0aa5d24f98ea7ea746ff1f4b4d31a1862543f77f44afcd5d31e2a2417a5998e7`
+- https://github.com/heathsanchez/test/actions/runs/34451227802/artifacts/10141612014 — SHA256 `771b4b71b8b7a718030d8e47888154688ceb6f8b9ee5a6b78b57b1cdc7de95ee`
+- https://github.com/heathsanchez/test/actions/runs/34451227802/artifacts/10141692969 — SHA256 `b6236448b2aacf787206883053d637816d611dcb9652ab951ad4fcc7fa67bd38`
+
+### Final release-v4 authority
+
+The fail-closed release wrapper completed at
+https://github.com/heathsanchez/test/actions/runs/34451224397. Its exact job is
+https://github.com/heathsanchez/test/actions/runs/34451224397/job/102787189519.
+The inspected internal result is `OPEN_DEVELOPMENT_RELEASE_V4_AUTHORITY_PASS`,
+with final authority evidence digest
+`a3fafeddec722a32c20be4bb9ff6af9e361252d1ac200c366619f2367f71c7f9`.
+The release artifact is
+https://github.com/heathsanchez/test/actions/runs/34451224397/artifacts/10141699676
+and its independently checked ZIP SHA256 is
+`7594ac85ef51238f1198c51f73f337a7d0f03218e4e7f724ea8ea4c069b95de6`.
+Its embedded scientific-manifest digest is
+`bb32fdb5d072c200912422e39fde125239ef37d8d20222ec3c8105c3c7f1be70`;
+its embedded current-regression digest is
+`55709240895dd3e4f383fbc1a1cac491881237dd2aa00e701c9fef2e398da5aa`.
 
 ### Supported claim and boundary
 
