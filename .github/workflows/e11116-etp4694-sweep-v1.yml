@@ -1,0 +1,213 @@
+name: E11116 full ETP-4694 separator sweep v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e11116-etp4694-sweep-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Freeze source universes
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          cd /tmp/etp
+          git checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          cd /tmp
+          curl -fsSL https://raw.githubusercontent.com/heathsanchez/test/e11116-austin-corpus-sweep-v1/experiments/e11116_austin_corpus_sweep_v1/released_model_prefix.b64 -o e11116.b64
+          base64 -d e11116.b64 > e11116_model.lean
+          echo 'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582  e11116_model.lean' | sha256sum -c -
+
+      - name: Build ETP-4694 fingerprint and Lean refutations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/etp4694
+          python3 - <<'PY'
+          import re,json,pathlib,itertools,hashlib
+          etp=pathlib.Path('/tmp/etp/equational_theories/Equations')
+          files=[etp/f'Eqns{a}_{b}.lean' for a,b in [(1,999),(1000,1999),(2000,2999),(3000,3999),(4000,4694)]]
+          raw={}
+          rx=re.compile(r'^\s*(?:--\s*)?equation\s+(\d+)\s*:=\s*(.*?)\s*$')
+          for p in files:
+              for line in p.read_text().splitlines():
+                  m=rx.match(line)
+                  if m: raw[int(m.group(1))]=m.group(2)
+          if len(raw)!=4694:
+              missing=[n for n in range(1,4695) if n not in raw]
+              raise SystemExit(f'expected 4694 equations, got {len(raw)}; missing {missing[:30]}')
+
+          # Public E11116 constructive_compact_v4 semantics.
+          def V(n): return ('v',n)
+          def O(a,b): return ('o',a,b)
+          def baseLink(c,q): return q[0]=='o' and q[2]==c
+          def linked(c,q):
+              if baseLink(c,q): return True
+              if c[0]=='o' and c[1][0]=='o' and c[2][0]=='o':
+                  qp,r=c[1][1],c[1][2]; a,b=c[2][1],c[2][2]
+                  if qp==q and a==b: return linked(qp,r)
+              return False
+          def root(a,b):
+              if b[0]=='o' and b[1][0]=='o' and b[2][0]=='o':
+                  c,q=b[1][1],b[1][2]; a1,a2=b[2][1],b[2][2]
+                  if a1==a and a2==a and linked(c,q): return c
+              return None
+          def mul(a,b):
+              c=root(a,b)
+              return O(a,b) if c is None else c
+
+          VARS='xyzwuvabcdefghijklmnopqrst'
+          def parse_term(s):
+              s=s.replace(' ','');i=0
+              def atom():
+                  nonlocal i
+                  if i<len(s) and (s[i].isalpha() or s[i]=='_'):
+                      j=i+1
+                      while j<len(s) and (s[j].isalnum() or s[j]=='_'):j+=1
+                      name=s[i:j];i=j;return ('v',name)
+                  if i<len(s) and s[i]=='(':
+                      i+=1;q=expr()
+                      if i>=len(s) or s[i]!=')':raise ValueError((s,i))
+                      i+=1;return q
+                  raise ValueError((s,i,s[i:i+10]))
+              def expr():
+                  nonlocal i
+                  q=atom()
+                  while i<len(s) and s[i]=='◇':
+                      i+=1;q=('o',q,atom())
+                  return q
+              q=expr()
+              if i!=len(s):raise ValueError((s,i,s[i:]))
+              return q
+
+          def split_eq(s):
+              # Equation source uses exactly one equality sign.
+              a,b=s.split('=',1)
+              return parse_term(a),parse_term(b)
+
+          def ev(t,env):
+              return env[t[1]] if t[0]=='v' else mul(ev(t[1],env),ev(t[2],env))
+          def vars_of(t):
+              if t[0]=='v':return {t[1]}
+              return vars_of(t[1])|vars_of(t[2])
+          def lean(t,env=None):
+              if t[0]=='v':
+                  return t[1] if env is None else f'(.var {env[t[1]]})'
+              return f'(mul {lean(t[1],env)} {lean(t[2],env)})'
+
+          ast={n:split_eq(s) for n,s in raw.items()}
+          rows=[];survivors=[]
+          pool=[V(0),V(1),V(2)]
+          for n in range(1,4695):
+              l,r=ast[n]; vs=sorted(vars_of(l)|vars_of(r))
+              w=None
+              for xs in itertools.product(pool,repeat=len(vs)):
+                  env=dict(zip(vs,xs))
+                  if ev(l,env)!=ev(r,env):
+                      w={v:env[v][1] for v in vs};break
+              if w is None:
+                  survivors.append(n)
+                  rows.append({'equation':n,'refuted':False,'witness':None})
+              else:
+                  rows.append({'equation':n,'refuted':True,'witness':w})
+
+          # Recheck provisional survivors with a wider 5-symbol valuation pool.
+          wide=[V(i) for i in range(5)]
+          final_survivors=[]
+          for n in survivors:
+              l,r=ast[n];vs=sorted(vars_of(l)|vars_of(r));w=None
+              for xs in itertools.product(wide,repeat=len(vs)):
+                  env=dict(zip(vs,xs))
+                  if ev(l,env)!=ev(r,env):
+                      w={v:env[v][1] for v in vs};break
+              row=rows[n-1]
+              if w is None:final_survivors.append(n)
+              else:row['refuted']=True;row['witness']=w
+
+          refs=[r for r in rows if r['refuted']]
+          manifest={
+              'source':'public E11116 constructive_compact_v4',
+              'source_sha256':'a1f26c5584e5e55f70f762f8c0b921340a7168cb7d6fa82852db86ce65ffd582',
+              'etp_commit':'bb5a9b5fe78c376ce1725529f235f8d574630b9f',
+              'total':4694,
+              'refuted_count':len(refs),
+              'survivor_count':len(final_survivors),
+              'survivors':final_survivors,
+              'rows':rows,
+          }
+          pathlib.Path('/tmp/etp4694/manifest.json').write_text(json.dumps(manifest,indent=2))
+          print('ETP_TOTAL',4694)
+          print('REFUTED',len(refs))
+          print('SURVIVORS',len(final_survivors),final_survivors)
+
+          # Generate chunks so Lean elaboration remains bounded. These are target
+          # refutations only; universal source E11116 is already in the frozen model.
+          prefix=pathlib.Path('/tmp/e11116_model.lean').read_text()
+          chunks=[refs[i:i+450] for i in range(0,len(refs),450)]
+          for ci,chunk in enumerate(chunks):
+              out=[prefix,'\nnamespace submission.C\n',
+                   'set_option maxRecDepth 100000\nset_option maxHeartbeats 100000000\n']
+              for row in chunk:
+                  n=row['equation'];w=row['witness'];l,r=ast[n];vs=sorted(vars_of(l)|vars_of(r))
+                  q=' '.join(vs)
+                  args=' '.join(f'(.var {w[v]})' for v in vs)
+                  out.append(f'''
+          def ETP{n} : Prop :=
+            ∀ {q} : T, {lean(l)} = {lean(r)}
+
+          theorem etp_not_{n} : ¬ ETP{n} := by
+            intro h
+            have hh := h {args}
+            simpa [mul, root, linked, baseLink] using hh
+          ''')
+              # print a few theorem axioms as trust sentinels
+              if chunk:
+                  out.append(f'#print axioms etp_not_{chunk[0]["equation"]}\n')
+                  out.append(f'#print axioms etp_not_{chunk[-1]["equation"]}\n')
+              out.append('\nend submission.C\n')
+              pathlib.Path(f'/tmp/etp4694/Chunk{ci:02}.lean').write_text(''.join(out))
+          pathlib.Path('/tmp/etp4694/chunk_count').write_text(str(len(chunks)))
+          print('LEAN_CHUNKS',len(chunks))
+          PY
+
+      - name: Reproduce Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+
+      - name: Kernel check every discovered ETP refutation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          : > /tmp/etp4694/lean.log
+          for f in /tmp/etp4694/Chunk*.lean; do
+            echo "CHECK $f" | tee -a /tmp/etp4694/lean.log
+            lake env lean "$f" 2>&1 | tee -a /tmp/etp4694/lean.log
+          done
+          ! grep -q 'sorryAx' /tmp/etp4694/lean.log
+          ! grep -q '_native.native_decide' /tmp/etp4694/lean.log
+          echo "PASS: every reported ETP-4694 target refutation kernel checked"
+
+      - name: Evidence digest
+        shell: bash
+        run: |
+          set -euxo pipefail
+          sha256sum /tmp/etp4694/manifest.json /tmp/etp4694/Chunk*.lean /tmp/etp4694/lean.log | tee /tmp/etp4694/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e11116-etp4694-separator-sweep-v1
+          path: /tmp/etp4694/
