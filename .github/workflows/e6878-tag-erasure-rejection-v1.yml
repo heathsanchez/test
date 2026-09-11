@@ -1,0 +1,193 @@
+name: E6878 tag erasure rejection v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-tag-erasure-rejection-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan and freeze source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean > /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission.CM\nnoncomputable def submission.unifiedOriginalWitness : Goal := by'
+          if marker not in s:
+              raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E6878TagReject.lean').write_text(s)
+          PY
+
+      - name: Add explicit tag-erasure counterexample
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E6878TagReject.lean <<'LEAN'
+
+          namespace E6878TagReject
+          open submission
+          open submission.CM
+
+          theorem nf_e : NF e := by trivial
+
+          theorem nf_qee : NF (q e e) := by
+            refine ⟨nf_e, nf_e, ?_⟩
+            intro h
+            cases h
+
+          theorem eval_e_e : eval e e = q e e := by
+            have h := eval_cases e e
+            simp only [EvalCases] at h
+            rcases h with h0 | h1 | h2 | h3 | h4 | h5 | h6 | hr
+            · rcases h0 with ⟨a,b,c,ha,hb,ho,_,_,_⟩
+              cases hb
+            · rcases h1 with ⟨a,b,ha,hb,ho,_,_,_,_⟩
+              cases hb
+            · rcases h2 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_⟩
+              cases hb
+            · rcases h3 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h4 with ⟨a,ha,hb,ho,_,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h5 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_,_,_,_⟩
+              cases ha
+            · rcases h6 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_,_,_,_⟩
+              exact ho
+            · rcases hr with ⟨ho,_,hn⟩
+              exfalso
+              apply hn
+              exact ⟨q e e, Code.r6 e e⟩
+
+          theorem eval_qee_qee : eval (q e e) (q e e) =
+              q (q e e) (q e e) := by
+            have h := eval_cases (q e e) (q e e)
+            rcases h with h0 | h1 | h2 | h3 | h4 | h5 | h6 | hr
+            · rcases h0 with ⟨a,b,c,ha,hb,ho,_,_,_⟩
+              cases hb
+            · rcases h1 with ⟨a,b,ha,hb,ho,_,_,_,_⟩
+              cases hb
+            · rcases h2 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_⟩
+              cases hb
+            · rcases h3 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h4 with ⟨a,ha,hb,ho,_,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h5 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_,_,_,_⟩
+              -- second input would have to be q (q a b) c
+              have bad := congrArg QL hb
+              simp only [QL] at bad
+              cases bad
+            · rcases h6 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_,_,_,_⟩
+              exact ho
+            · rcases hr with ⟨ho,_,hn⟩
+              exfalso
+              apply hn
+              exact ⟨q (q e e) (q e e), Code.r6 (q e e) (q e e)⟩
+
+          theorem eval_qee_qq : eval (q e e)
+              (q (q e e) (q e e)) =
+              q (q e e) (q (q e e) (q e e)) := by
+            have h := eval_cases (q e e) (q (q e e) (q e e))
+            rcases h with h0 | h1 | h2 | h3 | h4 | h5 | h6 | hr
+            · rcases h0 with ⟨a,b,c,ha,hb,ho,_,_,_⟩
+              cases hb
+            · rcases h1 with ⟨a,b,ha,hb,ho,_,_,_,_⟩
+              cases hb
+            · rcases h2 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_⟩
+              cases hb
+            · rcases h3 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h4 with ⟨a,ha,hb,ho,_,_,_,_,_,_,_⟩
+              -- this is exactly rule 4
+              exact ho
+            · rcases h5 with ⟨a,b,c,ha,hb,ho,_,_,_,_,_,_,_,_⟩
+              -- priority prevents r5 because rule4 already matched
+              exact False.elim (h5.11 ⟨q (q e e) (q (q e e) (q e e)), rule4_intro (q e e)⟩)
+            · rcases h6 with ⟨a,b,ha,hb,ho,_,_,_,_,_,_,_,_,_⟩
+              exfalso
+              apply h6.10
+              exact ⟨q (q e e) (q (q e e) (q e e)), rule4_intro (q e e)⟩
+            · rcases hr with ⟨ho,_,hn⟩
+              exfalso
+              apply hn
+              exact ⟨q (q e e) (q (q e e) (q e e)), Code.r4 (q e e)⟩
+
+          def ce : Carrier := ⟨e, nf_e⟩
+          def cq : Carrier := ⟨q e e, nf_qee⟩
+
+          theorem op_ce_ce : op ce ce = cq := by
+            apply Subtype.ext
+            exact eval_e_e
+
+          theorem erased_r5_fails :
+              ¬ (∀ a b c : Carrier,
+                op (op a b) (op (op a b) c) = a) := by
+            intro h
+            have bad := h ce ce cq
+            apply congrArg Subtype.val at bad
+            simp only [op, ce, cq] at bad
+            rw [eval_e_e, eval_qee_qee, eval_qee_qq] at bad
+            cases bad
+
+          theorem source_still_holds :
+              ∀ x y z : Carrier,
+                x = op y (op y (op (op z x) (op x y))) :=
+            source_holds
+
+          #print axioms erased_r5_fails
+          #print axioms source_still_holds
+
+          end E6878TagReject
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E6878TagReject.lean 2>&1 | tee /tmp/tagreject.log
+          ! grep -q sorryAx /tmp/tagreject.log
+          grep -q E6878TagReject.erased_r5_fails /tmp/tagreject.log
+          grep -q E6878TagReject.source_still_holds /tmp/tagreject.log
+          echo E6878_TAG_ERASURE_REJECTED_PASS
+
+      - name: Publish
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E6878TagReject.lean /tmp/out/
+          cp /tmp/tagreject.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "The frozen E6878 model satisfies E6878 but refutes the erased rule-5 identity (a*b)*((a*b)*c)=a on explicit normal-form states. Therefore q provenance cannot be soundly erased into ordinary magma multiplication.",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "role": "negative admission gate for auxiliary-grammar -> universal semantic compiler"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-tag-erasure-rejection-v1
+          path: /tmp/out/
