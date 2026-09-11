@@ -72,13 +72,20 @@ jobs:
           theorem q_state_future : eval sQ u = .e := by
             have h := eval_cases sQ u
             simp [EvalCases, Rule, sQ, u] at h
-            exact h
+            rcases h with h5 | hraw
+            · rcases h5 with ⟨v0, v1, hv, x, hx, heval, _⟩
+              exact heval.trans hv.1.symm
+            · exfalso
+              exact hraw.2.2 (.e) (Code.r5 .e .e .e)
 
           theorem p_state_future :
               eval sP u = .q sP u := by
             have h := eval_cases sP u
             simp [EvalCases, Rule, sP, u] at h
-            exact h
+            rcases h with h6 | hraw
+            · exact h6.1
+            · exfalso
+              exact hraw.2.2 (.q sP u) (Code.r6 sP u)
 
           theorem erased_futures_separate :
               erase (eval sQ u) ≠ erase (eval sP u) := by
