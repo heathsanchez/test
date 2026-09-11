@@ -1,0 +1,111 @@
+name: Andrews-Curtis Development V1
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v1
+    paths:
+      - "andrews_curtis/**"
+      - ".github/workflows/andrews-curtis-development-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  develop:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Pin official challenge release
+        run: |
+          git clone https://github.com/SAIRcompetition/Andrews-Curtis.git official-acc
+          cd official-acc
+          git checkout 99a65377c5c4f412cd9af7b8d31c41464a855736
+          test "$(git rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+      - name: Reproduce official sample verifier
+        run: |
+          PYTHONPATH=official-acc/competition/tools python3 -m verifier             --manifest official-acc/competition/examples/training_manifest.json             --submission official-acc/competition/examples/sample_submission.txt             --pretty | tee sample_verdict.json
+          python3 - <<'PY'
+          import json
+          d=json.load(open("sample_verdict.json"))
+          assert d["accepted"] is True
+          assert all(x["ok"] for x in d["results"])
+          print("OFFICIAL_SAMPLE_PASS")
+          PY
+
+      - name: Syntax check experiment
+        run: python3 -m py_compile andrews_curtis/solver_v1.py
+
+      - name: Run prospective development search
+        run: |
+          mkdir -p andrews_curtis/out_v1
+          python3 andrews_curtis/solver_v1.py             --acc-root official-acc             --out-dir andrews_curtis/out_v1             --reverse-depth 8             --reverse-cap 450000             --reverse-max-total 34             --macro-count 12             --search-count 1800             --nodes-per-problem 1400             --max-search-seconds 1500             --holdout-count 32             | tee andrews_curtis/out_v1/run.log
+
+      - name: Replay every generated submission with official verifier
+        run: |
+          mkdir -p andrews_curtis/out_v1/receipts
+          shopt -s nullglob
+          files=(andrews_curtis/out_v1/submission_v1_*.txt)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "No verified solutions generated"
+            exit 0
+          fi
+          for f in "${files[@]}"; do
+            b="$(basename "$f" .txt)"
+            PYTHONPATH=official-acc/competition/tools python3 -m verifier               --manifest official-acc/competition/tools/verifier/data/manifest.json               --submission "$f" --pretty               | tee "andrews_curtis/out_v1/receipts/${b}.json"
+          done
+
+      - name: Assert all replayed rows are accepted
+        run: |
+          python3 - <<'PY'
+          import glob, json
+          receipts=glob.glob("andrews_curtis/out_v1/receipts/*.json")
+          total=0
+          for p in receipts:
+              d=json.load(open(p))
+              assert d["accepted"] is True, (p,d)
+              bad=[r for r in d["results"] if not r.get("ok")]
+              assert not bad, (p,bad[:3])
+              total += len(d["results"])
+          print("OFFICIAL_REPLAY_PASS", total)
+          PY
+
+      - name: Write run summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p=pathlib.Path("andrews_curtis/out_v1/report_v1.json")
+          print("# Andrews-Curtis Development V1")
+          print()
+          print("- Official challenge commit: `99a65377c5c4f412cd9af7b8d31c41464a855736`")
+          if p.exists():
+              d=json.loads(p.read_text())
+              s=d["scored"]
+              h=d["training"]["holdout_results"]
+              print(f"- AC verified: **{s['ac_solved']}**")
+              print(f"- Stable AC verified via AC: **{s['stable_solved_via_ac']}**")
+              print(f"- Direct exact reverse-neighbourhood solves: **{s['direct_reverse_solved']}**")
+              print(f"- Searched non-reverse cases: **{s['searched_nonreverse']}**")
+              print(f"- Holdout atomic solved: **{sum(x['atomic_found'] for x in h)}/{len(h)}**")
+              print(f"- Holdout macro solved: **{sum(x['macro_found'] for x in h)}/{len(h)}**")
+              print(f"- Report SHA256: `{pathlib.Path('andrews_curtis/out_v1/report_v1.sha256').read_text().split()[0]}`")
+          else:
+              print("- Report not produced; inspect job log.")
+          PY
+
+      - name: Upload evidence and submissions
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andrews-curtis-development-v1
+          path: |
+            andrews_curtis/out_v1/
+            sample_verdict.json
+          if-no-files-found: warn
