@@ -1,0 +1,233 @@
+{
+  "verdict": "VERIFIED_META_DEVELOPMENTAL_COMPOUNDING",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL",
+  "snapshot_digest": "61d30dd5d3f54d398be40d45c4dcaf7ccdbd311f1e91be502adc02d13f09f6ff",
+  "results": {
+    "D2": {
+      "cold": {
+        "correct": true,
+        "verifier_calls": 37234,
+        "search_nodes": 55986,
+        "candidate_evaluations": 201,
+        "success_depth": 6,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "SCAN",
+          "FILTER",
+          "FIRST",
+          "PAIR",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": []
+      },
+      "warm_d1": {
+        "correct": true,
+        "verifier_calls": 1408,
+        "search_nodes": 399,
+        "candidate_evaluations": 112,
+        "success_depth": 3,
+        "successful_program_count": 2,
+        "canonical_success": [
+          "D1",
+          "EXTEND",
+          "D1"
+        ],
+        "active_tokens": [
+          "D1"
+        ]
+      },
+      "ablation_d1": {
+        "correct": true,
+        "verifier_calls": 37234,
+        "search_nodes": 55986,
+        "candidate_evaluations": 201,
+        "success_depth": 6,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "SCAN",
+          "FILTER",
+          "FIRST",
+          "PAIR",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": []
+      },
+      "sham": {
+        "correct": true,
+        "verifier_calls": 83086,
+        "search_nodes": 137256,
+        "candidate_evaluations": 323,
+        "success_depth": 6,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "SCAN",
+          "FILTER",
+          "FIRST",
+          "PAIR",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": [
+          "SHAM1"
+        ]
+      },
+      "answer_memory": {
+        "correct": true,
+        "verifier_calls": 246970,
+        "search_nodes": 299592,
+        "candidate_evaluations": 31445,
+        "success_depth": 6,
+        "successful_program_count": 13,
+        "canonical_success": [
+          "MEM0",
+          "PAIR",
+          "SCAN",
+          "FILTER",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": [
+          "MEM0",
+          "MEM1"
+        ]
+      }
+    },
+    "D3": {
+      "cold": {
+        "correct": true,
+        "verifier_calls": 222808,
+        "search_nodes": 335922,
+        "candidate_evaluations": 222,
+        "success_depth": 7,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "TEMPORAL",
+          "SCAN",
+          "FILTER",
+          "FIRST",
+          "PAIR",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": []
+      },
+      "warm_d1": {
+        "correct": true,
+        "verifier_calls": 7226,
+        "search_nodes": 2800,
+        "candidate_evaluations": 127,
+        "success_depth": 4,
+        "successful_program_count": 2,
+        "canonical_success": [
+          "TEMPORAL",
+          "D1",
+          "EXTEND",
+          "D1"
+        ],
+        "active_tokens": [
+          "D1"
+        ]
+      },
+      "warm_d1_d2": {
+        "correct": true,
+        "verifier_calls": 210,
+        "search_nodes": 72,
+        "candidate_evaluations": 3,
+        "success_depth": 2,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "TEMPORAL",
+          "D2"
+        ],
+        "active_tokens": [
+          "D1",
+          "D2"
+        ]
+      },
+      "ablation_d2": {
+        "correct": true,
+        "verifier_calls": 7226,
+        "search_nodes": 2800,
+        "candidate_evaluations": 127,
+        "success_depth": 4,
+        "successful_program_count": 2,
+        "canonical_success": [
+          "TEMPORAL",
+          "D1",
+          "EXTEND",
+          "D1"
+        ],
+        "active_tokens": [
+          "D1"
+        ]
+      },
+      "sham": {
+        "correct": true,
+        "verifier_calls": 1399752,
+        "search_nodes": 2396744,
+        "candidate_evaluations": 570,
+        "success_depth": 7,
+        "successful_program_count": 1,
+        "canonical_success": [
+          "TEMPORAL",
+          "SCAN",
+          "FILTER",
+          "FIRST",
+          "PAIR",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": [
+          "SHAM1",
+          "SHAM2"
+        ]
+      },
+      "answer_memory": {
+        "correct": true,
+        "verifier_calls": 2181120,
+        "search_nodes": 2396744,
+        "candidate_evaluations": 268674,
+        "success_depth": 7,
+        "successful_program_count": 21,
+        "canonical_success": [
+          "MEM0",
+          "PAIR",
+          "TEMPORAL",
+          "SCAN",
+          "FILTER",
+          "EXTEND",
+          "PAIR"
+        ],
+        "active_tokens": [
+          "MEM0",
+          "MEM1"
+        ]
+      }
+    }
+  },
+  "cold_aggregate": 260042,
+  "warm_aggregate": 1618,
+  "aggregate_reduction_factor": 160.71817058096414,
+  "gates": {
+    "G1_all_conditions_correct": true,
+    "G2_d2_warm_cheaper": true,
+    "G3_d2_ablation_restores_cold": true,
+    "G4_d2_controls_do_not_reproduce": true,
+    "G5_d3_strict_accumulation_curve": true,
+    "G6_d3_ablation_restores_d1_only": true,
+    "G7_d3_controls_do_not_reproduce": true,
+    "G8_aggregate_at_least_2x": true,
+    "G9_next_warm_acquisition_gets_cheaper": true,
+    "G10_d1_does_not_solve_d2_directly": true,
+    "G11_d2_does_not_solve_d3_without_temporal": true
+  },
+  "seed": null,
+  "not_established": [
+    "cross-domain compounding",
+    "unbounded compounding",
+    "model learning",
+    "primitive-substrate genesis"
+  ]
+}
