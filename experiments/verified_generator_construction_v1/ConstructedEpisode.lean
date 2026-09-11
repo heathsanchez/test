@@ -1,5 +1,3 @@
-[verified-generator-construction-v1 855f2f5] Repair concrete state indices
- 1 file changed, 7 insertions(+), 5 deletions(-)
 import TypedResidualKernel
 
 namespace VerifiedGeneratorConstruction
