@@ -112,9 +112,10 @@ def substrate_manifest() -> dict[str, Any]:
             "overlay operands canonicalized",
             "duplicate canonical JSON removed",
         ],
-        "equivalence": "minimum ASTs are quotiented by a frozen finite interaction profile before authority",
+        "equivalence": "minimum ASTs are quotiented only by a certified interpreter-preserving semantic key before authority",
         "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
-        "interaction_quotient_scope": "bounded exact over the declared 16-probe suite; not global semantic equivalence",
+        "interaction_probe_role": "separator synthesis only; probe agreement never licenses equivalence",
+        "semantic_quotient_scope": "structural interpreter congruence modulo semantically identical retained callees",
     }
     return {**body, "substrate_id": digest(body)}
 
@@ -141,6 +142,72 @@ def generation_terms(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
             values.append({"op": "call", "callee": rid, "arg": base})
     unique = {ast_key(value): value for value in values}
     return tuple(unique[key] for key in sorted(unique))
+
+
+def ast_semantic_key(state: Mapping[str, Any], ast: Mapping[str, Any]) -> str:
+    """Certified semantic key induced by the frozen interpreter.
+
+    Equality of keys is intentionally stronger than finite observational
+    agreement: we only identify syntax when the interpreter structure is the
+    same after recursively replacing retained capability IDs by their semantic
+    keys.  This is fail-closed and may miss true equivalences.
+    """
+    op = ast.get("op")
+    if op == "input":
+        body: Any = {"op": "input"}
+    elif op == "crop":
+        body = {"op": "crop", "arg": ast_semantic_key(state, ast["arg"])}
+    elif op == "call":
+        body = {
+            "op": "call",
+            "callee_semantics": capability_semantic_key(state, ast["callee"]),
+            "arg": ast_semantic_key(state, ast["arg"]),
+        }
+    elif op in FORM_OPS:
+        left = ast_semantic_key(state, ast["left"])
+        right = ast_semantic_key(state, ast["right"])
+        if op == "overlay" and left > right:
+            left, right = right, left
+        body = {"op": op, "left": left, "right": right}
+    else:
+        body = {"invalid": ast_key(ast)}
+    return digest(body)
+
+
+def capability_semantic_key(state: Mapping[str, Any], rid: str,
+                            active: tuple[str, ...] = ()) -> str:
+    if rid in active:
+        return digest({"cycle": rid})
+    record = state["capabilities"].get(rid)
+    if not record:
+        return digest({"missing": rid})
+    repair = record["repair"]
+    body = repair["payload"].get("body", {})
+    common = {
+        "verifier": record["evidence"].get("verifier"),
+        "contract": repair.get("contract"),
+    }
+    if body.get("op") == "d4":
+        desc = {**common, "op": "d4", "name": body.get("name")}
+    elif body.get("op") == "crop-call":
+        parent = body.get("callee")
+        desc = {
+            **common,
+            "op": "crop-call",
+            "callee_semantics": capability_semantic_key(
+                state, parent, (*active, rid)
+            ),
+        }
+    elif body.get("op") == "generated-ast":
+        desc = {
+            **common,
+            "op": "generated-ast",
+            "substrate_id": body.get("substrate_id"),
+            "ast_semantics": ast_semantic_key(state, body.get("ast", {})),
+        }
+    else:
+        desc = {**common, "raw_body": body, "dependencies": repair.get("dependencies", [])}
+    return digest(desc)
 
 
 def generated_asts(state: Mapping[str, Any]) -> tuple[dict[str, Any], ...]:
@@ -254,32 +321,33 @@ class ProspectiveARCAdapter:
     def execute_ast(self, state: Mapping[str, Any], ast: Mapping[str, Any], value: Any) -> Any:
         return self._exec_ast(state, ast, value, [], ())
 
-    def _interaction_profile(self, state: Mapping[str, Any], ast: Mapping[str, Any]) -> tuple[str, tuple[Any, ...]]:
-        outputs = tuple(self.execute_ast(state, ast, probe) for probe in INTERACTION_PROBES)
-        return digest(outputs), outputs
+    def _probe_profile(self, state: Mapping[str, Any], ast: Mapping[str, Any]) -> tuple[Any, ...]:
+        return tuple(self.execute_ast(state, ast, probe) for probe in INTERACTION_PROBES)
 
-    def _interaction_classes(self, state: Mapping[str, Any],
-                             survivors: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
-        grouped: dict[str, dict[str, Any]] = {}
+    def _certified_semantic_classes(
+            self, state: Mapping[str, Any],
+            survivors: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+        grouped: dict[str, list[dict[str, Any]]] = {}
         for ast in survivors:
-            class_id, outputs = self._interaction_profile(state, ast)
-            item = grouped.setdefault(class_id, {"class_id": class_id, "outputs": outputs, "members": []})
-            item["members"].append(ast)
+            grouped.setdefault(ast_semantic_key(state, ast), []).append(ast)
+
         classes = []
         for class_id in sorted(grouped):
-            item = grouped[class_id]
-            members = sorted(item["members"], key=ast_key)
+            members = sorted(grouped[class_id], key=ast_key)
             classes.append({
                 "class_id": class_id,
                 "size": len(members),
                 "representative": members[0],
-                "outputs": item["outputs"],
             })
 
         separator = None
         if len(classes) > 1:
+            representatives = [item["representative"] for item in classes]
             for index, probe in enumerate(INTERACTION_PROBES):
-                outputs = [item["outputs"][index] for item in classes]
+                outputs = [
+                    self.execute_ast(state, ast, probe)
+                    for ast in representatives
+                ]
                 if len({repr(output) for output in outputs}) > 1:
                     separator = {
                         "probe_index": index,
@@ -305,7 +373,7 @@ class ProspectiveARCAdapter:
                 by_size.setdefault(size, []).append(ast)
         minimum = min(by_size) if by_size else None
         survivors = by_size.get(minimum, []) if minimum is not None else []
-        classes, separator = self._interaction_classes(state, survivors)
+        classes, separator = self._certified_semantic_classes(state, survivors)
         representatives = [item["representative"] for item in classes]
         class_ids = [item["class_id"] for item in classes]
         return {
@@ -317,15 +385,19 @@ class ProspectiveARCAdapter:
             "minimum_survivors": survivors,
             "minimum_survivor_count": len(survivors),
             "minimum_syntactic_survivor_count": len(survivors),
+            "minimum_certified_semantic_class_count": len(classes),
             "minimum_interaction_class_count": len(classes),
+            "minimum_certified_semantic_class_sizes": [item["size"] for item in classes],
             "minimum_interaction_class_sizes": [item["size"] for item in classes],
             "minimum_class_representatives": representatives,
+            "certified_semantic_class_ids": class_ids,
             "interaction_class_ids": class_ids,
             "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+            "equivalence_basis": "certified-interpreter-semantic-key",
             "separator_probe": separator,
             "version_space_id": digest({
-                "probe_manifest": INTERACTION_PROBE_MANIFEST,
-                "interaction_class_ids": class_ids,
+                "equivalence_basis": "certified-interpreter-semantic-key",
+                "semantic_class_ids": class_ids,
             }),
         }
 
@@ -393,7 +465,7 @@ class ProspectiveARCAdapter:
                 "next_distinguishing_probe": analysis["separator_probe"],
             }
             cls = "GENERATIVE_VERSION_SPACE_UNRESOLVED"
-            strength = "finite-exhaustive-ambiguous-under-frozen-interaction-probes"
+            strength = "finite-exhaustive-ambiguous-after-certified-semantic-quotient"
         else:
             constraint = {
                 "change": "generated-language",
@@ -404,7 +476,7 @@ class ProspectiveARCAdapter:
                 "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
             }
             cls = "GENERATED_FORMATION_REQUIRED"
-            strength = "finite-exhaustive-minimal-interaction-class"
+            strength = "finite-exhaustive-minimal-certified-semantic-class"
         return Evidence("unknown", claim, self.verifier_id, old_witness,
                         self._envelope(obligation, cls, "language_failure", witness,
                                        constraint, strength), self.name)
