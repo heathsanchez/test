@@ -12,6 +12,7 @@ from copy import deepcopy
 from dataclasses import asdict
 from hashlib import sha256
 import json
+from itertools import product
 from pathlib import Path
 import resource
 import subprocess
@@ -38,6 +39,17 @@ D4 = ("id", "r90", "r180", "r270", "flip-h", "flip-v", "transpose", "anti")
 FORM_OPS = ("concat-h", "concat-v", "overlay")
 MAX_AST_SIZE = 5
 MAX_AST_DEPTH = 3
+
+INTERACTION_PROBES = tuple(
+    ((a, b), (c, d))
+    for a, b, c, d in product((0, 1), repeat=4)
+)
+INTERACTION_PROBE_MANIFEST = {
+    "schema": "grid-interaction-probes/v1",
+    "domain": "all 2x2 binary grids",
+    "count": len(INTERACTION_PROBES),
+    "digest": digest(INTERACTION_PROBES),
+}
 
 
 def ast_key(ast: Mapping[str, Any]) -> str:
@@ -82,7 +94,7 @@ def ast_dependencies(ast: Mapping[str, Any]) -> tuple[str, ...]:
 
 def substrate_manifest() -> dict[str, Any]:
     body = {
-        "schema": "grid-lower-substrate/v1",
+        "schema": "grid-lower-substrate/interaction-quotient-v1",
         "nodes": ["input", "call-retained", "crop", *FORM_OPS],
         "typing": {
             "input": "Grid",
@@ -100,7 +112,9 @@ def substrate_manifest() -> dict[str, Any]:
             "overlay operands canonicalized",
             "duplicate canonical JSON removed",
         ],
-        "equivalence": "normalized AST identity; no hidden-observation tie breaking",
+        "equivalence": "minimum ASTs are quotiented by a frozen finite interaction profile before authority",
+        "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+        "interaction_quotient_scope": "bounded exact over the declared 16-probe suite; not global semantic equivalence",
     }
     return {**body, "substrate_id": digest(body)}
 
@@ -153,7 +167,7 @@ def _valid_output(value: Any) -> bool:
 
 
 class ProspectiveARCAdapter:
-    name = "prospective-continuation-genesis-v1"
+    name = "interaction-quotient-controller-v1"
     contract = IRContract(
         "ARCTask", "GeneratedGridAST", "Verified|Unknown",
         "finite exact grid-program interpretation",
@@ -164,7 +178,7 @@ class ProspectiveARCAdapter:
         "NonzeroBoundingObject", "Grid", "crop then retained D4 transform", "ARCExactGridReplay")
     generated_contract = CapabilityContract(
         "Grid", "Grid", "frozen lower-substrate AST interpretation", "GeneratedGridASTReplayCertificate")
-    verifier_id = "prospective-grid-genesis-v1:" + digest({
+    verifier_id = "interaction-quotient-grid-genesis-v1:" + digest({
         "source": sha256(Path(__file__).read_bytes()).hexdigest(),
         "substrate": SUBSTRATE,
         "contract": contract.id,
@@ -240,6 +254,41 @@ class ProspectiveARCAdapter:
     def execute_ast(self, state: Mapping[str, Any], ast: Mapping[str, Any], value: Any) -> Any:
         return self._exec_ast(state, ast, value, [], ())
 
+    def _interaction_profile(self, state: Mapping[str, Any], ast: Mapping[str, Any]) -> tuple[str, tuple[Any, ...]]:
+        outputs = tuple(self.execute_ast(state, ast, probe) for probe in INTERACTION_PROBES)
+        return digest(outputs), outputs
+
+    def _interaction_classes(self, state: Mapping[str, Any],
+                             survivors: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+        grouped: dict[str, dict[str, Any]] = {}
+        for ast in survivors:
+            class_id, outputs = self._interaction_profile(state, ast)
+            item = grouped.setdefault(class_id, {"class_id": class_id, "outputs": outputs, "members": []})
+            item["members"].append(ast)
+        classes = []
+        for class_id in sorted(grouped):
+            item = grouped[class_id]
+            members = sorted(item["members"], key=ast_key)
+            classes.append({
+                "class_id": class_id,
+                "size": len(members),
+                "representative": members[0],
+                "outputs": item["outputs"],
+            })
+
+        separator = None
+        if len(classes) > 1:
+            for index, probe in enumerate(INTERACTION_PROBES):
+                outputs = [item["outputs"][index] for item in classes]
+                if len({repr(output) for output in outputs}) > 1:
+                    separator = {
+                        "probe_index": index,
+                        "input": probe,
+                        "class_output_digests": [digest(output) for output in outputs],
+                    }
+                    break
+        return classes, separator
+
     def generation_analysis(self, state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]:
         candidates = generated_asts(state)
         by_size: dict[int, list[dict[str, Any]]] = {}
@@ -256,6 +305,9 @@ class ProspectiveARCAdapter:
                 by_size.setdefault(size, []).append(ast)
         minimum = min(by_size) if by_size else None
         survivors = by_size.get(minimum, []) if minimum is not None else []
+        classes, separator = self._interaction_classes(state, survivors)
+        representatives = [item["representative"] for item in classes]
+        class_ids = [item["class_id"] for item in classes]
         return {
             "candidate_count": len(candidates),
             "candidate_count_by_size": {str(k): checked[k] for k in sorted(checked)},
@@ -264,7 +316,17 @@ class ProspectiveARCAdapter:
             "smaller_survivor_count": sum(len(v) for k, v in by_size.items() if minimum is not None and k < minimum),
             "minimum_survivors": survivors,
             "minimum_survivor_count": len(survivors),
-            "version_space_id": digest([ast_key(x) for x in survivors]),
+            "minimum_syntactic_survivor_count": len(survivors),
+            "minimum_interaction_class_count": len(classes),
+            "minimum_interaction_class_sizes": [item["size"] for item in classes],
+            "minimum_class_representatives": representatives,
+            "interaction_class_ids": class_ids,
+            "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+            "separator_probe": separator,
+            "version_space_id": digest({
+                "probe_manifest": INTERACTION_PROBE_MANIFEST,
+                "interaction_class_ids": class_ids,
+            }),
         }
 
     def _envelope(self, obligation: Obligation, cls: str, diagnosis: str,
@@ -317,22 +379,32 @@ class ProspectiveARCAdapter:
                        "old_language_cardinality": len(active) + len(D4)}
         analysis = self.generation_analysis(state, task)
         witness = {**old_witness, "generator": {k: v for k, v in analysis.items()
-                                                 if k != "minimum_survivors"}}
+                                                 if k not in {"minimum_survivors", "minimum_class_representatives"}}}
         if analysis["minimum_size"] is None:
             constraint = {"remain": "UNKNOWN", "bounded_generator_complete": True}
             cls = "NO_GENERATED_REALIZATION"
             strength = "finite-exhaustive-inconclusive"
-        elif analysis["minimum_survivor_count"] != 1:
-            constraint = {"remain": "UNKNOWN", "minimum_size": analysis["minimum_size"],
-                          "version_space_id": analysis["version_space_id"]}
+        elif analysis["minimum_interaction_class_count"] != 1:
+            constraint = {
+                "remain": "UNKNOWN",
+                "minimum_size": analysis["minimum_size"],
+                "version_space_id": analysis["version_space_id"],
+                "interaction_class_count": analysis["minimum_interaction_class_count"],
+                "next_distinguishing_probe": analysis["separator_probe"],
+            }
             cls = "GENERATIVE_VERSION_SPACE_UNRESOLVED"
-            strength = "finite-exhaustive-ambiguous"
+            strength = "finite-exhaustive-ambiguous-under-frozen-interaction-probes"
         else:
-            constraint = {"change": "generated-language", "substrate_id": SUBSTRATE["substrate_id"],
-                          "minimum_size": analysis["minimum_size"],
-                          "version_space_id": analysis["version_space_id"]}
+            constraint = {
+                "change": "generated-language",
+                "substrate_id": SUBSTRATE["substrate_id"],
+                "minimum_size": analysis["minimum_size"],
+                "version_space_id": analysis["version_space_id"],
+                "interaction_class_count": 1,
+                "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+            }
             cls = "GENERATED_FORMATION_REQUIRED"
-            strength = "finite-exhaustive-minimal"
+            strength = "finite-exhaustive-minimal-interaction-class"
         return Evidence("unknown", claim, self.verifier_id, old_witness,
                         self._envelope(obligation, cls, "language_failure", witness,
                                        constraint, strength), self.name)
@@ -351,8 +423,8 @@ class ProspectiveARCAdapter:
                          self.name, (callee,), self.role_contract)
         elif cls == "GENERATED_FORMATION_REQUIRED":
             analysis = self.generation_analysis(state, obligation.target["task"])
-            if analysis["minimum_survivor_count"] == 1:
-                ast = analysis["minimum_survivors"][0]
+            if analysis["minimum_interaction_class_count"] == 1:
+                ast = analysis["minimum_class_representatives"][0]
                 yield Repair("capability", "generated-" + digest(ast)[:16],
                              {"body": {"op": "generated-ast", "ast": ast,
                                        "substrate_id": SUBSTRATE["substrate_id"]},
@@ -377,8 +449,8 @@ class ProspectiveARCAdapter:
             ast = body.get("ast")
             ok = (repair.contract == self.generated_contract
                   and body.get("substrate_id") == SUBSTRATE["substrate_id"]
-                  and analysis["minimum_survivor_count"] == 1
-                  and ast == analysis["minimum_survivors"][0]
+                  and analysis["minimum_interaction_class_count"] == 1
+                  and ast == analysis["minimum_class_representatives"][0]
                   and repair.dependencies == ast_dependencies(ast)
                   and analysis["smaller_survivor_count"] == 0)
             certificate.update({
@@ -388,6 +460,9 @@ class ProspectiveARCAdapter:
                 "minimum_size": analysis["minimum_size"],
                 "smaller_survivor_count": analysis["smaller_survivor_count"],
                 "minimum_survivor_count": analysis["minimum_survivor_count"],
+                "minimum_interaction_class_count": analysis["minimum_interaction_class_count"],
+                "interaction_probe_manifest": analysis["interaction_probe_manifest"],
+                "separator_probe": analysis["separator_probe"],
                 "version_space_id": analysis["version_space_id"],
             })
         certificate["accepted"] = ok
