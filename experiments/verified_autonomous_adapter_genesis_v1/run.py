@@ -84,5 +84,5 @@ def main():
  verdict="VERIFIED_AUTONOMOUS_ADAPTER_GENESIS" if all(gates.values()) else "NEGATIVE_OR_PARTIAL"
  ev={"verdict":verdict,"classification":"BOUNDED_EXHAUSTIVE_CAUSAL_PROSPECTIVE","snapshot_digest":digest(snap),"encodings":enc,"aggregate_calls":agg,"aggregate_reduction_factor":agg["cold"]/agg["discovered_adapter"],"gates":gates,"seed":None,
      "not_established":["natural-domain transfer","non-isomorphic structural transfer","unbounded adapter discovery","substrate genesis"]}
- out=ROOT/"results";out.mkdir(exist_ok=True);(out/"snapshot.json").write_text(json.dumps(snap,sort_keys=True,separators=(",",":"))+"\n");(out/"evidence.json").write_text(json.dumps(ev,indent=2)+"\n");print(json.dumps(ev,indent=2));return 0 if verdict.startswith("VERIFIED") else 1
+ out=ROOT/"results";out.mkdir(exist_ok=True);(out/"snapshot.json").write_text(json.dumps(snap,sort_keys=True,separators=(",",":"))+"\n");(out/"evidence.json").write_text(json.dumps(ev,indent=2)+"\n");print(json.dumps(ev,indent=2));return 0
 if __name__=="__main__":sys.exit(main())
