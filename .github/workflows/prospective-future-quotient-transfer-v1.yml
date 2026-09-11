@@ -1,0 +1,366 @@
+name: Prospective future quotient transfer v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/prospective-future-quotient-transfer-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  transfer:
+    strategy:
+      fail-fast: false
+      matrix:
+        equation: [15535, 19966]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Freeze held-out archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          git -C /tmp/austin checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Run frozen generic developer
+        env:
+          EQUATION: ${{ matrix.equation }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os,re,json,pathlib,time
+          from functools import lru_cache
+          from collections import defaultdict
+
+          eq=os.environ['EQUATION']
+          source=pathlib.Path(f'/tmp/austin/proofs/Equation{eq}/InfiniteModel.lean').read_text()
+
+          # Admission boundary: this transfer adapter handles the previously unseen
+          # direct Code grammar e/k/p only. No law-specific rule is supplied.
+          cm=re.search(r'inductive CM where([^\n]*(?:\n\s*\|[^\n]*)*)',source)
+          if not cm: raise SystemExit('NO_CM')
+          cmtext=cm.group(0)
+          if not all(x in cmtext for x in ['| e : CM','| k : CM → CM','| p : CM → CM → CM']):
+            raise SystemExit('UNSUPPORTED_CM')
+          if re.search(r'\|\s+[qr]\s*:',cmtext):
+            raise SystemExit('UNSUPPORTED_AUX_CONSTRUCTOR')
+
+          def split_top(s):
+            out=[];start=0;depth=0
+            for i,ch in enumerate(s):
+              if ch=='(': depth+=1
+              elif ch==')': depth-=1
+              elif ch.isspace() and depth==0:
+                if start<i: out.append(s[start:i])
+                start=i+1
+            if start<len(s): out.append(s[start:])
+            return [x for x in out if x]
+
+          def strip_outer(s):
+            s=s.strip()
+            changed=True
+            while changed and len(s)>=2 and s[0]=='(' and s[-1]==')':
+              depth=0;changed=False
+              for i,ch in enumerate(s):
+                if ch=='(': depth+=1
+                elif ch==')': depth-=1
+                if depth==0:
+                  if i==len(s)-1:
+                    s=s[1:-1].strip();changed=True
+                  break
+            return s
+
+          def parse_expr(s):
+            s=strip_outer(s)
+            ps=split_top(s)
+            if len(ps)==1:
+              t=ps[0]
+              if t=='e': return ('e',)
+              if re.fullmatch(r'v\d+(?:_\d+)?',t): return ('V',t)
+              raise ValueError(('atom',s,ps))
+            op=ps[0]
+            if op=='k' and len(ps)==2: return ('k',parse_expr(ps[1]))
+            if op=='p' and len(ps)==3: return ('p',parse_expr(ps[1]),parse_expr(ps[2]))
+            raise ValueError(('app',s,ps))
+
+          i=source.index('inductive Code')
+          ends=[source.find(x,i) for x in ['\ndef CodeCases','\ndef CodeShape','\ndef NF','\ntheorem code_']]
+          ends=[x for x in ends if x>i]
+          block=source[i:(min(ends) if ends else i+20000)]
+          rules=[]
+          for line in block.splitlines():
+            line=line.strip()
+            if not line.startswith('|'): continue
+            m=re.match(r'\|\s+(\w+)\s*(.*?)\s*:\s*Code\s+(.+)$',line)
+            if not m: raise ValueError(('rule',line))
+            args=split_top(m.group(3))
+            if len(args)!=3: raise ValueError(('args',line,args))
+            rules.append((m.group(1),parse_expr(args[0]),parse_expr(args[1]),parse_expr(args[2]),line))
+          if not rules: raise SystemExit('NO_CODE_RULES')
+
+          E=('e',)
+          def K(a): return ('k',a)
+          def P(a,b): return ('p',a,b)
+
+          @lru_cache(None)
+          def size(t):
+            if t[0]=='e': return 0
+            if t[0]=='k': return size(t[1])+1
+            return size(t[1])+size(t[2])+2
+
+          @lru_cache(None)
+          def st(t):
+            if t[0]=='e': return 'e'
+            if t[0]=='k': return 'k('+st(t[1])+')'
+            return 'p('+st(t[1])+','+st(t[2])+')'
+
+          def match(p,t,env):
+            if p[0]=='V':
+              k=p[1]
+              if k in env: return env[k]==t
+              env[k]=t;return True
+            if p[0]!=t[0]: return False
+            if p[0]=='e': return True
+            if p[0]=='k': return match(p[1],t[1],env)
+            return match(p[1],t[1],env) and match(p[2],t[2],env)
+
+          def instantiate(p,env):
+            if p[0]=='V': return env[p[1]]
+            if p[0]=='e': return E
+            if p[0]=='k': return K(instantiate(p[1],env))
+            return P(instantiate(p[1],env),instantiate(p[2],env))
+
+          @lru_cache(None)
+          def code_outputs(a,b):
+            outs=[]
+            for _,pa,pb,po,_ in rules:
+              env={}
+              if match(pa,a,env) and match(pb,b,env):
+                outs.append(instantiate(po,env))
+            return tuple(outs)
+
+          @lru_cache(None)
+          def ev(a,b):
+            outs=code_outputs(a,b)
+            if not outs: return P(a,b)
+            if any(x!=outs[0] for x in outs[1:]):
+              raise AssertionError(('NONFUNCTIONAL_CODE',st(a),st(b),[st(x) for x in outs]))
+            return outs[0]
+
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e': return True
+            if t[0]=='k': return nf(t[1])
+            return nf(t[1]) and nf(t[2]) and not code_outputs(t[1],t[2])
+
+          STATE_MAX=6
+          TRAIN_CONTEXT_MAX=3
+          TARGET_CONTEXT_SIZE=4
+          MAX_SENSORS=64
+          MAX_DEPTH=12
+
+          by={0:{E}}
+          for n in range(1,STATE_MAX+1):
+            cur={K(x) for x in by.get(n-1,set()) if nf(K(x))}
+            for a_size in range(n-1):
+              b_size=n-2-a_size
+              for a in by.get(a_size,set()):
+                for b in by.get(b_size,set()):
+                  t=P(a,b)
+                  if nf(t): cur.add(t)
+            by[n]=cur
+          states=sorted(set().union(*by.values()),key=lambda t:(size(t),st(t)))
+          train_contexts=[t for t in states if size(t)<=TRAIN_CONTEXT_MAX]
+          target_contexts=[t for t in states if size(t)==TARGET_CONTEXT_SIZE]
+
+          # Protected observation starts below compound syntax: generators are
+          # distinguished, while all non-generator states are initially opaque.
+          @lru_cache(None)
+          def tower_index(t):
+            n=0;cur=t
+            while cur[0]=='k':
+              n+=1;cur=cur[1]
+            return n if cur[0]=='e' else None
+
+          @lru_cache(None)
+          def observe(t):
+            n=tower_index(t)
+            return ('generator',n) if n is not None else ('compound',)
+
+          train_actions=[('L',c) for c in train_contexts]+[('R',c) for c in train_contexts]
+          target_actions=[('L',c) for c in target_contexts]+[('R',c) for c in target_contexts]
+          train_actions.sort(key=lambda x:(x[0],size(x[1]),st(x[1])))
+          target_actions.sort(key=lambda x:(x[0],st(x[1])))
+
+          @lru_cache(None)
+          def step_train(t,ai):
+            side,c=train_actions[ai]
+            return ev(c,t) if side=='L' else ev(t,c)
+
+          def step_action(t,action):
+            side,c=action
+            return ev(c,t) if side=='L' else ev(t,c)
+
+          @lru_cache(None)
+          def run_sensor(t,sensor):
+            cur=t
+            for ai in sensor: cur=step_train(cur,ai)
+            return cur
+
+          def vec(sensor):
+            return tuple(observe(run_sensor(t,sensor)) for t in states)
+
+          def partition(sensors):
+            vs=[vec(q) for q in sensors]
+            ids={};cl=[];n=0
+            for i in range(len(states)):
+              key=tuple(v[i] for v in vs)
+              if key not in ids: ids[key]=n;n+=1
+              cl.append(ids[key])
+            return cl,n
+
+          def split_witness(v,cl):
+            first={}
+            for i,c in enumerate(cl):
+              if c in first and first[c][0]!=v[i]: return first[c][1],i
+              first.setdefault(c,(v[i],i))
+            return None
+
+          sensors=[()]
+          rejected=set()
+          history=[]
+          for it in range(MAX_SENSORS):
+            cl,nc=partition(sensors)
+            found=None
+            for parent in sorted(sensors,key=lambda q:(len(q),q)):
+              for ai in range(len(train_actions)):
+                cand=(ai,)+parent
+                if cand in sensors or cand in rejected or len(cand)>MAX_DEPTH: continue
+                v=vec(cand)
+                w=split_witness(v,cl)
+                if w is None:
+                  rejected.add(cand);continue
+                found=(cand,parent,ai,w);break
+              if found: break
+            if not found: break
+            cand,parent,ai,(x,y)=found
+            sensors.append(cand)
+            history.append({
+              'iteration':it,'sensor_depth':len(cand),
+              'witness':[st(states[x]),st(states[y])],
+              'prefix':{'side':train_actions[ai][0],'context':st(train_actions[ai][1])}
+            })
+            print('GENESIS',eq,it,'DEPTH',len(cand),'WITNESS',st(states[x]),'||',st(states[y]),
+                  'PREFIX',train_actions[ai][0],st(train_actions[ai][1]))
+
+          final_cl,final_classes=partition(sensors)
+
+          def profile_with(s,t):
+            return tuple(observe(run_sensor(t,q)) for q in s)
+
+          def stability(actions,sset):
+            cl,_=partition(sset)
+            buckets=defaultdict(list)
+            for i,c in enumerate(cl): buckets[c].append(i)
+            violations=[]
+            for xs in buckets.values():
+              if len(xs)<2: continue
+              for action in actions:
+                first=None
+                for i in xs:
+                  p=profile_with(sset,step_action(states[i],action))
+                  if first is None: first=(p,i)
+                  elif p!=first[0]:
+                    violations.append({
+                      'left':st(states[first[1]]),'right':st(states[i]),
+                      'action':{'side':action[0],'context':st(action[1])}
+                    })
+                    break
+            return violations
+
+          train_viol=stability(train_actions,sensors)
+          if train_viol: raise AssertionError(('TRAIN_NOT_STABLE',train_viol[0]))
+
+          baseline=[()]
+          target_before=stability(target_actions,baseline)
+          target_after=stability(target_actions,sensors)
+
+          # Exact single-coordinate ablation census.
+          necessary=[]
+          for i in range(1,len(sensors)):
+            weak=sensors[:i]+sensors[i+1:]
+            v=stability(train_actions,weak)
+            if v: necessary.append({'sensor_index':i,'depth':len(sensors[i]),'witness':v[0]})
+
+          result={
+            'equation':eq,
+            'archive_commit':'b984287a1e5283e67b3709fe1e43f7734b360342',
+            'rule_count':len(rules),
+            'state_count':len(states),
+            'train_context_count':len(train_contexts),
+            'target_context_count':len(target_contexts),
+            'sensor_count':len(sensors),
+            'max_sensor_depth':max(map(len,sensors)),
+            'final_class_count':final_classes,
+            'train_stable':True,
+            'target_violations_before':len(target_before),
+            'target_violations_after':len(target_after),
+            'target_first_residual_after':target_after[0] if target_after else None,
+            'necessary_sensor_count':len(necessary),
+            'necessary_sensors':necessary,
+            'history':history,
+            'selection':'precommitted held-out direct-Code laws E15535 and E19966; no law-specific Code semantics supplied to controller'
+          }
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps({k:result[k] for k in [
+            'equation','rule_count','state_count','train_context_count','target_context_count',
+            'sensor_count','max_sensor_depth','final_class_count','train_stable',
+            'target_violations_before','target_violations_after','necessary_sensor_count',
+            'target_first_residual_after']},indent=2))
+          print('PROSPECTIVE_FUTURE_QUOTIENT_TRANSFER_DONE',eq)
+          PY
+
+      - name: Classify prospective result
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/result.json'))
+          assert d['train_stable'] is True
+          assert d['sensor_count'] >= 1
+          if d['target_violations_before']>0 and d['target_violations_after']==0:
+              status='PROSPECTIVE_HELDOUT_CLOSURE'
+          elif d['target_violations_after'] < d['target_violations_before']:
+              status='PROSPECTIVE_HELDOUT_IMPROVEMENT_WITH_RESIDUAL'
+          elif d['target_violations_after']>0:
+              status='PROSPECTIVE_HELDOUT_RESIDUAL'
+          else:
+              status='NO_HELDOUT_SEPARATOR'
+          d['prospective_status']=status
+          open('/tmp/result.json','w').write(json.dumps(d,indent=2))
+          print(status)
+          PY
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/result.json /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<JSON
+          {
+            "classification": "BOUNDED_PROSPECTIVE_TRANSFER",
+            "equation": "E${{ matrix.equation }}",
+            "claim": "A single frozen parser/controller, with no law-specific rule semantics, parsed the held-out Code grammar, generated only future-separating continuation coordinates, closed the declared training transition quotient, and was then evaluated on precommitted larger unseen contexts.",
+            "archive_commit": "b984287a1e5283e67b3709fe1e43f7734b360342"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-future-quotient-E${{ matrix.equation }}-v1
+          path: /tmp/out/
