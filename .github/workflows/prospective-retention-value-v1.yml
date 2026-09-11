@@ -1,0 +1,26 @@
+name: Prospective Retention Value V1
+on: {workflow_dispatch: {}, push: {branches: [prospective-retention-value-v1]}}
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python experiments/prospective_retention_value_v1/run.py | tee /tmp/retention.json
+      - run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: |
+          set -o pipefail
+          lean experiments/prospective_retention_value_v1/Retention.lean 2>&1 | tee /tmp/retention-lean.log
+          ! grep -q sorry /tmp/retention-lean.log
+      - run: |
+          cd experiments/prospective_retention_value_v1
+          sha256sum PROTOCOL.md Retention.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/retention*.log results/ 2>/dev/null || true
+          cp /tmp/retention.json results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: prospective-retention-value-v1, path: experiments/prospective_retention_value_v1/results, retention-days: 90}
