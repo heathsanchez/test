@@ -1,0 +1,434 @@
+{
+  "verdict": "NEGATIVE_OR_PARTIAL",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "59f0e33dee097f0c0e569ec7c1f37bd0e3d4f9fa0425d9117fa96de23f50ad0d",
+  "encodings": [
+    {
+      "hidden_permutation": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "discovered_map": {
+        "SCAN": "zx9",
+        "FILTER": "qa2",
+        "FIRST": "mn7",
+        "PAIR": "rv4",
+        "EXTEND": "kp1",
+        "TEMPORAL": "ht8"
+      },
+      "results": {
+        "cold": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "ht8",
+            "zx9",
+            "qa2",
+            "mn7",
+            "rv4",
+            "kp1",
+            "rv4"
+          ],
+          "adapter_calls": 0
+        },
+        "discovered_adapter": {
+          "correct": true,
+          "verifier_calls": 320,
+          "search_nodes": 56,
+          "candidate_evaluations": 2,
+          "depth": 2,
+          "canonical": [
+            "ht8",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "adapter_ablation": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "ht8",
+            "zx9",
+            "qa2",
+            "mn7",
+            "rv4",
+            "kp1",
+            "rv4"
+          ],
+          "adapter_calls": 0
+        },
+        "random_bijection_sham": {
+          "correct": true,
+          "verifier_calls": 814028,
+          "search_nodes": 960799,
+          "candidate_evaluations": 7273,
+          "depth": 7,
+          "canonical": [
+            "ht8",
+            "zx9",
+            "qa2",
+            "mn7",
+            "rv4",
+            "kp1",
+            "rv4"
+          ],
+          "adapter_calls": 216
+        },
+        "answer_memory": {
+          "correct": true,
+          "verifier_calls": 2181120,
+          "search_nodes": 2396744,
+          "candidate_evaluations": 268674,
+          "depth": 7,
+          "canonical": [
+            "MEM_A",
+            "ht8",
+            "rv4",
+            "zx9",
+            "qa2",
+            "kp1",
+            "rv4"
+          ],
+          "adapter_calls": 0
+        }
+      },
+      "map_exact": true,
+      "sham_wrong": true
+    },
+    {
+      "hidden_permutation": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "discovered_map": {
+        "SCAN": "ht8",
+        "FILTER": "kp1",
+        "FIRST": "rv4",
+        "PAIR": "mn7",
+        "EXTEND": "qa2",
+        "TEMPORAL": "zx9"
+      },
+      "results": {
+        "cold": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "zx9",
+            "ht8",
+            "kp1",
+            "rv4",
+            "mn7",
+            "qa2",
+            "mn7"
+          ],
+          "adapter_calls": 0
+        },
+        "discovered_adapter": {
+          "correct": true,
+          "verifier_calls": 320,
+          "search_nodes": 56,
+          "candidate_evaluations": 2,
+          "depth": 2,
+          "canonical": [
+            "zx9",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "adapter_ablation": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "zx9",
+            "ht8",
+            "kp1",
+            "rv4",
+            "mn7",
+            "qa2",
+            "mn7"
+          ],
+          "adapter_calls": 0
+        },
+        "random_bijection_sham": {
+          "correct": true,
+          "verifier_calls": 2672,
+          "search_nodes": 399,
+          "candidate_evaluations": 112,
+          "depth": 3,
+          "canonical": [
+            "XFER",
+            "qa2",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "answer_memory": {
+          "correct": true,
+          "verifier_calls": 2181120,
+          "search_nodes": 2396744,
+          "candidate_evaluations": 268674,
+          "depth": 7,
+          "canonical": [
+            "MEM_A",
+            "mn7",
+            "zx9",
+            "ht8",
+            "kp1",
+            "qa2",
+            "mn7"
+          ],
+          "adapter_calls": 0
+        }
+      },
+      "map_exact": true,
+      "sham_wrong": true
+    },
+    {
+      "hidden_permutation": [
+        2,
+        5,
+        1,
+        4,
+        0,
+        3
+      ],
+      "discovered_map": {
+        "SCAN": "kp1",
+        "FILTER": "mn7",
+        "FIRST": "zx9",
+        "PAIR": "ht8",
+        "EXTEND": "rv4",
+        "TEMPORAL": "qa2"
+      },
+      "results": {
+        "cold": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "qa2",
+            "kp1",
+            "mn7",
+            "zx9",
+            "ht8",
+            "rv4",
+            "ht8"
+          ],
+          "adapter_calls": 0
+        },
+        "discovered_adapter": {
+          "correct": true,
+          "verifier_calls": 320,
+          "search_nodes": 56,
+          "candidate_evaluations": 2,
+          "depth": 2,
+          "canonical": [
+            "qa2",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "adapter_ablation": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "qa2",
+            "kp1",
+            "mn7",
+            "zx9",
+            "ht8",
+            "rv4",
+            "ht8"
+          ],
+          "adapter_calls": 0
+        },
+        "random_bijection_sham": {
+          "correct": true,
+          "verifier_calls": 53946,
+          "search_nodes": 137256,
+          "candidate_evaluations": 42,
+          "depth": 6,
+          "canonical": [
+            "qa2",
+            "kp1",
+            "mn7",
+            "zx9",
+            "XFER",
+            "ht8"
+          ],
+          "adapter_calls": 216
+        },
+        "answer_memory": {
+          "correct": true,
+          "verifier_calls": 2181120,
+          "search_nodes": 2396744,
+          "candidate_evaluations": 268674,
+          "depth": 7,
+          "canonical": [
+            "MEM_A",
+            "ht8",
+            "qa2",
+            "kp1",
+            "mn7",
+            "rv4",
+            "ht8"
+          ],
+          "adapter_calls": 0
+        }
+      },
+      "map_exact": true,
+      "sham_wrong": true
+    },
+    {
+      "hidden_permutation": [
+        3,
+        0,
+        4,
+        1,
+        5,
+        2
+      ],
+      "discovered_map": {
+        "SCAN": "qa2",
+        "FILTER": "rv4",
+        "FIRST": "ht8",
+        "PAIR": "zx9",
+        "EXTEND": "mn7",
+        "TEMPORAL": "kp1"
+      },
+      "results": {
+        "cold": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "kp1",
+            "qa2",
+            "rv4",
+            "ht8",
+            "zx9",
+            "mn7",
+            "zx9"
+          ],
+          "adapter_calls": 0
+        },
+        "discovered_adapter": {
+          "correct": true,
+          "verifier_calls": 320,
+          "search_nodes": 56,
+          "candidate_evaluations": 2,
+          "depth": 2,
+          "canonical": [
+            "kp1",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "adapter_ablation": {
+          "correct": true,
+          "verifier_calls": 222808,
+          "search_nodes": 335922,
+          "candidate_evaluations": 222,
+          "depth": 7,
+          "canonical": [
+            "kp1",
+            "qa2",
+            "rv4",
+            "ht8",
+            "zx9",
+            "mn7",
+            "zx9"
+          ],
+          "adapter_calls": 0
+        },
+        "random_bijection_sham": {
+          "correct": true,
+          "verifier_calls": 53826,
+          "search_nodes": 137256,
+          "candidate_evaluations": 21,
+          "depth": 6,
+          "canonical": [
+            "kp1",
+            "qa2",
+            "rv4",
+            "ht8",
+            "zx9",
+            "XFER"
+          ],
+          "adapter_calls": 216
+        },
+        "answer_memory": {
+          "correct": true,
+          "verifier_calls": 2181120,
+          "search_nodes": 2396744,
+          "candidate_evaluations": 268674,
+          "depth": 7,
+          "canonical": [
+            "MEM_A",
+            "kp1",
+            "qa2",
+            "rv4",
+            "zx9",
+            "mn7",
+            "zx9"
+          ],
+          "adapter_calls": 0
+        }
+      },
+      "map_exact": true,
+      "sham_wrong": true
+    }
+  ],
+  "aggregate_calls": {
+    "cold": 891232,
+    "discovered_adapter": 1280,
+    "adapter_ablation": 891232,
+    "random_bijection_sham": 924472,
+    "answer_memory": 8724480
+  },
+  "aggregate_reduction_factor": 696.275,
+  "gates": {
+    "all_maps_exact": true,
+    "all_conditions_correct": true,
+    "warm_always_cheaper": true,
+    "ablation_restores": true,
+    "sham_not_reproduce": false,
+    "memory_not_reproduce": true,
+    "surface_disjoint": true,
+    "counterbalanced": true
+  },
+  "seed": null,
+  "not_established": [
+    "natural-domain transfer",
+    "non-isomorphic structural transfer",
+    "unbounded adapter discovery",
+    "substrate genesis"
+  ]
+}
