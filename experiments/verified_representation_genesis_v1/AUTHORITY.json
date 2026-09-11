@@ -1,0 +1,30 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "verified-representation-genesis-v1",
+  "experiment_commit_sha": "9e6ba7cac5eeb965e1e882ebe038424a87a69ea0",
+  "successful_run": {
+    "run_id": 34591859113,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34591859113",
+    "job_id": 103238734560,
+    "job_url": "https://github.com/heathsanchez/test/actions/runs/34591859113/job/103238734560",
+    "conclusion": "success",
+    "lean_error_lines": 0,
+    "lean_version": "4.30.0-rc2",
+    "python_version": "3.12"
+  },
+  "artifact": {
+    "id": 10195947331,
+    "url": "https://github.com/heathsanchez/test/actions/runs/34591859113/artifacts/10195947331",
+    "sha256": "3ede7957ea74f3ee7417977781e3841361e7c73b3485d70364b4da8cc6392029"
+  },
+  "snapshot_sha256": "3106999ce529f3b7c5f6308d0e0217c208fdb4d9c426aea38d23bc94904f9cc7",
+  "representation_artifact_sha256": "6d6847fb66ad4c31fe54ab16022f97df7c2b359219c8f9202e76b58b7d798987",
+  "invalid_implementation_runs": [
+    {
+      "run_id": 34591666019,
+      "job_id": 103238118781,
+      "reason": "Lean contradiction, simplification, and decidability proof defects"
+    }
+  ],
+  "evidence_freeze_sha": null
+}
