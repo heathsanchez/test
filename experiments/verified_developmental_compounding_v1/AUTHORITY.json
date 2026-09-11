@@ -1,0 +1,33 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "verified-developmental-compounding-v1",
+  "base_commit": "ac4d0cf87118fd8e93f93d495ed9e95fa853e64a",
+  "initial_frozen_experiment_commit": "781139fdd6ec2b4687a171cbde65fc332fd1b94a",
+  "corrected_experiment_commit": "67837d0154df1a9f75975d3ac735ce33392269d7",
+  "correction_scope": "matched aggregate accounting only; controller, tasks, gates, and observed outcomes unchanged",
+  "controller_sha256": "9cb2951a3111bd24eaed003835b7174579064fbd6fd66e219215af82ee26b794",
+  "tasks_sha256": "1875eddcf7fcf411b1199992dc08b0acef3d4af6387e911bd37f03e9c7187adb",
+  "pi_freeze_sha256": "5cfd5cc61ee9b6101fb6e1d0fc2ccc0172fcf57a2a89a269bd336e1186ec7321",
+  "runs": [
+    {
+      "role": "superseded accounting run",
+      "run_id": 34562350044,
+      "run_url": "https://github.com/heathsanchez/test/actions/runs/34562350044",
+      "job_id": 103147503396,
+      "job_url": "https://github.com/heathsanchez/test/actions/runs/34562350044/job/103147503396",
+      "artifact_id": 10184761196,
+      "artifact_sha256": "730eff2e4317423acc79b1a7799a50916fe0657636dce6a3774b09f3fc4786d1"
+    },
+    {
+      "role": "authoritative corrected scientific run",
+      "run_id": 34562463842,
+      "run_url": "https://github.com/heathsanchez/test/actions/runs/34562463842",
+      "job_id": 103147825327,
+      "job_url": "https://github.com/heathsanchez/test/actions/runs/34562463842/job/103147825327",
+      "artifact_id": 10184798856,
+      "artifact_url": "https://github.com/heathsanchez/test/actions/runs/34562463842/artifacts/10184798856",
+      "artifact_sha256": "f13daca5128e6ff3866c6cefdeb96a187c75dde5107a53e4876539f2bd819a45"
+    }
+  ],
+  "evidence_freeze_commit": "SELF"
+}

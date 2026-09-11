@@ -1,0 +1,2094 @@
+{
+  "classification": "BOUNDED_CAUSAL",
+  "terminal_verdict": "PARTIAL / BOUNDED SIGNAL",
+  "scope": "deterministic finite qualification across three supplied verifier adapters",
+  "controller_sha256": "9cb2951a3111bd24eaed003835b7174579064fbd6fd66e219215af82ee26b794",
+  "tasks_sha256": "1875eddcf7fcf411b1199992dc08b0acef3d4af6387e911bd37f03e9c7187adb",
+  "task_manifest_claimed_sha256": "ab3cad92c89243ebb5f9cf07b73d1f033be4eedfe180e3e0bbb608fa7bc1e880",
+  "seed": 20260911,
+  "python": "3.12.14",
+  "platform": "Linux-6.18.35-x86_64-with-glibc2.39",
+  "primary_metric": "verifier-mediated candidate evaluations to first accepted program",
+  "aggregate": {
+    "cold": 722,
+    "warm": 27,
+    "ratio": 26.74074074074074
+  },
+  "stage_pairs": [
+    {
+      "domain": "finite_theorem",
+      "stage": 2,
+      "cold": 20,
+      "warm": 4,
+      "ratio": 5.0
+    },
+    {
+      "domain": "finite_theorem",
+      "stage": 3,
+      "cold": 79,
+      "warm": 3,
+      "ratio": 26.333333333333332
+    },
+    {
+      "domain": "finite_theorem",
+      "stage": 4,
+      "cold": 58,
+      "warm": 2,
+      "ratio": 29.0
+    },
+    {
+      "domain": "program_synthesis",
+      "stage": 2,
+      "cold": 17,
+      "warm": 4,
+      "ratio": 4.25
+    },
+    {
+      "domain": "program_synthesis",
+      "stage": 3,
+      "cold": 67,
+      "warm": 3,
+      "ratio": 22.333333333333332
+    },
+    {
+      "domain": "program_synthesis",
+      "stage": 4,
+      "cold": 131,
+      "warm": 2,
+      "ratio": 65.5
+    },
+    {
+      "domain": "rule_induction",
+      "stage": 2,
+      "cold": 17,
+      "warm": 4,
+      "ratio": 4.25
+    },
+    {
+      "domain": "rule_induction",
+      "stage": 3,
+      "cold": 67,
+      "warm": 3,
+      "ratio": 22.333333333333332
+    },
+    {
+      "domain": "rule_induction",
+      "stage": 4,
+      "cold": 266,
+      "warm": 2,
+      "ratio": 133.0
+    }
+  ],
+  "gates": {
+    "G1_no_warm_correctness_regression": true,
+    "G2_aggregate_at_least_2x": true,
+    "G3_benefit_persists": true,
+    "G4_ablation_damages": true,
+    "G5_sham_no_gain": true,
+    "G6_answer_memory_no_gain": true,
+    "G7_prospective_pi_transfer": false,
+    "G8_pi_frozen_before_heldout": true
+  },
+  "pi_freeze": {
+    "compiled_from_domains": [
+      "finite_theorem",
+      "program_synthesis"
+    ],
+    "operator": "residual_guided_composition",
+    "controller_sha256": "9cb2951a3111bd24eaed003835b7174579064fbd6fd66e219215af82ee26b794",
+    "held_out_task_commitment": "1621ab3aa6548fa8cd68ce24afa933587fefbca38759de62509eb47295ab7480",
+    "freeze_sha256": "5cfd5cc61ee9b6101fb6e1d0fc2ccc0172fcf57a2a89a269bd336e1186ec7321"
+  },
+  "rows": [
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 1,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "swap"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          1,
+          0
+        ],
+        "required": [
+          0,
+          0
+        ]
+      },
+      "wall_seconds": 4.2063000023517816e-05,
+      "cpu_seconds": 3.9148000000002736e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 1,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "swap"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          1,
+          0
+        ],
+        "required": [
+          0,
+          0
+        ]
+      },
+      "wall_seconds": 1.881899993350089e-05,
+      "cpu_seconds": 1.8867999999998275e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 2,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left"
+      ],
+      "verifier_calls": 20,
+      "search_nodes": 20,
+      "residual_count": 19,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          0
+        ]
+      },
+      "wall_seconds": 0.00010357600001498213,
+      "cpu_seconds": 0.00010357400000000211,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 2,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left"
+      ],
+      "verifier_calls": 4,
+      "search_nodes": 4,
+      "residual_count": 3,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          0
+        ]
+      },
+      "wall_seconds": 1.882899994143372e-05,
+      "cpu_seconds": 1.8917999999999713e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 2,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left"
+      ],
+      "verifier_calls": 20,
+      "search_nodes": 20,
+      "residual_count": 19,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          0
+        ]
+      },
+      "wall_seconds": 6.803200005833787e-05,
+      "cpu_seconds": 6.804000000000532e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 2,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left"
+      ],
+      "verifier_calls": 20,
+      "search_nodes": 20,
+      "residual_count": 19,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          0
+        ]
+      },
+      "wall_seconds": 6.681000002117798e-05,
+      "cpu_seconds": 6.692999999999977e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 2,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left"
+      ],
+      "verifier_calls": 20,
+      "search_nodes": 20,
+      "residual_count": 19,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          0
+        ]
+      },
+      "wall_seconds": 6.658099994183431e-05,
+      "cpu_seconds": 6.668900000000172e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 3,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left",
+        "xor_right"
+      ],
+      "verifier_calls": 79,
+      "search_nodes": 79,
+      "residual_count": 78,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.00041326300004129735,
+      "cpu_seconds": 0.00041355299999999706,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 3,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left",
+        "xor_right"
+      ],
+      "verifier_calls": 3,
+      "search_nodes": 3,
+      "residual_count": 2,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 1.5974000007190625e-05,
+      "cpu_seconds": 1.5993999999998343e-05,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 3,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "negate_left",
+        "swap",
+        "xor_right",
+        "negate_left"
+      ],
+      "verifier_calls": 76,
+      "search_nodes": 76,
+      "residual_count": 75,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          1
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.0003632080000670612,
+      "cpu_seconds": 0.0003635690000000011,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 3,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left",
+        "xor_right"
+      ],
+      "verifier_calls": 79,
+      "search_nodes": 79,
+      "residual_count": 78,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.0003868439999905604,
+      "cpu_seconds": 0.00038729300000000383,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 3,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left",
+        "xor_right"
+      ],
+      "verifier_calls": 79,
+      "search_nodes": 79,
+      "residual_count": 78,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.00035342399996807217,
+      "cpu_seconds": 0.0003538240000000026,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 4,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "negate_left",
+        "xor_right",
+        "and_left"
+      ],
+      "verifier_calls": 58,
+      "search_nodes": 58,
+      "residual_count": 57,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.000231969999958892,
+      "cpu_seconds": 0.00023200400000000093,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 4,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "swap",
+        "negate_left",
+        "xor_right",
+        "and_left"
+      ],
+      "verifier_calls": 2,
+      "search_nodes": 2,
+      "residual_count": 1,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 2,
+        "observed": [
+          1,
+          0
+        ],
+        "required": [
+          0,
+          0
+        ]
+      },
+      "wall_seconds": 1.2528999945971009e-05,
+      "cpu_seconds": 1.2497999999999676e-05,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 4,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "negate_left",
+        "xor_right",
+        "and_left"
+      ],
+      "verifier_calls": 2,
+      "search_nodes": 2,
+      "residual_count": 1,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 1,
+        "observed": [
+          1,
+          0
+        ],
+        "required": [
+          0,
+          0
+        ]
+      },
+      "wall_seconds": 9.804000001167879e-06,
+      "cpu_seconds": 9.834999999999705e-06,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 4,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "negate_left",
+        "xor_right",
+        "and_left"
+      ],
+      "verifier_calls": 58,
+      "search_nodes": 58,
+      "residual_count": 57,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.0002275739999504367,
+      "cpu_seconds": 0.0002276469999999975,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "finite_theorem",
+      "stage": 4,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "negate_left",
+        "xor_right",
+        "and_left"
+      ],
+      "verifier_calls": 58,
+      "search_nodes": 58,
+      "residual_count": 57,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          0,
+          0
+        ],
+        "required": [
+          1,
+          1
+        ]
+      },
+      "wall_seconds": 0.0002437480000025971,
+      "cpu_seconds": 0.00024390099999999776,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 1,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "reverse"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "ba"
+      },
+      "wall_seconds": 2.154300000256626e-05,
+      "cpu_seconds": 2.155200000000107e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 1,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "reverse"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "ba"
+      },
+      "wall_seconds": 1.5873000052124553e-05,
+      "cpu_seconds": 1.592300000000102e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 2,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "BA"
+      },
+      "wall_seconds": 7.039699994493276e-05,
+      "cpu_seconds": 7.047399999999399e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 2,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "reverse",
+        "upper"
+      ],
+      "verifier_calls": 4,
+      "search_nodes": 4,
+      "residual_count": 3,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "ab",
+        "required": "BA"
+      },
+      "wall_seconds": 1.8307999994249258e-05,
+      "cpu_seconds": 1.8297000000000452e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 2,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "BA"
+      },
+      "wall_seconds": 6.849300007161219e-05,
+      "cpu_seconds": 6.862099999999788e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 2,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "BA"
+      },
+      "wall_seconds": 6.765199998426397e-05,
+      "cpu_seconds": 6.768099999999999e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 2,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "BA"
+      },
+      "wall_seconds": 6.733199995778705e-05,
+      "cpu_seconds": 6.73389999999996e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 3,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABA",
+        "required": "AB"
+      },
+      "wall_seconds": 0.0003547649999973146,
+      "cpu_seconds": 0.0003549159999999968,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 3,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "reverse",
+        "upper",
+        "rotate"
+      ],
+      "verifier_calls": 3,
+      "search_nodes": 3,
+      "residual_count": 2,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABA",
+        "required": "AB"
+      },
+      "wall_seconds": 1.8036999904325057e-05,
+      "cpu_seconds": 1.798699999999709e-05,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 3,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 19,
+      "search_nodes": 19,
+      "residual_count": 18,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABA",
+        "required": "AB"
+      },
+      "wall_seconds": 0.00011913000003005436,
+      "cpu_seconds": 0.00011923600000000173,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 3,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABA",
+        "required": "AB"
+      },
+      "wall_seconds": 0.00036023300003762415,
+      "cpu_seconds": 0.0003603640000000019,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 3,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABA",
+        "required": "AB"
+      },
+      "wall_seconds": 0.0003777399999762565,
+      "cpu_seconds": 0.0003778899999999988,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 4,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "duplicate",
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 131,
+      "search_nodes": 131,
+      "residual_count": 130,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABABABA",
+        "required": "ABAB"
+      },
+      "wall_seconds": 0.0008246539999845481,
+      "cpu_seconds": 0.0008248219999999959,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 4,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "reverse",
+        "upper",
+        "rotate",
+        "duplicate"
+      ],
+      "verifier_calls": 2,
+      "search_nodes": 2,
+      "residual_count": 1,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "AB",
+        "required": "ABAB"
+      },
+      "wall_seconds": 1.6064999954323866e-05,
+      "cpu_seconds": 1.602400000000337e-05,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 4,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "duplicate",
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 152,
+      "search_nodes": 152,
+      "residual_count": 151,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABABABA",
+        "required": "ABAB"
+      },
+      "wall_seconds": 0.0009429220000356509,
+      "cpu_seconds": 0.0009434580000000012,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 4,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "duplicate",
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 131,
+      "search_nodes": 131,
+      "residual_count": 130,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABABABA",
+        "required": "ABAB"
+      },
+      "wall_seconds": 0.000790002000030654,
+      "cpu_seconds": 0.000790210999999999,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "program_synthesis",
+      "stage": 4,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "duplicate",
+        "upper",
+        "reverse",
+        "rotate"
+      ],
+      "verifier_calls": 131,
+      "search_nodes": 131,
+      "residual_count": 130,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": "BABABABA",
+        "required": "ABAB"
+      },
+      "wall_seconds": 0.0007854350000116028,
+      "cpu_seconds": 0.0007854939999999977,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 1,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "flip_h"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "required": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      },
+      "wall_seconds": 2.2484000055555953e-05,
+      "cpu_seconds": 2.251300000000178e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 1,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "flip_h"
+      ],
+      "verifier_calls": 5,
+      "search_nodes": 5,
+      "residual_count": 4,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            0
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "required": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ]
+      },
+      "wall_seconds": 1.717600002848485e-05,
+      "cpu_seconds": 1.7185000000002892e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 2,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 6.996599995545694e-05,
+      "cpu_seconds": 7.007399999999636e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 2,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "flip_h",
+        "invert"
+      ],
+      "verifier_calls": 4,
+      "search_nodes": 4,
+      "residual_count": 3,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            0
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 1.7846999980974942e-05,
+      "cpu_seconds": 1.7836999999999714e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 2,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 8.393700011311012e-05,
+      "cpu_seconds": 8.40439999999984e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 2,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 6.607000000258267e-05,
+      "cpu_seconds": 6.614799999999504e-05,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 2,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h"
+      ],
+      "verifier_calls": 17,
+      "search_nodes": 17,
+      "residual_count": 16,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            0,
+            1
+          ],
+          [
+            0,
+            0
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 6.395699995209725e-05,
+      "cpu_seconds": 6.402500000000227e-05,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 3,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0003297270000075514,
+      "cpu_seconds": 0.000329949000000003,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 3,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "flip_h",
+        "invert",
+        "transpose"
+      ],
+      "verifier_calls": 3,
+      "search_nodes": 3,
+      "residual_count": 2,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 1.717600002848485e-05,
+      "cpu_seconds": 1.715600000000428e-05,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 3,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose"
+      ],
+      "verifier_calls": 19,
+      "search_nodes": 19,
+      "residual_count": 18,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.00010995599996022065,
+      "cpu_seconds": 0.00011012300000000363,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 3,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.00033962300005896395,
+      "cpu_seconds": 0.0003396730000000056,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 3,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose"
+      ],
+      "verifier_calls": 67,
+      "search_nodes": 67,
+      "residual_count": 66,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ],
+        "required": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.00032298799999352923,
+      "cpu_seconds": 0.0003230779999999975,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "cross_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0023096459999578656,
+      "cpu_seconds": 0.0023099320000000007,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "cross_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "pi_warm",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 283,
+      "search_nodes": 283,
+      "residual_count": 282,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0017215980000173658,
+      "cpu_seconds": 0.0017218709999999998,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "cross_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "pi_ablation",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0016300800000408344,
+      "cpu_seconds": 0.0016301749999999976,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "cross_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "pi_sham",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0016416669999443911,
+      "cpu_seconds": 0.0016419820000000002,
+      "active_state_size": 1
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "cold",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0016081259999509712,
+      "cpu_seconds": 0.0016082730000000003,
+      "active_state_size": 0
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "warm",
+      "correct": true,
+      "solution": [
+        "flip_h",
+        "invert",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 2,
+      "search_nodes": 2,
+      "residual_count": 1,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            0,
+            1
+          ],
+          [
+            1,
+            1
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 1.592399996752647e-05,
+      "cpu_seconds": 1.6004000000000018e-05,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "ablation",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 287,
+      "search_nodes": 287,
+      "residual_count": 286,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0017859150000276713,
+      "cpu_seconds": 0.0017861459999999954,
+      "active_state_size": 2
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "sham",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.001613934999909361,
+      "cpu_seconds": 0.0016141409999999995,
+      "active_state_size": 3
+    },
+    {
+      "evaluation": "within_domain",
+      "domain": "rule_induction",
+      "stage": 4,
+      "condition": "answer_memory",
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "residual_count": 265,
+      "last_residual": {
+        "kind": "counterexample",
+        "index": 0,
+        "observed": [
+          [
+            1,
+            1
+          ],
+          [
+            1,
+            0
+          ]
+        ],
+        "required": [
+          [
+            1,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "wall_seconds": 0.0016165389999969193,
+      "cpu_seconds": 0.0016166250000000035,
+      "active_state_size": 0
+    }
+  ],
+  "retained_capabilities": [
+    {
+      "name": "swap",
+      "domain": "finite_theorem",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 1
+      },
+      "candidate": "swap",
+      "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+      "preservation": true,
+      "dependencies": [],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "negate_left",
+      "domain": "finite_theorem",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 2
+      },
+      "candidate": "negate_left",
+      "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+      "preservation": true,
+      "dependencies": [
+        "swap"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "xor_right",
+      "domain": "finite_theorem",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 3
+      },
+      "candidate": "xor_right",
+      "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+      "preservation": true,
+      "dependencies": [
+        "swap",
+        "negate_left"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "not_individually_tested_or_no_effect"
+    },
+    {
+      "name": "and_left",
+      "domain": "finite_theorem",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 4
+      },
+      "candidate": "and_left",
+      "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+      "preservation": true,
+      "dependencies": [
+        "swap",
+        "negate_left",
+        "xor_right"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "not_individually_tested_or_no_effect"
+    },
+    {
+      "name": "reverse",
+      "domain": "program_synthesis",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 1
+      },
+      "candidate": "reverse",
+      "verifier_authority": "exact executable I/O replay over the frozen specification set",
+      "preservation": true,
+      "dependencies": [],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "upper",
+      "domain": "program_synthesis",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 2
+      },
+      "candidate": "upper",
+      "verifier_authority": "exact executable I/O replay over the frozen specification set",
+      "preservation": true,
+      "dependencies": [
+        "reverse"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "rotate",
+      "domain": "program_synthesis",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 3
+      },
+      "candidate": "rotate",
+      "verifier_authority": "exact executable I/O replay over the frozen specification set",
+      "preservation": true,
+      "dependencies": [
+        "reverse",
+        "upper"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "duplicate",
+      "domain": "program_synthesis",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 4
+      },
+      "candidate": "duplicate",
+      "verifier_authority": "exact executable I/O replay over the frozen specification set",
+      "preservation": true,
+      "dependencies": [
+        "reverse",
+        "upper",
+        "rotate"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "not_individually_tested_or_no_effect"
+    },
+    {
+      "name": "flip_h",
+      "domain": "rule_induction",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 1
+      },
+      "candidate": "flip_h",
+      "verifier_authority": "exact grid equality over all frozen transformation cases",
+      "preservation": true,
+      "dependencies": [],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "invert",
+      "domain": "rule_induction",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 2
+      },
+      "candidate": "invert",
+      "verifier_authority": "exact grid equality over all frozen transformation cases",
+      "preservation": true,
+      "dependencies": [
+        "flip_h"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "transpose",
+      "domain": "rule_induction",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 3
+      },
+      "candidate": "transpose",
+      "verifier_authority": "exact grid equality over all frozen transformation cases",
+      "preservation": true,
+      "dependencies": [
+        "flip_h",
+        "invert"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "cost_or_reachability_damaged"
+    },
+    {
+      "name": "rotate_rows",
+      "domain": "rule_induction",
+      "residual": {
+        "kind": "verified_mismatch",
+        "task_stage": 4
+      },
+      "candidate": "rotate_rows",
+      "verifier_authority": "exact grid equality over all frozen transformation cases",
+      "preservation": true,
+      "dependencies": [
+        "flip_h",
+        "invert",
+        "transpose"
+      ],
+      "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+      "ablation_result": "not_individually_tested_or_no_effect"
+    }
+  ],
+  "active_state_size": 12,
+  "provenance_size": 12,
+  "model_api_tokens": null,
+  "unresolved_residual": "external validity: engineered finite curricula do not establish natural-task or unrestricted compounding"
+}

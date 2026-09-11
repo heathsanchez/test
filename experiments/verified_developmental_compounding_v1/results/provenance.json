@@ -1,0 +1,197 @@
+[
+  {
+    "name": "swap",
+    "domain": "finite_theorem",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 1
+    },
+    "candidate": "swap",
+    "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+    "preservation": true,
+    "dependencies": [],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "negate_left",
+    "domain": "finite_theorem",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 2
+    },
+    "candidate": "negate_left",
+    "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+    "preservation": true,
+    "dependencies": [
+      "swap"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "xor_right",
+    "domain": "finite_theorem",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 3
+    },
+    "candidate": "xor_right",
+    "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+    "preservation": true,
+    "dependencies": [
+      "swap",
+      "negate_left"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "not_individually_tested_or_no_effect"
+  },
+  {
+    "name": "and_left",
+    "domain": "finite_theorem",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 4
+    },
+    "candidate": "and_left",
+    "verifier_authority": "exhaustive evaluation over the complete two-bit carrier",
+    "preservation": true,
+    "dependencies": [
+      "swap",
+      "negate_left",
+      "xor_right"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "not_individually_tested_or_no_effect"
+  },
+  {
+    "name": "reverse",
+    "domain": "program_synthesis",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 1
+    },
+    "candidate": "reverse",
+    "verifier_authority": "exact executable I/O replay over the frozen specification set",
+    "preservation": true,
+    "dependencies": [],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "upper",
+    "domain": "program_synthesis",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 2
+    },
+    "candidate": "upper",
+    "verifier_authority": "exact executable I/O replay over the frozen specification set",
+    "preservation": true,
+    "dependencies": [
+      "reverse"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "rotate",
+    "domain": "program_synthesis",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 3
+    },
+    "candidate": "rotate",
+    "verifier_authority": "exact executable I/O replay over the frozen specification set",
+    "preservation": true,
+    "dependencies": [
+      "reverse",
+      "upper"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "duplicate",
+    "domain": "program_synthesis",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 4
+    },
+    "candidate": "duplicate",
+    "verifier_authority": "exact executable I/O replay over the frozen specification set",
+    "preservation": true,
+    "dependencies": [
+      "reverse",
+      "upper",
+      "rotate"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "not_individually_tested_or_no_effect"
+  },
+  {
+    "name": "flip_h",
+    "domain": "rule_induction",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 1
+    },
+    "candidate": "flip_h",
+    "verifier_authority": "exact grid equality over all frozen transformation cases",
+    "preservation": true,
+    "dependencies": [],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "invert",
+    "domain": "rule_induction",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 2
+    },
+    "candidate": "invert",
+    "verifier_authority": "exact grid equality over all frozen transformation cases",
+    "preservation": true,
+    "dependencies": [
+      "flip_h"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "transpose",
+    "domain": "rule_induction",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 3
+    },
+    "candidate": "transpose",
+    "verifier_authority": "exact grid equality over all frozen transformation cases",
+    "preservation": true,
+    "dependencies": [
+      "flip_h",
+      "invert"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "cost_or_reachability_damaged"
+  },
+  {
+    "name": "rotate_rows",
+    "domain": "rule_induction",
+    "residual": {
+      "kind": "verified_mismatch",
+      "task_stage": 4
+    },
+    "candidate": "rotate_rows",
+    "verifier_authority": "exact grid equality over all frozen transformation cases",
+    "preservation": true,
+    "dependencies": [
+      "flip_h",
+      "invert",
+      "transpose"
+    ],
+    "admission_reason": "occurs in a verifier-accepted minimal-depth program",
+    "ablation_result": "not_individually_tested_or_no_effect"
+  }
+]
