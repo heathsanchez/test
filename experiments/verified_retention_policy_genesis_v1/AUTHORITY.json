@@ -1,0 +1,16 @@
+{
+  "status": "FROZEN_NEGATIVE_PARTIAL_AUTHORITY",
+  "branch": "verified-retention-policy-genesis-v1",
+  "base_commit": "616d6007a85ed74bd2a2479b1cf44e885a0ea5fe",
+  "scientific_commit": "604de69ffc6762c634bde5fe40dc996a1a3a492b",
+  "scientific_run": 34648604462,
+  "scientific_job": 103425241749,
+  "artifact_id": 10283236516,
+  "artifact_sha256": "443872407de6ef4e4a2b1824ff4f22adcffd3b5f7264572e371f0c4b6b38a5f4",
+  "verdict": "NEGATIVE_OR_PARTIAL",
+  "failed_gate": "prospective_beats_hand_geometry",
+  "invalid_obsolete_runs": [
+    {"run": 34648396877, "reason": "Lean action setup failed before experiment execution"},
+    {"run": 34648508248, "reason": "Lean certificate did not compile"}
+  ]
+}
