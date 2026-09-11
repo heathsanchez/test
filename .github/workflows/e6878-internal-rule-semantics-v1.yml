@@ -1,0 +1,145 @@
+name: E6878 internal rule semantics v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-internal-rule-semantics-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Enumerate exact normal forms and test erased identities
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from functools import lru_cache
+          from itertools import product
+          import json,pathlib
+
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          def sz(t):
+            if t[0]=='e':return 0
+            if t[0]=='k':return sz(t[1])+1
+            return sz(t[1])+sz(t[2])+2
+          def st(t):
+            if t[0]=='e':return 'e'
+            if t[0]=='k':return 'k('+st(t[1])+')'
+            return t[0]+'('+st(t[1])+','+st(t[2])+')'
+
+          # Rule predicates/results, priority 0..6.
+          def r0(a,b):
+            if b[0]=='p' and b[1]==a:
+              t=b[2]
+              if t[0]=='p':
+                l,r=t[1],t[2]
+                if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:
+                  return l[2]
+          def r1(a,b):
+            if b[0]=='p' and b[2]==a:return R(a,b[1])
+          def r2(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2][0]=='q' and t[2][2]==a:return t[2][1]
+          def r3(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+          def r4(a,b):
+            if b==Q(a,a):return Q(a,Q(a,a))
+          def r5(a,b):
+            if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+          def r6(a,b):return Q(a,b)
+          rules=[r0,r1,r2,r3,r4,r5,r6]
+
+          @lru_cache(None)
+          def ev(a,b):
+            for i,r in enumerate(rules):
+              o=r(a,b)
+              if o is not None:return o,i
+            raise AssertionError
+
+          def blockedQ(a,b): return r0(a,b) is not None or r2(a,b) is not None
+          def blockedR(a,b): return r0(a,b) is not None or r2(a,b) is not None or r5(a,b) is not None
+
+          @lru_cache(None)
+          def nf(t):
+            k=t[0]
+            if k=='e':return True
+            if k=='k':return nf(t[1])
+            if k=='p':return False # r6 makes Code always nonempty
+            if k=='q':return nf(t[1]) and nf(t[2]) and not blockedQ(t[1],t[2])
+            if k=='r':return nf(t[1]) and nf(t[2]) and not blockedR(t[1],t[2])
+            return False
+
+          bysz={0:{E}}
+          maxsz=8
+          # k adds 1; q/r add +2. p cannot be NF.
+          for n in range(1,maxsz+1):
+            cur={K(t) for t in bysz.get(n-1,set())}
+            for i in range(0,n-1):
+              j=n-2-i
+              for a in bysz.get(i,set()):
+                for b in bysz.get(j,set()):
+                  q=Q(a,b); rr=R(a,b)
+                  if nf(q):cur.add(q)
+                  if nf(rr):cur.add(rr)
+            bysz[n]=cur
+            print('NF_SIZE',n,len(cur))
+          pool=sorted(set().union(*bysz.values()),key=lambda t:(sz(t),st(t)))
+          print('NF_TOTAL',len(pool))
+
+          def op(a,b):
+            o,_=ev(a,b)
+            assert nf(o),(st(a),st(b),st(o))
+            return o
+          def R2(a,b,c): return op(a,op(a,op(b,op(c,a))))==c
+          def R5(a,b,c):
+            ab=op(a,b)
+            return op(ab,op(ab,c))==a
+          def source(x,y,z):
+            return op(y,op(y,op(op(z,x),op(x,y))))==x
+
+          # sanity source on all triples of small pool first
+          sanity=[t for t in pool if sz(t)<=4]
+          badS=None
+          for x,y,z in product(sanity,repeat=3):
+            if not source(x,y,z): badS=(x,y,z);break
+          print('SOURCE_SMALL', 'PASS' if badS is None else tuple(map(st,badS)))
+
+          results={}
+          for name,pred in [('r2_erased',R2),('r5_erased',R5)]:
+            bad=None;tested=0
+            # increasing max-size triples; stop first witness
+            for a,b,c in product(pool,repeat=3):
+              tested+=1
+              if not pred(a,b,c):
+                bad=(a,b,c);break
+            results[name]={'tested':tested,'witness':None if bad is None else [st(x) for x in bad]}
+            print(name,'TESTED',tested,'WITNESS',results[name]['witness'])
+            if bad:
+              a,b,c=bad
+              if name=='r2_erased':
+                v=op(a,op(a,op(b,op(c,a))))
+                print('LHS_VALUE',st(v),'RHS_VALUE',st(c))
+              else:
+                ab=op(a,b);v=op(ab,op(ab,c))
+                print('AB',st(ab),'LHS_VALUE',st(v),'RHS_VALUE',st(a))
+
+          pathlib.Path('/tmp/results.json').write_text(json.dumps({
+            'max_nf_size':maxsz,'nf_total':len(pool),'results':results
+          },indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-internal-rule-semantics-v1
+          path: /tmp/results.json
