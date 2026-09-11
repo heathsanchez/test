@@ -1,28 +1,40 @@
-name: verified-retention-policy-genesis-v1
-on:
-  push:
-    branches: [verified-retention-policy-genesis-v1]
-  workflow_dispatch:
+name: Verified Retention Policy Genesis V1
+on: {workflow_dispatch: {}, push: {branches: [verified-retention-policy-genesis-v1]}}
 jobs:
   qualify:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
       - name: Run qualification
         shell: bash
         run: |
           set -euo pipefail
-          python3 experiments/verified_retention_policy_genesis_v1/run.py | tee experiments/verified_retention_policy_genesis_v1/results/run.log
-          grep -q 'NEGATIVE_OR_PARTIAL' experiments/verified_retention_policy_genesis_v1/results/run.log
-          grep -q '"prospective_beats_hand_geometry": false' experiments/verified_retention_policy_genesis_v1/results/run.log
+          python3 experiments/verified_retention_policy_genesis_v1/run.py | tee /tmp/policy.json
+          grep -q 'NEGATIVE_OR_PARTIAL' /tmp/policy.json
+          grep -q '"prospective_beats_hand_geometry": false' /tmp/policy.json
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Check Lean kernel fragment
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean experiments/verified_retention_policy_genesis_v1/RetentionPolicy.lean 2>&1 | tee experiments/verified_retention_policy_genesis_v1/results/lean.log
-          ! grep -R --line-number --include='*.lean' -E '\bsorry\b|\badmit\b' experiments/verified_retention_policy_genesis_v1
+          lean experiments/verified_retention_policy_genesis_v1/RetentionPolicy.lean 2>&1 | tee /tmp/policy-lean.log
+          ! grep -q sorry /tmp/policy-lean.log
+      - name: Seal evidence
+        shell: bash
+        run: |
+          cd experiments/verified_retention_policy_genesis_v1
+          sha256sum PROTOCOL.md RESULTS.md RetentionPolicy.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/policy.json results/
+          cp /tmp/policy-lean.log results/
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: verified-retention-policy-genesis-v1-evidence
           path: experiments/verified_retention_policy_genesis_v1/results/
+          retention-days: 90
