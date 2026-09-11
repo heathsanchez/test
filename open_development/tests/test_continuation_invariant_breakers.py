@@ -912,6 +912,8 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
 
             self.assertEqual(baseline["minimum_survivor_count"], 1)
             self.assertGreater(changed["minimum_survivor_count"], 1)
+            self.assertEqual(baseline["minimum_interaction_class_count"], 1)
+            self.assertEqual(changed["minimum_interaction_class_count"], 1)
 
             probes = [
                 [[a, b], [c, d]]
@@ -927,10 +929,12 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
             }
             self.assertEqual(baseline_behaviors, duplicate_behaviors)
             print(
-                "CONTROLLER_FULL_ABSTRACTION_FAILURE",
+                "CONTROLLER_INTERACTION_QUOTIENT_REPAIR",
                 "behavior_sets_equal", True,
-                "baseline_minima", baseline["minimum_survivor_count"],
-                "duplicate_minima", changed["minimum_survivor_count"],
+                "baseline_syntactic_minima", baseline["minimum_survivor_count"],
+                "duplicate_syntactic_minima", changed["minimum_survivor_count"],
+                "baseline_interaction_classes", baseline["minimum_interaction_class_count"],
+                "duplicate_interaction_classes", changed["minimum_interaction_class_count"],
             )
 
     def test_26_backward_revocation_probe_detects_causal_history(self):
@@ -1191,6 +1195,7 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
                 adapter, duplicated, duplicate_analysis["minimum_survivors"]
             )
             self.assertEqual(duplicate_classes, 1)
+            self.assertEqual(duplicate_analysis["minimum_interaction_class_count"], 1)
 
             ambiguous_task = full_task(
                 [[0, 0], [0, 1]],
@@ -1206,6 +1211,11 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
                 adapter, state, ambiguous_analysis["minimum_survivors"]
             )
             self.assertGreater(ambiguity_classes, 1)
+            self.assertEqual(
+                ambiguous_analysis["minimum_interaction_class_count"],
+                ambiguity_classes,
+            )
+            self.assertIsNotNone(ambiguous_analysis["separator_probe"])
             print(
                 "BEHAVIORAL_CLASS_VERSION_SPACE_SEPARATOR",
                 "duplicate_syntax", duplicate_analysis["minimum_survivor_count"],
@@ -1404,13 +1414,13 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
             "SURVIVES IN REAL GENERATOR: capability map ordering is irrelevant and commutative overlay admits canonical representative fixing"
         )
         print(
-            "NO CURRENT FP ANALOGUE ESTABLISHED: duplicate orbit multiplicity is not compensated; it changes the generator version space"
+            "REFINED: raw duplicate syntax still changes syntactic multiplicity, but the experimental controller no longer lets that alter authority when the frozen interaction profile is identical"
         )
         print(
             "NO CURRENT BRST ANALOGUE ESTABLISHED: no nilpotent cohomological operator was defined or tested by the implementation"
         )
         print(
-            "BREAKS IN REAL CONTROLLER: equal bounded generated behavior sets can yield different syntactic version-space outcomes"
+            "REPAIRED EXPERIMENTALLY: controller authority now factors through the frozen finite interaction quotient rather than raw minimum multiplicity"
         )
         print(
             "SURVIVES: backward revocation distinguishes causal developmental history even when present task output agrees"
@@ -1419,7 +1429,7 @@ class ContinuationInvariantBreakerTests(unittest.TestCase):
             "TESTED NEXT: independent real developments commute operationally; three independent developments form a coherent finite cube if the fixture passes"
         )
         print(
-            "TESTED NEXT: behavioral-class quotient can remove pure duplicate syntax while retaining genuine ambiguity if the separator passes"
+            "SURVIVES: frozen interaction-class quotient removes pure duplicate syntax while retaining genuine ambiguity and exposing a distinguishing probe"
         )
         print(
             "TESTED NEXT: real generated admission is an operational conservative extension on preserved capabilities if the preservation census passes"
