@@ -176,34 +176,85 @@ def execute(state: Mapping[str, Any], rid: str, value: Any, trace: list[str] | N
     return None
 
 
-def _interaction_profile(state: Mapping[str, Any], ast: Mapping[str, Any]) -> tuple[str, tuple[Any, ...]]:
+def ast_semantic_key(state: Mapping[str, Any], ast: Mapping[str, Any]) -> str:
     from .runtime import digest
-    outputs = tuple(_eval_ast(state, ast, probe, [], ()) for probe in INTERACTION_PROBES)
-    return digest(outputs), outputs
+    operation = ast.get("op")
+    if operation == "input":
+        body: Any = {"op": "input"}
+    elif operation == "crop":
+        body = {"op": "crop", "arg": ast_semantic_key(state, ast["arg"])}
+    elif operation == "call":
+        body = {
+            "op": "call",
+            "callee_semantics": capability_semantic_key(state, ast["callee"]),
+            "arg": ast_semantic_key(state, ast["arg"]),
+        }
+    elif operation in FORM_OPS:
+        left = ast_semantic_key(state, ast["left"])
+        right = ast_semantic_key(state, ast["right"])
+        if operation == "overlay" and left > right:
+            left, right = right, left
+        body = {"op": operation, "left": left, "right": right}
+    else:
+        body = {"invalid": key(ast)}
+    return digest(body)
 
 
-def _interaction_classes(state: Mapping[str, Any],
-                         winners: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+def capability_semantic_key(state: Mapping[str, Any], rid: str,
+                            active: tuple[str, ...] = ()) -> str:
     from .runtime import digest
-    grouped: dict[str, dict[str, Any]] = {}
+    if rid in active:
+        return digest({"cycle": rid})
+    record = state["capabilities"].get(rid)
+    if not record:
+        return digest({"missing": rid})
+    repair = record["repair"]
+    body = repair["payload"].get("body", {})
+    common = {
+        "verifier": record["evidence"].get("verifier"),
+        "contract": repair.get("contract"),
+    }
+    if body.get("op") == "d4":
+        desc = {**common, "op": "d4", "name": body.get("name")}
+    elif body.get("op") == "crop-call":
+        desc = {
+            **common,
+            "op": "crop-call",
+            "callee_semantics": capability_semantic_key(
+                state, body.get("callee"), (*active, rid)
+            ),
+        }
+    elif body.get("op") == "generated-ast":
+        desc = {
+            **common,
+            "op": "generated-ast",
+            "substrate_id": body.get("substrate_id"),
+            "ast_semantics": ast_semantic_key(state, body.get("ast", {})),
+        }
+    else:
+        desc = {**common, "raw_body": body, "dependencies": repair.get("dependencies", [])}
+    return digest(desc)
+
+
+def _semantic_classes(state: Mapping[str, Any],
+                      winners: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    from .runtime import digest
+    grouped: dict[str, list[dict[str, Any]]] = {}
     for ast in winners:
-        class_id, outputs = _interaction_profile(state, ast)
-        item = grouped.setdefault(class_id, {"class_id": class_id, "outputs": outputs, "members": []})
-        item["members"].append(ast)
+        grouped.setdefault(ast_semantic_key(state, ast), []).append(ast)
     classes = []
     for class_id in sorted(grouped):
-        item = grouped[class_id]
-        members = sorted(item["members"], key=key)
+        members = sorted(grouped[class_id], key=key)
         classes.append({
             "class_id": class_id,
             "size": len(members),
             "representative": members[0],
-            "outputs": item["outputs"],
         })
     separator = None
     if len(classes) > 1:
+        representatives = [item["representative"] for item in classes]
         for index, probe in enumerate(INTERACTION_PROBES):
-            outputs = [item["outputs"][index] for item in classes]
+            outputs = [_eval_ast(state, ast, probe, [], ()) for ast in representatives]
             if len({repr(output) for output in outputs}) > 1:
                 separator = {
                     "probe_index": index,
@@ -231,7 +282,7 @@ def analyze(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]
             survivors.setdefault(n, []).append(ast)
     minimum = min(survivors) if survivors else None
     winners = survivors.get(minimum, []) if minimum is not None else []
-    classes, separator = _interaction_classes(state, winners)
+    classes, separator = _semantic_classes(state, winners)
     representatives = [item["representative"] for item in classes]
     class_ids = [item["class_id"] for item in classes]
     return {
@@ -244,15 +295,19 @@ def analyze(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]
         "minimum_survivors": winners,
         "minimum_survivor_count": len(winners),
         "minimum_syntactic_survivor_count": len(winners),
+        "minimum_certified_semantic_class_count": len(classes),
         "minimum_interaction_class_count": len(classes),
+        "minimum_certified_semantic_class_sizes": [item["size"] for item in classes],
         "minimum_interaction_class_sizes": [item["size"] for item in classes],
         "minimum_class_representatives": representatives,
+        "certified_semantic_class_ids": class_ids,
         "interaction_class_ids": class_ids,
         "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+        "equivalence_basis": "certified-interpreter-semantic-key",
         "separator_probe": separator,
         "version_space_id": digest({
-            "probe_manifest": INTERACTION_PROBE_MANIFEST,
-            "interaction_class_ids": class_ids,
+            "equivalence_basis": "certified-interpreter-semantic-key",
+            "semantic_class_ids": class_ids,
         }),
     }
 
