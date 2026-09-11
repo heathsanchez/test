@@ -129,6 +129,10 @@ def main():
             })
             if ok:selected.append((qid,path))
 
+    dropped_for_batch_limit=0
+    if len(selected)>500:
+        dropped_for_batch_limit=len(selected)-500
+        selected=selected[:500]
     text="\n".join(f"{cid}: {json.dumps(m,separators=(',',':'))}" for cid,m in selected)
     if text:text+="\n"
     (out/"submission.txt").write_text(text)
@@ -162,6 +166,7 @@ def main():
         "selected_rows":len(selected),
         "selected_ac":sum(cid.startswith("ac-") for cid,_ in selected),
         "selected_stable":sum(cid.startswith("sac-") for cid,_ in selected),
+        "dropped_for_batch_limit":dropped_for_batch_limit,
         "submission_id":submission_id,
         "terminal_status":terminal,
         "failed_rows":failures,
