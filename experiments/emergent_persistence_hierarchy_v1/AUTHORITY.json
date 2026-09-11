@@ -1,1 +1,32 @@
-{"status":"PENDING_CI","claim":"emergent finite persistence hierarchy under one amortizing kernel"}
+{
+  "status": "VERIFIED",
+  "verdict": "VERIFIED_EMERGENT_PERSISTENCE_HIERARCHY",
+  "classification": "FINITE_ONLINE_CAUSAL_PROSPECTIVE",
+  "experiment_commit": "5941cb3a00bc6d39b429c19885219c3b0e89048b",
+  "run_id": 34634249023,
+  "job_id": 103378179020,
+  "artifact_id": 10277547998,
+  "artifact_sha256": "649cb5f649efdf4952fd73b4260eafe59ac00632d5a679168b3ef9a49c7140c7",
+  "totals": {
+    "cold": 1928,
+    "adaptive": 812,
+    "deep_ablation": 1865,
+    "shallow_ablation": 880,
+    "sham": 2120,
+    "answer_memory": 2172
+  },
+  "reduction_factor": 2.374384236453202,
+  "established": [
+    "three empirical dependency depths emerged without layer labels",
+    "recursive contraction of an acquired subgraph",
+    "deeper ablation caused broader and larger damage",
+    "regime shift revoked only the shallow failing node",
+    "unaffected deeper structures survived"
+  ],
+  "not_established": [
+    "natural-world hierarchy formation",
+    "open-ended continuation-language genesis",
+    "unbounded recursive self-development",
+    "optimality of the amortization policy"
+  ]
+}
