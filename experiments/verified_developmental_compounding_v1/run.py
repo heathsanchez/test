@@ -40,7 +40,7 @@ def main():
                 cold = controller.solve(adapter, task, State(), "cold")
                 piwarm = controller.solve(adapter, task, pi_state, "pi_warm")
                 for cond, result in [("cold",cold),("pi_warm",piwarm),("pi_ablation",controller.solve(adapter,task,State(),"cold")),("pi_sham",controller.solve(adapter,task,State(capabilities=[Capability("inert","sham",{},"inert","none",True,[],"budget control")]),"cold"))]:
-                    all_rows.append({"domain":name,"stage":4,"condition":cond,**result})
+                    all_rows.append({"evaluation":"cross_domain","domain":name,"stage":4,"condition":cond,**result})
                 # Continue ordinary within-domain controls below using state from C1-C3.
 
             conditions = {"cold": State(), "warm": warm}
@@ -55,7 +55,7 @@ def main():
             for cond, st in conditions.items():
                 result = controller.solve(adapter, task, st, cond)
                 stage_results[cond] = result
-                all_rows.append({"domain":name,"stage":task["stage"],"condition":cond,**result})
+                all_rows.append({"evaluation":"within_domain","domain":name,"stage":task["stage"],"condition":cond,**result})
             assert stage_results["warm"]["correct"] and stage_results["cold"]["correct"]
             added = controller.admit(adapter, task, stage_results["warm"]["solution"], warm, prior)
             for c in added: provenance.append(c.__dict__)
@@ -67,17 +67,16 @@ def main():
         rows = [r for r in all_rows if r["domain"] == cap["domain"] and r["condition"] in {"warm","ablation"} and r["stage"] > cap["residual"]["task_stage"]]
         cap["ablation_result"] = "cost_or_reachability_damaged" if any(r["condition"]=="ablation" and (not r["correct"] or r["verifier_calls"] > next(w["verifier_calls"] for w in rows if w["condition"]=="warm" and w["stage"]==r["stage"])) for r in rows if any(w["condition"]=="warm" and w["stage"]==r["stage"] for w in rows)) else "not_individually_tested_or_no_effect"
 
-    later = [r for r in all_rows if r["stage"]>1 and r["condition"] in {"cold","warm"} and not (r["domain"]=="rule_induction" and r["stage"]==4 and r["condition"]=="cold")]
-    cold_sum=sum(r["verifier_calls"] for r in later if r["condition"]=="cold")
-    warm_sum=sum(r["verifier_calls"] for r in later if r["condition"]=="warm")
     pairs=[]
     for d in [x["domain"] for x in spec["domains"]]:
         for s in (2,3,4):
-            c=next(r for r in all_rows if r["domain"]==d and r["stage"]==s and r["condition"]=="cold")
-            w=next(r for r in all_rows if r["domain"]==d and r["stage"]==s and r["condition"]=="warm")
+            c=next(r for r in all_rows if r["evaluation"]=="within_domain" and r["domain"]==d and r["stage"]==s and r["condition"]=="cold")
+            w=next(r for r in all_rows if r["evaluation"]=="within_domain" and r["domain"]==d and r["stage"]==s and r["condition"]=="warm")
             pairs.append({"domain":d,"stage":s,"cold":c["verifier_calls"],"warm":w["verifier_calls"],"ratio":c["verifier_calls"]/w["verifier_calls"]})
-    pi_c=next(r for r in all_rows if r["domain"]=="rule_induction" and r["stage"]==4 and r["condition"]=="cold")
-    pi_w=next(r for r in all_rows if r["domain"]=="rule_induction" and r["stage"]==4 and r["condition"]=="pi_warm")
+    cold_sum=sum(p["cold"] for p in pairs)
+    warm_sum=sum(p["warm"] for p in pairs)
+    pi_c=next(r for r in all_rows if r["evaluation"]=="cross_domain" and r["domain"]=="rule_induction" and r["stage"]==4 and r["condition"]=="cold")
+    pi_w=next(r for r in all_rows if r["evaluation"]=="cross_domain" and r["domain"]=="rule_induction" and r["stage"]==4 and r["condition"]=="pi_warm")
     gates={
       "G1_no_warm_correctness_regression":all(r["correct"] for r in all_rows if r["condition"]=="warm"),
       "G2_aggregate_at_least_2x":cold_sum >= 2*warm_sum,
