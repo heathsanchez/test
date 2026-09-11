@@ -1,0 +1,25 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "verified-meta-developmental-compounding-v1",
+  "experiment_commit_sha": "6561e5739dcad489fb1f977b7063c783bb60fca7",
+  "successful_run": {
+    "run_id": 34601471113,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34601471113",
+    "job_id": 103269547726,
+    "job_url": "https://github.com/heathsanchez/test/actions/runs/34601471113/job/103269547726",
+    "conclusion": "success",
+    "lean_error_lines": 0,
+    "lean_version": "4.30.0-rc2",
+    "python_version": "3.12"
+  },
+  "artifact": {
+    "id": 10264835274,
+    "url": "https://github.com/heathsanchez/test/actions/runs/34601471113/artifacts/10264835274",
+    "sha256": "b6a9f8ccba6fc621f26004d519fa4018173e0c700d66ccca5ba40001f3890aa6"
+  },
+  "snapshot_sha256": "61d30dd5d3f54d398be40d45c4dcaf7ccdbd311f1e91be502adc02d13f09f6ff",
+  "invalid_implementation_runs": [
+    {"run_id": 34601054459, "job_id": 103268165090, "reason": "indexed Lean residual elaboration defect"}
+  ],
+  "evidence_freeze_sha": null
+}
