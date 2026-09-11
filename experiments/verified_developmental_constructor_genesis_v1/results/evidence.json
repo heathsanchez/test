@@ -1,0 +1,78 @@
+{
+  "verdict": "VERIFIED_DEVELOPMENTAL_CONSTRUCTOR_GENESIS",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "old_developmental_language_size": 4,
+  "old_operator_matrix": [
+    [
+      false,
+      false
+    ],
+    [
+      false,
+      false
+    ],
+    [
+      false,
+      false
+    ],
+    [
+      false,
+      false
+    ]
+  ],
+  "training_results": [
+    {
+      "residual": "field_0",
+      "selected_projection": 0,
+      "verified": true
+    },
+    {
+      "residual": "field_1",
+      "selected_projection": 1,
+      "verified": true
+    }
+  ],
+  "held_out_result": {
+    "selected_projection": 2,
+    "success": true
+  },
+  "constructed_developmental_operator_ast": {
+    "node": "compose",
+    "instructions": [
+      "iterate_fields",
+      "filter_separating",
+      "take_first",
+      "pair_with_old"
+    ]
+  },
+  "ast_digest": "81d158abe19c89159198ab0f962145ba1c49060c55cdfcdb333dc732c6f71c33",
+  "programs_considered": 112,
+  "snapshot_digest": "dfbf897cd7b8673ccc9652ff7aace6a34b79c5cffcd966097f28660c7efa8260",
+  "controls": {
+    "ablation_fails_held_out": true,
+    "matched_sham_fails_held_out": true,
+    "training_answer_memory_fails_held_out": true
+  },
+  "gates": {
+    "G1_complete_old_developmental_language": true,
+    "G2_complete_negative_old_developmental_language": true,
+    "G3_unknown_expressivity_dev": true,
+    "G4_no_supplied_repair_primitive": true,
+    "G5_meta_program_structurally_constructed": true,
+    "G6_training_residuals_verified": true,
+    "G7_old_representation_preserved_exhaustively": true,
+    "G8_developmental_operator_admitted": true,
+    "G9_prospective_held_out_success": true,
+    "G10_ablation_restores_developmental_obstruction": true,
+    "G11_sham_does_not_transfer": true,
+    "G12_answer_memory_does_not_transfer": true
+  },
+  "verifier_calls": 52,
+  "seed": null,
+  "not_established": [
+    "invention of iteration/projection/pairing/separation primitives",
+    "unbounded self-application",
+    "cross-domain transfer",
+    "developmental compounding"
+  ]
+}
