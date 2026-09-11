@@ -1,0 +1,333 @@
+{
+  "verdict": "NEGATIVE_OR_PARTIAL",
+  "classification": "FINITE_GENERATIVE_GRAMMAR_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "2673ce708d9a2ed59d79e122adc35abf4df8b558c9cd69682dfa9b7a3285417f",
+  "rows": [
+    {
+      "separator_ast": [
+        "and",
+        [
+          "or",
+          [
+            "field",
+            0
+          ],
+          [
+            "field",
+            1
+          ]
+        ],
+        [
+          "not",
+          [
+            "and",
+            [
+              "field",
+              0
+            ],
+            [
+              "field",
+              1
+            ]
+          ]
+        ]
+      ],
+      "separator_key": "[\"and\",[\"or\",[\"field\",0],[\"field\",1]],[\"not\",[\"and\",[\"field\",0],[\"field\",1]]]]",
+      "required_profile": [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "emergent_quotient": [
+        3,
+        0,
+        2,
+        1,
+        3
+      ],
+      "quotient_size": 4,
+      "generated_behaviors": 16,
+      "construction_probe_calls": 1405,
+      "bridge_space": 256,
+      "conditions": {
+        "cold": {
+          "calls": 1280,
+          "correct": true
+        },
+        "joint_warm": {
+          "calls": 1410,
+          "correct": true
+        },
+        "separator_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "certificate_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "sham": {
+          "calls": 1280,
+          "correct": true
+        },
+        "answer_memory": {
+          "calls": 1285,
+          "correct": true
+        }
+      }
+    },
+    {
+      "separator_ast": [
+        "and",
+        [
+          "or",
+          [
+            "field",
+            0
+          ],
+          [
+            "field",
+            1
+          ]
+        ],
+        [
+          "not",
+          [
+            "and",
+            [
+              "field",
+              0
+            ],
+            [
+              "field",
+              1
+            ]
+          ]
+        ]
+      ],
+      "separator_key": "[\"and\",[\"or\",[\"field\",0],[\"field\",1]],[\"not\",[\"and\",[\"field\",0],[\"field\",1]]]]",
+      "required_profile": [
+        1,
+        0,
+        0,
+        1,
+        1
+      ],
+      "emergent_quotient": [
+        1,
+        2,
+        0,
+        3,
+        1
+      ],
+      "quotient_size": 4,
+      "generated_behaviors": 16,
+      "construction_probe_calls": 1405,
+      "bridge_space": 256,
+      "conditions": {
+        "cold": {
+          "calls": 1280,
+          "correct": true
+        },
+        "joint_warm": {
+          "calls": 1410,
+          "correct": true
+        },
+        "separator_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "certificate_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "sham": {
+          "calls": 1280,
+          "correct": true
+        },
+        "answer_memory": {
+          "calls": 1285,
+          "correct": true
+        }
+      }
+    },
+    {
+      "separator_ast": [
+        "and",
+        [
+          "or",
+          [
+            "field",
+            0
+          ],
+          [
+            "field",
+            1
+          ]
+        ],
+        [
+          "not",
+          [
+            "and",
+            [
+              "field",
+              0
+            ],
+            [
+              "field",
+              1
+            ]
+          ]
+        ]
+      ],
+      "separator_key": "[\"and\",[\"or\",[\"field\",0],[\"field\",1]],[\"not\",[\"and\",[\"field\",0],[\"field\",1]]]]",
+      "required_profile": [
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "emergent_quotient": [
+        2,
+        3,
+        1,
+        0,
+        2
+      ],
+      "quotient_size": 4,
+      "generated_behaviors": 16,
+      "construction_probe_calls": 1405,
+      "bridge_space": 256,
+      "conditions": {
+        "cold": {
+          "calls": 1280,
+          "correct": true
+        },
+        "joint_warm": {
+          "calls": 1410,
+          "correct": true
+        },
+        "separator_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "certificate_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "sham": {
+          "calls": 1280,
+          "correct": true
+        },
+        "answer_memory": {
+          "calls": 1285,
+          "correct": true
+        }
+      }
+    },
+    {
+      "separator_ast": [
+        "and",
+        [
+          "or",
+          [
+            "field",
+            0
+          ],
+          [
+            "field",
+            1
+          ]
+        ],
+        [
+          "not",
+          [
+            "and",
+            [
+              "field",
+              0
+            ],
+            [
+              "field",
+              1
+            ]
+          ]
+        ]
+      ],
+      "separator_key": "[\"and\",[\"or\",[\"field\",0],[\"field\",1]],[\"not\",[\"and\",[\"field\",0],[\"field\",1]]]]",
+      "required_profile": [
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "emergent_quotient": [
+        0,
+        3,
+        1,
+        2,
+        0
+      ],
+      "quotient_size": 4,
+      "generated_behaviors": 16,
+      "construction_probe_calls": 1405,
+      "bridge_space": 256,
+      "conditions": {
+        "cold": {
+          "calls": 1280,
+          "correct": true
+        },
+        "joint_warm": {
+          "calls": 1410,
+          "correct": true
+        },
+        "separator_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "certificate_ablation": {
+          "calls": 1280,
+          "correct": true
+        },
+        "sham": {
+          "calls": 1280,
+          "correct": true
+        },
+        "answer_memory": {
+          "calls": 1285,
+          "correct": true
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "cold": 5120,
+    "joint_warm": 5640,
+    "separator_ablation": 5120,
+    "certificate_ablation": 5120,
+    "sham": 5120,
+    "answer_memory": 5140
+  },
+  "reduction_factor": 0.9078014184397163,
+  "gates": {
+    "no_named_separator": true,
+    "constructed_from_frozen_primitives": true,
+    "quotient_emerges_from_profiles": true,
+    "nonisomorphic_carriers": true,
+    "prospective_correct": true,
+    "warm_cheaper_fully_charged": false,
+    "separator_ablation_restores": true,
+    "certificate_ablation_restores": true,
+    "sham_restores": true
+  },
+  "not_established": [
+    "open-ended continuation discovery",
+    "continuation-language genesis",
+    "natural-domain transfer",
+    "unbounded quotient construction"
+  ]
+}
