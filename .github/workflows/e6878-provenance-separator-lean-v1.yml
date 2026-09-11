@@ -26,7 +26,9 @@ jobs:
           from pathlib import Path
           s=Path('/tmp/original.lean').read_text()
           s=s.replace('import JudgeMagma.Magma\n','',1)
-          s=s.replace('import JudgeProblem', '''import Mathlib
+          s=s.replace('import JudgeProblem\n','',1)
+          s=s.replace('import Lean.Elab.Tactic.Omega', '''import Lean.Elab.Tactic.Omega
+
           class Magma (α : Type u) where
             op : α → α → α
           infixl:70 " ◇ " => Magma.op
