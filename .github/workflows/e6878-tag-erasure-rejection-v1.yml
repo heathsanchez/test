@@ -21,7 +21,7 @@ jobs:
           git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
           cd /tmp/mathlib4
           git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
-          lake exe cache get
+          "$HOME/.elan/bin/lake" exe cache get
           curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
           sha256sum /tmp/original.lean > /tmp/model.sha256
           python3 - <<'PY'
