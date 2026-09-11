@@ -1,0 +1,41 @@
+name: Verified Generator Construction V1
+on:
+  workflow_dispatch:
+  push:
+    branches: [verified-generator-construction-v1]
+    paths:
+      - 'experiments/verified_generator_construction_v1/**'
+      - 'experiments/typed_residual_kernel_v1/TypedResidualKernel.lean'
+      - '.github/workflows/verified-generator-construction-v1.yml'
+jobs:
+  construction:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run exhaustive construction episode
+        run: python experiments/verified_generator_construction_v1/run.py
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify proof-carrying gate
+        run: |
+          set -o pipefail
+          lean -o /tmp/TypedResidualKernel.olean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/kernel.log
+          LEAN_PATH=/tmp lean experiments/verified_generator_construction_v1/ConstructedEpisode.lean 2>&1 | tee /tmp/episode.log
+          ! grep -q sorry /tmp/kernel.log
+          ! grep -q sorry /tmp/episode.log
+      - name: Freeze evidence
+        run: |
+          cd experiments/verified_generator_construction_v1
+          sha256sum PROTOCOL.md ConstructedEpisode.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/kernel.log /tmp/episode.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-generator-construction-v1
+          path: experiments/verified_generator_construction_v1/results
+          retention-days: 90
