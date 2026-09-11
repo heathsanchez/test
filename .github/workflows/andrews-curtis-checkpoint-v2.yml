@@ -6,6 +6,8 @@ on:
       - andrews-curtis-development-v2
     paths:
       - ".github/workflows/andrews-curtis-checkpoint-v2.yml"
+      - "andrews_curtis/solver_v2_checkpoint.py"
+      - "andrews_curtis/solver_v2_gssub.py"
   workflow_dispatch:
 
 permissions:
@@ -50,6 +52,7 @@ jobs:
 
       - name: Compile public 610-solve history into official ACC moves
         run: |
+          set -o pipefail
           python3 andrews_curtis/solver_v2_checkpoint.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir andrews_curtis/out_v2_checkpoint             --checkpoint-name 610model             --checkpoint-step 1000             --ms-prefix 634             --max-compile 180             --compile-seconds 900             --reverse-depth 7             --reverse-cap 250000             --submit | tee andrews_curtis/v2_checkpoint.log
 
       - name: Write checkpoint-transfer summary
