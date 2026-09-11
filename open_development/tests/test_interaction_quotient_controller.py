@@ -189,5 +189,53 @@ class InteractionQuotientControllerTests(unittest.TestCase):
         )
 
 
+    def test_residual_query_answer_compiles_to_unique_verified_repair(self):
+        value = [[0, 0], [0, 1]]
+        task = full_task(
+            value,
+            lambda g: form(g, d4(g, "r90"), "concat-h"),
+        )
+        row = {"task_id": "active-query", "task_sha256": digest(task), "task": public(task)}
+        obligation = Obligation(self.adapter.name, row, 1, "method")
+        first = self.adapter.assess(self.state, obligation)
+        self.assertEqual(first.residual["class"], "GENERATIVE_VERSION_SPACE_UNRESOLVED")
+        query = first.residual["necessary_constraint"]["next_distinguishing_probe"]
+        self.assertIsNotNone(query)
+
+        analysis = self.adapter.generation_analysis(self.state, task)
+        target_rep = analysis["minimum_class_representatives"][0]
+        probe = query["input"]
+        answer = self.adapter.execute_ast(self.state, target_rep, probe)
+
+        augmented = deepcopy(task)
+        augmented["train"].append({
+            "input": [list(row) for row in probe],
+            "output": [list(row) for row in answer],
+        })
+        row2 = {
+            "task_id": "active-query-answered",
+            "task_sha256": digest(augmented),
+            "task": public(augmented),
+        }
+        obligation2 = Obligation(self.adapter.name, row2, 1, "method")
+        second = self.adapter.assess(self.state, obligation2)
+        self.assertEqual(second.residual["class"], "GENERATED_FORMATION_REQUIRED")
+        self.assertEqual(
+            second.residual["necessary_constraint"]["interaction_class_count"], 1
+        )
+
+        repairs = list(self.adapter.propose(self.state, obligation2, second.residual))
+        self.assertEqual(len(repairs), 1)
+        verification = self.adapter.verify(self.state, obligation2, repairs[0])
+        self.assertEqual(verification.verdict, "verified")
+        print(
+            "RESIDUAL_TO_QUERY_TO_VERIFIED_REPAIR_PASS",
+            "initial_class_count", analysis["minimum_interaction_class_count"],
+            "query_probe_index", query["probe_index"],
+            "final_class_count", 1,
+            "repair_id", repairs[0].id,
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
