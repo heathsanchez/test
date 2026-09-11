@@ -26,7 +26,7 @@ def closure(xs):
 
 SUBSETS = tuple(sorted({closure(xs) for k in range(CAPACITY + 1)
                         for xs in itertools.combinations(NODES, k)
-                        if len(closure(xs)) <= CAPACITY}, key=lambda s:(len(s), tuple(s))))
+                        if len(closure(xs)) <= CAPACITY}, key=lambda s:(len(s), tuple(sorted(s)))))
 
 def make_stream(seed, regime):
     r = random.Random(seed)
