@@ -1,0 +1,115 @@
+{
+  "stream_length": 24,
+  "shift_episode": 13,
+  "root_digests": [
+    [
+      "eca8bb4aed36",
+      "66d166638ed3",
+      "3cbb7f9d04ea"
+    ],
+    [
+      "66d166638ed3",
+      "90ebd0883619"
+    ],
+    [
+      "eca8bb4aed36",
+      "66d166638ed3",
+      "90ebd0883619"
+    ],
+    [
+      "66d166638ed3",
+      "90ebd0883619",
+      "58e66b167e1e"
+    ],
+    [
+      "eca8bb4aed36",
+      "1e5bfc5e96ee"
+    ],
+    [
+      "66d166638ed3",
+      "90ebd0883619",
+      "58e66b167e1e"
+    ],
+    [
+      "eca8bb4aed36",
+      "1e5bfc5e96ee",
+      "58e66b167e1e"
+    ],
+    [
+      "1e5bfc5e96ee",
+      "58e66b167e1e"
+    ],
+    [
+      "eca8bb4aed36",
+      "1e5bfc5e96ee"
+    ],
+    [
+      "1e5bfc5e96ee",
+      "58e66b167e1e"
+    ],
+    [
+      "eca8bb4aed36",
+      "1e5bfc5e96ee",
+      "58e66b167e1e"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "e1af77e5beb4",
+      "a5aad00b2426",
+      "aa9809613838"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "e1af77e5beb4",
+      "1e5bfc5e96ee",
+      "a5aad00b2426"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "e1af77e5beb4",
+      "1e5bfc5e96ee",
+      "a5aad00b2426"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "e1af77e5beb4",
+      "1e5bfc5e96ee",
+      "a5aad00b2426"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "1e5bfc5e96ee",
+      "a5aad00b2426",
+      "1ba237c6dd89"
+    ],
+    [
+      "a5aad00b2426"
+    ],
+    [
+      "1e5bfc5e96ee",
+      "a5aad00b2426"
+    ],
+    [
+      "a5aad00b2426"
+    ]
+  ],
+  "cost_law": {
+    "atom": 20,
+    "seq_overhead": 4,
+    "reuse": "2+depth",
+    "genesis": "12*tree_size",
+    "maintenance": 1
+  },
+  "promotion_rule": "account>0 and immediate dependencies active",
+  "canonical_identity": "sha256(complete outcome-profile AST)"
+}
