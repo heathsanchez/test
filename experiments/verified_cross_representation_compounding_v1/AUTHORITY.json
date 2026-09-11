@@ -1,8 +1,25 @@
 {
   "repository": "https://github.com/heathsanchez/test",
   "branch": "verified-cross-representation-compounding-v1",
-  "status": "PENDING_REMOTE_CI_FREEZE",
-  "experiment_commit": null,
+  "status": "VERIFIED",
+  "experiment_commit": "3a9a1e15be87063b52a11ae3fe234a7749062cc4",
   "evidence_freeze_commit": null,
-  "runs": []
+  "runs": [
+    {
+      "run_id": 34603467525,
+      "run_url": "https://github.com/heathsanchez/test/actions/runs/34603467525",
+      "job_id": 103276154365,
+      "job_url": "https://github.com/heathsanchez/test/actions/runs/34603467525/job/103276154365",
+      "conclusion": "success",
+      "artifact_id": 10265436536,
+      "artifact_sha256": "70e2f352aeb019319199e9882749d52f88ef07af9529c2ab0120b0bd35e7359f"
+    }
+  ],
+  "invalid_implementation_runs": [
+    {
+      "run_id": 34603219913,
+      "job_id": 103275347058,
+      "reason": "Lean disjointness theorem used invalid cross-type equality elimination"
+    }
+  ]
 }
