@@ -338,12 +338,13 @@ class InteractionSpaceBreakerTests(unittest.TestCase):
         before_store.close()
         self.assertEqual(result.verdict, "verified")
         self.assertEqual(before, after)
-        self.assertEqual(before_events, after_events)
+        self.assertEqual(after_events, before_events + 1)
         self.assertEqual(set(after), {"capabilities", "observations", "policies"})
         print(
             "ACTIVE_STATE_NOT_SELF_DUAL",
             "reuse_changes_active_state", False,
-            "persistent_obligation_space", False,
+            "assessment_appended_to_provenance", True,
+            "persistent_active_obligation_space", False,
         )
 
     def test_09_raw_self_duality_is_not_implemented_by_current_state_schema(self):
