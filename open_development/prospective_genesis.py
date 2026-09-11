@@ -703,8 +703,8 @@ def evaluate(stream: Mapping[str, Any], decisions: Mapping[str, Any], freeze: Ma
             pre_state = oracle.state_at(decisions["final_events"], decision["events_before"])
             analysis = oracle.analyze(pre_state, full)
             ast = record["repair"]["payload"]["body"]["ast"]
-            valid = (analysis["minimum_survivor_count"] == 1
-                     and analysis["minimum_survivors"][0] == ast
+            valid = (analysis["minimum_interaction_class_count"] == 1
+                     and analysis["minimum_class_representatives"][0] == ast
                      and analysis["smaller_survivor_count"] == 0
                      and record["repair"]["dependencies"] == list(oracle.dependencies(ast)))
             admission_checks.append({"capability": rid, "valid": valid, "analysis": analysis,
