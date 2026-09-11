@@ -1,0 +1,66 @@
+name: Andrews-Curtis Record Shortening V3
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-record-shortening-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  shorten-submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Fetch submission 117 evidence artifact
+        run: |
+          mkdir -p /tmp/acc117
+          gh api repos/heathsanchez/test/actions/artifacts/10279884075/zip > /tmp/acc117.zip
+          unzip -q /tmp/acc117.zip -d /tmp/acc117
+          test -f /tmp/acc117/out_v2_gs_residual/submission_v2.txt
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Verify, live-filter, and submit strict improvements
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/shorten_inverse_v3.py \
+            --acc-root /tmp/acc \
+            --input /tmp/acc117/out_v2_gs_residual/submission_v2.txt \
+            --out-dir andrews_curtis/out_shorten_v3 \
+            --submit | tee andrews_curtis/shorten_v3.log
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,pathlib
+          p=pathlib.Path("andrews_curtis/out_shorten_v3/report.json")
+          print("# ACC Record Shortening V3")
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Improved AC paths: **{d['improved_ac_paths']}**")
+              print(f"- Total AC moves removed: **{d['total_ac_moves_saved']}**")
+              print(f"- Live-selected rows: **{d['selected_rows']}**")
+              print(f"- Submission ID: **{d.get('submission_id')}**")
+          else: print("- No report.")
+          PY
+      - name: Upload shortening authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-record-shortening-v3
+          path: |
+            andrews_curtis/out_shorten_v3/
+            andrews_curtis/shorten_v3.log
+          if-no-files-found: warn
