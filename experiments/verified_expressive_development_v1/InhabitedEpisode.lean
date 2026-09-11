@@ -22,7 +22,9 @@ theorem prospective_reuse_available :
 theorem old_preserved :
     ∀ σ : Nat, σ ∈ oldLanguage → σ ∈ extendedLanguage := by
   intro σ h
-  exact List.mem_cons_of_mem target h
+  simp [oldLanguage] at h
+  rcases h with rfl | rfl | rfl | rfl | rfl | rfl <;>
+    decide
 
 theorem removal_restores_obstruction :
     target ∉ oldLanguage ∧ reuseTarget ∉ oldLanguage := by decide
@@ -75,7 +77,7 @@ theorem transition_preserves_old :
   step_preserves episodeKernel genesisStep
 
 def episodePath : Path episodeKernel sourceDigest nextDigest :=
-  Path.cons genesisStep (Path.refl nextDigest)
+  Path.cons genesisStep (Path.refl (K := episodeKernel) nextDigest)
 
 theorem history_preserves_old :
     ∀ fact, episodeKernel.isProtected sourceDigest fact →
@@ -83,7 +85,8 @@ theorem history_preserves_old :
   path_preserves episodeKernel episodePath
 
 theorem stale_complete_certificate_rejected :
-    ¬ episodeKernel.complete nextDigest oldLanguage target := by decide
+    ¬ episodeKernel.complete nextDigest oldLanguage target := by
+  simp [episodeKernel, nextDigest, sourceDigest]
 
 theorem existing_resolution_blocks_expressivity :
     ¬ ExpressivityEmittable episodeKernel sourceDigest extendedLanguage target := by
