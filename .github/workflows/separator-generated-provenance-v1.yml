@@ -1,0 +1,201 @@
+name: Separator generated provenance coordinates v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/separator-generated-provenance-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  develop:
+    strategy:
+      fail-fast: false
+      matrix:
+        orientation: [original, opposite]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Generate representation coordinates from residuals
+        env:
+          ORIENTATION: ${{ matrix.orientation }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from functools import lru_cache
+          from collections import defaultdict
+          from itertools import product
+          import os,json,pathlib
+
+          orientation=os.environ['ORIENTATION']
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          def sz(t):
+            if t[0]=='e':return 0
+            if t[0]=='k':return sz(t[1])+1
+            return sz(t[1])+sz(t[2])+2
+          def st(t):
+            if t[0]=='e':return 'e'
+            if t[0]=='k':return 'k('+st(t[1])+')'
+            return t[0]+'('+st(t[1])+','+st(t[2])+')'
+
+          def r0(a,b):
+            if b[0]=='p' and b[1]==a:
+              t=b[2]
+              if t[0]=='p':
+                l,r=t[1],t[2]
+                if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:return l[2]
+          def r1(a,b):
+            if b[0]=='p' and b[2]==a:return R(a,b[1])
+          def r2(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2][0]=='q' and t[2][2]==a:return t[2][1]
+          def r3(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+          def r4(a,b):
+            if b==Q(a,a):return Q(a,Q(a,a))
+          def r5(a,b):
+            if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+          def r6(a,b):return Q(a,b)
+          rules=[r0,r1,r2,r3,r4,r5,r6]
+          @lru_cache(None)
+          def base_ev(a,b):
+            for r in rules:
+              o=r(a,b)
+              if o is not None:return o
+            raise AssertionError
+          def ev(a,b): return base_ev(a,b) if orientation=='original' else base_ev(b,a)
+
+          def blockedQ(a,b):return r0(a,b) is not None or r2(a,b) is not None
+          def blockedR(a,b):return r0(a,b) is not None or r2(a,b) is not None or r5(a,b) is not None
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e':return True
+            if t[0]=='k':return nf(t[1])
+            if t[0]=='p':return False
+            if t[0]=='q':return nf(t[1]) and nf(t[2]) and not blockedQ(t[1],t[2])
+            if t[0]=='r':return nf(t[1]) and nf(t[2]) and not blockedR(t[1],t[2])
+            return False
+
+          def erase(t):
+            if t[0]=='e':return ('v',0)
+            if t[0]=='k':return ('v',sz(t))
+            if t[0] in ('p','q'):return ('f',erase(t[1]),erase(t[2]))
+            if t[0]=='r':return ('f',erase(t[1]),('f',erase(t[2]),erase(t[1])))
+
+          # Generic provenance sensor language: constructor head at a tree path.
+          # Path 0=unary/left child, 1=right child.
+          def tag_at(t,path):
+            cur=t
+            for bit in path:
+              if cur[0] in ('e',): return '∅'
+              if cur[0]=='k':
+                if bit!=0:return '∅'
+                cur=cur[1]
+              else:
+                cur=cur[1] if bit==0 else cur[2]
+            return cur[0]
+
+          # Candidate sensors ordered by description length only.
+          candidates=[()]
+          for n in range(1,5):
+            candidates += list(product([0,1],repeat=n))
+
+          by={0:{E}}
+          for n in range(1,7):
+            cur={K(x) for x in by.get(n-1,set())}
+            for i in range(n-1):
+              j=n-2-i
+              for a in by.get(i,set()):
+                for b in by.get(j,set()):
+                  for t in (Q(a,b),R(a,b)):
+                    if nf(t):cur.add(t)
+            by[n]=cur
+          states=sorted(set().union(*by.values()),key=lambda t:(sz(t),st(t)))
+          contexts=[t for t in states if sz(t)<=4]
+
+          selected=[]
+          def abstraction(t):
+            return (erase(t),tuple((p,tag_at(t,p)) for p in selected))
+
+          def verify():
+            buckets=defaultdict(list)
+            for t in states:buckets[abstraction(t)].append(t)
+            for xs in buckets.values():
+              if len(xs)<2:continue
+              for i in range(len(xs)):
+                for j in range(i+1,len(xs)):
+                  a,b=xs[i],xs[j]
+                  for c in contexts:
+                    oa,ob=ev(a,c),ev(b,c)
+                    if abstraction(oa)!=abstraction(ob):
+                      return False,{'side':'right','a':a,'b':b,'c':c,'oa':oa,'ob':ob}
+                    oa,ob=ev(c,a),ev(c,b)
+                    if abstraction(oa)!=abstraction(ob):
+                      return False,{'side':'left','a':a,'b':b,'c':c,'oa':oa,'ob':ob}
+            return True,None
+
+          history=[]
+          for iteration in range(12):
+            ok,res=verify()
+            rec={'iteration':iteration,'selected':[list(p) for p in selected],'pass':ok}
+            if res:
+              rec['residual']={k:(st(v) if isinstance(v,tuple) else v) for k,v in res.items()}
+            history.append(rec)
+            print('ITER',iteration,'SENSORS',selected,'PASS',ok)
+            if ok:break
+
+            a,b=res['a'],res['b']
+            # Generate the least new coordinate licensed by this exact residual.
+            viable=[p for p in candidates if p not in selected and tag_at(a,p)!=tag_at(b,p)]
+            if not viable:
+              raise SystemExit('NO_SENSOR_IN_LANGUAGE_FOR_RESIDUAL')
+            p=min(viable,key=lambda p:(len(p),p))
+            print('GENESIS_SENSOR',p,'VALUES',tag_at(a,p),tag_at(b,p))
+            selected.append(p)
+          else:
+            raise SystemExit('NO_CONVERGENCE')
+
+          assert history[-1]['pass']
+          # exact last-coordinate removal ablation
+          admitted=list(selected)
+          last=selected.pop()
+          weak_ok,weak_res=verify()
+          assert not weak_ok
+          selected.append(last)
+          print('ADMITTED_SENSORS',admitted)
+          print('LAST_SENSOR_REMOVAL_REJECTED',last)
+          out={'orientation':orientation,'state_count':len(states),'context_count':len(contexts),
+               'admitted_sensors':[list(p) for p in admitted],'history':history,
+               'last_sensor_ablation_passed':not weak_ok,
+               'last_sensor_ablation_residual':None if weak_res is None else
+                 {k:(st(v) if isinstance(v,tuple) else v) for k,v in weak_res.items()}}
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(out,indent=2))
+          PY
+
+      - name: Assert generated representation
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/result.json'))
+          assert d['history'][0]['pass'] is False
+          assert d['history'][-1]['pass'] is True
+          assert d['last_sensor_ablation_passed']
+          print('SEPARATOR_GENERATED_PROVENANCE_PASS',d['orientation'])
+          print('GENERATED_SENSOR_COUNT',len(d['admitted_sensors']))
+          print('GENERATED_SENSORS',d['admitted_sensors'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: separator-generated-provenance-${{ matrix.orientation }}-v1
+          path: /tmp/result.json
