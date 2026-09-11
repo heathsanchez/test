@@ -1,0 +1,163 @@
+name: E6878 provenance separator Lean v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-provenance-separator-lean-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Freeze Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          "$HOME/.elan/bin/lake" exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem', '''import Mathlib
+          class Magma (α : Type u) where
+            op : α → α → α
+          ''',1)
+          marker='\nopen submission.CM\nnoncomputable def submission.unifiedOriginalWitness : Goal := by'
+          if marker not in s: raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E6878ProvSep.lean').write_text(s)
+          PY
+
+      - name: Add separator theorem
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E6878ProvSep.lean <<'LEAN'
+
+          namespace E6878ProvSep
+          open submission
+          open submission.CM
+
+          def A : CM := r e e
+          def B : CM := q e (q e e)
+          def C : CM := q B e
+
+          theorem eval_B_C : eval B C = e := by
+            have h := eval_cases B C
+            rcases h with h0 | h1 | h2 | h3 | h4 | h5 | h6 | hr
+            · rcases h0 with ⟨v0,v1,v2,ha,hb,ho,_,_,_⟩
+              cases hb
+            · rcases h1 with ⟨v0,v1,ha,hb,ho,_,_,_,_⟩
+              cases hb
+            · rcases h2 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_⟩
+              cases hb
+            · rcases h3 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h4 with ⟨v0,ha,hb,ho,_,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h5 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_,_,_,_⟩
+              simp [A,B,C] at ha hb ho
+              exact ho
+            · rcases h6 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_,_,_,hmiss5⟩
+              exfalso
+              apply hmiss5
+              refine ⟨e, ?_⟩
+              simpa [B,C] using (rule5_intro e (q e e) e)
+            · rcases hr with ⟨ho,_,hn⟩
+              exfalso
+              apply hn
+              refine ⟨e, ?_⟩
+              simpa [B,C] using (Code.r5 e (q e e) e)
+
+          theorem eval_A_C : eval A C = q A C := by
+            have h := eval_cases A C
+            rcases h with h0 | h1 | h2 | h3 | h4 | h5 | h6 | hr
+            · rcases h0 with ⟨v0,v1,v2,ha,hb,ho,_,_,_⟩
+              cases hb
+            · rcases h1 with ⟨v0,v1,ha,hb,ho,_,_,_,_⟩
+              cases hb
+            · rcases h2 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_⟩
+              cases hb
+            · rcases h3 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h4 with ⟨v0,ha,hb,ho,_,_,_,_,_,_,_⟩
+              cases hb
+            · rcases h5 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_,_,_,_⟩
+              -- first argument A is r-headed, but rule 5 requires q-headed.
+              cases ha
+            · rcases h6 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_,_,_,_⟩
+              simpa [A,C] using ho
+            · rcases hr with ⟨ho,_,hn⟩
+              exfalso
+              apply hn
+              refine ⟨q A C, ?_⟩
+              exact Code.r6 A C
+
+          inductive Raw where
+            | v : Nat → Raw
+            | mul : Raw → Raw → Raw
+          deriving DecidableEq
+
+          def erase : CM → Raw
+            | e => .v 0
+            | k a => .v (sz (k a))
+            | p a b => .mul (erase a) (erase b)
+            | q a b => .mul (erase a) (erase b)
+            | r a b => .mul (erase a) (.mul (erase b) (erase a))
+
+          theorem same_erasure : erase A = erase B := by
+            rfl
+
+          theorem output_erasure_diff :
+              erase (eval A C) ≠ erase (eval B C) := by
+            rw [eval_A_C, eval_B_C]
+            decide
+
+          theorem erasure_not_right_congruent :
+              ∃ a b c : CM,
+                erase a = erase b ∧
+                erase (eval a c) ≠ erase (eval b c) := by
+            exact ⟨A,B,C,same_erasure,output_erasure_diff⟩
+
+          #print axioms eval_B_C
+          #print axioms eval_A_C
+          #print axioms erasure_not_right_congruent
+
+          end E6878ProvSep
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          "$HOME/.elan/bin/lake" env lean E6878ProvSep.lean 2>&1 | tee /tmp/provsep.log
+          ! grep -q sorryAx /tmp/provsep.log
+          grep -q E6878ProvSep.erasure_not_right_congruent /tmp/provsep.log
+          echo E6878_PROVENANCE_SEPARATOR_LEAN_PASS
+
+      - name: Publish
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E6878ProvSep.lean /tmp/out/
+          cp /tmp/provsep.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "In the frozen E6878 compiler, two CM states with identical ordinary magma-term erasure have a shared right context whose outputs have different erasures. Therefore tag erasure is not a congruence and provenance is operationally necessary.",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-provenance-separator-lean-v1
+          path: /tmp/out/
