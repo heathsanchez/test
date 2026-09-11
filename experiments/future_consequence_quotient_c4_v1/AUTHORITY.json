@@ -1,0 +1,28 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "future-consequence-quotient-c4-v1",
+  "parent_evidence_freeze": "379846668d040cfeaabc304413d1307db49a85fe",
+  "frozen_experiment_commit": "478ccb2dd9f077094b51948b5fb664b8bf14f28c",
+  "repaired_formal_commit": "5478882e5071a616609fee0d4a013fea5f835530",
+  "authoritative_run": {
+    "run_id": 34564241229,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34564241229",
+    "theorem_job_id": 103152976984,
+    "theorem_job_url": "https://github.com/heathsanchez/test/actions/runs/34564241229/job/103152976984",
+    "c4_job_id": 103152977140,
+    "c4_job_url": "https://github.com/heathsanchez/test/actions/runs/34564241229/job/103152977140",
+    "theorem_artifact_id": 10185416966,
+    "theorem_artifact_sha256": "b28e828670b0ad339b76271eed3ba94f763b679c5342336012d4946f144cb3bf",
+    "c4_artifact_id": 10185413603,
+    "c4_artifact_sha256": "353443c2c87f757d815bb642a91e1683181f5c1286b609191186da48e5f78afa"
+  },
+  "implementation_failure_run": {
+    "run_id": 34564100091,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34564100091",
+    "failed_theorem_job_id": 103152554226,
+    "successful_c4_job_id": 103152554440,
+    "cause": "standalone Lean declarations used an unavailable Monoid class and quotient API; experimental result itself passed",
+    "repair": "replaced dependency with an explicit typed action system and Quotient.lift"
+  },
+  "evidence_freeze_commit": "SELF"
+}

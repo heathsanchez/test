@@ -1,0 +1,123 @@
+{
+  "classification": "BOUNDED_CAUSAL_REPAIR_QUALIFICATION",
+  "prospective": false,
+  "generator_genesis": false,
+  "task": "unchanged C4 rule_induction stage 4",
+  "task_sha256": "2db3cc54e5ebb7bb542022f4c9d9bbecb0d30d0295bb0fe4d61fd8659f8d4976",
+  "primary_metric": "unique verifier-mediated program evaluations to first acceptance; all continuation probes charged",
+  "conditions": {
+    "cold_immediate": {
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "wall_seconds": 0.002069316999950388,
+      "cpu_seconds": 0.0020680240000000016
+    },
+    "future_quotient": {
+      "correct": true,
+      "solution": [
+        "flip_h",
+        "transpose",
+        "rotate_rows",
+        "invert"
+      ],
+      "verifier_calls": 161,
+      "search_nodes": 161,
+      "wall_seconds": 0.0014903119999871706,
+      "cpu_seconds": 0.001490769000000003
+    },
+    "separator_ablation": {
+      "correct": true,
+      "solution": [
+        "flip_h",
+        "transpose",
+        "invert",
+        "rotate_rows"
+      ],
+      "verifier_calls": 181,
+      "search_nodes": 181,
+      "wall_seconds": 0.0013702709998142382,
+      "cpu_seconds": 0.0013711109999999943
+    },
+    "operator_ablation": {
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "wall_seconds": 0.0018944530002045212,
+      "cpu_seconds": 0.0018949870000000008
+    },
+    "sham": {
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "wall_seconds": 0.0019926310001210368,
+      "cpu_seconds": 0.0019934840000000037
+    },
+    "answer_memory": {
+      "correct": true,
+      "solution": [
+        "invert",
+        "flip_h",
+        "transpose",
+        "rotate_rows"
+      ],
+      "verifier_calls": 266,
+      "search_nodes": 266,
+      "wall_seconds": 0.0018768059999274556,
+      "cpu_seconds": 0.001877702000000002
+    }
+  },
+  "immediate_leading_profile": [
+    0,
+    0,
+    0,
+    0
+  ],
+  "immediate_collision": true,
+  "first_successful_separator": [
+    "transpose",
+    "rotate_rows",
+    "invert"
+  ],
+  "separator_profile": [
+    0,
+    0,
+    0,
+    4
+  ],
+  "separator_splits_collision": true,
+  "gates": {
+    "G1_all_correct": true,
+    "G2_future_below_80pct_cold": true,
+    "G3_separator_ablation_removes_20_calls": true,
+    "G4_operator_ablation_restores_cold": true,
+    "G5_controls_equal_cold": true,
+    "G6_immediate_collision": true,
+    "G7_later_separator_on_accepted_path": true
+  },
+  "verdict": "PASS_BOUNDED_CAUSAL_REPAIR",
+  "gain": {
+    "calls_saved": 105,
+    "fraction_saved": 0.39473684210526316,
+    "separator_ablation_calls_restored": 20
+  },
+  "residual": "fresh held-out evaluation is required for prospective transfer; existing operation language precludes generator-genesis claim"
+}
