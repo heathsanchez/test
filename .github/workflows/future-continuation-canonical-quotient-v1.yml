@@ -147,7 +147,7 @@ jobs:
 
           def stepCanonical (step : A → X → X) (observe : X → K) (a : A) :
               CanonicalState step observe → CanonicalState step observe :=
-            Quotient.map (step a) (by
+            Quotient.map' (step a) (by
               intro x y h
               exact step_congr step observe a h)
 
