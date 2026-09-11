@@ -1,0 +1,32 @@
+name: Future Consequence Prospective Transfer V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [future-consequence-prospective-transfer-v1]
+    paths:
+      - 'experiments/future_consequence_prospective_transfer_v1/**'
+      - '.github/workflows/future-consequence-prospective-transfer-v1.yml'
+
+jobs:
+  transfer:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run prospective counterbalanced transfer
+        run: python experiments/future_consequence_prospective_transfer_v1/run.py
+      - name: Freeze authority
+        if: always()
+        run: |
+          cd experiments/future_consequence_prospective_transfer_v1
+          sha256sum PROTOCOL.md run.py results/evidence.json results/rows.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: future-consequence-prospective-transfer-v1
+          path: experiments/future_consequence_prospective_transfer_v1/results
+          retention-days: 90
