@@ -1,0 +1,179 @@
+{
+  "verdict": "VERIFIED_REPRESENTATION_GENESIS",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL",
+  "old_meta_language_size": 4,
+  "old_candidate_failures": {
+    "0": [
+      [
+        1,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "1": [
+      [
+        0,
+        0
+      ],
+      [
+        1,
+        1
+      ]
+    ],
+    "2": [
+      [
+        0,
+        1
+      ],
+      [
+        1,
+        0
+      ]
+    ],
+    "3": [
+      [
+        0,
+        0
+      ],
+      [
+        0,
+        1
+      ]
+    ]
+  },
+  "old_resolving_candidates": [],
+  "initial_status": "UNKNOWN_SEARCH",
+  "escalated_status": "UNKNOWN_EXPRESSIVITY",
+  "identity_residual": {
+    "left_history": [
+      0,
+      0
+    ],
+    "right_history": [
+      1,
+      0
+    ],
+    "same_current_observation": true,
+    "required_outputs": [
+      0,
+      1
+    ]
+  },
+  "minimum_state_count": 2,
+  "constructed_representation": {
+    "representation": "one residual-induced history bit",
+    "classes": {
+      "0": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          1
+        ]
+      ],
+      "1": [
+        [
+          1,
+          0
+        ],
+        [
+          1,
+          1
+        ]
+      ]
+    },
+    "transition": {
+      "state_0_on_0": 0,
+      "state_0_on_1": 1,
+      "state_1_on_0": 0,
+      "state_1_on_1": 1
+    },
+    "readout": {
+      "state_0": 0,
+      "state_1": 1
+    },
+    "source_snapshot": "3106999ce529f3b7c5f6308d0e0217c208fdb4d9c426aea38d23bc94904f9cc7"
+  },
+  "artifact_digest": "6d6847fb66ad4c31fe54ab16022f97df7c2b359219c8f9202e76b58b7d798987",
+  "snapshot_digest": "3106999ce529f3b7c5f6308d0e0217c208fdb4d9c426aea38d23bc94904f9cc7",
+  "prospective_sequences": [
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      1,
+      1
+    ],
+    [
+      1,
+      0,
+      0
+    ],
+    [
+      1,
+      0,
+      1
+    ],
+    [
+      1,
+      1,
+      0
+    ],
+    [
+      1,
+      1,
+      1
+    ]
+  ],
+  "controls": {
+    "missing_complete_rejected": true,
+    "missing_negative_rejected": true,
+    "missing_necessity_rejected": true,
+    "stale_snapshot_rejected": true
+  },
+  "gates": {
+    "G1_unknown_search": true,
+    "G2_old_meta_language_complete": true,
+    "G3_complete_negative": true,
+    "G4_unknown_expressivity": true,
+    "G5_identity_collision_certified": true,
+    "G6_two_states_necessary": true,
+    "G7_no_named_machine_candidates": true,
+    "G8_least_two_class_extension_constructed": true,
+    "G9_constructed_machine_verified": true,
+    "G10_invalid_admissions_rejected": true,
+    "G11_admitted": true,
+    "G12_old_consequence_preserved": true,
+    "G13_trigger_resolved": true,
+    "G14_prospective_reuse": true,
+    "G15_state_ablation_restores_obstruction": true,
+    "G16_inert_state_sham_fails": true,
+    "G17_answer_memory_without_live_state_fails": true
+  },
+  "verifier_calls": 62,
+  "seed": null,
+  "not_established": [
+    "unrestricted grammar invention",
+    "construction beyond quotient-by-certified-separator",
+    "cross-domain transfer",
+    "developmental compounding"
+  ]
+}
