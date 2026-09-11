@@ -1,0 +1,91 @@
+name: E7587 procedure residual trace v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e7587-procedure-residual-trace-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce E7587 and print witness trace
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation7587/InfiniteModel.lean -o /tmp/original.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text().replace('import JudgeProblem','import Mathlib',1)
+          marker='\nnamespace submission\nabbrev CM := Austin7587.Carrier'
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E7587Trace.lean').write_text(s)
+          PY
+          cat >> /tmp/mathlib4/E7587Trace.lean <<'LEAN'
+
+          namespace E7587Trace
+          open submission.Austin7587
+          open submission.Austin7587.T
+
+          def qEmpty (a b : T) : T :=
+            evalWith a b (Keys.empty (sz b))
+
+          def showT : T → String
+            | .e => "e"
+            | .k a => "k(" ++ showT a ++ ")"
+            | .p a b => "p(" ++ showT a ++ "," ++ showT b ++ ")"
+
+          def showKeys (b : T) : String :=
+            String.intercalate "|" ((decode b).terms.map showT)
+
+          def f1 : T := q .e .e
+          def f2 : T := q .e f1
+          def f3 : T := q f2 .e
+          def f4 : T := q .e f3
+          def f5 : T := q .e f4
+
+          def e1 : T := qEmpty .e .e
+          def e2 : T := qEmpty .e e1
+          def e3 : T := qEmpty e2 .e
+          def e4 : T := qEmpty .e e3
+          def e5 : T := qEmpty .e e4
+
+          #eval "FULL1=" ++ showT f1
+          #eval "FULL2=" ++ showT f2
+          #eval "FULL3=" ++ showT f3
+          #eval "FULL4=" ++ showT f4
+          #eval "FULL5=" ++ showT f5
+          #eval "EMPTY1=" ++ showT e1
+          #eval "EMPTY2=" ++ showT e2
+          #eval "EMPTY3=" ++ showT e3
+          #eval "EMPTY4=" ++ showT e4
+          #eval "EMPTY5=" ++ showT e5
+          #eval "KEYS_f1=" ++ showKeys f1
+          #eval "KEYS_f3=" ++ showKeys f3
+          #eval "KEYS_f4=" ++ showKeys f4
+
+          end E7587Trace
+          LEAN
+          lake env lean /tmp/mathlib4/E7587Trace.lean 2>&1 | tee /tmp/trace.log
+          grep -E '"(FULL|EMPTY|KEYS_)' /tmp/trace.log | tee /tmp/keytrace.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e7587-procedure-residual-trace-v1
+          path: |
+            /tmp/trace.log
+            /tmp/keytrace.txt
