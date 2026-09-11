@@ -1,0 +1,25 @@
+name: Emergent Persistence Hierarchy V1
+on: {workflow_dispatch: {}, push: {branches: [emergent-persistence-hierarchy-v1]}}
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python experiments/emergent_persistence_hierarchy_v1/run.py
+      - run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: |
+          set -o pipefail
+          lean experiments/emergent_persistence_hierarchy_v1/Hierarchy.lean 2>&1 | tee /tmp/hierarchy.log
+          ! grep -q sorry /tmp/hierarchy.log
+      - run: |
+          cd experiments/emergent_persistence_hierarchy_v1
+          sha256sum PROTOCOL.md Hierarchy.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/hierarchy.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: emergent-persistence-hierarchy-v1, path: experiments/emergent_persistence_hierarchy_v1/results, retention-days: 90}
