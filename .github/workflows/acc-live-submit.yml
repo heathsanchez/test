@@ -5,7 +5,7 @@ on:
     branches:
       - andrews-curtis-development-v1
     paths:
-      - ".github/workflows/acc-live-submit.yml"
+      - ".github/workflows/acc-live-submit.yml"\n      - "acc_submit/submit_live_filtered.py"\n      - "acc_submit/v1_verified_submission.txt"
   workflow_dispatch:
 
 permissions:
