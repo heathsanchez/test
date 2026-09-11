@@ -1,0 +1,35 @@
+name: Typed Residual Kernel V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [typed-residual-kernel-v1]
+    paths:
+      - 'experiments/typed_residual_kernel_v1/**'
+      - '.github/workflows/typed-residual-kernel-v1.yml'
+
+jobs:
+  theorem:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify proof-carrying developmental kernel
+        run: |
+          lean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/typed-residual-kernel.log
+          ! grep -q sorry /tmp/typed-residual-kernel.log
+      - name: Freeze hashes
+        run: |
+          mkdir -p /tmp/evidence
+          sha256sum experiments/typed_residual_kernel_v1/PROTOCOL.md experiments/typed_residual_kernel_v1/TypedResidualKernel.lean .github/workflows/typed-residual-kernel-v1.yml > /tmp/evidence/SHA256SUMS
+          git rev-parse HEAD > /tmp/evidence/RUN_COMMIT
+          cp /tmp/typed-residual-kernel.log /tmp/evidence/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: typed-residual-kernel-v1
+          path: /tmp/evidence
+          retention-days: 90
