@@ -1,0 +1,146 @@
+name: E6878 provenance quotient separator v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-provenance-quotient-separator-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  search:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Find same-erasure states with different continuations
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from functools import lru_cache
+          from collections import defaultdict
+          import json,pathlib
+
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          def sz(t):
+            if t[0]=='e':return 0
+            if t[0]=='k':return sz(t[1])+1
+            return sz(t[1])+sz(t[2])+2
+          def st(t):
+            if t[0]=='e':return 'e'
+            if t[0]=='k':return 'k('+st(t[1])+')'
+            return t[0]+'('+st(t[1])+','+st(t[2])+')'
+
+          def rr0(a,b):
+            if b[0]=='p' and b[1]==a:
+              t=b[2]
+              if t[0]=='p':
+                l,r=t[1],t[2]
+                if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:return l[2]
+          def rr1(a,b):
+            if b[0]=='p' and b[2]==a:return R(a,b[1])
+          def rr2(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2][0]=='q' and t[2][2]==a:return t[2][1]
+          def rr3(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+          def rr4(a,b):
+            if b==Q(a,a):return Q(a,Q(a,a))
+          def rr5(a,b):
+            if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+          def rr6(a,b):return Q(a,b)
+          rules=[rr0,rr1,rr2,rr3,rr4,rr5,rr6]
+          @lru_cache(None)
+          def ev(a,b):
+            for i,r in enumerate(rules):
+              o=r(a,b)
+              if o is not None:return o,i
+            raise AssertionError
+          def blockedQ(a,b):return rr0(a,b) is not None or rr2(a,b) is not None
+          def blockedR(a,b):return rr0(a,b) is not None or rr2(a,b) is not None or rr5(a,b) is not None
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e':return True
+            if t[0]=='k':return nf(t[1])
+            if t[0]=='p':return False
+            if t[0]=='q':return nf(t[1]) and nf(t[2]) and not blockedQ(t[1],t[2])
+            if t[0]=='r':return nf(t[1]) and nf(t[2]) and not blockedR(t[1],t[2])
+            return False
+
+          # Erasure into ordinary binary syntax. q records ordinary product.
+          # r(a,b) arose as the irreducible product a*(b*a).
+          def erase(t):
+            if t[0]=='e':return ('v',0)
+            if t[0]=='k':return ('v',sz(t))
+            if t[0] in ('p','q'):return ('f',erase(t[1]),erase(t[2]))
+            if t[0]=='r':return ('f',erase(t[1]),('f',erase(t[2]),erase(t[1])))
+          def estr(t):
+            if t[0]=='v':return 'v'+str(t[1])
+            return '('+estr(t[1])+'*'+estr(t[2])+')'
+
+          by={0:{E}}
+          maxsz=8
+          for n in range(1,maxsz+1):
+            cur={K(x) for x in by.get(n-1,set())}
+            for i in range(n-1):
+              j=n-2-i
+              for a in by.get(i,set()):
+                for b in by.get(j,set()):
+                  for t in (Q(a,b),R(a,b)):
+                    if nf(t):cur.add(t)
+            by[n]=cur
+          pool=sorted(set().union(*by.values()),key=lambda t:(sz(t),st(t)))
+          buckets=defaultdict(list)
+          for t in pool:buckets[erase(t)].append(t)
+          collisions=[(e,ts) for e,ts in buckets.items() if len(ts)>1]
+          print('NF_TOTAL',len(pool),'ERASURE_COLLISIONS',len(collisions))
+
+          # Search a one-hole operational separator using left or right multiplication.
+          witness=None
+          for e,ts in collisions:
+            for i in range(len(ts)):
+              for j in range(i+1,len(ts)):
+                a,b=ts[i],ts[j]
+                if a==b:continue
+                for c in pool:
+                  la,ia=ev(a,c); lb,ib=ev(b,c)
+                  if la!=lb:
+                    witness=('right_arg',a,b,c,la,lb,ia,ib,e);break
+                  la,ia=ev(c,a); lb,ib=ev(c,b)
+                  if la!=lb:
+                    witness=('left_arg',a,b,c,la,lb,ia,ib,e);break
+                if witness:break
+              if witness:break
+            if witness:break
+
+          if witness:
+            kind,a,b,c,oa,ob,ia,ib,e=witness
+            print('SEPARATOR_FOUND',kind)
+            print('STATE_A',st(a))
+            print('STATE_B',st(b))
+            print('SAME_ERASURE',estr(e))
+            print('CONTEXT_ARG',st(c))
+            print('OUT_A',st(oa),'RULE',ia)
+            print('OUT_B',st(ob),'RULE',ib)
+            out={
+              'found':True,'kind':kind,'state_a':st(a),'state_b':st(b),
+              'erasure':estr(e),'context':st(c),'out_a':st(oa),'out_b':st(ob),
+              'rule_a':ia,'rule_b':ib
+            }
+          else:
+            print('NO_SEPARATOR')
+            out={'found':False,'collision_count':len(collisions)}
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-provenance-quotient-separator-v1
+          path: /tmp/result.json
