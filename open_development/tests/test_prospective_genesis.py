@@ -72,6 +72,7 @@ class ProspectiveGenesisTests(unittest.TestCase):
             self.assertEqual(analysis["minimum_size"], 4)
             self.assertEqual(analysis["smaller_survivor_count"], 0)
             self.assertEqual(analysis["minimum_survivor_count"], 1)
+            self.assertEqual(analysis["minimum_interaction_class_count"], 1)
 
     def test_unresolved_minimum_version_space_stays_unknown(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -84,8 +85,21 @@ class ProspectiveGenesisTests(unittest.TestCase):
             # leaving two inequivalent minimum normalized ASTs.
             task = full_task([[0, 0], [0, 1]],
                              lambda g: form(g, d4(g, "r90"), "concat-h"))
-            analysis = ProspectiveARCAdapter().generation_analysis(state, task)
+            adapter = ProspectiveARCAdapter()
+            analysis = adapter.generation_analysis(state, task)
             self.assertGreater(analysis["minimum_survivor_count"], 1)
+            self.assertGreater(analysis["minimum_interaction_class_count"], 1)
+            self.assertIsNotNone(analysis["separator_probe"])
+            row = {"task_id": "ambiguous", "task_sha256": digest(task), "task": public(task)}
+            evidence = adapter.assess(
+                state, __import__("open_development.runtime", fromlist=["Obligation"]).Obligation(
+                    adapter.name, row, 1, "method"
+                )
+            )
+            self.assertEqual(evidence.residual["class"], "GENERATIVE_VERSION_SPACE_UNRESOLVED")
+            self.assertIsNotNone(
+                evidence.residual["necessary_constraint"]["next_distinguishing_probe"]
+            )
 
     def test_route_and_chain_leakage_are_rejected(self):
         stream, _ = self.fixture()
