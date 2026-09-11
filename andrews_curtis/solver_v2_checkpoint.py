@@ -25,7 +25,7 @@ from pathlib import Path
 
 import numpy as np
 
-from andrews_curtis.solver_v2_gssub import (
+from solver_v2_gssub import (
     api,
     data_obj,
     snapshot_map,
