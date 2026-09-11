@@ -11,9 +11,12 @@ def compile : SourceRole → TargetToken
   | .scan => .zx9 | .filter => .qa2 | .first => .mn7
   | .pair => .rv4 | .extend => .kp1 | .temporal => .ht8
 
-theorem vocabularies_disjoint : SourceRole ≠ TargetToken := by
-  intro h
-  cases h
+def sourceTag (s : SourceRole) : Sum SourceRole TargetToken := Sum.inl s
+def targetTag (t : TargetToken) : Sum SourceRole TargetToken := Sum.inr t
+
+theorem vocabularies_disjoint (s : SourceRole) (t : TargetToken) :
+    sourceTag s ≠ targetTag t := by
+  simp [sourceTag, targetTag]
 
 def D2 : List SourceRole := [.scan, .filter, .first, .pair, .extend, .pair]
 def targetD2 : List TargetToken := D2.map compile
