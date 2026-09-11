@@ -1,0 +1,112 @@
+name: E6878 survivor proof search v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-survivor-proof-search-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    strategy:
+      fail-fast: false
+      matrix:
+        law: [411,416,501,511,521,1629,1630,1647,1648,1649,6449,6454,6464,6474,6484,6804,6814,6824,6841,6851,6861,6895,6912,6929]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Install Vampire
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -LfsS https://github.com/vprover/vampire/releases/download/v5.1.0/vampire-Linux-X64.zip -o /tmp/vampire.zip
+          unzip -q /tmp/vampire.zip -d /tmp/vampire
+          chmod +x /tmp/vampire/vampire
+
+      - name: Write frozen source and precommitted target
+        env:
+          LAW: ${{ matrix.law }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os,pathlib,json
+          law=int(os.environ['LAW'])
+          targets={
+            411:"X = f(X,f(X,f(X,f(X,X))))",
+            416:"X = f(X,f(X,f(Y,f(X,X))))",
+            501:"X = f(Y,f(Y,f(X,f(X,Y))))",
+            511:"X = f(Y,f(Y,f(Y,f(X,Y))))",
+            521:"X = f(Y,f(Y,f(Z,f(X,Y))))",
+            1629:"X = f(f(X,X),f(f(X,X),X))",
+            1630:"X = f(f(X,X),f(f(X,X),Y))",
+            1647:"X = f(f(X,Y),f(f(X,Y),X))",
+            1648:"X = f(f(X,Y),f(f(X,Y),Y))",
+            1649:"X = f(f(X,Y),f(f(X,Y),Z))",
+            6449:"X = f(X,f(X,f(f(X,X),f(X,X))))",
+            6454:"X = f(X,f(X,f(f(X,Y),f(X,X))))",
+            6464:"X = f(X,f(X,f(f(Y,X),f(X,X))))",
+            6474:"X = f(X,f(X,f(f(Y,Y),f(X,X))))",
+            6484:"X = f(X,f(X,f(f(Y,Z),f(X,X))))",
+            6804:"X = f(Y,f(Y,f(f(X,X),f(X,Y))))",
+            6814:"X = f(Y,f(Y,f(f(X,Y),f(X,Y))))",
+            6824:"X = f(Y,f(Y,f(f(X,Z),f(X,Y))))",
+            6841:"X = f(Y,f(Y,f(f(Y,X),f(X,Y))))",
+            6851:"X = f(Y,f(Y,f(f(Y,Y),f(X,Y))))",
+            6861:"X = f(Y,f(Y,f(f(Y,Z),f(X,Y))))",
+            6895:"X = f(Y,f(Y,f(f(Z,Y),f(X,Y))))",
+            6912:"X = f(Y,f(Y,f(f(Z,Z),f(X,Y))))",
+            6929:"X = f(Y,f(Y,f(f(Z,W),f(X,Y))))",
+          }
+          target=targets[law]
+          vars=sorted(set(v for v in "XYZW" if v in target))
+          source="X = f(Y,f(Y,f(f(Z,X),f(X,Y))))"
+          p=(
+            "fof(source,axiom,![X,Y,Z]: "+source+").\n"+
+            "fof(goal,conjecture,!["+','.join(vars)+"]: "+target+").\n"
+          )
+          pathlib.Path('/tmp/problem.p').write_text(p)
+          pathlib.Path('/tmp/meta.json').write_text(json.dumps({
+            'source_law':6878,'target_law':law,'source':source,'target':target,
+            'authority':'proof search only until independently replayed'
+          },indent=2))
+          print(p)
+          PY
+
+      - name: Proof-producing search
+        shell: bash
+        run: |
+          set -euxo pipefail
+          set +e
+          timeout 150s /tmp/vampire/vampire --mode casc --time_limit 140 --proof tptp /tmp/problem.p > /tmp/vampire.txt 2>&1
+          rc=$?
+          set -e
+          if grep -q 'SZS status Theorem' /tmp/vampire.txt; then
+            verdict=THEOREM_TRACE
+          elif grep -q 'SZS status CounterSatisfiable' /tmp/vampire.txt; then
+            verdict=COUNTERSAT
+          elif [ "$rc" = "124" ]; then
+            verdict=TIMEOUT
+          else
+            verdict=UNKNOWN
+          fi
+          echo "$verdict" | tee /tmp/verdict.txt
+          echo "RC=$rc"
+          grep -E 'SZS status|Termination reason' /tmp/vampire.txt || true
+          if [ "$verdict" = "THEOREM_TRACE" ]; then
+            grep -q 'SZS output start Proof' /tmp/vampire.txt || grep -q 'inference' /tmp/vampire.txt
+          fi
+
+      - name: Publish search authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/problem.p /tmp/meta.json /tmp/vampire.txt /tmp/verdict.txt /tmp/out/
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-survivor-${{ matrix.law }}-v1
+          path: /tmp/out/
