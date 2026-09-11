@@ -1,0 +1,77 @@
+name: ACC Live Filtered Submission
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v1
+    paths:
+      - ".github/workflows/acc-live-submit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      ACC_SUBMISSION_FILE: acc_submit/v1_verified_submission.txt
+      ACC_SUBMIT_OUT: acc_submit/out
+
+    steps:
+      - name: Checkout submission freeze
+        uses: actions/checkout@v4
+
+      - name: Require SAIR API key
+        run: |
+          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY secret is empty"; exit 1; }
+          echo "SAIR_API_KEY_PRESENT"
+
+      - name: Syntax check submitter
+        run: python3 -m py_compile acc_submit/submit_live_filtered.py
+
+      - name: Compare live frontier and submit competitive rows
+        run: python3 acc_submit/submit_live_filtered.py | tee acc_submit/live_submit.log
+
+      - name: Write submission summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          out=pathlib.Path("acc_submit/out")
+          print("# ACC live filtered submission")
+          print()
+          p=out/"pre_submit_summary.json"
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Candidate verified rows: **{d['candidate_rows']}**")
+              print(f"- Selected against live frontier: **{d['selected_rows']}**")
+              print(f"- Currently unsolved: **{d['unsolved_rows']}**")
+              print(f"- Tie or improve current best: **{d['tie_or_improve_rows']}**")
+              print(f"- Longer than live best: **{d['longer_rows']}**")
+              print(f"- Unknown schema / fail-closed: **{d['unknown_schema_rows']}**")
+          q=out/"post_submit_summary.json"
+          if q.exists():
+              d=json.loads(q.read_text())
+              print(f"- Submission ID: `{d['submission_id']}`")
+              print(f"- API terminal status: **{d['status']}**")
+              print(f"- Result rows: **{d['result_rows']}**")
+          elif (out/"submission_id.txt").exists():
+              print(f"- Submission ID: `{(out/'submission_id.txt').read_text().strip()}`")
+              print("- No terminal post-submit summary; inspect artifact/log.")
+          else:
+              print("- No API batch submitted.")
+          PY
+
+      - name: Upload API evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-live-submission-evidence
+          path: |
+            acc_submit/out/
+            acc_submit/live_submit.log
+            acc_submit/v1_verified_submission.txt
+          if-no-files-found: warn
