@@ -1,0 +1,155 @@
+{
+  "verdict": "VERIFIED_CROSS_REPRESENTATION_COMPOUNDING",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "18c70af812a686b62f71628574b2519a97463bfdd0a7d95309301a634013895e",
+  "compiled_target_macro": [
+    "zx9",
+    "qa2",
+    "mn7",
+    "rv4",
+    "kp1",
+    "rv4"
+  ],
+  "adapter_certificates": [
+    {
+      "source_role": "SCAN",
+      "target_token": "zx9",
+      "all_cases_equal": true
+    },
+    {
+      "source_role": "FILTER",
+      "target_token": "qa2",
+      "all_cases_equal": true
+    },
+    {
+      "source_role": "FIRST",
+      "target_token": "mn7",
+      "all_cases_equal": true
+    },
+    {
+      "source_role": "PAIR",
+      "target_token": "rv4",
+      "all_cases_equal": true
+    },
+    {
+      "source_role": "EXTEND",
+      "target_token": "kp1",
+      "all_cases_equal": true
+    },
+    {
+      "source_role": "PAIR",
+      "target_token": "rv4",
+      "all_cases_equal": true
+    }
+  ],
+  "results": {
+    "cold_immediate": {
+      "correct": true,
+      "verifier_calls": 222808,
+      "search_nodes": 335922,
+      "candidate_evaluations": 222,
+      "success_depth": 7,
+      "successful_program_count": 1,
+      "canonical_success": [
+        "ht8",
+        "zx9",
+        "qa2",
+        "mn7",
+        "rv4",
+        "kp1",
+        "rv4"
+      ],
+      "adapter_calls": 0,
+      "direct_source_tokens_available": false
+    },
+    "q_warm": {
+      "correct": true,
+      "verifier_calls": 320,
+      "search_nodes": 56,
+      "candidate_evaluations": 2,
+      "success_depth": 2,
+      "successful_program_count": 1,
+      "canonical_success": [
+        "ht8",
+        "XFER"
+      ],
+      "adapter_calls": 216,
+      "direct_source_tokens_available": false
+    },
+    "q_ablation": {
+      "correct": true,
+      "verifier_calls": 222808,
+      "search_nodes": 335922,
+      "candidate_evaluations": 222,
+      "success_depth": 7,
+      "successful_program_count": 1,
+      "canonical_success": [
+        "ht8",
+        "zx9",
+        "qa2",
+        "mn7",
+        "rv4",
+        "kp1",
+        "rv4"
+      ],
+      "adapter_calls": 0,
+      "direct_source_tokens_available": false
+    },
+    "sham": {
+      "correct": true,
+      "verifier_calls": 600998,
+      "search_nodes": 960799,
+      "candidate_evaluations": 375,
+      "success_depth": 7,
+      "successful_program_count": 1,
+      "canonical_success": [
+        "ht8",
+        "zx9",
+        "qa2",
+        "mn7",
+        "rv4",
+        "kp1",
+        "rv4"
+      ],
+      "adapter_calls": 0,
+      "direct_source_tokens_available": false
+    },
+    "answer_memory": {
+      "correct": true,
+      "verifier_calls": 2181120,
+      "search_nodes": 2396744,
+      "candidate_evaluations": 268674,
+      "success_depth": 7,
+      "successful_program_count": 21,
+      "canonical_success": [
+        "MEM_A",
+        "ht8",
+        "rv4",
+        "zx9",
+        "qa2",
+        "kp1",
+        "rv4"
+      ],
+      "adapter_calls": 0,
+      "direct_source_tokens_available": false
+    }
+  },
+  "gates": {
+    "G1_all_correct": true,
+    "G2_fully_charged_transfer_cheaper": true,
+    "G3_ablation_restores_cold": true,
+    "G4_sham_not_reproduce": true,
+    "G5_answer_memory_not_reproduce": true,
+    "G6_no_shared_surface_tokens": true,
+    "G7_unique_behavioral_compilation": true,
+    "G8_source_macro_not_direct_solution": true
+  },
+  "reduction_factor": 696.275,
+  "seed": null,
+  "not_established": [
+    "natural-domain transfer",
+    "unbounded transfer",
+    "learned semantic adapters",
+    "substrate genesis"
+  ]
+}
