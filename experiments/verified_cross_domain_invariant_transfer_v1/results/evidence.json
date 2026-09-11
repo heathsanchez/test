@@ -1,0 +1,214 @@
+{
+  "verdict": "VERIFIED_NONISOMORPHIC_INVARIANT_TRANSFER",
+  "classification": "FINITE_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "ba786dbe1df8c9b50d6f242e6f828a9ce2ead42ce744ed40f1d015267592fa3e",
+  "rows": [
+    {
+      "encoding": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 27,
+          "bridges_available": 512,
+          "bridges_tested": 1,
+          "discovery_calls": 18
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4635,
+          "bridges_available": 512,
+          "bridges_tested": 513,
+          "discovery_calls": 18
+        }
+      }
+    },
+    {
+      "encoding": [
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 27,
+          "bridges_available": 512,
+          "bridges_tested": 1,
+          "discovery_calls": 18
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4635,
+          "bridges_available": 512,
+          "bridges_tested": 513,
+          "discovery_calls": 18
+        }
+      }
+    },
+    {
+      "encoding": [
+        2,
+        4,
+        1,
+        3,
+        0
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 27,
+          "bridges_available": 512,
+          "bridges_tested": 1,
+          "discovery_calls": 18
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4635,
+          "bridges_available": 512,
+          "bridges_tested": 513,
+          "discovery_calls": 18
+        }
+      }
+    },
+    {
+      "encoding": [
+        3,
+        0,
+        4,
+        2,
+        1
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 27,
+          "bridges_available": 512,
+          "bridges_tested": 1,
+          "discovery_calls": 18
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4608,
+          "bridges_available": 512,
+          "bridges_tested": 512,
+          "discovery_calls": 0
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4635,
+          "bridges_available": 512,
+          "bridges_tested": 513,
+          "discovery_calls": 18
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "no_certificate": 18432,
+    "correct_certificate": 108,
+    "certificate_ablation": 18432,
+    "sham_certificate": 18432,
+    "wrong_certificate": 18540
+  },
+  "reduction_factor": 170.66666666666666,
+  "gates": {
+    "non_isomorphic": true,
+    "all_correct": true,
+    "availability_matched": true,
+    "correct_cheaper": true,
+    "ablation_restores": true,
+    "sham_restores": true,
+    "wrong_not_help": true
+  },
+  "not_established": [
+    "natural-domain transfer",
+    "infinite carriers",
+    "open-ended invariant discovery",
+    "learned continuation language"
+  ]
+}
