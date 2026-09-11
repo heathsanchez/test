@@ -1,0 +1,151 @@
+name: Operational quotient admission theorem v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/operational-quotient-admission-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Install Lean
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          "$HOME/.elan/bin/elan" default leanprover/lean4:v4.33.1
+
+      - name: Write theorem
+        shell: bash
+        run: |
+          cat > /tmp/OperationalQuotient.lean <<'LEAN'
+          namespace OperationalQuotient
+
+          /-- An abstraction/erasure factors a concrete binary transition through
+          an abstract binary transition. -/
+          def FactorsThrough
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S)
+              (qstep : Q → Q → Q) : Prop :=
+            ∀ a b, erase (step a b) = qstep (erase a) (erase b)
+
+          def KernelRightCongruent
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S) : Prop :=
+            ∀ a b c, erase a = erase b →
+              erase (step a c) = erase (step b c)
+
+          def KernelLeftCongruent
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S) : Prop :=
+            ∀ a b c, erase a = erase b →
+              erase (step c a) = erase (step c b)
+
+          theorem factors_forces_right_congruence
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S)
+              (qstep : Q → Q → Q)
+              (h : FactorsThrough erase step qstep) :
+              KernelRightCongruent erase step := by
+            intro a b c hab
+            rw [h a c, h b c, hab]
+
+          theorem factors_forces_left_congruence
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S)
+              (qstep : Q → Q → Q)
+              (h : FactorsThrough erase step qstep) :
+              KernelLeftCongruent erase step := by
+            intro a b c hab
+            rw [h c a, h c b, hab]
+
+          /-- A single future separator certifies that no deterministic abstract
+          transition on the erased states can reproduce the concrete computation. -/
+          theorem separator_blocks_factorization
+              {S Q : Type}
+              (erase : S → Q)
+              (step : S → S → S)
+              (a b c : S)
+              (hsame : erase a = erase b)
+              (hfuture : erase (step a c) ≠ erase (step b c)) :
+              ¬ ∃ qstep : Q → Q → Q, FactorsThrough erase step qstep := by
+            rintro ⟨qstep, hf⟩
+            exact hfuture
+              (factors_forces_right_congruence erase step qstep hf a b c hsame)
+
+          /-- Every replacement abstraction that still identifies a,b and is
+          required to factor the same future transition is impossible. -/
+          theorem future_separator_forces_distinction
+              {S Q : Type}
+              (step : S → S → S)
+              (a b c : S)
+              (erase : S → Q)
+              (hfuture : erase (step a c) ≠ erase (step b c)) :
+              (∀ qstep : Q → Q → Q,
+                FactorsThrough erase step qstep →
+                erase a ≠ erase b) := by
+            intro qstep hf hab
+            exact hfuture
+              (factors_forces_right_congruence erase step qstep hf a b c hab)
+
+          /-- Refinement order: new preserves every old distinction. -/
+          def Refines {S A B : Type} (old : S → A) (new : S → B) : Prop :=
+            ∀ x y, new x = new y → old x = old y
+
+          /-- If the old abstraction is separated by a future context, any
+          factorable successor that refines it must split the offending pair. -/
+          theorem lawful_successor_must_split
+              {S A B : Type}
+              (step : S → S → S)
+              (old : S → A) (new : S → B)
+              (a b c : S)
+              (_href : Refines old new)
+              (hold : old a = old b)
+              (hsep : old (step a c) ≠ old (step b c))
+              (qstep : B → B → B)
+              (hfactor : FactorsThrough new step qstep)
+              (observe : B → A)
+              (hcommute : ∀ x, observe (new x) = old x) :
+              new a ≠ new b := by
+            intro hab
+            have hout : new (step a c) = new (step b c) :=
+              factors_forces_right_congruence new step qstep hfactor a b c hab
+            apply hsep
+            calc
+              old (step a c) = observe (new (step a c)) := (hcommute _).symm
+              _ = observe (new (step b c)) := congrArg observe hout
+              _ = old (step b c) := hcommute _
+
+          #print axioms factors_forces_right_congruence
+          #print axioms separator_blocks_factorization
+          #print axioms future_separator_forces_distinction
+          #print axioms lawful_successor_must_split
+
+          end OperationalQuotient
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp
+          "$HOME/.elan/bin/lean" OperationalQuotient.lean 2>&1 | tee quotient.log
+          ! grep -q sorryAx quotient.log
+          grep -q OperationalQuotient.lawful_successor_must_split quotient.log
+          echo OPERATIONAL_QUOTIENT_ADMISSION_PASS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: operational-quotient-admission-v1
+          path: |
+            /tmp/OperationalQuotient.lean
+            /tmp/quotient.log
