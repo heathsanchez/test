@@ -183,6 +183,97 @@ Commit: `16de151c761bc0d4c24f00e30e8c4b1358687bbd`
 
 The eight direct binary-rule models are exactly the first family whose consequence-complete semantics have been proved. Conditional completeness has now been reproduced on E4952 and E40909.
 
+## E6878 auxiliary-grammar frontier: plain erasure rejected
+
+The first auxiliary-grammar hypothesis interpreted the internal constructors extensionally:
+
+- `q(a,b)` as ordinary magma multiplication `a*b`;
+- `r(a,b)` as the derived composite `a*(b*a)`.
+
+That interpretation is now rejected by kernel-checked negative evidence.
+
+The frozen E6878 carrier from Austin-model commit
+`b984287a1e5283e67b3709fe1e43f7734b360342` satisfies the E6878
+source law universally, but it falsifies the plain rule-5 identity
+
+[
+(a*b)*((a*b)*c)=a
+]
+
+at the explicit carrier values `a=e`, `b=e`, `c=q(e,e)`.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34550404165  
+Job: https://github.com/heathsanchez/test/actions/runs/34550404165/job/103111921078  
+Commit: `23b124c620cc5cafe502109fff805960b5a61102`
+
+Main theorems:
+
+- `E6878R5Countermodel.source_model_holds`
+- `E6878R5Countermodel.r5_counterexample`
+- `E6878R5Countermodel.plain_r5_not_universal_in_source_model`
+
+They use only the standard axioms already present in the frozen model
+(`propext`, `Classical.choice`, `Quot.sound`); there is no
+`sorryAx` and no native-decision escape.
+
+Therefore the archived `Code.r5` rule cannot be justified by erasing
+`q` to ordinary multiplication.  The failure is semantic, not an ATP
+timeout or proof-script residual.
+
+A separate kernel-clean result identifies the missing distinction more
+directly.  In the frozen evaluator, `q(e,e)` and `p(e,e)` have the same
+naive erased magma term, yet the same future continuation separates their
+outputs.  Consequently no binary operation on the erased state space can
+make that erasure compositional.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34544681360  
+Job: https://github.com/heathsanchez/test/actions/runs/34544681360/job/103094625759  
+Commit: `b1383f62bd230cfe57218bf386d3f484cd0d19a1`  
+Key theorem: `E6878QState.no_compositional_erasure`.
+
+The developmental consequence is therefore:
+
+[
+	ext{plain derived coordinate}
+;
+ot	o;
+	ext{adequate E6878 state},
+qquad
+	ext{future-separating provenance/state}
+;	ext{must be retained}.
+]
+
+A frozen residual-to-coordinate procedure then selected constructor
+provenance features on bounded state/context horizons.  On the smaller
+horizon, three shallow sensors were sufficient and individually necessary
+for the selected basis:
+
+- separator-generated provenance:
+  https://github.com/heathsanchez/test/actions/runs/34546027960
+- exact bounded minimality:
+  https://github.com/heathsanchez/test/actions/runs/34546114416
+
+However, the same three-sensor basis failed at the larger tested horizon
+(888 states, 94 contexts):
+
+- https://github.com/heathsanchez/test/actions/runs/34546248889
+
+So the current status is not E6878 consequence completeness.  It is a
+verified rejection of the plain q/r erasure together with a new residual:
+the successor representation must preserve more operational provenance
+than the shallow bounded basis captured.
+
+Classification:
+
+[
+oxed{	ext{E6878 plain auxiliary semantics: NEGATIVE}}
+]
+
+The archived E6878 model itself is not rejected; what is rejected is the
+attempt to treat its auxiliary grammar as a purely definitional erasure
+into ordinary magma terms.
+
+
 ## Mathematical simplification
 
 Let T(X) be the free magma term algebra and define semantic equivalence
