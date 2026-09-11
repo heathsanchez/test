@@ -1,0 +1,66 @@
+name: Andrews-Curtis GS Residual V2
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-gs-residual-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  gs-residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Install GS-Sub runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+
+      - name: Search exact hard-tail residual
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir andrews_curtis/out_v2_gs_residual             --target-ids-file andrews_curtis/checkpoint_residual_v2.json             --max-targets 21             --max-nodes 100000             --max-quotient-total 80             --reverse-depth 7             --reverse-cap 250000             --search-seconds 1200             | tee andrews_curtis/gs_residual_v2.log
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,pathlib
+          p=pathlib.Path("andrews_curtis/out_v2_gs_residual/report_v2.json")
+          print("# ACC GS-Sub hard-tail residual")
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Targets processed: **{d['target_count_processed']}**")
+              print(f"- Official-verifier AC solves: **{d['verified_ac']}**")
+              print(f"- Currently competitive rows: **{d['competitive_submission_rows']}**")
+              for s in d.get("solutions",[]):
+                  print(f"- `{s['ac_id']}`: AC {s['ac_length']} moves; Stable {s['stable_length']}; GS nodes {s['nodes']}; quotient steps {s['quotient_steps']}")
+          else:
+              print("- No report; inspect log.")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andrews-curtis-gs-residual-v2
+          path: |
+            andrews_curtis/out_v2_gs_residual/
+            andrews_curtis/gs_residual_v2.log
+          if-no-files-found: warn
