@@ -7,7 +7,9 @@ def compiled (φ : Encoding) : List Role → List Token := List.map φ
 structure AdapterCertificate (φ : Encoding) : Prop where
   injective : Function.Injective φ
 theorem certified_compilation (φ : Encoding) (p : AdapterCertificate φ) (a b : Role) :
-    φ a = φ b → a = b := p.injective
-def example : Encoding | .scan=>.zx9 | .filter=>.qa2 | .first=>.mn7 | .pair=>.rv4 | .extend=>.kp1 | .temporal=>.ht8
-theorem example_certified : AdapterCertificate example := by constructor; intro a b h; cases a <;> cases b <;> simp_all [example]
+    φ a = φ b → a = b := by
+  intro h
+  exact p.injective h
+def fixedEncoding : Encoding | .scan=>.zx9 | .filter=>.qa2 | .first=>.mn7 | .pair=>.rv4 | .extend=>.kp1 | .temporal=>.ht8
+theorem fixedEncoding_certified : AdapterCertificate fixedEncoding := by constructor; intro a b h; cases a <;> cases b <;> simp_all [fixedEncoding]
 end AdapterGenesis
