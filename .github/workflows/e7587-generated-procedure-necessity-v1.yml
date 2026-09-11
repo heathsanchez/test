@@ -1,0 +1,131 @@
+name: E7587 generated procedure necessity v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e7587-generated-procedure-necessity-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reproduce frozen E7587 source
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          lake exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation7587/InfiniteModel.lean -o /tmp/original.lean
+          sha256sum /tmp/original.lean > /tmp/model.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeProblem','import Mathlib',1)
+          marker='\nnamespace submission\nabbrev CM := Austin7587.Carrier'
+          if marker not in s: raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E7587Procedure.lean').write_text(s)
+          PY
+
+      - name: Add empty-procedure ablation
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E7587Procedure.lean <<'LEAN'
+
+          namespace E7587Procedure
+          open submission.Austin7587
+          open submission.Austin7587.T
+
+          /-- Ablation: the recursive developed lookup state is removed. -/
+          def qEmpty (a b : T) : T :=
+            evalWith a b (Keys.empty (sz b))
+
+          theorem qEmpty_source_fails :
+              ¬ (∀ x y z : T,
+                x =
+                  qEmpty y
+                    (qEmpty x
+                      (qEmpty (qEmpty y (qEmpty z x)) y))) := by
+            intro h
+            have bad := h .e .e .e
+            simp [qEmpty, evalWith, Keys.empty] at bad
+
+          /-- The unchanged developed procedure satisfies the source law universally. -/
+          theorem full_procedure_source_holds :
+              ∀ x y z : T,
+                x = q y (q x (q (q y (q z x)) y)) :=
+            equation7587
+
+          theorem empty_and_full_differ_on_source_witness :
+              let x : T := .e
+              let y : T := .e
+              let z : T := .e
+              qEmpty y
+                    (qEmpty x
+                      (qEmpty (qEmpty y (qEmpty z x)) y))
+                ≠
+              q y (q x (q (q y (q z x)) y)) := by
+            simp only
+            have hfull := full_procedure_source_holds (.e) (.e) (.e)
+            have hempty : qEmpty (.e)
+                    (qEmpty (.e)
+                      (qEmpty (qEmpty (.e) (qEmpty (.e) (.e))) (.e)))
+                ≠ .e := by
+              simp [qEmpty, evalWith, Keys.empty]
+            exact fun heq => hempty (heq.trans hfull.symm)
+
+          #print axioms qEmpty_source_fails
+          #print axioms full_procedure_source_holds
+          #print axioms empty_and_full_differ_on_source_witness
+
+          end E7587Procedure
+          LEAN
+
+      - name: Kernel check procedure necessity
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          lake env lean E7587Procedure.lean 2>&1 | tee /tmp/procedure.log
+          ! grep -q sorryAx /tmp/procedure.log
+          ! grep -q _native.native_decide /tmp/procedure.log
+          grep -q E7587Procedure.qEmpty_source_fails /tmp/procedure.log
+          grep -q E7587Procedure.full_procedure_source_holds /tmp/procedure.log
+          echo E7587_GENERATED_PROCEDURE_NECESSITY_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E7587Procedure.lean /tmp/out/
+          cp /tmp/procedure.log /tmp/out/
+          cp /tmp/model.sha256 /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "claim": "Removing E7587's recursively synthesized decode/lookup procedure and replacing it by empty lookup state causes the source law to fail at x=y=z=e, while the unchanged developed procedure satisfies the law universally.",
+            "ablation": "decode(b) -> Keys.empty(sz b)",
+            "explicit_witness": "x=y=z=e",
+            "source_repo_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "developmental_role": "guarded state -> generated procedure",
+            "trust_guards": ["no sorryAx","no _native.native_decide"]
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e7587-generated-procedure-necessity-v1
+          path: /tmp/out/
