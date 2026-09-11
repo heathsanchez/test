@@ -1,3 +1,5 @@
+[verified-generator-construction-v1 855f2f5] Repair concrete state indices
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 import TypedResidualKernel
 
 namespace VerifiedGeneratorConstruction
@@ -7,6 +9,8 @@ def oldLanguage : List Nat := [0, 3, 5, 10, 12, 15]
 def extendedLanguage : List Nat := List.range 16
 def target : Nat := 8
 def reuseTarget : Nat := 4
+def sourceState : Nat := 1
+def nextState : Nat := 2
 
 theorem old_complete_negative : ¬ ∃ σ, σ ∈ oldLanguage ∧ σ = target := by decide
 theorem constructed_resolves : target ∈ extendedLanguage := by decide
@@ -26,18 +30,18 @@ def K : Kernel where
   resolves := fun σ ρ => σ = ρ
   isProtected := fun _ f => f ∈ oldLanguage
 
-def searchResult : Result K 1 oldLanguage () () target := Result.unknownSearch rfl
-def expressiveResult : Result K 1 oldLanguage () () target :=
+def searchResult : Result K sourceState oldLanguage () () target := Result.unknownSearch rfl
+def expressiveResult : Result K sourceState oldLanguage () () target :=
   Result.unknownExpressivity ⟨rfl, rfl⟩ old_complete_negative
-def constructionStep : Step K expressiveResult 2 := Step.proposeGenerator (fun _ h => h)
+def constructionStep : Step K expressiveResult nextState := Step.proposeGenerator (fun _ h => h)
 
 theorem only_expressivity_licenses_construction :
     constructionStep.kind = TransitionKind.proposeGenerator := by rfl
 theorem proof_carrying_preservation :
-    ∀ f, K.isProtected 1 f → K.isProtected 2 f :=
+    ∀ f, K.isProtected sourceState f → K.isProtected nextState f :=
   step_preserves K constructionStep
 theorem existing_resolution_blocks_reescalation :
-    ¬ ExpressivityEmittable K 1 extendedLanguage target := by
+    ¬ ExpressivityEmittable K sourceState extendedLanguage target := by
   apply existing_resolution_forbids_expressivity
   exact ⟨target, constructed_resolves, rfl⟩
 
