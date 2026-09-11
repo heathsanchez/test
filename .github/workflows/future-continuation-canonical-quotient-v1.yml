@@ -143,7 +143,7 @@ jobs:
 
           def canonical (step : A → X → X) (observe : X → K) (x : X) :
               CanonicalState step observe :=
-            Quotient.mk' x
+            Quotient.mk (futureSetoid step observe) x
 
           def stepCanonical (step : A → X → X) (observe : X → K) (a : A) :
               CanonicalState step observe → CanonicalState step observe :=
