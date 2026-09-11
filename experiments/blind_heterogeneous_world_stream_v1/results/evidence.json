@@ -1,0 +1,176 @@
+{
+  "verdict": "NEGATIVE_OR_PARTIAL",
+  "classification": "FINITE_CONSTRUCTED_VERIFIER_BACKED_PROSPECTIVE",
+  "snapshot_digest": "73d441a0126de803cee3f9e95e30c997f571818c9741eb7e178a582251b37fc4",
+  "totals": {
+    "cold": 2775,
+    "adaptive": 973,
+    "deep_ablation": 2690,
+    "shallow_ablation": 1041,
+    "sham": 2979,
+    "answer_memory": 3046
+  },
+  "reduction_factor": 2.8520041109969165,
+  "reuse_radius": [
+    {
+      "id": "78b846c8372b",
+      "depth": 0,
+      "promoted": 2,
+      "future_episodes": 30,
+      "future_domains": 4,
+      "ablation_breadth": 26
+    },
+    {
+      "id": "8e5b63634c45",
+      "depth": 0,
+      "promoted": 3,
+      "future_episodes": 4,
+      "future_domains": 2,
+      "ablation_breadth": 4
+    },
+    {
+      "id": "5c54bba3cb37",
+      "depth": 0,
+      "promoted": 3,
+      "future_episodes": 29,
+      "future_domains": 4,
+      "ablation_breadth": 25
+    },
+    {
+      "id": "7fca533520c6",
+      "depth": 0,
+      "promoted": 6,
+      "future_episodes": 25,
+      "future_domains": 4,
+      "ablation_breadth": 23
+    },
+    {
+      "id": "f6debfb4faed",
+      "depth": 1,
+      "promoted": 7,
+      "future_episodes": 25,
+      "future_domains": 4,
+      "ablation_breadth": 23
+    },
+    {
+      "id": "cc5eca9b439f",
+      "depth": 2,
+      "promoted": 13,
+      "future_episodes": 19,
+      "future_domains": 4,
+      "ablation_breadth": 19
+    },
+    {
+      "id": "808445ea9f61",
+      "depth": 0,
+      "promoted": 15,
+      "future_episodes": 4,
+      "future_domains": 2,
+      "ablation_breadth": 4
+    }
+  ],
+  "by_depth": {
+    "0": {
+      "future_episodes": 18.4,
+      "future_domains": 3.2,
+      "ablation_breadth": 16.4
+    },
+    "1": {
+      "future_episodes": 25.0,
+      "future_domains": 4.0,
+      "ablation_breadth": 23.0
+    },
+    "2": {
+      "future_episodes": 19.0,
+      "future_domains": 4.0,
+      "ablation_breadth": 19.0
+    }
+  },
+  "scramble": {
+    "cold": 2775,
+    "adaptive": 6807
+  },
+  "promotions": [
+    {
+      "episode": 2,
+      "id": "78b846c8372b",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 3,
+      "id": "8e5b63634c45",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 3,
+      "id": "5c54bba3cb37",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 6,
+      "id": "7fca533520c6",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 7,
+      "id": "f6debfb4faed",
+      "depth": 1,
+      "dependencies": [
+        "78b846c8372b",
+        "5c54bba3cb37"
+      ],
+      "account": 4
+    },
+    {
+      "episode": 13,
+      "id": "cc5eca9b439f",
+      "depth": 2,
+      "dependencies": [
+        "f6debfb4faed",
+        "7fca533520c6"
+      ],
+      "account": 3
+    },
+    {
+      "episode": 15,
+      "id": "808445ea9f61",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    }
+  ],
+  "revocations": [
+    {
+      "episode": 13,
+      "id": "8e5b63634c45",
+      "depth": 0,
+      "reason": "complete outcome profile changed"
+    }
+  ],
+  "gates": {
+    "all_adapters_exhaustively_verified": true,
+    "heterogeneous_domains": true,
+    "adaptive_beats_cold": true,
+    "depth_predicts_reuse_radius": false,
+    "recursive_depth_emerges": true,
+    "deep_ablation_broader_than_shallow": true,
+    "scramble_destroys_hierarchy": true,
+    "scramble_has_no_adaptive_gain": true,
+    "sham_not_help": true,
+    "answer_memory_not_help": true
+  },
+  "not_established": [
+    "natural-world ecological validity",
+    "open-ended domain discovery",
+    "unbounded recursive development",
+    "optimality of learned depth"
+  ]
+}
