@@ -66,14 +66,20 @@ jobs:
             · rcases h4 with ⟨v0,ha,hb,ho,_,_,_,_,_,_,_⟩
               cases hb
             · rcases h5 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_,_,_,_⟩
-              change q e (q e e) = q v0 v1 at ha
-              change q (q e (q e e)) e = q (q v0 v1) v2 at hb
-              injection ha with h0 h1
-              injection hb with _ h2
+              have hres := ho
+              have hv0 : v0 = e := by
+                have hq := congrArg QL ha
+                simpa [B, QL] using hq.symm
+              have hv1 : v1 = q e e := by
+                have hq := congrArg QR ha
+                simpa [B, QR] using hq.symm
+              have hv2 : v2 = e := by
+                have hq := congrArg QR hb
+                simpa [B, C, QR] using hq.symm
               subst v0
               subst v1
               subst v2
-              exact ho
+              simpa [B, C] using hres
             · rcases h6 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_,_,_,hmiss5⟩
               exfalso
               apply hmiss5
