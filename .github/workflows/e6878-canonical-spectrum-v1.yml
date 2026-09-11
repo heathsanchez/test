@@ -1,0 +1,240 @@
+name: E6878 canonical spectrum v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-canonical-spectrum-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  spectrum:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Generate canonical laws and evaluate archived E6878 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/teorth/equational_theories.git /tmp/etp
+          git -C /tmp/etp checkout -q bb5a9b5fe78c376ce1725529f235f8d574630b9f
+          python3 - <<'PY'
+          from functools import lru_cache
+          from itertools import product, permutations
+          import json, pathlib
+
+          # CM representation: ('e',), ('k',a), ('p',a,b), ('q',a,b), ('r',a,b)
+          E=('e',)
+          def K(a): return ('k',a)
+          def P(a,b): return ('p',a,b)
+          def Q(a,b): return ('q',a,b)
+          def R(a,b): return ('r',a,b)
+          def sz(t):
+              if t[0]=='e': return 0
+              if t[0]=='k': return sz(t[1])+1
+              return sz(t[1])+sz(t[2])+2
+          @lru_cache(None)
+          def tower(n):
+              return E if n==0 else K(tower(n-1))
+
+          def match_rule(a,b):
+              # r0: a , p a (p (p u c) (p c a)) -> c
+              if b[0]=='p' and b[1]==a:
+                t=b[2]
+                if t[0]=='p':
+                  l,r=t[1],t[2]
+                  if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:
+                    return l[2]
+              # r1: a , p u a -> r a u
+              if b[0]=='p' and b[2]==a:
+                return R(a,b[1])
+              # r2: a , q a (q u (q c a)) -> c
+              if b[0]=='q' and b[1]==a:
+                t=b[2]
+                if t[0]=='q':
+                  t2=t[2]
+                  if t2[0]=='q' and t2[2]==a:
+                    return t2[1]
+              # r3: a , q a (q u a) -> q a (q a (q u a))
+              if b[0]=='q' and b[1]==a:
+                t=b[2]
+                if t[0]=='q' and t[2]==a:
+                    u=t[1]
+                    return Q(a,Q(a,Q(u,a)))
+              # r4: a , q a a -> q a (q a a)
+              if b==Q(a,a):
+                return Q(a,Q(a,a))
+              # r5: q a u , q (q a u) c -> a
+              if a[0]=='q' and b[0]=='q' and b[1]==a:
+                return a[1]
+              # r6 always: a,b -> q a b
+              return Q(a,b)
+
+          @lru_cache(None)
+          def ev(a,b):
+              return match_rule(a,b)
+
+          # Confirm source identity on a structural generator probe.
+          def source(x,y,z):
+              return ev(y,ev(y,ev(ev(z,x),ev(x,y))))
+          probes=[tower(i) for i in range(4)]
+          assert all(source(x,y,z)==x for x,y,z in product(probes, repeat=3))
+          print('SOURCE_PROBE_PASS',len(probes)**3)
+
+          # Free magma terms as nested tuples ('v',i), ('f',a,b).
+          def V(i): return ('v',i)
+          def F(a,b): return ('f',a,b)
+          @lru_cache(None)
+          def shapes(leaves):
+              if leaves==1:return (None,)
+              out=[]
+              for l in range(1,leaves):
+                for a in shapes(l):
+                  for b in shapes(leaves-l):
+                    out.append((a,b))
+              return tuple(out)
+          def fill(shape,labels,it=None):
+              if it is None: it=iter(labels)
+              if shape is None:return V(next(it))
+              return F(fill(shape[0],labels,it),fill(shape[1],labels,it))
+          def canon_var_pattern(labels):
+              # first occurrence normalization 0, then <= next fresh
+              remap={};nxt=0;out=[]
+              for x in labels:
+                if x not in remap:
+                  remap[x]=nxt;nxt+=1
+                out.append(remap[x])
+              return tuple(out)
+          def patterns(n):
+              # restricted growth strings, require all variables that appear naturally
+              out=[]
+              def rec(xs,m):
+                if len(xs)==n:
+                  out.append(tuple(xs));return
+                for x in range(m+2):
+                  rec(xs+[x],max(m,x))
+              # canonical first symbol 0
+              if n==0:return [()]
+              def rgs(prefix,maxv):
+                if len(prefix)==n:
+                  out.append(tuple(prefix));return
+                for x in range(maxv+2):
+                  rgs(prefix+[x],max(maxv,x))
+              rgs([0],0)
+              return out
+          def evalterm(t,rho):
+              if t[0]=='v': return rho[t[1]]
+              return ev(evalterm(t[1],rho),evalterm(t[2],rho))
+          def termstr(t):
+              if t[0]=='v': return 'xyzwvutsrqp'[t[1]]
+              return '('+termstr(t[1])+'◇'+termstr(t[2])+')'
+
+          # Read the established canonical identity universe from the existing workflow's generator
+          # by regenerating all ordered term pairs with total variable occurrences <=5 and quotienting:
+          # same first-occurrence variable renaming, side-swap canonicalization.
+          terms=[]
+          for n in range(1,6):
+            seen=set()
+            for sh in shapes(n):
+              for pat in patterns(n):
+                t=fill(sh,pat)
+                key=termstr(t)
+                if key not in seen:
+                  seen.add(key); terms.append((n,t))
+          # Canonical equations whose total number of variable leaves <=5 is too small relative to prior
+          # "order" convention. Instead load exact law list from ETP generation helper if available.
+          # Use scripts/generate_eqs_list.py with EQ_SIZE=5 after this Python process.
+          pathlib.Path('/tmp/model_helper.py').write_text('')
+          print('TERM_COUNT_LOCAL',len(terms))
+          PY
+
+          # Generate exact canonical order<=5 list using same ETP script used in prior experiments.
+          cp /tmp/etp/scripts/generate_eqs_list.py /tmp/generate5.py
+          sed -i 's/EQ_SIZE = 4/EQ_SIZE = 5/' /tmp/generate5.py
+          python3 /tmp/generate5.py > /tmp/o5.txt
+
+          python3 - <<'PY'
+          import pathlib,ast,json,re
+          from functools import lru_cache
+          from itertools import product
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          @lru_cache(None)
+          def tower(n):return E if n==0 else K(tower(n-1))
+          def rule(a,b):
+              if b[0]=='p' and b[1]==a:
+                t=b[2]
+                if t[0]=='p':
+                  l,r=t[1],t[2]
+                  if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:
+                    return l[2]
+              if b[0]=='p' and b[2]==a:return R(a,b[1])
+              if b[0]=='q' and b[1]==a:
+                t=b[2]
+                if t[0]=='q':
+                  t2=t[2]
+                  if t2[0]=='q' and t2[2]==a:return t2[1]
+              if b[0]=='q' and b[1]==a:
+                t=b[2]
+                if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+              if b==Q(a,a):return Q(a,Q(a,a))
+              if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+              return Q(a,b)
+          @lru_cache(None)
+          def ev(a,b):return rule(a,b)
+
+          # parser for lines like x = ...
+          def tokenize(s):
+              return re.findall(r'[xyzwvutsrqp]|◇|\(|\)',s.replace(' ',''))
+          def parse(s):
+              toks=tokenize(s);i=0
+              def atom():
+                nonlocal i
+                if re.fullmatch(r'[xyzwvutsrqp]',toks[i]):
+                  v=('v','xyzwvutsrqp'.index(toks[i]));i+=1;return v
+                assert toks[i]=='(';i+=1
+                q=expr();assert toks[i]==')';i+=1;return q
+              def expr():
+                nonlocal i
+                q=atom()
+                while i<len(toks) and toks[i]=='◇':
+                  i+=1;q=('f',q,atom())
+                return q
+              q=expr();assert i==len(toks),(s,toks[i:]);return q
+          def et(t,rho):
+              if t[0]=='v':return rho[t[1]]
+              return ev(et(t[1],rho),et(t[2],rho))
+          lines=pathlib.Path('/tmp/o5.txt').read_text().splitlines()
+          survivors=[];refs=[]
+          # Probe valuations over towers 0..3; then 0..5 only for survivors.
+          pool=[tower(i) for i in range(4)]
+          for n,line in enumerate(lines,1):
+            a,b=map(parse,line.split('=',1))
+            vs=sorted(set(re.findall(r'[xyzwvutsrqp]',line)))
+            k=max(['xyzwvutsrqp'.index(v) for v in vs],default=-1)+1
+            witness=None
+            for vals in product(pool,repeat=k):
+              if et(a,vals)!=et(b,vals):
+                witness=tuple(range(k));break
+            if witness is None:survivors.append((n,line))
+            else:refs.append(n)
+            if n%10000==0:print('PROGRESS',n,'SURV',len(survivors))
+          print('TOTAL',len(lines))
+          print('REFUTED_PROBE',len(refs))
+          print('SURVIVOR_COUNT',len(survivors))
+          for x in survivors[:200]:print('SURVIVOR',x[0],x[1])
+          pathlib.Path('/tmp/spectrum.json').write_text(json.dumps({
+            'total':len(lines),'refuted_probe':len(refs),
+            'survivors':[{'index':n,'formula':f} for n,f in survivors]
+          },indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-canonical-spectrum-v1
+          path: |
+            /tmp/spectrum.json
+            /tmp/o5.txt
