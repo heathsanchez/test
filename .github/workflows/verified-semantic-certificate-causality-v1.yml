@@ -1,0 +1,26 @@
+name: Verified Semantic Certificate Causality V1
+on: {workflow_dispatch: {}, push: {branches: [verified-semantic-certificate-causality-v1]}}
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: python experiments/verified_semantic_certificate_causality_v1/run.py
+      - run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: |
+          set -o pipefail
+          lean -o /tmp/TypedResidualKernel.olean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/kernel.log
+          LEAN_PATH=/tmp lean experiments/verified_semantic_certificate_causality_v1/SemanticCertificate.lean 2>&1 | tee /tmp/cert.log
+          ! grep -q sorry /tmp/kernel.log && ! grep -q sorry /tmp/cert.log
+      - run: |
+          cd experiments/verified_semantic_certificate_causality_v1
+          sha256sum PROTOCOL.md SemanticCertificate.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/kernel.log /tmp/cert.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: verified-semantic-certificate-causality-v1, path: experiments/verified_semantic_certificate_causality_v1/results, retention-days: 90}
