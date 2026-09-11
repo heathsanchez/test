@@ -18,6 +18,7 @@ from open_development.prospective_genesis import (
     INTERACTION_PROBES,
     ProspectiveARCAdapter,
     ast_key,
+    ast_semantic_key,
     freeze_state,
     generated_asts,
 )
@@ -134,12 +135,11 @@ class InteractionQuotientControllerTests(unittest.TestCase):
             "branches_resolved", len(resolved_class_ids),
         )
 
-    def test_declared_probe_quotient_does_not_hide_broader_counterexample(self):
-        # Falsification attempt.  Group every generated AST by the declared
-        # 2x2-binary interaction profile, then search a broader held-out family:
-        # all binary 2x3 and 3x2 grids.  If a declared class splits there, the
-        # current quotient is only a bounded observational quotient and must not
-        # be treated as global semantic equality.
+    def test_certified_semantic_quotient_survives_broader_heldout_probes(self):
+        # Falsification attempt.  Group every generated AST only by the
+        # interpreter-preserving semantic key used for authority, then search a
+        # broader held-out family of all binary 2x3 and 3x2 grids.  Finite probe
+        # agreement is never used to license equivalence.
         asts = generated_asts(self.state)
 
         def signature(ast, probes):
@@ -150,7 +150,7 @@ class InteractionQuotientControllerTests(unittest.TestCase):
 
         declared = {}
         for ast in asts:
-            declared.setdefault(signature(ast, INTERACTION_PROBES), []).append(ast)
+            declared.setdefault(ast_semantic_key(self.state, ast), []).append(ast)
 
         heldout = []
         for cells in product((0, 1), repeat=6):
@@ -176,8 +176,8 @@ class InteractionQuotientControllerTests(unittest.TestCase):
                 ])
 
         print(
-            "INTERACTION_QUOTIENT_HELDOUT_SPLIT_CENSUS",
-            "declared_classes", len(declared),
+            "CERTIFIED_SEMANTIC_QUOTIENT_HELDOUT_CENSUS",
+            "certified_classes", len(declared),
             "syntactic_asts", len(asts),
             "heldout_probes", len(heldout),
             "split_classes", len(split_classes),
@@ -185,7 +185,7 @@ class InteractionQuotientControllerTests(unittest.TestCase):
         self.assertEqual(
             split_classes,
             [],
-            msg="frozen 2x2 interaction quotient merges programs distinguished by held-out rectangular probes",
+            msg="certified semantic key merged programs distinguished by held-out rectangular probes",
         )
 
 
