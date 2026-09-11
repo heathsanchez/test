@@ -1,0 +1,79 @@
+name: Andrews-Curtis Development V2
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-development-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  v2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+
+    steps:
+      - name: Checkout MathGraph experiment
+        uses: actions/checkout@v4
+
+      - name: Require SAIR key
+        run: test -n "$SAIR_API_KEY"
+
+      - name: Fetch pinned official ACC
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+      - name: Fetch pinned ACSolverX
+        run: |
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+          test "$(git -C /tmp/acsolverx rev-parse HEAD)" = "6a12515fe1d95178a483b76d5553266e61122417"
+
+      - name: Install GS-Sub runtime
+        run: python3 -m pip install --quiet numpy numba
+
+      - name: Syntax check
+        run: python3 -m py_compile andrews_curtis/solver_v2_gssub.py
+
+      - name: Run live unsolved GS-Sub pilot and submit verified competitive rows
+        run: |
+          python3 andrews_curtis/solver_v2_gssub.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir andrews_curtis/out_v2             --max-targets 120             --max-nodes 8000             --max-quotient-total 100             --reverse-depth 7             --reverse-cap 250000             --search-seconds 900             --submit | tee andrews_curtis/v2.log
+
+      - name: Write experiment summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p=pathlib.Path("andrews_curtis/out_v2/report_v2.json")
+          print("# Andrews-Curtis V2")
+          if not p.exists():
+              print("- No report produced; inspect log.")
+          else:
+              d=json.loads(p.read_text())
+              print(f"- Live AC unsolved at start: **{d['live_unsolved_at_start']}**")
+              print(f"- Targets processed: **{d['target_count_processed']}**")
+              print(f"- Official-verifier AC solves: **{d['verified_ac']}**")
+              print(f"- Competitive API rows: **{d['competitive_submission_rows']}**")
+              print(f"- Submission ID: **{d['submission_id']}**")
+              print(f"- Search seconds: **{d['search_seconds']}**")
+              for s in d.get("solutions", []):
+                  print(f"- `{s['ac_id']}`: AC {s['ac_length']} moves; Stable {s['stable_length']}; quotient steps {s['quotient_steps']}; nodes {s['nodes']}")
+          PY
+
+      - name: Upload V2 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andrews-curtis-development-v2
+          path: |
+            andrews_curtis/out_v2/
+            andrews_curtis/v2.log
+          if-no-files-found: warn
