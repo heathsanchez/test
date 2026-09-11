@@ -1,0 +1,33 @@
+name: ACC Post-117 Standing
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/acc-post117-standing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  standing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      MIN_SCORING: "20"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Poll standing propagation
+        run: python3 acc_status/check_post117.py | tee acc_status/post117.log
+      - name: Upload standing evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-post117-standing
+          path: |
+            acc_status/post117/
+            acc_status/post117.log
+          if-no-files-found: warn
