@@ -1,0 +1,116 @@
+name: Andrews-Curtis Beam Residual V2
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-beam-residual-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  beam-residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      JAX_PLATFORMS: cpu
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
+
+    steps:
+      - name: Checkout MathGraph experiment
+        uses: actions/checkout@v4
+
+      - name: Require SAIR key
+        run: test -n "$SAIR_API_KEY"
+
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
+          test "$(git -C /tmp/acsolverx rev-parse HEAD)" = "6a12515fe1d95178a483b76d5553266e61122417"
+
+      - name: Install public policy runtime
+        run: |
+          python3 -m pip install --quiet             "numpy==2.1.3" "pandas==2.2.3"             "jax==0.6.0" "jaxlib==0.6.0"             "flax==0.10.4" "chex==0.1.89"             "distrax==0.1.5" "gymnax==0.0.8"             "orbax-checkpoint==0.11.16"
+
+      - name: Build exact 21-case hard-tail dataset
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          residual=json.load(open("andrews_curtis/checkpoint_residual_v2.json"))
+          ids=[int(x["dataset_index"]) for x in residual]
+          src=pathlib.Path("/tmp/acsolverx/data/AC19_extended.txt").read_text().splitlines()
+          out=pathlib.Path("/tmp/acsolverx/data/mathgraph_residual_v2.txt")
+          out.write_text("\n".join(src[i] for i in ids)+"\n")
+          pathlib.Path("/tmp/acsolverx/data/mathgraph_residual_v2_orig_indices.txt").write_text(
+              "\n".join(map(str,ids))+"\n"
+          )
+          print("RESIDUAL_INDICES",ids)
+          PY
+
+      - name: Patch public beam loader to historical checkpoint row count
+        run: |
+          python3 - <<'PY'
+          p="/tmp/acsolverx/beam/beam_search.py"
+          s=open(p).read()
+          old='''    train_src_path = os.path.join("data", f"{args.training_dataset}.txt")
+              with open(train_src_path, "r") as f:
+                  train_num_states = sum(1 for _ in f)
+          '''
+          new='''    # Pinned 610model/1000 solve_data was written against 157217 rows.
+              # The repository's current AC19_extended file has a later row count.
+              train_num_states = 157217
+          '''
+          if old not in s:
+              raise SystemExit("beam loader patch target not found")
+          open(p,"w").write(s.replace(old,new))
+          PY
+
+      - name: Run released policy on checkpoint residual
+        working-directory: /tmp/acsolverx
+        run: |
+          set -o pipefail
+          python3 beam/beam_search.py             --ckpt_path 610model             --ckpt_step 1000             --dataset mathgraph_residual_v2             --training_dataset AC19_extended             --start 0 --end 21             --beam_width 1024             --max_steps 180             --alpha 0.0             --temperature 0.0             --temp_end 0.0             --seed 0             --out_csv /home/runner/work/test/test/andrews_curtis/beam_residual_v2.csv             | tee /home/runner/work/test/test/andrews_curtis/beam_residual_v2.log
+
+      - name: Compile beam paths to official atomic moves and live-submit
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/compile_beam_v2.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --beam-csv andrews_curtis/beam_residual_v2.csv             --residual-json andrews_curtis/checkpoint_residual_v2.json             --out-dir andrews_curtis/out_v2_beam             --submit | tee andrews_curtis/beam_compile_v2.log
+
+      - name: Write beam summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json, pathlib
+          p=pathlib.Path("andrews_curtis/out_v2_beam/report_beam_v2.json")
+          print("# ACC V2 beam residual")
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Public-policy beam solves on 21 hard-tail cases: **{d['beam_solved_rows']}**")
+              print(f"- Official-verifier AC solves after compilation: **{d['verified_ac']}**")
+              print(f"- Competitive API rows: **{d['competitive_rows']}**")
+              print(f"- Submission ID: **{d['submission_id']}**")
+              for s in d.get("solutions",[]):
+                  print(f"- `{s['ac_id']}`: beam {s['beam_steps']} S-moves -> AC {s['ac_length']} official moves; Stable {s['stable_length']}")
+          else:
+              print("- No final report; inspect logs.")
+          PY
+
+      - name: Upload beam evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andrews-curtis-beam-residual-v2
+          path: |
+            andrews_curtis/beam_residual_v2.csv
+            andrews_curtis/beam_residual_v2.log
+            andrews_curtis/beam_compile_v2.log
+            andrews_curtis/out_v2_beam/
+          if-no-files-found: warn
