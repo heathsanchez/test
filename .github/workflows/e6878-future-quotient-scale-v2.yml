@@ -1,0 +1,243 @@
+name: E6878 future quotient prospective scale v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-future-quotient-scale-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  scale:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Run frozen scale transfer
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from functools import lru_cache
+          from collections import defaultdict
+          import json,pathlib,time
+
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          @lru_cache(None)
+          def sz(t):
+            if t[0]=='e':return 0
+            if t[0]=='k':return sz(t[1])+1
+            return sz(t[1])+sz(t[2])+2
+          @lru_cache(None)
+          def st(t):
+            if t[0]=='e':return 'e'
+            if t[0]=='k':return 'k('+st(t[1])+')'
+            return t[0]+'('+st(t[1])+','+st(t[2])+')'
+
+          def r0(a,b):
+            if b[0]=='p' and b[1]==a:
+              t=b[2]
+              if t[0]=='p':
+                l,r=t[1],t[2]
+                if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:return l[2]
+          def r1(a,b):
+            if b[0]=='p' and b[2]==a:return R(a,b[1])
+          def r2(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2][0]=='q' and t[2][2]==a:return t[2][1]
+          def r3(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+          def r4(a,b):
+            if b==Q(a,a):return Q(a,Q(a,a))
+          def r5(a,b):
+            if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+          def r6(a,b):return Q(a,b)
+          rules=(r0,r1,r2,r3,r4,r5,r6)
+          @lru_cache(None)
+          def ev(a,b):
+            for r in rules:
+              o=r(a,b)
+              if o is not None:return o
+            raise AssertionError
+          def blockedQ(a,b):return r0(a,b) is not None or r2(a,b) is not None
+          def blockedR(a,b):return r0(a,b) is not None or r2(a,b) is not None or r5(a,b) is not None
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e':return True
+            if t[0]=='k':return nf(t[1])
+            if t[0]=='p':return False
+            if t[0]=='q':return nf(t[1]) and nf(t[2]) and not blockedQ(t[1],t[2])
+            return nf(t[1]) and nf(t[2]) and not blockedR(t[1],t[2])
+          @lru_cache(None)
+          def erase(t):
+            if t[0]=='e':return ('v',0)
+            if t[0]=='k':return ('v',sz(t))
+            if t[0] in ('p','q'):return ('f',erase(t[1]),erase(t[2]))
+            return ('f',erase(t[1]),('f',erase(t[2]),erase(t[1])))
+
+          by={0:{E}}
+          for n in range(1,9):
+            cur={K(x) for x in by.get(n-1,set())}
+            for i in range(n-1):
+              j=n-2-i
+              for a in by.get(i,set()):
+                for b in by.get(j,set()):
+                  for t in (Q(a,b),R(a,b)):
+                    if nf(t):cur.add(t)
+            by[n]=cur
+          all_states=sorted(set().union(*by.values()),key=lambda t:(sz(t),st(t)))
+          train_states=[t for t in all_states if sz(t)<=7]
+          train_contexts=[t for t in all_states if sz(t)<=5]
+          scale_contexts=[t for t in all_states if sz(t)<=6]
+          new_ring=[t for t in all_states if sz(t)==6]
+          actions_train=sorted([('L',c) for c in train_contexts]+[('R',c) for c in train_contexts],
+                               key=lambda x:(x[0],sz(x[1]),st(x[1])))
+          actions_scale=sorted([('L',c) for c in scale_contexts]+[('R',c) for c in scale_contexts],
+                               key=lambda x:(x[0],sz(x[1]),st(x[1])))
+          @lru_cache(None)
+          def step(t,action):
+            return ev(action[1],t) if action[0]=='L' else ev(t,action[1])
+          @lru_cache(None)
+          def run(t,sensor):
+            cur=t
+            for a in sensor:cur=step(cur,a)
+            return cur
+
+          def vector(states,sensor):
+            return tuple(erase(run(t,sensor)) for t in states)
+          def partition(states,sensors):
+            vs=[vector(states,q) for q in sensors]
+            ids={};cl=[];n=0
+            for i in range(len(states)):
+              key=tuple(v[i] for v in vs)
+              if key not in ids:ids[key]=n;n+=1
+              cl.append(ids[key])
+            return cl,n
+          def split(v,cl):
+            d={}
+            for i,c in enumerate(cl):
+              if c in d and d[c][0]!=v[i]:return d[c][1],i
+              d.setdefault(c,(v[i],i))
+            return None
+          def profile(t,sensors):return tuple(erase(run(t,q)) for q in sensors)
+          def stability(states,actions,sensors,limit=None):
+            cl,_=partition(states,sensors)
+            buckets=defaultdict(list)
+            for i,c in enumerate(cl):buckets[c].append(i)
+            out=[]
+            for xs in buckets.values():
+              if len(xs)<2:continue
+              for action in actions:
+                first=None
+                for i in xs:
+                  p=profile(step(states[i],action),sensors)
+                  if first is None:first=(p,i)
+                  elif p!=first[0]:
+                    out.append({'left':st(states[first[1]]),'right':st(states[i]),
+                                'action':{'side':action[0],'context':st(action[1])}})
+                    break
+                if limit and len(out)>=limit:return out
+            return out
+
+          def develop(states,actions,sensors,max_add):
+            rejected=set();added=[];history=[]
+            for _ in range(max_add):
+              cl,n=partition(states,sensors)
+              found=None
+              for parent in sorted(sensors,key=lambda q:(len(q),tuple((a[0],sz(a[1]),st(a[1])) for a in q))):
+                for action in actions:
+                  cand=(action,)+parent
+                  if cand in sensors or cand in rejected:continue
+                  v=vector(states,cand);w=split(v,cl)
+                  if w is None:rejected.add(cand);continue
+                  found=(cand,action,w);break
+                if found:break
+              if not found:return added,history
+              cand,action,(i,j)=found
+              sensors.append(cand);added.append(cand)
+              rec={'depth':len(cand),'left':st(states[i]),'right':st(states[j]),
+                   'prefix':{'side':action[0],'context':st(action[1])}}
+              history.append(rec)
+              print('GENESIS','DEPTH',len(cand),'WITNESS',rec['left'],'||',rec['right'],
+                    'PREFIX',action[0],st(action[1]))
+            raise RuntimeError('MAX_ADD_REACHED')
+
+          sensors=[()]
+          t0=time.time()
+          added_train,h1=develop(train_states,actions_train,sensors,96)
+          assert not stability(train_states,actions_train,sensors,1)
+          learned_count=len(sensors)
+          learned_classes=partition(train_states,sensors)[1]
+          print('TRAIN_CLOSED','STATES',len(train_states),'CONTEXTS',len(train_contexts),
+                'SENSORS',learned_count,'CLASSES',learned_classes)
+
+          # Precommitted prospective scale: same retained sensors, one larger
+          # state layer and one larger context ring.
+          scale_before=stability(all_states,actions_scale,sensors)
+          new_ring_before=stability(all_states,
+            sorted([('L',c) for c in new_ring]+[('R',c) for c in new_ring],
+                   key=lambda x:(x[0],st(x[1]))),sensors)
+          print('SCALE_BEFORE_VIOLATIONS',len(scale_before),'NEW_RING',len(new_ring_before))
+
+          added_scale,h2=develop(all_states,actions_scale,sensors,192)
+          assert not stability(all_states,actions_scale,sensors,1)
+          scale_classes=partition(all_states,sensors)[1]
+
+          ablation=None
+          for i in range(len(sensors)-1,0,-1):
+            weak=sensors[:i]+sensors[i+1:]
+            v=stability(all_states,actions_scale,weak,1)
+            if v:
+              ablation={'sensor_index':i,'depth':len(sensors[i]),'witness':v[0]}
+              break
+
+          result={
+            'train_state_count':len(train_states),
+            'train_context_count':len(train_contexts),
+            'train_sensor_count':learned_count,
+            'train_class_count':learned_classes,
+            'scale_state_count':len(all_states),
+            'scale_context_count':len(scale_contexts),
+            'new_context_ring_count':len(new_ring),
+            'scale_violations_before_development':len(scale_before),
+            'new_ring_violations_before_development':len(new_ring_before),
+            'first_scale_residual':scale_before[0] if scale_before else None,
+            'scale_sensors_added':len(added_scale),
+            'final_sensor_count':len(sensors),
+            'final_max_depth':max(map(len,sensors)),
+            'final_class_count':scale_classes,
+            'scale_stable_after_development':True,
+            'causal_ablation':ablation,
+            'elapsed_seconds':round(time.time()-t0,3),
+            'freeze':'Train horizon state<=7/context<=5 and prospective scale state<=8/context<=6 fixed before run.'
+          }
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps(result,indent=2))
+          print('E6878_PROSPECTIVE_SCALE_DEVELOPMENT_PASS')
+          PY
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/result.json /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "classification": "BOUNDED_PROSPECTIVE_SCALE",
+            "claim": "The future-continuation representation was frozen after closing E6878 through state size 7/context size 5, then tested unchanged on a precommitted larger state/context horizon. Any new separator was retained through the same frozen developmental rule until the larger quotient closed.",
+            "austin_model_commit": "b984287a1e5283e67b3709fe1e43f7734b360342"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-future-quotient-scale-v2
+          path: /tmp/out/
