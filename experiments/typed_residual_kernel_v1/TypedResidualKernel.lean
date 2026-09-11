@@ -50,49 +50,40 @@ abbrev R := Result SelectionObligation UniqueIfRequired IdentityResidual
   ChoiceResidual SearchIncomplete Complete InLanguage Resolves
 
 /-- Emittability of expressive inadequacy is exactly possession of both proofs. -/
-def ExpressivityEmittable (Ω : State) (M : Language) (u : Authority)
-    (P : Policy) (ρ : Residual) : Prop :=
-  ∃ (pc : Complete Ω M ρ)
-    (pn : NoCurrentResolution InLanguage Resolves M ρ),
-    Nonempty (R Ω M u P ρ)
+def ExpressivityEmittable (Ω : State) (M : Language) (ρ : Residual) : Prop :=
+  Complete Ω M ρ ∧ NoCurrentResolution InLanguage Resolves M ρ
 
 theorem unknownExpressivity_emittable
     {Ω : State} {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
     (pc : Complete Ω M ρ)
     (pn : NoCurrentResolution InLanguage Resolves M ρ) :
-    ExpressivityEmittable (SelectionObligation := SelectionObligation)
-      (UniqueIfRequired := UniqueIfRequired)
-      (IdentityResidual := IdentityResidual) (ChoiceResidual := ChoiceResidual)
-      (SearchIncomplete := SearchIncomplete) Complete InLanguage Resolves Ω M u P ρ := by
-  exact ⟨pc, pn, ⟨R.unknownExpressivity pc pn⟩⟩
+    ExpressivityEmittable Complete InLanguage Resolves Ω M ρ := by
+  exact ⟨pc, pn⟩
+
+theorem unknownExpressivity_constructible
+    {Ω : State} {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
+    (pc : Complete Ω M ρ)
+    (pn : NoCurrentResolution InLanguage Resolves M ρ) :
+    Nonempty (R Ω M u P ρ) := by
+  exact ⟨R.unknownExpressivity pc pn⟩
 
 theorem emittable_implies_complete_and_negative
     {Ω : State} {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
-    (h : ExpressivityEmittable (SelectionObligation := SelectionObligation)
-      (UniqueIfRequired := UniqueIfRequired)
-      (IdentityResidual := IdentityResidual) (ChoiceResidual := ChoiceResidual)
-      (SearchIncomplete := SearchIncomplete) Complete InLanguage Resolves Ω M u P ρ) :
+    (h : ExpressivityEmittable Complete InLanguage Resolves Ω M ρ) :
     Complete Ω M ρ ∧ NoCurrentResolution InLanguage Resolves M ρ := by
-  rcases h with ⟨pc, pn, _⟩
-  exact ⟨pc, pn⟩
+  exact h
 
 theorem incomplete_forbids_expressivity
     {Ω : State} {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
     (hIncomplete : ¬ Complete Ω M ρ) :
-    ¬ ExpressivityEmittable (SelectionObligation := SelectionObligation)
-      (UniqueIfRequired := UniqueIfRequired)
-      (IdentityResidual := IdentityResidual) (ChoiceResidual := ChoiceResidual)
-      (SearchIncomplete := SearchIncomplete) Complete InLanguage Resolves Ω M u P ρ := by
+    ¬ ExpressivityEmittable Complete InLanguage Resolves Ω M ρ := by
   intro h
   exact hIncomplete (emittable_implies_complete_and_negative h).1
 
 theorem existing_resolution_forbids_expressivity
     {Ω : State} {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
     (hExisting : ∃ σ : Future, InLanguage M σ ∧ Resolves σ ρ) :
-    ¬ ExpressivityEmittable (SelectionObligation := SelectionObligation)
-      (UniqueIfRequired := UniqueIfRequired)
-      (IdentityResidual := IdentityResidual) (ChoiceResidual := ChoiceResidual)
-      (SearchIncomplete := SearchIncomplete) Complete InLanguage Resolves Ω M u P ρ := by
+    ¬ ExpressivityEmittable Complete InLanguage Resolves Ω M ρ := by
   intro h
   exact (emittable_implies_complete_and_negative h).2 hExisting
 
@@ -107,7 +98,9 @@ inductive TransitionKind where
 /-- The transition constructors are the constitution: no cross-boundary repair
 constructor exists. Every constructor also requires preservation. -/
 inductive Step {M : Language} {u : Authority} {P : Policy} {ρ : Residual}
-    {Ω : State} : R Ω M u P ρ → State → Type (max uFact 0) where
+    {Ω : State} : R Ω M u P ρ → State →
+      Type (max uFact (max uFuture (max uCandidate (max uResidual
+        (max uPolicy (max uAuthority (max uLanguage uState))))))) where
   | act {a : Candidate} {pa : SelectionObligation Ω M u P a}
       {pu : UniqueIfRequired P a} {Ω' : State}
       (preserve : ∀ f, Protected Ω f → Protected Ω' f) :
@@ -144,7 +137,9 @@ theorem step_preserves {M : Language} {u : Authority} {P : Policy}
 
 /-- A development history existentially hides episode-local evidence, while each
 edge remains proof-carrying. -/
-inductive Path : State → State → Type (max uFact uLanguage uAuthority uPolicy uResidual) where
+inductive Path : State → State →
+    Type (max uFact (max uFuture (max uCandidate (max uResidual
+      (max uPolicy (max uAuthority (max uLanguage uState))))))) where
   | refl (Ω : State) : Path Ω Ω
   | cons {Ω Ω' Ω'' : State} {M : Language} {u : Authority} {P : Policy}
       {ρ : Residual} {r : R Ω M u P ρ}
