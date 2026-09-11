@@ -1,11 +1,11 @@
-import experiments.typed_residual_kernel_v1.TypedResidualKernel
+import TypedResidualKernel
 
 namespace VerifiedExpressiveDevelopment
 
 open TypedResidualKernel
 
 def oldLanguage : List Nat := [0, 3, 5, 10, 12, 15]
-def extendedLanguage : List Nat := 8 :: oldLanguage
+def extendedLanguage : List Nat := List.range 16
 def target : Nat := 8
 def reuseTarget : Nat := 4
 def sourceDigest : Nat := 1001
@@ -16,7 +16,8 @@ theorem old_negative :
 
 theorem generator_novel : target ∉ oldLanguage := by decide
 theorem residual_resolved : target ∈ extendedLanguage := by decide
-theorem prospective_reuse_available : reuseTarget ∉ oldLanguage := by decide
+theorem prospective_reuse_available :
+    reuseTarget ∉ oldLanguage ∧ reuseTarget ∈ extendedLanguage := by decide
 
 theorem old_preserved :
     ∀ σ : Nat, σ ∈ oldLanguage → σ ∈ extendedLanguage := by

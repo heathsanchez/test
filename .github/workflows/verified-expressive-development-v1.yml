@@ -25,8 +25,9 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Verify typed kernel and inhabited episode
         run: |
-          lean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/kernel.log
-          lean experiments/verified_expressive_development_v1/InhabitedEpisode.lean 2>&1 | tee /tmp/episode.log
+          set -o pipefail
+          lean -o /tmp/TypedResidualKernel.olean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/kernel.log
+          LEAN_PATH=/tmp lean experiments/verified_expressive_development_v1/InhabitedEpisode.lean 2>&1 | tee /tmp/episode.log
           ! grep -q sorry /tmp/kernel.log
           ! grep -q sorry /tmp/episode.log
       - name: Freeze evidence
