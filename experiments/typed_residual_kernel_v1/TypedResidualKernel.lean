@@ -17,7 +17,7 @@ structure Kernel where
   complete : State → Language → Residual → Prop
   inLanguage : Language → Future → Prop
   resolves : Future → Residual → Prop
-  protected : State → Fact → Prop
+  isProtected : State → Fact → Prop
 
 variable (K : Kernel)
 
@@ -88,20 +88,20 @@ inductive Step {M : K.Language} {u : K.Authority} {P : K.Policy}
     {ρ : K.Residual} {Ω : K.State} : Result K Ω M u P ρ → K.State → Type where
   | act {a : K.Candidate} {pa : K.selectionObligation Ω M u P a}
       {pu : K.uniqueIfRequired P a} {Ω' : K.State}
-      (preserve : ∀ f, K.protected Ω f → K.protected Ω' f) :
+      (preserve : ∀ f, K.isProtected Ω f → K.isProtected Ω' f) :
       Step (.authorized a pa pu) Ω'
   | refineIdentity {pi : K.identityResidual Ω M u ρ} {Ω' : K.State}
-      (preserve : ∀ f, K.protected Ω f → K.protected Ω' f) :
+      (preserve : ∀ f, K.isProtected Ω f → K.isProtected Ω' f) :
       Step (.unknownIdentity pi) Ω'
   | seekChoiceEvidence {pc : K.choiceResidual Ω M u P ρ} {Ω' : K.State}
-      (preserve : ∀ f, K.protected Ω f → K.protected Ω' f) :
+      (preserve : ∀ f, K.isProtected Ω f → K.isProtected Ω' f) :
       Step (.unknownChoice pc) Ω'
   | improveSearch {ps : K.searchIncomplete Ω M ρ} {Ω' : K.State}
-      (preserve : ∀ f, K.protected Ω f → K.protected Ω' f) :
+      (preserve : ∀ f, K.isProtected Ω f → K.isProtected Ω' f) :
       Step (.unknownSearch ps) Ω'
   | proposeGenerator {pc : K.complete Ω M ρ}
       {pn : NoCurrentResolution K M ρ} {Ω' : K.State}
-      (preserve : ∀ f, K.protected Ω f → K.protected Ω' f) :
+      (preserve : ∀ f, K.isProtected Ω f → K.isProtected Ω' f) :
       Step (.unknownExpressivity pc pn) Ω'
 
 def Step.kind {M : K.Language} {u : K.Authority} {P : K.Policy}
@@ -116,7 +116,7 @@ def Step.kind {M : K.Language} {u : K.Authority} {P : K.Policy}
 
 theorem step_preserves {M : K.Language} {u : K.Authority} {P : K.Policy}
     {ρ : K.Residual} {Ω Ω' : K.State} {r : Result K Ω M u P ρ}
-    (s : Step K r Ω') : ∀ f, K.protected Ω f → K.protected Ω' f := by
+    (s : Step K r Ω') : ∀ f, K.isProtected Ω f → K.isProtected Ω' f := by
   cases s <;> assumption
 
 inductive Path : K.State → K.State → Type where
@@ -126,7 +126,7 @@ inductive Path : K.State → K.State → Type where
       (head : Step K r Ω') (tail : Path Ω' Ω'') : Path Ω Ω''
 
 theorem path_preserves {Ω Ω' : K.State} (p : Path K Ω Ω') :
-    ∀ f, K.protected Ω f → K.protected Ω' f := by
+    ∀ f, K.isProtected Ω f → K.isProtected Ω' f := by
   induction p with
   | refl =>
       intro f hf

@@ -44,7 +44,7 @@ def episodeKernel : Kernel where
   complete := fun Ω M _ => Ω = sourceDigest ∧ M = oldLanguage
   inLanguage := fun M σ => σ ∈ M
   resolves := fun σ ρ => σ = ρ
-  protected := fun _ fact => fact ∈ oldLanguage
+  isProtected := fun _ fact => fact ∈ oldLanguage
 
 theorem complete_old :
     episodeKernel.complete sourceDigest oldLanguage target := by
@@ -70,16 +70,16 @@ theorem transition_is_generator_proposal :
     genesisStep.kind = TransitionKind.proposeGenerator := by rfl
 
 theorem transition_preserves_old :
-    ∀ fact, episodeKernel.protected sourceDigest fact →
-      episodeKernel.protected nextDigest fact :=
+    ∀ fact, episodeKernel.isProtected sourceDigest fact →
+      episodeKernel.isProtected nextDigest fact :=
   step_preserves episodeKernel genesisStep
 
 def episodePath : Path episodeKernel sourceDigest nextDigest :=
   Path.cons genesisStep (Path.refl nextDigest)
 
 theorem history_preserves_old :
-    ∀ fact, episodeKernel.protected sourceDigest fact →
-      episodeKernel.protected nextDigest fact :=
+    ∀ fact, episodeKernel.isProtected sourceDigest fact →
+      episodeKernel.isProtected nextDigest fact :=
   path_preserves episodeKernel episodePath
 
 theorem stale_complete_certificate_rejected :
