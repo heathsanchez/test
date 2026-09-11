@@ -168,16 +168,15 @@ jobs:
               (hsep : observe (run step w x) ≠ observe (run step w y)) :
               key x ≠ key y := by
             intro hkey
-            have hr : ∀ u : List A, key (run step u x) = key (run step u y) := by
-              intro u
-              induction u generalizing x y with
-              | nil => exact hkey
-              | cons a u ih =>
-                  apply ih
-                  rw [hstep a x, hstep a y, hkey]
-            have hk := hr w
-            apply hsep
-            rw [hobserve (run step w x), hobserve (run step w y), hk]
+            have hf : FutureEq step observe x y := by
+              apply stable_relation_subset_futureEq step observe
+                (fun a b => key a = key b)
+              · intro a b hab
+                rw [hobserve a, hobserve b, hab]
+              · intro a a₁ b hab
+                rw [hstep a a₁, hstep a b, hab]
+              · exact hkey
+            exact hsep (hf w)
 
           #print axioms behavior_step
           #print axioms behavior_eq_iff_futureEq
