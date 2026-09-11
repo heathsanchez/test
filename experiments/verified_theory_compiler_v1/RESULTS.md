@@ -274,6 +274,79 @@ attempt to treat its auxiliary grammar as a purely definitional erasure
 into ordinary magma terms.
 
 
+## E6878 future-continuation quotient repair
+
+The shallow constructor-tag basis was not the right endpoint.  The repaired
+experiment uses future distinguishability directly.
+
+Start from the naive erasure observation.  A sensor is now an actual finite
+left/right continuation of the frozen E6878 evaluator followed by erasure.
+Whenever two currently identified states have successor profiles separated
+by an already admitted sensor, prepend the separating action and retain that
+new continuation.  No constructor tag is added merely because of syntax.
+
+This is a finite Myhill-Nerode-style refinement over the declared E6878
+state/context horizon:
+
+[
+s \equiv_Q t
+\iff
+\forall q\in Q,; \mathrm{erase}(q(s))=\mathrm{erase}(q(t)).
+]
+
+The loop stops only when the induced equivalence is stable under every
+declared left/right context.
+
+Run: https://github.com/heathsanchez/test/actions/runs/34552007182  
+Commit: `edf4eeedeb2d67367182272808955d647c1c3f48`
+
+Medium horizon:
+
+- states: 285 normal forms, size <= 6;
+- contexts: 33 normal forms, size <= 4;
+- naive erasure classes: 146;
+- generated basis: 5 sensors, maximum continuation depth 2;
+- final operational classes: 154;
+- exact stability replay: PASS;
+- removing the final generated depth-2 sensor reintroduces a separator.
+
+Job:
+https://github.com/heathsanchez/test/actions/runs/34552007182/job/103116690809
+
+Large horizon:
+
+- states: 888 normal forms, size <= 7;
+- contexts: 94 normal forms, size <= 5;
+- naive erasure classes: 385;
+- generated basis: 17 sensors, maximum continuation depth 3;
+- final operational classes: 416;
+- exact stability replay under every declared left/right context: PASS;
+- removing the final generated depth-3 sensor reintroduces the concrete
+  separator `k(q(e,e))` versus `k(r(e,e))` under left context `e`.
+
+Job:
+https://github.com/heathsanchez/test/actions/runs/34552007182/job/103116690992
+
+Large artifact:
+https://github.com/heathsanchez/test/actions/runs/34552007182/artifacts/10181157641
+
+Artifact ZIP SHA256:
+`000237ab538fcf8477954b244bcb997a772922170873326f8e9080e0d81a3333`
+
+Classification: **FINITE / EXHAUSTIVE OVER THE DECLARED HORIZON**.
+
+This repairs the earlier larger-horizon failure of the shallow
+root/left/right constructor-tag basis.  The system no longer guesses what
+auxiliary state should mean.  It retains exactly those finite continuations
+that a verified residual shows are needed to preserve future consequence.
+
+The result does **not** prove global E6878 consequence completeness, nor that
+17 sensors are a globally minimal basis.  It establishes that, on the
+declared 888-state / 94-context horizon, a representation generated only
+from future separators closes to a stable operational quotient, and that
+the final admitted continuation is causally necessary for that closure.
+
+
 ## Mathematical simplification
 
 Let T(X) be the free magma term algebra and define semantic equivalence
