@@ -1,0 +1,91 @@
+name: E6878 residual to state-tag genesis v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-residual-state-tag-genesis-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  genesis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Freeze residual and synthesize least separator
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+
+          # Frozen verifier residual found in the E6878 evaluator.
+          sQ=('q',('e',),('e',))
+          sP=('p',('e',),('e',))
+          u =('q',('q',('e',),('e',)),('e',))
+
+          def erase(t):
+              k=t[0]
+              if k=='e': return ('e',)
+              if k=='k': return ('k',erase(t[1]))
+              if k=='p': return ('p',erase(t[1]),erase(t[2]))
+              if k=='q': return ('p',erase(t[1]),erase(t[2]))
+              if k=='r': return ('p',erase(t[1]),('p',erase(t[2]),erase(t[1])))
+              raise ValueError(k)
+
+          # Candidate atomic coordinates are generated from structural diffs,
+          # not supplied by law-specific knowledge.
+          def structural_features(t):
+              out={
+                'root_constructor': t[0],
+                'arity': len(t)-1,
+              }
+              if len(t)>1: out['child1_root']=t[1][0]
+              if len(t)>2: out['child2_root']=t[2][0]
+              return out
+
+          fQ=structural_features(sQ); fP=structural_features(sP)
+          separators=[k for k in fQ if fQ[k]!=fP.get(k)]
+          assert erase(sQ)==erase(sP)
+          assert separators==['root_constructor'], separators
+
+          # Least refinement of the old observation by the generated separator.
+          def obs0(t): return erase(t)
+          def obs1(t): return (erase(t), structural_features(t)['root_constructor'])
+
+          assert obs0(sQ)==obs0(sP)
+          assert obs1(sQ)!=obs1(sP)
+
+          out={
+            'old_representation':'erase auxiliary tags to old p-language',
+            'residual_pair':{'left':repr(sQ),'right':repr(sP)},
+            'common_future':repr(u),
+            'old_collapses_pair':True,
+            'generated_atomic_separators':separators,
+            'selected_least_separator':'root_constructor',
+            'new_representation':'(old_observation, root_constructor)',
+            'new_separates_pair':True,
+            'status':'LEAST_RESIDUAL_REFINEMENT_SYNTHESIZED'
+          }
+          open('/tmp/genesis.json','w').write(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - name: Assert frozen controller behavior
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import json
+          d=json.load(open('/tmp/genesis.json'))
+          assert d['old_collapses_pair']
+          assert d['generated_atomic_separators']==['root_constructor']
+          assert d['selected_least_separator']=='root_constructor'
+          assert d['new_separates_pair']
+          print('E6878_RESIDUAL_TO_STATE_TAG_GENESIS_PASS')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-residual-state-tag-genesis-v1
+          path: /tmp/genesis.json
