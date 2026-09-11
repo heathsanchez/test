@@ -1,0 +1,12 @@
+{
+  "experiment": "verified_cross_representation_compounding_v1",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "controller": "run.py",
+  "formal_certificate": "CrossRepresentation.lean",
+  "protocol": "PROTOCOL.md",
+  "human_results": "RESULTS.md",
+  "machine_results": "results/evidence.json",
+  "frozen_snapshot": "results/snapshot.json",
+  "seed": null,
+  "verifier": "Python 3.12 and Lean 4.30.0-rc2"
+}
