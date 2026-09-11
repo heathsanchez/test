@@ -1,0 +1,60 @@
+{
+  "verdict": "ORDERING_SENSITIVE_NEGATIVE_TRANSFER",
+  "classification": "PROSPECTIVE_EXHAUSTIVE_COUNTERBALANCED_FINITE",
+  "source_mechanism_commit": "8809c71cd75b49326f921595dfbfe05a310a959e",
+  "source_mechanism_sha256": "b24c010f126a3dbc302af123d0fe2e5e87fc87cb65f81b362b99d82b94dca273",
+  "carrier": "immutable token traces",
+  "targets": 24,
+  "operation_orders": 24,
+  "trials": 576,
+  "seed": null,
+  "primary_metric": "aggregate fully charged verifier calls",
+  "totals": {
+    "cold_immediate": 122976,
+    "q_warm": 122976,
+    "q_ablation": 122976,
+    "sham": 122976,
+    "answer_memory": 122976
+  },
+  "q_over_cold": 1.0,
+  "calls_delta": 0,
+  "wins": 288,
+  "ties": 0,
+  "losses": 288,
+  "strata": [
+    {
+      "target_first_action_position": 0,
+      "trials": 144,
+      "aggregate_delta": 18144
+    },
+    {
+      "target_first_action_position": 1,
+      "trials": 144,
+      "aggregate_delta": 6048
+    },
+    {
+      "target_first_action_position": 2,
+      "trials": 144,
+      "aggregate_delta": -6048
+    },
+    {
+      "target_first_action_position": 3,
+      "trials": 144,
+      "aggregate_delta": -18144
+    }
+  ],
+  "gates": {
+    "G1_all_correct": true,
+    "G2_q_below_80pct_cold": false,
+    "G3_more_wins_than_losses": false,
+    "G4_gain_every_stratum": false,
+    "G5_controls_equal_cold": true,
+    "G6_source_mechanism_frozen": true
+  },
+  "not_established": [
+    "generator genesis",
+    "unbounded quotient computation",
+    "natural-task transfer"
+  ],
+  "residual": "continuation-major traversal is a search-order permutation; without a learned consequence-dependent selection rule its aggregate advantage disappears under counterbalancing"
+}
