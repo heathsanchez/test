@@ -1,1 +1,25 @@
-{"status":"PENDING_CI","claim":"persistent amortization of constructed continuation/invariant state"}
+{
+  "status": "VERIFIED",
+  "verdict": "VERIFIED_PERSISTENT_INVARIANT_AMORTIZATION",
+  "classification": "FINITE_CAUSAL_PROSPECTIVE_AMORTIZED",
+  "experiment_commit": "9b1c26afbdd152b4590ad45056602dd848dbeaa8",
+  "run_id": 34627121603,
+  "job_id": 103354806065,
+  "artifact_id": 10275080566,
+  "artifact_sha256": "4538852713e25b369df1023b952ad0bcfeb0534a2d71fc196926329119b9c6db",
+  "aggregate": {
+    "cold": 32256,
+    "persistent": 1657,
+    "midstream_ablation": 22231,
+    "sham": 33661,
+    "answer_memory": 33787
+  },
+  "crossover_target": 2,
+  "reduction_factor": 19.466505733252866,
+  "not_established": [
+    "open-ended continuation discovery",
+    "continuation-language genesis",
+    "cross-domain natural-world amortization",
+    "unbounded compounding"
+  ]
+}
