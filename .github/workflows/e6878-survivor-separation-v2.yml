@@ -1,0 +1,156 @@
+name: E6878 survivor separation v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-survivor-separation-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  separate:
+    strategy:
+      fail-fast: false
+      matrix:
+        law: [411,416,501,511,521,1629,1630,1647,1648,1649,6449,6454,6464,6474,6484,6804,6814,6824,6841,6851,6861,6895,6912,6929]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - name: Exhaustive bounded valuation search in frozen E6878 model
+        env:
+          LAW: ${{ matrix.law }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          from functools import lru_cache
+          from itertools import product
+          import os,json,pathlib
+
+          law=int(os.environ['LAW'])
+          E=('e',)
+          def K(a):return ('k',a)
+          def P(a,b):return ('p',a,b)
+          def Q(a,b):return ('q',a,b)
+          def R(a,b):return ('r',a,b)
+          @lru_cache(None)
+          def sz(t):
+            if t[0]=='e':return 0
+            if t[0]=='k':return sz(t[1])+1
+            return sz(t[1])+sz(t[2])+2
+          @lru_cache(None)
+          def st(t):
+            if t[0]=='e':return 'e'
+            if t[0]=='k':return 'k('+st(t[1])+')'
+            return t[0]+'('+st(t[1])+','+st(t[2])+')'
+          def r0(a,b):
+            if b[0]=='p' and b[1]==a:
+              t=b[2]
+              if t[0]=='p':
+                l,r=t[1],t[2]
+                if l[0]=='p' and r[0]=='p' and r[2]==a and l[2]==r[1]:return l[2]
+          def r1(a,b):
+            if b[0]=='p' and b[2]==a:return R(a,b[1])
+          def r2(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2][0]=='q' and t[2][2]==a:return t[2][1]
+          def r3(a,b):
+            if b[0]=='q' and b[1]==a:
+              t=b[2]
+              if t[0]=='q' and t[2]==a:return Q(a,Q(a,Q(t[1],a)))
+          def r4(a,b):
+            if b==Q(a,a):return Q(a,Q(a,a))
+          def r5(a,b):
+            if a[0]=='q' and b[0]=='q' and b[1]==a:return a[1]
+          def r6(a,b):return Q(a,b)
+          rules=(r0,r1,r2,r3,r4,r5,r6)
+          @lru_cache(None)
+          def ev(a,b):
+            for r in rules:
+              o=r(a,b)
+              if o is not None:return o
+            raise AssertionError
+          def blockedQ(a,b):return r0(a,b) is not None or r2(a,b) is not None
+          def blockedR(a,b):return r0(a,b) is not None or r2(a,b) is not None or r5(a,b) is not None
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e':return True
+            if t[0]=='k':return nf(t[1])
+            if t[0]=='p':return False
+            if t[0]=='q':return nf(t[1]) and nf(t[2]) and not blockedQ(t[1],t[2])
+            return nf(t[1]) and nf(t[2]) and not blockedR(t[1],t[2])
+
+          V=lambda x:('V',x)
+          M=lambda a,b:('M',a,b)
+          X,Y,Z,W=map(V,'XYZW')
+          rhs={
+            411:M(X,M(X,M(X,M(X,X)))),
+            416:M(X,M(X,M(Y,M(X,X)))),
+            501:M(Y,M(Y,M(X,M(X,Y)))),
+            511:M(Y,M(Y,M(Y,M(X,Y)))),
+            521:M(Y,M(Y,M(Z,M(X,Y)))),
+            1629:M(M(X,X),M(M(X,X),X)),
+            1630:M(M(X,X),M(M(X,X),Y)),
+            1647:M(M(X,Y),M(M(X,Y),X)),
+            1648:M(M(X,Y),M(M(X,Y),Y)),
+            1649:M(M(X,Y),M(M(X,Y),Z)),
+            6449:M(X,M(X,M(M(X,X),M(X,X)))),
+            6454:M(X,M(X,M(M(X,Y),M(X,X)))),
+            6464:M(X,M(X,M(M(Y,X),M(X,X)))),
+            6474:M(X,M(X,M(M(Y,Y),M(X,X)))),
+            6484:M(X,M(X,M(M(Y,Z),M(X,X)))),
+            6804:M(Y,M(Y,M(M(X,X),M(X,Y)))),
+            6814:M(Y,M(Y,M(M(X,Y),M(X,Y)))),
+            6824:M(Y,M(Y,M(M(X,Z),M(X,Y)))),
+            6841:M(Y,M(Y,M(M(Y,X),M(X,Y)))),
+            6851:M(Y,M(Y,M(M(Y,Y),M(X,Y)))),
+            6861:M(Y,M(Y,M(M(Y,Z),M(X,Y)))),
+            6895:M(Y,M(Y,M(M(Z,Y),M(X,Y)))),
+            6912:M(Y,M(Y,M(M(Z,Z),M(X,Y)))),
+            6929:M(Y,M(Y,M(M(Z,W),M(X,Y)))),
+          }[law]
+          @lru_cache(None)
+          def vars_of(t):
+            if t[0]=='V':return frozenset([t[1]])
+            if t[0]=='M':return vars_of(t[1])|vars_of(t[2])
+            return frozenset()
+          def tev(t,env):
+            if t[0]=='V':return env[t[1]]
+            return ev(tev(t[1],env),tev(t[2],env))
+
+          by={0:{E}}
+          for n in range(1,5):
+            cur={K(x) for x in by.get(n-1,set())}
+            for i in range(n-1):
+              j=n-2-i
+              for a in by.get(i,set()):
+                for b in by.get(j,set()):
+                  for t in (Q(a,b),R(a,b)):
+                    if nf(t):cur.add(t)
+            by[n]=cur
+          pool=sorted(set().union(*by.values()),key=lambda t:(sz(t),st(t)))
+          names=sorted(vars_of(rhs)|{'X'})
+          tested=0; witness=None
+          for vals in product(pool,repeat=len(names)):
+            env=dict(zip(names,vals));tested+=1
+            lv=env['X'];rv=tev(rhs,env)
+            if lv!=rv:
+              witness={k:st(v) for k,v in env.items()}
+              witness['lhs_value']=st(lv);witness['rhs_value']=st(rv)
+              break
+          out={
+            'law':law,'pool_state_count':len(pool),'pool_max_size':4,
+            'variables':names,'tested':tested,
+            'verdict':'COUNTERMODEL_WITNESS' if witness else 'NO_SEPARATOR_IN_EXHAUSTIVE_BOUND',
+            'witness':witness,
+            'austin_model_commit':'b984287a1e5283e67b3709fe1e43f7734b360342'
+          }
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-survivor-separation-${{ matrix.law }}-v2
+          path: /tmp/result.json
