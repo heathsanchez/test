@@ -1,0 +1,43 @@
+{
+  "verdict": "VERIFIED_PROSPECTIVE_RETENTION_VALUE",
+  "classification": "FINITE_SCARCE_STATE_CAUSAL_PROSPECTIVE",
+  "totals": {
+    "geometry": 1120.0,
+    "amortization": 2382.0,
+    "depth": 1317.0,
+    "persistence": 1898.0,
+    "scope": 1322.5,
+    "sham": 2135.5,
+    "oracle": 1002.0,
+    "unlimited": 1056.0
+  },
+  "nominees": {
+    "geometry": "late_huge",
+    "amortization": "late_huge",
+    "depth": "deep_broad",
+    "persistence": "late_huge",
+    "scope": "weak_to_strong"
+  },
+  "ablation_penalties": {
+    "geometry": 1032.0,
+    "amortization": 1032.0,
+    "depth": 360.0,
+    "persistence": 1032.0,
+    "scope": 312.0
+  },
+  "gates": {
+    "beats_all_scalar_heuristics": true,
+    "better_than_sham": true,
+    "non_oracle": true,
+    "highest_value_ablation_maximal": true,
+    "scarcity_binding": true,
+    "revocation_executed": true
+  },
+  "snapshot_digest": "c89e9aaebb752eb521f4e69a9ad88fcc6ef47c878495b96bc357e11e81e2023f",
+  "not_established": [
+    "natural-world forecasting",
+    "estimator learning",
+    "global optimality",
+    "open-ended retention"
+  ]
+}
