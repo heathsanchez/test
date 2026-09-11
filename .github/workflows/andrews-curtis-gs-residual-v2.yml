@@ -35,7 +35,7 @@ jobs:
       - name: Search exact hard-tail residual
         run: |
           set -o pipefail
-          python3 andrews_curtis/solver_v2_gssub.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir andrews_curtis/out_v2_gs_residual             --target-ids-file andrews_curtis/checkpoint_residual_v2.json             --max-targets 21             --max-nodes 100000             --max-quotient-total 80             --reverse-depth 7             --reverse-cap 250000             --search-seconds 1200             | tee andrews_curtis/gs_residual_v2.log
+          python3 andrews_curtis/solver_v2_gssub.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir andrews_curtis/out_v2_gs_residual             --target-ids-file andrews_curtis/checkpoint_residual_v2.json             --max-targets 21             --max-nodes 100000             --max-quotient-total 80             --reverse-depth 7             --reverse-cap 250000             --search-seconds 1200             --submit             | tee andrews_curtis/gs_residual_v2.log
 
       - name: Summary
         if: always()
