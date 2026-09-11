@@ -1,0 +1,353 @@
+name: Prospective future quotient developmental ladder v2
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/prospective-future-quotient-ladder-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  develop:
+    strategy:
+      fail-fast: false
+      matrix:
+        equation: [15535, 19966]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Freeze archive
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone -q https://github.com/YanbiaoLab/Order5-Austin-Law-Proofs.git /tmp/austin
+          git -C /tmp/austin checkout -q b984287a1e5283e67b3709fe1e43f7734b360342
+
+      - name: Run frozen staged developer
+        env:
+          EQUATION: ${{ matrix.equation }}
+        shell: bash
+        run: |
+          set -euxo pipefail
+          python3 - <<'PY'
+          import os,re,json,pathlib,time
+          from functools import lru_cache
+          from collections import defaultdict
+
+          eq=os.environ['EQUATION']
+          source=pathlib.Path(f'/tmp/austin/proofs/Equation{eq}/InfiniteModel.lean').read_text()
+
+          cm=re.search(r'inductive CM where([^\n]*(?:\n\s*\|[^\n]*)*)',source)
+          if not cm: raise SystemExit('NO_CM')
+          cmtext=cm.group(0)
+          if not all(x in cmtext for x in ['| e : CM','| k : CM → CM','| p : CM → CM → CM']):
+            raise SystemExit('UNSUPPORTED_CM')
+          if re.search(r'\|\s+[qr]\s*:',cmtext):
+            raise SystemExit('UNSUPPORTED_AUX_CONSTRUCTOR')
+
+          def split_top(s):
+            out=[]; start=0; depth=0
+            for i,ch in enumerate(s):
+              if ch=='(': depth+=1
+              elif ch==')': depth-=1
+              elif ch.isspace() and depth==0:
+                if start<i: out.append(s[start:i])
+                start=i+1
+            if start<len(s): out.append(s[start:])
+            return [x for x in out if x]
+
+          def strip_outer(s):
+            s=s.strip()
+            while len(s)>=2 and s[0]=='(' and s[-1]==')':
+              depth=0; closes=None
+              for i,ch in enumerate(s):
+                if ch=='(': depth+=1
+                elif ch==')': depth-=1
+                if depth==0: closes=i; break
+              if closes==len(s)-1: s=s[1:-1].strip()
+              else: break
+            return s
+
+          def parse_expr(s):
+            s=strip_outer(s); ps=split_top(s)
+            if len(ps)==1:
+              if ps[0]=='e': return ('e',)
+              if re.fullmatch(r'v\d+(?:_\d+)?',ps[0]): return ('V',ps[0])
+              raise ValueError(('atom',s))
+            if ps[0]=='k' and len(ps)==2: return ('k',parse_expr(ps[1]))
+            if ps[0]=='p' and len(ps)==3: return ('p',parse_expr(ps[1]),parse_expr(ps[2]))
+            raise ValueError(('app',s,ps))
+
+          i=source.index('inductive Code')
+          ends=[source.find(x,i) for x in ['\ndef CodeCases','\ndef CodeShape','\ndef NF','\ntheorem code_']]
+          ends=[x for x in ends if x>i]
+          block=source[i:(min(ends) if ends else i+20000)]
+          rules=[]
+          for line in block.splitlines():
+            line=line.strip()
+            if not line.startswith('|'): continue
+            m=re.match(r'\|\s+(\w+)\s*(.*?)\s*:\s*Code\s+(.+)$',line)
+            if not m: raise ValueError(line)
+            args=split_top(m.group(3))
+            if len(args)!=3: raise ValueError((line,args))
+            rules.append((m.group(1),parse_expr(args[0]),parse_expr(args[1]),parse_expr(args[2])))
+          assert rules
+
+          E=('e',)
+          def K(a): return ('k',a)
+          def P(a,b): return ('p',a,b)
+          @lru_cache(None)
+          def size(t):
+            return 0 if t[0]=='e' else (size(t[1])+1 if t[0]=='k' else size(t[1])+size(t[2])+2)
+          @lru_cache(None)
+          def st(t):
+            return 'e' if t[0]=='e' else ('k('+st(t[1])+')' if t[0]=='k' else 'p('+st(t[1])+','+st(t[2])+')')
+
+          def match(p,t,env):
+            if p[0]=='V':
+              if p[1] in env: return env[p[1]]==t
+              env[p[1]]=t; return True
+            if p[0]!=t[0]: return False
+            if p[0]=='e': return True
+            if p[0]=='k': return match(p[1],t[1],env)
+            return match(p[1],t[1],env) and match(p[2],t[2],env)
+
+          def inst(p,env):
+            if p[0]=='V': return env[p[1]]
+            if p[0]=='e': return E
+            if p[0]=='k': return K(inst(p[1],env))
+            return P(inst(p[1],env),inst(p[2],env))
+
+          @lru_cache(None)
+          def outputs(a,b):
+            out=[]
+            for _,pa,pb,po in rules:
+              env={}
+              if match(pa,a,env) and match(pb,b,env): out.append(inst(po,env))
+            if out and any(x!=out[0] for x in out[1:]):
+              raise AssertionError(('NONFUNCTIONAL_CODE',st(a),st(b),[st(x) for x in out]))
+            return tuple(out)
+
+          @lru_cache(None)
+          def ev(a,b):
+            o=outputs(a,b)
+            return o[0] if o else P(a,b)
+
+          @lru_cache(None)
+          def nf(t):
+            if t[0]=='e': return True
+            if t[0]=='k': return nf(t[1])
+            return nf(t[1]) and nf(t[2]) and not outputs(t[1],t[2])
+
+          STATE_MAX=7
+          DEVELOPMENT_RINGS=[2,3,4,5,6]
+          FINAL_TARGET_RING=7
+          MAX_SENSORS=192
+          MAX_DEPTH=18
+
+          by={0:{E}}
+          for n in range(1,STATE_MAX+1):
+            cur={K(x) for x in by.get(n-1,set()) if nf(K(x))}
+            for aa in range(n-1):
+              bb=n-2-aa
+              for a in by.get(aa,set()):
+                for b in by.get(bb,set()):
+                  t=P(a,b)
+                  if nf(t):cur.add(t)
+            by[n]=cur
+          states=sorted(set().union(*by.values()),key=lambda t:(size(t),st(t)))
+
+          @lru_cache(None)
+          def tower_index(t):
+            n=0;cur=t
+            while cur[0]=='k':n+=1;cur=cur[1]
+            return n if cur[0]=='e' else None
+          @lru_cache(None)
+          def observe(t):
+            n=tower_index(t)
+            return ('generator',n) if n is not None else ('compound',)
+
+          def all_actions(max_size):
+            cs=[t for t in states if size(t)<=max_size]
+            a=[('L',c) for c in cs]+[('R',c) for c in cs]
+            return sorted(a,key=lambda x:(x[0],size(x[1]),st(x[1])))
+          def ring_actions(exact_size):
+            cs=[t for t in states if size(t)==exact_size]
+            a=[('L',c) for c in cs]+[('R',c) for c in cs]
+            return sorted(a,key=lambda x:(x[0],st(x[1])))
+
+          @lru_cache(None)
+          def step(t,action):
+            side,c=action
+            return ev(c,t) if side=='L' else ev(t,c)
+
+          @lru_cache(None)
+          def run_sensor(t,sensor):
+            cur=t
+            for action in sensor: cur=step(cur,action)
+            return cur
+
+          vector_cache={}
+          def vector(sensor):
+            if sensor not in vector_cache:
+              vector_cache[sensor]=tuple(observe(run_sensor(t,sensor)) for t in states)
+            return vector_cache[sensor]
+
+          def partition(sensors):
+            vs=[vector(q) for q in sensors]
+            ids={};cl=[];n=0
+            for i in range(len(states)):
+              key=tuple(v[i] for v in vs)
+              if key not in ids:ids[key]=n;n+=1
+              cl.append(ids[key])
+            return cl,n
+
+          def split_witness(v,cl):
+            seen={}
+            for i,c in enumerate(cl):
+              if c in seen and seen[c][0]!=v[i]:return seen[c][1],i
+              seen.setdefault(c,(v[i],i))
+            return None
+
+          def profile(sensors,t):
+            return tuple(observe(run_sensor(t,q)) for q in sensors)
+
+          def stability(actions,sensors,limit=1000000):
+            cl,_=partition(sensors)
+            buckets=defaultdict(list)
+            for i,c in enumerate(cl):buckets[c].append(i)
+            out=[]
+            for xs in buckets.values():
+              if len(xs)<2:continue
+              for action in actions:
+                first=None
+                for i in xs:
+                  p=profile(sensors,step(states[i],action))
+                  if first is None:first=(p,i)
+                  elif p!=first[0]:
+                    out.append({'left':st(states[first[1]]),'right':st(states[i]),
+                                'action':{'side':action[0],'context':st(action[1])}})
+                    break
+                if len(out)>=limit:return out
+            return out
+
+          sensors=[()]
+          rejected_by_ring={}
+          history=[]
+          stages=[]
+          total_added=0
+
+          def develop(max_context):
+            nonlocal_dummy=None
+            actions=all_actions(max_context)
+            rejected=rejected_by_ring.setdefault(max_context,set())
+            added=[]
+            global total_added
+            while total_added<MAX_SENSORS:
+              cl,nc=partition(sensors)
+              found=None
+              for parent in sorted(sensors,key=lambda q:(len(q),tuple((a[0],size(a[1]),st(a[1])) for a in q))):
+                for action in actions:
+                  cand=(action,)+parent
+                  if cand in sensors or cand in rejected or len(cand)>MAX_DEPTH:continue
+                  w=split_witness(vector(cand),cl)
+                  if w is None:
+                    rejected.add(cand);continue
+                  found=(cand,parent,action,w);break
+                if found:break
+              if found is None:return added
+              cand,parent,action,(i,j)=found
+              sensors.append(cand);total_added+=1;added.append(cand)
+              rec={'context_max':max_context,'sensor_depth':len(cand),
+                   'witness':[st(states[i]),st(states[j])],
+                   'prefix':{'side':action[0],'context':st(action[1])}}
+              history.append(rec)
+              print('GENESIS',eq,'CTXMAX',max_context,'DEPTH',len(cand),
+                    'WITNESS',rec['witness'][0],'||',rec['witness'][1],
+                    'PREFIX',action[0],st(action[1]))
+            raise RuntimeError('MAX_SENSOR_BUDGET_REACHED')
+
+          for ring in DEVELOPMENT_RINGS:
+            target=ring_actions(ring)
+            before=stability(target,sensors)
+            before_count=len(before)
+            before_first=before[0] if before else None
+            added=develop(ring)
+            cumulative=all_actions(ring)
+            after=stability(cumulative,sensors,limit=1)
+            assert not after, (ring,after)
+            stages.append({
+              'ring':ring,
+              'prospective_violations_before_admission':before_count,
+              'first_residual_before_admission':before_first,
+              'sensors_added':len(added),
+              'sensor_count_after':len(sensors),
+              'class_count_after':partition(sensors)[1],
+              'max_sensor_depth_after':max(map(len,sensors)),
+              'cumulative_stable_after_admission':True
+            })
+            print('STAGE',eq,ring,'BEFORE',before_count,'ADDED',len(added),
+                  'SENSORS',len(sensors),'CLASSES',partition(sensors)[1])
+
+          final_target=ring_actions(FINAL_TARGET_RING)
+          final_before=stability(final_target,sensors)
+          final_status='PROSPECTIVE_TARGET_CLOSED' if not final_before else 'PROSPECTIVE_TARGET_RESIDUAL'
+
+          # Causal ablation: find a retained generated coordinate whose exact
+          # removal breaks the final admitted cumulative quotient.
+          final_actions=all_actions(DEVELOPMENT_RINGS[-1])
+          ablation=None
+          for i in range(len(sensors)-1,0,-1):
+            weak=sensors[:i]+sensors[i+1:]
+            v=stability(final_actions,weak,limit=1)
+            if v:
+              ablation={'sensor_index':i,'sensor_depth':len(sensors[i]),'witness':v[0]}
+              break
+
+          result={
+            'equation':eq,
+            'archive_commit':'b984287a1e5283e67b3709fe1e43f7734b360342',
+            'rule_count':len(rules),
+            'state_count':len(states),
+            'development_rings':DEVELOPMENT_RINGS,
+            'final_target_ring':FINAL_TARGET_RING,
+            'stages':stages,
+            'final_sensor_count':len(sensors),
+            'final_class_count':partition(sensors)[1],
+            'final_max_sensor_depth':max(map(len,sensors)),
+            'final_target_context_count':len([t for t in states if size(t)==FINAL_TARGET_RING]),
+            'final_target_violations':len(final_before),
+            'final_target_first_residual':final_before[0] if final_before else None,
+            'final_status':final_status,
+            'causal_ablation':ablation,
+            'history':history,
+            'freeze':'Controller, equations, developmental rings [2,3,4,5,6], and final unseen target ring 7 were fixed before this run.'
+          }
+          pathlib.Path('/tmp/result.json').write_text(json.dumps(result,indent=2))
+          print(json.dumps({k:result[k] for k in [
+            'equation','rule_count','state_count','final_sensor_count','final_class_count',
+            'final_max_sensor_depth','final_target_context_count','final_target_violations',
+            'final_target_first_residual','final_status','causal_ablation']},indent=2))
+          print('PROSPECTIVE_DEVELOPMENTAL_LADDER_DONE',eq,final_status)
+          PY
+
+      - name: Publish bounded authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/result.json /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<JSON
+          {
+            "classification": "BOUNDED_PROSPECTIVE_DEVELOPMENTAL_TRANSFER",
+            "equation": "E${{ matrix.equation }}",
+            "claim": "The generic frozen developer repeatedly evaluated a precommitted unseen context ring before admission, converted certified future separators into new continuation coordinates, restored cumulative quotient stability, and proceeded to the next ring. The final size-7 context ring remained untouched for prospective evaluation.",
+            "archive_commit": "b984287a1e5283e67b3709fe1e43f7734b360342"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: prospective-developmental-ladder-E${{ matrix.equation }}-v2
+          path: /tmp/out/
