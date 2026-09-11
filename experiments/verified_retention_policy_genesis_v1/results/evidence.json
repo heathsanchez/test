@@ -1,0 +1,74 @@
+{
+  "verdict": "NEGATIVE_OR_PARTIAL",
+  "classification": "FINITE_CONSTRUCTED_SET_VALUED_POLICY_QUALIFICATION",
+  "policy_1": {
+    "recent": 0,
+    "scope": 0,
+    "breadth": 1,
+    "persistence": 1,
+    "amort": 1,
+    "depth": 0,
+    "genesis": 0,
+    "support": 1
+  },
+  "policy_2": {
+    "recent": 0,
+    "scope": 1,
+    "breadth": 0,
+    "persistence": 1,
+    "amort": -1,
+    "depth": -1,
+    "genesis": -1,
+    "support": 0
+  },
+  "grammar_programs": 6561,
+  "feasible_subsets": 27,
+  "genesis_verifier_calls": 26244,
+  "revision_verifier_calls": 26244,
+  "training_authority_cost": 20000,
+  "revision_training_authority_cost": 20378,
+  "heldout_totals": {
+    "scalar_recent": 124059,
+    "scalar_scope": 120857,
+    "scalar_breadth": 111358,
+    "scalar_persistence": 137847,
+    "scalar_amort": 154889,
+    "scalar_depth": 223501,
+    "scalar_genesis": 158025,
+    "hand_geometry": 102578,
+    "amortization": 154889,
+    "sham": 259114,
+    "generated_policy": 104887,
+    "oracle": 100000
+  },
+  "shift": {
+    "old_policy": 164113,
+    "revised_policy": 117159,
+    "calibration_old": 33708,
+    "calibration_new": 20378,
+    "revision_ablation_penalty": 46954
+  },
+  "fully_charged_cumulative": {
+    "generated_and_revised": 274534,
+    "no_revision": 295244
+  },
+  "gates": {
+    "policy_constructed_from_frozen_grammar": true,
+    "dependency_closed_budgeted_outputs": true,
+    "prospective_beats_every_scalar": true,
+    "prospective_beats_hand_geometry": false,
+    "non_oracle": true,
+    "verified_policy_residual": true,
+    "revision_is_behaviorally_distinct": true,
+    "revision_improves_untouched_suffix": true,
+    "revision_ablation_restores_old_cost": true,
+    "full_construction_cost_charged": true
+  },
+  "snapshot_digest": "a448f5021a340e651c7729466eec6d19616174c9aed0daa856bcb099482f7db5",
+  "not_established": [
+    "natural-world policy learning",
+    "open-ended policy grammar",
+    "global optimality",
+    "unbounded self-modification"
+  ]
+}
