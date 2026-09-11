@@ -7,6 +7,8 @@ inductive Capability where | d1 | d2 | temporal deriving DecidableEq
 def omega0 : List Capability := []
 def omega1 : List Capability := [.d1]
 def omega2 : List Capability := [.d1, .d2]
+def residual1 : Nat := 1
+def residual2 : Nat := 2
 
 theorem retained_d1 (h : Capability.d1 ∈ omega1) : Capability.d1 ∈ omega2 := by
   simpa [omega1, omega2] using h
@@ -25,10 +27,10 @@ def K : Kernel where
   searchIncomplete := fun _ _ _ => True
   complete := fun _ _ _ => True
   inLanguage := fun M c => c ∈ M
-  resolves := fun c r => (c = .d1 ∧ r = 1) ∨ (c = .d2 ∧ r = 2)
+  resolves := fun c r => (c = .d1 ∧ r = residual1) ∨ (c = .d2 ∧ r = residual2)
   isProtected := fun Ω c => c ∈ Ω
 
-def r1 : Result K omega0 omega0 () () 1 :=
+def r1 : Result K omega0 omega0 () () residual1 :=
   Result.unknownExpressivity trivial (by simp [NoCurrentResolution, K, omega0])
 def step1 : Step K r1 omega1 := Step.proposeGenerator (by simp [K, omega0, omega1])
 
