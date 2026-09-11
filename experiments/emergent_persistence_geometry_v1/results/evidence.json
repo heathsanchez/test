@@ -1,0 +1,101 @@
+{
+  "verdict": "VERIFIED_EMERGENT_PERSISTENCE_GEOMETRY",
+  "classification": "FINITE_MATCHED_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "640f41b437d2862c88457fa85d72aa6435b1c7a26ac878a93ac87fd1f79c1a0e",
+  "metrics": {
+    "ancestry_shallow": {
+      "d": 0,
+      "tau": 22,
+      "R": 1,
+      "B": 102,
+      "B_episodes": 6,
+      "A": 107,
+      "promoted": 2
+    },
+    "ancestry_deep": {
+      "d": 2,
+      "tau": 22,
+      "R": 1,
+      "B": 378,
+      "B_episodes": 6,
+      "A": 381,
+      "promoted": 2
+    },
+    "scope_narrow": {
+      "d": 0,
+      "tau": 22,
+      "R": 1,
+      "B": 102,
+      "B_episodes": 6,
+      "A": 107,
+      "promoted": 2
+    },
+    "scope_broad": {
+      "d": 0,
+      "tau": 22,
+      "R": 2,
+      "B": 102,
+      "B_episodes": 6,
+      "A": 107,
+      "promoted": 2
+    },
+    "persistence_short": {
+      "d": 0,
+      "tau": 7,
+      "R": 1,
+      "B": 34,
+      "B_episodes": 2,
+      "A": 107,
+      "promoted": 2
+    },
+    "persistence_long": {
+      "d": 0,
+      "tau": 20,
+      "R": 1,
+      "B": 85,
+      "B_episodes": 5,
+      "A": 107,
+      "promoted": 2
+    },
+    "breadth_low": {
+      "d": 0,
+      "tau": 22,
+      "R": 2,
+      "B": 102,
+      "B_episodes": 6,
+      "A": 107,
+      "promoted": 2
+    },
+    "breadth_high": {
+      "d": 0,
+      "tau": 22,
+      "R": 2,
+      "B": 408,
+      "B_episodes": 6,
+      "A": 413,
+      "promoted": 2
+    }
+  },
+  "totals": {
+    "adaptive": 1201,
+    "cold": 2298
+  },
+  "reduction_factor": 1.9134054954204829,
+  "gates": {
+    "ancestry_selective": true,
+    "scope_selective": true,
+    "persistence_selective": true,
+    "breadth_selective": true,
+    "derivedness_not_generality": true,
+    "persistence_not_depth": true,
+    "scope_not_depth": true,
+    "breadth_not_scope": true,
+    "adaptive_suite_advantage": true
+  },
+  "not_established": [
+    "natural-world coordinate emergence",
+    "coordinate statistical independence",
+    "optimal retention-value estimator",
+    "open-ended development"
+  ]
+}
