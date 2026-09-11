@@ -160,17 +160,24 @@ jobs:
           theorem stepCanonical_canonical
               (step : A → X → X) (observe : X → K) (a : A) (x : X) :
               stepCanonical step observe a (canonical step observe x) =
-                canonical step observe (step a x) := rfl
+                canonical step observe (step a x) := by
+            simp [stepCanonical, canonical]
 
           theorem observeCanonical_canonical
               (step : A → X → X) (observe : X → K) (x : X) :
-              observeCanonical step observe (canonical step observe x) = observe x := rfl
+              observeCanonical step observe (canonical step observe x) = observe x := by
+            simp [observeCanonical, canonical]
 
           theorem canonical_eq_iff
               (step : A → X → X) (observe : X → K) (x y : X) :
               canonical step observe x = canonical step observe y ↔
                 FutureEq step observe x y := by
-            exact Quotient.eq
+            change Quotient.mk (futureSetoid step observe) x =
+                Quotient.mk (futureSetoid step observe) y ↔
+                FutureEq step observe x y
+            constructor
+            · exact Quotient.exact
+            · exact Quotient.sound
 
           #print axioms stable_relation_subset_futureEq
           #print axioms factorization_implies_futureEq
