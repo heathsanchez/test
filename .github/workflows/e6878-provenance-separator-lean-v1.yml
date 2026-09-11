@@ -66,7 +66,13 @@ jobs:
             · rcases h4 with ⟨v0,ha,hb,ho,_,_,_,_,_,_,_⟩
               cases hb
             · rcases h5 with ⟨v0,v1,v2,ha,hb,ho,_,_,_,_,_,_,_,_⟩
-              simp [A,B,C] at ha hb ho
+              change q e (q e e) = q v0 v1 at ha
+              change q (q e (q e e)) e = q (q v0 v1) v2 at hb
+              injection ha with h0 h1
+              injection hb with _ h2
+              subst v0
+              subst v1
+              subst v2
               exact ho
             · rcases h6 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_,_,_,hmiss5⟩
               exfalso
@@ -96,7 +102,9 @@ jobs:
               -- first argument A is r-headed, but rule 5 requires q-headed.
               cases ha
             · rcases h6 with ⟨v0,v1,ha,hb,ho,_,_,_,_,_,_,_,_,_⟩
-              simpa [A,C] using ho
+              subst v0
+              subst v1
+              exact ho
             · rcases hr with ⟨ho,_,hn⟩
               exfalso
               apply hn
