@@ -1,0 +1,145 @@
+name: E6878 r5 countermodel Lean v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/e6878-r5-countermodel-lean-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Freeze Lean environment and E6878 model
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          "$HOME/.elan/bin/lake" exe cache get
+          curl -fsSL https://raw.githubusercontent.com/YanbiaoLab/Order5-Austin-Law-Proofs/b984287a1e5283e67b3709fe1e43f7734b360342/proofs/Equation6878/InfiniteModel.lean -o /tmp/original.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/original.lean').read_text()
+          s=s.replace('import JudgeMagma.Magma\n','',1)
+          s=s.replace('import JudgeProblem\n','',1)
+          s=s.replace('import Lean.Elab.Tactic.Omega', '''import Lean.Elab.Tactic.Omega
+
+          class Magma (α : Type u) where
+            op : α → α → α
+          infixl:70 " ◇ " => Magma.op
+          ''',1)
+          marker='\nopen submission.CM\nnoncomputable def submission.unifiedOriginalWitness : Goal := by'
+          if marker not in s: raise SystemExit('wrapper marker not found')
+          s=s.split(marker,1)[0]+'\n'
+          Path('/tmp/mathlib4/E6878R5Countermodel.lean').write_text(s)
+          PY
+
+      - name: Add kernel-checked separating witness
+        shell: bash
+        run: |
+          cat >> /tmp/mathlib4/E6878R5Countermodel.lean <<'LEAN'
+
+          namespace E6878R5Countermodel
+          open submission
+          open submission.CM
+
+          theorem nf_qee : NF (q e e) := by
+            constructor
+            · trivial
+            constructor
+            · trivial
+            · intro h
+              cases h
+
+          theorem eval_ee : eval e e = q e e := by
+            have h := eval_cases e e
+            have hc : ∃ o, Code e e o := ⟨q e e, Code.r6 e e⟩
+            simpa [EvalCases, Rule, hc] using h
+
+          theorem eval_qee_qee :
+              eval (q e e) (q e e) = q (q e e) (q e e) := by
+            have h := eval_cases (q e e) (q e e)
+            have hc : ∃ o, Code (q e e) (q e e) o :=
+              ⟨q (q e e) (q e e), Code.r6 (q e e) (q e e)⟩
+            simpa [EvalCases, Rule, hc] using h
+
+          theorem eval_qee_r4 :
+              eval (q e e) (q (q e e) (q e e)) =
+                q (q e e) (q (q e e) (q e e)) := by
+            have h := eval_cases (q e e) (q (q e e) (q e e))
+            have hc : ∃ o, Code (q e e) (q (q e e) (q e e)) o :=
+              ⟨q (q e e) (q (q e e) (q e e)), Code.r4 (q e e)⟩
+            simpa [EvalCases, Rule, hc] using h
+
+          def a : Carrier := ⟨e, by trivial⟩
+          def b : Carrier := ⟨e, by trivial⟩
+          def c : Carrier := ⟨q e e, nf_qee⟩
+
+          theorem r5_counterexample :
+              op (op a b) (op (op a b) c) ≠ a := by
+            intro h
+            have hv := congrArg Subtype.val h
+            change eval (eval e e) (eval (eval e e) (q e e)) = e at hv
+            rw [eval_ee] at hv
+            rw [eval_qee_qee] at hv
+            rw [eval_qee_r4] at hv
+            cases hv
+
+          theorem source_model_holds :
+              ∀ x y z : Carrier,
+                x = op y (op y (op (op z x) (op x y))) := by
+            intro x y z
+            exact source_holds x y z
+
+          theorem plain_r5_not_universal_in_source_model :
+              ¬ (∀ x y z : Carrier, op (op x y) (op (op x y) z) = x) := by
+            intro h
+            exact r5_counterexample (h a b c)
+
+          #print axioms nf_qee
+          #print axioms eval_ee
+          #print axioms eval_qee_qee
+          #print axioms eval_qee_r4
+          #print axioms source_model_holds
+          #print axioms r5_counterexample
+          #print axioms plain_r5_not_universal_in_source_model
+
+          end E6878R5Countermodel
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          "$HOME/.elan/bin/lake" env lean E6878R5Countermodel.lean 2>&1 | tee /tmp/e6878-r5.log
+          ! grep -q sorryAx /tmp/e6878-r5.log
+          grep -q "E6878R5Countermodel.plain_r5_not_universal_in_source_model" /tmp/e6878-r5.log
+          echo E6878_AUXILIARY_GRAMMAR_REJECTED_R5_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/E6878R5Countermodel.lean /tmp/out/
+          cp /tmp/e6878-r5.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "classification": "NEGATIVE",
+            "claim": "The frozen E6878 Carrier with operation op satisfies the E6878 source law universally, but falsifies the plain r5 obligation ((a*b)*((a*b)*c)=a) at a=e, b=e, c=q(e,e). Therefore the proposed erasure q(a,b)↦a*b does not validate archived Code.r5 as a source-theory consequence; the plain q/r semantic decoding is rejected.",
+            "austin_model_commit": "b984287a1e5283e67b3709fe1e43f7734b360342",
+            "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: e6878-r5-countermodel-lean-v1
+          path: /tmp/out/
