@@ -1,0 +1,149 @@
+name: Andrews-Curtis Full MS Residual V3
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-full-ms-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-targets:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Install mapper runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3"
+      - name: Build full live Miller-Schupp residual
+        run: |
+          python3 andrews_curtis/build_ms_full_residual_v3.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir andrews_curtis/v3_targets \
+            --shards 8 \
+            --max-targets 200 \
+            --exclude-json andrews_curtis/checkpoint_residual_v2.json | tee andrews_curtis/v3_targets.log
+      - name: Upload target freeze
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-ms-v3-targets
+          path: |
+            andrews_curtis/v3_targets/
+            andrews_curtis/v3_targets.log
+
+  search:
+    needs: build-targets
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download frozen targets
+        uses: actions/download-artifact@v4
+        with:
+          name: acc-ms-v3-targets
+          path: andrews_curtis/v3_target_artifact
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Install GS-Sub runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+      - name: Search residual shard
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir andrews_curtis/out_v3_shard_${{ matrix.shard }} \
+            --target-ids-file andrews_curtis/v3_target_artifact/v3_targets/shard_${{ matrix.shard }}.json \
+            --max-targets 25 \
+            --max-nodes 100000 \
+            --max-quotient-total 80 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --search-seconds 1200 \
+            | tee andrews_curtis/v3_shard_${{ matrix.shard }}.log
+      - name: Upload shard evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-ms-v3-shard-${{ matrix.shard }}
+          path: |
+            andrews_curtis/out_v3_shard_${{ matrix.shard }}/
+            andrews_curtis/v3_shard_${{ matrix.shard }}.log
+          if-no-files-found: warn
+
+  aggregate-submit:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download all shard evidence
+        uses: actions/download-artifact@v4
+        with:
+          pattern: acc-ms-v3-shard-*
+          path: andrews_curtis/v3_downloads
+      - name: Merge, live-filter, and submit once
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/submit_combined_v3.py \
+            --glob 'andrews_curtis/v3_downloads/**/submission_v2.txt' \
+            --out-dir andrews_curtis/out_v3_aggregate \
+            --description "MathGraph ACC V3 full Miller-Schupp residual sweep" \
+            | tee andrews_curtis/v3_aggregate.log
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,pathlib
+          p=pathlib.Path("andrews_curtis/out_v3_aggregate/report.json")
+          print("# ACC Full MS Residual V3")
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Candidate verifier-clean rows: **{d['candidate_rows']}**")
+              print(f"- Live-selected rows: **{d['selected_rows']}**")
+              print(f"- AC rows: **{d['selected_ac']}**")
+              print(f"- Stable rows: **{d['selected_stable']}**")
+              print(f"- Submission ID: **{d.get('submission_id')}**")
+              if 'result_rows' in d:
+                  print(f"- Platform results: **{d['result_rows']}**, failed: **{d.get('failed_rows')}**")
+          else:
+              print("- No aggregate report produced.")
+          PY
+      - name: Upload aggregate authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-ms-v3-aggregate
+          path: |
+            andrews_curtis/out_v3_aggregate/
+            andrews_curtis/v3_aggregate.log
+          if-no-files-found: warn
