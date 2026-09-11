@@ -22,7 +22,7 @@ def save(name, obj):
 
 def api(method, path, body=None):
     url = BASE + path
-    headers = {"Authorization": f"Bearer {API_KEY}"}
+    headers = {\n        "Authorization": f"Bearer {API_KEY}",\n        "Accept": "application/json",\n        "User-Agent": "curl/8.5.0",\n    }
     data = None
     if body is not None:
         data = json.dumps(body, separators=(",", ":")).encode()
