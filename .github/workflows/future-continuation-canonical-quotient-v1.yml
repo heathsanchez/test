@@ -26,6 +26,8 @@ jobs:
         shell: bash
         run: |
           cat > /tmp/mathlib4/FutureContinuationCanonical.lean <<'LEAN'
+          import Mathlib.Data.Quot
+
           namespace FutureContinuationCanonical
 
           universe u v w z
