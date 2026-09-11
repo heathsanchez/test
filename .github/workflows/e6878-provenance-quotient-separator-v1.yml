@@ -111,10 +111,10 @@ jobs:
                 if a==b:continue
                 for c in pool:
                   la,ia=ev(a,c); lb,ib=ev(b,c)
-                  if la!=lb:
+                  if erase(la)!=erase(lb):
                     witness=('right_arg',a,b,c,la,lb,ia,ib,e);break
                   la,ia=ev(c,a); lb,ib=ev(c,b)
-                  if la!=lb:
+                  if erase(la)!=erase(lb):
                     witness=('left_arg',a,b,c,la,lb,ia,ib,e);break
                 if witness:break
               if witness:break
@@ -127,12 +127,12 @@ jobs:
             print('STATE_B',st(b))
             print('SAME_ERASURE',estr(e))
             print('CONTEXT_ARG',st(c))
-            print('OUT_A',st(oa),'RULE',ia)
-            print('OUT_B',st(ob),'RULE',ib)
+            print('OUT_A',st(oa),'RULE',ia,'ERASE',estr(erase(oa)))
+            print('OUT_B',st(ob),'RULE',ib,'ERASE',estr(erase(ob)))
             out={
               'found':True,'kind':kind,'state_a':st(a),'state_b':st(b),
               'erasure':estr(e),'context':st(c),'out_a':st(oa),'out_b':st(ob),
-              'rule_a':ia,'rule_b':ib
+              'rule_a':ia,'rule_b':ib,'erase_out_a':estr(erase(oa)),'erase_out_b':estr(erase(ob))
             }
           else:
             print('NO_SEPARATOR')
