@@ -1,0 +1,49 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "verified-expressive-development-v1",
+  "lean_version": "4.30.0-rc2",
+  "python_version": "3.12",
+  "experiment_commit_sha": "213e932fcf11873dae7a037f7615cbcb0d3b980e",
+  "successful_run": {
+    "run_id": 34589130145,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34589130145",
+    "job_id": 103230116636,
+    "job_url": "https://github.com/heathsanchez/test/actions/runs/34589130145/job/103230116636",
+    "conclusion": "success",
+    "lean_error_lines": 0
+  },
+  "artifact": {
+    "id": 10194868088,
+    "url": "https://github.com/heathsanchez/test/actions/runs/34589130145/artifacts/10194868088",
+    "sha256": "2389ed826653c08ac1e513289ff6377362b8fbce6e392bccc9d2822fd3ab7a80"
+  },
+  "snapshot_sha256": "b6cde77d1742e414ef54b8ebf41cf96a6ca85ce0aecfa80b3d373dd04632757f",
+  "generator_sha256": "c93a3fb5ece6de0d37a607d80e5e76b25083ca77085ec47ccf1bd36617c963aa",
+  "invalid_or_repaired_runs": [
+    {
+      "run_id": 34588481553,
+      "job_id": 103228064038,
+      "status": "INVALID_FALSE_GREEN",
+      "reason": "Lean import error was masked by a pipeline without pipefail"
+    },
+    {
+      "run_id": 34588655262,
+      "job_id": 103228617346,
+      "status": "IMPLEMENTATION_FAILURE",
+      "reason": "reserved field name and module-gate defects"
+    },
+    {
+      "run_id": 34588809250,
+      "job_id": 103229107528,
+      "status": "IMPLEMENTATION_FAILURE",
+      "reason": "indexed constructor inference defects"
+    },
+    {
+      "run_id": 34588939842,
+      "job_id": 103229518247,
+      "status": "IMPLEMENTATION_FAILURE",
+      "reason": "concrete episode membership proof defects"
+    }
+  ],
+  "evidence_freeze_sha": null
+}

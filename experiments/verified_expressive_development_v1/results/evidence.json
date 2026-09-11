@@ -1,0 +1,98 @@
+{
+  "verdict": "VERIFIED_EXPRESSIVE_DEVELOPMENT",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL",
+  "carrier": "two-input Boolean truth tables",
+  "universe_size": 16,
+  "old_closure": [
+    0,
+    3,
+    5,
+    10,
+    12,
+    15
+  ],
+  "old_closure_size": 6,
+  "extended_closure": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "extended_closure_size": 16,
+  "target": 8,
+  "reuse_target": 4,
+  "initial_status": "UNKNOWN_SEARCH",
+  "escalated_status": "UNKNOWN_EXPRESSIVITY",
+  "snapshot_digest": "b6cde77d1742e414ef54b8ebf41cf96a6ca85ce0aecfa80b3d373dd04632757f",
+  "generator": {
+    "name": "pointwise_meet",
+    "arity": 2
+  },
+  "generator_digest": "c93a3fb5ece6de0d37a607d80e5e76b25083ca77085ec47ccf1bd36617c963aa",
+  "generator_rows": [
+    {
+      "a": false,
+      "b": false,
+      "got": false,
+      "expected": false
+    },
+    {
+      "a": false,
+      "b": true,
+      "got": false,
+      "expected": false
+    },
+    {
+      "a": true,
+      "b": false,
+      "got": false,
+      "expected": false
+    },
+    {
+      "a": true,
+      "b": true,
+      "got": true,
+      "expected": true
+    }
+  ],
+  "controls": {
+    "missing_complete_rejected": true,
+    "missing_negative_rejected": true,
+    "stale_digest_rejected": true,
+    "existing_capability_rejected": true
+  },
+  "gates": {
+    "G1_initial_unknown_search": true,
+    "G2_complete_old_language": true,
+    "G3_certified_old_negative": true,
+    "G4_typed_expressivity_status": true,
+    "G5_generator_novel": true,
+    "G6_generator_externally_verified": true,
+    "G7_all_invalid_admissions_rejected": true,
+    "G8_admitted": true,
+    "G9_residual_resolved": true,
+    "G10_old_consequence_preserved": true,
+    "G11_prospective_reuse": true,
+    "G12_ablation_restores_obstruction": true
+  },
+  "verifier_calls": 20,
+  "seed": null,
+  "not_established": [
+    "unrestricted generator genesis",
+    "autonomous proposal-basis growth",
+    "cross-domain transfer",
+    "developmental compounding"
+  ]
+}
