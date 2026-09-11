@@ -1,0 +1,423 @@
+{
+  "verdict": "VERIFIED_PERSISTENT_INVARIANT_AMORTIZATION",
+  "classification": "FINITE_CAUSAL_PROSPECTIVE_AMORTIZED",
+  "snapshot_digest": "18d725357ce6551ed4a3d84247b20a401c704e711c4ada58ba76a9e1d3a75cac",
+  "rows": [
+    {
+      "target": 1,
+      "carrier_size": 5,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 1280,
+        "persistent": 1415,
+        "midstream_ablation": 1415,
+        "sham": 2685,
+        "answer_memory": 2690
+      },
+      "cumulative": {
+        "cold": 1280,
+        "persistent": 1415,
+        "midstream_ablation": 1415,
+        "sham": 2685,
+        "answer_memory": 2690
+      }
+    },
+    {
+      "target": 2,
+      "carrier_size": 6,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 1536,
+        "persistent": 12,
+        "midstream_ablation": 12,
+        "sham": 1536,
+        "answer_memory": 1542
+      },
+      "cumulative": {
+        "cold": 2816,
+        "persistent": 1427,
+        "midstream_ablation": 1427,
+        "sham": 4221,
+        "answer_memory": 4232
+      }
+    },
+    {
+      "target": 3,
+      "carrier_size": 7,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 1792,
+        "persistent": 14,
+        "midstream_ablation": 14,
+        "sham": 1792,
+        "answer_memory": 1799
+      },
+      "cumulative": {
+        "cold": 4608,
+        "persistent": 1441,
+        "midstream_ablation": 1441,
+        "sham": 6013,
+        "answer_memory": 6031
+      }
+    },
+    {
+      "target": 4,
+      "carrier_size": 8,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 2048,
+        "persistent": 16,
+        "midstream_ablation": 16,
+        "sham": 2048,
+        "answer_memory": 2056
+      },
+      "cumulative": {
+        "cold": 6656,
+        "persistent": 1457,
+        "midstream_ablation": 1457,
+        "sham": 8061,
+        "answer_memory": 8087
+      }
+    },
+    {
+      "target": 5,
+      "carrier_size": 9,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 2304,
+        "persistent": 18,
+        "midstream_ablation": 18,
+        "sham": 2304,
+        "answer_memory": 2313
+      },
+      "cumulative": {
+        "cold": 8960,
+        "persistent": 1475,
+        "midstream_ablation": 1475,
+        "sham": 10365,
+        "answer_memory": 10400
+      }
+    },
+    {
+      "target": 6,
+      "carrier_size": 10,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 2560,
+        "persistent": 20,
+        "midstream_ablation": 20,
+        "sham": 2560,
+        "answer_memory": 2570
+      },
+      "cumulative": {
+        "cold": 11520,
+        "persistent": 1495,
+        "midstream_ablation": 1495,
+        "sham": 12925,
+        "answer_memory": 12970
+      }
+    },
+    {
+      "target": 7,
+      "carrier_size": 11,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 2816,
+        "persistent": 22,
+        "midstream_ablation": 2816,
+        "sham": 2816,
+        "answer_memory": 2827
+      },
+      "cumulative": {
+        "cold": 14336,
+        "persistent": 1517,
+        "midstream_ablation": 4311,
+        "sham": 15741,
+        "answer_memory": 15797
+      }
+    },
+    {
+      "target": 8,
+      "carrier_size": 12,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 3072,
+        "persistent": 24,
+        "midstream_ablation": 3072,
+        "sham": 3072,
+        "answer_memory": 3084
+      },
+      "cumulative": {
+        "cold": 17408,
+        "persistent": 1541,
+        "midstream_ablation": 7383,
+        "sham": 18813,
+        "answer_memory": 18881
+      }
+    },
+    {
+      "target": 9,
+      "carrier_size": 13,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 3328,
+        "persistent": 26,
+        "midstream_ablation": 3328,
+        "sham": 3328,
+        "answer_memory": 3341
+      },
+      "cumulative": {
+        "cold": 20736,
+        "persistent": 1567,
+        "midstream_ablation": 10711,
+        "sham": 22141,
+        "answer_memory": 22222
+      }
+    },
+    {
+      "target": 10,
+      "carrier_size": 14,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 3584,
+        "persistent": 28,
+        "midstream_ablation": 3584,
+        "sham": 3584,
+        "answer_memory": 3598
+      },
+      "cumulative": {
+        "cold": 24320,
+        "persistent": 1595,
+        "midstream_ablation": 14295,
+        "sham": 25725,
+        "answer_memory": 25820
+      }
+    },
+    {
+      "target": 11,
+      "carrier_size": 15,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 3840,
+        "persistent": 30,
+        "midstream_ablation": 3840,
+        "sham": 3840,
+        "answer_memory": 3855
+      },
+      "cumulative": {
+        "cold": 28160,
+        "persistent": 1625,
+        "midstream_ablation": 18135,
+        "sham": 29565,
+        "answer_memory": 29675
+      }
+    },
+    {
+      "target": 12,
+      "carrier_size": 16,
+      "quotient": [
+        3,
+        2,
+        1,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0,
+        1,
+        3,
+        2,
+        0
+      ],
+      "quotient_size": 4,
+      "bridge_space": 256,
+      "costs": {
+        "cold": 4096,
+        "persistent": 32,
+        "midstream_ablation": 4096,
+        "sham": 4096,
+        "answer_memory": 4112
+      },
+      "cumulative": {
+        "cold": 32256,
+        "persistent": 1657,
+        "midstream_ablation": 22231,
+        "sham": 33661,
+        "answer_memory": 33787
+      }
+    }
+  ],
+  "aggregate": {
+    "cold": 32256,
+    "persistent": 1657,
+    "midstream_ablation": 22231,
+    "sham": 33661,
+    "answer_memory": 33787
+  },
+  "crossover_target": 2,
+  "terminal_reduction_factor": 19.466505733252866,
+  "gates": {
+    "genesis_paid_once": true,
+    "all_quotients_emerge": true,
+    "prospective_sequence": true,
+    "cumulative_crossover": true,
+    "terminal_advantage": true,
+    "ablation_slope_restores": true,
+    "ablation_worse": true,
+    "sham_not_help": true,
+    "answer_memory_not_help": true
+  },
+  "not_established": [
+    "open-ended continuation discovery",
+    "continuation-language genesis",
+    "cross-domain natural-world amortization",
+    "unbounded compounding"
+  ]
+}
