@@ -1,0 +1,26 @@
+{
+  "repository": "https://github.com/heathsanchez/test",
+  "branch": "verified-generator-construction-v1",
+  "experiment_commit_sha": "bc20f766f84cbcf112d7d7cf6a27f87ffae7200d",
+  "successful_run": {
+    "run_id": 34590333207,
+    "run_url": "https://github.com/heathsanchez/test/actions/runs/34590333207",
+    "job_id": 103233917529,
+    "job_url": "https://github.com/heathsanchez/test/actions/runs/34590333207/job/103233917529",
+    "conclusion": "success",
+    "lean_version": "4.30.0-rc2",
+    "python_version": "3.12"
+  },
+  "artifact": {
+    "id": 10195353862,
+    "url": "https://github.com/heathsanchez/test/actions/runs/34590333207/artifacts/10195353862",
+    "sha256": "c0ac7ac986e970a60739521a61aa02fe8e6417ace6650487ca573218f7ae0bc8"
+  },
+  "snapshot_sha256": "74a1bbbd44d7fe083544cf84638a5110eedc98e33e1f7875deb23a5d330916ba",
+  "generator_sha256": "90c10a8b61fe1d7733212aa33b10080da27ad93de2622dc35043c0276b6af156",
+  "invalid_implementation_runs": [
+    {"run_id": 34590125601, "job_id": 103233254115, "reason": "Lean state-index elaboration errors"},
+    {"run_id": 34590221591, "job_id": 103233557202, "reason": "accidental commit transcript in Lean source"}
+  ],
+  "evidence_freeze_sha": null
+}
