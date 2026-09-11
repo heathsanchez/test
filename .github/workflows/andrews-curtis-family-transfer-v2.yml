@@ -1,0 +1,69 @@
+name: Andrews-Curtis Family Transfer V2
+
+on:
+  push:
+    branches:
+      - andrews-curtis-development-v2
+    paths:
+      - ".github/workflows/andrews-curtis-family-transfer-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  family-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      JAX_PLATFORMS: cpu
+      XLA_PYTHON_CLIENT_PREALLOCATE: "false"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Install runtime
+        run: |
+          python3 -m pip install --quiet             "numpy==2.1.3" "numba==0.63.1"             "jax==0.6.0" "jaxlib==0.6.0"             "orbax-checkpoint==0.11.16"
+
+      - name: Transfer n-1 procedures and search residuals
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_family_transfer.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --residual-json andrews_curtis/checkpoint_residual_v2.json             --out-dir andrews_curtis/out_v2_family             --prefix-candidates 3             --nodes-per-prefix 30000             --max-len 80             --search-seconds 1200             | tee andrews_curtis/family_transfer_v2.log
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,pathlib
+          p=pathlib.Path("andrews_curtis/out_v2_family/report_family_v2.json")
+          print("# ACC n-1 family transfer")
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(f"- Targets attempted: **{d['targets_attempted']}**")
+              print(f"- Official-verifier AC solves: **{d['verified_ac']}**")
+              print(f"- Live-competitive rows: **{d['competitive_rows']}**")
+              for s in d.get("solutions",[]):
+                  print(f"- `{s['ac_id']}`: AC {s['ac_length']}; Stable {s['stable_length']}; predecessor index {s['predecessor_index']}; retained prefix step {s['prefix_step']}")
+          else:
+              print("- No report; inspect log.")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: andrews-curtis-family-transfer-v2
+          path: |
+            andrews_curtis/out_v2_family/
+            andrews_curtis/family_transfer_v2.log
+          if-no-files-found: warn
