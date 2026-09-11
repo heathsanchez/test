@@ -1,0 +1,148 @@
+{
+  "verdict": "VERIFIED_GENERATOR_CONSTRUCTION",
+  "classification": "BOUNDED_EXHAUSTIVE_CAUSAL",
+  "initial_status": "UNKNOWN_SEARCH",
+  "escalated_status": "UNKNOWN_EXPRESSIVITY",
+  "universe_size": 16,
+  "old_closure": [
+    0,
+    3,
+    5,
+    10,
+    12,
+    15
+  ],
+  "old_closure_size": 6,
+  "extended_closure": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "extended_closure_size": 16,
+  "trigger_target": 8,
+  "prospective_reuse_target": 4,
+  "meta_language": "generic unnamed 4-bit binary Boolean truth table",
+  "named_candidate_count": 0,
+  "constructed_table": 8,
+  "construction_trace": [
+    {
+      "row": 0,
+      "inputs": [
+        0,
+        0
+      ],
+      "table_index": 0,
+      "required": 0,
+      "consistent": true
+    },
+    {
+      "row": 1,
+      "inputs": [
+        0,
+        1
+      ],
+      "table_index": 1,
+      "required": 0,
+      "consistent": true
+    },
+    {
+      "row": 2,
+      "inputs": [
+        1,
+        0
+      ],
+      "table_index": 2,
+      "required": 0,
+      "consistent": true
+    },
+    {
+      "row": 3,
+      "inputs": [
+        1,
+        1
+      ],
+      "table_index": 3,
+      "required": 1,
+      "consistent": true
+    }
+  ],
+  "generator_artifact": {
+    "kind": "synthesized_binary_truth_table",
+    "table": 8,
+    "bindings": {
+      "0": 0,
+      "1": 0,
+      "2": 0,
+      "3": 1
+    },
+    "source_residual_digest": "74a1bbbd44d7fe083544cf84638a5110eedc98e33e1f7875deb23a5d330916ba"
+  },
+  "generator_digest": "90c10a8b61fe1d7733212aa33b10080da27ad93de2622dc35043c0276b6af156",
+  "snapshot_digest": "74a1bbbd44d7fe083544cf84638a5110eedc98e33e1f7875deb23a5d330916ba",
+  "row_checks": [
+    {
+      "table_index": 0,
+      "got": 0,
+      "required": 0
+    },
+    {
+      "table_index": 1,
+      "got": 0,
+      "required": 0
+    },
+    {
+      "table_index": 2,
+      "got": 0,
+      "required": 0
+    },
+    {
+      "table_index": 3,
+      "got": 1,
+      "required": 1
+    }
+  ],
+  "controls": {
+    "missing_complete_rejected": true,
+    "missing_negative_rejected": true,
+    "stale_snapshot_rejected": true,
+    "existing_capability_rejected": true
+  },
+  "gates": {
+    "G1_unknown_search": true,
+    "G2_complete_old_language": true,
+    "G3_complete_negative": true,
+    "G4_unknown_expressivity": true,
+    "G5_no_named_candidate_menu": true,
+    "G6_construction_complete": true,
+    "G7_construction_consistent": true,
+    "G8_constructed_generator_novel": true,
+    "G9_exhaustively_verified": true,
+    "G10_invalid_admissions_rejected": true,
+    "G11_admitted": true,
+    "G12_residual_resolved": true,
+    "G13_old_consequence_preserved": true,
+    "G14_prospective_reuse": true,
+    "G15_ablation_restores_obstructions": true
+  },
+  "verifier_calls": 20,
+  "seed": null,
+  "not_established": [
+    "construction beyond the frozen truth-table meta-language",
+    "unrestricted self-development",
+    "cross-domain transfer",
+    "developmental compounding"
+  ]
+}
