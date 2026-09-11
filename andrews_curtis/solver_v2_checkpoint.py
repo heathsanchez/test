@@ -403,21 +403,35 @@ def main():
         "prefix": args.ms_prefix,
     }, sort_keys=True), flush=True)
 
-    mapped = []
-    for idx in solved_prefix:
-        state = dataset_states[idx]
+    all_prefix_mapped = []
+    solved_set = set(solved_prefix)
+    for idx, state in enumerate(dataset_states):
         cid = scored_key_to_id.get(canon_pair(state))
         if cid is None:
             continue
-        mapped.append({
+        all_prefix_mapped.append({
             "dataset_index": idx,
             "challenge_id": cid,
+            "checkpoint_solved": idx in solved_set,
             "live_status": ac_live[cid]["status"],
             "live_best": ac_live[cid].get("currentBestLength"),
-            "checkpoint_steps": int(sd["path_lengths"][idx]),
+            "checkpoint_steps": int(sd["path_lengths"][idx]) if idx in solved_set else None,
             "initial_total": total_len(state),
         })
+    save_json(out / "all_prefix_scored_mapping.json", all_prefix_mapped)
+    checkpoint_residual = [
+        r for r in all_prefix_mapped
+        if (not r["checkpoint_solved"]) and r["live_status"] == "unsolved"
+    ]
+    save_json(out / "checkpoint_residual_live_unsolved.json", checkpoint_residual)
+    print("CHECKPOINT_RESIDUAL", json.dumps({
+        "all_prefix_mapped": len(all_prefix_mapped),
+        "live_unsolved_mapped": sum(r["live_status"] == "unsolved" for r in all_prefix_mapped),
+        "checkpoint_unsolved_live_unsolved": len(checkpoint_residual),
+        "challenge_ids": [r["challenge_id"] for r in checkpoint_residual],
+    }, sort_keys=True), flush=True)
 
+    mapped = [r for r in all_prefix_mapped if r["checkpoint_solved"]]
     # First priority: still-unsolved scored presentations. Then solved rows only
     # as a diagnostic for path quality if compile budget remains.
     mapped.sort(key=lambda r: (
@@ -602,6 +616,9 @@ def main():
         "checkpoint_solved_prefix": len(solved_prefix),
         "mapped_to_scored_pool": len(mapped),
         "mapped_unsolved_at_start": sum(r["live_status"] == "unsolved" for r in mapped),
+        "all_prefix_mapped_to_scored_pool": len(all_prefix_mapped),
+        "checkpoint_residual_live_unsolved": len(checkpoint_residual),
+        "checkpoint_residual_ids": [r["challenge_id"] for r in checkpoint_residual],
         "compile_attempts": len(attempts),
         "verified_ac": len(compiled),
         "competitive_rows": len(lines),
