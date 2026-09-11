@@ -9,14 +9,14 @@ theorem no_stateless_delay :
   obtain ⟨f, hf⟩ := h
   have h0 := hf false false
   have h1 := hf true false
-  simp at h0 h1
+  exact Bool.false_ne_true (h0.symm.trans h1)
 
 def delayOutput (state : Bool) : Bool := state
 def delayNext (_state input : Bool) : Bool := input
 
 theorem one_bit_resolves (previous current : Bool) :
     delayOutput previous = previous ∧ delayNext previous current = current := by
-  rfl
+  simp [delayOutput, delayNext]
 
 theorem state_separator_necessary :
     (false, false).2 = (true, false).2 ∧
@@ -44,7 +44,8 @@ def K : Kernel where
   resolves := fun σ ρ => σ = 4 ∧ ρ = residual
   isProtected := fun _ f => f ∈ oldLanguage
 
-theorem old_negative : NoCurrentResolution K oldLanguage residual := by decide
+theorem old_negative : NoCurrentResolution K oldLanguage residual := by
+  simp [NoCurrentResolution, K, oldLanguage, residual]
 def expressive : Result K sourceState oldLanguage () () residual :=
   Result.unknownExpressivity ⟨rfl, rfl⟩ old_negative
 def genesis : Step K expressive nextState := Step.proposeGenerator (fun _ h => h)
