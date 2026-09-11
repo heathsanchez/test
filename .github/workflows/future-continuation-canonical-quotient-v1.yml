@@ -1,0 +1,214 @@
+name: Future continuation canonical quotient theorem v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/future-continuation-canonical-quotient-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Install frozen Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          "$HOME/.elan/bin/lake" exe cache get
+
+      - name: Write generic theorem
+        shell: bash
+        run: |
+          cat > /tmp/mathlib4/FutureContinuationCanonical.lean <<'LEAN'
+          namespace FutureContinuationCanonical
+
+          universe u v w z
+          variable {X : Type u} {A : Type v} {K : Type w}
+
+          def run (step : A → X → X) : List A → X → X
+            | [], x => x
+            | a :: w, x => run step w (step a x)
+
+          def FutureEq (step : A → X → X) (observe : X → K) (x y : X) : Prop :=
+            ∀ w : List A, observe (run step w x) = observe (run step w y)
+
+          theorem futureEq_refl (step : A → X → X) (observe : X → K) (x : X) :
+              FutureEq step observe x x := by
+            intro w
+            rfl
+
+          theorem futureEq_symm (step : A → X → X) (observe : X → K) {x y : X}
+              (h : FutureEq step observe x y) :
+              FutureEq step observe y x := by
+            intro w
+            exact (h w).symm
+
+          theorem futureEq_trans (step : A → X → X) (observe : X → K) {x y z : X}
+              (hxy : FutureEq step observe x y)
+              (hyz : FutureEq step observe y z) :
+              FutureEq step observe x z := by
+            intro w
+            exact (hxy w).trans (hyz w)
+
+          def futureSetoid (step : A → X → X) (observe : X → K) : Setoid X where
+            r := FutureEq step observe
+            iseqv := ⟨futureEq_refl step observe, futureEq_symm step observe,
+              futureEq_trans step observe⟩
+
+          theorem observe_eq_of_futureEq (step : A → X → X) (observe : X → K) {x y : X}
+              (h : FutureEq step observe x y) :
+              observe x = observe y := by
+            exact h []
+
+          theorem step_congr (step : A → X → X) (observe : X → K)
+              (a : A) {x y : X} (h : FutureEq step observe x y) :
+              FutureEq step observe (step a x) (step a y) := by
+            intro w
+            exact h (a :: w)
+
+          theorem run_preserves
+              (step : A → X → X) (R : X → X → Prop)
+              (hstep : ∀ a {x y}, R x y → R (step a x) (step a y))
+              (w : List A) {x y : X} (hxy : R x y) :
+              R (run step w x) (run step w y) := by
+            induction w generalizing x y with
+            | nil =>
+                exact hxy
+            | cons a w ih =>
+                exact ih (hstep a hxy)
+
+          /--
+          Future indistinguishability is the coarsest relation compatible with
+          the protected observation and every future action: any relation that
+          preserves observations and is stable under actions is contained in it.
+          -/
+          theorem stable_relation_subset_futureEq
+              (step : A → X → X) (observe : X → K)
+              (R : X → X → Prop)
+              (hobserve : ∀ {x y}, R x y → observe x = observe y)
+              (hstep : ∀ a {x y}, R x y → R (step a x) (step a y))
+              {x y : X} (hxy : R x y) :
+              FutureEq step observe x y := by
+            intro w
+            exact hobserve (run_preserves step R hstep w hxy)
+
+          variable {Q : Type z}
+
+          /--
+          Any deterministic abstraction through which both observations and
+          transitions factor may identify only future-equivalent states.
+          -/
+          theorem factorization_implies_futureEq
+              (step : A → X → X) (observe : X → K)
+              (key : X → Q) (stepQ : A → Q → Q) (observeQ : Q → K)
+              (hstep : ∀ a x, key (step a x) = stepQ a (key x))
+              (hobserve : ∀ x, observe x = observeQ (key x))
+              {x y : X} (hkey : key x = key y) :
+              FutureEq step observe x y := by
+            apply stable_relation_subset_futureEq step observe
+                (fun a b => key a = key b)
+            · intro a b hab
+              rw [hobserve a, hobserve b, hab]
+            · intro a a₁ b hab
+              rw [hstep a a₁, hstep a b, hab]
+            · exact hkey
+
+          /--
+          A witnessed future separator forces every adequate factorizing
+          abstraction to distinguish the separated states.
+          -/
+          theorem future_separator_forces_key_distinction
+              (step : A → X → X) (observe : X → K)
+              (key : X → Q) (stepQ : A → Q → Q) (observeQ : Q → K)
+              (hstep : ∀ a x, key (step a x) = stepQ a (key x))
+              (hobserve : ∀ x, observe x = observeQ (key x))
+              {x y : X} (w : List A)
+              (hsep : observe (run step w x) ≠ observe (run step w y)) :
+              key x ≠ key y := by
+            intro hkey
+            have hf := factorization_implies_futureEq step observe key stepQ observeQ
+              hstep hobserve hkey
+            exact hsep (hf w)
+
+          def CanonicalState (step : A → X → X) (observe : X → K) :=
+            Quotient (futureSetoid step observe)
+
+          def canonical (step : A → X → X) (observe : X → K) (x : X) :
+              CanonicalState step observe :=
+            Quotient.mk' x
+
+          def stepCanonical (step : A → X → X) (observe : X → K) (a : A) :
+              CanonicalState step observe → CanonicalState step observe :=
+            Quotient.map (step a) (by
+              intro x y h
+              exact step_congr step observe a h)
+
+          def observeCanonical (step : A → X → X) (observe : X → K) :
+              CanonicalState step observe → K :=
+            Quotient.lift observe (by
+              intro x y h
+              exact observe_eq_of_futureEq step observe h)
+
+          theorem stepCanonical_canonical
+              (step : A → X → X) (observe : X → K) (a : A) (x : X) :
+              stepCanonical step observe a (canonical step observe x) =
+                canonical step observe (step a x) := rfl
+
+          theorem observeCanonical_canonical
+              (step : A → X → X) (observe : X → K) (x : X) :
+              observeCanonical step observe (canonical step observe x) = observe x := rfl
+
+          theorem canonical_eq_iff
+              (step : A → X → X) (observe : X → K) (x y : X) :
+              canonical step observe x = canonical step observe y ↔
+                FutureEq step observe x y := by
+            exact Quotient.eq
+
+          #print axioms stable_relation_subset_futureEq
+          #print axioms factorization_implies_futureEq
+          #print axioms future_separator_forces_key_distinction
+          #print axioms stepCanonical_canonical
+          #print axioms observeCanonical_canonical
+          #print axioms canonical_eq_iff
+
+          end FutureContinuationCanonical
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          "$HOME/.elan/bin/lake" env lean FutureContinuationCanonical.lean 2>&1 | tee /tmp/future-canonical.log
+          ! grep -q sorryAx /tmp/future-canonical.log
+          ! grep -q _native.native_decide /tmp/future-canonical.log
+          grep -q FutureContinuationCanonical.future_separator_forces_key_distinction /tmp/future-canonical.log
+          grep -q FutureContinuationCanonical.canonical_eq_iff /tmp/future-canonical.log
+          echo FUTURE_CONTINUATION_CANONICAL_QUOTIENT_THEOREM_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/FutureContinuationCanonical.lean /tmp/out/
+          cp /tmp/future-canonical.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "classification": "PROVED",
+            "claim": "For any deterministic transition system with a protected observation, equality of all finite future response profiles is the coarsest transition-stable relation contained in observational equality. Every adequate factorizing abstraction is finer, every future separator forces a distinction, and the quotient carries canonical transitions and observations.",
+            "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: future-continuation-canonical-quotient-v1
+          path: /tmp/out/
