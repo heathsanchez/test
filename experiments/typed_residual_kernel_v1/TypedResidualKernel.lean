@@ -138,8 +138,10 @@ theorem path_preserves {Ω Ω' : K.State} (p : Path K Ω Ω') :
 theorem unknownSearch_only_improves
     {M : K.Language} {u : K.Authority} {P : K.Policy} {ρ : K.Residual}
     {Ω Ω' : K.State} {ps : K.searchIncomplete Ω M ρ}
-    (s : Step K (Result.unknownSearch ps) Ω') :
+    (s : Step K
+      (Result.unknownSearch ps : Result K Ω M u P ρ) Ω') :
     s.kind = TransitionKind.improveSearch := by
+  cases s
   rfl
 
 theorem unknownChoice_only_seeks_evidence
@@ -147,14 +149,17 @@ theorem unknownChoice_only_seeks_evidence
     {Ω Ω' : K.State} {pc : K.choiceResidual Ω M u P ρ}
     (s : Step K (Result.unknownChoice pc) Ω') :
     s.kind = TransitionKind.seekChoiceEvidence := by
+  cases s
   rfl
 
 theorem unknownExpressivity_only_proposes_generator
     {M : K.Language} {u : K.Authority} {P : K.Policy} {ρ : K.Residual}
     {Ω Ω' : K.State} {pc : K.complete Ω M ρ}
     {pn : NoCurrentResolution K M ρ}
-    (s : Step K (Result.unknownExpressivity pc pn) Ω') :
+    (s : Step K
+      (Result.unknownExpressivity pc pn : Result K Ω M u P ρ) Ω') :
     s.kind = TransitionKind.proposeGenerator := by
+  cases s
   rfl
 
 end TypedResidualKernel
