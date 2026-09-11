@@ -36,6 +36,7 @@ def parse_args():
     p.add_argument("--acsolverx-root", required=True)
     p.add_argument("--out-dir", default="andrews_curtis/out_v2")
     p.add_argument("--max-targets", type=int, default=180)
+    p.add_argument("--target-ids-file", default=None)
     p.add_argument("--max-nodes", type=int, default=10000)
     p.add_argument("--max-quotient-total", type=int, default=100)
     p.add_argument("--reverse-depth", type=int, default=7)
@@ -402,7 +403,15 @@ def main():
         max(len(w) for w in c["initial_relators"]),
         c["challenge_id"],
     ))
-    targets = unsolved[: args.max_targets]
+    if args.target_ids_file:
+        raw = json.loads(Path(args.target_ids_file).read_text())
+        requested = [x["challenge_id"] if isinstance(x, dict) else str(x) for x in raw]
+        targets = [
+            ac_by_id[cid] for cid in requested
+            if cid in ac_by_id and ac_live.get(cid, {}).get("status") == "unsolved"
+        ][: args.max_targets]
+    else:
+        targets = unsolved[: args.max_targets]
 
     ns = load_gssub(acsolverx_root)
 
