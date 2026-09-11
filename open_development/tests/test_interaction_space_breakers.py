@@ -437,9 +437,9 @@ class InteractionSpaceBreakerTests(unittest.TestCase):
             "future_active_states_equal", True,
         )
 
-    def test_11_static_behavior_quotient_not_yet_respected_by_controller(self):
-        # Reconfirm in interaction language: raw syntax can alter the controller
-        # even when the bounded extensional behavior set is unchanged.
+    def test_11_controller_factors_through_declared_interaction_quotient(self):
+        # Raw syntax still changes candidate multiplicity, but authority should
+        # now depend on the frozen interaction classes rather than that multiplicity.
         duplicated = deepcopy(self.state)
         source = self.ids["flip-h"]
         duplicated["capabilities"]["interaction-copy-" + source] = deepcopy(
@@ -451,6 +451,8 @@ class InteractionSpaceBreakerTests(unittest.TestCase):
         changed = self.adapter.generation_analysis(duplicated, task)
         self.assertEqual(baseline["minimum_survivor_count"], 1)
         self.assertEqual(changed["minimum_survivor_count"], 2)
+        self.assertEqual(baseline["minimum_interaction_class_count"], 1)
+        self.assertEqual(changed["minimum_interaction_class_count"], 1)
 
         probes = [
             [[a, b], [c, d]]
@@ -466,10 +468,12 @@ class InteractionSpaceBreakerTests(unittest.TestCase):
 
         self.assertEqual(behavior_set(self.state), behavior_set(duplicated))
         print(
-            "INTERACTION_QUOTIENT_CONTROLLER_MISMATCH",
+            "INTERACTION_QUOTIENT_CONTROLLER_FACTORS",
             "behavior_sets_equal", True,
-            "baseline_minima", 1,
-            "duplicate_minima", 2,
+            "baseline_syntactic_minima", 1,
+            "duplicate_syntactic_minima", 2,
+            "baseline_interaction_classes", 1,
+            "duplicate_interaction_classes", 1,
         )
 
     def test_12_binary_orthogonality_boundary_changes_only_by_new_incidence_in_fixture(self):
@@ -523,8 +527,7 @@ class InteractionSpaceBreakerTests(unittest.TestCase):
             "capabilities but not an active dual space of obligations/countercontexts"
         )
         print(
-            "BREAKS: the controller is not yet a function of the behavioral "
-            "interaction quotient; semantic duplicate syntax can change authority"
+            "SURVIVES EXPERIMENTALLY: controller authority factors through the declared frozen interaction quotient even when semantic duplicate syntax changes raw multiplicity"
         )
         print(
             "REFINES: append-only provenance is audit history, not automatically "
