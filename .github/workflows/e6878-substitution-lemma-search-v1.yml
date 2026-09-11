@@ -57,7 +57,7 @@ jobs:
               m=match(pat[1],t[1],m)
               return None if m is None else match(pat[2],t[2],m)
 
-          x,y,z=A,B,C=map(V,['x','y','z'])
+          x,y,z = [V(v) for v in ['x','y','z']]
           # S: y*(y*((z*x)*(x*y))) = x
           L=F(y,F(y,F(F(z,x),F(x,y))))
           R=x
