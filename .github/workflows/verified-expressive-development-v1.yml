@@ -1,0 +1,43 @@
+name: Verified Expressive Development V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [verified-expressive-development-v1]
+    paths:
+      - 'experiments/verified_expressive_development_v1/**'
+      - 'experiments/typed_residual_kernel_v1/TypedResidualKernel.lean'
+      - '.github/workflows/verified-expressive-development-v1.yml'
+
+jobs:
+  episode:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run exhaustive inhabited episode
+        run: python experiments/verified_expressive_development_v1/run.py
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Verify typed kernel and inhabited episode
+        run: |
+          lean experiments/typed_residual_kernel_v1/TypedResidualKernel.lean 2>&1 | tee /tmp/kernel.log
+          lean experiments/verified_expressive_development_v1/InhabitedEpisode.lean 2>&1 | tee /tmp/episode.log
+          ! grep -q sorry /tmp/kernel.log
+          ! grep -q sorry /tmp/episode.log
+      - name: Freeze evidence
+        run: |
+          cd experiments/verified_expressive_development_v1
+          sha256sum PROTOCOL.md InhabitedEpisode.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/kernel.log /tmp/episode.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-expressive-development-v1
+          path: experiments/verified_expressive_development_v1/results
+          retention-days: 90
