@@ -1,0 +1,223 @@
+name: Verified continuation semantics theorem v1
+
+on:
+  push:
+    branches: [verified-model-basis-v1]
+    paths:
+      - '.github/workflows/verified-continuation-semantics-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Install frozen Lean environment
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          git clone --filter=blob:none -q https://github.com/leanprover-community/mathlib4.git /tmp/mathlib4
+          cd /tmp/mathlib4
+          git checkout -q 0df444a360eaa60ab8c11dca51a86af692955474
+          "$HOME/.elan/bin/lake" exe cache get
+
+      - name: Write theorem
+        shell: bash
+        run: |
+          cat > /tmp/mathlib4/VerifiedContinuationSemantics.lean <<'LEAN'
+          namespace VerifiedContinuationSemantics
+
+          universe u v w z
+          variable {X : Type u} {A : Type v} {K : Type w}
+
+          def run (step : A → X → X) : List A → X → X
+            | [], x => x
+            | a :: w, x => run step w (step a x)
+
+          def Behavior (A : Type v) (K : Type w) := List A → K
+
+          def behavior (step : A → X → X) (observe : X → K) (x : X) :
+              Behavior A K :=
+            fun w => observe (run step w x)
+
+          def shift (a : A) (μ : Behavior A K) : Behavior A K :=
+            fun w => μ (a :: w)
+
+          theorem behavior_step
+              (step : A → X → X) (observe : X → K) (a : A) (x : X) :
+              behavior step observe (step a x) =
+                shift a (behavior step observe x) := by
+            funext w
+            rfl
+
+          def FutureEq (step : A → X → X) (observe : X → K) (x y : X) : Prop :=
+            ∀ w : List A, observe (run step w x) = observe (run step w y)
+
+          theorem behavior_eq_iff_futureEq
+              (step : A → X → X) (observe : X → K) (x y : X) :
+              behavior step observe x = behavior step observe y ↔
+                FutureEq step observe x y := by
+            constructor
+            · intro h w
+              exact congrFun h w
+            · intro h
+              funext w
+              exact h w
+
+          theorem futureEq_refl (step : A → X → X) (observe : X → K) (x : X) :
+              FutureEq step observe x x := by
+            intro w
+            rfl
+
+          theorem futureEq_step
+              (step : A → X → X) (observe : X → K) (a : A) {x y : X}
+              (h : FutureEq step observe x y) :
+              FutureEq step observe (step a x) (step a y) := by
+            intro w
+            exact h (a :: w)
+
+          theorem run_preserves
+              (step : A → X → X) (R : X → X → Prop)
+              (hstep : ∀ a {x y}, R x y → R (step a x) (step a y))
+              (w : List A) {x y : X} (hxy : R x y) :
+              R (run step w x) (run step w y) := by
+            induction w generalizing x y with
+            | nil => exact hxy
+            | cons a w ih => exact ih (hstep a hxy)
+
+          theorem stable_relation_subset_futureEq
+              (step : A → X → X) (observe : X → K)
+              (R : X → X → Prop)
+              (hobserve : ∀ {x y}, R x y → observe x = observe y)
+              (hstep : ∀ a {x y}, R x y → R (step a x) (step a y))
+              {x y : X} (hxy : R x y) :
+              FutureEq step observe x y := by
+            intro w
+            exact hobserve (run_preserves step R hstep w hxy)
+
+          variable {I : Type z}
+
+          def SensorEq
+              (step : A → X → X) (observe : X → K)
+              (sensor : I → List A) (x y : X) : Prop :=
+            ∀ i, observe (run step (sensor i) x) =
+              observe (run step (sensor i) y)
+
+          theorem futureEq_subset_sensorEq
+              (step : A → X → X) (observe : X → K)
+              (sensor : I → List A) {x y : X}
+              (h : FutureEq step observe x y) :
+              SensorEq step observe sensor x y := by
+            intro i
+            exact h (sensor i)
+
+          /--
+          A sensor representation is not merely a bounded approximation once
+          its equality is globally stable under every action and it contains
+          the empty observation. Under those two verifier obligations it is
+          exactly full future equivalence.
+          -/
+          theorem sensorEq_iff_futureEq_of_global_stability
+              (step : A → X → X) (observe : X → K)
+              (sensor : I → List A) (i0 : I)
+              (hempty : sensor i0 = [])
+              (hstable : ∀ a {x y},
+                SensorEq step observe sensor x y →
+                SensorEq step observe sensor (step a x) (step a y))
+              (x y : X) :
+              SensorEq step observe sensor x y ↔
+                FutureEq step observe x y := by
+            constructor
+            · intro h
+              apply stable_relation_subset_futureEq step observe
+                (SensorEq step observe sensor)
+              · intro a b hab
+                have h0 := hab i0
+                simpa [hempty, run] using h0
+              · intro a a₁ b hab
+                exact hstable a hab
+              · exact h
+            · exact futureEq_subset_sensorEq step observe sensor
+
+          /--
+          This is the exact residual used by the developmental controller:
+          two states are still identified by the retained sensors, but an
+          action followed by one retained sensor separates them. Therefore
+          the current sensor equality is not a lawful transition quotient.
+          -/
+          theorem prefixed_separator_obstructs_stability
+              (step : A → X → X) (observe : X → K)
+              (sensor : I → List A) {x y : X}
+              (hxy : SensorEq step observe sensor x y)
+              (a : A) (i : I)
+              (hsep :
+                observe (run step (a :: sensor i) x) ≠
+                observe (run step (a :: sensor i) y)) :
+              ¬ SensorEq step observe sensor (step a x) (step a y) := by
+            intro hnext
+            exact hsep (hnext i)
+
+          theorem prefixed_separator_forces_any_factorization_to_split
+              {Q : Type z}
+              (step : A → X → X) (observe : X → K)
+              (key : X → Q) (stepQ : A → Q → Q) (observeQ : Q → K)
+              (hstep : ∀ a x, key (step a x) = stepQ a (key x))
+              (hobserve : ∀ x, observe x = observeQ (key x))
+              {x y : X} (w : List A)
+              (hsep : observe (run step w x) ≠ observe (run step w y)) :
+              key x ≠ key y := by
+            intro hkey
+            have hr : ∀ u : List A, key (run step u x) = key (run step u y) := by
+              intro u
+              induction u generalizing x y with
+              | nil => exact hkey
+              | cons a u ih =>
+                  apply ih
+                  rw [hstep a x, hstep a y, hkey]
+            have hk := hr w
+            apply hsep
+            rw [hobserve (run step w x), hobserve (run step w y), hk]
+
+          #print axioms behavior_step
+          #print axioms behavior_eq_iff_futureEq
+          #print axioms stable_relation_subset_futureEq
+          #print axioms sensorEq_iff_futureEq_of_global_stability
+          #print axioms prefixed_separator_obstructs_stability
+          #print axioms prefixed_separator_forces_any_factorization_to_split
+
+          end VerifiedContinuationSemantics
+          LEAN
+
+      - name: Kernel check
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd /tmp/mathlib4
+          "$HOME/.elan/bin/lake" env lean VerifiedContinuationSemantics.lean 2>&1 | tee /tmp/continuation.log
+          ! grep -q sorryAx /tmp/continuation.log
+          ! grep -q _native.native_decide /tmp/continuation.log
+          grep -q VerifiedContinuationSemantics.sensorEq_iff_futureEq_of_global_stability /tmp/continuation.log
+          grep -q VerifiedContinuationSemantics.prefixed_separator_obstructs_stability /tmp/continuation.log
+          echo VERIFIED_CONTINUATION_SEMANTICS_PASS
+
+      - name: Publish authority
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/out
+          cp /tmp/mathlib4/VerifiedContinuationSemantics.lean /tmp/out/
+          cp /tmp/continuation.log /tmp/out/
+          cat > /tmp/out/AUTHORITY.json <<'JSON'
+          {
+            "classification": "PROVED",
+            "claim": "Full finite-future behavior is a canonical compositional state semantics. Any retained sensor profile containing the empty observation becomes exactly full future equivalence once global action-stability is proved. A prefixed future separator is therefore a verifier-certified obstruction to the current representation and forces every adequate factorization to split the pair.",
+            "mathlib_commit": "0df444a360eaa60ab8c11dca51a86af692955474"
+          }
+          JSON
+          sha256sum /tmp/out/* | tee /tmp/out/SHA256SUMS
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verified-continuation-semantics-v1
+          path: /tmp/out/
