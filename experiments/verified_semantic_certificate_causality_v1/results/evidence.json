@@ -1,0 +1,356 @@
+{
+  "verdict": "VERIFIED_SEMANTIC_CERTIFICATE_CAUSALITY",
+  "classification": "FINITE_EXHAUSTIVE_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "3475b3919df6f49acf430b951b21de87718db62a5b79994b129a0407f65c920e",
+  "rows": [
+    {
+      "encoding": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 6,
+          "macros_available": 720,
+          "macros_tested": 1,
+          "chosen": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4326,
+          "macros_available": 720,
+          "macros_tested": 721,
+          "chosen": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            0,
+            1,
+            2,
+            3,
+            4,
+            5
+          ]
+        }
+      }
+    },
+    {
+      "encoding": [
+        5,
+        4,
+        3,
+        2,
+        1,
+        0
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            5,
+            4,
+            3,
+            2,
+            1,
+            0
+          ]
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 6,
+          "macros_available": 720,
+          "macros_tested": 1,
+          "chosen": [
+            5,
+            4,
+            3,
+            2,
+            1,
+            0
+          ]
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4326,
+          "macros_available": 720,
+          "macros_tested": 721,
+          "chosen": [
+            5,
+            4,
+            3,
+            2,
+            1,
+            0
+          ]
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            5,
+            4,
+            3,
+            2,
+            1,
+            0
+          ]
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            5,
+            4,
+            3,
+            2,
+            1,
+            0
+          ]
+        }
+      }
+    },
+    {
+      "encoding": [
+        2,
+        5,
+        1,
+        4,
+        0,
+        3
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            4,
+            2,
+            0,
+            5,
+            3,
+            1
+          ]
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 6,
+          "macros_available": 720,
+          "macros_tested": 1,
+          "chosen": [
+            4,
+            2,
+            0,
+            5,
+            3,
+            1
+          ]
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4326,
+          "macros_available": 720,
+          "macros_tested": 721,
+          "chosen": [
+            4,
+            2,
+            0,
+            5,
+            3,
+            1
+          ]
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            4,
+            2,
+            0,
+            5,
+            3,
+            1
+          ]
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            4,
+            2,
+            0,
+            5,
+            3,
+            1
+          ]
+        }
+      }
+    },
+    {
+      "encoding": [
+        3,
+        0,
+        4,
+        1,
+        5,
+        2
+      ],
+      "conditions": {
+        "no_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            1,
+            3,
+            5,
+            0,
+            2,
+            4
+          ]
+        },
+        "correct_certificate": {
+          "correct": true,
+          "verifier_calls": 6,
+          "macros_available": 720,
+          "macros_tested": 1,
+          "chosen": [
+            1,
+            3,
+            5,
+            0,
+            2,
+            4
+          ]
+        },
+        "wrong_certificate": {
+          "correct": true,
+          "verifier_calls": 4326,
+          "macros_available": 720,
+          "macros_tested": 721,
+          "chosen": [
+            1,
+            3,
+            5,
+            0,
+            2,
+            4
+          ]
+        },
+        "certificate_ablation": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            1,
+            3,
+            5,
+            0,
+            2,
+            4
+          ]
+        },
+        "sham_certificate": {
+          "correct": true,
+          "verifier_calls": 4320,
+          "macros_available": 720,
+          "macros_tested": 720,
+          "chosen": [
+            1,
+            3,
+            5,
+            0,
+            2,
+            4
+          ]
+        }
+      }
+    }
+  ],
+  "aggregate": {
+    "no_certificate": 17280,
+    "correct_certificate": 24,
+    "wrong_certificate": 17304,
+    "certificate_ablation": 17280,
+    "sham_certificate": 17280
+  },
+  "reduction_factor": 720.0,
+  "gates": {
+    "same_macro_set": true,
+    "all_correct": true,
+    "certificate_cheaper": true,
+    "ablation_restores": true,
+    "wrong_not_help": true,
+    "sham_restores": true
+  },
+  "not_established": [
+    "natural-domain transfer",
+    "certificate usefulness without exhaustive fallback",
+    "non-isomorphic transfer"
+  ]
+}
