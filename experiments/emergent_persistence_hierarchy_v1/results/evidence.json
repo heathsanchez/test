@@ -1,0 +1,346 @@
+{
+  "verdict": "VERIFIED_EMERGENT_PERSISTENCE_HIERARCHY",
+  "classification": "FINITE_ONLINE_CAUSAL_PROSPECTIVE",
+  "snapshot_digest": "8b978e637cec07883df01ca73c05281de98dc17845f3820a0be4881ec4aa9d46",
+  "totals": {
+    "cold": 1928,
+    "adaptive": 812,
+    "deep_ablation": 1865,
+    "shallow_ablation": 880,
+    "sham": 2120,
+    "answer_memory": 2172
+  },
+  "reduction_factor": 2.374384236453202,
+  "promotions": [
+    {
+      "episode": 2,
+      "id": "66d166638ed3",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 3,
+      "id": "eca8bb4aed36",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 3,
+      "id": "90ebd0883619",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 6,
+      "id": "58e66b167e1e",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    },
+    {
+      "episode": 7,
+      "id": "1e5bfc5e96ee",
+      "depth": 1,
+      "dependencies": [
+        "66d166638ed3",
+        "90ebd0883619"
+      ],
+      "account": 4
+    },
+    {
+      "episode": 13,
+      "id": "a5aad00b2426",
+      "depth": 2,
+      "dependencies": [
+        "1e5bfc5e96ee",
+        "58e66b167e1e"
+      ],
+      "account": 3
+    },
+    {
+      "episode": 15,
+      "id": "e1af77e5beb4",
+      "depth": 0,
+      "dependencies": [],
+      "account": 5
+    }
+  ],
+  "revocations": [
+    {
+      "episode": 13,
+      "id": "eca8bb4aed36",
+      "depth": 0,
+      "reason": "complete outcome profile changed"
+    }
+  ],
+  "lifetimes": {
+    "66d166638ed3": 23,
+    "eca8bb4aed36": 10,
+    "90ebd0883619": 22,
+    "58e66b167e1e": 19,
+    "1e5bfc5e96ee": 18,
+    "a5aad00b2426": 12,
+    "e1af77e5beb4": 10
+  },
+  "ablation": {
+    "deep_damage": 1053,
+    "shallow_damage": 68,
+    "deep_breadth": 15,
+    "shallow_breadth": 4
+  },
+  "episodes": [
+    {
+      "episode": 1,
+      "surface_world": "opaque-01",
+      "cost": 96,
+      "cumulative": 96,
+      "active_count": 0,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 2,
+      "surface_world": "opaque-02",
+      "cost": 52,
+      "cumulative": 148,
+      "active_count": 1,
+      "new_active": [
+        "66d166638ed3"
+      ],
+      "revoked": []
+    },
+    {
+      "episode": 3,
+      "surface_world": "opaque-03",
+      "cost": 43,
+      "cumulative": 191,
+      "active_count": 3,
+      "new_active": [
+        "90ebd0883619",
+        "eca8bb4aed36"
+      ],
+      "revoked": []
+    },
+    {
+      "episode": 4,
+      "surface_world": "opaque-04",
+      "cost": 38,
+      "cumulative": 229,
+      "active_count": 3,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 5,
+      "surface_world": "opaque-05",
+      "cost": 83,
+      "cumulative": 312,
+      "active_count": 3,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 6,
+      "surface_world": "opaque-06",
+      "cost": 26,
+      "cumulative": 338,
+      "active_count": 4,
+      "new_active": [
+        "58e66b167e1e"
+      ],
+      "revoked": []
+    },
+    {
+      "episode": 7,
+      "surface_world": "opaque-07",
+      "cost": 50,
+      "cumulative": 388,
+      "active_count": 5,
+      "new_active": [
+        "1e5bfc5e96ee"
+      ],
+      "revoked": []
+    },
+    {
+      "episode": 8,
+      "surface_world": "opaque-08",
+      "cost": 7,
+      "cumulative": 395,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 9,
+      "surface_world": "opaque-09",
+      "cost": 7,
+      "cumulative": 402,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 10,
+      "surface_world": "opaque-10",
+      "cost": 7,
+      "cumulative": 409,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 11,
+      "surface_world": "opaque-11",
+      "cost": 10,
+      "cumulative": 419,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 12,
+      "surface_world": "opaque-12",
+      "cost": 128,
+      "cumulative": 547,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 13,
+      "surface_world": "opaque-13",
+      "cost": 132,
+      "cumulative": 679,
+      "active_count": 5,
+      "new_active": [
+        "a5aad00b2426"
+      ],
+      "revoked": [
+        "eca8bb4aed36"
+      ]
+    },
+    {
+      "episode": 14,
+      "surface_world": "opaque-14",
+      "cost": 5,
+      "cumulative": 684,
+      "active_count": 5,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 15,
+      "surface_world": "opaque-15",
+      "cost": 29,
+      "cumulative": 713,
+      "active_count": 6,
+      "new_active": [
+        "e1af77e5beb4"
+      ],
+      "revoked": []
+    },
+    {
+      "episode": 16,
+      "surface_world": "opaque-16",
+      "cost": 5,
+      "cumulative": 718,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 17,
+      "surface_world": "opaque-17",
+      "cost": 12,
+      "cumulative": 730,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 18,
+      "surface_world": "opaque-18",
+      "cost": 5,
+      "cumulative": 735,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 19,
+      "surface_world": "opaque-19",
+      "cost": 12,
+      "cumulative": 747,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 20,
+      "surface_world": "opaque-20",
+      "cost": 5,
+      "cumulative": 752,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 21,
+      "surface_world": "opaque-21",
+      "cost": 41,
+      "cumulative": 793,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 22,
+      "surface_world": "opaque-22",
+      "cost": 5,
+      "cumulative": 798,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 23,
+      "surface_world": "opaque-23",
+      "cost": 9,
+      "cumulative": 807,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    },
+    {
+      "episode": 24,
+      "surface_world": "opaque-24",
+      "cost": 5,
+      "cumulative": 812,
+      "active_count": 6,
+      "new_active": [],
+      "revoked": []
+    }
+  ],
+  "gates": {
+    "no_predefined_levels": true,
+    "emergent_multiple_depths": true,
+    "different_persistence_times": true,
+    "amortized_compounding": true,
+    "later_marginal_cost_falls": true,
+    "recursive_promotion": true,
+    "selective_ablation": true,
+    "shallowest_regime_repair": true,
+    "unaffected_deep_structure_preserved": true,
+    "sham_not_help": true,
+    "answer_memory_not_help": true
+  },
+  "not_established": [
+    "natural-world hierarchy formation",
+    "open-ended continuation-language genesis",
+    "unbounded recursive self-development",
+    "optimality of the amortization policy"
+  ]
+}
