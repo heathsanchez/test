@@ -1,0 +1,866 @@
+{
+  "schema_version": 1,
+  "seed": 20260911,
+  "domains": [
+    {
+      "domain": "finite_theorem",
+      "operations": [
+        "and_left",
+        "xor_right",
+        "negate_left",
+        "swap"
+      ],
+      "tasks": [
+        {
+          "stage": 1,
+          "held_out": false,
+          "target_program": [
+            "swap"
+          ],
+          "examples": [
+            {
+              "input": [
+                0,
+                0
+              ],
+              "output": [
+                0,
+                0
+              ]
+            },
+            {
+              "input": [
+                0,
+                1
+              ],
+              "output": [
+                1,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                0
+              ],
+              "output": [
+                0,
+                1
+              ]
+            },
+            {
+              "input": [
+                1,
+                1
+              ],
+              "output": [
+                1,
+                1
+              ]
+            }
+          ],
+          "verifier_authority": "exhaustive evaluation over the complete two-bit carrier"
+        },
+        {
+          "stage": 2,
+          "held_out": false,
+          "target_program": [
+            "swap",
+            "negate_left"
+          ],
+          "examples": [
+            {
+              "input": [
+                0,
+                0
+              ],
+              "output": [
+                1,
+                0
+              ]
+            },
+            {
+              "input": [
+                0,
+                1
+              ],
+              "output": [
+                0,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                0
+              ],
+              "output": [
+                1,
+                1
+              ]
+            },
+            {
+              "input": [
+                1,
+                1
+              ],
+              "output": [
+                0,
+                1
+              ]
+            }
+          ],
+          "verifier_authority": "exhaustive evaluation over the complete two-bit carrier"
+        },
+        {
+          "stage": 3,
+          "held_out": false,
+          "target_program": [
+            "swap",
+            "negate_left",
+            "xor_right"
+          ],
+          "examples": [
+            {
+              "input": [
+                0,
+                0
+              ],
+              "output": [
+                1,
+                1
+              ]
+            },
+            {
+              "input": [
+                0,
+                1
+              ],
+              "output": [
+                0,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                0
+              ],
+              "output": [
+                1,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                1
+              ],
+              "output": [
+                0,
+                1
+              ]
+            }
+          ],
+          "verifier_authority": "exhaustive evaluation over the complete two-bit carrier"
+        },
+        {
+          "stage": 4,
+          "held_out": false,
+          "target_program": [
+            "swap",
+            "negate_left",
+            "xor_right",
+            "and_left"
+          ],
+          "examples": [
+            {
+              "input": [
+                0,
+                0
+              ],
+              "output": [
+                1,
+                1
+              ]
+            },
+            {
+              "input": [
+                0,
+                1
+              ],
+              "output": [
+                0,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                0
+              ],
+              "output": [
+                0,
+                0
+              ]
+            },
+            {
+              "input": [
+                1,
+                1
+              ],
+              "output": [
+                0,
+                1
+              ]
+            }
+          ],
+          "verifier_authority": "exhaustive evaluation over the complete two-bit carrier"
+        }
+      ]
+    },
+    {
+      "domain": "program_synthesis",
+      "operations": [
+        "duplicate",
+        "rotate",
+        "upper",
+        "reverse"
+      ],
+      "tasks": [
+        {
+          "stage": 1,
+          "held_out": false,
+          "target_program": [
+            "reverse"
+          ],
+          "examples": [
+            {
+              "input": "ab",
+              "output": "ba"
+            },
+            {
+              "input": "xY",
+              "output": "Yx"
+            },
+            {
+              "input": "cab",
+              "output": "bac"
+            },
+            {
+              "input": "pqR",
+              "output": "Rqp"
+            }
+          ],
+          "verifier_authority": "exact executable I/O replay over the frozen specification set"
+        },
+        {
+          "stage": 2,
+          "held_out": false,
+          "target_program": [
+            "reverse",
+            "upper"
+          ],
+          "examples": [
+            {
+              "input": "ab",
+              "output": "BA"
+            },
+            {
+              "input": "xY",
+              "output": "YX"
+            },
+            {
+              "input": "cab",
+              "output": "BAC"
+            },
+            {
+              "input": "pqR",
+              "output": "RQP"
+            }
+          ],
+          "verifier_authority": "exact executable I/O replay over the frozen specification set"
+        },
+        {
+          "stage": 3,
+          "held_out": false,
+          "target_program": [
+            "reverse",
+            "upper",
+            "rotate"
+          ],
+          "examples": [
+            {
+              "input": "ab",
+              "output": "AB"
+            },
+            {
+              "input": "xY",
+              "output": "XY"
+            },
+            {
+              "input": "cab",
+              "output": "ACB"
+            },
+            {
+              "input": "pqR",
+              "output": "QPR"
+            }
+          ],
+          "verifier_authority": "exact executable I/O replay over the frozen specification set"
+        },
+        {
+          "stage": 4,
+          "held_out": false,
+          "target_program": [
+            "reverse",
+            "upper",
+            "rotate",
+            "duplicate"
+          ],
+          "examples": [
+            {
+              "input": "ab",
+              "output": "ABAB"
+            },
+            {
+              "input": "xY",
+              "output": "XYXY"
+            },
+            {
+              "input": "cab",
+              "output": "ACBACB"
+            },
+            {
+              "input": "pqR",
+              "output": "QPRQPR"
+            }
+          ],
+          "verifier_authority": "exact executable I/O replay over the frozen specification set"
+        }
+      ]
+    },
+    {
+      "domain": "rule_induction",
+      "operations": [
+        "rotate_rows",
+        "transpose",
+        "invert",
+        "flip_h"
+      ],
+      "tasks": [
+        {
+          "stage": 1,
+          "held_out": false,
+          "target_program": [
+            "flip_h"
+          ],
+          "examples": [
+            {
+              "input": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  1,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          ],
+          "verifier_authority": "exact grid equality over all frozen transformation cases"
+        },
+        {
+          "stage": 2,
+          "held_out": false,
+          "target_program": [
+            "flip_h",
+            "invert"
+          ],
+          "examples": [
+            {
+              "input": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  1,
+                  1
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "verifier_authority": "exact grid equality over all frozen transformation cases"
+        },
+        {
+          "stage": 3,
+          "held_out": false,
+          "target_program": [
+            "flip_h",
+            "invert",
+            "transpose"
+          ],
+          "examples": [
+            {
+              "input": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  1,
+                  1
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  1,
+                  1
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ]
+              ]
+            }
+          ],
+          "verifier_authority": "exact grid equality over all frozen transformation cases"
+        },
+        {
+          "stage": 4,
+          "held_out": true,
+          "target_program": [
+            "flip_h",
+            "invert",
+            "transpose",
+            "rotate_rows"
+          ],
+          "examples": [
+            {
+              "input": [
+                [
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  1
+                ],
+                [
+                  0,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  1
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  0
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ],
+                [
+                  1,
+                  1,
+                  1
+                ]
+              ]
+            },
+            {
+              "input": [
+                [
+                  1,
+                  0,
+                  1
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ],
+                [
+                  1,
+                  0,
+                  0
+                ]
+              ],
+              "output": [
+                [
+                  1,
+                  1,
+                  1
+                ],
+                [
+                  0,
+                  1,
+                  0
+                ],
+                [
+                  0,
+                  0,
+                  1
+                ]
+              ]
+            }
+          ],
+          "verifier_authority": "exact grid equality over all frozen transformation cases"
+        }
+      ]
+    }
+  ],
+  "manifest_sha256": "ab3cad92c89243ebb5f9cf07b73d1f033be4eedfe180e3e0bbb608fa7bc1e880"
+}

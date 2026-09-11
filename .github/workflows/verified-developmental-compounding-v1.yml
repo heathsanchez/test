@@ -1,0 +1,37 @@
+name: Verified Developmental Compounding V1
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [verified-developmental-compounding-v1]
+    paths:
+      - 'experiments/verified_developmental_compounding_v1/**'
+      - '.github/workflows/verified-developmental-compounding-v1.yml'
+
+jobs:
+  qualification:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify frozen task manifest is reproducible
+        run: |
+          cp experiments/verified_developmental_compounding_v1/tasks/tasks.json /tmp/tasks.json
+          python experiments/verified_developmental_compounding_v1/tasks/build_tasks.py
+          cmp /tmp/tasks.json experiments/verified_developmental_compounding_v1/tasks/tasks.json
+      - name: Run qualification and strong gates
+        run: python experiments/verified_developmental_compounding_v1/run.py
+      - name: Freeze runtime authority
+        if: always()
+        run: |
+          cd experiments/verified_developmental_compounding_v1
+          sha256sum PROTOCOL.md MANIFEST.json controller/core.py tasks/build_tasks.py tasks/tasks.json run.py > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-developmental-compounding-v1-evidence
+          path: experiments/verified_developmental_compounding_v1/results
+          retention-days: 90
