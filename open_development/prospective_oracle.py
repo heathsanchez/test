@@ -8,7 +8,9 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 
-from .prospective_genesis import D4, FORM_OPS, MAX_AST_DEPTH, MAX_AST_SIZE, SUBSTRATE
+from .prospective_genesis import (D4, FORM_OPS, INTERACTION_PROBES,
+                                   INTERACTION_PROBE_MANIFEST, MAX_AST_DEPTH,
+                                   MAX_AST_SIZE, SUBSTRATE)
 
 
 def G(value: Any) -> tuple[tuple[int, ...], ...]:
@@ -174,7 +176,46 @@ def execute(state: Mapping[str, Any], rid: str, value: Any, trace: list[str] | N
     return None
 
 
+def _interaction_profile(state: Mapping[str, Any], ast: Mapping[str, Any]) -> tuple[str, tuple[Any, ...]]:
+    from .runtime import digest
+    outputs = tuple(_eval_ast(state, ast, probe, [], ()) for probe in INTERACTION_PROBES)
+    return digest(outputs), outputs
+
+
+def _interaction_classes(state: Mapping[str, Any],
+                         winners: list[dict[str, Any]]) -> tuple[list[dict[str, Any]], dict[str, Any] | None]:
+    from .runtime import digest
+    grouped: dict[str, dict[str, Any]] = {}
+    for ast in winners:
+        class_id, outputs = _interaction_profile(state, ast)
+        item = grouped.setdefault(class_id, {"class_id": class_id, "outputs": outputs, "members": []})
+        item["members"].append(ast)
+    classes = []
+    for class_id in sorted(grouped):
+        item = grouped[class_id]
+        members = sorted(item["members"], key=key)
+        classes.append({
+            "class_id": class_id,
+            "size": len(members),
+            "representative": members[0],
+            "outputs": item["outputs"],
+        })
+    separator = None
+    if len(classes) > 1:
+        for index, probe in enumerate(INTERACTION_PROBES):
+            outputs = [item["outputs"][index] for item in classes]
+            if len({repr(output) for output in outputs}) > 1:
+                separator = {
+                    "probe_index": index,
+                    "input": probe,
+                    "class_output_digests": [digest(output) for output in outputs],
+                }
+                break
+    return classes, separator
+
+
 def analyze(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]:
+    from .runtime import digest
     candidates = enumerate_asts(state)
     counts: dict[int, int] = {}
     survivors: dict[int, list[dict[str, Any]]] = {}
@@ -190,12 +231,30 @@ def analyze(state: Mapping[str, Any], task: Mapping[str, Any]) -> dict[str, Any]
             survivors.setdefault(n, []).append(ast)
     minimum = min(survivors) if survivors else None
     winners = survivors.get(minimum, []) if minimum is not None else []
-    return {"candidate_count": len(candidates),
-            "candidate_count_by_size": {str(k): counts[k] for k in sorted(counts)},
-            "complete_through_size": MAX_AST_SIZE, "minimum_size": minimum,
-            "smaller_survivor_count": sum(len(v) for k, v in survivors.items()
-                                          if minimum is not None and k < minimum),
-            "minimum_survivors": winners, "minimum_survivor_count": len(winners)}
+    classes, separator = _interaction_classes(state, winners)
+    representatives = [item["representative"] for item in classes]
+    class_ids = [item["class_id"] for item in classes]
+    return {
+        "candidate_count": len(candidates),
+        "candidate_count_by_size": {str(k): counts[k] for k in sorted(counts)},
+        "complete_through_size": MAX_AST_SIZE,
+        "minimum_size": minimum,
+        "smaller_survivor_count": sum(len(v) for k, v in survivors.items()
+                                      if minimum is not None and k < minimum),
+        "minimum_survivors": winners,
+        "minimum_survivor_count": len(winners),
+        "minimum_syntactic_survivor_count": len(winners),
+        "minimum_interaction_class_count": len(classes),
+        "minimum_interaction_class_sizes": [item["size"] for item in classes],
+        "minimum_class_representatives": representatives,
+        "interaction_class_ids": class_ids,
+        "interaction_probe_manifest": INTERACTION_PROBE_MANIFEST,
+        "separator_probe": separator,
+        "version_space_id": digest({
+            "probe_manifest": INTERACTION_PROBE_MANIFEST,
+            "interaction_class_ids": class_ids,
+        }),
+    }
 
 
 def any_solves(state: Mapping[str, Any], task: Mapping[str, Any]) -> bool:
