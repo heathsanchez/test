@@ -282,10 +282,6 @@ def restore_solve_data(acsolverx_root: Path, checkpoint_name: str, step: int):
     import jax.numpy as jnp
     import orbax.checkpoint as ocp
 
-    dataset = acsolverx_root / "data" / "AC19_extended.txt"
-    with dataset.open() as f:
-        num_states = sum(1 for _ in f)
-
     ckpt_abs = acsolverx_root / "ppo_checkpoints" / checkpoint_name
     manager = ocp.CheckpointManager(
         str(ckpt_abs), item_names=("params", "solve_data", "config")
@@ -294,7 +290,22 @@ def restore_solve_data(acsolverx_root: Path, checkpoint_name: str, step: int):
     if actual_step is None:
         raise RuntimeError("checkpoint has no step")
 
-    # Public config at step 1000 uses NUM_STEPS=96.
+    # Restore at the checkpoint's native solve-table shape. The public
+    # repository's current AC19_extended.txt can differ in total row count from
+    # the historical training snapshot; the first 634 MS rows are the stable
+    # prefix we actually consume below.
+    md_path = ckpt_abs / str(actual_step) / "solve_data" / "_METADATA"
+    md = json.loads(md_path.read_text())
+    shapes = []
+    for entry in md.get("tree_metadata", {}).values():
+        shape = entry.get("value_metadata", {}).get("write_shape")
+        if shape:
+            shapes.append(shape)
+    row_counts = {int(s[0]) for s in shapes if len(s) >= 1}
+    if len(row_counts) != 1:
+        raise RuntimeError(f"cannot infer checkpoint solve-data rows: {row_counts}")
+    num_states = row_counts.pop()
+
     cfg = manager.restore(
         actual_step,
         args=ocp.args.Composite(config=ocp.args.JsonRestore({})),
