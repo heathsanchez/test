@@ -59,14 +59,20 @@ jobs:
           theorem eval_ee : eval e e = q e e := by
             have h := eval_cases e e
             have hc : ∃ o, Code e e o := ⟨q e e, Code.r6 e e⟩
-            simpa [EvalCases, Rule, hc] using h
+            have hs : eval e e = q e e ∧ sz (eval e e) = sz (q e e) := by
+              simpa [EvalCases, Rule, hc] using h
+            exact hs.1
 
           theorem eval_qee_qee :
               eval (q e e) (q e e) = q (q e e) (q e e) := by
             have h := eval_cases (q e e) (q e e)
             have hc : ∃ o, Code (q e e) (q e e) o :=
               ⟨q (q e e) (q e e), Code.r6 (q e e) (q e e)⟩
-            simpa [EvalCases, Rule, hc] using h
+            have hs :
+                eval (q e e) (q e e) = q (q e e) (q e e) ∧
+                sz (eval (q e e) (q e e)) = sz (q (q e e) (q e e)) := by
+              simpa [EvalCases, Rule, hc] using h
+            exact hs.1
 
           theorem eval_qee_r4 :
               eval (q e e) (q (q e e) (q e e)) =
@@ -74,7 +80,13 @@ jobs:
             have h := eval_cases (q e e) (q (q e e) (q e e))
             have hc : ∃ o, Code (q e e) (q (q e e) (q e e)) o :=
               ⟨q (q e e) (q (q e e) (q e e)), Code.r4 (q e e)⟩
-            simpa [EvalCases, Rule, hc] using h
+            have hs :
+                eval (q e e) (q (q e e) (q e e)) =
+                  q (q e e) (q (q e e) (q e e)) ∧
+                sz (eval (q e e) (q (q e e) (q e e))) =
+                  sz (q (q e e) (q (q e e) (q e e))) := by
+              simpa [EvalCases, Rule, hc] using h
+            exact hs.1
 
           def a : Carrier := ⟨e, by trivial⟩
           def b : Carrier := ⟨e, by trivial⟩
