@@ -1,0 +1,83 @@
+name: ACC Competitive Telemetry
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/acc-competitive-telemetry.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-competitive-telemetry
+  cancel-in-progress: false
+
+jobs:
+  telemetry:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout competitive branch
+        uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover prior telemetry
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/prior /tmp/bootstrap
+          PRIOR_ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-competitive-telemetry-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          if [ -n "$PRIOR_ID" ]; then
+            echo "Using telemetry artifact $PRIOR_ID"
+            gh api "repos/heathsanchez/test/actions/artifacts/$PRIOR_ID/zip" > /tmp/prior.zip
+            unzip -q /tmp/prior.zip -d /tmp/prior
+          else
+            STATE_ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-competitive-state&per_page=1' --jq '.artifacts[0].id // empty')"
+            if [ -n "$STATE_ID" ]; then
+              echo "Bootstrapping from competitive state $STATE_ID"
+              gh api "repos/heathsanchez/test/actions/artifacts/$STATE_ID/zip" > /tmp/prior.zip
+              unzip -q /tmp/prior.zip -d /tmp/prior
+            else
+              echo "Bootstrapping from earlier challenge/leaderboard snapshots"
+              gh api repos/heathsanchez/test/actions/artifacts/10289383464/zip > /tmp/prevcycle.zip
+              unzip -q /tmp/prevcycle.zip -d /tmp/bootstrap/prevcycle
+              gh api repos/heathsanchez/test/actions/artifacts/10289670991/zip > /tmp/prevstanding.zip
+              unzip -q /tmp/prevstanding.zip -d /tmp/bootstrap/prevstanding
+            fi
+          fi
+
+      - name: Capture interval and conservative record attribution
+        run: |
+          set -euo pipefail
+          PREV_AC="$(find /tmp/prior /tmp/bootstrap -name 'snapshot_ac.json' -o -name 'snapshot_ac_pre.json' 2>/dev/null | head -1 || true)"
+          PREV_STABLE="$(find /tmp/prior /tmp/bootstrap -name 'snapshot_stable.json' -o -name 'snapshot_stable_pre.json' 2>/dev/null | head -1 || true)"
+          PREV_LBA="$(find /tmp/prior -name 'leaderboard_ac.json' 2>/dev/null | head -1 || true)"
+          PREV_LBS="$(find /tmp/prior -name 'leaderboard_stable.json' 2>/dev/null | head -1 || true)"
+          if [ -z "$PREV_LBA" ]; then PREV_LBA="$(find /tmp/bootstrap/prevstanding -name 'ac_*.json' | sort | tail -1 || true)"; fi
+          if [ -z "$PREV_LBS" ]; then PREV_LBS="$(find /tmp/bootstrap/prevstanding -name 'stable_ac_*.json' | sort | tail -1 || true)"; fi
+          HIST="$(find /tmp/prior -name 'attribution_history.json' 2>/dev/null | head -1 || true)"
+          ARGS=(--out-dir acc_competitive/telemetry_out)
+          [ -n "$PREV_AC" ] && ARGS+=(--prev-ac "$PREV_AC")
+          [ -n "$PREV_STABLE" ] && ARGS+=(--prev-stable "$PREV_STABLE")
+          [ -n "$PREV_LBA" ] && ARGS+=(--prev-lba "$PREV_LBA")
+          [ -n "$PREV_LBS" ] && ARGS+=(--prev-lbs "$PREV_LBS")
+          [ -n "$HIST" ] && ARGS+=(--prev-history "$HIST")
+          python3 acc_competitive/competitive_telemetry_v1.py "${ARGS[@]}" | tee acc_competitive/telemetry.log
+
+      - name: Upload telemetry state
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-telemetry-state
+          path: |
+            acc_competitive/telemetry_out/
+            acc_competitive/telemetry.log
+          retention-days: 90
