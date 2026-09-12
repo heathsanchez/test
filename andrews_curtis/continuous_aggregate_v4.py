@@ -49,6 +49,16 @@ def compress(core,initial,moves):
             return nxt
         cur=nxt
 
+def strict_record_steal(row,candidate_len):
+    if row.get("status") == "unsolved":
+        return True, "currently_unsolved"
+    best=row.get("currentBestLength")
+    if isinstance(best,int) and candidate_len < best:
+        return True, "strict_improvement"
+    if isinstance(best,int) and candidate_len == best:
+        return False, "tie_not_a_strict_steal"
+    return False, "longer_than_live_best"
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--acc-root",required=True)
@@ -59,7 +69,7 @@ def main():
 
     root=Path(__file__).resolve().parent
     sys.path.insert(0,str(root))
-    from solver_v2_gssub import snapshot_map,current_competitive,submit_batch,api
+    from solver_v2_gssub import snapshot_map,submit_batch,api
 
     acc=Path(a.acc_root)
     sys.path.insert(0,str(acc/"competition/tools"))
@@ -160,7 +170,7 @@ def main():
             if row is None:
                 selection.append({"challenge_id":qid,"length":len(path),"selected":False,"reason":"missing_live_row"})
                 continue
-            ok,reason=current_competitive(row,len(path))
+            ok,reason=strict_record_steal(row,len(path))
             selection.append({
                 "challenge_id":qid,"length":len(path),"live_status":row.get("status"),
                 "live_best":row.get("currentBestLength"),"selected":ok,"reason":reason
