@@ -1,0 +1,54 @@
+name: ACC Family Bridge V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-family-bridge-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover verified n=9 solution
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/highpool
+          gh api repos/heathsanchez/test/actions/artifacts/10293864140/zip > /tmp/highpool.zip
+          unzip -q /tmp/highpool.zip -d /tmp/highpool
+          find /tmp/highpool -name pending_submission.txt -print
+
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Search exact adjacent-family bridges
+        run: |
+          set -o pipefail
+          P9="$(find /tmp/highpool -name pending_submission.txt | head -1)"
+          python3 acc_competitive/family_bridge_v1.py             --acc-root /tmp/acc             --p9-solution "$P9"             --out-dir acc_competitive/family_bridge_out             --half-depth 7             --extra-total 12             | tee acc_competitive/family_bridge.log
+
+      - name: Upload bridge evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-family-bridge-v1
+          path: |
+            acc_competitive/family_bridge_out/
+            acc_competitive/family_bridge.log
+          retention-days: 90
+          if-no-files-found: warn
