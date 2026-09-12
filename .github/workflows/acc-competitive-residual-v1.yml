@@ -81,7 +81,7 @@ jobs:
           CA="$(find /tmp/prior -name 'competitive_attempted.json' 2>/dev/null | head -1 || true)"
           if [ -z "$KF" ] && [ -f /tmp/bootstrap/known_failures.json ]; then KF=/tmp/bootstrap/known_failures.json; fi
 
-          ARGS=(--acc-root /tmp/acc --out-dir acc_competitive/scout_out --attack-count 128 --defend-fraction 0 --shards 16)
+          ARGS=(--acc-root /tmp/acc --out-dir acc_competitive/scout_out --attack-count 32 --defend-fraction 0 --shards 16)
           [ -n "$PREV_AC" ] && ARGS+=(--prev-ac "$PREV_AC")
           [ -n "$PREV_STABLE" ] && ARGS+=(--prev-stable "$PREV_STABLE")
           [ -n "$PREV_LBA" ] && ARGS+=(--prev-leaderboard-ac "$PREV_LBA")
@@ -146,7 +146,7 @@ jobs:
             --out-dir acc_competitive/out_attack_${{ matrix.shard }} \
             --target-ids-file "$TARGET" \
             --include-solved \
-            --max-targets 8 \
+            --max-targets 2 \
             --max-nodes 120000 \
             --max-quotient-total 80 \
             --reverse-depth 7 \
