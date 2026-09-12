@@ -40,6 +40,27 @@
       "frozen_best": 15267,
       "shortening_fraction": 0.4,
       "source": "artifact 10293864140"
+    },
+    {
+      "challenge_id": "ac-06430",
+      "candidate_length": 3871,
+      "frozen_best": 3872,
+      "shortening_fraction": 0.000258,
+      "source": "artifact 10294327941"
+    },
+    {
+      "challenge_id": "ac-03086",
+      "candidate_length": 3080,
+      "frozen_best": 3081,
+      "shortening_fraction": 0.000325,
+      "source": "artifact 10294327941"
+    },
+    {
+      "challenge_id": "ac-02523",
+      "candidate_length": 2368,
+      "frozen_best": 2370,
+      "shortening_fraction": 0.000844,
+      "source": "artifact 10294846050"
     }
   ],
   "pending_defense": [
@@ -52,10 +73,10 @@
     }
   ],
   "expected_if_frozen_records_unchanged": {
-    "new_unique_ac_points": 5,
-    "new_unique_stable_points": 5,
+    "new_unique_ac_points": 8,
+    "new_unique_stable_points": 8,
     "defense_rows": 2,
-    "packed_rows_before_family_bridge": 12
+    "packed_rows_before_any_late_offline_discoveries": 18
   },
   "search_economics": {
     "historical_win_rate_by_incumbent": [
@@ -95,7 +116,36 @@
     "high_slack_experiment": {
       "variants_per_target_tested": 6,
       "useful_unique_wins": 4,
-      "note": "All four best winners came from depth_weight=0, quotient_cap=100; future policy runs this baseline first and escalates only failures."
+      "winning_configuration": "depth_weight=0, quotient_cap=100, max_nodes=500000",
+      "note": "All four useful high-slack wins came from one configuration. Future policy runs that single baseline first and escalates only failures, avoiding the 6-way Cartesian sweep."
+    },
+    "local_superoptimizer": {
+      "targeted_cases": 3,
+      "converted_to_frozen_record_wins": 3,
+      "results": [
+        {
+          "challenge_id": "ac-06430",
+          "old": 3884,
+          "new": 3871,
+          "frozen_best": 3872,
+          "moves_saved": 13
+        },
+        {
+          "challenge_id": "ac-03086",
+          "old": 3135,
+          "new": 3080,
+          "frozen_best": 3081,
+          "moves_saved": 55
+        },
+        {
+          "challenge_id": "ac-02523",
+          "old": 2490,
+          "new": 2368,
+          "frozen_best": 2370,
+          "moves_saved": 122
+        }
+      ],
+      "note": "Exact local official-move superoptimization converted all three available close paths in seconds. Remaining preserved candidates are too far from frozen records for this pass to be economical."
     }
   },
   "policy": [
@@ -104,5 +154,11 @@
     "Run one baseline 500k/q100/depth_weight=0 attempt per high-value residual before any variants.",
     "Escalate only cases that still fail after the baseline.",
     "Pack all surviving candidates into one fresh live-filtered submission after reset."
-  ]
+  ],
+  "family_bridge_experiment": {
+    "family": "same first relator; B_n = y^-n x^-1 y^(n-1) x for n=9,10,11",
+    "tested_exact_total_bridge_depth": 14,
+    "result": "no exact bridge found",
+    "decision": "do not deepen brute-force bridge search yet"
+  }
 }
