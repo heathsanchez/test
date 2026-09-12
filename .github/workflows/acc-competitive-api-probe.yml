@@ -1,0 +1,32 @@
+name: ACC Competitive API Probe
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-competitive-api-probe.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe read-only public endpoints
+        run: python3 acc_competitive/probe_api.py | tee acc_competitive/probe.log
+      - name: Upload probe evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-api-probe
+          path: |
+            acc_competitive/probe_out/
+            acc_competitive/probe.log
+          if-no-files-found: warn
