@@ -1,0 +1,87 @@
+name: ACC Dominant Team Map
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-dominant-team-map.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch current dominant-team record sets
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/dominant_map
+          python3 - <<'PY'
+          import urllib.request,json,urllib.parse,pathlib
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/dominant_map')
+
+          def get(path):
+              req=urllib.request.Request(B+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def data(o): return o.get('data',o)
+
+          report={}
+          for problem in ('ac','stable_ac'):
+              lb=get('/api/acc/leaderboard?problem='+problem)
+              bd=data(lb); sid=bd['snapshotId']
+              top=bd['items'][:5]
+              teams={}
+              for row in top:
+                  tid=row['team']['teamId']
+                  qs=urllib.parse.urlencode({'problem':problem,'snapshotId':sid,'limit':5000})
+                  obj=get('/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+qs)
+                  dd=data(obj)
+                  teams[tid]={
+                    'team':row['team'].get('teamName'),
+                    'rank':row['rank'],'score':row['score'],'count':row['currentBestCount'],
+                    'returned':len(dd.get('items',[])),'totalCount':dd.get('totalCount'),
+                    'nextCursor':dd.get('nextCursor'),
+                    'items':dd.get('items',[])
+                  }
+                  print('TEAM_MAP',problem,row['rank'],row['team'].get('teamName'),len(dd.get('items',[])),dd.get('totalCount'),bool(dd.get('nextCursor')))
+              report[problem]={'generatedAt':bd.get('generatedAt'),'snapshotId':sid,'teams':teams}
+              (out/f'{problem}.json').write_text(json.dumps(report[problem],indent=2,sort_keys=True)+'\n')
+
+          # Set relationships for AC.
+          ac=report['ac']['teams']
+          byname={v['team']:set(x['challengeId'] for x in v['items']) for v in ac.values()}
+          names=list(byname)
+          relations={}
+          for a in names:
+              relations[a]={}
+              for b in names:
+                  if a==b: continue
+                  relations[a][b]={
+                    'a_not_b':len(byname[a]-byname[b]),
+                    'intersection':len(byname[a]&byname[b]),
+                    'b_not_a':len(byname[b]-byname[a]),
+                  }
+          summary={
+            'relations':relations,
+            'counts':{n:len(s) for n,s in byname.items()},
+          }
+          (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print('DOMINANT_SUMMARY',json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-dominant-team-map
+          path: acc_competitive/dominant_map/
+          retention-days: 90
