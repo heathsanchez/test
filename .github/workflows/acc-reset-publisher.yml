@@ -37,7 +37,7 @@ jobs:
           unzip -q /tmp/attack7.zip -d /tmp/pending/attack7
 
           # Pull latest offline pools if they exist by reset time.
-          for NAME in acc-offline-high-slack-pool acc-depth-cost-sweep-v1; do
+          for NAME in acc-offline-high-slack-pool acc-depth-cost-sweep-v1 acc-family-bridge-v1; do
             ID="$(gh api "repos/heathsanchez/test/actions/artifacts?name=$NAME&per_page=1" --jq '.artifacts[0].id // empty')"
             if [ -n "$ID" ]; then
               echo "Downloading $NAME artifact $ID"
