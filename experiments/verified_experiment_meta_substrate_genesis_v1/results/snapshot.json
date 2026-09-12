@@ -1,0 +1,41 @@
+{
+  "forbidden_named_primitives": [
+    "history",
+    "delay",
+    "memory",
+    "previous"
+  ],
+  "histories": [
+    [
+      [
+        0,
+        1
+      ],
+      [
+        0,
+        0
+      ]
+    ],
+    [
+      [
+        1,
+        1
+      ],
+      [
+        0,
+        0
+      ]
+    ]
+  ],
+  "lower_machine_substrate": "two states; arbitrary finite transition table; arbitrary Moore output table; composition; exhaustive verification",
+  "old_extensional_closure": "all 16 stateless Boolean maps",
+  "old_meta_substrate": [
+    "0",
+    "1",
+    "x",
+    "y",
+    "NAND"
+  ],
+  "old_substrate_id": "70ff0f54c4d56bf29c4177297a2ee618a9a86f827396b961e0b441a2d3e4feef",
+  "parent_freeze": "af224f4108a3ed545ffad23fc4080225d1157b54"
+}
