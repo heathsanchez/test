@@ -12,7 +12,7 @@ theorem stateless_no_separator (m : StatelessObserver) :
     ¬ Separates (fun h => m h.present) h0 h1 := by
   simp [Separates, h0, h1]
 
-structure CompleteStateless (M : Type) : Prop where
+structure CompleteStateless (M : Type) : Type where
   denotes : M → StatelessObserver
   complete : ∀ f : StatelessObserver, ∃ m, denotes m = f
 
@@ -35,7 +35,7 @@ def constructed : MachineObserver where
   output := id
 
 theorem constructed_separates : Separates (runMachine constructed) h0 h1 := by
-  decide
+  simp [Separates, runMachine, constructed, h0, h1]
 
 theorem extension_is_not_stateless :
     ¬ ∃ m : StatelessObserver,
