@@ -33,6 +33,11 @@ jobs:
         run: |
           lake update
 
+      - name: Build pinned HexGraphIso
+        working-directory: experiments/hex_digraph_exaptation_v1
+        run: |
+          lake build HexGraphIso
+
       - name: Kernel-check held-out Hex exaptation
         working-directory: experiments/hex_digraph_exaptation_v1
         run: |
