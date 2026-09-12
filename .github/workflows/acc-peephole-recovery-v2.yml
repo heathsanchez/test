@@ -1,0 +1,104 @@
+name: ACC Peephole Recovery V2
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-peephole-recovery-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - challenge: ac-02523
+            artifact_id: 10291890298
+            frozen_best: 2370
+          - challenge: ac-07048
+            artifact_id: 10292452100
+            frozen_best: 1700
+          - challenge: ac-08459
+            artifact_id: 10292093199
+            frozen_best: 2442
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover verifier-clean candidate
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/candidate
+          gh api "repos/heathsanchez/test/actions/artifacts/${{ matrix.artifact_id }}/zip" > /tmp/candidate.zip
+          unzip -q /tmp/candidate.zip -d /tmp/candidate
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Exact local path superoptimization
+        run: |
+          set -o pipefail
+          CAND="$(find /tmp/candidate -name submission_v2.txt | head -1)"
+          python3 acc_competitive/peephole_superopt_v1.py \
+            --acc-root /tmp/acc \
+            --candidate-file "$CAND" \
+            --challenge-id "${{ matrix.challenge }}" \
+            --frozen-best "${{ matrix.frozen_best }}" \
+            --max-window 5 \
+            --out-dir "acc_competitive/peephole_v2_${{ matrix.challenge }}" \
+            | tee "acc_competitive/peephole_v2_${{ matrix.challenge }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-peephole-v2-${{ matrix.challenge }}
+          path: |
+            acc_competitive/peephole_v2_${{ matrix.challenge }}/
+            acc_competitive/peephole_v2_${{ matrix.challenge }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: recover
+    if: always() && needs.recover.result != 'cancelled'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-peephole-v2-*
+          path: acc_competitive/peephole_v2_downloads
+          merge-multiple: false
+      - name: Pool successful local improvements
+        run: |
+          mkdir -p acc_competitive/peephole_v2_pool
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('acc_competitive/peephole_v2_downloads')
+          lines=[]; reports=[]
+          for rp in root.rglob('report.json'):
+              d=json.loads(rp.read_text()); reports.append(d)
+              if d.get('strictly_better_frozen'):
+                  p=rp.parent/'pending_submission.txt'
+                  if p.exists(): lines.extend(x for x in p.read_text().splitlines() if x.strip())
+          pathlib.Path('acc_competitive/peephole_v2_pool/pending_submission.txt').write_text(('\n'.join(lines)+'\n') if lines else '')
+          pathlib.Path('acc_competitive/peephole_v2_pool/report.json').write_text(json.dumps({'reports':reports,'pending_rows':len(lines)},indent=2,sort_keys=True)+'\n')
+          print('PEEPHOLE_V2_POOL',json.dumps({'cases':len(reports),'pending_rows':len(lines)}))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-peephole-recovery-v2
+          path: acc_competitive/peephole_v2_pool/
+          retention-days: 90
