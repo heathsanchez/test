@@ -1,0 +1,114 @@
+name: ACC Depth-Cost Search Sweep V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-depth-cost-sweep-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        target:
+          - ac-08459
+          - ac-07048
+          - ac-02137
+          - ac-03146
+        depth_weight: ["0.01","0.03","0.05","0.10","0.20"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Install runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+      - name: Freeze target
+        run: |
+          mkdir -p acc_competitive/depth_sweep
+          printf '["%s"]\n' "${{ matrix.target }}" > "acc_competitive/depth_sweep/${{ matrix.target }}.json"
+      - name: Search with quotient-depth cost
+        run: |
+          set -o pipefail
+          TAG="${{ matrix.target }}-w${{ matrix.depth_weight }}"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "acc_competitive/out_depth_${TAG}" \
+            --target-ids-file "acc_competitive/depth_sweep/${{ matrix.target }}.json" \
+            --include-solved \
+            --max-targets 1 \
+            --max-nodes 120000 \
+            --max-quotient-total 80 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 8 \
+            --depth-weight "${{ matrix.depth_weight }}" \
+            --search-seconds 1600 \
+            | tee "acc_competitive/depth_${TAG}.log"
+      - name: Upload candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-depth-${{ matrix.target }}-w${{ matrix.depth_weight }}
+          path: |
+            acc_competitive/out_depth_*/
+            acc_competitive/depth_*.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  submit:
+    needs: sweep
+    if: always() && needs.sweep.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-depth-*
+          path: acc_competitive/depth_downloads
+          merge-multiple: false
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Live-filter best depth-cost records
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/depth_downloads/**/submission_v2.txt' \
+            --out-dir acc_competitive/depth_sweep_aggregate \
+            --cycle 1 \
+            | tee acc_competitive/depth_sweep_aggregate.log
+      - name: Upload authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-depth-cost-sweep-v1
+          path: |
+            acc_competitive/depth_sweep_aggregate/
+            acc_competitive/depth_sweep_aggregate.log
+          retention-days: 90
+          if-no-files-found: warn
