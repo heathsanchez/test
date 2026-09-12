@@ -1,0 +1,69 @@
+name: Hex Digraph Exaptation V1
+
+on:
+  push:
+    branches:
+      - hex-digraph-exaptation-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exhaustive finite adapter qualification
+        run: |
+          python3 experiments/hex_digraph_exaptation_v1/run.py
+
+      - name: Install pinned Lean toolchain
+        uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: experiments/hex_digraph_exaptation_v1
+          auto-config: false
+          build: false
+          test: false
+          lint: false
+          use-github-cache: false
+          use-mathlib-cache: false
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_digraph_exaptation_v1
+        run: lake update
+
+      - name: Kernel-check held-out Hex exaptation
+        working-directory: experiments/hex_digraph_exaptation_v1
+        run: |
+          mkdir -p results
+          set -o pipefail
+          lake env lean Main.lean 2>&1 | tee results/lean.log
+
+      - name: Seal evidence
+        working-directory: experiments/hex_digraph_exaptation_v1
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path(".")
+          ev = json.loads((root/"results/evidence.json").read_text())
+          ev["lean_kernel_check"] = "PASS"
+          ev["final_verdict"] = "PILOT_PASS" if ev["verdict"].startswith("QUALIFIED") else "NEGATIVE_OR_PARTIAL"
+          files = ["PROTOCOL.md", "run.py", "Main.lean", "lakefile.toml", "lean-toolchain", "lake-manifest.json"]
+          ev["sealed_files"] = {
+              f: hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(json.dumps(ev, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(ev, indent=2, sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py Main.lean lakefile.toml lean-toolchain lake-manifest.json > results/SHA256SUMS.txt
+
+      - name: Upload sealed evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-digraph-exaptation-v1-evidence
+          path: experiments/hex_digraph_exaptation_v1/results/
+          if-no-files-found: error
