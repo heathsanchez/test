@@ -86,6 +86,33 @@ jobs:
                   open('/tmp/board.txt','w').write(text)
           PY
 
+      - name: Read public leaderboard JSON without API key
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,json
+          H={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36','Accept':'application/json'}
+          for problem in ('ac','stable_ac'):
+              url=f'https://competition.sair.foundation/api/public/v1/competitions/acc/leaderboard?problem={problem}'
+              req=urllib.request.Request(url,headers=H)
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as r:
+                      raw=r.read().decode()
+                      print('PUBLIC_HTTP',problem,r.status,'bytes',len(raw))
+              except Exception as e:
+                  print('PUBLIC_FAIL',problem,repr(e))
+                  continue
+              open(f'/tmp/public_{problem}.json','w').write(raw)
+              obj=json.loads(raw)
+              data=obj.get('data',obj)
+              print('GENERATED',problem,data.get('generatedAt'),'snapshot',data.get('snapshotId'))
+              for x in data.get('items',[]):
+                  name=((x.get('team') or {}).get('teamName') or '')
+                  if name in ('MathGraph.org','NavierStoked','JDD') or 'MathGraph' in name:
+                      print('PUBLIC_TEAM',problem,json.dumps({'rank':x.get('rank'),'score':x.get('score'),'currentBestCount':x.get('currentBestCount'),'team':name,'teamId':(x.get('team') or {}).get('teamId')},sort_keys=True))
+              print('TOP10',problem,json.dumps([{'rank':x.get('rank'),'team':(x.get('team') or {}).get('teamName'),'score':x.get('score'),'count':x.get('currentBestCount')} for x in data.get('items',[])[:10]],sort_keys=True))
+          PY
+
       - name: Upload scrape
         uses: actions/upload-artifact@v4
         with:
@@ -95,4 +122,6 @@ jobs:
             /tmp/site.js
             /tmp/board.html
             /tmp/board.txt
+            /tmp/public_ac.json
+            /tmp/public_stable_ac.json
           if-no-files-found: warn
