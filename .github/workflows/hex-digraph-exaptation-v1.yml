@@ -21,19 +21,17 @@ jobs:
           python3 experiments/hex_digraph_exaptation_v1/run.py
 
       - name: Install pinned Lean toolchain
-        uses: leanprover/lean-action@v1
-        with:
-          lake-package-directory: experiments/hex_digraph_exaptation_v1
-          auto-config: false
-          build: false
-          test: false
-          lint: false
-          use-github-cache: false
-          use-mathlib-cache: false
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          lean --version
+          lake --version
 
       - name: Resolve pinned HexGraphIso dependency
         working-directory: experiments/hex_digraph_exaptation_v1
-        run: lake update
+        run: |
+          lake update
 
       - name: Kernel-check held-out Hex exaptation
         working-directory: experiments/hex_digraph_exaptation_v1
