@@ -1,0 +1,365 @@
+{
+  "verdict": "REPRESENTABLE_BUT_UNSELECTED",
+  "classification": "FINITE_EXHAUSTIVE_POLICY_REPRESENTABILITY_BOUNDARY",
+  "selected_policy": {
+    "recent": 0,
+    "scope": 0,
+    "breadth": 1,
+    "persistence": 1,
+    "amort": 1,
+    "depth": 0,
+    "genesis": 0,
+    "support": 1
+  },
+  "geometry_policy": {
+    "recent": 1,
+    "scope": 1,
+    "breadth": 1,
+    "persistence": 1,
+    "amort": 1,
+    "depth": -1,
+    "genesis": -1,
+    "support": 1
+  },
+  "grammar_programs_evaluated": 6561,
+  "decision_states_evaluated": 48,
+  "behaviorally_equivalent_program_count": 1,
+  "canonical_equivalent": {
+    "recent": 1,
+    "scope": 1,
+    "breadth": 1,
+    "persistence": 1,
+    "amort": 1,
+    "depth": -1,
+    "genesis": -1,
+    "support": 1
+  },
+  "costs": {
+    "training_selected": 20000,
+    "training_geometry": 20341,
+    "heldout_selected": 104887,
+    "heldout_geometry": 102558
+  },
+  "decision_divergence_count": 15,
+  "minimal_divergence": {
+    "cohort": "train",
+    "seed": 14,
+    "selected": [
+      "a",
+      "b",
+      "d",
+      "h"
+    ],
+    "geometry": [
+      "b",
+      "d",
+      "g",
+      "h"
+    ],
+    "selected_cost": 5000,
+    "geometry_cost": 5341,
+    "geometry_advantage": -341
+  },
+  "divergences": [
+    {
+      "cohort": "train",
+      "seed": 14,
+      "selected": [
+        "a",
+        "b",
+        "d",
+        "h"
+      ],
+      "geometry": [
+        "b",
+        "d",
+        "g",
+        "h"
+      ],
+      "selected_cost": 5000,
+      "geometry_cost": 5341,
+      "geometry_advantage": -341
+    },
+    {
+      "cohort": "heldout",
+      "seed": 102,
+      "selected": [
+        "a",
+        "c",
+        "f",
+        "g"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "f"
+      ],
+      "selected_cost": 6973,
+      "geometry_cost": 5357,
+      "geometry_advantage": 1616
+    },
+    {
+      "cohort": "heldout",
+      "seed": 107,
+      "selected": [
+        "a",
+        "c",
+        "f",
+        "g"
+      ],
+      "geometry": [
+        "b",
+        "d",
+        "g",
+        "h"
+      ],
+      "selected_cost": 5734,
+      "geometry_cost": 5198,
+      "geometry_advantage": 536
+    },
+    {
+      "cohort": "heldout",
+      "seed": 109,
+      "selected": [
+        "a",
+        "c",
+        "f",
+        "g"
+      ],
+      "geometry": [
+        "b",
+        "d",
+        "g",
+        "h"
+      ],
+      "selected_cost": 5386,
+      "geometry_cost": 6085,
+      "geometry_advantage": -699
+    },
+    {
+      "cohort": "heldout",
+      "seed": 116,
+      "selected": [
+        "a",
+        "b",
+        "c",
+        "f"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "e",
+        "g"
+      ],
+      "selected_cost": 5720,
+      "geometry_cost": 5011,
+      "geometry_advantage": 709
+    },
+    {
+      "cohort": "heldout",
+      "seed": 117,
+      "selected": [
+        "a",
+        "b",
+        "d",
+        "e"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "f"
+      ],
+      "selected_cost": 5167,
+      "geometry_cost": 5000,
+      "geometry_advantage": 167
+    },
+    {
+      "cohort": "shift_calibration",
+      "seed": 201,
+      "selected": [
+        "a",
+        "b",
+        "e",
+        "g"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "g"
+      ],
+      "selected_cost": 6099,
+      "geometry_cost": 6820,
+      "geometry_advantage": -721
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 301,
+      "selected": [
+        "a",
+        "b",
+        "d",
+        "e"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "selected_cost": 10763,
+      "geometry_cost": 8969,
+      "geometry_advantage": 1794
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 302,
+      "selected": [
+        "b",
+        "d",
+        "g",
+        "h"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "e",
+        "g"
+      ],
+      "selected_cost": 10595,
+      "geometry_cost": 5000,
+      "geometry_advantage": 5595
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 303,
+      "selected": [
+        "b",
+        "d",
+        "g",
+        "h"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "d",
+        "e"
+      ],
+      "selected_cost": 6978,
+      "geometry_cost": 7698,
+      "geometry_advantage": -720
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 306,
+      "selected": [
+        "a",
+        "b",
+        "d",
+        "e"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "f"
+      ],
+      "selected_cost": 12204,
+      "geometry_cost": 9854,
+      "geometry_advantage": 2350
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 307,
+      "selected": [
+        "a",
+        "b",
+        "c",
+        "g"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "e"
+      ],
+      "selected_cost": 7336,
+      "geometry_cost": 6601,
+      "geometry_advantage": 735
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 308,
+      "selected": [
+        "a",
+        "b",
+        "d",
+        "e"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "e",
+        "g"
+      ],
+      "selected_cost": 11140,
+      "geometry_cost": 12393,
+      "geometry_advantage": -1253
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 311,
+      "selected": [
+        "a",
+        "b",
+        "c",
+        "d"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "e",
+        "g"
+      ],
+      "selected_cost": 7525,
+      "geometry_cost": 7337,
+      "geometry_advantage": 188
+    },
+    {
+      "cohort": "shift_test",
+      "seed": 317,
+      "selected": [
+        "a",
+        "b",
+        "c",
+        "f"
+      ],
+      "geometry": [
+        "a",
+        "b",
+        "c",
+        "g"
+      ],
+      "selected_cost": 7548,
+      "geometry_cost": 8247,
+      "geometry_advantage": -699
+    }
+  ],
+  "diagnosis": "SELECTION_OBJECTIVE_OR_VALUE_EVIDENCE_RESIDUAL",
+  "gates": {
+    "complete_grammar_enumeration": true,
+    "geometry_coefficients_in_grammar": true,
+    "behavioral_representative_exists": true,
+    "selected_policy_training_preferred": true,
+    "geometry_heldout_preferred": true,
+    "nonempty_decision_residual": true
+  },
+  "snapshot_digest": "93957071ba0fed5c3c1d8917e92058826ff7092fd4f616bdd4d93a4b87a812b3",
+  "not_established": [
+    "improved value estimator",
+    "natural-world policy induction",
+    "open-ended retention policy genesis"
+  ]
+}
