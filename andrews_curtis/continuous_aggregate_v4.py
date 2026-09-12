@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import argparse,ast,json,re,sys,time
 from datetime import datetime, timezone
+from urllib.parse import quote
 from pathlib import Path
 
 INV=(0,1,3,2,5,4,7,6,9,8,11,10,13,12)
@@ -107,13 +108,29 @@ def main():
     if not (200<=st<300): raise RuntimeError(f"submission-spec HTTP {st}: {spec}")
     mt,_,mine=api("GET","/competitions/acc/submissions/mine")
     if not (200<=mt<300): raise RuntimeError(f"submissions/mine HTTP {mt}: {mine}")
+
+    # Follow the submission-history cursor so quota accounting remains exact
+    # after the team has more history than fits on one response page.
+    mine_pages=[mine]
+    mine_data=mine.get("data",mine) if isinstance(mine,dict) else {}
+    mine_items=list(mine_data.get("items",[])) if isinstance(mine_data,dict) else []
+    cursor=mine_data.get("nextCursor") if isinstance(mine_data,dict) else None
+    seen_cursors=set()
+    while cursor and cursor not in seen_cursors and len(mine_pages)<20:
+        seen_cursors.add(cursor)
+        pt,_,page=api("GET","/competitions/acc/submissions/mine?cursor="+quote(str(cursor),safe=""))
+        if not (200<=pt<300):
+            raise RuntimeError(f"submissions/mine pagination HTTP {pt}: {page}")
+        mine_pages.append(page)
+        pd=page.get("data",page) if isinstance(page,dict) else {}
+        mine_items.extend(pd.get("items",[]) if isinstance(pd,dict) else [])
+        cursor=pd.get("nextCursor") if isinstance(pd,dict) else None
+
     (out/"submission_spec.json").write_text(json.dumps(spec,indent=2,sort_keys=True)+"\n")
-    (out/"submissions_mine_pre.json").write_text(json.dumps(mine,indent=2,sort_keys=True)+"\n")
+    (out/"submissions_mine_pre.json").write_text(json.dumps({"pages":mine_pages,"items":mine_items},indent=2,sort_keys=True)+"\n")
 
     spec_data=spec.get("data",spec) if isinstance(spec,dict) else {}
     daily_limit=int(((spec_data.get("limits") or {}).get("dailySubmissions")) or 40)
-    mine_data=mine.get("data",mine) if isinstance(mine,dict) else {}
-    mine_items=mine_data.get("items",[]) if isinstance(mine_data,dict) else []
     utc_today=datetime.now(timezone.utc).date().isoformat()
     used_today=0
     for sub in mine_items:
