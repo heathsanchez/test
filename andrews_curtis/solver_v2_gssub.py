@@ -37,6 +37,7 @@ def parse_args():
     p.add_argument("--out-dir", default="andrews_curtis/out_v2")
     p.add_argument("--max-targets", type=int, default=180)
     p.add_argument("--target-ids-file", default=None)
+    p.add_argument("--include-solved", action="store_true")
     p.add_argument("--max-nodes", type=int, default=10000)
     p.add_argument("--max-quotient-total", type=int, default=100)
     p.add_argument("--reverse-depth", type=int, default=7)
@@ -408,7 +409,11 @@ def main():
         requested = [x["challenge_id"] if isinstance(x, dict) else str(x) for x in raw]
         targets = [
             ac_by_id[cid] for cid in requested
-            if cid in ac_by_id and ac_live.get(cid, {}).get("status") == "unsolved"
+            if cid in ac_by_id
+            and (
+                args.include_solved
+                or ac_live.get(cid, {}).get("status") == "unsolved"
+            )
         ][: args.max_targets]
     else:
         targets = unsolved[: args.max_targets]
@@ -454,8 +459,12 @@ def main():
         else:
             quotient_path, nodes = found[:2]
 
+        live_row = ac_live.get(cid, {})
         rec = {
             "challenge_id": cid,
+            "live_status": live_row.get("status"),
+            "live_best": live_row.get("currentBestLength"),
+            "live_k_teams": live_row.get("kTeams"),
             "initial_total": initial_total,
             "max_nodes": args.max_nodes,
             "quotient_total_cap": qcap,
