@@ -1,0 +1,138 @@
+name: ACC Public Current Audit
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-public-current-audit.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen pre-collapse snapshot
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/old
+          gh api repos/heathsanchez/test/actions/artifacts/10291997930/zip > /tmp/old.zip
+          unzip -q /tmp/old.zip -d /tmp/old
+
+      - name: Audit current public board and challenge frontier
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/current_audit
+          python3 - <<'PY'
+          import urllib.request,json,pathlib,statistics,math
+          BASE='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/current_audit')
+
+          def get(path):
+              req=urllib.request.Request(BASE+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  raw=r.read().decode()
+              return json.loads(raw)
+
+          def data(o): return o.get('data',o)
+          def snapmap(o): return {x['challengeId']:x for x in data(o)['items']}
+
+          boards={}
+          snaps={}
+          for problem in ('ac','stable_ac'):
+              boards[problem]=get('/api/acc/leaderboard?problem='+problem)
+              snaps[problem]=get('/api/acc/discoveries/snapshot?problem='+problem)
+              (out/f'leaderboard_{problem}.json').write_text(json.dumps(boards[problem],indent=2,sort_keys=True)+'\n')
+              (out/f'snapshot_{problem}.json').write_text(json.dumps(snaps[problem],indent=2,sort_keys=True)+'\n')
+
+          teamid='teamv2_0bcc0432f4d0471c92874fa374467b2e'
+          current_team={}
+          for problem in ('ac','stable_ac'):
+              bd=data(boards[problem])
+              row=next(x for x in bd['items'] if x['team']['teamId']==teamid)
+              current_team[problem]={'rank':row['rank'],'score':row['score'],'count':row['currentBestCount'],
+                                     'generatedAt':bd.get('generatedAt'),'snapshotId':bd.get('snapshotId')}
+
+          # Current scoring challenges for MathGraph are small enough for one page.
+          scoring={}
+          import urllib.parse
+          for problem in ('ac','stable_ac'):
+              sid=current_team[problem]['snapshotId']
+              qs=urllib.parse.urlencode({'problem':problem,'snapshotId':sid})
+              obj=get('/api/acc/leaderboard/teams/'+urllib.parse.quote(teamid,safe='')+'/challenges?'+qs)
+              scoring[problem]=data(obj).get('items',[])
+          (out/'mathgraph_scoring.json').write_text(json.dumps(scoring,indent=2,sort_keys=True)+'\n')
+
+          # Compare current AC frontier with last authoritative frozen snapshot.
+          old_path=next(pathlib.Path('/tmp/old').rglob('snapshot_ac.json'))
+          old=snapmap(json.loads(old_path.read_text()))
+          cur=snapmap(snaps['ac'])
+          changes=[]
+          ratios=[]
+          for cid,n in cur.items():
+              o=old.get(cid)
+              if not o: continue
+              ob=o.get('currentBestLength'); nb=n.get('currentBestLength')
+              if isinstance(ob,int) and isinstance(nb,int) and nb<ob:
+                  ratio=nb/ob
+                  ratios.append(ratio)
+                  changes.append({'challenge_id':cid,'old_best':ob,'new_best':nb,'ratio':ratio,
+                                  'saved':ob-nb,'old_k':o.get('kTeams'),'new_k':n.get('kTeams')})
+          changes.sort(key=lambda x:x['ratio'])
+          (out/'overnight_shortening.json').write_text(json.dumps(changes,indent=2,sort_keys=True)+'\n')
+
+          # Prepared queue viability.
+          manifest=json.loads(pathlib.Path('acc_competitive/PREPARED_RESET_MANIFEST_2026-09-12.json').read_text())
+          prepared=[]
+          for x in manifest['pending_acquisitions']:
+              cid=x['challenge_id']; row=cur[cid]; best=row.get('currentBestLength')
+              prepared.append({**x,'current_best':best,'current_kTeams':row.get('kTeams'),
+                               'still_strict_win':row.get('status')=='unsolved' or (isinstance(best,int) and x['candidate_length']<best),
+                               'gap_vs_current':None if not isinstance(best,int) else x['candidate_length']-best})
+          (out/'prepared_viability.json').write_text(json.dumps(prepared,indent=2,sort_keys=True)+'\n')
+
+          # Top-team summary.
+          top={}
+          for problem in ('ac','stable_ac'):
+              top[problem]=[{'rank':x['rank'],'team':x['team'].get('teamName'),'teamId':x['team'].get('teamId'),
+                             'score':x['score'],'count':x['currentBestCount']} for x in data(boards[problem])['items'][:12]]
+
+          def q(v,p):
+              if not v:return None
+              v=sorted(v); idx=min(len(v)-1,max(0,round((len(v)-1)*p)))
+              return v[idx]
+          report={
+            'current_mathgraph':current_team,
+            'mathgraph_scoring_challenges':scoring,
+            'prepared_still_winning':sum(x['still_strict_win'] for x in prepared),
+            'prepared_total':len(prepared),
+            'prepared':prepared,
+            'ac_records_shortened_since_frozen':len(changes),
+            'ac_shortening_ratio_quantiles':{
+              'p10':q(ratios,.1),'p25':q(ratios,.25),'median':q(ratios,.5),'p75':q(ratios,.75),'p90':q(ratios,.9)
+            },
+            'top12':top,
+            'largest_shortening_examples':changes[:30],
+          }
+          (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('CURRENT_AUDIT',json.dumps(report,sort_keys=True))
+          PY
+
+      - name: Upload audit
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-public-current-audit
+          path: acc_competitive/current_audit/
+          retention-days: 90
