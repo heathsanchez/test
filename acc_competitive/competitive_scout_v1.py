@@ -94,6 +94,8 @@ def main():
     p.add_argument("--prev-leaderboard-stable")
     p.add_argument("--known-failures")
     p.add_argument("--known-successes")
+    p.add_argument("--competitive-wins")
+    p.add_argument("--competitive-attempted")
     p.add_argument("--attack-count",type=int,default=64)
     p.add_argument("--defend-fraction",type=float,default=0.20)
     p.add_argument("--shards",type=int,default=8)
@@ -166,34 +168,49 @@ def main():
     keys=list(next(iter(fmap.values())).keys())
     mu,sd=zstats(fmap,keys)
 
+    # Competitive labels must mean "strictly beat the current record", not
+    # merely "the solver found some verified path". The older checkpoint 21/21
+    # result is valuable capability evidence but no longer a positive scoring
+    # label because many of those paths are now noncompetitive.
+    competitive_wins=[]
+    competitive_attempted=[]
+    seed_wins=ROOT/"acc_competitive/competitive_wins_seed_v1.json"
+    seed_attempted=ROOT/"acc_competitive/competitive_attempted_seed_v1.json"
+    if seed_wins.exists():
+        raw=json.loads(seed_wins.read_text())
+        competitive_wins += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    if seed_attempted.exists():
+        raw=json.loads(seed_attempted.read_text())
+        competitive_attempted += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    if a.competitive_wins and Path(a.competitive_wins).exists():
+        raw=json.loads(Path(a.competitive_wins).read_text())
+        competitive_wins += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    if a.competitive_attempted and Path(a.competitive_attempted).exists():
+        raw=json.loads(Path(a.competitive_attempted).read_text())
+        competitive_attempted += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    competitive_wins=list(dict.fromkeys(competitive_wins))
+    competitive_attempted=list(dict.fromkeys(competitive_attempted))
+    winset=set(competitive_wins)
+    competitive_nonwins=[x for x in competitive_attempted if x not in winset]
+
+    # Keep legacy files in evidence for auditability, but do not let them drive
+    # the competitive selector.
     known_success=[]
-    kp=ROOT/"andrews_curtis/checkpoint_residual_v2.json"
-    if kp.exists():
-        raw=json.loads(kp.read_text())
-        known_success=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
     if a.known_successes and Path(a.known_successes).exists():
         raw=json.loads(Path(a.known_successes).read_text())
-        known_success += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
-    static_success=ROOT/"acc_competitive/recovered_cycle2_successes.json"
-    if static_success.exists():
-        raw=json.loads(static_success.read_text())
-        known_success += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
-    known_success=list(dict.fromkeys(known_success))
+        known_success=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
     known_fail=[]
     if a.known_failures and Path(a.known_failures).exists():
         raw=json.loads(Path(a.known_failures).read_text())
         known_fail=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
-    static_fail=ROOT/"acc_competitive/recovered_cycle2_failures.json"
-    if static_fail.exists():
-        raw=json.loads(static_fail.read_text())
-        known_fail += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
-    known_fail=list(dict.fromkeys(known_fail))
-    ss=set(known_success)
-    known_fail=[x for x in known_fail if x not in ss]
 
     save(out/"known_successes_input.json",known_success)
     save(out/"known_failures_input.json",known_fail)
-    success_mean=means(known_success,fmap,keys); fail_mean=means(known_fail,fmap,keys)
+    save(out/"competitive_wins_input.json",competitive_wins)
+    save(out/"competitive_attempted_input.json",competitive_attempted)
+    save(out/"competitive_nonwins_input.json",competitive_nonwins)
+    success_mean=means(competitive_wins,fmap,keys)
+    fail_mean=means(competitive_nonwins,fmap,keys)
     positive_events=[e["challenge_id"] for e in events if e["kind"] in ("new_solve","shortened")]
     # Unchanged controls are evidence of no public movement in this interval, not certified failures.
     unchanged=[cid for cid,row in ac.items() if cid in prev_ac and row.get("currentBestLength")==prev_ac[cid].get("currentBestLength") and row.get("status")=="solved"]
@@ -203,7 +220,7 @@ def main():
     for k in keys:
         sep.append({
           "feature":k,
-          "mathgraph_success_minus_failure_sd":(success_mean[k]-fail_mean[k])/sd[k] if known_success and known_fail else None,
+          "mathgraph_success_minus_failure_sd":(success_mean[k]-fail_mean[k])/sd[k] if competitive_wins and competitive_nonwins else None,
           "public_moved_minus_unchanged_sd":(event_mean[k]-unchanged_mean[k])/sd[k] if positive_events and unchanged else None,
         })
     sep.sort(key=lambda x:max(abs(x["mathgraph_success_minus_failure_sd"] or 0),abs(x["public_moved_minus_unchanged_sd"] or 0)),reverse=True)
@@ -222,13 +239,22 @@ def main():
         # A just-submitted path can be ahead of a lagging public snapshot.
         # Do not waste a second acquisition search until the board catches up.
         if status=="ahead_unpublished": continue
-        cap=contrast_score(cid,fmap,keys,mu,sd,success_mean,fail_mean) if known_success and known_fail else 0.0
+        # Same solver + same cap is deterministic here. Re-running an already
+        # attempted acquisition cannot improve the path unless the mechanism
+        # changes, so spend compute on a fresh record instead.
+        if cid in set(competitive_attempted) and status!="unique_hold":
+            continue
+        cap=contrast_score(cid,fmap,keys,mu,sd,success_mean,fail_mean) if competitive_wins and competitive_nonwins else 0.0
         mov=contrast_score(cid,fmap,keys,mu,sd,event_mean,unchanged_mean) if positive_events and unchanged else 0.0
         value=(2.0 if k==1 else 1.0/(2**max(0,(k or 1)-1)))
         length_score=math.log1p(best)
         lost_bonus=1.5 if status=="lost" else 0.0
         recent_bonus=0.8 if cid in event_set else 0.0
         if status=="unique_hold":
+            # Re-running the same deterministic GS-Sub engine on our own record
+            # just rediscovers the same certificate. Leave defense to a distinct
+            # shortening engine; do not spend acquisition compute here.
+            continue
             # Defense does not add a point immediately, but a shorter owned
             # record increases survival probability. Prefer large/slack-looking
             # records in regions where our shortening mechanism has worked.
@@ -279,6 +305,9 @@ def main():
       "mathgraph_lost":sum(x["status"]=="lost" for x in ours_status),
       "known_success_cases":len(known_success),
       "known_failure_cases":len(known_fail),
+      "competitive_win_cases":len(competitive_wins),
+      "competitive_attempted_cases":len(competitive_attempted),
+      "competitive_nonwin_cases":len(competitive_nonwins),
       "attack_candidates":len(candidates),
       "selected_targets":len(selected),
       "selected_acquire":sum(x.get("mode")=="acquire" for x in selected),
