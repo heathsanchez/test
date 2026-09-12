@@ -179,6 +179,8 @@ def main():
         raw=json.loads(Path(a.known_failures).read_text())
         known_fail=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
 
+    save(out/"known_successes_input.json",known_success)
+    save(out/"known_failures_input.json",known_fail)
     success_mean=means(known_success,fmap,keys); fail_mean=means(known_fail,fmap,keys)
     positive_events=[e["challenge_id"] for e in events if e["kind"] in ("new_solve","shortened")]
     # Unchanged controls are evidence of no public movement in this interval, not certified failures.
