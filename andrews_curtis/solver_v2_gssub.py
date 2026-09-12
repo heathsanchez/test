@@ -356,17 +356,23 @@ def submit_batch(text):
     for attempt in range(1, 61):
         st, hdr, got = api("GET", f"/competitions/acc/submissions/{sid}")
         polls.append({"attempt": attempt, "http_status": st, "body": got})
+        retry = hdr.get("Retry-After") or hdr.get("retry-after")
+        try:
+            delay = max(2, min(30, int(retry))) if retry else 5
+        except Exception:
+            delay = 5
+        # Polling is read-only and SAIR's independent verifier can transiently
+        # return 429/5xx after the POST has already been accepted. Never turn
+        # that into a duplicate re-submission; wait and poll the same sid.
+        if st == 429 or st in (500, 502, 503, 504):
+            time.sleep(delay)
+            continue
         if not (200 <= st < 300):
             raise RuntimeError(f"poll HTTP {st}: {got}")
         state = str(data_obj(got).get("status", "")).lower()
         if state in ("complete", "completed", "failed", "error", "rejected"):
             final = got
             break
-        retry = hdr.get("Retry-After") or hdr.get("retry-after")
-        try:
-            delay = max(2, min(20, int(retry))) if retry else 5
-        except Exception:
-            delay = 5
         time.sleep(delay)
     if final is None:
         raise RuntimeError("submission did not reach terminal state")
