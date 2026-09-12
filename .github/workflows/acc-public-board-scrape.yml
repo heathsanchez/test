@@ -63,11 +63,10 @@ jobs:
           import urllib.request,re,json,html as H
           base='https://competition.sair.foundation'
           doc=open('/tmp/competitions.html').read()
-          links=sorted(set(re.findall(r'href=["\']([^"\']+)["\']',doc)))
-          cands=[x for x in links if 'curtis' in x.lower() or '/acc' in x.lower()]
+          cands=['/competitions/acc']
           for x in cands:
               root=x.rstrip('/')
-              for suffix in ('/leaderboard',''):
+              for suffix in ('/leaderboard','/overview',''):
                   url=base+root+suffix
                   try:
                       req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36','Accept':'text/html,application/xhtml+xml'})
