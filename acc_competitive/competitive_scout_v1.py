@@ -93,6 +93,7 @@ def main():
     p.add_argument("--prev-leaderboard-ac")
     p.add_argument("--prev-leaderboard-stable")
     p.add_argument("--known-failures")
+    p.add_argument("--known-successes")
     p.add_argument("--attack-count",type=int,default=64)
     p.add_argument("--shards",type=int,default=8)
     a=p.parse_args()
@@ -169,6 +170,10 @@ def main():
     if kp.exists():
         raw=json.loads(kp.read_text())
         known_success=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    if a.known_successes and Path(a.known_successes).exists():
+        raw=json.loads(Path(a.known_successes).read_text())
+        known_success += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    known_success=list(dict.fromkeys(known_success))
     known_fail=[]
     if a.known_failures and Path(a.known_failures).exists():
         raw=json.loads(Path(a.known_failures).read_text())
