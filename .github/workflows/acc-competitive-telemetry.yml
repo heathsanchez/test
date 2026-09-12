@@ -2,7 +2,7 @@ name: ACC Competitive Telemetry
 
 on:
   schedule:
-    - cron: "*/15 * * * *"
+    - cron: "7 */6 * * *"
   workflow_dispatch:
   push:
     branches:
