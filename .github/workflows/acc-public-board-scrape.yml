@@ -93,7 +93,7 @@ jobs:
           import urllib.request,json
           H={'User-Agent':'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/126 Safari/537.36','Accept':'application/json'}
           for problem in ('ac','stable_ac'):
-              url=f'https://competition.sair.foundation/api/public/v1/competitions/acc/leaderboard?problem={problem}'
+              url=f'https://competition.sair.foundation/api/acc/leaderboard?problem={problem}'
               req=urllib.request.Request(url,headers=H)
               try:
                   with urllib.request.urlopen(req,timeout=30) as r:
