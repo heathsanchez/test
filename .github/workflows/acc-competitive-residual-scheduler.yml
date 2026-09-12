@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: "17,47 * * * *"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/acc-competitive-residual-scheduler.yml"
 
 permissions:
   contents: read
