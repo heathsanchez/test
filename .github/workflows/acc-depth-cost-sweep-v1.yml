@@ -10,6 +10,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   sweep:
@@ -26,11 +27,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
-      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
+      - name: Recover frozen competition snapshot
+        run: |
+          mkdir -p /tmp/scout
+          gh api repos/heathsanchez/test/actions/artifacts/10291997930/zip > /tmp/scout.zip
+          unzip -q /tmp/scout.zip -d /tmp/scout
+
       - name: Fetch pinned repositories
         run: |
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
@@ -47,12 +54,17 @@ jobs:
         run: |
           set -o pipefail
           TAG="${{ matrix.target }}-w${{ matrix.depth_weight }}"
+          AC_SNAP="$(find /tmp/scout -name snapshot_ac.json | head -1)"
+          ST_SNAP="$(find /tmp/scout -name snapshot_stable.json | head -1)"
           python3 andrews_curtis/solver_v2_gssub.py \
             --acc-root /tmp/acc \
             --acsolverx-root /tmp/acsolverx \
             --out-dir "acc_competitive/out_depth_${TAG}" \
             --target-ids-file "acc_competitive/depth_sweep/${{ matrix.target }}.json" \
             --include-solved \
+            --snapshot-ac-file "$AC_SNAP" \
+            --snapshot-stable-file "$ST_SNAP" \
+            --defer-live-filter \
             --max-targets 1 \
             --max-nodes 120000 \
             --max-quotient-total 80 \
@@ -73,13 +85,13 @@ jobs:
           retention-days: 90
           if-no-files-found: warn
 
-  submit:
+  pool:
     needs: sweep
     if: always() && needs.sweep.result != 'cancelled'
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 15
     env:
-      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,26 +101,33 @@ jobs:
           pattern: acc-depth-*
           path: acc_competitive/depth_downloads
           merge-multiple: false
+      - name: Recover frozen snapshots
+        run: |
+          mkdir -p /tmp/scout
+          gh api repos/heathsanchez/test/actions/artifacts/10291997930/zip > /tmp/scout.zip
+          unzip -q /tmp/scout.zip -d /tmp/scout
       - name: Fetch pinned official verifier
         run: |
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
-      - name: Live-filter best depth-cost records
+      - name: Pool verifier-clean depth-cost candidates offline
         run: |
-          set -o pipefail
-          python3 andrews_curtis/continuous_aggregate_v4.py \
+          AC_SNAP="$(find /tmp/scout -name snapshot_ac.json | head -1)"
+          ST_SNAP="$(find /tmp/scout -name snapshot_stable.json | head -1)"
+          python3 acc_competitive/offline_candidate_pool_v1.py \
             --acc-root /tmp/acc \
             --glob 'acc_competitive/depth_downloads/**/submission_v2.txt' \
-            --out-dir acc_competitive/depth_sweep_aggregate \
-            --cycle 1 \
-            | tee acc_competitive/depth_sweep_aggregate.log
+            --snapshot-ac "$AC_SNAP" \
+            --snapshot-stable "$ST_SNAP" \
+            --out-dir acc_competitive/depth_sweep_pool \
+            | tee acc_competitive/depth_sweep_pool.log
       - name: Upload authority
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: acc-depth-cost-sweep-v1
           path: |
-            acc_competitive/depth_sweep_aggregate/
-            acc_competitive/depth_sweep_aggregate.log
+            acc_competitive/depth_sweep_pool/
+            acc_competitive/depth_sweep_pool.log
           retention-days: 90
           if-no-files-found: warn
