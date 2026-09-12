@@ -2,7 +2,7 @@ name: ACC Competitive Residual Scheduler
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17,47 * * * *"
   workflow_dispatch:
 
 permissions:
