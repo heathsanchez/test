@@ -1,0 +1,271 @@
+name: ACC Competitive Residual V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-competitive-residual-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-competitive-residual-v1
+  cancel-in-progress: false
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout competitive branch
+        uses: actions/checkout@v4
+
+      - name: Fetch pinned official ACC
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Recover prior competitive state or bootstrap evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/prior /tmp/bootstrap
+          PRIOR_ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-competitive-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          if [ -n "$PRIOR_ID" ]; then
+            echo "Using prior competitive state artifact $PRIOR_ID"
+            gh api "repos/heathsanchez/test/actions/artifacts/$PRIOR_ID/zip" > /tmp/prior.zip
+            unzip -q /tmp/prior.zip -d /tmp/prior
+          else
+            echo "Bootstrapping from prior ACC evidence"
+            gh api repos/heathsanchez/test/actions/artifacts/10289383464/zip > /tmp/prevcycle.zip
+            unzip -q /tmp/prevcycle.zip -d /tmp/bootstrap/prevcycle
+            gh api repos/heathsanchez/test/actions/artifacts/10289670991/zip > /tmp/prevstanding.zip
+            unzip -q /tmp/prevstanding.zip -d /tmp/bootstrap/prevstanding
+            gh api repos/heathsanchez/test/actions/artifacts/10278974139/zip > /tmp/generic.zip
+            unzip -q /tmp/generic.zip -d /tmp/bootstrap/generic
+            python3 - <<'PY'
+          import json,glob,pathlib
+          fs=glob.glob('/tmp/bootstrap/generic/**/search_results.json',recursive=True)
+          out=[]
+          if fs:
+              for r in json.load(open(fs[0])):
+                  cid=r.get('challenge_id')
+                  if cid and not ((r.get('ac_verdict') or {}).get('ok') is True):
+                      out.append(cid)
+          pathlib.Path('/tmp/bootstrap/known_failures.json').write_text(json.dumps(list(dict.fromkeys(out)),indent=2)+'\n')
+          print('BOOTSTRAP_FAILURES',len(out))
+          PY
+          fi
+
+      - name: Map competition residual and rank record-steal targets
+        run: |
+          set -euo pipefail
+          PREV_AC="$(find /tmp/prior /tmp/bootstrap -name 'snapshot_ac.json' -o -name 'snapshot_ac_pre.json' 2>/dev/null | head -1 || true)"
+          PREV_STABLE="$(find /tmp/prior /tmp/bootstrap -name 'snapshot_stable.json' -o -name 'snapshot_stable_pre.json' 2>/dev/null | head -1 || true)"
+          PREV_LBA="$(find /tmp/prior -name 'leaderboard_ac.json' 2>/dev/null | head -1 || true)"
+          PREV_LBS="$(find /tmp/prior -name 'leaderboard_stable.json' 2>/dev/null | head -1 || true)"
+          if [ -z "$PREV_LBA" ]; then PREV_LBA="$(find /tmp/bootstrap/prevstanding -name 'ac_*.json' | sort | tail -1 || true)"; fi
+          if [ -z "$PREV_LBS" ]; then PREV_LBS="$(find /tmp/bootstrap/prevstanding -name 'stable_ac_*.json' | sort | tail -1 || true)"; fi
+          KS="$(find /tmp/prior -name 'known_successes.json' 2>/dev/null | head -1 || true)"
+          KF="$(find /tmp/prior -name 'known_failures.json' 2>/dev/null | head -1 || true)"
+          if [ -z "$KF" ] && [ -f /tmp/bootstrap/known_failures.json ]; then KF=/tmp/bootstrap/known_failures.json; fi
+
+          ARGS=(--acc-root /tmp/acc --out-dir acc_competitive/scout_out --attack-count 64 --shards 8)
+          [ -n "$PREV_AC" ] && ARGS+=(--prev-ac "$PREV_AC")
+          [ -n "$PREV_STABLE" ] && ARGS+=(--prev-stable "$PREV_STABLE")
+          [ -n "$PREV_LBA" ] && ARGS+=(--prev-leaderboard-ac "$PREV_LBA")
+          [ -n "$PREV_LBS" ] && ARGS+=(--prev-leaderboard-stable "$PREV_LBS")
+          [ -n "$KS" ] && ARGS+=(--known-successes "$KS")
+          [ -n "$KF" ] && ARGS+=(--known-failures "$KF")
+
+          python3 acc_competitive/competitive_scout_v1.py "${ARGS[@]}" | tee acc_competitive/scout.log
+
+      - name: Upload scout evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-scout
+          path: |
+            acc_competitive/scout_out/
+            acc_competitive/scout.log
+          retention-days: 90
+
+  attack:
+    needs: scout
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Checkout competitive branch
+        uses: actions/checkout@v4
+
+      - name: Download scout
+        uses: actions/download-artifact@v4
+        with:
+          name: acc-competitive-scout
+          path: /tmp/scout
+
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Install GS-Sub runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+
+      - name: Attack score-aware solved records
+        run: |
+          set -euo pipefail
+          TARGET="$(find /tmp/scout -name 'shard_${{ matrix.shard }}.json' | head -1)"
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir acc_competitive/out_attack_${{ matrix.shard }} \
+            --target-ids-file "$TARGET" \
+            --include-solved \
+            --max-targets 8 \
+            --max-nodes 120000 \
+            --max-quotient-total 80 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --search-seconds 1400 \
+            | tee acc_competitive/attack_${{ matrix.shard }}.log
+
+      - name: Upload attack evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-attack-${{ matrix.shard }}
+          path: |
+            acc_competitive/out_attack_${{ matrix.shard }}/
+            acc_competitive/attack_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  aggregate:
+    needs: attack
+    if: always() && needs.attack.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Checkout competitive branch
+        uses: actions/checkout@v4
+
+      - name: Download scout and attacks
+        uses: actions/download-artifact@v4
+        with:
+          pattern: acc-competitive-*
+          path: acc_competitive/downloads
+          merge-multiple: false
+
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Compress, verify, live-filter, and submit competitive rows
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/downloads/**/submission_v2.txt' \
+            --out-dir acc_competitive/aggregate_out \
+            --cycle "${GITHUB_RUN_NUMBER}" \
+            | tee acc_competitive/aggregate.log
+
+      - name: Compile attack outcomes into next-cycle residual
+        run: |
+          set -euo pipefail
+          SELECTED="$(find acc_competitive/downloads -name selected_targets.json | head -1)"
+          PRIOR_S="$(find acc_competitive/downloads -name known_successes_input.json | head -1)"
+          PRIOR_F="$(find acc_competitive/downloads -name known_failures_input.json | head -1)"
+          python3 acc_competitive/competitive_outcome_v1.py \
+            --selected "$SELECTED" \
+            --glob 'acc_competitive/downloads/**/search_results.json' \
+            --out-dir acc_competitive/outcome_out \
+            --prior-successes "$PRIOR_S" \
+            --prior-failures "$PRIOR_F" \
+            | tee acc_competitive/outcome.log
+
+      - name: Assemble persistent competitive state
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/state
+          SCOUTDIR="$(dirname "$(find acc_competitive/downloads -name snapshot_ac.json | head -1)")"
+          cp "$SCOUTDIR/snapshot_ac.json" acc_competitive/state/
+          cp "$SCOUTDIR/snapshot_stable.json" acc_competitive/state/
+          cp "$SCOUTDIR/leaderboard_ac.json" acc_competitive/state/
+          cp "$SCOUTDIR/leaderboard_stable.json" acc_competitive/state/
+          cp "$SCOUTDIR/report.json" acc_competitive/state/scout_report.json
+          cp "$SCOUTDIR/record_events.json" acc_competitive/state/
+          cp "$SCOUTDIR/contestant_deltas.json" acc_competitive/state/
+          cp "$SCOUTDIR/attack_ranking.json" acc_competitive/state/
+          cp acc_competitive/outcome_out/known_successes.json acc_competitive/state/
+          cp acc_competitive/outcome_out/known_failures.json acc_competitive/state/
+          cp acc_competitive/outcome_out/attack_outcomes.json acc_competitive/state/
+          cp acc_competitive/outcome_out/outcome_report.json acc_competitive/state/
+          cp acc_competitive/aggregate_out/report.json acc_competitive/state/submission_report.json
+
+      - name: Summary
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json,pathlib
+          sp=pathlib.Path('acc_competitive/state/scout_report.json')
+          op=pathlib.Path('acc_competitive/state/outcome_report.json')
+          sub=pathlib.Path('acc_competitive/state/submission_report.json')
+          print('# ACC Competitive Residual V1')
+          if sp.exists():
+              d=json.loads(sp.read_text())
+              print(f"- Public record events: **{d['public_record_events']}**")
+              print(f"- MathGraph current unique / tied / lost: **{d['mathgraph_current_unique']} / {d['mathgraph_current_tied']} / {d['mathgraph_lost']}**")
+              print(f"- Selected score-aware record attacks: **{d['selected_targets']}**")
+          if op.exists():
+              d=json.loads(op.read_text())
+              print(f"- Strict improvements: **{d['strict_improvements']}**")
+              print(f"- Ties: **{d['ties']}**")
+              print(f"- Verified but noncompetitive: **{d['verified_noncompetitive']}**")
+              print(f"- Search failures: **{d['search_failures']}**")
+          if sub.exists():
+              d=json.loads(sub.read_text())
+              print(f"- Submitted rows: **{d['selected_rows']}**")
+              print(f"- Submission ID: **{d.get('submission_id')}**")
+          PY
+
+      - name: Upload persistent competitive state
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-state
+          path: acc_competitive/state/
+          retention-days: 90
+          if-no-files-found: warn
+
+      - name: Upload full cycle authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-competitive-cycle-${{ github.run_number }}
+          path: |
+            acc_competitive/aggregate_out/
+            acc_competitive/outcome_out/
+            acc_competitive/aggregate.log
+            acc_competitive/outcome.log
+          retention-days: 90
+          if-no-files-found: warn
