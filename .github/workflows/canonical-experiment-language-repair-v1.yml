@@ -1,0 +1,39 @@
+name: Canonical Experiment Language Repair V1
+on: {workflow_dispatch: {}, push: {branches: [canonical-experiment-language-repair-v1]}}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Exhaust canonical repair boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/canonical_experiment_language_repair_v1/run.py | tee /tmp/evidence.json
+          grep -Eq 'CANONICAL_REPAIR|MULTIPLE_MINIMAL_REPAIRS|NO_REPAIR_IN_META_SUBSTRATE' /tmp/evidence.json
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check incomparable repair witnesses
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean experiments/canonical_experiment_language_repair_v1/CanonicalRepair.lean 2>&1 | tee /tmp/lean.log
+          ! grep -q sorry /tmp/lean.log
+      - name: Seal evidence
+        shell: bash
+        run: |
+          cd experiments/canonical_experiment_language_repair_v1
+          sha256sum PROTOCOL.md RESULTS.md CanonicalRepair.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/evidence.json results/workflow-evidence.json
+          cp /tmp/lean.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-experiment-language-repair-v1
+          path: experiments/canonical_experiment_language_repair_v1/results
+          retention-days: 90
