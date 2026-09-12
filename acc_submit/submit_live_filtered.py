@@ -167,10 +167,13 @@ for cid,moves,line in rows:
         rec["decision"]="submit"
         rec["reason"]="currently_unsolved"
         selected.append(line)
-    elif state=="solved" and len(moves) <= best:
+    elif state=="solved" and len(moves) < best:
         rec["decision"]="submit"
-        rec["reason"]="tie_or_improve"
+        rec["reason"]="strict_improvement"
         selected.append(line)
+    elif state=="solved" and len(moves) == best:
+        rec["decision"]="skip"
+        rec["reason"]="tie_not_a_strict_steal"
     elif state=="solved":
         rec["decision"]="skip"
         rec["reason"]="longer_than_live_best"
@@ -190,8 +193,9 @@ summary={
     "selected_stable_ac":sum(1 for x in selected if x.startswith("sac-")),
     "unknown_schema_rows":sum(1 for x in comparison if x["reason"]=="fail_closed_unknown_snapshot_schema"),
     "longer_rows":sum(1 for x in comparison if x["reason"]=="longer_than_live_best"),
+    "tie_rows":sum(1 for x in comparison if x["reason"]=="tie_not_a_strict_steal"),
     "unsolved_rows":sum(1 for x in comparison if x["reason"]=="currently_unsolved"),
-    "tie_or_improve_rows":sum(1 for x in comparison if x["reason"]=="tie_or_improve"),
+    "strict_improvement_rows":sum(1 for x in comparison if x["reason"]=="strict_improvement"),
 }
 save("pre_submit_summary.json", summary)
 print("PRE_SUBMIT", json.dumps(summary, sort_keys=True), flush=True)
@@ -201,7 +205,7 @@ if not selected:
     raise SystemExit(0)
 
 # 3. Submit one filtered batch.
-payload={"payload":{"text":filtered},"meta":{"description":"MathGraph ACC V1: locally replay-verified, live-frontier filtered"}}
+payload={"payload":{"text":filtered},"meta":{"description":"MathGraph ACC V1: locally replay-verified, live-frontier strict-steal filtered"}}
 status, headers, submitted = api("POST", "/competitions/acc/submissions", payload)
 save("submit_response.json", {"http_status":status,"headers":headers,"body":submitted})
 if status != 202:
