@@ -103,35 +103,42 @@ def main():
             raise RuntimeError(f"compressed candidate failed official verifier: {rec}")
         verified[cid]=(short,sid,stable)
 
-    # Capture current API policy and our submission history every cycle.
-    st,_,spec=api("GET","/competitions/acc/submission-spec")
-    if not (200<=st<300): raise RuntimeError(f"submission-spec HTTP {st}: {spec}")
+    # The current official submission spec is pinned at 40 batches/day.
+    # Do not spend an API call re-fetching an unchanged policy every cycle.
+    daily_limit=40
+    utc_today=datetime.now(timezone.utc).date().isoformat()
+
     mt,_,mine=api("GET","/competitions/acc/submissions/mine")
     if not (200<=mt<300): raise RuntimeError(f"submissions/mine HTTP {mt}: {mine}")
 
-    # Follow the submission-history cursor so quota accounting remains exact
-    # after the team has more history than fits on one response page.
+    # Follow history only while the returned page can still contain today's
+    # submissions. Once the oldest item is from an earlier UTC date, stop.
     mine_pages=[mine]
     mine_data=mine.get("data",mine) if isinstance(mine,dict) else {}
     mine_items=list(mine_data.get("items",[])) if isinstance(mine_data,dict) else []
     cursor=mine_data.get("nextCursor") if isinstance(mine_data,dict) else None
     seen_cursors=set()
-    while cursor and cursor not in seen_cursors and len(mine_pages)<20:
+    def page_may_contain_today(items):
+        stamps=[x.get("receivedAt") or x.get("updatedAt") for x in items if isinstance(x,dict)]
+        dates=[s[:10] for s in stamps if isinstance(s,str) and len(s)>=10]
+        return not dates or max(dates)>=utc_today
+    while cursor and cursor not in seen_cursors and len(mine_pages)<20 and page_may_contain_today(mine_items[-50:]):
         seen_cursors.add(cursor)
         pt,_,page=api("GET","/competitions/acc/submissions/mine?cursor="+quote(str(cursor),safe=""))
         if not (200<=pt<300):
             raise RuntimeError(f"submissions/mine pagination HTTP {pt}: {page}")
         mine_pages.append(page)
         pd=page.get("data",page) if isinstance(page,dict) else {}
-        mine_items.extend(pd.get("items",[]) if isinstance(pd,dict) else [])
+        page_items=pd.get("items",[]) if isinstance(pd,dict) else []
+        mine_items.extend(page_items)
         cursor=pd.get("nextCursor") if isinstance(pd,dict) else None
+        if not page_may_contain_today(page_items):
+            break
 
-    (out/"submission_spec.json").write_text(json.dumps(spec,indent=2,sort_keys=True)+"\n")
+    local_spec={"source":"pinned-current-spec","limits":{"dailySubmissions":daily_limit}}
+    (out/"submission_spec.json").write_text(json.dumps(local_spec,indent=2,sort_keys=True)+"\n")
     (out/"submissions_mine_pre.json").write_text(json.dumps({"pages":mine_pages,"items":mine_items},indent=2,sort_keys=True)+"\n")
 
-    spec_data=spec.get("data",spec) if isinstance(spec,dict) else {}
-    daily_limit=int(((spec_data.get("limits") or {}).get("dailySubmissions")) or 40)
-    utc_today=datetime.now(timezone.utc).date().isoformat()
     used_today=0
     for sub in mine_items:
         stamp=sub.get("receivedAt") or sub.get("updatedAt")
