@@ -14,18 +14,19 @@ permissions:
 jobs:
   map:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
 
-      - name: Fetch current dominant-team record sets
+      - name: Fetch current dominant-team AC record sets
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/dominant_map
           python3 - <<'PY'
           import urllib.request,json,urllib.parse,pathlib
+          from urllib.error import HTTPError
           B='https://server-9527.sair.foundation'
           H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
           out=pathlib.Path('acc_competitive/dominant_map')
@@ -36,31 +37,50 @@ jobs:
                   return json.loads(r.read().decode())
           def data(o): return o.get('data',o)
 
-          report={}
-          for problem in ('ac','stable_ac'):
-              lb=get('/api/acc/leaderboard?problem='+problem)
-              bd=data(lb); sid=bd['snapshotId']
-              top=bd['items'][:5]
-              teams={}
-              for row in top:
-                  tid=row['team']['teamId']
-                  qs=urllib.parse.urlencode({'problem':problem,'snapshotId':sid,'limit':5000})
-                  obj=get('/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+qs)
-                  dd=data(obj)
-                  teams[tid]={
-                    'team':row['team'].get('teamName'),
-                    'rank':row['rank'],'score':row['score'],'count':row['currentBestCount'],
-                    'returned':len(dd.get('items',[])),'totalCount':dd.get('totalCount'),
-                    'nextCursor':dd.get('nextCursor'),
-                    'items':dd.get('items',[])
-                  }
-                  print('TEAM_MAP',problem,row['rank'],row['team'].get('teamName'),len(dd.get('items',[])),dd.get('totalCount'),bool(dd.get('nextCursor')))
-              report[problem]={'generatedAt':bd.get('generatedAt'),'snapshotId':sid,'teams':teams}
-              (out/f'{problem}.json').write_text(json.dumps(report[problem],indent=2,sort_keys=True)+'\n')
+          problem='ac'
+          lb=get('/api/acc/leaderboard?problem=ac')
+          bd=data(lb); sid=bd['snapshotId']
+          top=bd['items'][:5]
+          teams={}
+          for row in top:
+              tid=row['team']['teamId']
+              items=[]; cursor=None; pages=0; total=None; page_size=100
+              while pages<250:
+                  params={'problem':problem,'snapshotId':sid,'limit':page_size}
+                  if cursor: params['cursor']=cursor
+                  qs=urllib.parse.urlencode(params)
+                  path='/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+qs
+                  try:
+                      obj=get(path)
+                  except HTTPError as e:
+                      if e.code==400 and page_size!=25:
+                          page_size=25
+                          params['limit']=page_size
+                          qs=urllib.parse.urlencode(params)
+                          path='/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+qs
+                          obj=get(path)
+                      else:
+                          raise
+                  dd=data(obj); page=dd.get('items',[])
+                  items.extend(page); total=dd.get('totalCount',total); cursor=dd.get('nextCursor'); pages+=1
+                  if not cursor: break
+              teams[tid]={
+                'team':row['team'].get('teamName'),
+                'rank':row['rank'],'score':row['score'],'count':row['currentBestCount'],
+                'returned':len(items),'totalCount':total,'pages':pages,'pageSize':page_size,
+                'items':items
+              }
+              print('TEAM_MAP',row['rank'],row['team'].get('teamName'),len(items),total,pages,page_size)
 
-          # Set relationships for AC.
-          ac=report['ac']['teams']
-          byname={v['team']:set(x['challengeId'] for x in v['items']) for v in ac.values()}
+          report={'generatedAt':bd.get('generatedAt'),'snapshotId':sid,'teams':teams}
+          (out/'ac.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+
+          byname={v['team'] or v['teamId'] if 'teamId' in v else '':set(x['challengeId'] for x in v['items']) for v in teams.values()}
+          # Fix empty-name collisions with team IDs.
+          byname={}
+          for tid,v in teams.items():
+              name=v['team'] or tid
+              byname[name]=set(x['challengeId'] for x in v['items'])
           names=list(byname)
           relations={}
           for a in names:
@@ -72,10 +92,7 @@ jobs:
                     'intersection':len(byname[a]&byname[b]),
                     'b_not_a':len(byname[b]-byname[a]),
                   }
-          summary={
-            'relations':relations,
-            'counts':{n:len(s) for n,s in byname.items()},
-          }
+          summary={'relations':relations,'counts':{n:len(s) for n,s in byname.items()}}
           (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
           print('DOMINANT_SUMMARY',json.dumps(summary,sort_keys=True))
           PY
