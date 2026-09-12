@@ -1,0 +1,108 @@
+{
+  "generated_from_frozen_snapshot": "2026-09-12T05:36:00Z",
+  "sair_api_budget": {
+    "used": 360,
+    "limit": 360,
+    "blocked_until": "2026-09-13T00:00:00Z"
+  },
+  "pending_acquisitions": [
+    {
+      "challenge_id": "ac-09679",
+      "candidate_length": 579,
+      "frozen_best": 1238,
+      "shortening_fraction": 0.5323,
+      "source": "artifact 10292442312"
+    },
+    {
+      "challenge_id": "ac-01501",
+      "candidate_length": 4360,
+      "frozen_best": 24455,
+      "shortening_fraction": 0.8217,
+      "source": "artifact 10293864140"
+    },
+    {
+      "challenge_id": "ac-09388",
+      "candidate_length": 3378,
+      "frozen_best": 30845,
+      "shortening_fraction": 0.8905,
+      "source": "artifact 10293864140"
+    },
+    {
+      "challenge_id": "ac-09633",
+      "candidate_length": 8113,
+      "frozen_best": 18408,
+      "shortening_fraction": 0.5593,
+      "source": "artifact 10293864140"
+    },
+    {
+      "challenge_id": "ac-03773",
+      "candidate_length": 9160,
+      "frozen_best": 15267,
+      "shortening_fraction": 0.4,
+      "source": "artifact 10293864140"
+    }
+  ],
+  "pending_defense": [
+    {
+      "challenge_id": "ac-02137",
+      "candidate_length": 3667,
+      "previous_mathgraph_length": 3945,
+      "frozen_best_before_mathgraph": 6278,
+      "source": "artifact 10293981383"
+    }
+  ],
+  "expected_if_frozen_records_unchanged": {
+    "new_unique_ac_points": 5,
+    "new_unique_stable_points": 5,
+    "defense_rows": 2,
+    "packed_rows_before_family_bridge": 12
+  },
+  "search_economics": {
+    "historical_win_rate_by_incumbent": [
+      {
+        "range": "<1000",
+        "win_rate": 0
+      },
+      {
+        "range": "1000-1500",
+        "win_rate": 0
+      },
+      {
+        "range": "1500-2000",
+        "win_rate": 0.0299
+      },
+      {
+        "range": "2000-3000",
+        "win_rate": 0.0323
+      },
+      {
+        "range": "3000-5000",
+        "win_rate": 0.15
+      },
+      {
+        "range": "5000-8000",
+        "win_rate": 0.6667
+      },
+      {
+        "range": "8000-20000",
+        "win_rate": 0.5238
+      },
+      {
+        "range": ">=20000",
+        "win_rate": 0.3333
+      }
+    ],
+    "high_slack_experiment": {
+      "variants_per_target_tested": 6,
+      "useful_unique_wins": 4,
+      "note": "All four best winners came from depth_weight=0, quotient_cap=100; future policy runs this baseline first and escalates only failures."
+    }
+  },
+  "policy": [
+    "No SAIR API calls before reset except the scheduled reset publisher.",
+    "Use frozen snapshots for all search and local official-verifier checks.",
+    "Run one baseline 500k/q100/depth_weight=0 attempt per high-value residual before any variants.",
+    "Escalate only cases that still fail after the baseline.",
+    "Pack all surviving candidates into one fresh live-filtered submission after reset."
+  ]
+}
