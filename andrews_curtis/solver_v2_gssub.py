@@ -618,14 +618,17 @@ def submit_batch(text):
 
     polls = []
     final = None
-    for attempt in range(1, 61):
+    # The account has a hard public-API budget. Verification usually finishes
+    # quickly, so wait before the first read rather than burning several polls.
+    time.sleep(10)
+    for attempt in range(1, 13):
         st, hdr, got = api("GET", f"/competitions/acc/submissions/{sid}")
         polls.append({"attempt": attempt, "http_status": st, "body": got})
         retry = hdr.get("Retry-After") or hdr.get("retry-after")
         try:
-            delay = max(2, min(30, int(retry))) if retry else 5
+            delay = max(5, min(30, int(retry))) if retry else 10
         except Exception:
-            delay = 5
+            delay = 10
         # Polling is read-only and SAIR's independent verifier can transiently
         # return 429/5xx after the POST has already been accepted. Never turn
         # that into a duplicate re-submission; wait and poll the same sid.
