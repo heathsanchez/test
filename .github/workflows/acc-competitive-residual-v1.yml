@@ -77,15 +77,19 @@ jobs:
           if [ -z "$PREV_LBS" ]; then PREV_LBS="$(find /tmp/bootstrap/prevstanding -name 'stable_ac_*.json' | sort | tail -1 || true)"; fi
           KS="$(find /tmp/prior -name 'known_successes.json' 2>/dev/null | head -1 || true)"
           KF="$(find /tmp/prior -name 'known_failures.json' 2>/dev/null | head -1 || true)"
+          CW="$(find /tmp/prior -name 'competitive_wins.json' 2>/dev/null | head -1 || true)"
+          CA="$(find /tmp/prior -name 'competitive_attempted.json' 2>/dev/null | head -1 || true)"
           if [ -z "$KF" ] && [ -f /tmp/bootstrap/known_failures.json ]; then KF=/tmp/bootstrap/known_failures.json; fi
 
-          ARGS=(--acc-root /tmp/acc --out-dir acc_competitive/scout_out --attack-count 128 --shards 16)
+          ARGS=(--acc-root /tmp/acc --out-dir acc_competitive/scout_out --attack-count 128 --defend-fraction 0 --shards 16)
           [ -n "$PREV_AC" ] && ARGS+=(--prev-ac "$PREV_AC")
           [ -n "$PREV_STABLE" ] && ARGS+=(--prev-stable "$PREV_STABLE")
           [ -n "$PREV_LBA" ] && ARGS+=(--prev-leaderboard-ac "$PREV_LBA")
           [ -n "$PREV_LBS" ] && ARGS+=(--prev-leaderboard-stable "$PREV_LBS")
           [ -n "$KS" ] && ARGS+=(--known-successes "$KS")
           [ -n "$KF" ] && ARGS+=(--known-failures "$KF")
+          [ -n "$CW" ] && ARGS+=(--competitive-wins "$CW")
+          [ -n "$CA" ] && ARGS+=(--competitive-attempted "$CA")
 
           python3 acc_competitive/competitive_scout_v1.py "${ARGS[@]}" | tee acc_competitive/scout.log
 
@@ -202,12 +206,16 @@ jobs:
           SELECTED="$(find acc_competitive/downloads -name selected_targets.json | head -1)"
           PRIOR_S="$(find acc_competitive/downloads -name known_successes_input.json | head -1)"
           PRIOR_F="$(find acc_competitive/downloads -name known_failures_input.json | head -1)"
+          PRIOR_W="$(find acc_competitive/downloads -name competitive_wins_input.json | head -1)"
+          PRIOR_A="$(find acc_competitive/downloads -name competitive_attempted_input.json | head -1)"
           python3 acc_competitive/competitive_outcome_v1.py \
             --selected "$SELECTED" \
             --glob 'acc_competitive/downloads/**/search_results.json' \
             --out-dir acc_competitive/outcome_out \
             --prior-successes "$PRIOR_S" \
             --prior-failures "$PRIOR_F" \
+            --prior-wins "$PRIOR_W" \
+            --prior-attempted "$PRIOR_A" \
             | tee acc_competitive/outcome.log
 
       - name: Assemble persistent competitive state
@@ -225,6 +233,9 @@ jobs:
           cp "$SCOUTDIR/attack_ranking.json" acc_competitive/state/
           cp acc_competitive/outcome_out/known_successes.json acc_competitive/state/
           cp acc_competitive/outcome_out/known_failures.json acc_competitive/state/
+          cp acc_competitive/outcome_out/competitive_wins.json acc_competitive/state/
+          cp acc_competitive/outcome_out/competitive_attempted.json acc_competitive/state/
+          cp acc_competitive/outcome_out/competitive_nonwins.json acc_competitive/state/
           cp acc_competitive/outcome_out/attack_outcomes.json acc_competitive/state/
           cp acc_competitive/outcome_out/outcome_report.json acc_competitive/state/
           cp acc_competitive/aggregate_out/report.json acc_competitive/state/submission_report.json
