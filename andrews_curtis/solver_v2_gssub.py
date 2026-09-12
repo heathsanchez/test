@@ -43,6 +43,7 @@ def parse_args():
     p.add_argument("--reverse-depth", type=int, default=7)
     p.add_argument("--reverse-cap", type=int, default=250000)
     p.add_argument("--compiler-beam", type=int, default=4)
+    p.add_argument("--depth-weight", type=float, default=0.0)
     p.add_argument("--search-seconds", type=int, default=1100)
     p.add_argument("--submit", action="store_true")
     return p.parse_args()
@@ -122,6 +123,72 @@ def load_gssub(acsolverx_root: Path):
     exec("\n\n".join(sources), ns)
     return ns
 
+
+
+def solve_depth_weighted_gssub(ns, r0, r1, max_nodes, max_len, depth_weight):
+    """
+    Best-first GS-Sub search with an explicit path-depth penalty.
+
+    ACSolverX's public greedy search prioritizes only the current total relator
+    length. For a shortest-certificate competition that can prefer very deep
+    quotient trajectories. This keeps the same public neighbor language and
+    canonicalization, but ranks a state by:
+
+        total_relator_length + depth_weight * quotient_depth
+
+    and allows a quotient state to be reopened if reached at lower depth.
+    """
+    reduce_relator = ns["reduce_relator_nj"]
+    canonical_pair = ns["canonical_pair_nj"]
+    state_to_key = ns["state_to_key"]
+    str_to_arr = ns["str_to_arr"]
+    get_neighbors = ns["get_neighbors_nj"]
+
+    initial = canonical_pair(
+        reduce_relator(str_to_arr(r0)),
+        reduce_relator(str_to_arr(r1)),
+    )
+    ikey = state_to_key(initial)
+    pq = [(len(initial[0]) + len(initial[1]), 0, ikey)]
+    prev = {ikey: None}
+    best_depth = {ikey: 0}
+    nodes = 0
+    seen = {ikey}
+
+    def key_to_state(key):
+        return (str_to_arr(key[0]), str_to_arr(key[1]))
+
+    while pq and nodes < max_nodes:
+        _, depth, key = heapq.heappop(pq)
+        if depth != best_depth.get(key):
+            continue
+        nodes += 1
+        r1a, r2a = key_to_state(key)
+        if len(r1a) == 1 and len(r2a) == 1:
+            path = []
+            cur = key
+            while cur is not None:
+                path.append(key_to_state(cur))
+                cur = prev[cur]
+            path.reverse()
+            return path, nodes, seen
+
+        nd = depth + 1
+        for nr1, nr2 in get_neighbors(r1a, r2a):
+            nr1r = reduce_relator(nr1)
+            nr2r = reduce_relator(nr2)
+            if len(nr1r) + len(nr2r) >= max_len:
+                continue
+            c1, c2 = canonical_pair(nr1r, nr2r)
+            knew = state_to_key((c1, c2))
+            if nd >= best_depth.get(knew, 10**18):
+                continue
+            best_depth[knew] = nd
+            prev[knew] = key
+            seen.add(knew)
+            priority = len(c1) + len(c2) + float(depth_weight) * nd
+            heapq.heappush(pq, (priority, nd, knew))
+    return None, nodes, seen
 
 def total_len(s):
     return len(s[0]) + len(s[1])
@@ -639,18 +706,26 @@ def main():
         initial_total = total_len(exact)
         qcap = min(args.max_quotient_total, max(initial_total + 36, 48))
 
-        solver = ns["ACRelatorSolver"](
-            r0, r1,
-            max_nodes=args.max_nodes,
-            max_len=qcap,
-            verbose=False,
-            stop_early=False,
-        )
-        found = solver.solve()
-        if len(found) == 3:
-            quotient_path, nodes, _seen = found
+        if args.depth_weight > 0:
+            quotient_path, nodes, _seen = solve_depth_weighted_gssub(
+                ns, r0, r1,
+                max_nodes=args.max_nodes,
+                max_len=qcap,
+                depth_weight=args.depth_weight,
+            )
         else:
-            quotient_path, nodes = found[:2]
+            solver = ns["ACRelatorSolver"](
+                r0, r1,
+                max_nodes=args.max_nodes,
+                max_len=qcap,
+                verbose=False,
+                stop_early=False,
+            )
+            found = solver.solve()
+            if len(found) == 3:
+                quotient_path, nodes, _seen = found
+            else:
+                quotient_path, nodes = found[:2]
 
         live_row = ac_live.get(cid, {})
         rec = {
@@ -661,6 +736,7 @@ def main():
             "initial_total": initial_total,
             "max_nodes": args.max_nodes,
             "compiler_beam": args.compiler_beam,
+            "depth_weight": args.depth_weight,
             "quotient_total_cap": qcap,
             "nodes": int(nodes),
             "quotient_found": quotient_path is not None,
