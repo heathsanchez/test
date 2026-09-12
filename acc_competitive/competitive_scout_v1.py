@@ -92,6 +92,7 @@ def main():
     p.add_argument("--prev-stable")
     p.add_argument("--prev-leaderboard-ac")
     p.add_argument("--prev-leaderboard-stable")
+    p.add_argument("--skip-leaderboards",action="store_true")
     p.add_argument("--known-failures")
     p.add_argument("--known-successes")
     p.add_argument("--competitive-wins")
@@ -106,7 +107,18 @@ def main():
     byid={c["challenge_id"]:c for c in manifest["challenges"] if c["challenge_id"].startswith("ac-")}
 
     acsnap,ac=snapshot_map("ac"); ssnap,sac=snapshot_map("stable_ac")
-    lba=leaderboard("ac"); lbs=leaderboard("stable_ac"); mine=submissions_mine()
+    # Leaderboards are useful for reporting/attribution but not required for
+    # target selection. Under the 360-call/day cap, reuse the previous board
+    # between sparse telemetry refreshes.
+    if a.skip_leaderboards and a.prev_leaderboard_ac and Path(a.prev_leaderboard_ac).exists():
+        lba=json.loads(Path(a.prev_leaderboard_ac).read_text())
+    else:
+        lba=leaderboard("ac")
+    if a.skip_leaderboards and a.prev_leaderboard_stable and Path(a.prev_leaderboard_stable).exists():
+        lbs=json.loads(Path(a.prev_leaderboard_stable).read_text())
+    else:
+        lbs=leaderboard("stable_ac")
+    mine=submissions_mine()
     save(out/"snapshot_ac.json",acsnap); save(out/"snapshot_stable.json",ssnap)
     save(out/"leaderboard_ac.json",lba); save(out/"leaderboard_stable.json",lbs); save(out/"submissions_mine.json",mine)
 
