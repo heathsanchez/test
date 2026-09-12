@@ -1,0 +1,62 @@
+name: ACC Compiler A-B V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-compiler-ab-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        target:
+          - ac-09535
+          - ac-04141
+          - ac-06830
+          - ac-02430
+          - ac-00308
+          - ac-03146
+          - ac-04489
+          - ac-08459
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Install runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+      - name: Compare legacy and optimized exact compiler
+        run: |
+          set -o pipefail
+          python3 acc_competitive/compiler_ab_v1.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --target "${{ matrix.target }}" \
+            --beam 4 \
+            --out-dir "acc_competitive/compiler_ab_${{ matrix.target }}" \
+            | tee "acc_competitive/compiler_ab_${{ matrix.target }}.log"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-compiler-ab-${{ matrix.target }}
+          path: |
+            acc_competitive/compiler_ab_${{ matrix.target }}/
+            acc_competitive/compiler_ab_${{ matrix.target }}.log
+          retention-days: 90
+          if-no-files-found: warn
