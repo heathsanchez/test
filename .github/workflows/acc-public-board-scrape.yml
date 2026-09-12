@@ -34,6 +34,28 @@ jobs:
                   print('ACC_LINK',x)
           PY
 
+      - name: Inspect deployed JS for ACC route
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,re
+          html=open('/tmp/competitions.html').read()
+          m=re.search(r'<script[^>]+src=["\']([^"\']+\.js)["\']',html)
+          if not m:
+              raise SystemExit('no js bundle')
+          url='https://competition.sair.foundation'+m.group(1)
+          req=urllib.request.Request(url,headers={'User-Agent':'Mozilla/5.0'})
+          raw=urllib.request.urlopen(req,timeout=30).read().decode('utf-8','replace')
+          open('/tmp/site.js','w').write(raw)
+          print('JS_BYTES',len(raw))
+          low=raw.lower()
+          for needle in ('andrews','curtis','competitions/acc','leaderboard?problem=ac','stable_ac'):
+              i=low.find(needle.lower())
+              print('JS_FIND',needle,i)
+              if i>=0:
+                  print(raw[max(0,i-700):i+1800])
+          PY
+
       - name: Fetch candidate ACC leaderboard pages
         run: |
           set -euo pipefail
@@ -71,6 +93,7 @@ jobs:
           name: acc-public-board-scrape
           path: |
             /tmp/competitions.html
+            /tmp/site.js
             /tmp/board.html
             /tmp/board.txt
           if-no-files-found: warn
