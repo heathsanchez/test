@@ -15,6 +15,25 @@ permissions:
   actions: read
 
 jobs:
+  gate:
+    runs-on: ubuntu-latest
+    outputs:
+      allow_live: ${{ steps.gate.outputs.allow_live }}
+    steps:
+      - id: gate
+        shell: bash
+        run: |
+          NOW="$(date -u +%s)"
+          RESET="$(date -u -d '2026-09-13T00:00:00Z' +%s)"
+          if [ "$NOW" -ge "$RESET" ]; then
+            echo "allow_live=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "allow_live=false" >> "$GITHUB_OUTPUT"
+            echo "SAIR API exhausted until 2026-09-13T00:00:00Z; live cycle skipped."
+          fi
+
   cycle:
+    needs: gate
+    if: needs.gate.outputs.allow_live == 'true'
     uses: heathsanchez/test/.github/workflows/acc-competitive-residual-v1.yml@acc-competitive-residual-v1
     secrets: inherit
