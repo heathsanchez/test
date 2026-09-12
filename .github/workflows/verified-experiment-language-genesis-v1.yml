@@ -1,0 +1,39 @@
+name: Verified Experiment Language Genesis V1
+on: {workflow_dispatch: {}, push: {branches: [verified-experiment-language-genesis-v1]}}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run frozen qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/verified_experiment_language_genesis_v1/run.py | tee /tmp/evidence.json
+          grep -q 'VERIFIED_EXPERIMENT_LANGUAGE_GENESIS\|NEGATIVE_OR_PARTIAL' /tmp/evidence.json
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check indexed transition types
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean experiments/verified_experiment_language_genesis_v1/ExperimentLanguage.lean 2>&1 | tee /tmp/evidence-lean.log
+          ! grep -q sorry /tmp/evidence-lean.log
+      - name: Seal evidence
+        shell: bash
+        run: |
+          cd experiments/verified_experiment_language_genesis_v1
+          sha256sum PROTOCOL.md RESULTS.md ExperimentLanguage.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/evidence.json results/workflow-evidence.json
+          cp /tmp/evidence-lean.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-experiment-language-genesis-v1
+          path: experiments/verified_experiment_language_genesis_v1/results
+          retention-days: 90
