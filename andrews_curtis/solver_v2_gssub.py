@@ -38,6 +38,9 @@ def parse_args():
     p.add_argument("--max-targets", type=int, default=180)
     p.add_argument("--target-ids-file", default=None)
     p.add_argument("--include-solved", action="store_true")
+    p.add_argument("--snapshot-ac-file", default=None)
+    p.add_argument("--snapshot-stable-file", default=None)
+    p.add_argument("--defer-live-filter", action="store_true")
     p.add_argument("--max-nodes", type=int, default=10000)
     p.add_argument("--max-quotient-total", type=int, default=100)
     p.add_argument("--reverse-depth", type=int, default=7)
@@ -93,6 +96,14 @@ def data_obj(obj):
 
 def snapshot_map(problem):
     _, obj = api_get(f"/competitions/acc/discoveries/snapshot?problem={problem}")
+    d = data_obj(obj)
+    items = d["items"]
+    return obj, {x["challengeId"]: x for x in items}
+
+
+
+def snapshot_file_map(path):
+    obj = json.loads(Path(path).read_text(encoding="utf-8"))
     d = data_obj(obj)
     items = d["items"]
     return obj, {x["challengeId"]: x for x in items}
@@ -649,9 +660,14 @@ def main():
     limits = manifest["limits"]
     ac_by_id, sac_by_id = challenge_maps(manifest)
 
-    # Live frontier is authority for search allocation.
-    ac_snapshot_before, ac_live = snapshot_map("ac")
-    sac_snapshot_before, sac_live = snapshot_map("stable_ac")
+    # Use the scout's frozen frontier inside parallel search shards whenever
+    # available. Only the aggregate/submission job needs a fresh live read.
+    if args.snapshot_ac_file and args.snapshot_stable_file:
+        ac_snapshot_before, ac_live = snapshot_file_map(args.snapshot_ac_file)
+        sac_snapshot_before, sac_live = snapshot_file_map(args.snapshot_stable_file)
+    else:
+        ac_snapshot_before, ac_live = snapshot_map("ac")
+        sac_snapshot_before, sac_live = snapshot_map("stable_ac")
     save_json(out / "snapshot_ac_before.json", ac_snapshot_before)
     save_json(out / "snapshot_stable_ac_before.json", sac_snapshot_before)
 
@@ -786,17 +802,27 @@ def main():
 
     save_json(out / "search_results.json", results)
 
-    # Re-read live state after search. This is the only state used to decide
-    # whether a verified row is allowed into the API batch.
-    ac_snapshot_pre_submit, ac_now = snapshot_map("ac")
-    sac_snapshot_pre_submit, sac_now = snapshot_map("stable_ac")
+    # Parallel shards can defer all live competitiveness checks to the single
+    # aggregate job. This avoids an API thundering herd while preserving the
+    # final live recheck immediately before submission.
+    if args.defer_live_filter:
+        ac_now = ac_live
+        sac_now = sac_live
+        ac_snapshot_pre_submit = ac_snapshot_before
+        sac_snapshot_pre_submit = sac_snapshot_before
+    else:
+        ac_snapshot_pre_submit, ac_now = snapshot_map("ac")
+        sac_snapshot_pre_submit, sac_now = snapshot_map("stable_ac")
     save_json(out / "snapshot_ac_pre_submit.json", ac_snapshot_pre_submit)
     save_json(out / "snapshot_stable_ac_pre_submit.json", sac_snapshot_pre_submit)
 
     lines = []
     selection = []
     for cid, v in sorted(verified.items(), key=lambda kv: (len(kv[1]["path"]), kv[0])):
-        ok, reason = current_competitive(ac_now[cid], len(v["path"]))
+        if args.defer_live_filter:
+            ok, reason = True, "deferred_to_aggregate"
+        else:
+            ok, reason = current_competitive(ac_now[cid], len(v["path"]))
         selection.append({
             "challenge_id": cid,
             "problem": "ac",
@@ -810,7 +836,10 @@ def main():
             lines.append(f"{cid}: {json.dumps(list(v['path']), separators=(',', ':'))}")
 
         sid = v["stable_id"]
-        sok, sreason = current_competitive(sac_now[sid], len(v["stable_path"]))
+        if args.defer_live_filter:
+            sok, sreason = True, "deferred_to_aggregate"
+        else:
+            sok, sreason = current_competitive(sac_now[sid], len(v["stable_path"]))
         selection.append({
             "challenge_id": sid,
             "problem": "stable_ac",
