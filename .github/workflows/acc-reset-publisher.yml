@@ -1,0 +1,100 @@
+name: ACC Reset Publisher
+
+on:
+  schedule:
+    - cron: "3 0 * * *"
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/acc-reset-publisher.yml"
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-reset-publisher
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout competitive branch
+        uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Gather verifier-clean pending pools
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/reset_inputs /tmp/pending
+
+          # Carry forward the known unsent 579-move ac-09679 candidate.
+          gh api repos/heathsanchez/test/actions/artifacts/10292442312/zip > /tmp/attack7.zip
+          mkdir -p /tmp/pending/attack7
+          unzip -q /tmp/attack7.zip -d /tmp/pending/attack7
+
+          # Pull latest offline pools if they exist by reset time.
+          for NAME in acc-offline-high-slack-pool acc-depth-cost-sweep-v1; do
+            ID="$(gh api "repos/heathsanchez/test/actions/artifacts?name=$NAME&per_page=1" --jq '.artifacts[0].id // empty')"
+            if [ -n "$ID" ]; then
+              echo "Downloading $NAME artifact $ID"
+              gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > "/tmp/$NAME.zip"
+              mkdir -p "/tmp/pending/$NAME"
+              unzip -q "/tmp/$NAME.zip" -d "/tmp/pending/$NAME"
+            fi
+          done
+
+          python3 - <<'PY'
+          import pathlib
+          roots=pathlib.Path('/tmp/pending')
+          outs=[]
+          for p in roots.rglob('*'):
+              if p.is_file() and p.name in ('submission_v2.txt','pending_submission.txt'):
+                  txt=p.read_text().strip()
+                  if txt:
+                      outs.append(txt)
+                      print('SOURCE',p)
+          out=pathlib.Path('acc_competitive/reset_inputs/all.txt')
+          out.write_text(('\n'.join(outs)+'\n') if outs else '')
+          print('PENDING_SOURCE_FILES',len(outs))
+          print('PENDING_LINES',sum(len(x.splitlines()) for x in outs))
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Fresh live filter and publish one packed batch
+        run: |
+          set -o pipefail
+          if [ ! -s acc_competitive/reset_inputs/all.txt ]; then
+            echo "No pending candidates."
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/reset_inputs/all.txt' \
+            --out-dir acc_competitive/reset_publish_out \
+            --cycle 0 \
+            | tee acc_competitive/reset_publish.log
+
+      - name: Upload reset authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-reset-publisher-authority
+          path: |
+            acc_competitive/reset_inputs/
+            acc_competitive/reset_publish_out/
+            acc_competitive/reset_publish.log
+          retention-days: 90
+          if-no-files-found: warn
