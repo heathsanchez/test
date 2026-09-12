@@ -1,0 +1,37 @@
+name: Retention Policy Representability Boundary V1
+on: {workflow_dispatch: {}, push: {branches: [retention-policy-representability-boundary-v1]}}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Exhaustive boundary qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/retention_policy_representability_boundary_v1/run.py | tee /tmp/boundary.json
+          grep -q 'REPRESENTABLE_BUT_UNSELECTED' /tmp/boundary.json
+          grep -q 'SELECTION_OBJECTIVE_OR_VALUE_EVIDENCE_RESIDUAL' /tmp/boundary.json
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check typed fork
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean experiments/retention_policy_representability_boundary_v1/Boundary.lean 2>&1 | tee /tmp/boundary-lean.log
+          ! grep -q sorry /tmp/boundary-lean.log
+      - name: Seal evidence
+        shell: bash
+        run: |
+          cd experiments/retention_policy_representability_boundary_v1
+          sha256sum PROTOCOL.md RESULTS.md Boundary.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/boundary.json results/
+          cp /tmp/boundary-lean.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: retention-policy-representability-boundary-v1, path: experiments/retention_policy_representability_boundary_v1/results, retention-days: 90}
