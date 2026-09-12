@@ -1,0 +1,21 @@
+{
+  "parent_authority": "185476c1aa0d9fa7caa5327152b254bec45c4988",
+  "train_seeds": [
+    11,
+    12,
+    13,
+    14
+  ],
+  "candidate_pool_seeds": [
+    1001,
+    1100
+  ],
+  "prospective_seeds": [
+    401,
+    600
+  ],
+  "evidence_budget": 8,
+  "policy_grammar_programs": 6561,
+  "selection_rule": "first eight lexicographic candidate streams on which frozen selected and geometry policies disagree",
+  "query_information": "policy decisions only; verifier costs hidden until acquisition"
+}
