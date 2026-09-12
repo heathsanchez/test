@@ -95,6 +95,7 @@ def main():
     p.add_argument("--known-failures")
     p.add_argument("--known-successes")
     p.add_argument("--attack-count",type=int,default=64)
+    p.add_argument("--defend-fraction",type=float,default=0.20)
     p.add_argument("--shards",type=int,default=8)
     a=p.parse_args()
     out=Path(a.out_dir);out.mkdir(parents=True,exist_ok=True)
@@ -173,11 +174,22 @@ def main():
     if a.known_successes and Path(a.known_successes).exists():
         raw=json.loads(Path(a.known_successes).read_text())
         known_success += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    static_success=ROOT/"acc_competitive/recovered_cycle2_successes.json"
+    if static_success.exists():
+        raw=json.loads(static_success.read_text())
+        known_success += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
     known_success=list(dict.fromkeys(known_success))
     known_fail=[]
     if a.known_failures and Path(a.known_failures).exists():
         raw=json.loads(Path(a.known_failures).read_text())
         known_fail=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    static_fail=ROOT/"acc_competitive/recovered_cycle2_failures.json"
+    if static_fail.exists():
+        raw=json.loads(static_fail.read_text())
+        known_fail += [x["challenge_id"] if isinstance(x,dict) else str(x) for x in raw]
+    known_fail=list(dict.fromkeys(known_fail))
+    ss=set(known_success)
+    known_fail=[x for x in known_fail if x not in ss]
 
     save(out/"known_successes_input.json",known_success)
     save(out/"known_failures_input.json",known_fail)
@@ -199,30 +211,58 @@ def main():
 
     our_ac={x["challenge_id"]:x for x in ours_status if x["challenge_id"].startswith("ac-")}
     event_set=set(positive_events)
-    candidates=[]
+    acquire=[]
+    defend=[]
     for cid,row in ac.items():
         if cid not in fmap or row.get("status")!="solved": continue
         best=row.get("currentBestLength"); k=row.get("kTeams")
         if not isinstance(best,int) or best<100: continue
         os=our_ac.get(cid)
-        if os and os["status"] in ("unique_hold","tied_hold"): continue
+        status=None if not os else os["status"]
+        # A just-submitted path can be ahead of a lagging public snapshot.
+        # Do not waste a second acquisition search until the board catches up.
+        if status=="ahead_unpublished": continue
         cap=contrast_score(cid,fmap,keys,mu,sd,success_mean,fail_mean) if known_success and known_fail else 0.0
         mov=contrast_score(cid,fmap,keys,mu,sd,event_mean,unchanged_mean) if positive_events and unchanged else 0.0
         value=(2.0 if k==1 else 1.0/(2**max(0,(k or 1)-1)))
         length_score=math.log1p(best)
-        lost_bonus=1.5 if os and os["status"]=="lost" else 0.0
+        lost_bonus=1.5 if status=="lost" else 0.0
         recent_bonus=0.8 if cid in event_set else 0.0
-        score=2.0*value + 0.75*length_score + 1.25*cap + 0.75*mov + lost_bonus + recent_bonus
-        candidates.append({
-          "challenge_id":cid,"priority":score,"live_best":best,"kTeams":k,
+        if status=="unique_hold":
+            # Defense does not add a point immediately, but a shorter owned
+            # record increases survival probability. Prefer large/slack-looking
+            # records in regions where our shortening mechanism has worked.
+            score=0.90*length_score + 1.50*cap + 0.50*mov + recent_bonus
+            defend.append({
+              "challenge_id":cid,"priority":score,"mode":"defend","live_best":best,"kTeams":k,
+              "record_value":1.0,"capability_score":cap,"public_movement_score":mov,
+              "mathgraph_status":status,"recent_public_move":cid in event_set,**fmap[cid],
+            })
+            continue
+        # Tied holds belong here too: beating our own tie converts a tiny
+        # shared score into a unique full point.
+        tie_break_bonus=1.5 if status=="tied_hold" else 0.0
+        score=2.0*value + 0.75*length_score + 1.25*cap + 0.75*mov + lost_bonus + recent_bonus + tie_break_bonus
+        acquire.append({
+          "challenge_id":cid,"priority":score,"mode":"acquire","live_best":best,"kTeams":k,
           "record_value":value,"capability_score":cap,"public_movement_score":mov,
-          "mathgraph_status":None if not os else os["status"],"recent_public_move":cid in event_set,
-          **fmap[cid],
+          "mathgraph_status":status,"recent_public_move":cid in event_set,**fmap[cid],
         })
-    candidates.sort(key=lambda x:(-x["priority"],-x["live_best"],x["challenge_id"]))
-    selected=candidates[:a.attack_count]
+    acquire.sort(key=lambda x:(-x["priority"],-x["live_best"],x["challenge_id"]))
+    defend.sort(key=lambda x:(-x["priority"],-x["live_best"],x["challenge_id"]))
+    defend_n=min(len(defend),max(0,round(a.attack_count*max(0.0,min(0.5,a.defend_fraction)))))
+    acquire_n=min(len(acquire),a.attack_count-defend_n)
+    selected=acquire[:acquire_n]+defend[:defend_n]
+    if len(selected)<a.attack_count:
+        used={x["challenge_id"] for x in selected}
+        extras=[x for x in acquire[acquire_n:]+defend[defend_n:] if x["challenge_id"] not in used]
+        selected+=extras[:a.attack_count-len(selected)]
+    selected.sort(key=lambda x:(x["mode"]!="acquire",-x["priority"],x["challenge_id"]))
+    candidates=acquire+defend
+    candidates.sort(key=lambda x:(-x["priority"],x["mode"],-x["live_best"],x["challenge_id"]))
     save(out/"attack_ranking.json",candidates[:500])
     save(out/"selected_targets.json",[x["challenge_id"] for x in selected])
+    save(out/"selected_modes.json",[{k:x[k] for k in ("challenge_id","mode","priority","live_best","kTeams","mathgraph_status")} for x in selected])
 
     shards=[[] for _ in range(a.shards)]
     for i,x in enumerate(selected): shards[i%a.shards].append(x["challenge_id"])
@@ -241,6 +281,8 @@ def main():
       "known_failure_cases":len(known_fail),
       "attack_candidates":len(candidates),
       "selected_targets":len(selected),
+      "selected_acquire":sum(x.get("mode")=="acquire" for x in selected),
+      "selected_defend":sum(x.get("mode")=="defend" for x in selected),
       "shards":[len(x) for x in shards],
       "exact_per_challenge_opponent_holder_available":False,
       "holder_note":"Public API exposes challenge best length/kTeams and aggregate team records, but no per-challenge holder endpoint was found; do not treat absent team/challenge cells as failures.",
