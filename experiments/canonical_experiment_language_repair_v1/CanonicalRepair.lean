@@ -18,7 +18,7 @@ def singletonObservation : Observation
 theorem xor_not_refines_singleton :
     ¬ Refines xorObservation singletonObservation := by
   intro h
-  have z := h ⟨1, by omega⟩ ⟨2, by omega⟩
+  have z := h ⟨0, by omega⟩ ⟨3, by omega⟩
   simp [sameObservation, xorObservation, singletonObservation] at z
 
 theorem singleton_not_refines_xor :
