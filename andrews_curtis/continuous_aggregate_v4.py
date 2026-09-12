@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse,ast,json,re,sys,time
+from datetime import datetime, timezone
 from pathlib import Path
 
 INV=(0,1,3,2,5,4,7,6,9,8,11,10,13,12)
@@ -109,6 +110,19 @@ def main():
     (out/"submission_spec.json").write_text(json.dumps(spec,indent=2,sort_keys=True)+"\n")
     (out/"submissions_mine_pre.json").write_text(json.dumps(mine,indent=2,sort_keys=True)+"\n")
 
+    spec_data=spec.get("data",spec) if isinstance(spec,dict) else {}
+    daily_limit=int(((spec_data.get("limits") or {}).get("dailySubmissions")) or 40)
+    mine_data=mine.get("data",mine) if isinstance(mine,dict) else {}
+    mine_items=mine_data.get("items",[]) if isinstance(mine_data,dict) else []
+    utc_today=datetime.now(timezone.utc).date().isoformat()
+    used_today=0
+    for sub in mine_items:
+        stamp=sub.get("receivedAt") or sub.get("updatedAt")
+        if isinstance(stamp,str) and stamp[:10]==utc_today:
+            used_today += 1
+    quota_remaining=max(0,daily_limit-used_today)
+    quota_blocked=quota_remaining<=0
+
     acsnap,ac=snapshot_map("ac")
     ssnap,sac=snapshot_map("stable_ac")
     (out/"snapshot_ac_pre.json").write_text(json.dumps(acsnap,indent=2,sort_keys=True)+"\n")
@@ -142,7 +156,7 @@ def main():
     submission_id=None
     terminal=None
     failures=None
-    if selected:
+    if selected and not quota_blocked:
         submission_id,response,polls,final=submit_batch(text)
         (out/"submission_response.json").write_text(json.dumps(response,indent=2,sort_keys=True)+"\n")
         (out/"submission_polls.json").write_text(json.dumps(polls,indent=2,sort_keys=True)+"\n")
@@ -167,6 +181,10 @@ def main():
         "selected_ac":sum(cid.startswith("ac-") for cid,_ in selected),
         "selected_stable":sum(cid.startswith("sac-") for cid,_ in selected),
         "dropped_for_batch_limit":dropped_for_batch_limit,
+        "daily_submission_limit":daily_limit,
+        "daily_submissions_used_pre":used_today,
+        "daily_submissions_remaining_pre":quota_remaining,
+        "quota_blocked":quota_blocked,
         "submission_id":submission_id,
         "terminal_status":terminal,
         "failed_rows":failures,
