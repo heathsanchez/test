@@ -1,0 +1,39 @@
+name: Verified Prospective Repair Selection V1
+on: {workflow_dispatch: {}, push: {branches: [verified-prospective-repair-selection-v1]}}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Run prospective repair selection
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 experiments/verified_prospective_repair_selection_v1/run.py | tee /tmp/evidence.json
+          grep -q 'AUTHORIZED_REPAIR\|NEGATIVE_OR_PARTIAL' /tmp/evidence.json
+      - name: Install Lean
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.30.0-rc2
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check choice authority types
+        shell: bash
+        run: |
+          set -euo pipefail
+          lean experiments/verified_prospective_repair_selection_v1/RepairSelection.lean 2>&1 | tee /tmp/lean.log
+          ! grep -q sorry /tmp/lean.log
+      - name: Seal evidence
+        shell: bash
+        run: |
+          cd experiments/verified_prospective_repair_selection_v1
+          sha256sum PROTOCOL.md RESULTS.md RepairSelection.lean run.py results/evidence.json results/snapshot.json > results/SHA256SUMS
+          git rev-parse HEAD > results/RUN_COMMIT
+          cp /tmp/evidence.json results/workflow-evidence.json
+          cp /tmp/lean.log results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verified-prospective-repair-selection-v1
+          path: experiments/verified_prospective_repair_selection_v1/results
+          retention-days: 90
