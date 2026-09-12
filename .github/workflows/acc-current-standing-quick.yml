@@ -1,0 +1,39 @@
+name: ACC Current Standing Quick
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-current-standing-quick.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  standing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read current standings once
+        run: |
+          python3 - <<'PY'
+          import json,os
+          from urllib import request
+          B='https://api.sair.foundation/api/public/v1'
+          H={'Authorization':'Bearer '+os.environ['SAIR_API_KEY'],'Accept':'application/json','User-Agent':'curl/8.5.0'}
+          def get(p):
+              with request.urlopen(request.Request(B+p,headers=H),timeout=60) as r:
+                  return json.loads(r.read().decode())
+          me=get('/competitions/acc/me'); team=me['data']['team']; tid=team['teamId']
+          out={'team':team}
+          for problem in ('ac','stable_ac'):
+              lb=get('/competitions/acc/leaderboard?problem='+problem)
+              hit=next(x for x in lb['data']['items'] if x['team']['teamId']==tid)
+              out[problem]={'generatedAt':lb['data'].get('generatedAt'),'rank':hit.get('rank'),'score':hit.get('score'),'currentBestCount':hit.get('currentBestCount')}
+          print('CURRENT_STANDING',json.dumps(out,sort_keys=True))
+          PY
