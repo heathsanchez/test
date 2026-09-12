@@ -42,6 +42,7 @@ def parse_args():
     p.add_argument("--max-quotient-total", type=int, default=100)
     p.add_argument("--reverse-depth", type=int, default=7)
     p.add_argument("--reverse-cap", type=int, default=250000)
+    p.add_argument("--compiler-beam", type=int, default=4)
     p.add_argument("--search-seconds", type=int, default=1100)
     p.add_argument("--submit", action="store_true")
     return p.parse_args()
@@ -183,6 +184,192 @@ def orientation_options(core, w, relator_index):
             cur = word_conjugate(core, cur, g)
             seq = seq + (m,)
     return list(best.items())
+
+
+
+def orientation_options_no_invert(core, w, relator_index):
+    """Cyclic-conjugation representatives only; no physical relator inversion."""
+    best = {}
+    cur = tuple(w)
+    seq = ()
+    local = set()
+    for _ in range(max(2, len(w) + 2)):
+        if cur in local:
+            break
+        local.add(cur)
+        old = best.get(cur)
+        if old is None or len(seq) < len(old):
+            best[cur] = seq
+        if not cur:
+            break
+        g = -cur[0]
+        m = conjugation_move(relator_index, g)
+        cur = word_conjugate(core, cur, g)
+        seq = seq + (m,)
+    return list(best.items())
+
+
+def compiled_superneighbor_candidates(core, ns, state, desired, total_cap):
+    """
+    All economical exact representatives of one desired GS-Sub neighbor.
+
+    Source inversion is compiled through the official direct multiply-by-inverse
+    move (3 or 5), rather than physically inverting the untouched source and
+    then undoing that inversion. This preserves the exact source byte-for-byte
+    while removing two atomic moves whenever the quotient proposal uses the
+    inverted source orientation.
+    """
+    best_exact = {}
+    for i in (0, 1):
+        j = 1 - i
+        target_opts = orientation_options(core, state[i], i)
+        source_opts = orientation_options_no_invert(core, state[j], j)
+        mul_pos = 2 if i == 0 else 4
+        mul_neg = 3 if i == 0 else 5
+
+        for tw, tseq in target_opts:
+            if not tw:
+                continue
+            for sw, sseq in source_opts:
+                if not sw:
+                    continue
+                undo_source = tuple(core.INVERSE_MOVE[m] for m in reversed(sseq))
+                for source_word, mul in ((sw, mul_pos), (core.invert(sw), mul_neg)):
+                    if tw[-1] != -source_word[0]:
+                        continue
+                    new_word = core.free_reduce(tw + source_word)
+                    n = (new_word, state[1]) if i == 0 else (state[0], new_word)
+                    if total_len(n) > total_cap:
+                        continue
+                    if gssub_key(ns, n) != desired:
+                        continue
+                    atomics = tuple(tseq) + tuple(sseq) + (mul,) + undo_source
+
+                    chk = state
+                    for m in atomics:
+                        chk = core.apply_move(chk, m)
+                    if chk != n:
+                        raise RuntimeError("optimized compiled supermove mismatch")
+
+                    prev = best_exact.get(n)
+                    if prev is None or len(atomics) < len(prev):
+                        best_exact[n] = atomics
+    return [(n, edge) for n, edge in best_exact.items()]
+
+
+def exact_terminal_suffix(core, state, reverse_paths):
+    suffix = reverse_paths.get(state)
+    if suffix is not None:
+        return tuple(suffix)
+    q = collections.deque([(state, ())])
+    seen = {state}
+    while q:
+        s, p = q.popleft()
+        if len(p) >= 8:
+            continue
+        for m in range(core.NUM_MOVES):
+            n = core.apply_move(s, m)
+            if n in seen or total_len(n) > 20:
+                continue
+            np = p + (m,)
+            if n == TARGET:
+                return np
+            seen.add(n)
+            q.append((n, np))
+    return None
+
+
+def compile_quotient_path_optimized(
+    core, ns, exact_initial, quotient_path, reverse_paths, total_cap, beam_width=4
+):
+    """
+    Dynamic exact-representative compiler for a fixed quotient path.
+
+    The legacy compiler greedily picks one locally cheapest representative at
+    each quotient step. Here we retain a small beam of exact representatives
+    and minimize accumulated official atomic cost. Admission remains an exact
+    replay through the official transition function.
+    """
+    if not quotient_path:
+        return None, {"code": "empty_quotient_path"}
+
+    initial_key = gssub_key(ns, exact_initial)
+    q0 = path_state_key(ns, quotient_path[0])
+    if initial_key != q0:
+        return None, {"code": "initial_key_mismatch", "exact": initial_key, "quotient": q0}
+
+    beam_width = max(1, int(beam_width))
+    beam = [(exact_initial, (), 0)]
+    layer_meta = []
+
+    for step_index, qstate in enumerate(quotient_path[1:], 1):
+        desired = path_state_key(ns, qstate)
+        by_exact = {}
+        raw_candidates = 0
+
+        for state, path, cost in beam:
+            cands = compiled_superneighbor_candidates(core, ns, state, desired, total_cap)
+            # Coverage fallback: if the optimized signed compiler misses a
+            # transition, preserve the legacy compiler's proven behavior.
+            if not cands:
+                hit = compiled_superneighbors(core, ns, state, total_cap).get(desired)
+                if hit is not None:
+                    cands = [hit]
+            raw_candidates += len(cands)
+            for nxt, edge in cands:
+                nc = cost + len(edge)
+                prev = by_exact.get(nxt)
+                if prev is None or nc < prev[0]:
+                    by_exact[nxt] = (nc, path, tuple(edge))
+
+        if not by_exact:
+            return None, {
+                "code": "uncompiled_transition",
+                "step": step_index,
+                "from_beam": len(beam),
+                "to_key": desired,
+            }
+
+        ranked = sorted(
+            ((nc, nxt, parent_path, edge) for nxt, (nc, parent_path, edge) in by_exact.items()),
+            key=lambda x: x[0],
+        )[:beam_width]
+        beam = [(nxt, parent_path + edge, nc) for nc, nxt, parent_path, edge in ranked]
+        layer_meta.append({
+            "quotient_step": step_index,
+            "raw_candidates": raw_candidates,
+            "distinct_exact": len(by_exact),
+            "beam": len(beam),
+            "best_cost": beam[0][2],
+        })
+
+    finals = []
+    for state, path, cost in beam:
+        suffix = exact_terminal_suffix(core, state, reverse_paths)
+        if suffix is not None:
+            finals.append((cost + len(suffix), path + tuple(suffix), state, len(suffix)))
+    if not finals:
+        return None, {"code": "no_exact_terminal_bridge", "beam": len(beam)}
+
+    total_cost, atomics, final_state, suffix_len = min(finals, key=lambda x: x[0])
+    end = exact_initial
+    peak = total_len(end)
+    for m in atomics:
+        end = core.apply_move(end, m)
+        peak = max(peak, total_len(end))
+    if end != TARGET:
+        return None, {"code": "optimized_compiled_path_not_exact_target", "final": end}
+
+    return atomics, {
+        "code": "ok",
+        "compiler": "signed-exact-beam-v1",
+        "beam_width": beam_width,
+        "quotient_steps": len(quotient_path) - 1,
+        "atomic_cost": total_cost,
+        "suffix_len": suffix_len,
+        "peak": peak,
+        "layers": layer_meta,
+    }
 
 
 def gssub_key(ns, state):
@@ -473,15 +660,17 @@ def main():
             "live_k_teams": live_row.get("kTeams"),
             "initial_total": initial_total,
             "max_nodes": args.max_nodes,
+            "compiler_beam": args.compiler_beam,
             "quotient_total_cap": qcap,
             "nodes": int(nodes),
             "quotient_found": quotient_path is not None,
         }
 
         if quotient_path is not None:
-            atomics, comp = compile_quotient_path(
+            atomics, comp = compile_quotient_path_optimized(
                 core, ns, exact, quotient_path, reverse_paths,
                 total_cap=limits["max_total_relator_length"],
+                beam_width=args.compiler_beam,
             )
             rec["compile"] = comp
             if atomics is not None:
