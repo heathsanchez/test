@@ -1,0 +1,132 @@
+{
+  "verdict": "VERIFIED_VALUE_EVIDENCE_SEPARATOR_GENESIS",
+  "classification": "FINITE_CONSTRUCTED_PROSPECTIVE_CAUSAL",
+  "passive_policy": {
+    "recent": 0,
+    "scope": 0,
+    "breadth": 1,
+    "persistence": 1,
+    "amort": 1,
+    "depth": 0,
+    "genesis": 0,
+    "support": 1
+  },
+  "passive_future_cost": 1168650,
+  "conditions": {
+    "guided": {
+      "policy": {
+        "recent": 1,
+        "scope": 1,
+        "breadth": 1,
+        "persistence": 1,
+        "amort": 1,
+        "depth": -1,
+        "genesis": -1,
+        "support": 1
+      },
+      "query_seeds": [
+        1002,
+        1003,
+        1004,
+        1005,
+        1007,
+        1009,
+        1010,
+        1011
+      ],
+      "future_cost": 1057634,
+      "acquisition_cost": {
+        "probe_calls": 200,
+        "external_verifier_calls": 8,
+        "resynthesis_calls": 78732,
+        "total": 78940
+      },
+      "fully_charged_total": 1136574,
+      "geometry_equivalent": true
+    },
+    "random": {
+      "policy": {
+        "recent": 1,
+        "scope": 1,
+        "breadth": 1,
+        "persistence": 1,
+        "amort": 0,
+        "depth": 0,
+        "genesis": 0,
+        "support": -1
+      },
+      "query_seeds": [
+        1008,
+        1088,
+        1056,
+        1028,
+        1016,
+        1004,
+        1080,
+        1090
+      ],
+      "future_cost": 1106165,
+      "acquisition_cost": {
+        "probe_calls": 200,
+        "external_verifier_calls": 8,
+        "resynthesis_calls": 78732,
+        "total": 78940
+      },
+      "fully_charged_total": 1185105,
+      "geometry_equivalent": false
+    },
+    "sham": {
+      "policy": {
+        "recent": 1,
+        "scope": 1,
+        "breadth": 1,
+        "persistence": 1,
+        "amort": 0,
+        "depth": 0,
+        "genesis": 0,
+        "support": 0
+      },
+      "query_seeds": [
+        1001,
+        1006,
+        1008,
+        1012,
+        1013,
+        1016,
+        1019,
+        1020
+      ],
+      "future_cost": 1090739,
+      "acquisition_cost": {
+        "probe_calls": 200,
+        "external_verifier_calls": 8,
+        "resynthesis_calls": 78732,
+        "total": 78940
+      },
+      "fully_charged_total": 1169679,
+      "geometry_equivalent": false
+    }
+  },
+  "separator_ablation_future_cost": 1168650,
+  "net_guided_savings": 32076,
+  "initial_policy_synthesis_calls_prior_authority": 26244,
+  "diagnosis": "VALUE_EVIDENCE_INSUFFICIENCY",
+  "gates": {
+    "fixed_policy_language": true,
+    "matched_evidence_budgets": true,
+    "guided_constructs_only_disagreements": true,
+    "guided_selects_unique_geometry_program": true,
+    "fully_charged_guided_beats_passive": true,
+    "fully_charged_guided_beats_random": true,
+    "fully_charged_guided_beats_sham": true,
+    "separator_ablation_restores_passive": true,
+    "positive_causal_savings": true
+  },
+  "snapshot_digest": "2129533c3fb7ac8901286168d62b6309fbbf5d8aab82b102459f1aea9680b21e",
+  "not_established": [
+    "open-ended experiment genesis",
+    "natural-world active learning",
+    "evidence-language inadequacy",
+    "unbounded autonomous science"
+  ]
+}
