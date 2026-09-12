@@ -146,6 +146,9 @@ jobs:
             --out-dir acc_competitive/out_attack_${{ matrix.shard }} \
             --target-ids-file "$TARGET" \
             --include-solved \
+            --snapshot-ac-file /tmp/scout/scout_out/snapshot_ac.json \
+            --snapshot-stable-file /tmp/scout/scout_out/snapshot_stable.json \
+            --defer-live-filter \
             --max-targets 2 \
             --max-nodes 120000 \
             --max-quotient-total 80 \
