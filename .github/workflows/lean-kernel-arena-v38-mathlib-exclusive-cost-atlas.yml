@@ -1,0 +1,211 @@
+name: V38 Mathlib exclusive cost atlas
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: v38-mathlib-exclusive-cost-atlas-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      ARENA_REV: aaa6aedd3a4f4de88bf825319a8a050e572c9cce
+      KERNEL_REV: 3d7585c21242f29fdaa48ae9a16e16c6afe42238
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install profiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          valgrind --version
+
+      - name: Fetch frozen Arena
+        run: |
+          git clone https://github.com/leanprover/lean-kernel-arena.git arena
+          git -C arena checkout "$ARENA_REV"
+          grep -q "$KERNEL_REV" arena/checkers/mathgraph.yaml
+
+      - name: Build exact submitted MathGraph checker
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py build-checker mathgraph
+
+      - name: Build Mathlib workload
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py build-test mathlib
+
+      - name: Locate submitted checker and Mathlib input
+        run: |
+          set -euxo pipefail
+          BIN=$(find arena/_build/checkers/mathgraph -type f -path '*/target/release/sokonanoda' -perm -111 | head -1)
+          CFG=$(find arena/_build/checkers/mathgraph -type f -name config.json | head -1)
+          IN=arena/_build/tests/mathlib.ndjson
+          test -n "$BIN" && test -x "$BIN"
+          test -n "$CFG" && test -f "$CFG"
+          test -f "$IN"
+          printf '%s\n' "$BIN" > checker-bin.txt
+          printf '%s\n' "$CFG" > checker-cfg.txt
+
+      - name: Semantic smoke gate on submitted native Mathlib
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py run --checker mathgraph --test mathlib
+
+      - name: Build ISA-conservative PGO diagnostic twin with line info
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          set -euxo pipefail
+          SRC="$PWD/_build/checkers/mathgraph/src"
+          ROOT="$PWD"
+          cd "$SRC"
+          rm -rf target-v38 pgo-v38
+          mkdir -p pgo-v38
+          export CARGO_TARGET_DIR="$SRC/target-v38"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=1 -Cprofile-generate=$SRC/pgo-v38" cargo build --release
+          "$CARGO_TARGET_DIR/release/sokonanoda" config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+          llvm-profdata merge -o "$SRC/pgo-v38/merged.profdata" "$SRC/pgo-v38"
+          rm -rf "$CARGO_TARGET_DIR"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=1 -Cprofile-use=$SRC/pgo-v38/merged.profdata" cargo build --release
+          test -x "$CARGO_TARGET_DIR/release/sokonanoda"
+          printf '%s\n' "$CARGO_TARGET_DIR/release/sokonanoda" > "$ROOT/../diag-bin.txt"
+          printf '%s\n' "$SRC/config.json" > "$ROOT/../diag-cfg.txt"
+
+      - name: Diagnostic twin semantic equivalence gate on Mathlib
+        run: |
+          set -euxo pipefail
+          BIN=$(cat diag-bin.txt)
+          CFG=$(cat diag-cfg.txt)
+          IN=arena/_build/tests/mathlib.ndjson
+          "$BIN" "$CFG" < "$IN" > results-v38-diag.stdout
+          test $? -eq 0
+          test ! -s results-v38-diag.stdout
+
+      - name: Profile Mathlib exclusive instruction cost and evaluator lines
+        run: |
+          set -euxo pipefail
+          mkdir -p results/v38
+          BIN=$(cat diag-bin.txt)
+          CFG=$(cat diag-cfg.txt)
+          IN=arena/_build/tests/mathlib.ndjson
+          valgrind --tool=callgrind --cache-sim=no --branch-sim=no --collect-jumps=no \
+            --callgrind-out-file=results/v38/callgrind.out \
+            "$BIN" "$CFG" < "$IN" > /dev/null
+          callgrind_annotate --inclusive=no --threshold=0.01 results/v38/callgrind.out \
+            > results/v38/callgrind-self.txt
+          callgrind_annotate --inclusive=yes --threshold=0.05 results/v38/callgrind.out \
+            > results/v38/callgrind-inclusive.txt
+          callgrind_annotate --inclusive=no --threshold=0.00 --auto=yes results/v38/callgrind.out \
+            > results/v38/callgrind-source.txt
+          grep -n -A220 -B20 'TypeChecker.*eval' results/v38/callgrind-source.txt | head -500 \
+            > results/v38/eval-source-split.txt || true
+          head -120 results/v38/callgrind-self.txt
+
+      - name: Derive frozen family and evaluator atlas
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re, json
+          txt=Path('results/v38/callgrind-self.txt').read_text(errors='replace')
+          rows=[]
+          total=None
+          for line in txt.splitlines():
+              m=re.match(r'^\s*([0-9,]+)\s+\(100\.0%\)\s+PROGRAM TOTALS', line)
+              if m:
+                  total=int(m.group(1).replace(',',''))
+                  continue
+              m=re.match(r'^\s*([0-9,]+)\s+\([^)]*%\)\s+(.+)$', line)
+              if m:
+                  n=int(m.group(1).replace(',',''))
+                  sym=m.group(2).strip()
+                  if n>0: rows.append((n,sym))
+          if total is None:
+              raise SystemExit('NO_PROGRAM_TOTALS')
+
+          families={k:0 for k in ['EVAL','ENV','CONV','IOTA','INFER','MEMORY','PARSE','OTHER']}
+          pats={
+            'EVAL': re.compile(r'TypeChecker>::eval|::eval(?:\b|\')',re.I),
+            'ENV': re.compile(r'prune_env|key_env|env_|Env|Closure|apply_closure',re.I),
+            'CONV': re.compile(r'unify|whnf|force_thunk|unfold|spine_probe|unify_spine|defeq|convert',re.I),
+            'IOTA': re.compile(r'iota|recursor|recursors|projection|proj_',re.I),
+            'INFER': re.compile(r'infer|check_declar|check_type|check_value',re.I),
+            'MEMORY': re.compile(r'hash|intern|alloc|mimalloc|malloc|free|swiss|hashbrown|arena',re.I),
+            'PARSE': re.compile(r'parse|serde|json|ndjson|ExportFile',re.I),
+          }
+          classified=[]
+          for n,sym in rows:
+              fam='OTHER'
+              for k,r in pats.items():
+                  if r.search(sym): fam=k; break
+              families[fam]+=n
+              classified.append({'instructions':n,'self_pct':100*n/total,'family':fam,'symbol':sym})
+          fpct={k:100*v/total for k,v in families.items()}
+          ranked=sorted(fpct.items(),key=lambda kv:kv[1],reverse=True)
+          mass=[k for k,v in ranked if k!='OTHER' and v>=5.0]
+
+          src=Path('results/v38/callgrind-source.txt').read_text(errors='replace')
+          eval_lines=[]
+          in_eval=False
+          for line in src.splitlines():
+              if re.search(r'TypeChecker.*eval', line): in_eval=True
+              if in_eval:
+                  m=re.match(r'^\s*([0-9,]+)\s+(.+)$', line)
+                  if m:
+                      n=int(m.group(1).replace(',',''))
+                      tail=m.group(2).strip()
+                      if n>0: eval_lines.append({'instructions':n,'whole_program_pct':100*n/total,'text':tail})
+              if in_eval and len(eval_lines)>500: break
+          out={
+            'verdict':'EVAL_MASS_SPLIT' if fpct.get('EVAL',0)>=5.0 else ('MASS_FAMILY_FOUND' if mass else 'DIFFUSE_COST'),
+            'program_total_instructions':total,
+            'families_self_pct':dict(ranked),
+            'families_ge_5pct':mass,
+            'top_symbols':sorted(classified,key=lambda r:r['instructions'],reverse=True)[:100],
+            'eval_top_source_lines':sorted(eval_lines,key=lambda r:r['instructions'],reverse=True)[:100]
+          }
+          Path('results/v38/atlas.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - name: Record provenance and decision constraints
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import json
+          atlas=json.loads(Path('results/v38/atlas.json').read_text())
+          out={
+            'arena_rev':'aaa6aedd3a4f4de88bf825319a8a050e572c9cce',
+            'kernel_rev':'3d7585c21242f29fdaa48ae9a16e16c6afe42238',
+            'primary_objective':'submitted native Mathlib instruction cost',
+            'semantic_gate':'submitted native and x86-64-v2 PGO diagnostic twin both accept Mathlib before profiling',
+            'profiler':'Callgrind Ir on x86-64-v2 PGO diagnostic twin with source-line attribution',
+            'measurement_boundary':'diagnostic twin changes ISA target and adds line debug info only; source and semantics unchanged',
+            'frozen_residual':'prior V38 profile found TypeChecker::eval at about one third of total Mathlib instructions; this run splits that mass before intervention',
+            'decision_rule':'no optimization admitted from heat alone; next intervention requires a concrete evaluator operation with material whole-Mathlib mass and a plausible removable mechanism, then a separate A/B semantic and economic test',
+            'atlas_verdict':atlas['verdict'],
+            'next':'freeze smallest evaluator-operation separator from the source-line split'
+          }
+          Path('results/v38/decision.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v38-mathlib-exclusive-cost-atlas
+          path: results/v38/
+          if-no-files-found: error
