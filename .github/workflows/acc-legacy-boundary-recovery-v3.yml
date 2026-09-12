@@ -1,0 +1,123 @@
+name: ACC Legacy Boundary Recovery V3
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-legacy-boundary-recovery-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        target:
+          - ac-07418
+          - ac-03873
+          - ac-09392
+          - ac-00603
+          - ac-01975
+          - ac-00230
+          - ac-00341
+          - ac-02616
+          - ac-07622
+          - ac-06832
+          - ac-07432
+          - ac-00907
+          - ac-06254
+          - ac-02868
+          - ac-10057
+          - ac-05328
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Fetch pinned repositories
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Install runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+      - name: Freeze target
+        run: |
+          mkdir -p acc_competitive/boundary_v3
+          printf '["%s"]\n' "${{ matrix.target }}" > "acc_competitive/boundary_v3/${{ matrix.target }}.json"
+      - name: Retry outer legacy boundary with optimized compiler
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "acc_competitive/out_boundary_v3_${{ matrix.target }}" \
+            --target-ids-file "acc_competitive/boundary_v3/${{ matrix.target }}.json" \
+            --include-solved \
+            --max-targets 1 \
+            --max-nodes 120000 \
+            --max-quotient-total 80 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            --search-seconds 1700 \
+            | tee "acc_competitive/boundary_v3_${{ matrix.target }}.log"
+      - name: Upload candidate
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-boundary-v3-${{ matrix.target }}
+          path: |
+            acc_competitive/out_boundary_v3_${{ matrix.target }}/
+            acc_competitive/boundary_v3_${{ matrix.target }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  submit:
+    needs: recover
+    if: always() && needs.recover.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-boundary-v3-*
+          path: acc_competitive/boundary_v3_downloads
+          merge-multiple: false
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Live-filter and submit recovered records
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/boundary_v3_downloads/**/submission_v2.txt' \
+            --out-dir acc_competitive/boundary_v3_aggregate \
+            --cycle 3 \
+            | tee acc_competitive/boundary_v3_aggregate.log
+      - name: Upload authority
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-legacy-boundary-recovery-v3
+          path: |
+            acc_competitive/boundary_v3_aggregate/
+            acc_competitive/boundary_v3_aggregate.log
+          retention-days: 90
+          if-no-files-found: warn
