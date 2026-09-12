@@ -1,14 +1,7 @@
 name: ACC Competitive Telemetry
 
 on:
-  schedule:
-    - cron: "7 */6 * * *"
   workflow_dispatch:
-  push:
-    branches:
-      - main
-    paths:
-      - ".github/workflows/acc-competitive-telemetry.yml"
 
 permissions:
   contents: read
