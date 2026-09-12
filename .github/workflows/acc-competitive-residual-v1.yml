@@ -7,6 +7,7 @@ on:
     paths:
       - ".github/workflows/acc-competitive-residual-v1.yml"
   workflow_dispatch:
+  workflow_call:
 
 permissions:
   contents: read
@@ -26,6 +27,8 @@ jobs:
     steps:
       - name: Checkout competitive branch
         uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
 
       - name: Fetch pinned official ACC
         run: |
@@ -109,6 +112,8 @@ jobs:
     steps:
       - name: Checkout competitive branch
         uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
 
       - name: Download scout
         uses: actions/download-artifact@v4
@@ -166,6 +171,8 @@ jobs:
     steps:
       - name: Checkout competitive branch
         uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
 
       - name: Download scout and attacks
         uses: actions/download-artifact@v4
