@@ -1,0 +1,67 @@
+{
+  "charges": {
+    "external_authority": 8,
+    "fully_charged_total": 34659,
+    "machine_synthesis": 10,
+    "old_denotation_exhaustion": 16,
+    "old_history_checks": 32,
+    "passive_future": 50000,
+    "repair_reselection": 6561,
+    "selected_future": 28000,
+    "stateful_novelty_verification": 32
+  },
+  "classification": "FINITE_EXHAUSTIVE_PROOF_GATED_CAUSAL_EXPERIMENT_META_SUBSTRATE_GENESIS",
+  "constructed_observations": [
+    0,
+    1
+  ],
+  "constructed_output_table": [
+    1,
+    0
+  ],
+  "constructed_transition_table": [
+    0,
+    1,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0
+  ],
+  "construction_calls": 10,
+  "controls": {
+    "existing_stateless_separator_blocks_growth": true,
+    "inert_extra_state_fails": true,
+    "meta_extension_ablation_restores_impossibility": true,
+    "missing_completeness_blocks_growth": true,
+    "separator_ablation_removes_repair_authority": true,
+    "stale_certificate_rejected": true,
+    "state_coordinate_ablation_destroys_separator": true,
+    "syntactic_rename_fails_extensional_novelty": true
+  },
+  "gates": {
+    "all_hard_controls": true,
+    "complete_and_no_separator_are_distinct_certificates": true,
+    "complete_stateless_meta_substrate": true,
+    "constructed_machine_is_stateful_extensionally": true,
+    "fully_charged_path_beats_passive": true,
+    "lower_machine_substrate_is_generic": true,
+    "new_observer_separates_histories": true,
+    "no_named_history_delay_or_previous_primitive": true,
+    "repair_authority_changes": true,
+    "same_present_inputs_verified": true,
+    "unknown_expressivity_experiment_meta_inhabited": true
+  },
+  "net_savings": 15341,
+  "not_established": [
+    "substrate from nothing",
+    "unrestricted meta-language growth",
+    "open-ended question invention",
+    "autonomous physical experiment design"
+  ],
+  "old_denotation_count": 16,
+  "old_no_separator": true,
+  "snapshot_digest": "34e2c37b6635581928a7e7aa18b27171b09e0636e854dc7f5ab2a77f9be4f75b",
+  "verdict": "VERIFIED_EXPERIMENT_META_SUBSTRATE_GENESIS"
+}
