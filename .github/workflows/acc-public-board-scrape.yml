@@ -1,0 +1,74 @@
+name: ACC Public Board Scrape
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-public-board-scrape.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Discover ACC public route
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,re
+          u='https://competition.sair.foundation/competitions/'
+          html=urllib.request.urlopen(u,timeout=30).read().decode('utf-8','replace')
+          open('/tmp/competitions.html','w').write(html)
+          links=sorted(set(re.findall(r'href=["\']([^"\']+)["\']',html)))
+          for x in links:
+              if 'curtis' in x.lower() or '/acc' in x.lower():
+                  print('ACC_LINK',x)
+          PY
+
+      - name: Fetch candidate ACC leaderboard pages
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import urllib.request,re,json,html as H
+          base='https://competition.sair.foundation'
+          doc=open('/tmp/competitions.html').read()
+          links=sorted(set(re.findall(r'href=["\']([^"\']+)["\']',doc)))
+          cands=[x for x in links if 'curtis' in x.lower() or '/acc' in x.lower()]
+          for x in cands:
+              root=x.rstrip('/')
+              for suffix in ('/leaderboard',''):
+                  url=base+root+suffix
+                  try:
+                      raw=urllib.request.urlopen(url,timeout=30).read().decode('utf-8','replace')
+                  except Exception as e:
+                      print('FETCH_FAIL',url,repr(e)); continue
+                  print('FETCH_OK',url,'bytes',len(raw))
+                  text=re.sub(r'<script[^>]*>.*?</script>',' ',raw,flags=re.S|re.I)
+                  text=re.sub(r'<style[^>]*>.*?</style>',' ',text,flags=re.S|re.I)
+                  text=H.unescape(re.sub(r'<[^>]+>',' ',text))
+                  text=re.sub(r'\s+',' ',text)
+                  for needle in ('MathGraph','Navier','JDD'):
+                      i=text.lower().find(needle.lower())
+                      if i>=0:
+                          print('HIT',needle,text[max(0,i-500):i+1200])
+                  open('/tmp/board.html','w').write(raw)
+                  open('/tmp/board.txt','w').write(text)
+          PY
+
+      - name: Upload scrape
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-public-board-scrape
+          path: |
+            /tmp/competitions.html
+            /tmp/board.html
+            /tmp/board.txt
+          if-no-files-found: warn
