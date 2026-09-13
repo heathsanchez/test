@@ -219,12 +219,36 @@ class Kernel:
         self,world:World,*,
         verification_enabled:bool=True,
         allowed_action_classes:int | None=None,
+        minimum_successors_per_state:int | None=None,
+        maximum_successors_per_state:int | None=None,
     )->dict[str,Any]:
         auth=self.authority(world)
         if auth:
             return auth
         if not verification_enabled:
             return {"status":"UNKNOWN_NO_VERIFIER","algebra_steps":0}
+
+        successor_sizes=[len(r.afters) for r in world.rows]
+        if (
+            minimum_successors_per_state is not None
+            and min(successor_sizes)<int(minimum_successors_per_state)
+        ):
+            return {
+                "status":"CERTIFIED_SUCCESSOR_MULTIPLICITY_BOUND_INADEQUACY",
+                "minimum_successors_per_state":int(minimum_successors_per_state),
+                "observed_minimum_successors":min(successor_sizes),
+                "algebra_steps":0,
+            }
+        if (
+            maximum_successors_per_state is not None
+            and max(successor_sizes)>int(maximum_successors_per_state)
+        ):
+            return {
+                "status":"CERTIFIED_SUCCESSOR_MULTIPLICITY_BOUND_INADEQUACY",
+                "maximum_successors_per_state":int(maximum_successors_per_state),
+                "observed_maximum_successors":max(successor_sizes),
+                "algebra_steps":0,
+            }
 
         classes=self.action_classes(world)
         if allowed_action_classes is not None and len(classes)>int(allowed_action_classes):
