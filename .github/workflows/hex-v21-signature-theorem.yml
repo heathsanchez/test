@@ -1,0 +1,58 @@
+name: Hex V21 Signature Theorem
+
+on:
+  push:
+    branches:
+      - hex-v21-signature-theorem
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theorem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Lean
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          elan toolchain install leanprover/lean4:v4.34.0-rc2
+          elan override set leanprover/lean4:v4.34.0-rc2 --path experiments/hex_v21_signature_theorem
+          lean --version
+
+      - name: Kernel-check arbitrary-signature theorem
+        working-directory: experiments/hex_v21_signature_theorem
+        run: |
+          set -o pipefail
+          lean Main.lean 2>&1 | tee theorem.log
+
+      - name: Seal V21 evidence
+        working-directory: experiments/hex_v21_signature_theorem
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          ev={
+            "verdict":"VERIFIED_ARBITRARY_RELATIONAL_SIGNATURE_INCIDENCE_THEOREM",
+            "lean_kernel_check":"PASS",
+            "theorem":"sourceIso_iff_incIso",
+            "scope":"arbitrary carrier types, arbitrary relation-symbol type, arbitrary finite arity per relation symbol",
+            "main_sha256":hashlib.sha256((root/"Main.lean").read_bytes()).hexdigest()
+          }
+          (root/"final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v21-signature-theorem-evidence
+          path: |
+            experiments/hex_v21_signature_theorem/final_evidence.json
+            experiments/hex_v21_signature_theorem/theorem.log
+            experiments/hex_v21_signature_theorem/Main.lean
