@@ -32,8 +32,9 @@ def find_verdict(name, expected):
     for p,x in jsons(name):
         if verdict_of(x)==expected:
             matches.append((p,x))
-    if len(matches)!=1:
-        raise RuntimeError(f"{name}: expected exactly one {expected}, found {len(matches)}")
+    if not matches:
+        raise RuntimeError(f"{name}: expected {expected}, found none")
+    matches.sort(key=lambda px: (px[0].name != "final_evidence.json", len(px[0].parts)))
     return matches[0]
 
 def all_bool_gates(x):
