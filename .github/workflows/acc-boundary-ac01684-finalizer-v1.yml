@@ -47,10 +47,13 @@ jobs:
           echo "BEFORE_MEMORY"
           free -h || true
           df -h / || true
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          # GitHub's Ubuntu image already has /swapfile active. Add a separate swap file
+          # rather than attempting to mutate the runner's existing one.
+          SWAP=/swapfile-extra-acc
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
           echo "AFTER_MEMORY"
           free -h
           swapon --show
@@ -121,9 +124,7 @@ jobs:
             cp "$f" "acc_competitive/boundary_final_collected/$c/search_results.json"
           done
 
-          # Recover the 11 successful per-target full_current rows from the prior recovery run.
           gh run download "$RECOVERY_RUN" --pattern 'acc-full-current-recovery-*' -D /tmp/recovery || true
-          # Recover ac-01684 from this finalizer run.
           gh run download "${{ github.run_id }}" -n acc-ac01684-finalizer-v1 -D /tmp/final
 
           mkdir -p acc_competitive/boundary_final_collected/full_current
@@ -141,7 +142,6 @@ jobs:
           for r in rows:
               cid=r.get('challenge_id')
               if cid not in tids: continue
-              # finalizer result for ac-01684 is authoritative over any absent/partial recovery row.
               if cid in by and by[cid] != r and cid!='ac-01684':
                   raise SystemExit(f'conflicting rows for {cid}')
               by[cid]=r
