@@ -1,0 +1,15 @@
+{
+  "experiment":"consequence_symmetry_genesis_v18",
+  "scientific_freeze_commit":"898d203c54f059700910ca9257363a2d219d02c9",
+  "github_blob_shas":{
+    "PROTOCOL.md":"061cb7b07206cb96e31a2d3788e7c362edbab393",
+    "basis.py":"dc110a024cc088bbafe27c935a8c73aaaa2b0e44",
+    "kernel.py":"d44da57fba37fbafbfed90efc6326feb4077a977"
+  },
+  "primitive_transformation_language":"all finite bijections of anonymous carrier",
+  "admission_rule":"preserve every protected relation and consequence signature",
+  "initial_present":"identity transformation only",
+  "explicitly_absent":["coordinates","angles","distance","rotation","reflection","frequency","units","dimension","group labels"],
+  "freeze_rule":"Post-freeze worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite automorphism genesis and orbit qualification reduction only."
+}
