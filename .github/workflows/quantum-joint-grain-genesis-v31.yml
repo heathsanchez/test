@@ -1,0 +1,65 @@
+name: Quantum Joint Grain Genesis V31
+
+on:
+  push:
+    branches: [quantum-joint-grain-genesis-v31]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V31 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=091ffab475de3616534d9a837ed1cdfdb27cdf81
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/quantum_joint_grain_genesis_v31/PROTOCOL.md             experiments/quantum_joint_grain_genesis_v31/basis.py             experiments/quantum_joint_grain_genesis_v31/kernel.py
+          echo "V31 FROZEN CORE UNCHANGED"
+
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/quantum_joint_grain_genesis_v31/basis.py             experiments/quantum_joint_grain_genesis_v31/kernel.py             experiments/quantum_joint_grain_genesis_v31/challenge_pack.py             experiments/quantum_joint_grain_genesis_v31/run.py
+
+      - name: Run V31
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/quantum_joint_grain_genesis_v31
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/quantum_joint_grain_genesis_v31
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: quantum-joint-grain-genesis-v31-evidence
+          path: |
+            experiments/quantum_joint_grain_genesis_v31/evidence.json
+            experiments/quantum_joint_grain_genesis_v31/run.log
+            experiments/quantum_joint_grain_genesis_v31/FREEZE.json
+            experiments/quantum_joint_grain_genesis_v31/PROTOCOL.md
+          if-no-files-found: error
