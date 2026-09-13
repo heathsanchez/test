@@ -1,0 +1,22 @@
+{
+  "experiment":"compositional_relation_carrier_genesis_v27",
+  "scientific_freeze_commit":"f4f0799472ef042c9b9d1fef52e4d133abdb16cb",
+  "protocol_commit":"773e52bbfe7450f60c278ad438742eed1e52fde2",
+  "basis_commit":"611975406e4f1c48c45981bf2d502501b1476f95",
+  "kernel_commit":"f4f0799472ef042c9b9d1fef52e4d133abdb16cb",
+  "github_blob_shas":{
+    "PROTOCOL.md":"0fcdf934e1aa46498abf29e005d11dfd14539643",
+    "basis.py":"ad11f024eee96a2fba42b6ed7cff8ecf5dd8f015",
+    "kernel.py":"9b7f1428eda738af9aec81487254aadc5320b8fc"
+  },
+  "primitive_syntax":"ATOM(p) plus generic CAT(Expr,ATOM(p))",
+  "initial_authorized_width":1,
+  "growth_rule":"increase compositional width by one only after complete verifier-clean failure",
+  "explicitly_absent":[
+    "tuple constructor","pair constructor","RELATION primitive","EDGE primitive",
+    "source role","target role","function candidate type","bijection candidate type",
+    "SET","FLIP","swap constructor"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite relation-carrier realization by generic composition; CAT and verifier remain supplied."
+}
