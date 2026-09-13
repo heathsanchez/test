@@ -1,0 +1,17 @@
+{
+  "experiment":"stochastic_memory_genesis_v19",
+  "scientific_freeze_commit":"27a7cf4eb11af34ef111cd614483882b2aef1b86",
+  "protocol_commit":"06c6caa6db8d4103585a18f3ff3c66a3ce416eea",
+  "basis_commit":"30a24ddce3d7a8fbbd8164d61aab47545a73fba2",
+  "kernel_commit":"27a7cf4eb11af34ef111cd614483882b2aef1b86",
+  "github_blob_shas":{
+    "PROTOCOL.md":"aeb7a4f170905939c69541de0ccc7add2d8fc0c2",
+    "basis.py":"95b37e2bc4b43507c7ffa19de495597abbea8396",
+    "kernel.py":"2e4f61027630238d53b39e592b686dd55e4a8a38"
+  },
+  "primitive_language":"ACCESS(lag, anonymous_channel)",
+  "data_code":"Jeffreys/Krichevsky-Trofimov Beta(1/2,1/2)",
+  "structural_code":"sum(1+lag) over retained accessors",
+  "initial_authorized_lag":0,
+  "freeze_rule":"Post-freeze worlds may not alter PROTOCOL.md, basis.py, or kernel.py."
+}
