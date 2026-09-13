@@ -1,0 +1,70 @@
+name: Typed Generative Basis V2
+
+on:
+  push:
+    branches:
+      - typed-generative-basis-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen basis and kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=125da06b2228aa08c6b56b4c6c7a4d24ea261f93
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/typed_generative_basis_v2/PROTOCOL.md             experiments/typed_generative_basis_v2/basis.py             experiments/typed_generative_basis_v2/kernel.py
+          echo "V2 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/typed_generative_basis_v2/basis.py             experiments/typed_generative_basis_v2/kernel.py             experiments/typed_generative_basis_v2/challenge_pack.py             experiments/typed_generative_basis_v2/run.py
+
+      - name: Run post-freeze language construction suite
+        id: science
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/typed_generative_basis_v2
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/typed_generative_basis_v2
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          print("DISTINCT_LANGUAGES", e["distinct_verified_language_count"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: typed-generative-basis-v2-evidence
+          path: |
+            experiments/typed_generative_basis_v2/evidence.json
+            experiments/typed_generative_basis_v2/run.log
+            experiments/typed_generative_basis_v2/FREEZE.json
+            experiments/typed_generative_basis_v2/PROTOCOL.md
+          if-no-files-found: error
