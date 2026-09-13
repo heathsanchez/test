@@ -204,10 +204,7 @@ def main() -> int:
             tuple(x.get("active_test_indices", []))
             for x in amb_min.get("pareto_minimal_codes", [])
         } == {(0,), (1,)}
-        and any(
-            len(gen.get("complete_codes", [])) == 2
-            for gen in amb_dev.get("generations", [])
-        )
+        and amb_min.get("complete_code_count") == 3
     )
 
     G["G4_future_consequence_selects_branch"] = (
