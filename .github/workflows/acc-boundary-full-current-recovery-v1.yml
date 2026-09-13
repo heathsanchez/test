@@ -29,6 +29,7 @@ jobs:
       - name: Recover exact frozen target set
         env:
           GH_TOKEN: ${{ github.token }}
+          INDEX: ${{ matrix.index }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/freeze
@@ -42,9 +43,6 @@ jobs:
           Path('/tmp/one_target.json').write_text(json.dumps([rows[i]],indent=2)+'\n')
           print('RECOVERY_TARGET', json.dumps(rows[i],sort_keys=True))
           PY
-        env:
-          GH_TOKEN: ${{ github.token }}
-          INDEX: ${{ matrix.index }}
       - name: Fetch pinned search and verifier authority
         run: |
           set -euo pipefail
@@ -130,8 +128,7 @@ jobs:
           print('FULL_CURRENT_RECOVERY_COUNTS', {'rows':len(rows),'unique':len(by),'missing':missing,'extra':extra})
           assert not missing and not extra and len(by)==len(tids)
           ordered=[by[x] for x in tids]
-          out=Path('acc_competitive/boundary_collected/full_current/search_results.json')
-          out.write_text(json.dumps(ordered,indent=2,sort_keys=True)+'\n')
+          Path('acc_competitive/boundary_collected/full_current/search_results.json').write_text(json.dumps(ordered,indent=2,sort_keys=True)+'\n')
           PY
       - name: Re-synthesize the same declared portfolio
         run: |
@@ -148,8 +145,7 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json,pathlib,urllib.request
-          p=pathlib.Path('acc_competitive/boundary_recovery_result/report.json')
-          r=json.loads(p.read_text())
+          r=json.loads(pathlib.Path('acc_competitive/boundary_recovery_result/report.json').read_text())
           B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
           u=f'{B}/api/acc/discoveries/snapshot?problem=ac'
           with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as z:o=json.loads(z.read().decode())
@@ -174,8 +170,7 @@ jobs:
           if [ -f acc_competitive/competitive_wins_seed_v1.json ]; then
             args+=(--protected-wins acc_competitive/competitive_wins_seed_v1.json)
           fi
-          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" \
-            | tee acc_competitive/resolve_acc_recovery_result.log
+          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" | tee acc_competitive/resolve_acc_recovery_result.log
       - uses: actions/upload-artifact@v4
         with:
           name: acc-boundary-full-current-recovery-v1
@@ -188,6 +183,6 @@ jobs:
             /tmp/freeze/targets.json
           retention-days: 90
 
-# Scientific scope: this is a protocol repair, not a mechanism expansion.
-# The exact frozen target set and full_current search parameters are preserved.
-# Sharding makes the declared per-target bounded capability executable without runner timeout.
+# Scientific scope: protocol repair, not mechanism expansion.
+# Exact frozen target set and full_current search parameters are preserved.
+# Sharding turns the intended per-target bounded capability into an executable qualification.
