@@ -1,0 +1,30 @@
+{
+  "classification": "FINITE_EXHAUSTIVE_TERNARY_RELATION_REPRESENTATION_GROWTH",
+  "qualification": {
+    "carrier_size": 3,
+    "relation_arity": 3,
+    "relation_size": 4,
+    "object_count": 17550,
+    "ordered_pair_count": 308002500,
+    "source_isomorphism_classes": 2964
+  },
+  "current_substrate": {
+    "representation": "all three direct binary projections plus vertex identity anchors",
+    "mismatch_count": 288
+  },
+  "growth_substrate": {
+    "constructor": "one occurrence node per tuple, connected to selected argument-position roles",
+    "mismatch_counts": {
+      "0": 112257630,
+      "1": 112257630,
+      "2": 112257630,
+      "01": 5595696,
+      "02": 5595696,
+      "12": 5595696,
+      "012": 0
+    },
+    "selected_subset": [0,1,2]
+  },
+  "semantic_verdict": "LOCAL_SEMANTIC_PASS_TERNARY_COHERENCE_EXPANSION",
+  "generated_lean_sha256": "c1e4062f7d203050759e5acb6040295acd05fc1837fb5523bd31234957e38998"
+}
