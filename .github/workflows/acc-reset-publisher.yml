@@ -30,14 +30,8 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/reset_inputs /tmp/pending
-
-          # Carry forward the known unsent 579-move ac-09679 candidate.
-          gh api repos/heathsanchez/test/actions/artifacts/10292442312/zip > /tmp/attack7.zip
-          mkdir -p /tmp/pending/attack7
-          unzip -q /tmp/attack7.zip -d /tmp/pending/attack7
-
-          # Pull latest offline pools if they exist by reset time.
-          for NAME in acc-offline-high-slack-pool acc-depth-cost-sweep-v1 acc-family-bridge-v1 acc-peephole-recovery-v1 acc-peephole-recovery-v2 acc-peephole-recovery-v3 acc-current-tail-pool acc-atlas-connector-pool acc-official-bestfirst-pool; do
+          # No hard-coded stale candidates: only current reusable offline pools.
+          for NAME in acc-fresh-frontier-v2-pool acc-offline-high-slack-pool acc-depth-cost-sweep-v1 acc-family-bridge-v1 acc-peephole-recovery-v1 acc-peephole-recovery-v2 acc-peephole-recovery-v3 acc-current-tail-pool acc-atlas-connector-pool acc-official-bestfirst-pool; do
             ID="$(gh api "repos/heathsanchez/test/actions/artifacts?name=$NAME&per_page=1" --jq '.artifacts[0].id // empty')"
             if [ -n "$ID" ]; then
               echo "Downloading $NAME artifact $ID"
@@ -46,21 +40,16 @@ jobs:
               unzip -q "/tmp/$NAME.zip" -d "/tmp/pending/$NAME"
             fi
           done
-
           python3 - <<'PY'
           import pathlib
-          roots=pathlib.Path('/tmp/pending')
-          outs=[]
+          roots=pathlib.Path('/tmp/pending'); outs=[]
           for p in roots.rglob('*'):
               if p.is_file() and p.name in ('submission_v2.txt','pending_submission.txt'):
                   txt=p.read_text().strip()
-                  if txt:
-                      outs.append(txt)
-                      print('SOURCE',p)
+                  if txt: outs.append(txt); print('SOURCE',p)
           out=pathlib.Path('acc_competitive/reset_inputs/all.txt')
           out.write_text(('\n'.join(outs)+'\n') if outs else '')
-          print('PENDING_SOURCE_FILES',len(outs))
-          print('PENDING_LINES',sum(len(x.splitlines()) for x in outs))
+          print('PENDING_SOURCE_FILES',len(outs)); print('PENDING_LINES',sum(len(x.splitlines()) for x in outs))
           PY
 
       - name: Fetch pinned official verifier
@@ -74,7 +63,6 @@ jobs:
           mkdir -p /tmp/prior_atlas
           ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
           if [ -n "$ID" ]; then
-            echo "Recovering proof atlas artifact $ID"
             gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/prior_atlas.zip
             unzip -q /tmp/prior_atlas.zip -d /tmp/prior_atlas
           fi
@@ -82,45 +70,28 @@ jobs:
       - name: Fortify every candidate through shared proof atlas
         run: |
           set -euo pipefail
-          if [ ! -s acc_competitive/reset_inputs/all.txt ]; then
-            echo "No pending candidates."
-            exit 0
-          fi
+          if [ ! -s acc_competitive/reset_inputs/all.txt ]; then echo "No pending candidates."; exit 0; fi
           PRIOR="$(find /tmp/prior_atlas -name proof_atlas.sqlite 2>/dev/null | head -1 || true)"
           ARGS=(--acc-root /tmp/acc --glob 'acc_competitive/reset_inputs/all.txt' --out-dir acc_competitive/fortified --reverse-depth 7 --reverse-cap 250000)
           if [ -n "$PRIOR" ]; then ARGS+=(--prior-atlas "$PRIOR"); fi
           python3 acc_competitive/proof_atlas_fortify_v1.py "${ARGS[@]}" | tee acc_competitive/fortify.log
 
-      - name: Superoptimize thin wins and near misses before POST
+      - name: Superoptimize before any POST
         run: |
           set -euo pipefail
-          if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then
-            echo "No fortified candidates."
-            exit 0
-          fi
-          python3 acc_competitive/batch_peephole_fortify_v1.py \
-            --acc-root /tmp/acc \
-            --input acc_competitive/fortified/fortified_ac.txt \
-            --out-dir acc_competitive/peephole_fortified \
-            --thin-win-frac 0.25 \
-            --near-miss-frac 0.10 \
-            --max-window 5 \
-            --max-path 6000 \
+          if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then echo "No fortified candidates."; exit 0; fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py --acc-root /tmp/acc \
+            --input acc_competitive/fortified/fortified_ac.txt --out-dir acc_competitive/peephole_fortified \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 5 --max-path 6000 \
             | tee acc_competitive/batch_peephole.log
 
       - name: Fresh live filter and publish one packed batch
         run: |
           set -o pipefail
-          if [ ! -s acc_competitive/peephole_fortified/fortified_ac.txt ]; then
-            echo "No fortified candidates."
-            exit 0
-          fi
-          python3 andrews_curtis/continuous_aggregate_v4.py \
-            --acc-root /tmp/acc \
+          if [ ! -s acc_competitive/peephole_fortified/fortified_ac.txt ]; then echo "No fortified candidates."; exit 0; fi
+          python3 andrews_curtis/continuous_aggregate_v4.py --acc-root /tmp/acc \
             --glob 'acc_competitive/peephole_fortified/fortified_ac.txt' \
-            --out-dir acc_competitive/reset_publish_out \
-            --cycle 0 \
-            | tee acc_competitive/reset_publish.log
+            --out-dir acc_competitive/reset_publish_out --cycle 0 | tee acc_competitive/reset_publish.log
 
       - name: Persist compounding proof atlas
         if: always()
