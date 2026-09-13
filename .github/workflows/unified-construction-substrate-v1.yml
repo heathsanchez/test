@@ -1,0 +1,85 @@
+name: Unified Construction Substrate V1
+
+on:
+  push:
+    branches:
+      - unified-construction-substrate-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify scientific freeze
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=9152e3e95e9352fed2eb85df859444d986eb0626
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/unified_construction_substrate_v1/PROTOCOL.md             experiments/unified_construction_substrate_v1/mdc_l1.py             experiments/unified_construction_substrate_v1/kernel.py
+          echo "FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/unified_construction_substrate_v1/mdc_l1.py             experiments/unified_construction_substrate_v1/kernel.py             experiments/unified_construction_substrate_v1/challenge_pack.py             experiments/unified_construction_substrate_v1/run.py
+
+      - name: Run strict post-freeze challenge pack
+        id: science
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/unified_construction_substrate_v1
+          python -u run.py 2>&1 | tee run.log
+          code=${PIPESTATUS[0]}
+          echo "exit_code=$code" >> "$GITHUB_OUTPUT"
+          exit "$code"
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/unified_construction_substrate_v1
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("CORE_PASS", e["core_pass"])
+          print("FULL_PROTOCOL_PASS", e["full_protocol_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          for g in e["gaps"]:
+              print("GAP", g["gate"], "-", g["detail"])
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unified-construction-substrate-v1-evidence
+          path: |
+            experiments/unified_construction_substrate_v1/evidence.json
+            experiments/unified_construction_substrate_v1/run.log
+            experiments/unified_construction_substrate_v1/FREEZE.json
+            experiments/unified_construction_substrate_v1/PROTOCOL.md
+          if-no-files-found: error
+
+      - name: Enforce scientific pass
+        if: always()
+        shell: bash
+        run: |
+          if [ "${{ steps.science.outputs.exit_code }}" != "0" ]; then
+            echo "Full protocol did not pass; see evidence artifact."
+            exit 1
+          fi
