@@ -106,7 +106,11 @@ jobs:
       - name: Fetch pinned search and authority
         run: |
           set -euo pipefail
-          python3 -m pip install --quiet numpy
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          python3 - <<'PY'
+          import numpy, numba
+          print('RUNTIME_OK', numpy.__version__, numba.__version__)
+          PY
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
@@ -201,4 +205,4 @@ jobs:
             /tmp/freeze/targets.json
           retention-days: 90
 
-# Boundary Learns discipline: exhaust declared current capabilities first; type residuals before any mechanism growth.
+# Boundary Learns discipline: preserve the same declared capability experiment; repair apparatus only.
