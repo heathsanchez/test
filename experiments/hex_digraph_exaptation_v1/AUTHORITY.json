@@ -1,0 +1,22 @@
+{
+  "verdict": "PILOT_PASS",
+  "workflow_run_id": 34727216924,
+  "workflow_job_id": 103643360934,
+  "head_sha": "e1c58399c92355cd50e82b9e55075c7e0dfaa7a2",
+  "artifact_id": 10308475502,
+  "artifact_name": "hex-digraph-exaptation-v1-evidence",
+  "artifact_zip_sha256": "aaaca375e2d858e9d4a63b4f1f2c8e5320a1188320f129e382eb75b609c481e7",
+  "hex": {
+    "repo": "leanprover/hex-graph-iso",
+    "tag": "v0.6.0",
+    "commit": "f247c0898414ca29c502691e3a8ad0b3ce0b4f6a"
+  },
+  "lean": "leanprover/lean4:v4.34.0-rc2",
+  "qualification": {
+    "graphs": 64,
+    "ordered_pairs": 4096,
+    "role_split_anchor_mismatches": 0,
+    "symmetrize_mismatches": 1228
+  },
+  "lean_kernel_check": "PASS"
+}
