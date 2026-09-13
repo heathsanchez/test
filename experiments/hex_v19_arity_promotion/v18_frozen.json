@@ -1,0 +1,86 @@
+{
+  "claim_boundary": [
+    "same occurrence-node structural pattern promoted",
+    "finite arity5 world",
+    "no external Hex heldout check"
+  ],
+  "classification": "FINITE_EXHAUSTIVE_CROSS_ARITY_COMPOUNDING",
+  "cold_search": {
+    "candidate_subsets": 31,
+    "conceptual_pair_comparison_budget": 40086769600,
+    "mismatch_counts": {
+      "(0, 1)": 104778408,
+      "(0, 1, 2)": 11902680,
+      "(0, 1, 2, 3)": 906864,
+      "(0, 1, 2, 3, 4)": 0,
+      "(0, 1, 2, 4)": 906864,
+      "(0, 1, 3)": 11902680,
+      "(0, 1, 3, 4)": 906864,
+      "(0, 1, 4)": 11902680,
+      "(0, 2)": 104778408,
+      "(0, 2, 3)": 11902680,
+      "(0, 2, 3, 4)": 906864,
+      "(0, 2, 4)": 11902680,
+      "(0, 3)": 104778408,
+      "(0, 3, 4)": 11902680,
+      "(0, 4)": 104778408,
+      "(0,)": 541664200,
+      "(1, 2)": 104778408,
+      "(1, 2, 3)": 11902680,
+      "(1, 2, 3, 4)": 906864,
+      "(1, 2, 4)": 11902680,
+      "(1, 3)": 104778408,
+      "(1, 3, 4)": 906864,
+      "(1, 4)": 104778408,
+      "(1,)": 541664200,
+      "(2, 3)": 104778408,
+      "(2, 3, 4)": 11902680,
+      "(2, 4)": 104778408,
+      "(2,)": 541664200,
+      "(3, 4)": 104778408,
+      "(3,)": 541664200,
+      "(4,)": 541664200
+    },
+    "qualified_subsets": [
+      [
+        0,
+        1,
+        2,
+        3,
+        4
+      ]
+    ]
+  },
+  "gates": {
+    "G1_only_full_star_qualifies": true,
+    "G2_all_ablations_fail": true
+  },
+  "qualification": {
+    "carrier_size": 2,
+    "object_count": 35960,
+    "ordered_pair_count": 1293121600,
+    "relation_arity": 5,
+    "relation_size": 4,
+    "source_isomorphism_classes": 18040
+  },
+  "single_position_ablations": {
+    "(0, 1, 2, 3)": 906864,
+    "(0, 1, 2, 4)": 906864,
+    "(0, 1, 3, 4)": 906864,
+    "(0, 2, 3, 4)": 906864,
+    "(1, 2, 3, 4)": 906864
+  },
+  "verdict": "LOCAL_SEMANTIC_PASS_ARITY5_PROMOTION",
+  "warm_pattern": {
+    "candidate_search_reduction": 31.0,
+    "conceptual_pair_comparison_budget": 1293121600,
+    "mismatch_count": 0,
+    "subset": [
+      0,
+      1,
+      2,
+      3,
+      4
+    ]
+  }
+}
