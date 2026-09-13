@@ -1,0 +1,119 @@
+name: ACC Public Source Map V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-public-source-map-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  map:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned public datasets
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+          gunzip -k /tmp/acsolverx/data/AC1M.txt.gz
+
+      - name: Map scored presentations to AC19 and AC1M
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/source_map
+          python3 - <<'PY'
+          import ast,json,pathlib,sys,time
+          ROOT=pathlib.Path('.').resolve()
+          sys.path.insert(0,str(ROOT/'andrews_curtis'))
+          import solver_v2_gssub as S
+
+          ns=S.load_gssub(pathlib.Path('/tmp/acsolverx'))
+          canon=ns['canonical_pair_str']
+
+          def iw(w):
+              return ''.join({1:'x',-1:'X',2:'y',-2:'Y'}[a] for a in w)
+
+          def ckey_pair(r0,r1):
+              return canon(iw(tuple(r0)),iw(tuple(r1)))
+
+          def flat_pair(row):
+              n=len(row)//2
+              a=tuple(x for x in row[:n] if x)
+              b=tuple(x for x in row[n:] if x)
+              return a,b
+
+          def load_dataset(path):
+              index={}
+              exact={}
+              with open(path,encoding='utf-8') as f:
+                  for i,line in enumerate(f):
+                      line=line.strip()
+                      if not line:continue
+                      row=ast.literal_eval(line)
+                      a,b=flat_pair(row)
+                      k=ckey_pair(a,b)
+                      index.setdefault(k,i)
+                      exact.setdefault((a,b),i)
+              return index,exact
+
+          t=time.time()
+          ac19,_=load_dataset('/tmp/acsolverx/data/AC19.txt')
+          print('AC19_INDEX',len(ac19),'seconds',round(time.time()-t,3))
+          t=time.time()
+          ac1m,_=load_dataset('/tmp/acsolverx/data/AC1M.txt')
+          print('AC1M_INDEX',len(ac1m),'seconds',round(time.time()-t,3))
+
+          manifest=json.loads(pathlib.Path('/tmp/acc/competition/tools/verifier/data/manifest.json').read_text())
+          challenges=[c for c in manifest['challenges'] if c['challenge_id'].startswith('ac-')]
+          rows=[]
+          n19=n1m=0
+          for c in challenges:
+              r0,r1=c['initial_relators']
+              k=ckey_pair(r0,r1)
+              i19=ac19.get(k)
+              i1m=ac1m.get(k)
+              if i19 is not None:n19+=1
+              if i1m is not None:n1m+=1
+              rows.append({
+                'challenge_id':c['challenge_id'],
+                'ac19_index':i19,
+                'ac1m_index':i1m,
+                'total_len':len(r0)+len(r1),
+                'canonical':list(k),
+              })
+          only1m=sum(r['ac1m_index'] is not None and r['ac19_index'] is None for r in rows)
+          both=sum(r['ac1m_index'] is not None and r['ac19_index'] is not None for r in rows)
+          neither=sum(r['ac1m_index'] is None and r['ac19_index'] is None for r in rows)
+          out=pathlib.Path('acc_competitive/source_map')
+          out.joinpath('matches.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          rep={
+            'scored_presentations':len(rows),
+            'canonical_in_ac19':n19,
+            'canonical_in_ac1m':n1m,
+            'ac1m_not_ac19':only1m,
+            'both':both,
+            'neither':neither,
+            'ac19_index_size':len(ac19),
+            'ac1m_index_size':len(ac1m),
+          }
+          out.joinpath('report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('SOURCE_MAP',json.dumps(rep,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-public-source-map-v1
+          path: acc_competitive/source_map/
+          retention-days: 90
