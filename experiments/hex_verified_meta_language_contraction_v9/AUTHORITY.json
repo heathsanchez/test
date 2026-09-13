@@ -1,0 +1,22 @@
+{
+  "verdict": "VERIFIED_META_LANGUAGE_CONTRACTION_AND_TRANSFER",
+  "workflow_run_id": 34732916564,
+  "workflow_job_id": 103658940710,
+  "head_sha": "ffa58bd5ffb64f24042f72ec7d774d9ab32b0f60",
+  "artifact_id": 10309587400,
+  "artifact_zip_sha256": "7237bd837d484d662c64846b5cea518ced93146cd098be8803188f3f5908103b",
+  "input_dependency_count_before": 2,
+  "input_dependency_count_after": 0,
+  "contracted_output": 1,
+  "constant_zero_ablation_one_relation_mismatches": 36,
+  "runner_up_truth_table": [0, 1, 1, 1],
+  "runner_up_requires_both_inputs": true,
+  "heldout": {
+    "relation_count": 5,
+    "carrier_size": 2,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=22 nodes=2",
+    "negative_route": "certs n=22 records=2"
+  },
+  "claim_boundary": "V8 construction still used a supplied complete Boolean operator substrate"
+}
