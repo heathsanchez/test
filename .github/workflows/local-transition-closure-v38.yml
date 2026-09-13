@@ -1,0 +1,70 @@
+name: Local Transition Closure V38
+
+on:
+  push:
+    branches:
+      - local-transition-closure-v38
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V38 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=ee59365d8ab26328edb8b4832bbff05af1b5e692
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/local_transition_closure_v38/PROTOCOL.md             experiments/local_transition_closure_v38/basis.py             experiments/local_transition_closure_v38/kernel.py             experiments/local_transition_closure_v38/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V38 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/local_transition_closure_v38/basis.py             experiments/local_transition_closure_v38/kernel.py             experiments/local_transition_closure_v38/challenge_pack.py             experiments/local_transition_closure_v38/run.py
+
+      - name: Run frozen V38 experiment
+        working-directory: experiments/local_transition_closure_v38
+        shell: bash
+        run: |
+          set -o pipefail
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/local_transition_closure_v38
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: local-transition-closure-v38-evidence
+          path: |
+            experiments/local_transition_closure_v38/evidence.json
+            experiments/local_transition_closure_v38/run.log
+            experiments/local_transition_closure_v38/FREEZE.json
+            experiments/local_transition_closure_v38/PROTOCOL.md
