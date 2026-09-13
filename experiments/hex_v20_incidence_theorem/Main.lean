@@ -34,8 +34,17 @@ def symm (e : Bijection α β) : Bijection β α where
 
 theorem injective (e : Bijection α β) : Function.Injective e := by
   intro x y h
-  have := congrArg e.invFun h
-  simpa using this
+  calc
+    x = e.invFun (e x) := (e.left_inv x).symm
+    _ = e.invFun (e y) := congrArg e.invFun h
+    _ = y := e.left_inv y
+
+@[simp] theorem apply_eq_apply_iff (e : Bijection α β) {x y : α} :
+    e x = e y ↔ x = y := by
+  constructor
+  · exact e.injective
+  · intro h
+    exact congrArg e h
 
 theorem surjective (e : Bijection α β) : Function.Surjective e := by
   intro y
@@ -182,7 +191,7 @@ theorem map_anchor_exists (F : IncIso A B) (a : α) :
       rw [h] at hc
       simp [IncNode.color] at hc
   | anchor b =>
-      exact ⟨b, h⟩
+      exact ⟨b, rfl⟩
   | occ q =>
       rw [h] at hc
       simp [IncNode.color] at hc
@@ -202,7 +211,7 @@ theorem anchor_left (F : IncIso A B) (a : α) :
       IncNode.anchor (F.symm.anchorMap (F.anchorMap a)) at h2
   rw [← h1] at h2
   simp at h2
-  exact IncNode.anchor.inj h2.symm
+  exact h2.symm
 
 theorem anchor_right (F : IncIso A B) (b : β) :
     F.anchorMap (F.symm.anchorMap b) = b := by
@@ -212,7 +221,7 @@ theorem anchor_right (F : IncIso A B) (b : β) :
       IncNode.anchor (F.symm.anchorMap b) at h1
   rw [← h1] at h2
   simp at h2
-  exact IncNode.anchor.inj h2.symm
+  exact h2.symm
 
 noncomputable def anchorEquiv (F : IncIso A B) : Bijection α β where
   toFun := F.anchorMap
@@ -257,7 +266,7 @@ theorem map_occ_exists (F : IncIso A B) (t : Fin k → α) (ht : A.holds t) :
       rw [h] at hc
       simp [IncNode.color] at hc
   | occ q =>
-      exact ⟨q, h⟩
+      exact ⟨q, rfl⟩
 
 theorem relation_forward (F : IncIso A B) (t : Fin k → α) :
     A.holds t → B.holds (fun i => F.anchorEquiv (t i)) := by
