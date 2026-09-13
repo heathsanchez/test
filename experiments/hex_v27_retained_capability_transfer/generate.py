@@ -132,7 +132,7 @@ def {prefix} : Colored {N} {K} where
 """
 
 def emit_goal_file(path, left_name, left_graph, right_name, right_graph, positive):
-    chunks=["import HexGraphIso.Tactic\\n\\nopen Hex Hex.GraphIso\\n"]
+    chunks=["import HexGraphIso.Tactic\n\nopen Hex Hex.GraphIso\n"]
     chunks.append(emit_graph(left_name,left_graph))
     chunks.append(emit_graph(right_name,right_graph))
     if positive:
@@ -147,7 +147,7 @@ set_option trace.graph_iso true in
 example : ¬ Isomorphic {left_name} {right_name} := by
   graph_iso
 """)
-    (ROOT/path).write_text("\\n".join(chunks))
+    (ROOT/path).write_text("\n".join(chunks))
 
 def main():
     rows=[]
@@ -199,7 +199,7 @@ def main():
         "zero_development_transitions":all(x["development_transitions"]==0 for x in rows)
       }
     }
-    (OUT/"source_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\\n")
+    (OUT/"source_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
     print(json.dumps(ev,indent=2,sort_keys=True))
 
 if __name__=="__main__":
