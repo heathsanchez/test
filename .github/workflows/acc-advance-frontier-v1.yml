@@ -1,0 +1,46 @@
+name: ACC Advance Attempted Frontier V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - "acc_competitive/competitive_attempted_addendum_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  advance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+          fetch-depth: 0
+      - name: Merge exhausted frontier into persistent attempted set
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('acc_competitive/competitive_attempted_seed_v1.json')
+          add=Path('acc_competitive/competitive_attempted_addendum_v1.json')
+          xs=json.loads(base.read_text())
+          ys=json.loads(add.read_text())
+          seen=set(xs)
+          for x in ys:
+              if x not in seen:
+                  xs.append(x); seen.add(x)
+          base.write_text(json.dumps(xs,indent=2)+'\n')
+          print('ATTEMPTED_FRONTIER',len(xs))
+          PY
+          if git diff --quiet -- acc_competitive/competitive_attempted_seed_v1.json; then
+            echo "NO_FRONTIER_CHANGE"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add acc_competitive/competitive_attempted_seed_v1.json
+          git commit -m "Advance ACC attempted frontier"
+          git push origin HEAD:acc-competitive-residual-v1
