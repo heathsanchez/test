@@ -1,0 +1,67 @@
+name: Edit Free Relational Repair V24
+
+on:
+  push:
+    branches:
+      - edit-free-relational-repair-v24
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V24 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=f0cfe0802ef9303ed02b31aa5a2553719f3255cf
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/edit_free_relational_repair_v24/PROTOCOL.md             experiments/edit_free_relational_repair_v24/basis.py             experiments/edit_free_relational_repair_v24/kernel.py
+          echo "V24 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/edit_free_relational_repair_v24/basis.py             experiments/edit_free_relational_repair_v24/kernel.py             experiments/edit_free_relational_repair_v24/challenge_pack.py             experiments/edit_free_relational_repair_v24/run.py
+
+      - name: Run V24
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/edit_free_relational_repair_v24
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/edit_free_relational_repair_v24
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: edit-free-relational-repair-v24-evidence
+          path: |
+            experiments/edit_free_relational_repair_v24/evidence.json
+            experiments/edit_free_relational_repair_v24/run.log
+            experiments/edit_free_relational_repair_v24/FREEZE.json
+            experiments/edit_free_relational_repair_v24/PROTOCOL.md
+          if-no-files-found: error
