@@ -1,0 +1,72 @@
+name: Relational Reification Basis V8
+
+on:
+  push:
+    branches:
+      - relational-reification-basis-v8
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V8 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=54c67f03f6f6861a15e03d66f1a4480659784f3b
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/relational_reification_basis_v8/PROTOCOL.md             experiments/relational_reification_basis_v8/basis.py             experiments/relational_reification_basis_v8/kernel.py
+          echo "V8 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/relational_reification_basis_v8/basis.py             experiments/relational_reification_basis_v8/kernel.py             experiments/relational_reification_basis_v8/challenge_pack.py             experiments/relational_reification_basis_v8/run.py
+
+      - name: Run exhaustive relational reification reduction
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/relational_reification_basis_v8
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/relational_reification_basis_v8
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          print("MINIMAL_BASES", e["minimal_passing_bases"])
+          print("PASSING_BASIS_COUNT", e["passing_basis_count"])
+          for k,v in e["full_basis"]["gates"].items():
+              print(f"GATE {k}={v}")
+          for p,row in e["single_primitive_ablations"].items():
+              print("ABLATION", p, "full_pass=", row["full_pass"], "failed=", ",".join(row["failed_gates"]))
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relational-reification-basis-v8-evidence
+          path: |
+            experiments/relational_reification_basis_v8/evidence.json
+            experiments/relational_reification_basis_v8/run.log
+            experiments/relational_reification_basis_v8/FREEZE.json
+            experiments/relational_reification_basis_v8/PROTOCOL.md
+          if-no-files-found: error
