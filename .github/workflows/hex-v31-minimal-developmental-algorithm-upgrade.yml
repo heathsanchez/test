@@ -1,0 +1,61 @@
+name: Hex V31 Minimal Developmental Algorithm Upgrade
+
+on:
+  push:
+    branches:
+      - hex-v31-minimal-developmental-algorithm-upgrade
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and hash-verify exact upgrade authorities
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base=experiments/hex_v31_mda_upgrade/prior
+          mkdir -p "$base"/{v26,v27,v28,v29,v30}
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10311979346/zip -o /tmp/v26.zip
+          echo "404bd8ab3f6659aabf05e257cd34a71c225bbfc4e584c40b1a1af8a48caf2e91  /tmp/v26.zip" | sha256sum -c -
+          unzip -q /tmp/v26.zip -d "$base/v26"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10312741186/zip -o /tmp/v27.zip
+          echo "3c88db90b46a017195e73b399abde452532a1b05eefc73b67dd31333b533bf32  /tmp/v27.zip" | sha256sum -c -
+          unzip -q /tmp/v27.zip -d "$base/v27"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10312555824/zip -o /tmp/v28.zip
+          echo "cda69a9b4ed498bdff5d58d8c904249025af53854229d9017315d85bdad5e794  /tmp/v28.zip" | sha256sum -c -
+          unzip -q /tmp/v28.zip -d "$base/v28"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10312447755/zip -o /tmp/v29.zip
+          echo "528afad7f8e30c1e472af283061dd3924a76ffc5923b4900d96442b080a22067  /tmp/v29.zip" | sha256sum -c -
+          unzip -q /tmp/v29.zip -d "$base/v29"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10313375793/zip -o /tmp/v30.zip
+          echo "c1393a49ef0ea6af5b85193f0cae35d1ce1b87fda1d747c5066cee9a1ba0ea23  /tmp/v30.zip" | sha256sum -c -
+          unzip -q /tmp/v30.zip -d "$base/v30"
+
+      - name: Run final upgrade authority audit
+        run: python3 experiments/hex_v31_mda_upgrade/audit.py
+
+      - name: Seal V31 evidence
+        working-directory: experiments/hex_v31_mda_upgrade
+        run: |
+          sha256sum PROTOCOL.md audit.py results/final_evidence.json > results/SHA256SUMS.txt
+          cat results/final_evidence.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v31-mda-upgrade-authority
+          path: experiments/hex_v31_mda_upgrade/results/
+          if-no-files-found: error
