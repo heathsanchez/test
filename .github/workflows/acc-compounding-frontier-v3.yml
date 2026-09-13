@@ -1,6 +1,10 @@
 name: ACC Compounding Frontier V3
 
 on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-compounding-frontier-v3.yml"
   workflow_run:
     workflows: ["ACC Fresh Frontier Acquisition V2"]
     types: [completed]
@@ -17,9 +21,8 @@ permissions:
 
 jobs:
   compound:
-    # workflow_run already fires only after completion. Scientific admission is
-    # determined below by the presence and validation of the verifier-clean pool,
-    # not by the aggregate parent workflow conclusion.
+    # Scientific admission is determined by the presence and validation of the
+    # verifier-clean pool artifact, not by the aggregate parent run conclusion.
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
@@ -36,9 +39,12 @@ jobs:
           set -euo pipefail
           if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
             RUN_ID="${{ inputs.source_run_id }}"
-          else
+          elif [[ "${{ github.event_name }}" == "workflow_run" ]]; then
             RUN_ID="${{ github.event.workflow_run.id }}"
+          else
+            RUN_ID="$(tr -d '[:space:]' < acc_competitive/compound_v3_source_run.txt)"
           fi
+          test -n "$RUN_ID"
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "SOURCE_RUN_ID=$RUN_ID"
 
@@ -52,7 +58,7 @@ jobs:
           find /tmp/v2freeze -maxdepth 3 -type f -print
           find /tmp/v2pool -maxdepth 4 -type f -print
           find /tmp/v2pool -name pending_submission.txt -type f -exec cp {} acc_competitive/compound_input/v2_pending_submission.txt \;
-          test -f acc_competitive/compound_input/v2_pending_submission.txt
+          test -s acc_competitive/compound_input/v2_pending_submission.txt
 
       - name: Fetch pinned official verifier
         shell: bash
