@@ -1,0 +1,67 @@
+name: Untyped Relation Repair Genesis V25
+
+on:
+  push:
+    branches:
+      - untyped-relation-repair-genesis-v25
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V25 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=c2e0837fc36f01fbd70891fb0ecba45256399a4c
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/untyped_relation_repair_genesis_v25/PROTOCOL.md             experiments/untyped_relation_repair_genesis_v25/basis.py             experiments/untyped_relation_repair_genesis_v25/kernel.py
+          echo "V25 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/untyped_relation_repair_genesis_v25/basis.py             experiments/untyped_relation_repair_genesis_v25/kernel.py             experiments/untyped_relation_repair_genesis_v25/challenge_pack.py             experiments/untyped_relation_repair_genesis_v25/run.py
+
+      - name: Run V25
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/untyped_relation_repair_genesis_v25
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/untyped_relation_repair_genesis_v25
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: untyped-relation-repair-genesis-v25-evidence
+          path: |
+            experiments/untyped_relation_repair_genesis_v25/evidence.json
+            experiments/untyped_relation_repair_genesis_v25/run.log
+            experiments/untyped_relation_repair_genesis_v25/FREEZE.json
+            experiments/untyped_relation_repair_genesis_v25/PROTOCOL.md
+          if-no-files-found: error
