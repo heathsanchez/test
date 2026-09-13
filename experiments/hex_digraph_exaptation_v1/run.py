@@ -30,13 +30,18 @@ def source_iso(a, b, n):
     return any(relabel_digraph(a, p) == b for p in itertools.permutations(range(n)))
 
 def role_split_anchor(edges, n):
+    # Interleave OUT/IN/ANCHOR so Hex's verified Coloring.mod (i % 3)
+    # supplies the role colouring without an extra proof obligation.
+    out = lambda v: 3 * v
+    inn = lambda v: 3 * v + 1
+    anchor = lambda v: 3 * v + 2
     target_edges = set()
     for v in range(n):
-        target_edges.add(tuple(sorted((2 * n + v, v))))
-        target_edges.add(tuple(sorted((2 * n + v, n + v))))
+        target_edges.add(tuple(sorted((anchor(v), out(v)))))
+        target_edges.add(tuple(sorted((anchor(v), inn(v)))))
     for u, v in edges:
-        target_edges.add(tuple(sorted((u, n + v))))
-    colors = tuple([0] * n + [1] * n + [2] * n)
+        target_edges.add(tuple(sorted((out(u), inn(v)))))
+    colors = tuple(i % 3 for i in range(3 * n))
     return frozenset(target_edges), colors
 
 def color_preserving_iso(a, b):
