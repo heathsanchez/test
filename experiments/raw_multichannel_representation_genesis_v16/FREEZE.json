@@ -1,0 +1,45 @@
+{
+  "experiment": "raw_multichannel_representation_genesis_v16",
+  "protocol_commit": "87e3fc7bf4e4996e9620bd839953b9125fc22145",
+  "basis_commit": "ad93e460805d39dbeb8424949ce98b139dfed5ec",
+  "kernel_commit": "4317d32b82c26c84e8425680bf5d51c64520b41d",
+  "scientific_freeze_commit": "4317d32b82c26c84e8425680bf5d51c64520b41d",
+  "github_blob_shas": {
+    "PROTOCOL.md": "415cae0b4f8c0e1774e87e5394c8e883e4d2080e",
+    "basis.py": "13ec231f68d466bd4c388a307bc8482370162df4",
+    "kernel.py": "3023d146a56ae7792cdbc9dd5cea8597464fa4cb"
+  },
+  "initial_present": {
+    "active_accessors": [],
+    "authorized_lag": 0,
+    "representation_classes": 1
+  },
+  "primitive_feature_language": "ACCESS(lag, anonymous_channel) only",
+  "explicitly_absent": [
+    "hand_engineered_markers",
+    "summary_statistics",
+    "frequency_features",
+    "threshold_features",
+    "ratios",
+    "PCA",
+    "neural_embeddings",
+    "domain_labels",
+    "hidden_state_ids"
+  ],
+  "developmental_algorithm": [
+    "EXECUTE",
+    "VERIFY",
+    "DIAGNOSE",
+    "CONSTRAIN",
+    "RESTRUCTURE",
+    "CHOOSE",
+    "COMPILE",
+    "UPDATE"
+  ],
+  "global_objective": [
+    "minimum accessor count",
+    "minimum lag-weighted accessor cost"
+  ],
+  "freeze_rule": "Post-freeze worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded exact multichannel predictive readout genesis only."
+}
