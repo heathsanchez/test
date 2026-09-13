@@ -1,0 +1,76 @@
+name: Hex V26 Document Upgrade Audit
+
+on:
+  push:
+    branches:
+      - hex-v26-doc-upgrade-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Audit V20-V25 sealed authorities and proof hygiene
+        run: python experiments/hex_v26_doc_upgrade_audit/authority_audit.py
+
+      - name: Run frozen Execute Develop Promote controller pack
+        run: python experiments/hex_v26_doc_upgrade_audit/test_controller.py
+
+      - name: Seal V26 audit
+        run: |
+          python - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path("experiments/hex_v26_doc_upgrade_audit")
+          a=json.loads((root/"results/authority_audit.json").read_text())
+          c=json.loads((root/"results/controller_audit.json").read_text())
+          gates={
+            "authority_chain_pass": a["verdict"]=="PASS_V20_V25_AUTHORITY_AND_PROOF_HYGIENE",
+            "controller_pack_pass": c["verdict"]=="PASS_FROZEN_EXECUTE_DEVELOP_PROMOTE_CONTROLLER",
+            "all_controller_cases_pass": all(x["pass"] for x in c["cases"]),
+            "all_constitutional_controls": all(c["constitutional_controls"].values()),
+          }
+          ev={
+            "verdict":"VERIFIED_DOC_UPGRADE_AUDIT_V26" if all(gates.values()) else "NEGATIVE_OR_PARTIAL",
+            "gates":gates,
+            "authority_audit":a,
+            "controller_audit":c,
+            "claim_upgrade":{
+              "supported":[
+                "Execute until certified inadequate",
+                "Develop only under certified obstruction",
+                "Wait rather than guess when several verified minima survive",
+                "Promote verified transferable development into retained execution capability",
+                "Contract only under preserved consequence",
+                "Return UNKNOWN when evidence does not license change"
+              ],
+              "not_established":[
+                "unrestricted action-language invention",
+                "designerless subject selection",
+                "universal completeness",
+                "fully automatic finite enumeration/color coding for every source structure"
+              ]
+            },
+            "files":{
+              f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in ["PROTOCOL.md","authority_audit.py","controller.py","test_controller.py"]
+            }
+          }
+          (root/"results/final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          if ev["verdict"]!="VERIFIED_DOC_UPGRADE_AUDIT_V26": raise SystemExit(1)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v26-doc-upgrade-audit-evidence
+          path: experiments/hex_v26_doc_upgrade_audit/results/
+          if-no-files-found: error
