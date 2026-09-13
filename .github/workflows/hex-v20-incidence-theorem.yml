@@ -26,6 +26,9 @@ jobs:
       - name: Resolve Hex
         working-directory: experiments/hex_v20_incidence_theorem
         run: lake update
+      - name: Build pinned Hex theorem dependency
+        working-directory: experiments/hex_v20_incidence_theorem
+        run: lake build HexGraphIso.Iso
       - name: Check theorem
         working-directory: experiments/hex_v20_incidence_theorem
         run: |
