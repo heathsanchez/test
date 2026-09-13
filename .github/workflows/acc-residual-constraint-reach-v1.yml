@@ -1,0 +1,229 @@
+name: ACC Residual Constraints + Reach V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-residual-constraint-reach-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_SYNTHESIS_RUN: "34746876438"
+  SOURCE_FREEZE_RUN: "34737558836"
+
+jobs:
+  extract:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover completed boundary authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_SYNTHESIS_RUN" -n acc-boundary-gap-synthesis-v2 -D /tmp/source
+          echo "SOURCE_FILES"
+          find /tmp/source -name 'report.json' -o -name 'typed_results.json' -o -name 'search_results.json' -o -name 'targets.json' | sort
+
+      - name: Extract certified residual constraints
+        run: |
+          set -euo pipefail
+          report=$(find /tmp/source -path '*/boundary_gap_v2_result/report.json' -print -quit)
+          typed=$(find /tmp/source -path '*/boundary_gap_v2_result/typed_results.json' -print -quit)
+          runs=$(find /tmp/source -type d -path '*/boundary_gap_v2_collected' -print -quit)
+          targets=$(find /tmp/source -path '*/tmp/freeze/targets.json' -print -quit)
+          test -n "$report" && test -n "$typed" && test -n "$runs" && test -n "$targets"
+          python3 acc_competitive/residual_constraint_extraction_v1.py \
+            --targets "$targets" \
+            --typed-results "$typed" \
+            --report "$report" \
+            --runs-root "$runs" \
+            --out-dir acc_competitive/residual_constraint_v1 \
+            --solver-sha 11fce564ed871a33fef8fa67dbd7394b0b9bb1fa \
+            | tee acc_competitive/residual_constraint_v1.log
+
+      - name: Freeze Reach V1 candidate matrix
+        id: matrix
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' > /tmp/matrix.json
+          import json
+          from pathlib import Path
+          rows=json.loads(Path('acc_competitive/residual_constraint_v1/candidate_targets.json').read_text())
+          print(json.dumps({'include':rows},separators=(',',':')))
+          PY
+          echo "matrix=$(cat /tmp/matrix.json)" >> "$GITHUB_OUTPUT"
+          echo "FROZEN_REACH_MATRIX $(cat /tmp/matrix.json)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-residual-constraint-extraction-v1
+          path: |
+            acc_competitive/residual_constraint_v1/
+            acc_competitive/residual_constraint_v1.log
+          retention-days: 90
+
+  reach_candidate:
+    needs: extract
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJson(needs.extract.outputs.matrix) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact frozen target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHALLENGE: ${{ matrix.challenge_id }}
+          FROZEN_BEST: ${{ matrix.frozen_best }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "$SOURCE_FREEZE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          rows=json.loads(Path('/tmp/freeze/targets.json').read_text())
+          cid=os.environ['CHALLENGE']; fb=int(os.environ['FROZEN_BEST'])
+          hit=[r for r in rows if r['challenge_id']==cid]
+          assert len(hit)==1, (cid,hit)
+          assert hit[0]['frozen_best']==fb, (hit[0],fb)
+          Path('/tmp/one_target.json').write_text(json.dumps(hit,indent=2)+'\n')
+          print('REACH_V1_TARGET',json.dumps(hit[0],sort_keys=True))
+          PY
+
+      - name: Add execution swap only
+        run: |
+          set -euo pipefail
+          SWAP=/swapfile-extra-acc-reach
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+          free -h
+          swapon --show
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Execute only missing Reach V1 equivalence class
+        run: |
+          set -o pipefail
+          out="acc_competitive/reach_v1_runs/${{ matrix.challenge_id }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/one_target.json \
+            --snapshot-ac-file /tmp/freeze/snapshot_ac.json \
+            --snapshot-stable-file /tmp/freeze/snapshot_stable_ac.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes ${{ matrix.max_nodes }} \
+            --max-quotient-total ${{ matrix.max_quotient_total }} \
+            --reverse-depth ${{ matrix.reverse_depth }} \
+            --reverse-cap ${{ matrix.reverse_cap }} \
+            --compiler-beam ${{ matrix.compiler_beam }} \
+            --depth-weight ${{ matrix.depth_weight }} \
+            --search-seconds 2100 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-reach-v1-${{ matrix.challenge_id }}
+          path: |
+            acc_competitive/reach_v1_runs/${{ matrix.challenge_id }}/
+            acc_competitive/reach_v1_runs/${{ matrix.challenge_id }}.log
+            /tmp/one_target.json
+          retention-days: 90
+
+  synthesize:
+    needs: [extract, reach_candidate]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen constraints and candidate executions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/extract /tmp/reach
+          gh run download "${{ github.run_id }}" -n acc-residual-constraint-extraction-v1 -D /tmp/extract
+          gh run download "${{ github.run_id }}" --pattern 'acc-reach-v1-*' -D /tmp/reach
+          find /tmp/reach -name search_results.json -print | sort
+
+      - name: Synthesize Reach V1 consequence
+        run: |
+          set -euo pipefail
+          reach=$(find /tmp/extract -name reach_v1.json -print -quit)
+          test -n "$reach"
+          python3 acc_competitive/reach_v1_synthesis.py \
+            --reach "$reach" \
+            --candidate-runs-root /tmp/reach \
+            --out-dir acc_competitive/reach_v1_result \
+            | tee acc_competitive/reach_v1_result.log
+
+      - name: Fresh consequence check for any strict candidate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          p=pathlib.Path('acc_competitive/reach_v1_result/report.json')
+          r=json.loads(p.read_text())
+          ids=r.get('strict_verified_wins',[])
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          with urllib.request.urlopen(urllib.request.Request(f'{B}/api/acc/discoveries/snapshot?problem=ac',headers=H),timeout=60) as z:
+              o=json.loads(z.read().decode())
+          d=o.get('data',o); items=d.get('items',d if isinstance(d,list) else [])
+          live={x['challengeId']:x for x in items}
+          typed=json.loads(pathlib.Path('acc_competitive/reach_v1_result/typed_results.json').read_text())
+          by={x['challenge_id']:x for x in typed}
+          fresh=[]
+          for cid in ids:
+              b=(live.get(cid) or {}).get('currentBestLength')
+              n=by[cid].get('atomic_length')
+              if isinstance(b,int) and isinstance(n,int) and n<b:
+                  fresh.append({'challenge_id':cid,'candidate_length':n,'fresh_live_best':b,'fresh_margin':b-n})
+          pathlib.Path('acc_competitive/reach_v1_result/fresh_strict_wins.json').write_text(json.dumps(fresh,indent=2)+'\n')
+          print('FRESH_STRICT_WINS',json.dumps(fresh))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-residual-constraint-reach-v1
+          path: |
+            acc_competitive/reach_v1_result/
+            acc_competitive/reach_v1_result.log
+            /tmp/extract/
+          retention-days: 90
+
+# v5 discipline:
+# object-level obstruction -> CONSTRAIN -> exhaust only the frozen finite current Reach closure.
+# No new search mechanism, parameter value, verifier, target, or consequence threshold is introduced.
