@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "30 * * * *"
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/acc-reset-publisher.yml'
 
 permissions:
   contents: read
