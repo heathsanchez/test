@@ -1,0 +1,138 @@
+name: ACC RESOLVE Controller V1
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Optional ACC Boundary Learns Qualification run ID; blank = latest
+        required: false
+        type: string
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-resolve-controller-v1.yml"
+      - "acc_competitive/resolve_acc_v1.py"
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  resolve:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Select and await boundary qualification authority
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_RUN: ${{ inputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          rid="${INPUT_RUN:-}"
+          if [ -z "$rid" ]; then
+            rid=$(gh run list \
+              --workflow acc-boundary-qualification-v1.yml \
+              --branch acc-competitive-residual-v1 \
+              --limit 20 \
+              --json databaseId,createdAt \
+              --jq 'sort_by(.createdAt) | reverse | .[0].databaseId')
+          fi
+          test -n "$rid"
+          echo "source_run_id=$rid" >> "$GITHUB_OUTPUT"
+          echo "BOUNDARY_SOURCE_RUN=$rid"
+          for i in $(seq 1 165); do
+            status=$(gh run view "$rid" --json status --jq .status)
+            conclusion=$(gh run view "$rid" --json conclusion --jq '.conclusion // ""')
+            echo "BOUNDARY_STATUS status=$status conclusion=$conclusion"
+            if [ "$status" = "completed" ]; then
+              break
+            fi
+            sleep 20
+          done
+          status=$(gh run view "$rid" --json status --jq .status)
+          test "$status" = "completed"
+
+      - name: Recover sealed boundary result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RID: ${{ steps.source.outputs.source_run_id }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/boundary
+          gh run download "$RID" -n acc-boundary-qualification-v1 -D /tmp/boundary
+          report=$(find /tmp/boundary -name report.json -path '*boundary_result*' -print -quit)
+          typed=$(find /tmp/boundary -name typed_results.json -print -quit)
+          fresh=$(find /tmp/boundary -name fresh_strict_wins.json -print -quit)
+          test -n "$report"
+          test -n "$typed"
+          cp "$report" /tmp/boundary_report.json
+          cp "$typed" /tmp/boundary_typed_results.json
+          if [ -n "$fresh" ]; then cp "$fresh" /tmp/fresh_strict_wins.json; else echo '[]' > /tmp/fresh_strict_wins.json; fi
+          echo "RECOVERED_BOUNDARY_REPORT=$report"
+          echo "RECOVERED_TYPED_RESULTS=$typed"
+          echo "FRESH_WINS=$(cat /tmp/fresh_strict_wins.json)"
+
+      - name: Execute frozen developmental controller
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/resolve_acc_result
+          args=(
+            --report /tmp/boundary_report.json
+            --typed-results /tmp/boundary_typed_results.json
+            --fresh-wins /tmp/fresh_strict_wins.json
+            --out-dir acc_competitive/resolve_acc_result
+          )
+          if [ -f acc_competitive/competitive_wins_seed_v1.json ]; then
+            args+=(--protected-wins acc_competitive/competitive_wins_seed_v1.json)
+          fi
+          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" \
+            | tee acc_competitive/resolve_acc_result.log
+
+      - name: Enforce constitutional transition gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('acc_competitive/resolve_acc_result/developmental_state.json')
+          s=json.loads(p.read_text())
+          allowed={
+            'RETAIN_VERIFIED_WINS',
+            'UNKNOWN_SEARCH',
+            'REPAIR_FRONTIER_AUTHORIZED',
+          }
+          assert s['transition'] in allowed, s['transition']
+          if s['transition']=='REPAIR_FRONTIER_AUTHORIZED':
+              assert s['portfolio_complete'] is True
+              assert s['expressive_inadequacy_certified'] is True
+              assert s['growth_authorized_by_input_evidence'] is True
+              assert s['permission']=='REPAIR_FRONTIER_ONLY'
+          else:
+              assert s['permission']=='NO_EXPANSION_LICENSE'
+          print('CONSTITUTIONAL_GATE', json.dumps({
+              'transition':s['transition'],
+              'permission':s['permission'],
+              'next_action':s['next_action'],
+          }, sort_keys=True))
+          PY
+
+      - name: Upload developmental state
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-resolve-controller-v1
+          path: |
+            acc_competitive/resolve_acc_result/
+            acc_competitive/resolve_acc_result.log
+            /tmp/boundary_report.json
+            /tmp/boundary_typed_results.json
+            /tmp/fresh_strict_wins.json
+          retention-days: 90
+
+# Minimal Developmental Algorithm:
+# Split on consequence. Merge on invariance. Preserve what works. Recurse on what cannot.
+# This workflow does not invent or admit a new mechanism unless the supplied authority licenses it.
