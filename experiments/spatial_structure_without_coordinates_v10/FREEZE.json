@@ -1,0 +1,19 @@
+{
+  "experiment": "spatial_structure_without_coordinates_v10",
+  "protocol_commit": "5c7bafa879cf1e784cda86d31a205112f7d75ffe",
+  "basis_commit": "614a503467642fe441ee550e8b1af8a3b2af689d",
+  "kernel_commit": "f470fcd693f710cc838e3aa3330bc5f4bf10eabd",
+  "scientific_freeze_commit": "f470fcd693f710cc838e3aa3330bc5f4bf10eabd",
+  "github_blob_shas": {
+    "PROTOCOL.md": "d079b0fc56bdb3ff4445726e851e70b6ba3fd0f0",
+    "basis.py": "3528b808cfc3497584acee8defd50f421e1e5f8a",
+    "kernel.py": "923873a05d459a4c6b62724a0f7ac457c005d52c"
+  },
+  "inputs": ["anonymous_channels", "binary_impulse_consequences"],
+  "explicitly_absent": [
+    "coordinates", "distance", "dimension", "adjacency_label",
+    "line", "ring", "region", "topology_label"
+  ],
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Finite intervention-based relational spatial structure only."
+}
