@@ -17,11 +17,9 @@ permissions:
 
 jobs:
   compound:
-    if: >-
-      ${{
-        (github.event_name == 'workflow_dispatch') ||
-        (github.event.workflow_run.conclusion == 'success')
-      }}
+    # workflow_run already fires only after completion. Scientific admission is
+    # determined below by the presence and validation of the verifier-clean pool,
+    # not by the aggregate parent workflow conclusion.
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
