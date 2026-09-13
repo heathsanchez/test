@@ -1,0 +1,63 @@
+name: Hex V25 Relational Decision
+
+on:
+  push:
+    branches:
+      - hex-v25-relational-decision
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theorem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v25_relational_decision
+          elan override set leanprover/lean4:v4.34.0-rc2
+      - name: Resolve Hex
+        working-directory: experiments/hex_v25_relational_decision
+        run: lake update
+      - name: Build Hex Ops
+        working-directory: experiments/hex_v25_relational_decision
+        run: lake build HexGraphIso.Ops
+      - name: Kernel-check relational decision theorem
+        working-directory: experiments/hex_v25_relational_decision
+        run: |
+          set -o pipefail
+          lake env lean Main.lean 2>&1 | tee theorem.log
+      - name: Seal V25 evidence
+        working-directory: experiments/hex_v25_relational_decision
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          ev={
+            "verdict":"VERIFIED_RELATIONAL_ISOMORPHISM_DECISION_VIA_HEX",
+            "lean_kernel_check":"PASS",
+            "theorems":[
+              "IncidenceNumberingPair.findSourceIso_isSome_iff",
+              "IncidenceNumberingPair.sourceIsIso_eq_true_iff",
+              "IncidenceNumberingPair.sourceIsIso_eq_false_iff",
+              "IncidenceNumberingPair.sourceIso_of_findSourceIso"
+            ],
+            "main_sha256":hashlib.sha256((root/"Main.lean").read_bytes()).hexdigest()
+          }
+          (root/"final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v25-relational-decision-evidence
+          path: |
+            experiments/hex_v25_relational_decision/final_evidence.json
+            experiments/hex_v25_relational_decision/theorem.log
+            experiments/hex_v25_relational_decision/Main.lean
