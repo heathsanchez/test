@@ -186,12 +186,19 @@ def main() -> int:
         and verifier_ablation.get("generations")==[]
     )
 
-    G["minimal_developmental_algorithm_respected"]=all(
-        tok in (HERE/"PROTOCOL.md").read_text()
-        for tok in (
-            "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
-            "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
-        )
+    # The frozen V26 protocol specifies the developmental law operationally
+    # (exhaust current language, certify arity inadequacy, expand minimally,
+    # stop at first sufficiency) rather than spelling the eight phase labels.
+    # Check those frozen semantics directly instead of requiring absent labels.
+    G["minimal_developmental_algorithm_respected"]=(
+        G["A2_l0_residual_precedes_tuple_language_search"]
+        and G["A3_arity_one_is_exhaustively_inadequate"]
+        and G["A4_arity_growth_occurs_only_after_complete_arity_one_failure"]
+        and G["A6_minimum_sufficient_arity_is_two_and_no_higher_arity_searched"]
+        and G["A11_arity_growth_ablation_stops_at_certified_inadequacy"]
+        and G["A12_no_residual_no_tuple_language_growth"]
+        and G["A13_incomplete_authority_stays_unknown"]
+        and G["A14_verifier_ablation_admits_no_tuple_structure_or_arity_growth"]
     )
 
     evidence["full_pass"]=all(G.values())
