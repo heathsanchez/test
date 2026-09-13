@@ -1,0 +1,63 @@
+{
+  "verdict": "VERIFIED_RECURSIVE_ACTION_LANGUAGE_GENESIS_AND_COMPOUNDING",
+  "canonical_workflow_run_id": 34741539955,
+  "workflow_job_id": 103681953389,
+  "scientific_head": "bf4bb580a786ea1820901d7499bb86e92c18c5b1",
+  "artifact_id": 10313330346,
+  "artifact_zip_sha256": "2377ba5f645a58a3cc2312fbfdf6853924d50568e046cf507cb1ba647b59e677",
+  "parent_v9_workflow_run_id": 34732916564,
+  "old_program_substrate_size": 16,
+  "old_arity4_best_mismatches": 1,
+  "residual_collision": {
+    "signature": [
+      0,
+      0
+    ],
+    "members": [
+      1,
+      2
+    ],
+    "target_values": [
+      1,
+      0
+    ]
+  },
+  "generated_refinements": {
+    "LEFT_EDGE_OF_CONFLICT_CLASS": {
+      "arity4_qualifying_count": 16,
+      "arity5_qualifying_count": 16
+    },
+    "RIGHT_EDGE_OF_CONFLICT_CLASS": {
+      "arity4_qualifying_count": 16,
+      "arity5_qualifying_count": 0
+    }
+  },
+  "selected_refinement": "LEFT_EDGE_OF_CONFLICT_CLASS",
+  "selected_operator_id": 170,
+  "selected_dependency_names": [
+    "GENERATED_ATOM"
+  ],
+  "protected_replay_mismatches": {
+    "4": 0,
+    "5": 0
+  },
+  "heldout": {
+    "6": {
+      "mismatches": 0,
+      "warm_candidate_evaluations": 1,
+      "cold_redevelopment_candidate_evaluations": 528
+    },
+    "7": {
+      "mismatches": 0,
+      "warm_candidate_evaluations": 1,
+      "cold_redevelopment_candidate_evaluations": 528
+    }
+  },
+  "independent_verifier": "PASS",
+  "lean_kernel_check": "PASS",
+  "rejected_noncanonical_run": {
+    "workflow_run_id": 34741452525,
+    "reason": "scientific-head provenance field contained escaping defect"
+  },
+  "claim_boundary": "finite ordered families; supplied frozen higher-order conflict-class splitter; no ex nihilo lowest-level substrate invention"
+}
