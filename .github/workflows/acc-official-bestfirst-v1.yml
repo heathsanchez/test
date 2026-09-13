@@ -1,0 +1,156 @@
+name: ACC Official Best-First V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-official-bestfirst-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover latest proof atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          [ -n "$ID" ] || { echo "No proof atlas"; exit 1; }
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+
+      - name: Freeze 32 high-value short-regime targets
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/official_freeze
+          python3 - <<'PY'
+          import urllib.request,json,pathlib
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          req=urllib.request.Request(B+'/api/acc/discoveries/snapshot?problem=ac',headers=H)
+          with urllib.request.urlopen(req,timeout=60) as r:obj=json.loads(r.read().decode())
+          d=obj.get('data',obj);items=d['items']
+          rows=[x for x in items if x.get('status')=='solved' and x.get('kTeams')==1
+                and isinstance(x.get('currentBestLength'),int)
+                and 300 <= x['currentBestLength'] <= 2500]
+          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows=rows[:32]
+          pathlib.Path('acc_competitive/official_freeze/snapshot_ac.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          ids=[x['challengeId'] for x in rows]
+          for shard in range(4):
+              pathlib.Path(f'acc_competitive/official_freeze/shard_{shard}.json').write_text(json.dumps(ids[shard::4],indent=2)+'\n')
+          pathlib.Path('acc_competitive/official_freeze/selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print('OFFICIAL_TARGETS',[(x['challengeId'],x['currentBestLength']) for x in rows])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-official-freeze
+          path: acc_competitive/official_freeze/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-official-atlas
+          path: /tmp/atlas/
+          retention-days: 1
+
+  search:
+    needs: build
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 38
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-official-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-official-atlas
+          path: /tmp/atlas
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Search direct official-move cost
+        run: |
+          set -o pipefail
+          python3 acc_competitive/official_bestfirst_v1.py \
+            --acc-root /tmp/acc \
+            --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
+            --snapshot-ac "$(find /tmp/freeze -name snapshot_ac.json | head -1)" \
+            --target-ids-file "$(find /tmp/freeze -name 'shard_${{ matrix.shard }}.json' | head -1)" \
+            --out-dir "acc_competitive/official_${{ matrix.shard }}" \
+            --node-cap 250000 \
+            --time-cap 900 \
+            --depth-weight 0.15 \
+            --extra-total 40 \
+            | tee "acc_competitive/official_${{ matrix.shard }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-official-${{ matrix.shard }}
+          path: |
+            acc_competitive/official_${{ matrix.shard }}/
+            acc_competitive/official_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-official-*
+          path: acc_competitive/official_downloads
+          merge-multiple: false
+      - name: Pool official-cost wins
+        run: |
+          mkdir -p acc_competitive/official_pool
+          python3 - <<'PY'
+          import pathlib,json
+          best={}
+          for p in pathlib.Path('acc_competitive/official_downloads').rglob('pending_submission.txt'):
+              for line in p.read_text().splitlines():
+                  if ':' not in line:continue
+                  cid,raw=line.split(':',1)
+                  try:m=list(json.loads(raw.strip()))
+                  except Exception:continue
+                  if cid not in best or len(m)<len(best[cid]):best[cid]=m
+          pathlib.Path('acc_competitive/official_pool/pending_submission.txt').write_text(
+              '\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
+          rep={'pending_rows':len(best),'ac_rows':sum(cid.startswith('ac-') for cid in best)}
+          pathlib.Path('acc_competitive/official_pool/report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('OFFICIAL_POOL',json.dumps(rep,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-official-bestfirst-pool
+          path: acc_competitive/official_pool/
+          retention-days: 90
