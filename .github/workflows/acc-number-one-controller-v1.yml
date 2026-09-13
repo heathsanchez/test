@@ -5,6 +5,8 @@ on:
     branches: [acc-competitive-residual-v1]
     paths:
       - ".github/workflows/acc-number-one-controller-v1.yml"
+      - "acc_competitive/competitive_attempted_seed_v1.json"
+      - "acc_competitive/competitive_wins_seed_v1.json"
   workflow_dispatch:
 
 permissions:
