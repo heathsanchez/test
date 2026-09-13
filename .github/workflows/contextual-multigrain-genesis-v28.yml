@@ -1,0 +1,67 @@
+name: Contextual Multigrain Genesis V28
+
+on:
+  push:
+    branches:
+      - contextual-multigrain-genesis-v28
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V28 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=0c97a75798949a56cfaba933fe5cedb3e3f25547
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/contextual_multigrain_genesis_v28/PROTOCOL.md             experiments/contextual_multigrain_genesis_v28/basis.py             experiments/contextual_multigrain_genesis_v28/kernel.py
+          echo "V28 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/contextual_multigrain_genesis_v28/basis.py             experiments/contextual_multigrain_genesis_v28/kernel.py             experiments/contextual_multigrain_genesis_v28/challenge_pack.py             experiments/contextual_multigrain_genesis_v28/run.py
+
+      - name: Run V28
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/contextual_multigrain_genesis_v28
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/contextual_multigrain_genesis_v28
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: contextual-multigrain-genesis-v28-evidence
+          path: |
+            experiments/contextual_multigrain_genesis_v28/evidence.json
+            experiments/contextual_multigrain_genesis_v28/run.log
+            experiments/contextual_multigrain_genesis_v28/FREEZE.json
+            experiments/contextual_multigrain_genesis_v28/PROTOCOL.md
+          if-no-files-found: error
