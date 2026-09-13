@@ -10,7 +10,18 @@ Partition = tuple[tuple[int,...],...]
 Factorization = tuple[Partition,...]
 
 class Kernel:
-    SHAPES=((8,),(2,4),(2,2,2))
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def multiplicative_shapes(n:int,minimum_factor:int=2)->tuple[tuple[int,...],...]:
+        out={(int(n),)}
+        for f in range(int(minimum_factor),int(n)+1):
+            if f*f>n:
+                break
+            if n%f!=0:
+                continue
+            for tail in Kernel.multiplicative_shapes(n//f,f):
+                out.add((f,)+tail)
+        return tuple(sorted(out,key=lambda shape:(len(shape),shape)))
 
     @staticmethod
     def authority(world:World)->dict[str,Any] | None:
@@ -76,7 +87,7 @@ class Kernel:
     @classmethod
     def candidates(cls,max_factors:int | None=None)->tuple[Factorization,...]:
         out=[]
-        for shape in cls.SHAPES:
+        for shape in cls.multiplicative_shapes(8):
             if max_factors is not None and len(shape)>int(max_factors):
                 continue
             out.extend(cls.factorizations_for_shape(shape))
