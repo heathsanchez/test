@@ -61,7 +61,7 @@ def encode(edges, n, candidate):
 
     for x, y in candidate["identity_couplings"]:
         for v in range(n):
-            target.add(tuple(sorted((idx(v, x), idx(v, y))))
+            target.add(tuple(sorted((idx(v, x), idx(v, y)))))
 
     return frozenset(target)
 
