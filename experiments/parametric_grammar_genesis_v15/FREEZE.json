@@ -1,0 +1,45 @@
+{
+  "experiment": "parametric_grammar_genesis_v15",
+  "protocol_commit": "a8ce10b0cae7704ec2533076462ec86df56413b8",
+  "basis_commit": "b303bfba1fd71d02e2528c21b69ee95d998b3c24",
+  "kernel_commit": "6b1b7c057409bf826ed5eac66ffcdf70c4a18d03",
+  "scientific_freeze_commit": "6b1b7c057409bf826ed5eac66ffcdf70c4a18d03",
+  "github_blob_shas": {
+    "PROTOCOL.md": "c20e0cfc6580c27906b4cdff52f127ebb4fad41c",
+    "basis.py": "616de47b7e71ad74b8b598dadab31079dced2856",
+    "kernel.py": "460a7d016b832a8621bdf8949e47d048359ab70f"
+  },
+  "pinned_lower_layer": {
+    "v14_run": 34750917389,
+    "v14_head": "2ac57c21ca8a2935e4a39fdea94426c753320ae6",
+    "v14_artifact_sha256": "35ec378762bdaaeeaa03837a3374f3a71d01906a155e6291d6beb82e8535a991"
+  },
+  "schema_primitives": [
+    "verified_literal_sequences",
+    "position",
+    "opaque_token_equality",
+    "finite_set_partition_enumeration",
+    "exact_replay",
+    "minimum_parameter_count"
+  ],
+  "explicitly_absent": [
+    "hand_written_parameter_pattern",
+    "repeat_operator",
+    "alternate_operator",
+    "copy_operator",
+    "ABAB_schema",
+    "natural_language_variables"
+  ],
+  "developmental_algorithm": [
+    "EXECUTE",
+    "VERIFY",
+    "DIAGNOSE",
+    "CONSTRAIN",
+    "RESTRUCTURE",
+    "CHOOSE",
+    "COMPILE",
+    "UPDATE"
+  ],
+  "freeze_rule": "Post-freeze literal challenge families may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded finite positional parameter-schema genesis over V14-verified lower constructions."
+}
