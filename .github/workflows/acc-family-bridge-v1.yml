@@ -15,9 +15,10 @@ permissions:
 jobs:
   bridge:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     env:
       GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,18 +30,82 @@ jobs:
           mkdir -p /tmp/highpool
           gh api repos/heathsanchez/test/actions/artifacts/10293864140/zip > /tmp/highpool.zip
           unzip -q /tmp/highpool.zip -d /tmp/highpool
-          find /tmp/highpool -name pending_submission.txt -print
+          P9="$(find /tmp/highpool -name pending_submission.txt | head -1)"
+          test -s "$P9"
+          echo "P9=$P9" >> "$GITHUB_ENV"
 
       - name: Fetch pinned official verifier
         run: |
+          set -euo pipefail
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
 
       - name: Search exact adjacent-family bridges
         run: |
           set -o pipefail
-          P9="$(find /tmp/highpool -name pending_submission.txt | head -1)"
-          python3 acc_competitive/family_bridge_v1.py             --acc-root /tmp/acc             --p9-solution "$P9"             --out-dir acc_competitive/family_bridge_out             --half-depth 7             --extra-total 12             | tee acc_competitive/family_bridge.log
+          python3 acc_competitive/family_bridge_v1.py \
+            --acc-root /tmp/acc \
+            --p9-solution "$P9" \
+            --out-dir acc_competitive/family_bridge_out \
+            --half-depth 7 \
+            --extra-total 12 \
+            | tee acc_competitive/family_bridge.log
+
+      - name: Fortify any bridge-derived proofs
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/family_bridge_final
+          if [ -s acc_competitive/family_bridge_out/pending_submission.txt ]; then
+            python3 acc_competitive/proof_atlas_fortify_v1.py \
+              --acc-root /tmp/acc \
+              --glob 'acc_competitive/family_bridge_out/pending_submission.txt' \
+              --out-dir acc_competitive/family_bridge_fortified \
+              --reverse-depth 7 --reverse-cap 300000 \
+              | tee acc_competitive/family_bridge_fortified.log
+            cp acc_competitive/family_bridge_fortified/fortified_ac.txt acc_competitive/family_bridge_final/candidates.txt
+          else
+            : > acc_competitive/family_bridge_final/candidates.txt
+          fi
+
+      - name: One packed strict-live-win publication call
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/family_bridge_final/candidates.txt' \
+            --out-dir acc_competitive/family_bridge_publish \
+            --cycle 5 \
+            | tee acc_competitive/family_bridge_publish.log
+
+      - name: Score-economics summary
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          def read(p):
+              p=pathlib.Path(p)
+              return json.loads(p.read_text()) if p.exists() else {}
+          b=read('acc_competitive/family_bridge_out/report.json')
+          f=read('acc_competitive/family_bridge_fortified/report.json')
+          p=read('acc_competitive/family_bridge_publish/report.json')
+          r={
+            'experiment':'ACC_FAMILY_BRIDGE_POINT_ATTACK',
+            'bridge_01821_to_09633':b.get('bridge_10'),
+            'bridge_01684_to_01821':b.get('bridge_11'),
+            'raw_candidates':b.get('candidate_count',0),
+            'fortified_candidates':f.get('optimized_candidates',0),
+            'fortify_moves_saved':f.get('moves_saved',0),
+            'published_rows':p.get('selected_rows',0),
+            'published_ac':p.get('selected_ac',0),
+            'published_stable':p.get('selected_stable',0),
+            'submission_id':p.get('submission_id'),
+            'terminal_status':p.get('terminal_status'),
+            'failed_rows':p.get('failed_rows'),
+            'policy':'ONE_PACKED_CALL_STRICT_LIVE_WINS_ONLY'
+          }
+          pathlib.Path('acc_competitive/family_bridge_score_report.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print('FAMILY_BRIDGE_SCORE',json.dumps(r,sort_keys=True))
+          PY
 
       - name: Upload bridge evidence
         if: always()
@@ -50,5 +115,11 @@ jobs:
           path: |
             acc_competitive/family_bridge_out/
             acc_competitive/family_bridge.log
+            acc_competitive/family_bridge_fortified/
+            acc_competitive/family_bridge_fortified.log
+            acc_competitive/family_bridge_final/
+            acc_competitive/family_bridge_publish/
+            acc_competitive/family_bridge_publish.log
+            acc_competitive/family_bridge_score_report.json
           retention-days: 90
           if-no-files-found: warn
