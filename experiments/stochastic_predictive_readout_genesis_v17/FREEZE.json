@@ -1,0 +1,29 @@
+{
+  "experiment": "stochastic_predictive_readout_genesis_v17",
+  "protocol_commit": "2223bbadc1804945e19e76feedf56c04a5ed15c5",
+  "basis_commit": "a8a60c76ba68ac22a3dab6522f5d909e94ad9e0a",
+  "kernel_commit": "6cf9c80a7fd0fc37e46050f47e5c6df0b7bd7580",
+  "scientific_freeze_commit": "6cf9c80a7fd0fc37e46050f47e5c6df0b7bd7580",
+  "github_blob_shas": {
+    "PROTOCOL.md": "1dda85efbf56f6a700eaeb5788ceb5a98a800523",
+    "basis.py": "791c5cbb8e3844892e327d22d5dd8eafd560bac9",
+    "kernel.py": "c58f35cf9adfcdfeefaa42a5a9dd4f897a69e150"
+  },
+  "measurement_language": "raw anonymous current-channel accessors only",
+  "statistical_constitution": {
+    "binary_cell_code": "Jeffreys/Krichevsky-Trofimov Beta(1/2,1/2) marginal code",
+    "subset_model_code": "log2(M+1)+log2(binomial(M,k))",
+    "growth_rule": "strict universal codelength improvement over empty readout"
+  },
+  "explicitly_absent": [
+    "domain markers",
+    "hand thresholds",
+    "loss weights",
+    "Fourier features",
+    "ratios",
+    "PCA",
+    "neural embeddings"
+  ],
+  "freeze_rule": "Post-freeze stochastic worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded synthetic stochastic multichannel readout genesis only."
+}
