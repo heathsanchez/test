@@ -1,0 +1,131 @@
+name: ACC Motif Bridge V5
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-motif-bridge-v5.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  motif-bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover verified n=9 solution
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/highpool
+          gh api repos/heathsanchez/test/actions/artifacts/10293864140/zip > /tmp/highpool.zip
+          unzip -q /tmp/highpool.zip -d /tmp/highpool
+          P9="$(find /tmp/highpool -name pending_submission.txt | head -1)"
+          test -s "$P9"
+          echo "P9=$P9" >> "$GITHUB_ENV"
+
+      - name: Fetch pinned official verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Motif-mediated structural bridge search
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 acc_competitive/motif_bridge_v5.py \
+            --acc-root /tmp/acc \
+            --p9-solution "$P9" \
+            --out-dir acc_competitive/motif_bridge_v5_out \
+            --front-depth 4 \
+            --front-cap 90000 \
+            --local-depth 3 \
+            --extra-total 18 \
+            --pair-cap 180 \
+            | tee acc_competitive/motif_bridge_v5.log
+
+      - name: Fortify any verifier-clean motif bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/motif_bridge_v5_final
+          if [ -s acc_competitive/motif_bridge_v5_out/pending_submission.txt ]; then
+            python3 acc_competitive/proof_atlas_fortify_v1.py \
+              --acc-root /tmp/acc \
+              --glob 'acc_competitive/motif_bridge_v5_out/pending_submission.txt' \
+              --out-dir acc_competitive/motif_bridge_v5_fortified \
+              --reverse-depth 7 --reverse-cap 300000 \
+              | tee acc_competitive/motif_bridge_v5_fortified.log
+            cp acc_competitive/motif_bridge_v5_fortified/fortified_ac.txt acc_competitive/motif_bridge_v5_final/candidates.txt
+          else
+            : > acc_competitive/motif_bridge_v5_final/candidates.txt
+          fi
+
+      - name: Fresh live-frontier strict-win filter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/motif_bridge_v5_live'); out.mkdir(parents=True,exist_ok=True)
+          for p in ('ac','stable_ac'):
+              u=f'{B}/api/acc/discoveries/snapshot?problem={p}'
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r:o=json.loads(r.read().decode())
+              (out/f'snapshot_{p}.json').write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+          PY
+          python3 acc_competitive/offline_candidate_pool_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/motif_bridge_v5_final/candidates.txt' \
+            --snapshot-ac acc_competitive/motif_bridge_v5_live/snapshot_ac.json \
+            --snapshot-stable acc_competitive/motif_bridge_v5_live/snapshot_stable_ac.json \
+            --out-dir acc_competitive/motif_bridge_v5_pool \
+            | tee acc_competitive/motif_bridge_v5_pool.log
+
+      - name: Emit V5 result
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          def read(p):
+              p=pathlib.Path(p); return json.loads(p.read_text()) if p.exists() else {}
+          m=read('acc_competitive/motif_bridge_v5_out/report.json')
+          f=read('acc_competitive/motif_bridge_v5_fortified/report.json')
+          p=read('acc_competitive/motif_bridge_v5_pool/report.json')
+          r={'experiment':'ACC_MOTIF_BRIDGE_V5','mechanism':m.get('mechanism'),
+             'bridge_01821_to_09633':m.get('bridge_10'),'bridge_01684_to_01821':m.get('bridge_11'),
+             'raw_candidates':m.get('candidate_count',0),'evidence':m.get('evidence',[]),
+             'fortified_candidates':f.get('optimized_candidates',0),'fortify_moves_saved':f.get('moves_saved',0),
+             'strict_live_rows':p.get('strictly_better_than_frozen',0),
+             'policy':'PUBLISH_ONLY_AFTER_FRESH_STRICT_LIVE_WIN'}
+          pathlib.Path('acc_competitive/motif_bridge_v5_report.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          print('MOTIF_BRIDGE_V5_RESULT',json.dumps(r,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-motif-bridge-v5
+          path: |
+            acc_competitive/motif_bridge_v5_out/
+            acc_competitive/motif_bridge_v5.log
+            acc_competitive/motif_bridge_v5_fortified/
+            acc_competitive/motif_bridge_v5_fortified.log
+            acc_competitive/motif_bridge_v5_final/
+            acc_competitive/motif_bridge_v5_live/
+            acc_competitive/motif_bridge_v5_pool/
+            acc_competitive/motif_bridge_v5_pool.log
+            acc_competitive/motif_bridge_v5_report.json
+          retention-days: 90
+          if-no-files-found: warn
