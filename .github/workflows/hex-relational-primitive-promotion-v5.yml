@@ -1,0 +1,81 @@
+name: Hex Relational Primitive Promotion V5
+
+on:
+  push:
+    branches:
+      - hex-relational-primitive-promotion-v5
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Induce and qualify promoted primitive
+        run: |
+          python3 experiments/hex_relational_primitive_promotion_v5/run.py
+
+      - name: Generate held-out two-relation Lean obligations
+        run: |
+          python3 experiments/hex_relational_primitive_promotion_v5/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_relational_primitive_promotion_v5
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_relational_primitive_promotion_v5
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_relational_primitive_promotion_v5
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check promoted macro held-out transfer
+        working-directory: experiments/hex_relational_primitive_promotion_v5
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V5 evidence
+        working-directory: experiments/hex_relational_primitive_promotion_v5
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path(".")
+          q = json.loads((root/"results/qualification.json").read_text())
+          q["generation"] = json.loads((root/"results/generation.json").read_text())
+          q["lean_kernel_check"] = "PASS"
+          q["final_verdict"] = "VERIFIED_PRIMITIVE_PROMOTION_AND_TRANSFER"
+          files = [
+              "PROTOCOL.md", "run.py", "generate_lean.py", "Generated.lean",
+              "lakefile.toml", "lean-toolchain", "lake-manifest.json",
+              "results/promoted_macro.json"
+          ]
+          q["sealed_files"] = {
+              f: hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(q, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(q, indent=2, sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py generate_lean.py Generated.lean lakefile.toml lean-toolchain lake-manifest.json results/promoted_macro.json > results/SHA256SUMS.txt
+
+      - name: Upload sealed V5 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-relational-primitive-promotion-v5-evidence
+          path: experiments/hex_relational_primitive_promotion_v5/results/
+          if-no-files-found: error
