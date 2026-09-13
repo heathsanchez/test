@@ -1,0 +1,67 @@
+name: Relational Delta Repair Genesis V23
+
+on:
+  push:
+    branches:
+      - relational-delta-repair-genesis-v23
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V23 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=f7880590cfff1b726fb02c9e918e92b5169f18fe
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/relational_delta_repair_genesis_v23/PROTOCOL.md             experiments/relational_delta_repair_genesis_v23/basis.py             experiments/relational_delta_repair_genesis_v23/kernel.py
+          echo "V23 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/relational_delta_repair_genesis_v23/basis.py             experiments/relational_delta_repair_genesis_v23/kernel.py             experiments/relational_delta_repair_genesis_v23/challenge_pack.py             experiments/relational_delta_repair_genesis_v23/run.py
+
+      - name: Run V23
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/relational_delta_repair_genesis_v23
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/relational_delta_repair_genesis_v23
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relational-delta-repair-genesis-v23-evidence
+          path: |
+            experiments/relational_delta_repair_genesis_v23/evidence.json
+            experiments/relational_delta_repair_genesis_v23/run.log
+            experiments/relational_delta_repair_genesis_v23/FREEZE.json
+            experiments/relational_delta_repair_genesis_v23/PROTOCOL.md
+          if-no-files-found: error
