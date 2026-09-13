@@ -18,3 +18,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh workflow run acc-reset-publisher.yml --ref main --repo heathsanchez/test
+
+# one-shot kick after missed scheduled publication
