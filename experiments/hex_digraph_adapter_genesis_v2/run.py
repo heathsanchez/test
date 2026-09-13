@@ -181,7 +181,7 @@ def main():
             ablated["identity_couplings"] = tuple(
                 x for x in selected["identity_couplings"] if x != removed
             )
-            ev = evaluate_candidate(ablated, graphs, source_sigs, maps_by_roles[selected["roles"]])
+            ev = evaluate_candidate(ablated, graphs, source_sigs, maps_by_roles)
             ablations.append({
                 "removed": list(removed),
                 "mismatch_count": ev["mismatch_count"],
