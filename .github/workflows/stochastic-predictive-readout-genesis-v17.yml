@@ -1,0 +1,68 @@
+name: Stochastic Predictive Readout Genesis V17
+
+on:
+  push:
+    branches:
+      - stochastic-predictive-readout-genesis-v17
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V17 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=6cf9c80a7fd0fc37e46050f47e5c6df0b7bd7580
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/stochastic_predictive_readout_genesis_v17/PROTOCOL.md             experiments/stochastic_predictive_readout_genesis_v17/basis.py             experiments/stochastic_predictive_readout_genesis_v17/kernel.py
+          echo "V17 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/stochastic_predictive_readout_genesis_v17/basis.py             experiments/stochastic_predictive_readout_genesis_v17/kernel.py             experiments/stochastic_predictive_readout_genesis_v17/challenge_pack.py             experiments/stochastic_predictive_readout_genesis_v17/run.py
+
+      - name: Run stochastic readout suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/stochastic_predictive_readout_genesis_v17
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/stochastic_predictive_readout_genesis_v17
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stochastic-predictive-readout-genesis-v17-evidence
+          path: |
+            experiments/stochastic_predictive_readout_genesis_v17/evidence.json
+            experiments/stochastic_predictive_readout_genesis_v17/run.log
+            experiments/stochastic_predictive_readout_genesis_v17/FREEZE.json
+            experiments/stochastic_predictive_readout_genesis_v17/PROTOCOL.md
+          if-no-files-found: error
