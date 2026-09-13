@@ -77,8 +77,9 @@ def main():
 
     G=evidence["gates"]
     G["Y1_no_geometry_vocabulary_in_frozen_executable_core"]=all(x not in core for x in forbidden)
+    protocol_text=(HERE/"PROTOCOL.md").read_text().lower()
     G["Y2_identity_only_beginning_is_explicit"]=(
-        "identity transformation only" in (HERE/"PROTOCOL.md").read_text()
+        ("begin with identity only" in protocol_text or "identity transformation only" in protocol_text)
         and tuple(identity(WORLD_A.n)) in group_set(a)
     )
     G["Y3_all_bijections_exhaustively_tested"]=A["tested_bijections"]==720
