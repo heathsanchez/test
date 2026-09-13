@@ -1,0 +1,47 @@
+{
+  "verdict": "VERIFIED_COMPOSITIONAL_REPAIR_GENESIS",
+  "workflow_run_id": 34728202783,
+  "workflow_job_id": 103646051150,
+  "head_sha": "e76168cbdadfdef15d580bad8328514470da04f9",
+  "artifact_id": 10309055753,
+  "artifact_zip_sha256": "f1c4e1129e2ecf49f8e15bc4c879e7a7c2f49537118064dd94d234679cfc5ef8",
+  "primitives": [
+    "ADD_FRESH_ROLE",
+    "COUPLE_OLD0_TO_FRESH",
+    "COUPLE_OLD1_TO_FRESH"
+  ],
+  "first_success_depth": 3,
+  "winning_program": [
+    "ADD_FRESH_ROLE",
+    "COUPLE_OLD0_TO_FRESH",
+    "COUPLE_OLD1_TO_FRESH"
+  ],
+  "selected_state": {
+    "roles": 3,
+    "arc_channel": [
+      0,
+      1
+    ],
+    "identity_couplings": [
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "mismatches": 0
+  },
+  "depth2_mismatches": [
+    36,
+    36
+  ],
+  "matches_v2": true,
+  "prior_v2": {
+    "run_id": 34727765985,
+    "artifact_id": 10309130239,
+    "hex_kernel_check": "PASS"
+  }
+}
