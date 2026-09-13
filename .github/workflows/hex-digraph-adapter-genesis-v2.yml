@@ -1,0 +1,82 @@
+name: Hex Digraph Adapter Genesis V2
+
+on:
+  push:
+    branches:
+      - hex-digraph-adapter-genesis-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  genesis:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exhaustive adapter grammar search
+        run: |
+          python3 experiments/hex_digraph_adapter_genesis_v2/run.py
+
+      - name: Generate held-out Lean obligations from selected adapter
+        run: |
+          python3 experiments/hex_digraph_adapter_genesis_v2/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_digraph_adapter_genesis_v2
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_digraph_adapter_genesis_v2
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_digraph_adapter_genesis_v2
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check generated held-out transfer
+        working-directory: experiments/hex_digraph_adapter_genesis_v2
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V2 evidence
+        working-directory: experiments/hex_digraph_adapter_genesis_v2
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path(".")
+          q = json.loads((root/"results/qualification.json").read_text())
+          generation = json.loads((root/"results/generation.json").read_text())
+          q["generation"] = generation
+          q["lean_kernel_check"] = "PASS"
+          q["final_verdict"] = "VERIFIED_BOUNDED_ADAPTER_GENESIS" if q["verdict"].startswith("SELECTED") else "NEGATIVE_OR_PARTIAL"
+          files = [
+              "PROTOCOL.md", "run.py", "generate_lean.py", "Generated.lean",
+              "lakefile.toml", "lean-toolchain", "lake-manifest.json",
+              "results/selected_adapter.json", "results/candidate_ledger.json"
+          ]
+          q["sealed_files"] = {
+              f: hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(q, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(q, indent=2, sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py generate_lean.py Generated.lean lakefile.toml lean-toolchain lake-manifest.json results/selected_adapter.json results/candidate_ledger.json > results/SHA256SUMS.txt
+
+      - name: Upload sealed V2 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-digraph-adapter-genesis-v2-evidence
+          path: experiments/hex_digraph_adapter_genesis_v2/results/
+          if-no-files-found: error
