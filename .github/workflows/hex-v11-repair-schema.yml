@@ -1,0 +1,91 @@
+name: Hex V11 Repair Schema Transfer
+
+on:
+  push:
+    branches:
+      - hex-v11
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  schema:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download exact sealed V10 authority artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/hex_v11_repair_schema/prior_v10
+          curl -L             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             https://api.github.com/repos/heathsanchez/test/actions/artifacts/10310401999/zip             -o /tmp/v10-evidence.zip
+          echo "96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87  /tmp/v10-evidence.zip" | sha256sum -c -
+          unzip -q /tmp/v10-evidence.zip -d experiments/hex_v11_repair_schema/prior_v10
+          test -f experiments/hex_v11_repair_schema/prior_v10/final_evidence.json
+
+      - name: Infer V10 repair schema and transfer to categorical keys
+        run: python3 experiments/hex_v11_repair_schema/run.py
+
+      - name: Generate held-out seven-relation Lean obligations
+        run: python3 experiments/hex_v11_repair_schema/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v11_repair_schema
+          elan override set leanprover/lean4:v4.34.0-rc2
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_v11_repair_schema
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_v11_repair_schema
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check V11 held-out transfer
+        working-directory: experiments/hex_v11_repair_schema
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V11 evidence
+        working-directory: experiments/hex_v11_repair_schema
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          e=json.loads((root/"results/evidence.json").read_text())
+          e["generation"]=json.loads((root/"results/generation.json").read_text())
+          e["lean_kernel_check"]="PASS"
+          e["prior_v10_artifact_id"]=10310401999
+          e["prior_v10_artifact_zip_sha256"]="96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87"
+          e["final_verdict"]="VERIFIED_REPAIR_SCHEMA_ANTI_UNIFICATION_AND_TRANSFER"
+          files=["PROTOCOL.md","run.py","generate_lean.py","Generated.lean",
+                 "lakefile.toml","lake-manifest.json",
+                 "results/induced_schema.json","results/final_policy.json"]
+          e["sealed_files"]={
+              f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(e,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(e,indent=2,sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py generate_lean.py Generated.lean lakefile.toml lake-manifest.json results/induced_schema.json results/final_policy.json > results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v11-repair-schema-evidence
+          path: experiments/hex_v11_repair_schema/results/
+          if-no-files-found: error
