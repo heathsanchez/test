@@ -1,0 +1,68 @@
+name: Consequence Symmetry Genesis V20
+
+on:
+  push:
+    branches:
+      - consequence-symmetry-genesis-v20
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V20 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=2dd1d64dacaa049032e704928e26eaea383263cc
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/consequence_symmetry_genesis_v20/PROTOCOL.md             experiments/consequence_symmetry_genesis_v20/basis.py             experiments/consequence_symmetry_genesis_v20/kernel.py
+          echo "V20 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/consequence_symmetry_genesis_v20/basis.py             experiments/consequence_symmetry_genesis_v20/kernel.py             experiments/consequence_symmetry_genesis_v20/challenge_pack.py             experiments/consequence_symmetry_genesis_v20/run.py
+
+      - name: Run post-freeze consequence-symmetry suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/consequence_symmetry_genesis_v20
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/consequence_symmetry_genesis_v20
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consequence-symmetry-genesis-v20-evidence
+          path: |
+            experiments/consequence_symmetry_genesis_v20/evidence.json
+            experiments/consequence_symmetry_genesis_v20/run.log
+            experiments/consequence_symmetry_genesis_v20/FREEZE.json
+            experiments/consequence_symmetry_genesis_v20/PROTOCOL.md
+          if-no-files-found: error
