@@ -30,10 +30,13 @@ jobs:
       - name: Exhaust anonymous outer edit transducer substrate
         run: python3 experiments/hex_v30_outer_edit_operation_genesis/run.py
 
+      - name: Independently replay V30 synthesis and transfer
+        run: python3 experiments/hex_v30_outer_edit_operation_genesis/independent_verify.py
+
       - name: Seal V30 evidence
         working-directory: experiments/hex_v30_outer_edit_operation_genesis
         run: |
-          sha256sum PROTOCOL.md run.py results/final_evidence.json > results/SHA256SUMS.txt
+          sha256sum PROTOCOL.md run.py independent_verify.py results/final_evidence.json results/independent_verification.json > results/SHA256SUMS.txt
           cat results/final_evidence.json
 
       - uses: actions/upload-artifact@v4
