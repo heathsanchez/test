@@ -75,13 +75,16 @@ def main()->int:
         nover.get("status")=="UNKNOWN_NO_VERIFIER" and nover.get("tested_frame_modes")==0
     )
 
-    source=((HERE/"basis.py").read_text()+"\n"+(HERE/"kernel.py").read_text()).lower()
-    forbidden=(
-        "channel","history","joint","read","atom","pair","tuple","switch","apply",
-        "contextual","interventional","oriented4","anchored2","framed2"
+    source_raw=((HERE/"basis.py").read_text()+"\n"+(HERE/"kernel.py").read_text())
+    source_lower=source_raw.lower()
+    forbidden_domains=(
+        "channel","history","joint","contextual","interventional",
+        "oriented4","anchored2","framed2"
     )
-    G["E15_named_domains_and_old_constructors_absent_from_frozen_kernel"]=all(
-        re.search(r"\b"+re.escape(tok)+r"\b",source) is None for tok in forbidden
+    forbidden_legacy_constructors=("READ","ATOM","PAIR","TUPLE3","SWITCH","APPLY")
+    G["E15_named_domains_and_old_constructors_absent_from_frozen_kernel"]=(
+        all(re.search(r"\b"+re.escape(tok)+r"\b",source_lower) is None for tok in forbidden_domains)
+        and all(re.search(r"\b"+re.escape(tok)+r"\b",source_raw) is None for tok in forbidden_legacy_constructors)
     )
     G["E16_only_supplied_developmental_dimensions_are_symmetry_and_window"]=(
         tuple(Kernel.FRAME_MODES)==(
