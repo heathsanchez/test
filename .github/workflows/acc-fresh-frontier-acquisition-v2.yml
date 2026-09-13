@@ -1,0 +1,130 @@
+name: ACC Fresh Frontier Acquisition V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths: [".github/workflows/acc-fresh-frontier-acquisition-v2.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze live frontier and shard highest-slack singleton records
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/fresh_v2
+          python3 - <<'PY'
+          import urllib.request,json,pathlib
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/fresh_v2')
+          def get(problem):
+              u=f'{B}/api/acc/discoveries/snapshot?problem={problem}'
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r: return json.loads(r.read().decode())
+          snaps={p:get(p) for p in ('ac','stable_ac')}
+          for p,o in snaps.items(): (out/f'snapshot_{p}.json').write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+          items=snaps['ac'].get('data',snaps['ac'])['items']
+          rows=[x for x in items if x.get('status')=='solved' and x.get('kTeams')==1 and isinstance(x.get('currentBestLength'),int) and x['currentBestLength']>=2000]
+          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows=rows[:16]
+          (out/'selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          for i in range(8):
+              ids=[x['challengeId'] for x in rows[i*2:(i+1)*2]]
+              (out/f'shard_{i}.json').write_text(json.dumps(ids)+'\n')
+          print('FRESH_V2_TARGETS',json.dumps([(x['challengeId'],x['currentBestLength']) for x in rows]))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-fresh-v2-freeze
+          path: acc_competitive/fresh_v2/
+          retention-days: 30
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-fresh-v2-freeze
+          path: /tmp/freeze
+      - name: Fetch pinned solver/verifier sources once per two targets
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+          python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+      - name: Search two fresh records with proven baseline
+        run: |
+          set -o pipefail
+          IDS="$(find /tmp/freeze -name shard_${{ matrix.shard }}.json | head -1)"
+          AC="$(find /tmp/freeze -name snapshot_ac.json | head -1)"
+          ST="$(find /tmp/freeze -name snapshot_stable_ac.json | head -1)"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc --acsolverx-root /tmp/acsolverx \
+            --out-dir acc_competitive/out_fresh_v2_${{ matrix.shard }} \
+            --target-ids-file "$IDS" --include-solved \
+            --snapshot-ac-file "$AC" --snapshot-stable-file "$ST" --defer-live-filter \
+            --max-targets 2 --max-nodes 500000 --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 --compiler-beam 16 --depth-weight 0 \
+            --search-seconds 1800 | tee acc_competitive/fresh_v2_${{ matrix.shard }}.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-fresh-v2-shard-${{ matrix.shard }}
+          path: |
+            acc_competitive/out_fresh_v2_${{ matrix.shard }}/
+            acc_competitive/fresh_v2_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: [freeze,search]
+    if: always() && needs.freeze.result == 'success' && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-fresh-v2-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-fresh-v2-shard-*
+          path: acc_competitive/fresh_v2_downloads
+          merge-multiple: false
+      - name: Fetch pinned verifier and make verifier-clean pool only
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          AC="$(find /tmp/freeze -name snapshot_ac.json | head -1)"; ST="$(find /tmp/freeze -name snapshot_stable_ac.json | head -1)"
+          python3 acc_competitive/offline_candidate_pool_v1.py --acc-root /tmp/acc \
+            --glob 'acc_competitive/fresh_v2_downloads/**/submission_v2.txt' \
+            --snapshot-ac "$AC" --snapshot-stable "$ST" \
+            --out-dir acc_competitive/fresh_frontier_v2_pool | tee acc_competitive/fresh_frontier_v2_pool.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-fresh-frontier-v2-pool
+          path: |
+            acc_competitive/fresh_frontier_v2_pool/
+            acc_competitive/fresh_frontier_v2_pool.log
+          retention-days: 90
