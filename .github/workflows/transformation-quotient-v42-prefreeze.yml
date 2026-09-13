@@ -1,0 +1,28 @@
+name: Transformation Quotient V42 Prefreeze
+
+on:
+  push:
+    branches:
+      - transformation-quotient-genesis-v42
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/transformation_quotient_v42/basis.py             experiments/transformation_quotient_v42/kernel.py
+      - name: Exhaustive quotient census
+        working-directory: experiments/transformation_quotient_v42
+        run: |
+          python - <<'PY'
+          from kernel import Kernel
+          parts=Kernel.set_partitions(8)
+          print("partition_count",len(parts))
+          assert len(parts)==4140, len(parts)
+          assert min(len(p) for p in parts)==1
+          assert max(len(p) for p in parts)==8
+          PY
