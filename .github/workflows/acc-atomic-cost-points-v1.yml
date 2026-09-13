@@ -1,0 +1,353 @@
+name: ACC Atomic Cost Points V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atomic-cost-points-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  CYCLE1_RUN: "34754206724"
+  CYCLE2_RUN: "34755708007"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned competition authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze fresh public frontier
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/atomic_cost_freeze \
+            --competitive-wins acc_competitive/competitive_wins_seed_v1.json \
+            --competitive-attempted acc_competitive/competitive_attempted_seed_v1.json \
+            --attack-count 1 --defend-fraction 0 --shards 1 \
+            --mechanism-id atomic-cost-v1 \
+            | tee acc_competitive/atomic_cost_freeze.log
+
+      - name: Recover demonstrated solver-responsive history
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/history/c1 /tmp/history/c2
+          gh run download "$CYCLE1_RUN" -n acc-number-one-controller-v1-recovered -D /tmp/history/c1
+          gh run download "$CYCLE2_RUN" -n acc-number-one-controller-v1 -D /tmp/history/c2
+          find /tmp/history -name attack_outcomes.json -print
+
+      - name: Select eight responsive cells by current exact gap
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json,math
+          from pathlib import Path
+          snap=json.load(open('acc_competitive/atomic_cost_freeze/snapshot_ac.json'))
+          d=snap.get('data',snap)
+          live={x['challengeId']:x for x in d['items']}
+          best={}
+          for fn in glob.glob('/tmp/history/**/attack_outcomes.json',recursive=True):
+              for r in json.load(open(fn)):
+                  cid=r.get('challenge_id'); al=r.get('atomic_length')
+                  if not cid or not isinstance(al,int): continue
+                  row=live.get(cid,{})
+                  lb=row.get('currentBestLength')
+                  if row.get('status')!='solved' or not isinstance(lb,int) or lb<=0: continue
+                  old=best.get(cid)
+                  rec={'challenge_id':cid,'historical_candidate':al,'live_best':lb,
+                       'gap_moves':al-lb,'relative_gap':(al-lb)/lb,
+                       'historical_nodes':r.get('nodes')}
+                  if old is None or al<old['historical_candidate']: best[cid]=rec
+          rows=sorted(best.values(),key=lambda r:(r['relative_gap'],r['gap_moves'],r['historical_nodes'] or 10**18))
+          chosen=rows[:8]
+          assert len(chosen)==8,chosen
+          Path('acc_competitive/atomic_cost_freeze/selected_targets.json').write_text(
+              json.dumps([r['challenge_id'] for r in chosen],indent=2)+'\n')
+          Path('acc_competitive/atomic_cost_freeze/selection_evidence.json').write_text(
+              json.dumps(chosen,indent=2,sort_keys=True)+'\n')
+          print('ATOMIC_COST_FROZEN',json.dumps(chosen,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-atomic-cost-freeze
+          path: |
+            acc_competitive/atomic_cost_freeze/
+            acc_competitive/atomic_cost_freeze.log
+          retention-days: 90
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0,1,2,3,4,5,6,7]
+        alpha: ["0","1","4"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 32
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen target and snapshots
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-atomic-cost-freeze -D /tmp/freeze
+          t=$(find /tmp/freeze -name selected_targets.json -print -quit)
+          ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
+          st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
+          test -n "$t" && test -n "$ac" && test -n "$st"
+          cp "$ac" /tmp/snapshot_ac.json
+          cp "$st" /tmp/snapshot_stable.json
+          python3 - <<'PY'
+          import json,os
+          xs=json.load(open(os.environ['T']))
+          cid=xs[int(os.environ['IDX'])]
+          open('/tmp/cid','w').write(cid)
+          print('ATOMIC_COST_CASE',cid,'alpha',os.environ['ALPHA'])
+          PY
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+          ALPHA: ${{ matrix.alpha }}
+          T: /tmp/freeze/home/runner/work/test/test/acc_competitive/atomic_cost_freeze/selected_targets.json
+
+      - name: Resolve target robustly
+        id: resolved
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/cid ]; then
+            t=$(find /tmp/freeze -name selected_targets.json -print -quit)
+            T="$t" IDX="$IDX" python3 - <<'PY'
+          import json,os
+          xs=json.load(open(os.environ['T']))
+          open('/tmp/cid','w').write(xs[int(os.environ['IDX'])])
+          PY
+          fi
+          echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
+
+      - name: Add swap
+        run: |
+          set -euo pipefail
+          SWAP=/swapfile-atomic-${{ matrix.index }}-${{ matrix.alpha }}
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Search official atomic cost directly
+        run: |
+          set -o pipefail
+          out="acc_competitive/atomic_cost_runs/i${{ matrix.index }}_a${{ matrix.alpha }}"
+          mkdir -p "$out"
+          python3 acc_competitive/atomic_cost_search_v1.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --target-id "${{ steps.resolved.outputs.cid }}" \
+            --snapshot-ac /tmp/snapshot_ac.json \
+            --snapshot-stable /tmp/snapshot_stable.json \
+            --out-dir "$out" \
+            --alpha "${{ matrix.alpha }}" \
+            --max-nodes 60000 \
+            --max-seconds 1500 \
+            --total-cap 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atomic-cost-${{ matrix.index }}-${{ matrix.alpha }}
+          path: |
+            acc_competitive/atomic_cost_runs/i${{ matrix.index }}_a${{ matrix.alpha }}/
+            acc_competitive/atomic_cost_runs/i${{ matrix.index }}_a${{ matrix.alpha }}.log
+          retention-days: 90
+
+  publish:
+    needs: [freeze, search]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all completed atomic-cost evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/runs /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-atomic-cost-*-*' -D /tmp/runs || true
+          gh run download "${{ github.run_id }}" -n acc-atomic-cost-freeze -D /tmp/freeze
+          echo "RESULTS=$(find /tmp/runs -name result.json | wc -l)"
+
+      - name: Select shortest exact certificate per responsive target
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/atomic_cost_publish
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rows=[]; best={}
+          for fn in glob.glob('/tmp/runs/**/result.json',recursive=True):
+              r=json.load(open(fn)); rows.append(r)
+              cid=r['challenge_id']; n=r.get('atomic_length')
+              cand=Path(fn).parent/'candidate_ac.txt'
+              if not isinstance(n,int) or not cand.exists(): continue
+              line=cand.read_text().strip()
+              if cid not in best or n<best[cid][0]: best[cid]=(n,line,r.get('alpha'))
+          Path('acc_competitive/atomic_cost_publish/all_results.json').write_text(
+              json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          Path('acc_competitive/atomic_cost_publish/best_ac.txt').write_text(
+              ''.join(best[c][1]+'\n' for c in sorted(best)))
+          rep={'completed_cases':len(rows),'verified_targets':len(best),
+               'best_lengths':{c:{'length':v[0],'alpha':v[2]} for c,v in best.items()}}
+          Path('acc_competitive/atomic_cost_publish/search_report.json').write_text(
+              json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('ATOMIC_COST_SYNTHESIS',json.dumps(rep,sort_keys=True))
+          PY
+
+      - name: Fetch pinned verifier authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Compile retained paths through Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/atomic_cost_atlas
+          if [ ! -s acc_competitive/atomic_cost_publish/best_ac.txt ]; then
+            : > acc_competitive/atomic_cost_atlas/fortified_ac.txt
+            echo NO_ATOMIC_CERTIFICATES
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/atomic_cost_publish/best_ac.txt' \
+            --out-dir acc_competitive/atomic_cost_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/atomic_cost_atlas.log
+
+      - name: Peephole exact atomic paths
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/atomic_cost_peephole
+          if [ ! -s acc_competitive/atomic_cost_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/atomic_cost_peephole/fortified_ac.txt
+            echo NO_ATLAS_PATHS
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/atomic_cost_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/atomic_cost_peephole \
+            --thin-win-frac 1.0 --near-miss-frac 1.0 --max-window 5 --max-path 20000 \
+            | tee acc_competitive/atomic_cost_peephole.log
+
+      - name: Fresh-check and submit every new scoring consequence
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/atomic_cost_live
+          if [ ! -s acc_competitive/atomic_cost_peephole/fortified_ac.txt ]; then
+            echo NO_PATHS_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/atomic_cost_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/atomic_cost_live \
+            --cycle 3 \
+            | tee acc_competitive/atomic_cost_live.log
+
+      - name: Final report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          sr=J('acc_competitive/atomic_cost_publish/search_report.json')
+          pub=J('acc_competitive/atomic_cost_live/report.json')
+          rep={
+            'experiment':'ACC_ATOMIC_COST_POINTS_V1',
+            'objective':'search official atomic move cost rather than quotient size',
+            'completed_cases':sr.get('completed_cases'),
+            'verified_targets':sr.get('verified_targets'),
+            'best_lengths':sr.get('best_lengths'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ac':pub.get('selected_ac',0),
+            'published_stable':pub.get('selected_stable',0),
+            'published_ties':pub.get('selected_scoring_ties',0),
+            'published_strict':pub.get('selected_strict_improvements',0),
+            'submission_id':pub.get('submission_id'),
+            'terminal_status':pub.get('terminal_status'),
+          }
+          Path('acc_competitive/atomic_cost_final.json').write_text(
+              json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('ATOMIC_COST_FINAL',json.dumps(rep,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atomic-cost-final
+          path: |
+            acc_competitive/atomic_cost_publish/
+            acc_competitive/atomic_cost_atlas/
+            acc_competitive/atomic_cost_atlas.log
+            acc_competitive/atomic_cost_peephole/
+            acc_competitive/atomic_cost_peephole.log
+            acc_competitive/atomic_cost_live/
+            acc_competitive/atomic_cost_live.log
+            acc_competitive/atomic_cost_final.json
+            /tmp/freeze/
+          retention-days: 90
+
+# One target per search job: no hard case can starve another.
+# Targets are selected only from challenges this mechanism has demonstrably solved.
+# Search cost is official atomic move count; relator length is only a bounded bias.
