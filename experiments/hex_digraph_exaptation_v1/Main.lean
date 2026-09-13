@@ -1,4 +1,4 @@
-import HexGraphIso
+import HexGraphIso.Tactic
 
 open Hex Hex.GraphIso
 
