@@ -1,0 +1,22 @@
+{
+  "experiment": "proto_semantics_basis_v7",
+  "protocol_commit": "a9418d240766d36413b3409a4ceffede4abc2b75",
+  "basis_commit": "de8c2fc7f6eef623e2d813742332a2f35ba3bd70",
+  "kernel_commit": "217216d6f711c0d9c1f5d1c0328ea87fb63b3d7b",
+  "scientific_freeze_commit": "217216d6f711c0d9c1f5d1c0328ea87fb63b3d7b",
+  "github_blob_shas": {
+    "PROTOCOL.md": "c232fe43b2b1b3b18c5580bdd5db6a3da7dfb32b",
+    "basis.py": "ca9bf2248e8c89bafe6e898ab93070c4236ea155",
+    "kernel.py": "43ff10ef796babbee4b530af6b34af90841511ae"
+  },
+  "fixed_seed": "BIT",
+  "candidate_primitive_universe": ["PRODUCT", "QUOTIENT", "RELATION", "COMPOSE"],
+  "developmental_constitution_not_counted_as_proto_semantics": [
+    "external_verification",
+    "behavior_quotienting",
+    "verified_reification",
+    "conservative_UNKNOWN"
+  ],
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py. Any such edit resets the experiment version.",
+  "claim_boundary": "Finite bounded basis search only; no claim of unique metaphysical foundation or natural-world adequacy."
+}
