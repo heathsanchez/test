@@ -1,0 +1,388 @@
+name: ACC Reach V2 Close + V3 Guard
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-reach-v2-close-v3-guard.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  V2_RUN: "34775261733"
+  CYCLE2_RUN: "34755708007"
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  close_v2:
+    runs-on: ubuntu-latest
+    outputs:
+      authorized: ${{ steps.auth.outputs.authorized }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover preserved Reach V2 evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2
+          gh run download "$V2_RUN" --pattern 'acc-reach-v2-*' -D /tmp/v2
+          echo "COMPLETED_REPORTS=$(find /tmp/v2 -name report.json | wc -l)"
+          find /tmp/v2 -name report.json -print | sort
+          mask6=$(find /tmp/v2 -type f -name '*mask6*.log' -print -quit)
+          if [ -z "$mask6" ]; then
+            mask6=$(grep -rl 'REACH_V2_TARGET.*"policy": "mask6"' /tmp/v2 | head -1)
+          fi
+          test -n "$mask6"
+          cp "$mask6" /tmp/mask6.log
+          grep 'REACH_V2_TARGET' /tmp/mask6.log | tail -12
+
+      - name: Formally close V2 using early replay rejection
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/reach_v2_close_partial.py \
+            --reports-glob '/tmp/v2/**/report.json' \
+            --mask6-log /tmp/mask6.log \
+            --out-dir acc_competitive/reach_v2_formal_close \
+            | tee acc_competitive/reach_v2_formal_close.log
+
+      - name: Expose recursion authority
+        id: auth
+        run: |
+          set -euo pipefail
+          python3 - <<'PY' >/tmp/auth
+          import json
+          r=json.load(open('acc_competitive/reach_v2_formal_close/report.json'))
+          ok=(r['transition']=='REACH_V2_OBSTRUCTION_CERTIFIED'
+              and r['permission']=='RECURSE_ON_REACH_V2_AUTHORIZED'
+              and r['declared_language_complete'] is True)
+          print('true' if ok else 'false')
+          if not ok:
+              raise SystemExit(r)
+          PY
+          echo "authorized=$(cat /tmp/auth)" >> "$GITHUB_OUTPUT"
+          cat acc_competitive/reach_v2_formal_close/report.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-reach-v2-formal-close
+          path: |
+            acc_competitive/reach_v2_formal_close/
+            acc_competitive/reach_v2_formal_close.log
+          retention-days: 90
+
+  freeze_v3:
+    needs: close_v2
+    if: needs.close_v2.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover cumulative attempted memory and V2 prospective pack
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/cycle2 /tmp/v2freeze
+          gh run download "$CYCLE2_RUN" -n acc-number-one-controller-v1 -D /tmp/cycle2
+          gh run download "$V2_RUN" -n acc-reach-v2-freeze -D /tmp/v2freeze
+          attempted=$(find /tmp/cycle2 -name competitive_attempted.json -print -quit)
+          v2targets=$(find /tmp/v2freeze -name selected_targets.json -print -quit)
+          test -n "$attempted" && test -n "$v2targets"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          a=json.load(open(next(str(p) for p in Path('/tmp/cycle2').rglob('competitive_attempted.json'))))
+          b=json.load(open(next(str(p) for p in Path('/tmp/v2freeze').rglob('selected_targets.json'))))
+          out=list(dict.fromkeys([str(x) for x in a]+[str(x) for x in b]))
+          Path('/tmp/attempted_v3.json').write_text(json.dumps(out,indent=2)+'\n')
+          print('V3_EXCLUDED_PRIOR_ENCOUNTERS',len(out))
+          PY
+
+      - name: Fetch pinned competition authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze six unseen high-value prospective targets
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v1.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/reach_v3_freeze \
+            --competitive-wins acc_competitive/competitive_wins_seed_v1.json \
+            --competitive-attempted /tmp/attempted_v3.json \
+            --attack-count 6 \
+            --defend-fraction 0 \
+            --shards 1 \
+            | tee acc_competitive/reach_v3_freeze.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          ids=json.loads(Path('acc_competitive/reach_v3_freeze/selected_targets.json').read_text())
+          assert len(ids)==6,ids
+          cert={
+            'experiment':'ACC_REACH_V3_PROSPECTIVE_FREEZE',
+            'targets':ids,
+            'targets_frozen_before_guard_execution':True,
+            'declared_guard_language':{
+              'input':'existing boundary-inverse Boolean proposal predicate',
+              'truth_tables':{
+                'never':[0,0],
+                'boundary':[0,1],
+                'nonboundary':[1,0],
+                'all':[1,1],
+              },
+              'complete':True,
+            },
+            'protected_controls':['ac-08551','ac-04629','ac-00761'],
+          }
+          Path('acc_competitive/reach_v3_freeze/freeze_authority.json').write_text(
+              json.dumps(cert,indent=2,sort_keys=True)+'\n')
+          print('REACH_V3_FROZEN_TARGETS',json.dumps(ids))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-reach-v3-freeze
+          path: |
+            acc_competitive/reach_v3_freeze/
+            acc_competitive/reach_v3_freeze.log
+            /tmp/attempted_v3.json
+          retention-days: 90
+
+  candidate_v3:
+    needs: freeze_v3
+    strategy:
+      fail-fast: false
+      matrix:
+        guard: [never, boundary, nonboundary, all]
+        index: [0,1,2,3,4,5,6,7,8]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable V3 freeze and resolve one case
+        id: case
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-reach-v3-freeze -D /tmp/freeze
+          targets=$(find /tmp/freeze -name selected_targets.json -print -quit)
+          ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
+          st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
+          test -n "$targets" && test -n "$ac" && test -n "$st"
+          cp "$ac" /tmp/snapshot_ac.json
+          cp "$st" /tmp/snapshot_stable.json
+          python3 - <<'PY'
+          import json,os
+          idx=int(os.environ['IDX'])
+          xs=json.load(open(os.environ['TARGETS']))
+          controls=['ac-08551','ac-04629','ac-00761']
+          if idx < 6:
+              cid=xs[idx]; role='prospective'
+          else:
+              cid=controls[idx-6]; role='protected_replay'
+          with open('/tmp/cid','w') as f:f.write(cid)
+          with open('/tmp/role','w') as f:f.write(role)
+          print('V3_CASE',idx,cid,role)
+          PY
+          echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
+          echo "role=$(cat /tmp/role)" >> "$GITHUB_OUTPUT"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+          TARGETS: /tmp/freeze/home/runner/work/test/test/acc_competitive/reach_v3_freeze/selected_targets.json
+
+      - name: Resolve target path fallback
+        if: steps.case.outputs.cid == ''
+        run: exit 1
+
+      - name: Add swap
+        run: |
+          set -euo pipefail
+          SWAP=/swapfile-v3-${{ matrix.guard }}-${{ matrix.index }}
+          sudo fallocate -l 6G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Execute one guard on one frozen obligation
+        run: |
+          set -o pipefail
+          out="acc_competitive/reach_v3_runs/${{ matrix.guard }}_${{ matrix.index }}"
+          mkdir -p "$out"
+          python3 acc_competitive/reach_v3_guard_language.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --snapshot-ac /tmp/snapshot_ac.json \
+            --snapshot-stable /tmp/snapshot_stable.json \
+            --target-id "${{ steps.case.outputs.cid }}" \
+            --role "${{ steps.case.outputs.role }}" \
+            --guard "${{ matrix.guard }}" \
+            --out-dir "$out" \
+            --max-nodes 150000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-reach-v3-${{ matrix.guard }}-${{ matrix.index }}
+          path: |
+            acc_competitive/reach_v3_runs/${{ matrix.guard }}_${{ matrix.index }}/
+            acc_competitive/reach_v3_runs/${{ matrix.guard }}_${{ matrix.index }}.log
+          retention-days: 90
+
+  synthesize_v3:
+    needs: [close_v2, freeze_v3, candidate_v3]
+    if: always() && needs.close_v2.outputs.authorized == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all 36 guarded cases
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v3 /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-reach-v3-*-*' -D /tmp/v3
+          gh run download "${{ github.run_id }}" -n acc-reach-v3-freeze -D /tmp/freeze
+          n=$(find /tmp/v3 -name result.json | wc -l)
+          echo "V3_CASE_RESULTS=$n"
+          test "$n" -eq 36
+
+      - name: Synthesize V3 warrant and developmental transition
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/reach_v3_synthesis.py \
+            --glob '/tmp/v3/**/result.json' \
+            --prospective-count 6 \
+            --out-dir acc_competitive/reach_v3_result \
+            | tee acc_competitive/reach_v3_result.log
+
+      - name: Fetch pinned verifier authority for retained consequences
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Compile any strict consequences into Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/reach_v3_atlas
+          src=acc_competitive/reach_v3_result/best_strict_ac.txt
+          if [ ! -s "$src" ]; then
+            : > acc_competitive/reach_v3_atlas/fortified_ac.txt
+            echo "NO_V3_STRICT_CONSEQUENCES"
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob "$src" \
+            --out-dir acc_competitive/reach_v3_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/reach_v3_atlas.log
+
+      - name: Fresh-recheck and publish only still-strict consequences
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/reach_v3_publish
+          if [ ! -s acc_competitive/reach_v3_atlas/fortified_ac.txt ]; then
+            echo "NO_V3_CONSEQUENCES_TO_PUBLISH"
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/reach_v3_atlas/fortified_ac.txt' \
+            --out-dir acc_competitive/reach_v3_publish \
+            --cycle 3 \
+            | tee acc_competitive/reach_v3_publish.log
+
+      - name: Final V2-to-V3 report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          v3=J('acc_competitive/reach_v3_result/report.json')
+          pub=J('acc_competitive/reach_v3_publish/report.json')
+          final={
+            'experiment':'ACC_V2_CLOSE_THEN_V3_BOOLEAN_GUARD',
+            'v2_transition':'REACH_V2_OBSTRUCTION_CERTIFIED',
+            'v2_permission':'RECURSE_ON_REACH_V2_AUTHORIZED',
+            'v3_transition':v3.get('transition'),
+            'v3_permission':v3.get('permission'),
+            'v3_admissible':v3.get('admissible_replay_clean'),
+            'v3_novel_adequate':v3.get('novel_adequate_guards'),
+            'v3_pareto_frontier':v3.get('pareto_frontier'),
+            'strict_targets':v3.get('strict_targets_for_fresh_recheck'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ac':pub.get('selected_ac',0),
+            'published_stable':pub.get('selected_stable',0),
+            'submission_id':pub.get('submission_id'),
+            'terminal_status':pub.get('terminal_status'),
+            'unrestricted_search_inadequacy_certified':False,
+          }
+          Path('acc_competitive/reach_v3_final.json').write_text(
+              json.dumps(final,indent=2,sort_keys=True)+'\n')
+          print('ACC_V2_V3_FINAL',json.dumps(final,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-reach-v3-final
+          path: |
+            acc_competitive/reach_v3_result/
+            acc_competitive/reach_v3_result.log
+            acc_competitive/reach_v3_atlas/
+            acc_competitive/reach_v3_atlas.log
+            acc_competitive/reach_v3_publish/
+            acc_competitive/reach_v3_publish.log
+            acc_competitive/reach_v3_final.json
+            /tmp/freeze/
+          retention-days: 90
+
+# V2 is closed from a logically sufficient early replay counterexample.
+# V3 then exhausts all four Boolean edits of the existing proposal guard.
+# No fitted feature, motif, family label, or hand-picked weight is introduced.
