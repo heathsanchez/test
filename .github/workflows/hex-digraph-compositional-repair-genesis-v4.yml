@@ -1,0 +1,31 @@
+name: Hex Digraph Compositional Repair Genesis V4
+on:
+  push:
+    branches: [hex-digraph-compositional-repair-genesis-v4]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compose substrate repair from primitive developmental operations
+        run: python3 experiments/hex_digraph_compositional_repair_genesis_v4/run.py
+      - name: Seal evidence
+        working-directory: experiments/hex_digraph_compositional_repair_genesis_v4
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          r=pathlib.Path("."); e=json.loads((r/"results/evidence.json").read_text())
+          e["sealed_files"]={f:hashlib.sha256((r/f).read_bytes()).hexdigest() for f in ["PROTOCOL.md","run.py"]}
+          (r/"results/final_evidence.json").write_text(json.dumps(e,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(e,indent=2,sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py > results/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-digraph-compositional-repair-genesis-v4-evidence
+          path: experiments/hex_digraph_compositional_repair_genesis_v4/results/
+          if-no-files-found: error
