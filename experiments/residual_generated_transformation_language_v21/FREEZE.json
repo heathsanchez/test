@@ -1,0 +1,26 @@
+{
+  "experiment":"residual_generated_transformation_language_v21",
+  "scientific_freeze_commit":"d918d4ff6d3756058e391ce80884c57d9a3a56e8",
+  "protocol_commit":"4ee74107403d9441cc63cef8a409a6a2d16a7fe7",
+  "basis_commit":"27e5c909c9f6ebe167509c1dd966e515a86bea02",
+  "kernel_commit":"d918d4ff6d3756058e391ce80884c57d9a3a56e8",
+  "github_blob_shas":{
+    "PROTOCOL.md":"8344a6e08933ed6267b1dad1619ac2fcb46ade84",
+    "basis.py":"1f05b8f20abbf2077720b77dfa634325e7365c74",
+    "kernel.py":"e5fc20bc1cd364f3069672e83b38ed28f7691e95"
+  },
+  "initial_transformation_language":"factorized finite bijections Perm(X) x Perm(C)",
+  "growth_constructor":"residual-generated JOINT_SWAP on reified presentation cells X x C",
+  "growth_authority":"same verified consequence but distinct exhausted-L0 orbit",
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "explicitly_absent":[
+    "prelisted joint swap instances",
+    "geometry","coordinates","rotation","reflection","translation",
+    "domain-specific transformation types","quantum structure"
+  ],
+  "freeze_rule":"Post-freeze challenge worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite residual-generated joint-presentation transformation growth only."
+}
