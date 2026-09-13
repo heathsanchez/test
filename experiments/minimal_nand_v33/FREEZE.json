@@ -1,0 +1,16 @@
+{
+  "experiment": "minimal_anonymous_nand_substrate_v33",
+  "challenge_pack_committed_after_freeze": true,
+  "scientific_core_paths": [
+    "PROTOCOL.md",
+    "basis.py",
+    "kernel.py"
+  ],
+  "git_blob_sha": {
+    "PROTOCOL.md": "d6dfbf4958ef029a1605c4561f01cbe4c1d538a9",
+    "basis.py": "128738134a1a13a1c0025674409f91b00d07ad38",
+    "kernel.py": "f7f265320af27329135a85f7184ff711efc5d5c1"
+  },
+  "maximum_nand_cost": 5,
+  "term_constructors": ["ATOM", "NAND"]
+}
