@@ -17,6 +17,7 @@ from basis import (
     can_generate_cardinality,
     cardinality,
     obstruction_certificate,
+    type_cost,
     values,
 )
 
@@ -88,11 +89,11 @@ class Kernel:
                 "tested_type_count": tested,
             }
 
-        min_cost = min(__import__("basis").type_cost(ty) for ty, _, _ in accepted)
+        min_cost = min(type_cost(ty) for ty, _, _ in accepted)
         minima = [
             (ty, p, ev)
             for ty, p, ev in accepted
-            if __import__("basis").type_cost(ty) == min_cost
+            if type_cost(ty) == min_cost
         ]
 
         # Authority may explicitly declare accepted candidates consequence-equivalent.
