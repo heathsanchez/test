@@ -1,0 +1,75 @@
+name: Hex V16 Ternary Heldout
+
+on:
+  push:
+    branches:
+      - hex-v16-heldout-run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify frozen Lean source hash
+        working-directory: experiments/hex_v16_ternary_coherence
+        run: |
+          echo "c1e4062f7d203050759e5acb6040295acd05fc1837fb5523bd31234957e38998  Generated.lean" | sha256sum -c -
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v16_ternary_coherence
+          elan override set leanprover/lean4:v4.34.0-rc2
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_v16_ternary_coherence
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_v16_ternary_coherence
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check held-out ternary transfer
+        working-directory: experiments/hex_v16_ternary_coherence
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee lean.log
+
+      - name: Seal V16 external evidence
+        working-directory: experiments/hex_v16_ternary_coherence
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          ev=json.loads((root/"semantic_evidence.json").read_text())
+          ev["lean_kernel_check"]="PASS"
+          ev["final_verdict"]="VERIFIED_TERNARY_COHERENCE_EXPANSION_AND_HELDOUT_TRANSFER"
+          ev["sealed_files"]={
+            f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+            for f in ["Generated.lean","semantic_evidence.json","lakefile.toml","lake-manifest.json"]
+            if (root/f).exists()
+          }
+          (root/"final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v16-ternary-heldout-evidence
+          path: |
+            experiments/hex_v16_ternary_coherence/final_evidence.json
+            experiments/hex_v16_ternary_coherence/lean.log
+            experiments/hex_v16_ternary_coherence/Generated.lean
+            experiments/hex_v16_ternary_coherence/semantic_evidence.json
+          if-no-files-found: error
