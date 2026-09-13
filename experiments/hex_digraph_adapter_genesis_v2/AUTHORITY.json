@@ -1,0 +1,53 @@
+{
+  "final_verdict": "VERIFIED_BOUNDED_ADAPTER_GENESIS",
+  "workflow_run_id": 34727765985,
+  "workflow_job_id": 103644868924,
+  "head_sha": "8e897d6571bf53a35980d8ff635a68652bf81173",
+  "artifact_id": 10309130239,
+  "artifact_name": "hex-digraph-adapter-genesis-v2-evidence",
+  "artifact_zip_sha256": "a384b953d8cf3236255cd104679a3079430ab8d8ce2bbd60a6e2fcc996f24891",
+  "qualification": {
+    "n": 3,
+    "graphs": 64,
+    "ordered_pairs": 4096,
+    "candidates": 81,
+    "qualified_candidates": 12,
+    "least_successful_cost": [
+      3,
+      2
+    ]
+  },
+  "selected": {
+    "roles": 3,
+    "arc_channel": [
+      0,
+      1
+    ],
+    "identity_couplings": [
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ],
+    "mismatches": 0
+  },
+  "ablation_mismatches": [
+    36,
+    36
+  ],
+  "one_role_control_mismatches": 1228,
+  "heldout": {
+    "n": 4,
+    "lean_kernel_check": "PASS",
+    "generated_lean_sha256": "f1bcdc90c1a2d6671bf39a201c433a00ccacf66a2dcebfa338601bc325140bea"
+  },
+  "hex": {
+    "repo": "leanprover/hex-graph-iso",
+    "tag": "v0.6.0",
+    "commit": "f247c0898414ca29c502691e3a8ad0b3ce0b4f6a"
+  }
+}
