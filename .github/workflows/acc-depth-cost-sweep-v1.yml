@@ -19,10 +19,9 @@ jobs:
       max-parallel: 20
       matrix:
         target:
-          - ac-08459
-          - ac-07048
-          - ac-02137
-          - ac-03146
+          - ac-01523
+          - ac-06727
+          - ac-08222
         depth_weight: ["0.01","0.03","0.05","0.10","0.20"]
     runs-on: ubuntu-latest
     timeout-minutes: 35
