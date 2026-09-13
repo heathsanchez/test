@@ -39,7 +39,7 @@ jobs:
       - name: Seal V10 evidence
         working-directory: experiments/hex_recursive_action_language_genesis_v10
         env:
-          SCIENTIFIC_HEAD: \${{ github.sha }}
+          SCIENTIFIC_HEAD: ${{ github.sha }}
         run: |
           python3 - <<'PY'
           import hashlib, json, os, pathlib
