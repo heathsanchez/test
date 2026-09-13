@@ -35,7 +35,9 @@ jobs:
 
       - name: Run frozen V35 experiment
         working-directory: experiments/temporal_event_structure_v35
+        shell: bash
         run: |
+          set -o pipefail
           python run.py | tee run.log
 
       - name: Evidence summary
