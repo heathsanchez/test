@@ -1,0 +1,67 @@
+name: Compositional Relation Carrier Genesis V27
+
+on:
+  push:
+    branches:
+      - compositional-relation-carrier-genesis-v27
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V27 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=f4f0799472ef042c9b9d1fef52e4d133abdb16cb
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/compositional_relation_carrier_genesis_v27/PROTOCOL.md             experiments/compositional_relation_carrier_genesis_v27/basis.py             experiments/compositional_relation_carrier_genesis_v27/kernel.py
+          echo "V27 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/compositional_relation_carrier_genesis_v27/basis.py             experiments/compositional_relation_carrier_genesis_v27/kernel.py             experiments/compositional_relation_carrier_genesis_v27/challenge_pack.py             experiments/compositional_relation_carrier_genesis_v27/run.py
+
+      - name: Run V27
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/compositional_relation_carrier_genesis_v27
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/compositional_relation_carrier_genesis_v27
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compositional-relation-carrier-genesis-v27-evidence
+          path: |
+            experiments/compositional_relation_carrier_genesis_v27/evidence.json
+            experiments/compositional_relation_carrier_genesis_v27/run.log
+            experiments/compositional_relation_carrier_genesis_v27/FREEZE.json
+            experiments/compositional_relation_carrier_genesis_v27/PROTOCOL.md
+          if-no-files-found: error
