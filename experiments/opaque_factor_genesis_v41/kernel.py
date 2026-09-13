@@ -1,4 +1,5 @@
 from __future__ import annotations
+from functools import lru_cache
 from itertools import permutations, product
 from math import prod
 from typing import Any
@@ -62,6 +63,7 @@ class Kernel:
         return tuple(sorted(factors,key=lambda p:(len(p),p)))
 
     @classmethod
+    @lru_cache(maxsize=None)
     def factorizations_for_shape(cls,shape:tuple[int,...])->tuple[Factorization,...]:
         if prod(shape)!=8:
             return ()
@@ -82,8 +84,7 @@ class Kernel:
 
     @staticmethod
     def state_factor_values(f:Factorization)->tuple[tuple[int,...],...]:
-        n=sum(len(block) for block in f[0]) if f else 0
-        # state labels are 0..7; build coordinate block index for each state.
+        # State labels are opaque 0..7 symbols. Build only candidate coordinate values.
         vals=[]
         for state in range(8):
             row=[]
@@ -164,10 +165,14 @@ class Kernel:
 
     @staticmethod
     def transform_factorization(f:Factorization,p:tuple[int,...])->Factorization:
-        return tuple(sorted(
-            tuple(sorted(tuple(sorted(int(p[s]) for s in block)) for block in part))
-            for part in f
-        ,key=lambda part:(len(part),part)))
+        mapped=[]
+        for part in f:
+            blocks=tuple(sorted(
+                tuple(sorted(int(p[s]) for s in block))
+                for block in part
+            ))
+            mapped.append(blocks)
+        return tuple(sorted(mapped,key=lambda part:(len(part),part)))
 
     def synthesize(
         self,world:World,*,
