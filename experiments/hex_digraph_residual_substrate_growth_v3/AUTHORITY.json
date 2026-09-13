@@ -1,0 +1,49 @@
+{
+  "verdict": "VERIFIED_RESIDUAL_GUIDED_SUBSTRATE_GROWTH",
+  "workflow_run_id": 34728103235,
+  "workflow_job_id": 103645785353,
+  "head_sha": "2c81ebc576c2ba938343546dc45ce9b1336c50a5",
+  "artifact_id": 10309060619,
+  "artifact_name": "hex-digraph-residual-substrate-growth-v3-evidence",
+  "artifact_zip_sha256": "ca22003960053fe5a70f34c7fa5e4ba677fcaad95e77ebe73c78cb147871aa81",
+  "initial_substrate": {
+    "candidate_count": 9,
+    "qualified": 0,
+    "best_mismatch_count": 36,
+    "best_two_role_mismatch_count": 36
+  },
+  "residual_classification": "ROLE_PERMUTATION_DESYNCHRONIZATION",
+  "repairs": {
+    "ADD_INERT_ROLE": 36,
+    "ADD_PARTIAL_IDENTITY_CHANNEL_0": 36,
+    "ADD_PARTIAL_IDENTITY_CHANNEL_1": 36,
+    "ADD_FULL_IDENTITY_CHANNEL": 0
+  },
+  "ablation_mismatches": [
+    36,
+    36
+  ],
+  "selected_growth_result": {
+    "roles": 3,
+    "arc_channel": [
+      0,
+      1
+    ],
+    "identity_couplings": [
+      [
+        0,
+        2
+      ],
+      [
+        1,
+        2
+      ]
+    ]
+  },
+  "matches_v2_adapter": true,
+  "prior_v2": {
+    "run_id": 34727765985,
+    "artifact_id": 10309130239,
+    "hex_kernel_check": "PASS"
+  }
+}
