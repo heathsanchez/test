@@ -1,0 +1,29 @@
+name: Opaque Factor V41 Prefreeze
+
+on:
+  push:
+    branches:
+      - opaque-factor-genesis-v41
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/opaque_factor_genesis_v41/basis.py             experiments/opaque_factor_genesis_v41/kernel.py
+      - name: Exhaustive candidate census
+        working-directory: experiments/opaque_factor_genesis_v41
+        run: |
+          python - <<'PY'
+          from kernel import Kernel
+          counts={k:0 for k in (1,2,3)}
+          for f in Kernel.candidates():
+              counts[len(f)]+=1
+          print(counts)
+          assert counts=={1:1,2:840,3:840}, counts
+          assert sum(counts.values())==1681
+          PY
