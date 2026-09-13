@@ -1,0 +1,47 @@
+name: Finite Transformation Monoid V44 Prefreeze
+
+on:
+  push:
+    branches:
+      - finite-transformation-monoid-v44
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/finite_transformation_monoid_v44/basis.py             experiments/finite_transformation_monoid_v44/kernel.py
+
+      - name: Irreversibility smoke
+        working-directory: experiments/finite_transformation_monoid_v44
+        run: |
+          python - <<'PY'
+          from kernel import Kernel
+
+          k=Kernel()
+          n=8
+
+          contraction=tuple(i//2 for i in range(n))
+          m=k.generated_monoid(n,(contraction,))
+          p=k.monoid_profile(n,m)
+
+          print("monoid_size",len(m))
+          print("profile",p)
+
+          assert p["rank_spectrum"]==[1,2,4,8], p
+          assert p["minimum_rank"]==1
+          assert p["all_elements_units"] is False
+          assert p["nonidentity_idempotent_count"]>=1
+          assert p["rank_behavior"]=="GLOBAL_COLLAPSE_PRESENT"
+
+          flip=tuple(i^4 for i in range(n))
+          mf=k.generated_monoid(n,(flip,))
+          pf=k.monoid_profile(n,mf)
+          assert pf["all_elements_units"] is True
+          assert pf["rank_spectrum"]==[8]
+          PY
