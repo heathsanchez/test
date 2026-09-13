@@ -1,0 +1,24 @@
+{
+  "verdict": "VERIFIED_FINITE_MAGMA_ADAPTER_GENESIS_AND_TRANSFER",
+  "workflow_run_id": 34733513941,
+  "workflow_job_id": 103660642952,
+  "head_sha": "fbb8ad6427f8c7b5360675c3c3eedda9904dae8e",
+  "artifact_id": 10310062635,
+  "artifact_zip_sha256": "00987ef0c0b3b0b20efa6678228bd6cede093b5f3306a7175ae76b2a4d2420be",
+  "qualification": {
+    "order": 2,
+    "magmas": 16,
+    "ordered_pairs": 256,
+    "cold_candidates": 64,
+    "warm_candidates": 8,
+    "reduction": 8.0
+  },
+  "selected_channels": ["T_L", "T_R", "T_O", "A_L", "A_R", "A_O"],
+  "heldout": {
+    "order": 3,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=21 nodes=9",
+    "negative_route": "root n=21"
+  },
+  "claim_boundary": "tuple-incidence grammar supplied"
+}
