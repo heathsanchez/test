@@ -1,0 +1,56 @@
+{
+  "experiment": "predictive_causal_state_genesis_v12",
+  "protocol_commit": "60bcd1668eb33f66ea6d1135728137fd8b1c39e7",
+  "basis_commit": "3d3637b63ef77c053550c76f1337f6668ac34f56",
+  "kernel_commit": "d0d6d625ee4690b416a68f3f58f7388dffcb5f4c",
+  "scientific_freeze_commit": "d0d6d625ee4690b416a68f3f58f7388dffcb5f4c",
+  "github_blob_shas": {
+    "PROTOCOL.md": "9225bd063ee67e1323bd6a7b041303284a7db35f",
+    "basis.py": "0282f83b4a8d574a650aac056b86531161c80fe4",
+    "kernel.py": "e2ba42875132f46d1a0faa9751f05f884c67a3f0"
+  },
+  "initial_present": {
+    "active_tests": [],
+    "representation_classes": 1
+  },
+  "learner_primitives": [
+    "anonymous_actions",
+    "anonymous_observations",
+    "ordered_encounter_histories",
+    "future_action_tests",
+    "external_future_consequences",
+    "finite_completeness_bound"
+  ],
+  "developmental_algorithm": [
+    "EXECUTE",
+    "VERIFY",
+    "DIAGNOSE",
+    "CONSTRAIN",
+    "RESTRUCTURE",
+    "CHOOSE",
+    "COMPILE",
+    "UPDATE"
+  ],
+  "explicitly_absent": [
+    "hidden_state_ids",
+    "objects",
+    "coordinates",
+    "geometry",
+    "adjacency",
+    "frequency",
+    "phase",
+    "nodes",
+    "modes",
+    "fields",
+    "hand_written_pattern_features"
+  ],
+  "scientific_anchors": [
+    "future_consequence_equivalence",
+    "causal_state_style_predictive_quotient",
+    "predictive_state_style_intervention_tests",
+    "minimum_description_structural_cost",
+    "conservative_UNKNOWN"
+  ],
+  "freeze_rule": "Post-freeze challenge worlds/tables may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded deterministic predictive ontology genesis only; no metaphysical nothing, stochastic/continuous/quantum claim."
+}
