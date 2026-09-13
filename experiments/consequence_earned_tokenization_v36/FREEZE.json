@@ -1,0 +1,17 @@
+{
+  "experiment": "consequence_earned_tokenization_v36",
+  "challenge_pack_committed_after_freeze": true,
+  "scientific_core_paths": [
+    "PROTOCOL.md",
+    "basis.py",
+    "kernel.py"
+  ],
+  "git_blob_sha": {
+    "PROTOCOL.md": "1a9f912992794519c30d262a0090501c63cec83c",
+    "basis.py": "1d6106d80e3126e549ce592899f95306cef43e58",
+    "kernel.py": "6497be3464d7fefab603ac03a0e3973deb1699fd"
+  },
+  "raw_prior": "ordered binary sample string with no supplied macro-token/event boundaries",
+  "tokenizer_prior": "prefix-free anonymous codebooks, 1..3 token types, codeword length 1..3",
+  "machine_prior": "deterministic recurrent residual consequence machine"
+}
