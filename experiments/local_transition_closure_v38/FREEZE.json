@@ -1,0 +1,17 @@
+{
+  "experiment": "local_transition_closure_v38",
+  "challenge_pack_committed_after_freeze": true,
+  "scientific_core_paths": [
+    "PROTOCOL.md",
+    "basis.py",
+    "kernel.py"
+  ],
+  "git_blob_sha": {
+    "PROTOCOL.md": "f7653e3906ba18f919fc0d99c109a53913cbd4ee",
+    "basis.py": "f109cfd3a8821e6531405ac9f39f805d8b7c3966",
+    "kernel.py": "e9982d6da819f3be7ef4df833c9c00dcf3ae4fc0"
+  },
+  "transition_statuses": ["WARRANTED", "UNRESOLVED"],
+  "system_statuses": ["VERIFIED_LOCAL", "VERIFIED_CYCLE_CLOSED", "VERIFIED_STABLE"],
+  "scientific_question": "can local transition warrants compose monotonically into cycle closure and then whole-machine stabilization?"
+}
