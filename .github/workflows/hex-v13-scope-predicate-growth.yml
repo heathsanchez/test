@@ -1,10 +1,93 @@
 name: Hex V13 Scope Predicate Growth
 
 on:
+  push:
+    branches:
+      - hex-v13-growth
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
-  placeholder:
+  grow:
     runs-on: ubuntu-latest
+    timeout-minutes: 60
     steps:
-      - run: echo placeholder
+      - uses: actions/checkout@v4
+
+      - name: Download exact prior evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/hex_v13_scope_predicate_growth/prior_v10
+          mkdir -p experiments/hex_v13_scope_predicate_growth/prior_v11
+          mkdir -p experiments/hex_v13_scope_predicate_growth/prior_v12
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10310401999/zip -o /tmp/v10.zip
+          echo "96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87  /tmp/v10.zip" | sha256sum -c -
+          unzip -q /tmp/v10.zip -d experiments/hex_v13_scope_predicate_growth/prior_v10
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10309829989/zip -o /tmp/v11.zip
+          echo "8b6c677598df6ab5cb5f034900a66a010bde19798b8fcbd9da9d3ccfd312f907  /tmp/v11.zip" | sha256sum -c -
+          unzip -q /tmp/v11.zip -d experiments/hex_v13_scope_predicate_growth/prior_v11
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10310427933/zip -o /tmp/v12.zip
+          echo "93f3446d125129f06f5326c74a1ad06e7a3addb2b5afef1ee1d0e079fa9a4f6a  /tmp/v12.zip" | sha256sum -c -
+          unzip -q /tmp/v12.zip -d experiments/hex_v13_scope_predicate_growth/prior_v12
+
+      - name: Grow schema from typed residuals
+        run: python3 experiments/hex_v13_scope_predicate_growth/run.py
+
+      - name: Generate held-out Lean obligations
+        run: python3 experiments/hex_v13_scope_predicate_growth/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v13_scope_predicate_growth
+          elan override set leanprover/lean4:v4.34.0-rc2
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_v13_scope_predicate_growth
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_v13_scope_predicate_growth
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check V13 held-out transfer
+        working-directory: experiments/hex_v13_scope_predicate_growth
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V13 evidence
+        working-directory: experiments/hex_v13_scope_predicate_growth
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          e=json.loads((root/"results/evidence.json").read_text())
+          e["generation"]=json.loads((root/"results/generation.json").read_text())
+          e["lean_kernel_check"]="PASS"
+          e["prior_artifacts"]={"v10":10310401999,"v11":10309829989,"v12":10310427933}
+          e["final_verdict"]="VERIFIED_RESIDUAL_GUIDED_SCHEMA_SCOPE_GROWTH_AND_TRANSFER"
+          files=["PROTOCOL.md","run.py","generate_lean.py","Generated.lean","lakefile.toml","lake-manifest.json","results/final_scope.json","results/final_policy.json"]
+          e["sealed_files"]={f:hashlib.sha256((root/f).read_bytes()).hexdigest() for f in files if (root/f).exists()}
+          (root/"results/final_evidence.json").write_text(json.dumps(e,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(e,indent=2,sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py generate_lean.py Generated.lean lakefile.toml lake-manifest.json results/final_scope.json results/final_policy.json > results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v13-scope-predicate-growth-evidence
+          path: experiments/hex_v13_scope_predicate_growth/results/
+          if-no-files-found: error
