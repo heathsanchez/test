@@ -1,0 +1,29 @@
+name: Epistemic Floor V47b Probe
+
+on:
+  push:
+    branches:
+      - epistemic-floor-v47b
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen core
+        run: |
+          set -euo pipefail
+          FREEZE=9156211c3da2bb120aab513eef83ae303fa83556
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/epistemic_floor_v47b/PROTOCOL.md             experiments/epistemic_floor_v47b/basis.py             experiments/epistemic_floor_v47b/kernel.py             experiments/epistemic_floor_v47b/FREEZE.json)"
+          test -z "$changed" || { echo "$changed"; exit 1; }
+
+      - name: Probe hidden evidence
+        working-directory: experiments/epistemic_floor_v47b
+        run: |
+          python probe.py
