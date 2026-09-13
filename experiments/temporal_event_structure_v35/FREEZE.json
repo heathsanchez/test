@@ -1,0 +1,21 @@
+{
+  "experiment": "temporal_event_structure_genesis_v35",
+  "challenge_pack_committed_after_freeze": true,
+  "scientific_core_paths": [
+    "PROTOCOL.md",
+    "basis.py",
+    "kernel.py"
+  ],
+  "sha256": {
+    "PROTOCOL.md": "7c5cd3755b84084e176c429b20333c99c429d10d362db054867695bd1a970077",
+    "basis.py": "03df7d506fcf393bd020ab413543296cf4cc0096856d4c384c7b54b4ef19875a",
+    "kernel.py": "3a1b260ce5d233ff693bf89874b2be5104fe4a29c6c484e5439f10f3d8cbccbe"
+  },
+  "git_blob_sha": {
+    "PROTOCOL.md": "8bf13d0da310d9669218688efcff7517e569e4c8",
+    "basis.py": "3dc464d508963f8e741bec1768c91bc6bb2ca866",
+    "kernel.py": "2e22ddaac3a4852b66924be8b2348df3c461e9a8"
+  },
+  "input_prior": "variable-length ordered binary microstream with no macro-event boundary",
+  "machine_prior": "deterministic recurrent state with two anonymous symbol transitions and an output label"
+}
