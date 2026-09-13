@@ -16,6 +16,7 @@ from basis import (
     contains_macro,
     eval_type_expr,
     type_macro_id,
+    values,
 )
 
 
@@ -247,7 +248,7 @@ class Kernel:
             "formation_digest": formation.digest(),
             "formation_cost": formation.cost,
             "identity_program_digest": program.digest(),
-            "identity_rows_checked": len(tuple(__import__("basis").values(formed_ty))),
+            "identity_rows_checked": len(values(formed_ty)),
             "evaluation": ev,
             "tested_formation_count": tested,
             "used_macro_ids": used_macro_ids,
