@@ -1,0 +1,111 @@
+name: ACC Proof Atlas Seed V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-proof-atlas-seed-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Harvest retained historical proof artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/harvest
+          python3 - <<'PY' > /tmp/artifacts.tsv
+          import json,subprocess,re
+          keep=re.compile(r'^(acc-(competitive-(cycle|state)|near-miss|offline-high-slack|depth-cost|peephole|current-tail|high-slack))')
+          rows=[]
+          for page in range(1,6):
+              raw=subprocess.check_output(['gh','api',f'repos/heathsanchez/test/actions/artifacts?per_page=100&page={page}'])
+              obj=json.loads(raw)
+              for a in obj.get('artifacts',[]):
+                  if not a.get('expired') and keep.search(a.get('name','')):
+                      rows.append((a['id'],a['name'],a.get('created_at','')))
+              if len(obj.get('artifacts',[]))<100:break
+          # newest first; cap downloads to bound setup cost
+          rows.sort(key=lambda x:x[2],reverse=True)
+          for aid,name,created in rows[:80]:
+              print(aid,name,created,sep='\t')
+          PY
+          echo "HARVEST_ARTIFACTS $(wc -l < /tmp/artifacts.tsv)"
+          while IFS=$'\t' read -r ID NAME CREATED; do
+            [ -z "$ID" ] && continue
+            DIR="/tmp/harvest/$ID"
+            mkdir -p "$DIR"
+            if gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > "/tmp/$ID.zip" 2>/dev/null; then
+              unzip -q "/tmp/$ID.zip" -d "$DIR" || true
+            fi
+          done < /tmp/artifacts.tsv
+          find /tmp/harvest -type f \( -name 'submission*.txt' -o -name 'pending_submission.txt' \) | wc -l
+
+      - name: Consolidate historical AC certificates
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/atlas_seed_input
+          python3 - <<'PY'
+          import pathlib,re,json
+          best={}
+          src={}
+          pat=re.compile(r'^([A-Za-z0-9_-]+)\s*:\s*(\[.*\])\s*$')
+          for p in pathlib.Path('/tmp/harvest').rglob('*.txt'):
+              if not (p.name.startswith('submission') or p.name=='pending_submission.txt'):continue
+              try:lines=p.read_text().splitlines()
+              except Exception:continue
+              for line in lines:
+                  m=pat.match(line.strip())
+                  if not m or not m.group(1).startswith('ac-'):continue
+                  try:moves=list(json.loads(m.group(2)))
+                  except Exception:continue
+                  cid=m.group(1)
+                  if cid not in best or len(moves)<len(best[cid]):
+                      best[cid]=moves;src[cid]=str(p)
+          out=pathlib.Path('acc_competitive/atlas_seed_input/all.txt')
+          out.write_text('\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
+          pathlib.Path('acc_competitive/atlas_seed_input/sources.json').write_text(json.dumps(src,indent=2,sort_keys=True)+'\n')
+          print('ATLAS_SEED_CERTIFICATES',len(best))
+          print('ATLAS_SEED_MOVES',sum(len(x) for x in best.values()))
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Build shared compounding atlas
+        run: |
+          set -o pipefail
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/atlas_seed_input/all.txt' \
+            --out-dir acc_competitive/atlas_seed_out \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            | tee acc_competitive/atlas_seed.log
+
+      - name: Upload persistent atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-proof-atlas-state
+          path: |
+            acc_competitive/atlas_seed_out/proof_atlas.sqlite
+            acc_competitive/atlas_seed_out/fortification.json
+            acc_competitive/atlas_seed_out/report.json
+            acc_competitive/atlas_seed_input/sources.json
+            acc_competitive/atlas_seed.log
+          retention-days: 90
