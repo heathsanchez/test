@@ -1,0 +1,71 @@
+name: Anonymous Meta Development V32
+
+on:
+  push:
+    branches:
+      - anonymous-meta-development-v32
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V32 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=85c8bdb04d2e9b622eb648015f95a638039a2aa4
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/meta_development_v32/PROTOCOL.md             experiments/meta_development_v32/basis.py             experiments/meta_development_v32/kernel.py             experiments/meta_development_v32/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/meta_development_v32/basis.py             experiments/meta_development_v32/kernel.py             experiments/meta_development_v32/challenge_pack.py             experiments/meta_development_v32/run.py
+
+      - name: Run frozen V32 experiment
+        working-directory: experiments/meta_development_v32
+        run: |
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/meta_development_v32
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          print("cold_acquisition_tested:",e.get("cold_acquisition_tested"))
+          print("warm_acquisition_tested:",e.get("warm_acquisition_tested"))
+          print("speedup:",e.get("speedup"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: anonymous-meta-development-v32-evidence
+          path: |
+            experiments/meta_development_v32/evidence.json
+            experiments/meta_development_v32/run.log
+            experiments/meta_development_v32/FREEZE.json
+            experiments/meta_development_v32/PROTOCOL.md
