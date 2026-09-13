@@ -150,18 +150,25 @@ def main() -> int:
     main_min = main_dev.get("minimum_search", {})
     main_codes = codes(main_min)
 
-    G["M1_no_hand_engineered_features_in_frozen_core"] = all(
-        token not in (HERE / "kernel.py").read_text().lower()
-        for token in (
-            "fourier",
-            "frequency",
-            "variance",
-            "mean(",
-            "ratio",
-            "pca",
-            "neural",
-            "threshold",
-        )
+    # Check executable identifiers rather than raw substrings: e.g.
+    # "generation" contains the characters "ratio" but is not a ratio feature.
+    import ast
+    frozen_tree = ast.parse((HERE / "kernel.py").read_text())
+    frozen_names = {
+        node.id.lower()
+        for node in ast.walk(frozen_tree)
+        if isinstance(node, ast.Name)
+    } | {
+        node.name.lower()
+        for node in ast.walk(frozen_tree)
+        if isinstance(node, (ast.FunctionDef, ast.ClassDef))
+    }
+    forbidden_feature_names = {
+        "fourier", "frequency", "variance", "mean", "ratio",
+        "pca", "neural", "threshold",
+    }
+    G["M1_no_hand_engineered_features_in_frozen_core"] = (
+        frozen_names.isdisjoint(forbidden_feature_names)
     )
 
     G["M2_undifferentiated_beginning_then_consequence_split"] = (
