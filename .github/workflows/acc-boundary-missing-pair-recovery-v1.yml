@@ -1,0 +1,148 @@
+name: ACC Boundary Missing-Pair Recovery V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-boundary-missing-pair-recovery-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_FREEZE_RUN: "34737558836"
+
+jobs:
+  recover:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - challenge_id: ac-08027
+            capability: depth_weighted
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - challenge_id: ac-00106
+            capability: depth_weighted
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - challenge_id: ac-01523
+            capability: gssub_basic
+            max_nodes: 150000
+            reverse_depth: 0
+            reverse_cap: 1
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - challenge_id: ac-01523
+            capability: depth_weighted
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - challenge_id: ac-01520
+            capability: gssub_basic
+            max_nodes: 150000
+            reverse_depth: 0
+            reverse_cap: 1
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - challenge_id: ac-01520
+            capability: compiler_beam
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.0
+            quotient_total: 72
+          - challenge_id: ac-01520
+            capability: depth_weighted
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact frozen target and snapshots
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "$SOURCE_FREEZE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+          python3 - <<'PY'
+          import json, pathlib, os
+          cid=os.environ['CID']
+          rows=json.loads(pathlib.Path('/tmp/freeze/targets.json').read_text())
+          row=next(x for x in rows if x['challenge_id']==cid)
+          pathlib.Path('/tmp/one_target.json').write_text(json.dumps([row],indent=2)+'\n')
+          print('RECOVER_TARGET',row)
+          PY
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CID: ${{ matrix.challenge_id }}
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Run missing declared capability only
+        run: |
+          set -o pipefail
+          OUT="acc_competitive/missing_pair/${{ matrix.challenge_id }}/${{ matrix.capability }}"
+          mkdir -p "$OUT"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$OUT" \
+            --target-ids-file /tmp/one_target.json \
+            --snapshot-ac-file /tmp/freeze/snapshot_ac.json \
+            --snapshot-stable-file /tmp/freeze/snapshot_stable_ac.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes ${{ matrix.max_nodes }} \
+            --max-quotient-total ${{ matrix.quotient_total }} \
+            --reverse-depth ${{ matrix.reverse_depth }} \
+            --reverse-cap ${{ matrix.reverse_cap }} \
+            --compiler-beam ${{ matrix.compiler_beam }} \
+            --depth-weight ${{ matrix.depth_weight }} \
+            --search-seconds 2100 \
+            | tee "$OUT.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-missing-${{ matrix.challenge_id }}-${{ matrix.capability }}
+          path: |
+            acc_competitive/missing_pair/${{ matrix.challenge_id }}/${{ matrix.capability }}/
+            acc_competitive/missing_pair/${{ matrix.challenge_id }}/${{ matrix.capability }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+# Apparatus repair only: fill evaluations marked NOT_PROCESSED in the frozen declared portfolio.
+# No submission and no capability/search expansion occurs in this workflow.
