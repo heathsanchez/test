@@ -1,0 +1,68 @@
+name: Simulated Cymatics V11
+
+on:
+  push:
+    branches:
+      - simulated-cymatics-v11
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V11 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=88c90e102e964a2a0d3d06daca5ff1fd3df126be
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/simulated_cymatics_v11/PROTOCOL.md             experiments/simulated_cymatics_v11/basis.py             experiments/simulated_cymatics_v11/kernel.py
+          echo "V11 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/simulated_cymatics_v11/basis.py             experiments/simulated_cymatics_v11/kernel.py             experiments/simulated_cymatics_v11/challenge_pack.py             experiments/simulated_cymatics_v11/run.py
+
+      - name: Run post-freeze standing-pattern suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/simulated_cymatics_v11
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/simulated_cymatics_v11
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulated-cymatics-v11-evidence
+          path: |
+            experiments/simulated_cymatics_v11/evidence.json
+            experiments/simulated_cymatics_v11/run.log
+            experiments/simulated_cymatics_v11/FREEZE.json
+            experiments/simulated_cymatics_v11/PROTOCOL.md
+          if-no-files-found: error
