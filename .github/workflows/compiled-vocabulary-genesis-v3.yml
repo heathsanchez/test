@@ -1,0 +1,68 @@
+name: Compiled Vocabulary Genesis V3
+
+on:
+  push:
+    branches:
+      - compiled-vocabulary-genesis-v3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V3 basis and kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=63c43296ff2e0942cb4437ba62e48ac15612fad8
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/compiled_vocabulary_genesis_v3/PROTOCOL.md             experiments/compiled_vocabulary_genesis_v3/basis.py             experiments/compiled_vocabulary_genesis_v3/kernel.py
+          echo "V3 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/compiled_vocabulary_genesis_v3/basis.py             experiments/compiled_vocabulary_genesis_v3/kernel.py             experiments/compiled_vocabulary_genesis_v3/challenge_pack.py             experiments/compiled_vocabulary_genesis_v3/run.py
+
+      - name: Run post-freeze vocabulary genesis suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/compiled_vocabulary_genesis_v3
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/compiled_vocabulary_genesis_v3
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-vocabulary-genesis-v3-evidence
+          path: |
+            experiments/compiled_vocabulary_genesis_v3/evidence.json
+            experiments/compiled_vocabulary_genesis_v3/run.log
+            experiments/compiled_vocabulary_genesis_v3/FREEZE.json
+            experiments/compiled_vocabulary_genesis_v3/PROTOCOL.md
+          if-no-files-found: error
