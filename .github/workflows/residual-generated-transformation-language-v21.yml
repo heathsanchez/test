@@ -1,0 +1,54 @@
+name: Residual Generated Transformation Language V21
+on:
+  push:
+    branches: [residual-generated-transformation-language-v21]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Verify frozen V21 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=d918d4ff6d3756058e391ce80884c57d9a3a56e8
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/residual_generated_transformation_language_v21/PROTOCOL.md             experiments/residual_generated_transformation_language_v21/basis.py             experiments/residual_generated_transformation_language_v21/kernel.py
+      - name: Syntax
+        run: python -m py_compile experiments/residual_generated_transformation_language_v21/{basis.py,kernel.py,challenge_pack.py,run.py}
+      - name: Run V21
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/residual_generated_transformation_language_v21
+          python -u run.py 2>&1 | tee run.log
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/residual_generated_transformation_language_v21
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items(): print(f"GATE {k}={v}")
+          PY
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: residual-generated-transformation-language-v21-evidence
+          path: |
+            experiments/residual_generated_transformation_language_v21/evidence.json
+            experiments/residual_generated_transformation_language_v21/run.log
+            experiments/residual_generated_transformation_language_v21/FREEZE.json
+            experiments/residual_generated_transformation_language_v21/PROTOCOL.md
+          if-no-files-found: error
