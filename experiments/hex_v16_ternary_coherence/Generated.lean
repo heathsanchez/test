@@ -2,6 +2,14 @@ import HexGraphIso.Tactic
 
 open Hex Hex.GraphIso
 
+/-
+Held-out V16 ternary relation representation test.
+Carrier n=4, relation arity 3, exactly four tuple occurrences.
+Colors mod 5:
+0/1/2 = argument-position roles, 3 = vertex identity anchor,
+4 = tuple-occurrence node.
+-/
+
 def roleColoring20 : Coloring 20 5 := Coloring.mod 20 5
 
 def encA : Colored 20 5 where
