@@ -1,0 +1,179 @@
+name: ACC Compounding Frontier V3
+
+on:
+  workflow_run:
+    workflows: ["ACC Fresh Frontier Acquisition V2"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Completed Fresh Frontier V2 run ID"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  compound:
+    if: >-
+      ${{
+        (github.event_name == 'workflow_dispatch') ||
+        (github.event.workflow_run.conclusion == 'success')
+      }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Resolve source acquisition run
+        id: src
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" ]]; then
+            RUN_ID="${{ inputs.source_run_id }}"
+          else
+            RUN_ID="${{ github.event.workflow_run.id }}"
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "SOURCE_RUN_ID=$RUN_ID"
+
+      - name: Download frozen frontier and verifier-clean V2 pool
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2freeze /tmp/v2pool acc_competitive/compound_input
+          gh run download "${{ steps.src.outputs.run_id }}" -R "$GITHUB_REPOSITORY" -n acc-fresh-v2-freeze -D /tmp/v2freeze
+          gh run download "${{ steps.src.outputs.run_id }}" -R "$GITHUB_REPOSITORY" -n acc-fresh-frontier-v2-pool -D /tmp/v2pool
+          find /tmp/v2freeze -maxdepth 3 -type f -print
+          find /tmp/v2pool -maxdepth 4 -type f -print
+          find /tmp/v2pool -name pending_submission.txt -type f -exec cp {} acc_competitive/compound_input/v2_pending_submission.txt \;
+          test -f acc_competitive/compound_input/v2_pending_submission.txt
+
+      - name: Fetch pinned official verifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Compound every verified V2 path into Proof Atlas
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/compound_input/*.txt' \
+            --out-dir acc_competitive/compound_v3_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/compound_v3_atlas.log
+
+      - name: Freeze next live singleton frontier, excluding V2 targets
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/compound_v3_next');out.mkdir(parents=True,exist_ok=True)
+          def get(problem):
+              u=f'{B}/api/acc/discoveries/snapshot?problem={problem}'
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r:
+                  return json.loads(r.read().decode())
+          live=get('ac'); d=live.get('data',live)
+          frozen_files=list(pathlib.Path('/tmp/v2freeze').rglob('selected.json'))
+          prior=set()
+          if frozen_files:
+              for x in json.loads(frozen_files[0].read_text()): prior.add(x['challengeId'])
+          rows=[x for x in d['items'] if x.get('status')=='solved' and x.get('kTeams')==1
+                and isinstance(x.get('currentBestLength'),int) and x['currentBestLength']>=1000
+                and x['challengeId'] not in prior]
+          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows=rows[:32]
+          (out/'snapshot_ac.json').write_text(json.dumps(live,indent=2,sort_keys=True)+'\n')
+          (out/'targets.json').write_text(json.dumps([x['challengeId'] for x in rows])+'\n')
+          (out/'selection.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print('COMPOUND_V3_TARGETS',json.dumps([(x['challengeId'],x['currentBestLength']) for x in rows]))
+          PY
+
+      - name: Search only until the new frontier intersects learned territory
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_connector_v1.py \
+            --acc-root /tmp/acc \
+            --atlas acc_competitive/compound_v3_atlas/proof_atlas.sqlite \
+            --snapshot-ac acc_competitive/compound_v3_next/snapshot_ac.json \
+            --target-ids-file acc_competitive/compound_v3_next/targets.json \
+            --out-dir acc_competitive/compound_v3_connector \
+            --connector-depth 5 --node-cap 180000 \
+            | tee acc_competitive/compound_v3_connector.log
+
+      - name: Official-verifier pool and strict frozen-frontier filter
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          B='https://server-9527.sair.foundation';H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/compound_v3_next')
+          for p in ('stable_ac',):
+              u=f'{B}/api/acc/discoveries/snapshot?problem={p}'
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r:o=json.loads(r.read().decode())
+              (out/f'snapshot_{p}.json').write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+          PY
+          python3 acc_competitive/offline_candidate_pool_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/compound_v3_connector/pending_submission.txt' \
+            --snapshot-ac acc_competitive/compound_v3_next/snapshot_ac.json \
+            --snapshot-stable acc_competitive/compound_v3_next/snapshot_stable_ac.json \
+            --out-dir acc_competitive/compound_v3_pool \
+            | tee acc_competitive/compound_v3_pool.log
+
+      - name: Emit causal residual report
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          A=json.loads(pathlib.Path('acc_competitive/compound_v3_atlas/report.json').read_text())
+          C=json.loads(pathlib.Path('acc_competitive/compound_v3_connector/report.json').read_text())
+          P=json.loads(pathlib.Path('acc_competitive/compound_v3_pool/report.json').read_text())
+          result={
+            'source_run_id':'${{ steps.src.outputs.run_id }}',
+            'atlas_states':A.get('atlas_states'),
+            'ingested_candidates':A.get('optimized_candidates'),
+            'connector_targets':C.get('targets'),
+            'connector_wins':C.get('wins'),
+            'strict_frozen_frontier_rows':P.get('strictly_better_than_frozen'),
+            'interpretation':(
+              'COMPOUNDING_INTERSECTION_WORKS' if P.get('strictly_better_than_frozen',0)>0 else
+              'NO_ATLAS_INTERSECTION_STRICT_WIN_MECHANISM_RESIDUAL'
+            )
+          }
+          pathlib.Path('acc_competitive/compound_v3_report.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print('COMPOUND_V3',json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-compounding-frontier-v3
+          path: |
+            acc_competitive/compound_v3_atlas/
+            acc_competitive/compound_v3_atlas.log
+            acc_competitive/compound_v3_next/
+            acc_competitive/compound_v3_connector/
+            acc_competitive/compound_v3_connector.log
+            acc_competitive/compound_v3_pool/
+            acc_competitive/compound_v3_pool.log
+            acc_competitive/compound_v3_report.json
+          retention-days: 90
+          if-no-files-found: warn
