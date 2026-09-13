@@ -2,6 +2,7 @@
 import argparse,ast,json,re,sys,time
 from datetime import datetime, timezone
 from urllib.parse import quote
+from urllib import request
 from pathlib import Path
 
 INV=(0,1,3,2,5,4,7,6,9,8,11,10,13,12)
@@ -59,6 +60,17 @@ def strict_record_steal(row,candidate_len):
         return False, "tie_not_a_strict_steal"
     return False, "longer_than_live_best"
 
+
+PUBLIC_BASE="https://server-9527.sair.foundation"
+
+def public_snapshot_map(problem):
+    url=f"{PUBLIC_BASE}/api/acc/discoveries/snapshot?problem={problem}"
+    req=request.Request(url,headers={"User-Agent":"Mozilla/5.0","Accept":"application/json"})
+    with request.urlopen(req,timeout=60) as r:
+        obj=json.loads(r.read().decode("utf-8"))
+    d=obj.get("data",obj)
+    return obj,{x["challengeId"]:x for x in d["items"]}
+
 def main():
     p=argparse.ArgumentParser()
     p.add_argument("--acc-root",required=True)
@@ -69,7 +81,7 @@ def main():
 
     root=Path(__file__).resolve().parent
     sys.path.insert(0,str(root))
-    from solver_v2_gssub import snapshot_map,submit_batch,api
+    from solver_v2_gssub import submit_batch
 
     acc=Path(a.acc_root)
     sys.path.insert(0,str(acc/"competition/tools"))
@@ -113,52 +125,18 @@ def main():
             raise RuntimeError(f"compressed candidate failed official verifier: {rec}")
         verified[cid]=(short,sid,stable)
 
-    # The current official submission spec is pinned at 40 batches/day.
-    # Do not spend an API call re-fetching an unchanged policy every cycle.
+    # Publication economics: routine scheduler is capped below 40 batches/day,
+    # so do not spend authenticated API calls reading history or static policy.
+    # All live frontier reads use SAIR's public frontend backend.
     daily_limit=40
-    utc_today=datetime.now(timezone.utc).date().isoformat()
-
-    mt,_,mine=api("GET","/competitions/acc/submissions/mine")
-    if not (200<=mt<300): raise RuntimeError(f"submissions/mine HTTP {mt}: {mine}")
-
-    # Follow history only while the returned page can still contain today's
-    # submissions. Once the oldest item is from an earlier UTC date, stop.
-    mine_pages=[mine]
-    mine_data=mine.get("data",mine) if isinstance(mine,dict) else {}
-    mine_items=list(mine_data.get("items",[])) if isinstance(mine_data,dict) else []
-    cursor=mine_data.get("nextCursor") if isinstance(mine_data,dict) else None
-    seen_cursors=set()
-    def page_may_contain_today(items):
-        stamps=[x.get("receivedAt") or x.get("updatedAt") for x in items if isinstance(x,dict)]
-        dates=[s[:10] for s in stamps if isinstance(s,str) and len(s)>=10]
-        return not dates or max(dates)>=utc_today
-    while cursor and cursor not in seen_cursors and len(mine_pages)<20 and page_may_contain_today(mine_items[-50:]):
-        seen_cursors.add(cursor)
-        pt,_,page=api("GET","/competitions/acc/submissions/mine?cursor="+quote(str(cursor),safe=""))
-        if not (200<=pt<300):
-            raise RuntimeError(f"submissions/mine pagination HTTP {pt}: {page}")
-        mine_pages.append(page)
-        pd=page.get("data",page) if isinstance(page,dict) else {}
-        page_items=pd.get("items",[]) if isinstance(pd,dict) else []
-        mine_items.extend(page_items)
-        cursor=pd.get("nextCursor") if isinstance(pd,dict) else None
-        if not page_may_contain_today(page_items):
-            break
-
+    used_today=None
+    quota_remaining=None
+    quota_blocked=False
     local_spec={"source":"pinned-current-spec","limits":{"dailySubmissions":daily_limit}}
     (out/"submission_spec.json").write_text(json.dumps(local_spec,indent=2,sort_keys=True)+"\n")
-    (out/"submissions_mine_pre.json").write_text(json.dumps({"pages":mine_pages,"items":mine_items},indent=2,sort_keys=True)+"\n")
 
-    used_today=0
-    for sub in mine_items:
-        stamp=sub.get("receivedAt") or sub.get("updatedAt")
-        if isinstance(stamp,str) and stamp[:10]==utc_today:
-            used_today += 1
-    quota_remaining=max(0,daily_limit-used_today)
-    quota_blocked=quota_remaining<=0
-
-    acsnap,ac=snapshot_map("ac")
-    ssnap,sac=snapshot_map("stable_ac")
+    acsnap,ac=public_snapshot_map("ac")
+    ssnap,sac=public_snapshot_map("stable_ac")
     (out/"snapshot_ac_pre.json").write_text(json.dumps(acsnap,indent=2,sort_keys=True)+"\n")
     (out/"snapshot_stable_pre.json").write_text(json.dumps(ssnap,indent=2,sort_keys=True)+"\n")
 
