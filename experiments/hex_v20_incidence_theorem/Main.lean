@@ -11,7 +11,7 @@ structure KRel (α : Type u) (k : Nat) where
 /-- Isomorphism of k-ary relational structures. -/
 structure SourceIso {α : Type u} {β : Type v} {k : Nat}
     (A : KRel α k) (B : KRel β k) where
-  carrier : α ≃ β
+  carrier : Equiv α β
   rel : ∀ t, A.holds t ↔ B.holds (fun i => carrier (t i))
 
 /-- Vertices of the abstract identity+occurrence incidence construction. -/
@@ -48,7 +48,7 @@ end IncNode
 /-- Color- and adjacency-preserving isomorphism of abstract incidence graphs. -/
 structure IncIso {α : Type u} {β : Type v} {k : Nat}
     (A : KRel α k) (B : KRel β k) where
-  map : IncNode A ≃ IncNode B
+  map : Equiv (IncNode A) (IncNode B)
   color : ∀ x, IncNode.color (map x) = IncNode.color x
   adj : ∀ x y, IncNode.Adj (map x) (map y) ↔ IncNode.Adj x y
 
@@ -93,7 +93,7 @@ theorem map_invNode (h : SourceIso A B) (x : IncNode B) :
       funext i
       simp
 
-def nodeEquiv (h : SourceIso A B) : IncNode A ≃ IncNode B where
+def nodeEquiv (h : SourceIso A B) : Equiv (IncNode A) (IncNode B) where
   toFun := h.mapNode
   invFun := h.invNode
   left_inv := h.inv_mapNode
@@ -166,7 +166,7 @@ theorem anchor_right (F : IncIso A B) (b : β) :
   simp [symm] at h2
   exact IncNode.anchor.inj h2.symm
 
-noncomputable def anchorEquiv (F : IncIso A B) : α ≃ β where
+noncomputable def anchorEquiv (F : IncIso A B) : Equiv α β where
   toFun := F.anchorMap
   invFun := F.symm.anchorMap
   left_inv := F.anchor_left
