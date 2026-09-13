@@ -19,40 +19,67 @@ class Kernel:
         return None
 
     @staticmethod
+    def _syntax_cost(expr):
+        return (expr.atoms(),expr.ops(),expr.depth(),expr.lag_sum())
+
+    @staticmethod
     def _store(best, expr, sig):
-        c=(expr.atoms(),expr.ops(),expr.depth(),expr.lag_sum(),repr(expr.data()))
+        c=Kernel._syntax_cost(expr)
         old=best.get(sig)
-        if old is None or c < old[0]: best[sig]=(c,expr)
+        if old is None or c < old[0]:
+            best[sig]=(c,[expr]); return True
+        if c == old[0]:
+            key=repr(expr.data())
+            if all(repr(e.data()) != key for e in old[1]):
+                old[1].append(expr)
+        return False
+
+    @staticmethod
+    def _combine_sig(op, left, right):
+        return tuple((int(op) >> ((a << 1) | b)) & 1 for a,b in zip(left,right))
 
     def closure(self, w: World, *, max_atoms=3, max_depth=2):
         auth=self.authority(w)
         if auth: return auth
         records=w.records; best={}; tested=0
+        bases=[]
         for k in (0,1):
-            e=Const(k); self._store(best,e,signature(e,records)); tested+=1
+            e=Const(k); s=signature(e,records); self._store(best,e,s); bases.append((e,s)); tested+=1
         for off in range(w.max_offset+1):
             for ch in range(w.channel_count):
-                e=Atom(off,ch); self._store(best,e,signature(e,records)); tested+=1
-        changed=True
-        while changed:
-            before=len(best)
-            reps=[x[1] for x in best.values()]
-            for l in reps:
-                for r in reps:
-                    if l.atoms()+r.atoms()>max_atoms: continue
-                    if 1+max(l.depth(),r.depth())>max_depth: continue
-                    for op in range(16):
-                        e=Bin(op,l,r); tested+=1
-                        self._store(best,e,signature(e,records))
-            changed=len(best)>before
+                e=Atom(off,ch); s=signature(e,records); self._store(best,e,s); bases.append((e,s)); tested+=1
+
+        layer1={}
+        for le,ls in bases:
+            for re,rs in bases:
+                if le.atoms()+re.atoms()>max_atoms: continue
+                for op in range(16):
+                    e=Bin(op,le,re); tested+=1
+                    sig=self._combine_sig(op,ls,rs)
+                    self._store(best,e,sig)
+                    self._store(layer1,e,sig)
+
+        if max_depth>=2:
+            reps=[(rows[1][0],sig) for sig,rows in layer1.items() if rows[1][0].atoms()<=2]
+            for le,ls in reps:
+                for re,rs in bases:
+                    if le.atoms()+re.atoms()<=max_atoms:
+                        for op in range(16):
+                            e=Bin(op,le,re); tested+=1
+                            self._store(best,e,self._combine_sig(op,ls,rs))
+                    if re.atoms()+le.atoms()<=max_atoms:
+                        for op in range(16):
+                            e=Bin(op,re,le); tested+=1
+                            self._store(best,e,self._combine_sig(op,rs,ls))
+
         rows=[]
-        for sig,(_,e) in best.items():
-            if sufficient(sig,w.targets):
+        for sig,(sc,variants) in best.items():
+            if not sufficient(sig,w.targets): continue
+            for e in variants:
                 rows.append((expr_cost(e,sig),repr(e.data()),e,sig,mapping_for(sig,w.targets)))
         if not rows:
             return {"status":"CERTIFIED_INADEQUATE_IN_DECLARED_LANGUAGE","tested_candidate_count":tested,"unique_semantic_count":len(best),"frontier":[]}
-        rows.sort(key=lambda x:(x[0],x[1]))
-        cost=rows[0][0]; front=[x for x in rows if x[0]==cost]
+        rows.sort(key=lambda x:(x[0],x[1])); cost=rows[0][0]; front=[x for x in rows if x[0]==cost]
         return {"status":"VERIFIED","tested_candidate_count":tested,"unique_semantic_count":len(best),
                 "minimum_cost":list(cost),
                 "frontier":[{"expr":x[2].data(),"skeleton":canonical_skeleton(x[2]),"mapping":list(x[4])} for x in front],
@@ -82,8 +109,7 @@ class Kernel:
         if not allow_acquisition:
             return {"status":"UNKNOWN_DEVELOPMENT","route":"NO_COMPILED_DEVELOPMENT","acquisition_search_count":0,"tested_candidate_count":0}
         out=self.closure(w)
-        if out.get("status")=="VERIFIED":
-            out["route"]="DEVELOP"; out["acquisition_search_count"]=1
+        if out.get("status")=="VERIFIED": out["route"]="DEVELOP"; out["acquisition_search_count"]=1
         return out
 
     def compile_from(self,key:str, named_results):
