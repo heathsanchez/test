@@ -1,0 +1,59 @@
+name: Hex V24 Numbering Constructor
+
+on:
+  push:
+    branches:
+      - hex-v24-numbering-constructor
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theorem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v24_numbering_constructor
+          elan override set leanprover/lean4:v4.34.0-rc2
+      - name: Resolve Hex
+        working-directory: experiments/hex_v24_numbering_constructor
+        run: lake update
+      - name: Build Hex dependency
+        working-directory: experiments/hex_v24_numbering_constructor
+        run: lake build HexGraphIso.Iso
+      - name: Kernel-check numbering constructor theorem
+        working-directory: experiments/hex_v24_numbering_constructor
+        run: |
+          set -o pipefail
+          lake env lean Main.lean 2>&1 | tee theorem.log
+      - name: Seal V24 evidence
+        working-directory: experiments/hex_v24_numbering_constructor
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          ev={
+            "verdict":"VERIFIED_INCIDENCE_NUMBERING_CONSTRUCTOR_TO_HEX",
+            "lean_kernel_check":"PASS",
+            "theorem":"IncidenceNumberingPair.sourceIso_iff_hexIsomorphic",
+            "scope":"arbitrary relational signatures and finite arities, from explicit incidence-node numberings and a faithful finite color code",
+            "main_sha256":hashlib.sha256((root/"Main.lean").read_bytes()).hexdigest()
+          }
+          (root/"final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v24-numbering-constructor-evidence
+          path: |
+            experiments/hex_v24_numbering_constructor/final_evidence.json
+            experiments/hex_v24_numbering_constructor/theorem.log
+            experiments/hex_v24_numbering_constructor/Main.lean
