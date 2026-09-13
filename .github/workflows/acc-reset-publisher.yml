@@ -91,16 +91,33 @@ jobs:
           if [ -n "$PRIOR" ]; then ARGS+=(--prior-atlas "$PRIOR"); fi
           python3 acc_competitive/proof_atlas_fortify_v1.py "${ARGS[@]}" | tee acc_competitive/fortify.log
 
+      - name: Superoptimize thin wins and near misses before POST
+        run: |
+          set -euo pipefail
+          if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then
+            echo "No fortified candidates."
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/fortified/fortified_ac.txt \
+            --out-dir acc_competitive/peephole_fortified \
+            --thin-win-frac 0.25 \
+            --near-miss-frac 0.10 \
+            --max-window 5 \
+            --max-path 6000 \
+            | tee acc_competitive/batch_peephole.log
+
       - name: Fresh live filter and publish one packed batch
         run: |
           set -o pipefail
-          if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then
+          if [ ! -s acc_competitive/peephole_fortified/fortified_ac.txt ]; then
             echo "No fortified candidates."
             exit 0
           fi
           python3 andrews_curtis/continuous_aggregate_v4.py \
             --acc-root /tmp/acc \
-            --glob 'acc_competitive/fortified/fortified_ac.txt' \
+            --glob 'acc_competitive/peephole_fortified/fortified_ac.txt' \
             --out-dir acc_competitive/reset_publish_out \
             --cycle 0 \
             | tee acc_competitive/reset_publish.log
@@ -126,7 +143,9 @@ jobs:
             acc_competitive/reset_inputs/
             acc_competitive/reset_publish_out/
             acc_competitive/fortified/
+            acc_competitive/peephole_fortified/
             acc_competitive/fortify.log
+            acc_competitive/batch_peephole.log
             acc_competitive/reset_publish.log
           retention-days: 90
           if-no-files-found: warn
