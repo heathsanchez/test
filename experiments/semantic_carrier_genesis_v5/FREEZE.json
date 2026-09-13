@@ -1,0 +1,16 @@
+{
+  "experiment": "semantic_carrier_genesis_v5",
+  "protocol_commit": "6fea22fa202b2dc587a51805802c0cf732bd3417",
+  "basis_commit": "534195eaae413d73b3151290c5dfb062c7862659",
+  "kernel_commit": "9fdd35bf6e89755512a650bd05e8474665263010",
+  "scientific_freeze_commit": "9fdd35bf6e89755512a650bd05e8474665263010",
+  "github_blob_shas": {
+    "PROTOCOL.md": "0987f728305583ba7f6d6d74cbc28489d85befe0",
+    "basis.py": "5ba06d55be4cc2c28d554c79d269be3e832842a8",
+    "kernel.py": "3db8b9c11d705cf02685b103e81c62a6eef67043"
+  },
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py. Any such edit resets the experiment version.",
+  "initial_object_basis": ["Bool", "Product"],
+  "meta_substrate": "generic bounded anonymous finite-carrier generator",
+  "claim_boundary": "Finite semantic carrier genesis from a supplied generic meta-generator; no spontaneous semantics or autonomous meta-rule invention."
+}
