@@ -1,0 +1,67 @@
+name: Consequence Earned Arity V26
+
+on:
+  push:
+    branches:
+      - consequence-earned-arity-v26
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V26 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=d21b6e7a41f3701efb80fc6ee1cecd150275956f
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/consequence_earned_arity_v26/PROTOCOL.md             experiments/consequence_earned_arity_v26/basis.py             experiments/consequence_earned_arity_v26/kernel.py
+          echo "V26 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/consequence_earned_arity_v26/basis.py             experiments/consequence_earned_arity_v26/kernel.py             experiments/consequence_earned_arity_v26/challenge_pack.py             experiments/consequence_earned_arity_v26/run.py
+
+      - name: Run V26
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/consequence_earned_arity_v26
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/consequence_earned_arity_v26
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consequence-earned-arity-v26-evidence
+          path: |
+            experiments/consequence_earned_arity_v26/evidence.json
+            experiments/consequence_earned_arity_v26/run.log
+            experiments/consequence_earned_arity_v26/FREEZE.json
+            experiments/consequence_earned_arity_v26/PROTOCOL.md
+          if-no-files-found: error
