@@ -1,0 +1,58 @@
+name: Hex V22 Finite Compiler
+
+on:
+  push:
+    branches:
+      - hex-v22-finite-compiler
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theorem:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v22_finite_compiler
+          elan override set leanprover/lean4:v4.34.0-rc2
+      - name: Resolve Hex
+        working-directory: experiments/hex_v22_finite_compiler
+        run: lake update
+      - name: Build Hex dependency
+        working-directory: experiments/hex_v22_finite_compiler
+        run: lake build HexGraphIso.Iso
+      - name: Kernel-check finite compiler theorem
+        working-directory: experiments/hex_v22_finite_compiler
+        run: |
+          set -o pipefail
+          lake env lean Main.lean 2>&1 | tee theorem.log
+      - name: Seal V22 evidence
+        working-directory: experiments/hex_v22_finite_compiler
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          ev={
+            "verdict":"VERIFIED_FINITE_COLORED_COMPILER_TO_HEX",
+            "lean_kernel_check":"PASS",
+            "theorem":"finiteColoredIso_iff_hexIsomorphic",
+            "main_sha256":hashlib.sha256((root/"Main.lean").read_bytes()).hexdigest()
+          }
+          (root/"final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v22-finite-compiler-evidence
+          path: |
+            experiments/hex_v22_finite_compiler/final_evidence.json
+            experiments/hex_v22_finite_compiler/theorem.log
+            experiments/hex_v22_finite_compiler/Main.lean
