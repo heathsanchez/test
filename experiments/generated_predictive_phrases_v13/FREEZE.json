@@ -1,0 +1,41 @@
+{
+  "experiment": "generated_predictive_phrases_v13",
+  "protocol_commit": "db2b4c330da4fc24589bdf6c4ea2cc1549fc5170",
+  "basis_commit": "8369524bf9bc52538247df511df004e5ecebd92b",
+  "kernel_commit": "312f2fc0725926bdb67cea4f4c3002581912321a",
+  "scientific_freeze_commit": "312f2fc0725926bdb67cea4f4c3002581912321a",
+  "github_blob_shas": {
+    "PROTOCOL.md": "3221f24da5d2ac3893f966ddd3100f38d69a89db",
+    "basis.py": "d056daf4489a21b2bd7cb3349677b4d44727dfe3",
+    "kernel.py": "c442f32cafc2db9b055973eadf997f03e21e15d7"
+  },
+  "primitive_phrase_basis": "length-1 anonymous actions only",
+  "composition_rule": "CONCAT",
+  "developmental_algorithm": [
+    "EXECUTE",
+    "VERIFY",
+    "DIAGNOSE",
+    "CONSTRAIN",
+    "RESTRUCTURE",
+    "CHOOSE",
+    "COMPILE",
+    "UPDATE"
+  ],
+  "global_objective": [
+    "minimum phrase count",
+    "minimum total atomic expansion length"
+  ],
+  "explicitly_absent": [
+    "hand_written_multi_action_tests",
+    "domain_feature_names",
+    "objects",
+    "coordinates",
+    "frequency",
+    "phase",
+    "nodes",
+    "modes",
+    "natural_language_semantics"
+  ],
+  "freeze_rule": "Post-freeze challenge worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded deterministic compositional predictive phrase genesis only."
+}
