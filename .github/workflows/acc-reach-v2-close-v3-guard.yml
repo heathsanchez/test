@@ -182,6 +182,8 @@ jobs:
         id: case
         env:
           GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+          TARGETS: /tmp/targets.json
         run: |
           set -euo pipefail
           mkdir -p /tmp/freeze
@@ -190,6 +192,7 @@ jobs:
           ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
           st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
           test -n "$targets" && test -n "$ac" && test -n "$st"
+          cp "$targets" /tmp/targets.json
           cp "$ac" /tmp/snapshot_ac.json
           cp "$st" /tmp/snapshot_stable.json
           python3 - <<'PY'
@@ -207,10 +210,6 @@ jobs:
           PY
           echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
           echo "role=$(cat /tmp/role)" >> "$GITHUB_OUTPUT"
-        env:
-          GH_TOKEN: ${{ github.token }}
-          IDX: ${{ matrix.index }}
-          TARGETS: /tmp/freeze/home/runner/work/test/test/acc_competitive/reach_v3_freeze/selected_targets.json
 
       - name: Resolve target path fallback
         if: steps.case.outputs.cid == ''
