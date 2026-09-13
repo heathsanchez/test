@@ -1,0 +1,27 @@
+{
+  "experiment":"edit_free_relational_repair_v24",
+  "scientific_freeze_commit":"f0cfe0802ef9303ed02b31aa5a2553719f3255cf",
+  "protocol_commit":"f53d34d93a8cecf531329503d721421be20036bf",
+  "basis_commit":"24ef7ca84ea9bdca2593f7408ea74cc9e1ee0487",
+  "kernel_commit":"f0cfe0802ef9303ed02b31aa5a2553719f3255cf",
+  "github_blob_shas":{
+    "PROTOCOL.md":"d59a9a32b723baaf0c177c108f30ae067f88cd7e",
+    "basis.py":"f5cecd135da4743d95fd0177daf0da7d0e2e5508",
+    "kernel.py":"fa648d4340846e43071820c2ba862e4901532497"
+  },
+  "primitive_constructive_substrate":"positive EDGE(source,target) facts forming total relation candidates",
+  "candidate_language":"all total maps P -> P",
+  "repair_cost":"extensional symmetric-difference size from current identity relation",
+  "explicitly_absent":[
+    "SET","FLIP","toggle","assignment","redirect",
+    "swap constructor","exchange constructor","transposition constructor",
+    "cycle constructor","delta application"
+  ],
+  "meta_compiler":"generic first-order structural anti-unification over derived DIFF evidence only",
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite direct relational repair construction; total-map typing remains supplied."
+}
