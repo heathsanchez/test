@@ -1,0 +1,51 @@
+name: Finite Transition Relation V45 Prefreeze
+
+on:
+  push:
+    branches:
+      - finite-transition-relation-v45
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/finite_transition_relation_v45/basis.py             experiments/finite_transition_relation_v45/kernel.py
+
+      - name: Relation-algebra smoke
+        working-directory: experiments/finite_transition_relation_v45
+        run: |
+          python - <<'PY'
+          from kernel import Kernel
+
+          k=Kernel()
+          n=4
+
+          deterministic=tuple(((i^2),) for i in range(n))
+          partial=tuple(((i,) if i<2 else ()) for i in range(n))
+          branching=tuple(tuple(sorted({i,i^1})) for i in range(n))
+
+          md=k.generated_relation_monoid(n,(deterministic,))
+          mp=k.generated_relation_monoid(n,(partial,))
+          mb=k.generated_relation_monoid(n,(branching,))
+
+          pd=k.monoid_profile(n,md)
+          pp=k.monoid_profile(n,mp)
+          pb=k.monoid_profile(n,mb)
+
+          print("deterministic",pd)
+          print("partial",pp)
+          print("branching",pb)
+
+          assert pd["relation_kinds"]==["TOTAL_FUNCTION"]
+          assert pp["partial_function_count"]>=1
+          assert pp["nondeterministic_relation_count"]==0
+          assert pb["nondeterministic_relation_count"]>=1
+          assert pb["partial_function_count"]==0
+          assert 2 in pb["max_branching_spectrum"]
+          PY
