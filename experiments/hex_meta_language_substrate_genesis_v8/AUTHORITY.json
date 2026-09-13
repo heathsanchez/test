@@ -1,0 +1,25 @@
+{
+  "verdict": "VERIFIED_META_LANGUAGE_PRIMITIVE_GENESIS_AND_TRANSFER",
+  "workflow_run_id": 34732985810,
+  "workflow_job_id": 103659136380,
+  "head_sha": "7722d1c3acd9ac26e496c2009bbb9f8467d9701e",
+  "artifact_id": 10310446449,
+  "artifact_zip_sha256": "a5283126481de32e6ac57dcea5a4ed6e5ffcf071efe7698a73acd25b6089954e",
+  "synthesized_primitive": {
+    "representation": "binary_boolean_truth_table",
+    "input_order": ["00", "01", "10", "11"],
+    "bits": "1111",
+    "table_index": 15
+  },
+  "cold_candidate_count": 16,
+  "warm_candidate_count": 1,
+  "comparison_reduction": 16.0,
+  "heldout": {
+    "relation_count": 4,
+    "carrier_size": 3,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=27 nodes=2",
+    "negative_route": "root n=27"
+  },
+  "claim_boundary": "generic binary truth-table substrate supplied"
+}
