@@ -1,0 +1,30 @@
+{
+  "verdict": "VERIFIED_META_LANGUAGE_PRIMITIVE_CONSTRUCTION_AND_TRANSFER",
+  "workflow_run_id": 34732486735,
+  "workflow_job_id": 103657718270,
+  "head_sha": "b1f5a86afa41a0f3776ab79fb6de5e47c0914940",
+  "artifact_id": 10309732898,
+  "artifact_zip_sha256": "ee5512a9fa5cc70cbf967112944327adbfe30b310208da75d5aa580523eeaf3c",
+  "selected_operator_id": 15,
+  "selected_truth_table": [1, 1, 1, 1],
+  "runner_up_operator_id": 14,
+  "runner_up_truth_table": [0, 1, 1, 1],
+  "runner_up_three_relation_mismatches": 16,
+  "old_language_two_relation_mismatches": {
+    "FIRST": 1080,
+    "LAST": 1080
+  },
+  "single_bit_mutation_mismatches": {
+    "00": 16,
+    "01": 1080,
+    "10": 1080
+  },
+  "heldout": {
+    "relation_count": 4,
+    "carrier_size": 2,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=18 nodes=2",
+    "negative_route": "certs n=18 records=2"
+  },
+  "claim_boundary": "complete binary Boolean operator substrate supplied"
+}
