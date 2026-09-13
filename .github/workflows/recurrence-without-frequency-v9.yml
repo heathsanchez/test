@@ -1,0 +1,68 @@
+name: Recurrence Without Frequency V9
+
+on:
+  push:
+    branches:
+      - recurrence-without-frequency-v9
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V9 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=790a4561c37d7172e16222e2141453434a896fa5
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/recurrence_without_frequency_v9/PROTOCOL.md             experiments/recurrence_without_frequency_v9/basis.py             experiments/recurrence_without_frequency_v9/kernel.py
+          echo "V9 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/recurrence_without_frequency_v9/basis.py             experiments/recurrence_without_frequency_v9/kernel.py             experiments/recurrence_without_frequency_v9/challenge_pack.py             experiments/recurrence_without_frequency_v9/run.py
+
+      - name: Run post-freeze temporal structure suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/recurrence_without_frequency_v9
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/recurrence_without_frequency_v9
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recurrence-without-frequency-v9-evidence
+          path: |
+            experiments/recurrence_without_frequency_v9/evidence.json
+            experiments/recurrence_without_frequency_v9/run.log
+            experiments/recurrence_without_frequency_v9/FREEZE.json
+            experiments/recurrence_without_frequency_v9/PROTOCOL.md
+          if-no-files-found: error
