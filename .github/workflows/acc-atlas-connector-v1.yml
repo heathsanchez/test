@@ -1,0 +1,172 @@
+name: ACC Atlas Connector V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-atlas-connector-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    outputs:
+      count: ${{ steps.freeze.outputs.count }}
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Wait for latest persistent proof atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID=""
+          for I in $(seq 1 20); do
+            ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+            [ -n "$ID" ] && break
+            echo "Waiting for proof atlas ($I/20)"
+            sleep 30
+          done
+          [ -n "$ID" ] || { echo "No proof atlas available"; exit 1; }
+          echo "$ID" > /tmp/atlas_id
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          find /tmp/atlas -name proof_atlas.sqlite -print
+
+      - name: Freeze 200 current unique official-cost targets
+        id: freeze
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/connector_freeze
+          python3 - <<'PY'
+          import urllib.request,json,pathlib,os
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          req=urllib.request.Request(B+'/api/acc/discoveries/snapshot?problem=ac',headers=H)
+          with urllib.request.urlopen(req,timeout=60) as r: obj=json.loads(r.read().decode())
+          d=obj.get('data',obj); items=d['items']
+          rows=[x for x in items if x.get('status')=='solved' and x.get('kTeams')==1
+                and isinstance(x.get('currentBestLength'),int)
+                and 20 < x['currentBestLength'] <= 2500]
+          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows=rows[:200]
+          pathlib.Path('acc_competitive/connector_freeze/snapshot_ac.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
+          ids=[x['challengeId'] for x in rows]
+          for shard in range(8):
+              part=ids[shard::8]
+              pathlib.Path(f'acc_competitive/connector_freeze/shard_{shard}.json').write_text(json.dumps(part,indent=2)+'\n')
+          pathlib.Path('acc_competitive/connector_freeze/selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write('count='+str(len(ids))+'\n')
+          print('CONNECTOR_TARGETS',len(ids),[(x['challengeId'],x['currentBestLength']) for x in rows[:20]])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-atlas-connector-freeze
+          path: acc_competitive/connector_freeze/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-atlas-connector-db
+          path: /tmp/atlas/
+          retention-days: 1
+
+  connect:
+    needs: build
+    if: needs.build.outputs.count != '0'
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-atlas-connector-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-atlas-connector-db
+          path: /tmp/atlas
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Search exact official-move connectors
+        run: |
+          set -o pipefail
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite | head -1)"
+          SNAP="$(find /tmp/freeze -name snapshot_ac.json | head -1)"
+          TARGETS="$(find /tmp/freeze -name 'shard_${{ matrix.shard }}.json' | head -1)"
+          python3 acc_competitive/atlas_connector_v1.py \
+            --acc-root /tmp/acc \
+            --atlas "$ATLAS" \
+            --snapshot-ac "$SNAP" \
+            --target-ids-file "$TARGETS" \
+            --out-dir "acc_competitive/connector_${{ matrix.shard }}" \
+            --connector-depth 4 \
+            --node-cap 60000 \
+            | tee "acc_competitive/connector_${{ matrix.shard }}.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-connector-${{ matrix.shard }}
+          path: |
+            acc_competitive/connector_${{ matrix.shard }}/
+            acc_competitive/connector_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: connect
+    if: always() && needs.connect.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-atlas-connector-*
+          path: acc_competitive/connector_downloads
+          merge-multiple: false
+      - name: Pool connector wins
+        run: |
+          mkdir -p acc_competitive/connector_pool
+          python3 - <<'PY'
+          import pathlib,json,re
+          best={}
+          for p in pathlib.Path('acc_competitive/connector_downloads').rglob('pending_submission.txt'):
+              for line in p.read_text().splitlines():
+                  if not line.strip() or ':' not in line:continue
+                  cid,raw=line.split(':',1)
+                  try:moves=list(json.loads(raw.strip()))
+                  except Exception:continue
+                  if cid not in best or len(moves)<len(best[cid]):best[cid]=moves
+          out=pathlib.Path('acc_competitive/connector_pool/pending_submission.txt')
+          out.write_text('\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
+          rep={'pending_rows':len(best),'ac_rows':sum(x.startswith('ac-') for x in best)}
+          pathlib.Path('acc_competitive/connector_pool/report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('CONNECTOR_POOL',json.dumps(rep,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-atlas-connector-pool
+          path: acc_competitive/connector_pool/
+          retention-days: 90
