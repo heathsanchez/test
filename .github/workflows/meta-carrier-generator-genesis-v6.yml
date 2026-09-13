@@ -1,0 +1,68 @@
+name: Meta Carrier Generator Genesis V6
+
+on:
+  push:
+    branches:
+      - meta-carrier-generator-genesis-v6
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V6 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=b8417afd3d688c6b4d04291b5f332115a99ef12f
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/meta_carrier_generator_genesis_v6/PROTOCOL.md             experiments/meta_carrier_generator_genesis_v6/basis.py             experiments/meta_carrier_generator_genesis_v6/kernel.py
+          echo "V6 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/meta_carrier_generator_genesis_v6/basis.py             experiments/meta_carrier_generator_genesis_v6/kernel.py             experiments/meta_carrier_generator_genesis_v6/challenge_pack.py             experiments/meta_carrier_generator_genesis_v6/run.py
+
+      - name: Run post-freeze meta-generator development suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/meta_carrier_generator_genesis_v6
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/meta_carrier_generator_genesis_v6
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meta-carrier-generator-genesis-v6-evidence
+          path: |
+            experiments/meta_carrier_generator_genesis_v6/evidence.json
+            experiments/meta_carrier_generator_genesis_v6/run.log
+            experiments/meta_carrier_generator_genesis_v6/FREEZE.json
+            experiments/meta_carrier_generator_genesis_v6/PROTOCOL.md
+          if-no-files-found: error
