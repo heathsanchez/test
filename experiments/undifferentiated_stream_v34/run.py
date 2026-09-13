@@ -121,10 +121,8 @@ def main()->int:
     c0,c1=raw[(0,"contextual")],raw[(1,"contextual")]
     i0,i2=raw[(0,"interventional")],raw[(2,"interventional")]
     G["S9_conditional_structures_reorganize_when_sources_move_in_stream"]=(
-        c0["state_count"]!=c1["state_count"]
-        and c0["neutral_transition_count"]!=c1["neutral_transition_count"]
-        and i0["state_count"]!=i2["state_count"]
-        and i0["neutral_transition_count"]!=i2["neutral_transition_count"]
+        graph_shape(c0)!=graph_shape(c1)
+        and graph_shape(i0)!=graph_shape(i2)
     )
 
     dist=raw[(0,"distant_pair")]
