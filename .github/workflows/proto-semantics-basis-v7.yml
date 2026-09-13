@@ -1,0 +1,72 @@
+name: Proto Semantics Basis V7
+
+on:
+  push:
+    branches:
+      - proto-semantics-basis-v7
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V7 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=217216d6f711c0d9c1f5d1c0328ea87fb63b3d7b
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/proto_semantics_basis_v7/PROTOCOL.md             experiments/proto_semantics_basis_v7/basis.py             experiments/proto_semantics_basis_v7/kernel.py
+          echo "V7 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/proto_semantics_basis_v7/basis.py             experiments/proto_semantics_basis_v7/kernel.py             experiments/proto_semantics_basis_v7/challenge_pack.py             experiments/proto_semantics_basis_v7/run.py
+
+      - name: Run exhaustive proto-semantic basis search
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/proto_semantics_basis_v7
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/proto_semantics_basis_v7
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          print("MINIMAL_BASES", e["minimal_passing_bases"])
+          print("PASSING_BASIS_COUNT", e["passing_basis_count"])
+          for k,v in e["full_basis"]["gates"].items():
+              print(f"GATE {k}={v}")
+          for p,row in e["single_primitive_ablations"].items():
+              print("ABLATION", p, "full_pass=", row["full_pass"], "failed=", ",".join(row["failed_gates"]))
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: proto-semantics-basis-v7-evidence
+          path: |
+            experiments/proto_semantics_basis_v7/evidence.json
+            experiments/proto_semantics_basis_v7/run.log
+            experiments/proto_semantics_basis_v7/FREEZE.json
+            experiments/proto_semantics_basis_v7/PROTOCOL.md
+          if-no-files-found: error
