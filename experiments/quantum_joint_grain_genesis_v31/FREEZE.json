@@ -1,0 +1,26 @@
+{
+  "experiment":"quantum_joint_grain_genesis_v31",
+  "scientific_freeze_commit":"091ffab475de3616534d9a837ed1cdfdb27cdf81",
+  "protocol_commit":"65775801a682867a00c4d2684c46d86d7bc3b495",
+  "basis_commit":"33f44bfc328368356366aec928023934d590d686",
+  "kernel_commit":"091ffab475de3616534d9a837ed1cdfdb27cdf81",
+  "github_blob_shas":{
+    "PROTOCOL.md":"824ff15f73e4440ecf4f3aedb1a0a23134f91945",
+    "basis.py":"97493ca73a368afe030d535841730c33e0049d8b",
+    "kernel.py":"84e74f080e258918917d71fc1d6cefbacea64211"
+  },
+  "candidate_language":"all nonzero real two-qubit coefficient vectors in {-1,0,1}^4 modulo global sign",
+  "quantum_verifier":"exact Born replay over Q(sqrt(2))",
+  "bell_local_obstruction":"exact maximum over eight CHSH sign forms",
+  "local_grain":"observational equivalence under one-party marginals",
+  "joint_grain":"observational equivalence under full joint probabilities",
+  "explicitly_absent":[
+    "named Bell-state constructor",
+    "state-specific repair macro",
+    "floating point acceptance tolerance",
+    "quantum claim from disturbance alone",
+    "quantum claim from operation order alone"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded exact two-qubit Bell-local obstruction and finite quantum replay only."
+}
