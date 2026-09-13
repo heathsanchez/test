@@ -1,0 +1,47 @@
+name: Hex Digraph Residual Substrate Growth V3
+
+on:
+  push:
+    branches:
+      - hex-digraph-residual-substrate-growth-v3
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  growth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exhaust initial substrate then test residual-guided growth
+        run: |
+          python3 experiments/hex_digraph_residual_substrate_growth_v3/run.py
+
+      - name: Seal V3 evidence
+        working-directory: experiments/hex_digraph_residual_substrate_growth_v3
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path(".")
+          ev = json.loads((root/"results/evidence.json").read_text())
+          files = ["PROTOCOL.md", "run.py", "results/initial_ledger.json"]
+          ev["sealed_files"] = {
+              f: hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(ev, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(ev, indent=2, sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py results/initial_ledger.json > results/SHA256SUMS.txt
+
+      - name: Upload sealed V3 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: hex-digraph-residual-substrate-growth-v3-evidence
+          path: experiments/hex_digraph_residual_substrate_growth_v3/results/
+          if-no-files-found: error
