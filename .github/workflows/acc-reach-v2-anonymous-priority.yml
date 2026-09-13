@@ -1,0 +1,320 @@
+name: ACC Reach V2 Anonymous Priority
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-reach-v2-anonymous-priority.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34755708007"
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover cumulative competitive memory through cycle 2
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n acc-number-one-controller-v1 -D /tmp/source
+          attempted=$(find /tmp/source -name competitive_attempted.json -print -quit)
+          test -n "$attempted"
+          cp "$attempted" /tmp/competitive_attempted_cycle2.json
+          python3 - <<'PY'
+          import json
+          x=json.load(open('/tmp/competitive_attempted_cycle2.json'))
+          print('CUMULATIVE_ATTEMPTED',len(x))
+          assert len(x) >= 210
+          PY
+
+      - name: Fetch pinned competition authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze unseen prospective leaderboard pack before policy execution
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v1.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/reach_v2_freeze \
+            --competitive-wins acc_competitive/competitive_wins_seed_v1.json \
+            --competitive-attempted /tmp/competitive_attempted_cycle2.json \
+            --attack-count 8 \
+            --defend-fraction 0 \
+            --shards 1 \
+            | tee acc_competitive/reach_v2_freeze.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          ids=json.loads(Path('acc_competitive/reach_v2_freeze/selected_targets.json').read_text())
+          assert len(ids)==8, ids
+          Path('acc_competitive/reach_v2_freeze/freeze_authority.json').write_text(
+              json.dumps({
+                  'experiment':'ACC_REACH_V2_PROSPECTIVE_FREEZE',
+                  'source_competitive_memory_run':34755708007,
+                  'targets':ids,
+                  'targets_frozen_before_candidate_execution':True,
+                  'policy_language_outcome_unseen_at_freeze':True,
+                  'protected_controls':['ac-08551','ac-04629','ac-00761'],
+              },indent=2,sort_keys=True)+'\n'
+          )
+          print('REACH_V2_FROZEN_TARGETS',json.dumps(ids))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-reach-v2-freeze
+          path: |
+            acc_competitive/reach_v2_freeze/
+            acc_competitive/reach_v2_freeze.log
+            /tmp/competitive_attempted_cycle2.json
+          retention-days: 90
+
+  candidate:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        policy:
+          - current
+          - depth025
+          - mask1
+          - mask2
+          - mask3
+          - mask4
+          - mask5
+          - mask6
+          - mask7
+    runs-on: ubuntu-latest
+    timeout-minutes: 85
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen prospective pack
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-reach-v2-freeze -D /tmp/freeze
+          t=$(find /tmp/freeze -name selected_targets.json -print -quit)
+          ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
+          st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
+          test -n "$t" && test -n "$ac" && test -n "$st"
+          cp "$t" /tmp/targets.json
+          cp "$ac" /tmp/snapshot_ac.json
+          cp "$st" /tmp/snapshot_stable.json
+          cat /tmp/targets.json
+
+      - name: Add execution swap
+        run: |
+          set -euo pipefail
+          SWAP=/swapfile-reach-v2-${{ matrix.policy }}
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+          free -h
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Execute one frozen policy over identical prospective and replay packs
+        run: |
+          set -o pipefail
+          out="acc_competitive/reach_v2_runs/${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 acc_competitive/reach_v2_priority_language.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --targets /tmp/targets.json \
+            --snapshot-ac /tmp/snapshot_ac.json \
+            --snapshot-stable /tmp/snapshot_stable.json \
+            --out-dir "$out" \
+            --policy "${{ matrix.policy }}" \
+            --max-nodes 150000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-reach-v2-${{ matrix.policy }}
+          path: |
+            acc_competitive/reach_v2_runs/${{ matrix.policy }}/
+            acc_competitive/reach_v2_runs/${{ matrix.policy }}.log
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze, candidate]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen authority and all policy executions
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/candidates
+          gh run download "${{ github.run_id }}" -n acc-reach-v2-freeze -D /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-reach-v2-*' -D /tmp/candidates
+          n=$(find /tmp/candidates -name report.json | wc -l)
+          echo "POLICY_REPORTS=$n"
+          test "$n" -eq 9
+
+      - name: Synthesize warrant, frontier, and recursive consequence
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/reach_v2_synthesis.py \
+            --glob '/tmp/candidates/**/report.json' \
+            --out-dir acc_competitive/reach_v2_result \
+            | tee acc_competitive/reach_v2_result.log
+
+      - name: Fetch pinned verifier authority for any retained consequence
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Compile retained strict consequences into Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/reach_v2_atlas
+          src=acc_competitive/reach_v2_result/best_strict_ac.txt
+          if [ ! -s "$src" ]; then
+            : > acc_competitive/reach_v2_atlas/fortified_ac.txt
+            echo "NO_FROZEN_STRICT_CONSEQUENCES"
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob "$src" \
+            --out-dir acc_competitive/reach_v2_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/reach_v2_atlas.log
+
+      - name: Peephole retained strict consequences
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/reach_v2_peephole
+          if [ ! -s acc_competitive/reach_v2_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/reach_v2_peephole/fortified_ac.txt
+            echo "NO_ATLAS_STRICT_CONSEQUENCES"
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/reach_v2_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/reach_v2_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 5 --max-path 6000 \
+            | tee acc_competitive/reach_v2_peephole.log
+
+      - name: Fresh-recheck and publish only still-strict AC or Stable consequences
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/reach_v2_publish
+          if [ ! -s acc_competitive/reach_v2_peephole/fortified_ac.txt ]; then
+            echo "NO_STRICT_CONSEQUENCES_TO_PUBLISH"
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/reach_v2_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/reach_v2_publish \
+            --cycle 2 \
+            | tee acc_competitive/reach_v2_publish.log
+
+      - name: Final developmental report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p)
+              return json.loads(q.read_text()) if q.exists() else {}
+          dev=J('acc_competitive/reach_v2_result/report.json')
+          pub=J('acc_competitive/reach_v2_publish/report.json')
+          final={
+            'experiment':'ACC_REACH_V2_DEVELOPMENTAL_GENERATION',
+            'transition':dev.get('transition'),
+            'permission':dev.get('permission'),
+            'declared_language_complete':dev.get('declared_language_complete'),
+            'adequate_anonymous_policies':dev.get('adequate_anonymous_policies'),
+            'pareto_frontier':dev.get('pareto_frontier'),
+            'strict_targets_for_fresh_recheck':dev.get('strict_targets_for_fresh_recheck'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ac':pub.get('selected_ac',0),
+            'published_stable':pub.get('selected_stable',0),
+            'submission_id':pub.get('submission_id'),
+            'terminal_status':pub.get('terminal_status'),
+            'unrestricted_search_inadequacy_certified':False,
+          }
+          Path('acc_competitive/reach_v2_final.json').write_text(
+              json.dumps(final,indent=2,sort_keys=True)+'\n'
+          )
+          print('REACH_V2_FINAL',json.dumps(final,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-reach-v2-final
+          path: |
+            acc_competitive/reach_v2_result/
+            acc_competitive/reach_v2_result.log
+            acc_competitive/reach_v2_atlas/
+            acc_competitive/reach_v2_atlas.log
+            acc_competitive/reach_v2_peephole/
+            acc_competitive/reach_v2_peephole.log
+            acc_competitive/reach_v2_publish/
+            acc_competitive/reach_v2_publish.log
+            acc_competitive/reach_v2_final.json
+            /tmp/freeze/
+          retention-days: 90
+
+# V5 discipline:
+# - frozen unseen prospective pack before candidate execution;
+# - change support restricted to the certified pre-quotient boundary;
+# - complete finite anonymous language, no fitted weights or ACC motifs;
+# - protected replay gates admission;
+# - all warranted survivors retained; Pareto frontier not forced to one choice;
+# - fresh official-verifier-gated publication only for strict consequences.
