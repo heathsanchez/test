@@ -1,0 +1,22 @@
+{
+  "verdict": "VERIFIED_SPARSE_META_OPERATOR_GENESIS_AND_TRANSFER",
+  "workflow_run_id": 34733374359,
+  "workflow_job_id": 103660225724,
+  "head_sha": "6f66af5dadd1e99f6c0afa91c5277c38797c64f5",
+  "artifact_id": 10310401999,
+  "artifact_zip_sha256": "96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87",
+  "constructed_truth_table": [1, 1, 1, 1],
+  "candidate_level_semantic_pair_comparisons": {
+    "v8_complete_library": 86400,
+    "v10_sparse_completion": 13504,
+    "reduction_factor": 6.398104265402844
+  },
+  "heldout": {
+    "relation_count": 6,
+    "carrier_size": 2,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=26 nodes=2",
+    "negative_route": "certs n=26 records=2"
+  },
+  "claim_boundary": "generic fresh-pattern assignment operation supplied"
+}
