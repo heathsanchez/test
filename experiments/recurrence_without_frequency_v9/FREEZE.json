@@ -1,0 +1,22 @@
+{
+  "experiment": "recurrence_without_frequency_v9",
+  "protocol_commit": "f95eab237aaf7e1e7aedaa32b33f21ba8dfda5b6",
+  "basis_commit": "2b7ea4327087fd6a7611b8aa8015eadc63f4ac25",
+  "kernel_commit": "790a4561c37d7172e16222e2141453434a896fa5",
+  "scientific_freeze_commit": "790a4561c37d7172e16222e2141453434a896fa5",
+  "github_blob_shas": {
+    "PROTOCOL.md": "bf0d1cd8fb908d70283c5224244e16e97c5aecc2",
+    "basis.py": "e39db662c7bbd33457d11d5efc32c8cdea84bad0",
+    "kernel.py": "b15cba9f37f4c1dd383571f6bdf031c894e55b41"
+  },
+  "semantic_primitives": ["RELATION", "COMPOSE"],
+  "explicitly_absent": ["FREQUENCY", "PERIOD", "CYCLE", "PHASE", "ITERATE"],
+  "developmental_constitution": [
+    "external_verification",
+    "future_consequence_equivalence",
+    "verified_reification",
+    "conservative_UNKNOWN"
+  ],
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded finite deterministic recurrence only; no continuous spectral or physical-time claim."
+}
