@@ -1,0 +1,27 @@
+{
+  "experiment":"consequence_earned_arity_v26",
+  "scientific_freeze_commit":"d21b6e7a41f3701efb80fc6ee1cecd150275956f",
+  "protocol_commit":"c10c8048c8d7ed573f11a274a1b4e7c1d63e8e38",
+  "basis_commit":"114cbd8a522c2918e856294e9afbf5cdb6e53c81",
+  "kernel_commit":"d21b6e7a41f3701efb80fc6ee1cecd150275956f",
+  "github_blob_shas":{
+    "PROTOCOL.md":"49089840618365bf4e3e8a64c93d1115fe24d7d6",
+    "basis.py":"89e06cd63cf31ba895f512486b3a1fb2f1db7fb1",
+    "kernel.py":"135f73e9a55d2c6148143f133831a74449d70dd4"
+  },
+  "candidate_language":"generic tuple sets S subseteq P^r",
+  "initial_authorized_arity":1,
+  "arity_growth_rule":"increase r by exactly one only after complete verifier-clean failure at current r",
+  "role_semantics":"verifier searches all ordered coordinate-role pairs",
+  "explicitly_absent":[
+    "RELATION primitive","EDGE primitive","source role","target role",
+    "function candidate type","bijection candidate type",
+    "SET","FLIP","swap constructor"
+  ],
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite tuple-arity growth; tuple constructor and verifier remain supplied."
+}
