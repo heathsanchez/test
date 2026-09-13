@@ -1,0 +1,168 @@
+name: ACC Boundary Gap Synthesis V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-boundary-gap-synthesis-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34737558836"
+  FINALIZER_RUN: "34744913633"
+  GAP_RUN: "34746162384"
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Assemble exact completed portfolio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/base /tmp/finalizer /tmp/gaps acc_competitive/boundary_gap_v2_collected
+          gh run download "$SOURCE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+
+          for c in gssub_basic reverse_augmented compiler_beam depth_weighted; do
+            mkdir -p "/tmp/base/$c" "acc_competitive/boundary_gap_v2_collected/$c"
+            gh run download "$SOURCE_RUN" -n "acc-boundary-$c" -D "/tmp/base/$c"
+            f=$(find "/tmp/base/$c" -name search_results.json -print -quit)
+            test -n "$f"
+            cp "$f" "acc_competitive/boundary_gap_v2_collected/$c/search_results.json"
+          done
+
+          gh run download "$FINALIZER_RUN" -n acc-boundary-ac01684-finalizer-v1 -D /tmp/finalizer
+          ff=$(find /tmp/finalizer -path '*/boundary_final_collected/full_current/search_results.json' -print -quit)
+          test -n "$ff"
+          mkdir -p acc_competitive/boundary_gap_v2_collected/full_current
+          cp "$ff" acc_competitive/boundary_gap_v2_collected/full_current/search_results.json
+
+          gh run download "$GAP_RUN" --pattern 'acc-boundary-gap-*' -D /tmp/gaps
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path('acc_competitive/boundary_gap_v2_collected')
+          expected={
+            ('depth_weighted','ac-01462'),('depth_weighted','ac-00761'),('depth_weighted','ac-08027'),
+            ('depth_weighted','ac-00106'),('depth_weighted','ac-01523'),('depth_weighted','ac-01520'),
+            ('gssub_basic','ac-01523'),('gssub_basic','ac-01520'),('compiler_beam','ac-01520')
+          }
+          patches={}
+          metas=list(Path('/tmp/gaps').rglob('gap_meta.json'))
+          print('META_FILES', [str(x) for x in metas])
+          for meta in metas:
+              m=json.loads(meta.read_text())
+              key=(m['capability'],m['challenge_id'])
+              artifact_root=meta.parent.parent
+              candidates=list(artifact_root.rglob('search_results.json'))
+              assert len(candidates)==1, (key, artifact_root, [str(x) for x in candidates])
+              data=json.loads(candidates[0].read_text())
+              assert isinstance(data,list) and len(data)==1, (key,candidates[0],data)
+              assert data[0].get('challenge_id')==m['challenge_id'], (key,data[0])
+              patches[key]=data[0]
+
+          print('GAP_PATCHES', sorted(patches))
+          missing=sorted(expected-set(patches))
+          extra=sorted(set(patches)-expected)
+          assert not missing, f'missing gap executions: {missing}'
+          assert not extra, f'unexpected gap executions: {extra}'
+
+          targets=json.loads(Path('/tmp/freeze/targets.json').read_text())
+          tids=[x['challenge_id'] if isinstance(x,dict) else str(x) for x in targets]
+          assert len(tids)==12 and len(set(tids))==12, tids
+
+          for cap in ['gssub_basic','compiler_beam','depth_weighted']:
+              p=root/cap/'search_results.json'
+              rows=json.loads(p.read_text())
+              by={r['challenge_id']:r for r in rows}
+              for (c,cid),row in patches.items():
+                  if c==cap:
+                      by[cid]=row
+              missing_cap=[x for x in tids if x not in by]
+              extra_cap=[x for x in by if x not in tids]
+              assert not missing_cap and not extra_cap, (cap,missing_cap,extra_cap)
+              ordered=[by[x] for x in tids]
+              p.write_text(json.dumps(ordered,indent=2,sort_keys=True)+'\n')
+              print('PATCHED_CAPABILITY',cap,'rows',len(ordered))
+
+          for cap in ['gssub_basic','reverse_augmented','compiler_beam','depth_weighted','full_current']:
+              p=root/cap/'search_results.json'
+              rows=json.loads(p.read_text())
+              ids=[r['challenge_id'] for r in rows]
+              missing_cap=[x for x in tids if x not in ids]
+              extra_cap=[x for x in ids if x not in tids]
+              print('CAPABILITY_COMPLETENESS',cap,{'rows':len(rows),'missing':missing_cap,'extra':extra_cap})
+              assert len(rows)==12 and not missing_cap and not extra_cap and len(set(ids))==12
+          PY
+
+      - name: Re-synthesize exact declared portfolio
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/boundary_qualification_v1.py \
+            --targets /tmp/freeze/targets.json \
+            --snapshot /tmp/freeze/snapshot_ac.json \
+            --runs-root acc_competitive/boundary_gap_v2_collected \
+            --out-dir acc_competitive/boundary_gap_v2_result \
+            --capabilities gssub_basic reverse_augmented compiler_beam depth_weighted full_current \
+            | tee acc_competitive/boundary_gap_v2_result.log
+
+      - name: Apply fresh leaderboard consequence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          r=json.loads(pathlib.Path('acc_competitive/boundary_gap_v2_result/report.json').read_text())
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          u=f'{B}/api/acc/discoveries/snapshot?problem=ac'
+          with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as z:o=json.loads(z.read().decode())
+          d=o.get('data',o); items=d.get('items',d if isinstance(d,list) else [])
+          live={x['challengeId']:x for x in items}
+          surviving=[]
+          for w in r.get('strict_verified_wins',[]):
+              b=(live.get(w['challenge_id']) or {}).get('currentBestLength')
+              if isinstance(b,int) and w['candidate_length']<b:
+                  q=dict(w); q['fresh_live_best']=b; q['fresh_margin']=b-w['candidate_length']; surviving.append(q)
+          pathlib.Path('acc_competitive/boundary_gap_v2_result/fresh_strict_wins.json').write_text(json.dumps(surviving,indent=2)+'\n')
+          print('FRESH_STRICT_WINS',json.dumps(surviving))
+          PY
+
+      - name: Execute developmental controller
+        run: |
+          set -euo pipefail
+          args=(
+            --report acc_competitive/boundary_gap_v2_result/report.json
+            --typed-results acc_competitive/boundary_gap_v2_result/typed_results.json
+            --fresh-wins acc_competitive/boundary_gap_v2_result/fresh_strict_wins.json
+            --out-dir acc_competitive/resolve_acc_gap_v2_result
+          )
+          if [ -f acc_competitive/competitive_wins_seed_v1.json ]; then
+            args+=(--protected-wins acc_competitive/competitive_wins_seed_v1.json)
+          fi
+          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" | tee acc_competitive/resolve_acc_gap_v2_result.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-boundary-gap-synthesis-v2
+          path: |
+            acc_competitive/boundary_gap_v2_result/
+            acc_competitive/boundary_gap_v2_result.log
+            acc_competitive/resolve_acc_gap_v2_result/
+            acc_competitive/resolve_acc_gap_v2_result.log
+            acc_competitive/boundary_gap_v2_collected/
+            /tmp/freeze/targets.json
+          retention-days: 90
+
+# Synthesis-only repair. Reuses the nine already-completed gap executions from GAP_RUN.
+# No search is rerun and no scientific parameter, capability, target, verifier pin, or consequence rule changes.
