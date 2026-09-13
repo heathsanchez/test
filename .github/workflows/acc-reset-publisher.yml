@@ -68,19 +68,54 @@ jobs:
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
 
-      - name: Fresh live filter and publish one packed batch
+      - name: Recover prior proof atlas if available
         run: |
-          set -o pipefail
+          set -euo pipefail
+          mkdir -p /tmp/prior_atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          if [ -n "$ID" ]; then
+            echo "Recovering proof atlas artifact $ID"
+            gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/prior_atlas.zip
+            unzip -q /tmp/prior_atlas.zip -d /tmp/prior_atlas
+          fi
+
+      - name: Fortify every candidate through shared proof atlas
+        run: |
+          set -euo pipefail
           if [ ! -s acc_competitive/reset_inputs/all.txt ]; then
             echo "No pending candidates."
             exit 0
           fi
+          PRIOR="$(find /tmp/prior_atlas -name proof_atlas.sqlite 2>/dev/null | head -1 || true)"
+          ARGS=(--acc-root /tmp/acc --glob 'acc_competitive/reset_inputs/all.txt' --out-dir acc_competitive/fortified --reverse-depth 7 --reverse-cap 250000)
+          if [ -n "$PRIOR" ]; then ARGS+=(--prior-atlas "$PRIOR"); fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py "${ARGS[@]}" | tee acc_competitive/fortify.log
+
+      - name: Fresh live filter and publish one packed batch
+        run: |
+          set -o pipefail
+          if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then
+            echo "No fortified candidates."
+            exit 0
+          fi
           python3 andrews_curtis/continuous_aggregate_v4.py \
             --acc-root /tmp/acc \
-            --glob 'acc_competitive/reset_inputs/all.txt' \
+            --glob 'acc_competitive/fortified/fortified_ac.txt' \
             --out-dir acc_competitive/reset_publish_out \
             --cycle 0 \
             | tee acc_competitive/reset_publish.log
+
+      - name: Persist compounding proof atlas
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: acc-proof-atlas-state
+          path: |
+            acc_competitive/fortified/proof_atlas.sqlite
+            acc_competitive/fortified/fortification.json
+            acc_competitive/fortified/report.json
+          retention-days: 90
+          if-no-files-found: warn
 
       - name: Upload reset authority
         if: always()
@@ -90,6 +125,8 @@ jobs:
           path: |
             acc_competitive/reset_inputs/
             acc_competitive/reset_publish_out/
+            acc_competitive/fortified/
+            acc_competitive/fortify.log
             acc_competitive/reset_publish.log
           retention-days: 90
           if-no-files-found: warn
