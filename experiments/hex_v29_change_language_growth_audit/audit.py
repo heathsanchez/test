@@ -13,7 +13,7 @@ EXPECTED = {
     },
     "v10": {
         "verdict": "VERIFIED_SPARSE_META_OPERATOR_GENESIS_AND_TRANSFER",
-        "boundary_any": ["generic ability to add a value", "previously undefined observation pattern"],
+        "boundary_any": ["generic single-cell Boolean assignment operation supplied"],
     },
     "v11": {
         "verdict": "VERIFIED_REPAIR_SCHEMA_ANTI_UNIFICATION_AND_TRANSFER",
