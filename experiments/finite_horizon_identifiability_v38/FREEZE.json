@@ -1,0 +1,15 @@
+{
+  "experiment": "finite_horizon_identifiability_v38",
+  "challenge_pack_committed_after_freeze": true,
+  "scientific_core_paths": [
+    "PROTOCOL.md",
+    "basis.py",
+    "kernel.py"
+  ],
+  "git_blob_sha": {
+    "PROTOCOL.md": "b35a192119d618360a8e127cd7a7c0ac631cc3ea",
+    "basis.py": "d9aec17840d16b0f1a045e32e1550518bf80b8af",
+    "kernel.py": "85ef145ed6450abbf193ae19f9d5ef84cdd1f2ca"
+  },
+  "global_rule": "finite non-separation does not imply unbounded equivalence without an external completeness certificate"
+}
