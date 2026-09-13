@@ -36,8 +36,6 @@ def encode(obj,selected):
         edges.add(tuple(sorted((roles*u+2*rel,roles*v+2*rel+1))))
     for rel in selected:
         for role in (2*rel,2*rel+1):
-            edges.add(tuple(sorted((role,roles+role))))
-            edges.add(tuple(sorted((fresh,roles+fresh))))
             edges.add(tuple(sorted((role,fresh))))
             edges.add(tuple(sorted((roles+role,roles+fresh))))
     return frozenset(edges)
