@@ -1,0 +1,69 @@
+name: Finite Transition Relation Genesis V45
+
+on:
+  push:
+    branches:
+      - finite-transition-relation-v45
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V45 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=d62f99158435afa75ab53278848b3c5a1c41feb7
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/finite_transition_relation_v45/PROTOCOL.md             experiments/finite_transition_relation_v45/basis.py             experiments/finite_transition_relation_v45/kernel.py             experiments/finite_transition_relation_v45/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V45 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/finite_transition_relation_v45/basis.py             experiments/finite_transition_relation_v45/kernel.py             experiments/finite_transition_relation_v45/challenge_pack.py             experiments/finite_transition_relation_v45/run.py
+
+      - name: Run frozen V45 experiment
+        working-directory: experiments/finite_transition_relation_v45
+        run: |
+          set -o pipefail
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/finite_transition_relation_v45
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-transition-relation-v45-evidence
+          path: |
+            experiments/finite_transition_relation_v45/evidence.json
+            experiments/finite_transition_relation_v45/run.log
+            experiments/finite_transition_relation_v45/FREEZE.json
+            experiments/finite_transition_relation_v45/PROTOCOL.md
