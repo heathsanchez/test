@@ -1,0 +1,68 @@
+name: Parametric Grammar Genesis V15
+
+on:
+  push:
+    branches:
+      - parametric-grammar-genesis-v15
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V15 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=6b1b7c057409bf826ed5eac66ffcdf70c4a18d03
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/parametric_grammar_genesis_v15/PROTOCOL.md             experiments/parametric_grammar_genesis_v15/basis.py             experiments/parametric_grammar_genesis_v15/kernel.py
+          echo "V15 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/parametric_grammar_genesis_v15/basis.py             experiments/parametric_grammar_genesis_v15/kernel.py             experiments/parametric_grammar_genesis_v15/challenge_pack.py             experiments/parametric_grammar_genesis_v15/run.py
+
+      - name: Run parametric grammar genesis suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/parametric_grammar_genesis_v15
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/parametric_grammar_genesis_v15
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parametric-grammar-genesis-v15-evidence
+          path: |
+            experiments/parametric_grammar_genesis_v15/evidence.json
+            experiments/parametric_grammar_genesis_v15/run.log
+            experiments/parametric_grammar_genesis_v15/FREEZE.json
+            experiments/parametric_grammar_genesis_v15/PROTOCOL.md
+          if-no-files-found: error
