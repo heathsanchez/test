@@ -1,0 +1,57 @@
+name: Generic Developmental Kernel V1
+
+on:
+  push:
+    branches:
+      - generic-developmental-kernel-v1
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen kernel temporal authority
+        run: |
+          set -euo pipefail
+          FREEZE=f3ee5e65cd0592fa41e4cc9476e3d2d8a5613bae
+          KERNEL=experiments/generic_developmental_kernel_v1/kernel.py
+          echo "5539aba1ef745f8c645fa932997914c32d12572e5befa5b00fed58dd018c30f3  $KERNEL" | sha256sum -c -
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          test -z "$(git diff --name-only "$FREEZE"..HEAD -- "$KERNEL")"
+
+      - name: Syntax check frozen kernel and post-freeze challenge pack
+        run: |
+          python3 -m py_compile             experiments/generic_developmental_kernel_v1/kernel.py             experiments/generic_developmental_kernel_v1/challenge_pack.py             experiments/generic_developmental_kernel_v1/run.py
+
+      - name: Run frozen generic developmental kernel
+        run: |
+          set -o pipefail
+          python3 experiments/generic_developmental_kernel_v1/run.py 2>&1 | tee experiments/generic_developmental_kernel_v1/run.log
+
+      - name: Seal evidence hashes
+        run: |
+          cd experiments/generic_developmental_kernel_v1
+          sha256sum             KERNEL_PROTOCOL.md             FREEZE.json             kernel.py             challenge_pack.py             run.py             results/evidence.json             run.log > results/SHA256SUMS.txt
+          cat results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generic-developmental-kernel-v1-evidence
+          path: |
+            experiments/generic_developmental_kernel_v1/KERNEL_PROTOCOL.md
+            experiments/generic_developmental_kernel_v1/FREEZE.json
+            experiments/generic_developmental_kernel_v1/kernel.py
+            experiments/generic_developmental_kernel_v1/challenge_pack.py
+            experiments/generic_developmental_kernel_v1/run.py
+            experiments/generic_developmental_kernel_v1/results/evidence.json
+            experiments/generic_developmental_kernel_v1/results/SHA256SUMS.txt
+            experiments/generic_developmental_kernel_v1/run.log
+          if-no-files-found: error
