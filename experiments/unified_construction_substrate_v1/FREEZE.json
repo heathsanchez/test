@@ -1,0 +1,14 @@
+{
+  "experiment": "unified_construction_substrate_v1",
+  "protocol_commit": "ddba5062aed607bc7c5fe2c2c22f09c97419fccc",
+  "substrate_commit": "07c37da90eb902abd4484b2f6c86b41e9e454c51",
+  "kernel_commit": "9152e3e95e9352fed2eb85df859444d986eb0626",
+  "scientific_freeze_commit": "9152e3e95e9352fed2eb85df859444d986eb0626",
+  "github_blob_shas": {
+    "PROTOCOL.md": "addf110b21f903fa0a9ed10f79e37bd14da2daf6",
+    "mdc_l1.py": "e9f5f58b805ab0f5e647423fc407ace6c29d0ec7",
+    "kernel.py": "c9bedfb5f804f4bcd71603c0e0c3f520b94ed6c5"
+  },
+  "freeze_rule": "Post-freeze challenge packs may not modify PROTOCOL.md, mdc_l1.py, or kernel.py. Any such modification resets the experiment version.",
+  "claim_boundary": "Finite typed supplied substrate, external verifier, declared resource bounds, no unrestricted self-hosting claim."
+}
