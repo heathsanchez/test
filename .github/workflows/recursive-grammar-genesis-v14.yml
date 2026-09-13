@@ -1,0 +1,68 @@
+name: Recursive Grammar Genesis V14
+
+on:
+  push:
+    branches:
+      - recursive-grammar-genesis-v14
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V14 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=aa0848ff59e4dffc323248f9bf008dfe94bacbd3
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/recursive_grammar_genesis_v14/PROTOCOL.md             experiments/recursive_grammar_genesis_v14/basis.py             experiments/recursive_grammar_genesis_v14/kernel.py
+          echo "V14 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/recursive_grammar_genesis_v14/basis.py             experiments/recursive_grammar_genesis_v14/kernel.py             experiments/recursive_grammar_genesis_v14/challenge_pack.py             experiments/recursive_grammar_genesis_v14/run.py
+
+      - name: Run recursive grammar genesis suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/recursive_grammar_genesis_v14
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/recursive_grammar_genesis_v14
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recursive-grammar-genesis-v14-evidence
+          path: |
+            experiments/recursive_grammar_genesis_v14/evidence.json
+            experiments/recursive_grammar_genesis_v14/run.log
+            experiments/recursive_grammar_genesis_v14/FREEZE.json
+            experiments/recursive_grammar_genesis_v14/PROTOCOL.md
+          if-no-files-found: error
