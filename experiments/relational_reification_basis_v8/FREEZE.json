@@ -1,0 +1,25 @@
+{
+  "experiment": "relational_reification_basis_v8",
+  "protocol_commit": "81f8c3b5e9b1d6b885dc53ac7ff13b08de943902",
+  "basis_commit": "9cf68e6bf3852fd9d718754cf12aa7cdc957c8a4",
+  "kernel_commit": "54c67f03f6f6861a15e03d66f1a4480659784f3b",
+  "scientific_freeze_commit": "54c67f03f6f6861a15e03d66f1a4480659784f3b",
+  "github_blob_shas": {
+    "PROTOCOL.md": "7abd0cc94c1d25a39ba63a9db61a6d045868c71c",
+    "basis.py": "b0d7df4002df30d925ce9a51eda4d911e0d877a1",
+    "kernel.py": "35f00accd170af16eae5fe879cf11f72eae7883f"
+  },
+  "fixed_seed": "BIT",
+  "candidate_primitive_universe": ["RELATION", "COMPOSE"],
+  "developmental_constitution": [
+    "external_verification",
+    "exact_bounded_search",
+    "conservative_UNKNOWN",
+    "verified_EDGE_REIFY",
+    "verified_CLASS_REIFY",
+    "verified_relation_compilation"
+  ],
+  "explicitly_absent_object_primitives": ["PRODUCT", "QUOTIENT"],
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Finite bounded reduction of V7 object-language primitives only."
+}
