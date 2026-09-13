@@ -81,7 +81,7 @@ def toHex (A : FiniteColored V n k) : Colored n k where
 
 @[simp] theorem toHex_adj (A : FiniteColored V n k) (i j : Fin n) :
     A.toHex.graph.adj i j = A.adj (A.number.symm i) (A.number.symm j) := by
-  exact Graph.adj_ofAdj ..
+  simp [toHex]
 
 @[simp] theorem toHex_color (A : FiniteColored V n k) (i : Fin n) :
     A.toHex.coloring.cells[i] = A.color (A.number.symm i) := by
@@ -128,8 +128,10 @@ theorem toHex_isIso (F : FiniteColoredIso A B) :
     IsIso A.toHex B.toHex F.perm := by
   refine IsIso.mk ?_ ?_
   · intro i
+    rw [FiniteColored.toHex_color, FiniteColored.toHex_color]
     simpa [perm, finMap] using F.color (A.number.symm i)
   · intro i j
+    rw [FiniteColored.toHex_adj, FiniteColored.toHex_adj]
     simpa [perm, finMap] using F.adj (A.number.symm i) (A.number.symm j)
 
 theorem toHex_isomorphic (F : FiniteColoredIso A B) :
@@ -165,19 +167,6 @@ def nodeBijectionFromPerm (p : Hex.Perm n) : Bijection V W where
   left_inv := inv_mapFromPerm (A := A) (B := B) p
   right_inv := map_invFromPerm (A := A) (B := B) p
 
-def isoFromHex (h : Isomorphic A.toHex B.toHex) : FiniteColoredIso A B := by
-  rcases Isomorphic.elim h with ⟨p, hp⟩
-  refine
-    { map := nodeBijectionFromPerm (A := A) (B := B) p
-      color := ?_
-      adj := ?_ }
-  · intro v
-    have hc := IsIso.cells_eq hp (A.number v)
-    simpa [nodeBijectionFromPerm, mapFromPerm] using hc
-  · intro u v
-    have ha := IsIso.adj_eq hp (A.number u) (A.number v)
-    simpa [nodeBijectionFromPerm, mapFromPerm] using ha
-
 end FiniteColored
 
 /--
@@ -194,6 +183,19 @@ theorem finiteColoredIso_iff_hexIsomorphic
   · rintro ⟨h⟩
     exact h.toHex_isomorphic
   · intro h
-    exact ⟨FiniteColored.isoFromHex h⟩
+    rcases Hex.GraphIso.Isomorphic.elim h with ⟨p, hp⟩
+    refine ⟨{
+      map := FiniteColored.nodeBijectionFromPerm (A := A) (B := B) p
+      color := ?_
+      adj := ?_
+    }⟩
+    · intro v
+      have hc := Hex.GraphIso.IsIso.cells_eq hp (A.number v)
+      rw [FiniteColored.toHex_color, FiniteColored.toHex_color] at hc
+      simpa [FiniteColored.nodeBijectionFromPerm, FiniteColored.mapFromPerm] using hc
+    · intro u v
+      have ha := Hex.GraphIso.IsIso.adj_eq hp (A.number u) (A.number v)
+      rw [FiniteColored.toHex_adj, FiniteColored.toHex_adj] at ha
+      simpa [FiniteColored.nodeBijectionFromPerm, FiniteColored.mapFromPerm] using ha
 
 end MathGraph
