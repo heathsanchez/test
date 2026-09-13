@@ -1,0 +1,68 @@
+name: Generated Predictive Phrases V13
+
+on:
+  push:
+    branches:
+      - generated-predictive-phrases-v13
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V13 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=312f2fc0725926bdb67cea4f4c3002581912321a
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/generated_predictive_phrases_v13/PROTOCOL.md             experiments/generated_predictive_phrases_v13/basis.py             experiments/generated_predictive_phrases_v13/kernel.py
+          echo "V13 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/generated_predictive_phrases_v13/basis.py             experiments/generated_predictive_phrases_v13/kernel.py             experiments/generated_predictive_phrases_v13/challenge_pack.py             experiments/generated_predictive_phrases_v13/run.py
+
+      - name: Run generated predictive phrase suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/generated_predictive_phrases_v13
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/generated_predictive_phrases_v13
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-predictive-phrases-v13-evidence
+          path: |
+            experiments/generated_predictive_phrases_v13/evidence.json
+            experiments/generated_predictive_phrases_v13/run.log
+            experiments/generated_predictive_phrases_v13/FREEZE.json
+            experiments/generated_predictive_phrases_v13/PROTOCOL.md
+          if-no-files-found: error
