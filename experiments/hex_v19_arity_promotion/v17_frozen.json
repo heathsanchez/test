@@ -1,0 +1,70 @@
+{
+  "ablations": {
+    "(0, 1, 2)": 36120,
+    "(0, 1, 3)": 36120,
+    "(0, 2, 3)": 36120,
+    "(1, 2, 3)": 36120
+  },
+  "claim_boundary": [
+    "pattern promotion from arity3 supplied as structural induction rule",
+    "finite arity4 world",
+    "no Hex heldout run"
+  ],
+  "classification": "FINITE_EXHAUSTIVE_ARITY_GENERALIZATION_OF_OCCURRENCE_NODE_REPAIR",
+  "cold_search": {
+    "candidate_connection_subsets": 15,
+    "candidate_level_pair_comparisons": 49686000,
+    "mismatch_counts": {
+      "(0, 1)": 302220,
+      "(0, 1, 2)": 36120,
+      "(0, 1, 2, 3)": 0,
+      "(0, 1, 3)": 36120,
+      "(0, 2)": 302220,
+      "(0, 2, 3)": 36120,
+      "(0, 3)": 302220,
+      "(0,)": 1433460,
+      "(1, 2)": 302220,
+      "(1, 2, 3)": 36120,
+      "(1, 3)": 302220,
+      "(1,)": 1433460,
+      "(2, 3)": 302220,
+      "(2,)": 1433460,
+      "(3,)": 1433460
+    },
+    "qualified_subsets": [
+      [
+        0,
+        1,
+        2,
+        3
+      ]
+    ]
+  },
+  "gates": {
+    "G1_only_full_arity_star_qualifies": true,
+    "G2_all_single_position_ablations_fail": true,
+    "G3_warm_reduces_candidate_search_15x": true
+  },
+  "qualification": {
+    "carrier_size": 2,
+    "object_count": 1820,
+    "ordered_pair_count": 3312400,
+    "relation_arity": 4,
+    "relation_size": 4,
+    "source_isomorphism_classes": 924
+  },
+  "source_v16_pattern": "one occurrence node per tuple connected to every argument-position role",
+  "verdict": "LOCAL_SEMANTIC_PASS_CROSS_ARITY_PRIMITIVE_PROMOTION",
+  "warm_promoted_pattern": {
+    "candidate_evaluations": 1,
+    "candidate_level_pair_comparisons": 3312400,
+    "connection_subset": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "mismatch_count": 0,
+    "reduction_factor": 15.0
+  }
+}
