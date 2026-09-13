@@ -1,0 +1,68 @@
+name: Semantic Carrier Genesis V5
+
+on:
+  push:
+    branches:
+      - semantic-carrier-genesis-v5
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V5 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=9fdd35bf6e89755512a650bd05e8474665263010
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/semantic_carrier_genesis_v5/PROTOCOL.md             experiments/semantic_carrier_genesis_v5/basis.py             experiments/semantic_carrier_genesis_v5/kernel.py
+          echo "V5 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/semantic_carrier_genesis_v5/basis.py             experiments/semantic_carrier_genesis_v5/kernel.py             experiments/semantic_carrier_genesis_v5/challenge_pack.py             experiments/semantic_carrier_genesis_v5/run.py
+
+      - name: Run post-freeze semantic carrier suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/semantic_carrier_genesis_v5
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/semantic_carrier_genesis_v5
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semantic-carrier-genesis-v5-evidence
+          path: |
+            experiments/semantic_carrier_genesis_v5/evidence.json
+            experiments/semantic_carrier_genesis_v5/run.log
+            experiments/semantic_carrier_genesis_v5/FREEZE.json
+            experiments/semantic_carrier_genesis_v5/PROTOCOL.md
+          if-no-files-found: error
