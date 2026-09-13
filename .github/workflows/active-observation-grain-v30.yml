@@ -1,0 +1,52 @@
+name: Active Observation Grain V30
+on:
+  push:
+    branches: [active-observation-grain-v30]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: Verify frozen V30 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=b482fed720dbac43efdf51976974552758328616
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/active_observation_grain_v30/PROTOCOL.md             experiments/active_observation_grain_v30/basis.py             experiments/active_observation_grain_v30/kernel.py
+      - name: Syntax
+        run: python -m py_compile experiments/active_observation_grain_v30/{basis.py,kernel.py,challenge_pack.py,run.py}
+      - name: Run V30
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/active_observation_grain_v30
+          python -u run.py 2>&1 | tee run.log
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/active_observation_grain_v30
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"]); print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items(): print(f"GATE {k}={v}")
+          PY
+      - name: Upload
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: active-observation-grain-v30-evidence
+          path: |
+            experiments/active_observation_grain_v30/evidence.json
+            experiments/active_observation_grain_v30/run.log
+            experiments/active_observation_grain_v30/FREEZE.json
+            experiments/active_observation_grain_v30/PROTOCOL.md
+          if-no-files-found: error
