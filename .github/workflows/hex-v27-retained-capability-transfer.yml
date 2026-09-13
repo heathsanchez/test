@@ -43,8 +43,12 @@ jobs:
       - name: Kernel-check all retained-capability transfer obligations
         working-directory: experiments/hex_v27_retained_capability_transfer
         run: |
-          set -o pipefail
-          lake env lean Generated.lean 2>&1 | tee results/lean.log
+          set -euo pipefail
+          : > results/lean.log
+          for f in Generated_*_positive.lean Generated_*_negative.lean; do
+            echo "=== $f ===" | tee -a results/lean.log
+            lake env lean "$f" 2>&1 | tee -a results/lean.log
+          done
 
       - name: Seal V27 evidence
         working-directory: experiments/hex_v27_retained_capability_transfer
@@ -60,7 +64,10 @@ jobs:
               if all(bool(x) for x in gates.values()) else "NEGATIVE_OR_PARTIAL",
             "gates":gates,
             "source_evidence":src,
-            "generated_lean_sha256":hashlib.sha256((root/"Generated.lean").read_bytes()).hexdigest(),
+            "generated_lean_sha256":{
+              p.name:hashlib.sha256(p.read_bytes()).hexdigest()
+              for p in sorted(root.glob("Generated_*.lean"))
+            },
             "claim_boundary":[
               "frozen new relational challenge pack",
               "retained incidence law supplied from prior verified development",
