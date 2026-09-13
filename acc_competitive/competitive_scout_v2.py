@@ -293,8 +293,8 @@ def main():
           "live_status":live_status,
           "mathgraph_status":status,"recent_public_move":cid in event_set,**fmap[cid],
         })
-    acquire.sort(key=lambda x:(-x["priority"],-x["live_best"],x["challenge_id"]))
-    defend.sort(key=lambda x:(-x["priority"],-x["live_best"],x["challenge_id"]))
+    acquire.sort(key=lambda x:(-x["priority"],-(x["live_best"] if isinstance(x.get("live_best"),int) else -1),x["challenge_id"]))
+    defend.sort(key=lambda x:(-x["priority"],-(x["live_best"] if isinstance(x.get("live_best"),int) else -1),x["challenge_id"]))
     defend_n=min(len(defend),max(0,round(a.attack_count*max(0.0,min(0.5,a.defend_fraction)))))
     acquire_n=min(len(acquire),a.attack_count-defend_n)
     selected=acquire[:acquire_n]+defend[:defend_n]
@@ -304,7 +304,7 @@ def main():
         selected+=extras[:a.attack_count-len(selected)]
     selected.sort(key=lambda x:(x["mode"]!="acquire",-x["priority"],x["challenge_id"]))
     candidates=acquire+defend
-    candidates.sort(key=lambda x:(-x["priority"],x["mode"],-x["live_best"],x["challenge_id"]))
+    candidates.sort(key=lambda x:(-x["priority"],x["mode"],-(x["live_best"] if isinstance(x.get("live_best"),int) else -1),x["challenge_id"]))
     save(out/"attack_ranking.json",candidates[:500])
     save(out/"selected_targets.json",[x["challenge_id"] for x in selected])
     save(out/"selected_modes.json",[{k:x[k] for k in ("challenge_id","mode","priority","live_best","kTeams","mathgraph_status")} for x in selected])
