@@ -1,0 +1,70 @@
+name: Consequence-Selected Eventization V35
+
+on:
+  push:
+    branches:
+      - event-genesis-v35
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V35 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=7545d4e5d5b5130f26bff8e6aa7e2f92d27f02b9
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/event_genesis_v35/PROTOCOL.md             experiments/event_genesis_v35/basis.py             experiments/event_genesis_v35/kernel.py             experiments/event_genesis_v35/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V35 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/event_genesis_v35/basis.py             experiments/event_genesis_v35/kernel.py             experiments/event_genesis_v35/challenge_pack.py             experiments/event_genesis_v35/run.py
+
+      - name: Run frozen V35 experiment
+        working-directory: experiments/event_genesis_v35
+        run: |
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/event_genesis_v35
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          print("selected_widths:",e.get("selected_widths"))
+          print("permutation_changed_task_count:",e.get("permutation_changed_task_count"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: consequence-selected-eventization-v35-evidence
+          path: |
+            experiments/event_genesis_v35/evidence.json
+            experiments/event_genesis_v35/run.log
+            experiments/event_genesis_v35/FREEZE.json
+            experiments/event_genesis_v35/PROTOCOL.md
