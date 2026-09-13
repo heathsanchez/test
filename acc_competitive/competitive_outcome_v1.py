@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse,json
+import argparse,glob,json
 from pathlib import Path
 
 def save(p,o): Path(p).write_text(json.dumps(o,indent=2,sort_keys=True)+"\n")
@@ -17,7 +17,9 @@ def main():
     out=Path(a.out_dir);out.mkdir(parents=True,exist_ok=True)
     selected=json.loads(Path(a.selected).read_text())
     rows={}
-    files=sorted(Path(".").glob(a.glob))
+    # glob.glob supports both absolute and relative recursive artifact paths;
+    # pathlib.Path.glob rejects non-relative patterns.
+    files=[Path(x) for x in sorted(glob.glob(a.glob,recursive=True))]
     for fp in files:
         try:data=json.loads(fp.read_text())
         except Exception:continue
