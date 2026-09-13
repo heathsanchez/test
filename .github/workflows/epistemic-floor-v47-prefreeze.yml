@@ -1,0 +1,66 @@
+name: Epistemic Floor V47 Prefreeze
+
+on:
+  push:
+    branches:
+      - epistemic-floor-v47
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/epistemic_floor_v47/basis.py             experiments/epistemic_floor_v47/kernel.py
+
+      - name: Exact version-space smoke
+        working-directory: experiments/epistemic_floor_v47
+        run: |
+          python - <<'PY'
+          from basis import Sample, World
+          from kernel import Kernel
+
+          # Alphabet size 1, histories (), (0), (0,0).
+          samples=(
+              Sample((),0),
+              Sample((0,),0),
+              Sample((0,0),0),
+          )
+
+          closed=World(
+              "closed",
+              alphabet_size=1,
+              consequence_alphabet_size=2,
+              prefix_depth=1,
+              max_future_depth=1,
+              samples=samples,
+              closed_histories=((),(0,),(0,0)),
+              packet_complete=True,
+          )
+          rc=Kernel().synthesize(closed)
+          print("closed",rc)
+          assert rc["status"]=="VERIFIED_IDENTIFIABLE_BEHAVIORAL_FLOOR"
+          assert rc["completion_count"]==1
+          assert rc["state_count"]==1
+          assert rc["determinism_identifiable"] is True
+
+          open_one=World(
+              "open_one",
+              alphabet_size=1,
+              consequence_alphabet_size=2,
+              prefix_depth=1,
+              max_future_depth=1,
+              samples=samples,
+              closed_histories=((),(0,)),
+              packet_complete=True,
+          )
+          ro=Kernel().synthesize(open_one)
+          print("open_one",ro)
+          assert ro["status"]=="UNKNOWN_IDENTIFIABILITY"
+          assert ro["completion_count"]==2
+          assert ro["witness_a"]["floor_status"]!=ro["witness_b"]["floor_status"] or ro["witness_a"]["state_count"]!=ro["witness_b"]["state_count"] or ro["witness_a"]["law_kind"]!=ro["witness_b"]["law_kind"]
+          PY
