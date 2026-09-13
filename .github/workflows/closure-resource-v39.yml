@@ -1,0 +1,70 @@
+name: Closure Resource V39
+
+on:
+  push:
+    branches:
+      - closure-resource-v39
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V39 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=40459f046d5865edf0e7c8460b96ced55e282ad9
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/closure_resource_v39/PROTOCOL.md             experiments/closure_resource_v39/basis.py             experiments/closure_resource_v39/kernel.py             experiments/closure_resource_v39/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V39 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/closure_resource_v39/basis.py             experiments/closure_resource_v39/kernel.py             experiments/closure_resource_v39/challenge_pack.py             experiments/closure_resource_v39/run.py
+
+      - name: Run frozen V39 experiment
+        working-directory: experiments/closure_resource_v39
+        shell: bash
+        run: |
+          set -o pipefail
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/closure_resource_v39
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: closure-resource-v39-evidence
+          path: |
+            experiments/closure_resource_v39/evidence.json
+            experiments/closure_resource_v39/run.log
+            experiments/closure_resource_v39/FREEZE.json
+            experiments/closure_resource_v39/PROTOCOL.md
