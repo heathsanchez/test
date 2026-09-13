@@ -8,6 +8,7 @@ permissions:
   actions: read
 
 jobs:
-  cycle:
-    uses: heathsanchez/test/.github/workflows/acc-competitive-residual-v1.yml@acc-competitive-residual-v1
-    secrets: inherit
+  retired:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Retired. GS-Sub recurring search was economically dominated by Proof Atlas / official-move connector search."
