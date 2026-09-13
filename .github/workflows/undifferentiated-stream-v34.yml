@@ -1,0 +1,68 @@
+name: Undifferentiated Stream Residual Machine V34
+
+on:
+  push:
+    branches:
+      - undifferentiated-stream-v34
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V34 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=2d3c9635cc272425833e967c3825b9a9221b513f
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/undifferentiated_stream_v34/PROTOCOL.md             experiments/undifferentiated_stream_v34/basis.py             experiments/undifferentiated_stream_v34/kernel.py             experiments/undifferentiated_stream_v34/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V34 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/undifferentiated_stream_v34/basis.py             experiments/undifferentiated_stream_v34/kernel.py             experiments/undifferentiated_stream_v34/challenge_pack.py             experiments/undifferentiated_stream_v34/run.py
+
+      - name: Run frozen V34 experiment
+        working-directory: experiments/undifferentiated_stream_v34
+        run: |
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/undifferentiated_stream_v34
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: undifferentiated-stream-v34-evidence
+          path: |
+            experiments/undifferentiated_stream_v34/evidence.json
+            experiments/undifferentiated_stream_v34/run.log
+            experiments/undifferentiated_stream_v34/FREEZE.json
+            experiments/undifferentiated_stream_v34/PROTOCOL.md
