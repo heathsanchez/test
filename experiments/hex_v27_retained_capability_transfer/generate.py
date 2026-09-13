@@ -131,9 +131,27 @@ def {prefix} : Colored {N} {K} where
   coloring := {prefix}Coloring
 """
 
+def emit_goal_file(path, left_name, left_graph, right_name, right_graph, positive):
+    chunks=["import HexGraphIso.Tactic\\n\\nopen Hex Hex.GraphIso\\n"]
+    chunks.append(emit_graph(left_name,left_graph))
+    chunks.append(emit_graph(right_name,right_graph))
+    if positive:
+        chunks.append(f"""
+set_option trace.graph_iso true in
+example : Isomorphic {left_name} {right_name} := by
+  graph_iso
+""")
+    else:
+        chunks.append(f"""
+set_option trace.graph_iso true in
+example : ¬ Isomorphic {left_name} {right_name} := by
+  graph_iso
+""")
+    (ROOT/path).write_text("\\n".join(chunks))
+
 def main():
     rows=[]
-    chunks=["import HexGraphIso.Tactic\n\nopen Hex Hex.GraphIso\n"]
+    generated=[]
     for case in CASES:
         name=case["name"]
         arities=case["arities"]
@@ -151,18 +169,11 @@ def main():
         gA=semantic_graph(A,arities); gB=semantic_graph(B,arities); gC=semantic_graph(C,arities)
         assert (gA["N"],gA["K"])==(gB["N"],gB["K"])==(gC["N"],gC["K"])
         cap=name.replace("_","").title()
-        chunks.append(emit_graph(cap+"A",gA))
-        chunks.append(emit_graph(cap+"B",gB))
-        chunks.append(emit_graph(cap+"C",gC))
-        chunks.append(f"""
-set_option trace.graph_iso true in
-example : Isomorphic {cap}A {cap}B := by
-  graph_iso
-
-set_option trace.graph_iso true in
-example : ¬ Isomorphic {cap}A {cap}C := by
-  graph_iso
-""")
+        pos_file=f"Generated_{name}_positive.lean"
+        neg_file=f"Generated_{name}_negative.lean"
+        emit_goal_file(pos_file,cap+"A",gA,cap+"B",gB,True)
+        emit_goal_file(neg_file,cap+"A",gA,cap+"C",gC,False)
+        generated.extend([pos_file,neg_file])
         rows.append({
           "case":name,
           "arities":arities,
@@ -176,10 +187,10 @@ example : ¬ Isomorphic {cap}A {cap}C := by
         })
 
     OUT.mkdir(exist_ok=True)
-    (ROOT/"Generated.lean").write_text("\n".join(chunks))
     ev={
       "verdict":"SOURCE_CHALLENGE_PACK_VERIFIED",
       "frozen_representation":"IDENTITY_ANCHOR_PLUS_ALL_ACTIVE_OCCURRENCE",
+      "generated_lean_files":generated,
       "cases":rows,
       "gates":{
         "all_source_positive":all(x["source_positive"] for x in rows),
@@ -188,7 +199,7 @@ example : ¬ Isomorphic {cap}A {cap}C := by
         "zero_development_transitions":all(x["development_transitions"]==0 for x in rows)
       }
     }
-    (OUT/"source_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+    (OUT/"source_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\\n")
     print(json.dumps(ev,indent=2,sort_keys=True))
 
 if __name__=="__main__":
