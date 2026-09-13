@@ -1,0 +1,29 @@
+{
+  "experiment": "stochastic_readout_mdl_repair_v18",
+  "parent_failure": {
+    "branch": "stochastic-predictive-readout-genesis-v17",
+    "run_id": 34751829971,
+    "verdict": "STOCHASTIC_PREDICTIVE_READOUT_V17_GAPS_EXPOSED"
+  },
+  "protocol_commit": "6d64251692f3bb634e567c3f2005e6120dd40991",
+  "basis_commit": "c6656811709f5b31ca50ded5832c8f30e7d9a7a4",
+  "kernel_commit": "c4dc2477f97841e25ff70f5d53b9da0709378def",
+  "scientific_freeze_commit": "c4dc2477f97841e25ff70f5d53b9da0709378def",
+  "github_blob_shas": {
+    "PROTOCOL.md": "9bb44f5ec8be4ec323fd91e649489022f233fa3d",
+    "basis.py": "791c5cbb8e3844892e327d22d5dd8eafd560bac9",
+    "kernel.py": "9b0d510f8bc75bcf1b8a464fe8524849dc642acd"
+  },
+  "repair": {
+    "unchanged_data_code": "Jeffreys/Krichevsky-Trofimov Beta(1/2,1/2)",
+    "old_structural_code": "log2(M+1)+log2(binomial(M,k))",
+    "new_structural_code": "|R| bits, one per retained ACCESS token"
+  },
+  "explicitly_absent": [
+    "domain feature engineering",
+    "tuned sparsity coefficient",
+    "loss weight",
+    "challenge threshold"
+  ],
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py."
+}
