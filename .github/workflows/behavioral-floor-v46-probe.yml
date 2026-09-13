@@ -1,0 +1,29 @@
+name: Behavioral Floor V46 Probe
+
+on:
+  push:
+    branches:
+      - behavioral-floor-v46
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen core
+        run: |
+          set -euo pipefail
+          FREEZE=8125a1d1e2d4d0f57f55e636b68405461a936cfb
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/behavioral_floor_v46/PROTOCOL.md             experiments/behavioral_floor_v46/basis.py             experiments/behavioral_floor_v46/kernel.py             experiments/behavioral_floor_v46/FREEZE.json)"
+          test -z "$changed" || { echo "$changed"; exit 1; }
+
+      - name: Probe hidden challenges
+        working-directory: experiments/behavioral_floor_v46
+        run: |
+          python probe.py
