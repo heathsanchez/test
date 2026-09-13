@@ -1,0 +1,68 @@
+name: Compiled Type Constructor Genesis V4
+
+on:
+  push:
+    branches:
+      - compiled-type-constructor-genesis-v4
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V4 basis and kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=d5222275fc35ae7ed518df8200f5c01d4d64ac54
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/compiled_type_constructor_genesis_v4/PROTOCOL.md             experiments/compiled_type_constructor_genesis_v4/basis.py             experiments/compiled_type_constructor_genesis_v4/kernel.py
+          echo "V4 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/compiled_type_constructor_genesis_v4/basis.py             experiments/compiled_type_constructor_genesis_v4/kernel.py             experiments/compiled_type_constructor_genesis_v4/challenge_pack.py             experiments/compiled_type_constructor_genesis_v4/run.py
+
+      - name: Run post-freeze type-constructor genesis suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/compiled_type_constructor_genesis_v4
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/compiled_type_constructor_genesis_v4
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: compiled-type-constructor-genesis-v4-evidence
+          path: |
+            experiments/compiled_type_constructor_genesis_v4/evidence.json
+            experiments/compiled_type_constructor_genesis_v4/run.log
+            experiments/compiled_type_constructor_genesis_v4/FREEZE.json
+            experiments/compiled_type_constructor_genesis_v4/PROTOCOL.md
+          if-no-files-found: error
