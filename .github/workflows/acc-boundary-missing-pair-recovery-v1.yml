@@ -86,6 +86,7 @@ jobs:
       - name: Recover exact frozen target and snapshots
         env:
           GH_TOKEN: ${{ github.token }}
+          CID: ${{ matrix.challenge_id }}
         run: |
           set -euo pipefail
           mkdir -p /tmp/freeze
@@ -98,9 +99,6 @@ jobs:
           pathlib.Path('/tmp/one_target.json').write_text(json.dumps([row],indent=2)+'\n')
           print('RECOVER_TARGET',row)
           PY
-        env:
-          GH_TOKEN: ${{ github.token }}
-          CID: ${{ matrix.challenge_id }}
 
       - name: Fetch pinned search and verifier authority
         run: |
