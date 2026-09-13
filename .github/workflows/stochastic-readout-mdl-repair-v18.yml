@@ -1,0 +1,68 @@
+name: Stochastic Readout MDL Repair V18
+
+on:
+  push:
+    branches:
+      - stochastic-readout-mdl-repair-v18
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V18 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=c4dc2477f97841e25ff70f5d53b9da0709378def
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/stochastic_readout_mdl_repair_v18/PROTOCOL.md             experiments/stochastic_readout_mdl_repair_v18/basis.py             experiments/stochastic_readout_mdl_repair_v18/kernel.py
+          echo "V18 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/stochastic_readout_mdl_repair_v18/basis.py             experiments/stochastic_readout_mdl_repair_v18/kernel.py             experiments/stochastic_readout_mdl_repair_v18/challenge_pack.py             experiments/stochastic_readout_mdl_repair_v18/run.py
+
+      - name: Run V18 MDL repair suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/stochastic_readout_mdl_repair_v18
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/stochastic_readout_mdl_repair_v18
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: stochastic-readout-mdl-repair-v18-evidence
+          path: |
+            experiments/stochastic_readout_mdl_repair_v18/evidence.json
+            experiments/stochastic_readout_mdl_repair_v18/run.log
+            experiments/stochastic_readout_mdl_repair_v18/FREEZE.json
+            experiments/stochastic_readout_mdl_repair_v18/PROTOCOL.md
+          if-no-files-found: error
