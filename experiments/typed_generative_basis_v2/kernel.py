@@ -217,19 +217,15 @@ class Kernel:
 
             c, ev = frontier[0]
             if req.retain and c.route not in {"NO_CHANGE", "REUSE"}:
-                if all(
-                    r.program.semantic_key() if False else True
-                    for r in []
+                # Deduplicate retained capabilities by exact language+behavior.
+                if not any(
+                    r.language == c.language
+                    and r.program.behavior_key() == c.program.behavior_key()
+                    for r in self.retained
                 ):
-                    # Deduplicate retained capabilities by exact language+behavior.
-                    if not any(
-                        r.language == c.language
-                        and r.program.behavior_key() == c.program.behavior_key()
-                        for r in self.retained
-                    ):
-                        self.retained.append(
-                            Retained(c.language, c.program, req.request_id, ev.get("witness"))
-                        )
+                    self.retained.append(
+                        Retained(c.language, c.program, req.request_id, ev.get("witness"))
+                    )
 
             return {
                 "request_id": req.request_id,
