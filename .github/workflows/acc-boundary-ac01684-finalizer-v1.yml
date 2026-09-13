@@ -1,0 +1,212 @@
+name: ACC Boundary ac-01684 Finalizer V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-boundary-ac01684-finalizer-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_FREEZE_RUN: "34737558836"
+  RECOVERY_RUN: "34740692115"
+
+jobs:
+  ac01684:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact frozen ac-01684 target
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "$SOURCE_FREEZE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=json.loads(Path('/tmp/freeze/targets.json').read_text())
+          matches=[r for r in rows if (r.get('challenge_id') if isinstance(r,dict) else r)=='ac-01684']
+          assert len(matches)==1, matches
+          Path('/tmp/one_target.json').write_text(json.dumps(matches,indent=2)+'\n')
+          print('FINALIZER_TARGET',json.dumps(matches[0],sort_keys=True))
+          PY
+
+      - name: Add swap apparatus only
+        run: |
+          set -euo pipefail
+          echo "BEFORE_MEMORY"
+          free -h || true
+          df -h / || true
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          echo "AFTER_MEMORY"
+          free -h
+          swapon --show
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Apply unchanged full_current capability
+        run: |
+          set -o pipefail
+          out="acc_competitive/ac01684_finalizer"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/one_target.json \
+            --snapshot-ac-file /tmp/freeze/snapshot_ac.json \
+            --snapshot-stable-file /tmp/freeze/snapshot_stable_ac.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes 500000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            --depth-weight 0 \
+            --search-seconds 2100 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac01684-finalizer-v1
+          path: |
+            acc_competitive/ac01684_finalizer/
+            acc_competitive/ac01684_finalizer.log
+            /tmp/one_target.json
+          retention-days: 90
+
+  synthesize:
+    needs: ac01684
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Assemble completed frozen portfolio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/base /tmp/recovery /tmp/final acc_competitive/boundary_final_collected
+          gh run download "$SOURCE_FREEZE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+          for c in gssub_basic reverse_augmented compiler_beam depth_weighted; do
+            mkdir -p "/tmp/base/$c" "acc_competitive/boundary_final_collected/$c"
+            gh run download "$SOURCE_FREEZE_RUN" -n "acc-boundary-$c" -D "/tmp/base/$c"
+            f=$(find "/tmp/base/$c" -name search_results.json -print -quit)
+            test -n "$f"
+            cp "$f" "acc_competitive/boundary_final_collected/$c/search_results.json"
+          done
+
+          # Recover the 11 successful per-target full_current rows from the prior recovery run.
+          gh run download "$RECOVERY_RUN" --pattern 'acc-full-current-recovery-*' -D /tmp/recovery || true
+          # Recover ac-01684 from this finalizer run.
+          gh run download "${{ github.run_id }}" -n acc-ac01684-finalizer-v1 -D /tmp/final
+
+          mkdir -p acc_competitive/boundary_final_collected/full_current
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          targets=json.loads(Path('/tmp/freeze/targets.json').read_text())
+          tids=[x['challenge_id'] if isinstance(x,dict) else str(x) for x in targets]
+          rows=[]
+          for root in [Path('/tmp/recovery'),Path('/tmp/final')]:
+              for p in root.rglob('search_results.json'):
+                  data=json.loads(p.read_text())
+                  if isinstance(data,list): rows.extend(data)
+          by={}
+          for r in rows:
+              cid=r.get('challenge_id')
+              if cid not in tids: continue
+              # finalizer result for ac-01684 is authoritative over any absent/partial recovery row.
+              if cid in by and by[cid] != r and cid!='ac-01684':
+                  raise SystemExit(f'conflicting rows for {cid}')
+              by[cid]=r
+          missing=[x for x in tids if x not in by]
+          print('FINAL_FULL_CURRENT_COUNTS',{'seen':len(by),'missing':missing})
+          assert not missing, missing
+          ordered=[by[x] for x in tids]
+          Path('acc_competitive/boundary_final_collected/full_current/search_results.json').write_text(json.dumps(ordered,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Re-synthesize exact declared portfolio
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/boundary_qualification_v1.py \
+            --targets /tmp/freeze/targets.json \
+            --snapshot /tmp/freeze/snapshot_ac.json \
+            --runs-root acc_competitive/boundary_final_collected \
+            --out-dir acc_competitive/boundary_final_result \
+            --capabilities gssub_basic reverse_augmented compiler_beam depth_weighted full_current \
+            | tee acc_competitive/boundary_final_result.log
+
+      - name: Apply fresh leaderboard consequence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          r=json.loads(pathlib.Path('acc_competitive/boundary_final_result/report.json').read_text())
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          u=f'{B}/api/acc/discoveries/snapshot?problem=ac'
+          with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as z:o=json.loads(z.read().decode())
+          d=o.get('data',o); items=d.get('items',d if isinstance(d,list) else []); live={x['challengeId']:x for x in items}
+          surviving=[]
+          for w in r.get('strict_verified_wins',[]):
+              b=(live.get(w['challenge_id']) or {}).get('currentBestLength')
+              if isinstance(b,int) and w['candidate_length']<b:
+                  q=dict(w);q['fresh_live_best']=b;q['fresh_margin']=b-w['candidate_length'];surviving.append(q)
+          pathlib.Path('acc_competitive/boundary_final_result/fresh_strict_wins.json').write_text(json.dumps(surviving,indent=2)+'\n')
+          print('FRESH_STRICT_WINS',json.dumps(surviving))
+          PY
+
+      - name: Execute developmental controller
+        run: |
+          set -euo pipefail
+          args=(
+            --report acc_competitive/boundary_final_result/report.json
+            --typed-results acc_competitive/boundary_final_result/typed_results.json
+            --fresh-wins acc_competitive/boundary_final_result/fresh_strict_wins.json
+            --out-dir acc_competitive/resolve_acc_final_result
+          )
+          if [ -f acc_competitive/competitive_wins_seed_v1.json ]; then
+            args+=(--protected-wins acc_competitive/competitive_wins_seed_v1.json)
+          fi
+          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" | tee acc_competitive/resolve_acc_final_result.log
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-boundary-ac01684-finalizer-v1
+          path: |
+            acc_competitive/boundary_final_result/
+            acc_competitive/boundary_final_result.log
+            acc_competitive/resolve_acc_final_result/
+            acc_competitive/resolve_acc_final_result.log
+            acc_competitive/boundary_final_collected/full_current/search_results.json
+            /tmp/freeze/targets.json
+          retention-days: 90
+
+# Apparatus-only repair: target, frozen frontier, search code, pins, and all full_current parameters are unchanged.
+# Added swap changes execution capacity only; it does not change the admitted search mechanism or its budget.
