@@ -1,0 +1,18 @@
+{
+  "experiment": "compiled_type_constructor_genesis_v4",
+  "protocol_commit": "97085b1656957795191efab5a5796cc41a350671",
+  "basis_commit": "f61b6a388851d31b06e987935a3df8ae98487c1d",
+  "kernel_commit": "d5222275fc35ae7ed518df8200f5c01d4d64ac54",
+  "scientific_freeze_commit": "d5222275fc35ae7ed518df8200f5c01d4d64ac54",
+  "github_blob_shas": {
+    "PROTOCOL.md": "1ed9c2af8112c72f74a1aad380702210fdf1b4b5",
+    "basis.py": "e94831096a4cde466efa47b5892b3f14ee781afa",
+    "kernel.py": "468c21a99d82bd007d8f12c8a2576556c1cfc778"
+  },
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py. Any such edit resets the experiment version.",
+  "primitive_type_formers": ["Bool", "TypeVar", "Product"],
+  "explicitly_absent": ["DuplicateType", "PairStateType", "MemoryType"],
+  "promotion_distinct_bases": 2,
+  "promotion_min_formation_cost": 3,
+  "claim_boundary": "Finite supplied symbolic type algebra with generic verified parametric constructor promotion; no new irreducible semantic type former."
+}
