@@ -1,0 +1,42 @@
+{
+  "verdict": "VERIFIED_PRIMITIVE_PROMOTION_AND_TRANSFER",
+  "workflow_run_id": 34728975710,
+  "workflow_job_id": 103648150221,
+  "head_sha": "02380f15afb6f4278febdce844d45aa29412c0ab",
+  "artifact_id": 10309112114,
+  "artifact_zip_sha256": "4b3cc87760ebec8279d252a3298528554fcb31b0f395c547382f160c554a4ffa",
+  "source_v4": {
+    "run_id": 34728202783,
+    "artifact_id": 10309055753
+  },
+  "promoted_pattern": {
+    "fresh_role_count": 1,
+    "couple_to": "all_active_relation_roles",
+    "induced_from_active_role_count": 2
+  },
+  "transfer": {
+    "source_language": "two named loopless directed binary relations",
+    "qualification_n": 3,
+    "objects": 36,
+    "ordered_pairs": 1296,
+    "active_roles": 4
+  },
+  "cold": {
+    "first_success_depth": 5,
+    "candidate_evaluations": 16,
+    "semantic_pair_comparisons": 20736
+  },
+  "warm": {
+    "candidate_evaluations": 1,
+    "semantic_pair_comparisons": 1296,
+    "mismatches": 0
+  },
+  "reduction": 16.0,
+  "single_link_ablation_mismatches": [216, 216, 216, 216],
+  "heldout": {
+    "n": 4,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=20 nodes=2",
+    "negative_route": "root n=20"
+  }
+}
