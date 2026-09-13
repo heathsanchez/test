@@ -36,7 +36,7 @@ jobs:
       - name: Build pinned HexGraphIso
         working-directory: experiments/hex_digraph_exaptation_v1
         run: |
-          lake build HexGraphIso
+          lake build HexGraphIso.Tactic
 
       - name: Kernel-check held-out Hex exaptation
         working-directory: experiments/hex_digraph_exaptation_v1
