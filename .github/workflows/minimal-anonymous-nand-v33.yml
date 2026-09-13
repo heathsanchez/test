@@ -1,0 +1,68 @@
+name: Minimal Anonymous NAND Substrate V33
+
+on:
+  push:
+    branches:
+      - minimal-nand-substrate-v33
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V33 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=b5116b228beab50958d29b2bafa4a161dd358abc
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/minimal_nand_v33/PROTOCOL.md             experiments/minimal_nand_v33/basis.py             experiments/minimal_nand_v33/kernel.py             experiments/minimal_nand_v33/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V33 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/minimal_nand_v33/basis.py             experiments/minimal_nand_v33/kernel.py             experiments/minimal_nand_v33/challenge_pack.py             experiments/minimal_nand_v33/run.py
+
+      - name: Run frozen V33 experiment
+        working-directory: experiments/minimal_nand_v33
+        run: |
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/minimal_nand_v33
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minimal-anonymous-nand-v33-evidence
+          path: |
+            experiments/minimal_nand_v33/evidence.json
+            experiments/minimal_nand_v33/run.log
+            experiments/minimal_nand_v33/FREEZE.json
+            experiments/minimal_nand_v33/PROTOCOL.md
