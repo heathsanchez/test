@@ -1,0 +1,31 @@
+{
+  "verdict": "VERIFIED_REPAIR_SCHEMA_ANTI_UNIFICATION_AND_TRANSFER",
+  "workflow_run_id": 34733923706,
+  "workflow_job_id": 103661769672,
+  "head_sha": "bff12a9816953ee99cd198eab779c2bf899af4c9",
+  "artifact_id": 10309829989,
+  "artifact_zip_sha256": "8b6c677598df6ab5cb5f034900a66a010bde19798b8fcbd9da9d3ccfd312f907",
+  "source_v10_artifact_id": 10310401999,
+  "source_v10_artifact_zip_sha256": "96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87",
+  "induced_schema": {
+    "kind": "MONOTONE_FRESH_BINDING_EXTENSION",
+    "key_scope": "generic",
+    "batch_scope": "nonempty_finite",
+    "preserve_existing": true,
+    "keys_equal_typed_residual": true,
+    "values_require_verifier_clean_semantics": true
+  },
+  "transfer_key_representation": ["SINGLE", "LEFT", "RIGHT", "INTERIOR"],
+  "candidate_level_semantic_pair_comparisons": {
+    "inferred_schema_transfer": 13504,
+    "complete_policy_baseline": 86400
+  },
+  "heldout": {
+    "relation_count": 7,
+    "carrier_size": 2,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=30 nodes=2",
+    "negative_route": "certs n=30 records=2"
+  },
+  "claim_boundary": "anti-unification procedure supplied"
+}
