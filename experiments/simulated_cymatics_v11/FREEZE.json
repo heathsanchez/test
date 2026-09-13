@@ -1,0 +1,25 @@
+{
+  "experiment": "simulated_cymatics_v11",
+  "protocol_commit": "316a74aea957fdd3f761183e325cfb1cad6a15d1",
+  "basis_commit": "8558cb4dd6004d89224c83b9ba6ac191bb56bb43",
+  "kernel_commit": "88c90e102e964a2a0d3d06daca5ff1fd3df126be",
+  "scientific_freeze_commit": "88c90e102e964a2a0d3d06daca5ff1fd3df126be",
+  "github_blob_shas": {
+    "PROTOCOL.md": "00c9c47efc9adf646a81b81151097a8e2e299095",
+    "basis.py": "bb27cca23c28c811b0425fd91e69b573178e0567",
+    "kernel.py": "2212ddb2c8b6a3812862638627627968c1380146"
+  },
+  "kernel_inputs": [
+    "anonymous_channels",
+    "binary_intervention_consequences",
+    "exact_finite_value_frames",
+    "baseline_value"
+  ],
+  "explicitly_absent": [
+    "coordinates", "frequency", "phase", "period_primitive",
+    "node", "nodal_line", "mode", "eigenmode", "wavelength",
+    "geometry_label", "wave_equation"
+  ],
+  "freeze_rule": "Post-freeze challenge generation may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Exact finite vibration surrogate only; no continuous physical cymatics claim."
+}
