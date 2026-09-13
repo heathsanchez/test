@@ -1,0 +1,65 @@
+name: Meta Development Selector V33
+
+on:
+  push:
+    branches:
+      - meta-development-selector-v33
+    paths:
+      - 'experiments/meta_development_selector_v33/**'
+      - '.github/workflows/meta-development-selector-v33.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verify frozen V33 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git hash-object experiments/meta_development_selector_v33/PROTOCOL.md)" = "08cca0ed532e784d4fe80cada273759336e6e627"
+          test "$(git hash-object experiments/meta_development_selector_v33/basis.py)" = "55c172716fa6b6163cefc9ec26b827c9c12f2d43"
+          test "$(git hash-object experiments/meta_development_selector_v33/kernel.py)" = "84610fbe5f0df3dad1c2ce056757ef41e32aa8a9"
+
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/meta_development_selector_v33/basis.py             experiments/meta_development_selector_v33/kernel.py             experiments/meta_development_selector_v33/challenge_pack.py             experiments/meta_development_selector_v33/run_v33.py
+
+      - name: Run V33
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/meta_development_selector_v33
+          python -u run_v33.py | tee run.log
+
+      - name: Summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/meta_development_selector_v33
+          if [ -f evidence.json ]; then
+            python - <<'PY'
+          import json
+          j=json.load(open("evidence.json"))
+          print("VERDICT",j.get("verdict"))
+          for k,v in j.get("gates",{}).items():
+              print(k,v)
+          t=j.get("results",{}).get("transfer",{})
+          for name in ("warm_pair","cold_pair","warm_mix","cold_mix","warm_lag","cold_lag"):
+              row=t.get(name,{})
+              print(name,row.get("status"),row.get("tested_candidate_count"),row.get("minimum_cost"))
+          PY
+          fi
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meta-development-selector-v33-evidence
+          path: |
+            experiments/meta_development_selector_v33/evidence.json
+            experiments/meta_development_selector_v33/run.log
+          if-no-files-found: ignore
