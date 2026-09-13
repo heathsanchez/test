@@ -23,7 +23,8 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
           source "$HOME/.elan/env"
           elan toolchain install leanprover/lean4:v4.34.0-rc2
-          elan override set leanprover/lean4:v4.34.0-rc2 --path experiments/hex_v21_signature_theorem
+          cd experiments/hex_v21_signature_theorem
+          elan override set leanprover/lean4:v4.34.0-rc2
           lean --version
 
       - name: Kernel-check arbitrary-signature theorem
