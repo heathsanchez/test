@@ -1,0 +1,30 @@
+{
+  "experiment":"meta_repair_constructor_genesis_v22",
+  "scientific_freeze_commit":"c6552ba10067af7d208cddc06760e574aaae8b84",
+  "protocol_commit":"cdcff40c2a363a404d8e4c13f38bbf1281a4b0c7",
+  "basis_commit":"b34e9d531b8625e41d994bfab6701c9d5cac9c7f",
+  "kernel_commit":"c6552ba10067af7d208cddc06760e574aaae8b84",
+  "github_blob_shas":{
+    "PROTOCOL.md":"a684f7630a2d135fbfce5b4e809fa7d7c88dfb71",
+    "basis.py":"2b199998539ad3faf60b3cf838ae6a0438f4502c",
+    "kernel.py":"ac0b2ee47d4cee2709ef86e811cb6ae7304ee227"
+  },
+  "lower_edit_primitive":"SET(source,target)",
+  "repair_synthesis":"exact minimum edit-depth exhaustive search",
+  "meta_compiler":"generic first-order structural anti-unification",
+  "explicitly_absent":[
+    "swap constructor",
+    "exchange constructor",
+    "transposition constructor",
+    "cycle constructor",
+    "residual-specific macro",
+    "geometry",
+    "quantum structure"
+  ],
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite meta-repair schema genesis from generic pointwise edits only."
+}
