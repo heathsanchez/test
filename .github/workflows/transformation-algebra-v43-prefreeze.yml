@@ -1,0 +1,37 @@
+name: Transformation Algebra V43 Prefreeze
+
+on:
+  push:
+    branches:
+      - transformation-algebra-v43
+  workflow_dispatch:
+
+jobs:
+  prefreeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Syntax
+        run: |
+          python -m py_compile             experiments/transformation_algebra_v43/basis.py             experiments/transformation_algebra_v43/kernel.py
+      - name: Algebra smoke
+        working-directory: experiments/transformation_algebra_v43
+        run: |
+          python - <<'PY'
+          from kernel import Kernel
+          k=Kernel()
+          a=(1,0,3,2)
+          b=(2,3,0,1)
+          ga=k.generated_group(4,(a,))
+          gb=k.generated_group(4,(b,))
+          g=k.generated_group(4,(a,b))
+          print("orders",len(ga),len(gb),len(g))
+          print("orbits",k.orbit_blocks(4,g))
+          assert len(ga)==2
+          assert len(gb)==2
+          assert len(g)==4
+          assert k.subgroups_commute((ga,gb))
+          assert k.pairwise_trivial_intersection(4,(ga,gb))
+          assert len(k.orbit_blocks(4,g))==1
+          PY
