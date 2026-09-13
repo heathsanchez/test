@@ -1,0 +1,200 @@
+name: ACC Boundary Learns Qualification V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-boundary-qualification-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze prospective frontier and controls
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/boundary_freeze
+          python3 - <<'PY'
+          import json,urllib.request,pathlib
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          out=pathlib.Path('acc_competitive/boundary_freeze')
+          snaps={}
+          for p in ('ac','stable_ac'):
+              u=f'{B}/api/acc/discoveries/snapshot?problem={p}'
+              with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r:o=json.loads(r.read().decode())
+              (out/f'snapshot_{p}.json').write_text(json.dumps(o,indent=2,sort_keys=True)+'\n')
+              snaps[p]=o
+          d=snaps['ac'].get('data',snaps['ac']); items=d.get('items',d if isinstance(d,list) else [])
+          controls=['ac-08551','ac-03392','ac-04629','ac-06598','ac-08795']
+          cand=[x for x in items if x.get('status')=='solved' and x.get('kTeams')==1 and isinstance(x.get('currentBestLength'),int)]
+          cand.sort(key=lambda x:x['currentBestLength'],reverse=True)
+          ids=[]
+          for cid in controls+[x['challengeId'] for x in cand]:
+              if cid not in ids: ids.append(cid)
+              if len(ids)>=12: break
+          rows=[{'challenge_id':cid,'frozen_best':next((x.get('currentBestLength') for x in items if x.get('challengeId')==cid),None)} for cid in ids]
+          (out/'targets.json').write_text(json.dumps(rows,indent=2)+'\n')
+          print('FROZEN_TARGETS',json.dumps(rows))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-boundary-freeze
+          path: acc_competitive/boundary_freeze/
+          retention-days: 90
+
+  qualify:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - capability: gssub_basic
+            max_nodes: 150000
+            reverse_depth: 0
+            reverse_cap: 1
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - capability: reverse_augmented
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - capability: compiler_beam
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.0
+            quotient_total: 72
+          - capability: depth_weighted
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: full_current
+            max_nodes: 500000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.0
+            quotient_total: 100
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Download frozen target set
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/freeze
+          gh run download ${{ github.run_id }} -n acc-boundary-freeze -D /tmp/freeze
+      - name: Fetch pinned search and authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Exhaust declared capability ${{ matrix.capability }}
+        run: |
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir acc_competitive/boundary_runs/${{ matrix.capability }} \
+            --target-ids-file /tmp/freeze/targets.json \
+            --snapshot-ac-file /tmp/freeze/snapshot_ac.json \
+            --snapshot-stable-file /tmp/freeze/snapshot_stable_ac.json \
+            --include-solved --defer-live-filter \
+            --max-targets 12 \
+            --max-nodes ${{ matrix.max_nodes }} \
+            --max-quotient-total ${{ matrix.quotient_total }} \
+            --reverse-depth ${{ matrix.reverse_depth }} \
+            --reverse-cap ${{ matrix.reverse_cap }} \
+            --compiler-beam ${{ matrix.compiler_beam }} \
+            --depth-weight ${{ matrix.depth_weight }} \
+            --search-seconds 2100 \
+            | tee acc_competitive/boundary_runs/${{ matrix.capability }}.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-boundary-${{ matrix.capability }}
+          path: |
+            acc_competitive/boundary_runs/${{ matrix.capability }}/
+            acc_competitive/boundary_runs/${{ matrix.capability }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  synthesize:
+    needs: [freeze, qualify]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover all qualification evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze acc_competitive/boundary_collected
+          gh run download ${{ github.run_id }} -n acc-boundary-freeze -D /tmp/freeze
+          for c in gssub_basic reverse_augmented compiler_beam depth_weighted full_current; do
+            mkdir -p acc_competitive/boundary_collected/$c
+            gh run download ${{ github.run_id }} -n acc-boundary-$c -D /tmp/$c || true
+            f=$(find /tmp/$c -name search_results.json -print -quit 2>/dev/null || true)
+            if [ -n "$f" ]; then cp "$f" acc_competitive/boundary_collected/$c/search_results.json; fi
+          done
+      - name: Type residuals constitutionally
+        run: |
+          python3 acc_competitive/boundary_qualification_v1.py \
+            --targets /tmp/freeze/targets.json \
+            --snapshot /tmp/freeze/snapshot_ac.json \
+            --runs-root acc_competitive/boundary_collected \
+            --out-dir acc_competitive/boundary_result \
+            --capabilities gssub_basic reverse_augmented compiler_beam depth_weighted full_current \
+            | tee acc_competitive/boundary_result.log
+      - name: Verify and compare any strict witnesses against fresh frontier
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          p=pathlib.Path('acc_competitive/boundary_result/report.json')
+          r=json.loads(p.read_text())
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          u=f'{B}/api/acc/discoveries/snapshot?problem=ac'
+          with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as z:o=json.loads(z.read().decode())
+          d=o.get('data',o); items=d.get('items',d if isinstance(d,list) else []); live={x['challengeId']:x for x in items}
+          surviving=[]
+          for w in r.get('strict_verified_wins',[]):
+              b=(live.get(w['challenge_id']) or {}).get('currentBestLength')
+              if isinstance(b,int) and w['candidate_length']<b:
+                  q=dict(w); q['fresh_live_best']=b; q['fresh_margin']=b-w['candidate_length']; surviving.append(q)
+          pathlib.Path('acc_competitive/boundary_result/fresh_strict_wins.json').write_text(json.dumps(surviving,indent=2)+'\n')
+          print('FRESH_STRICT_WINS',json.dumps(surviving))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-boundary-qualification-v1
+          path: |
+            acc_competitive/boundary_result/
+            acc_competitive/boundary_result.log
+            acc_competitive/boundary_collected/
+            /tmp/freeze/targets.json
+          retention-days: 90
