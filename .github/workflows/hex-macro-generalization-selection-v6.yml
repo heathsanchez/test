@@ -1,0 +1,44 @@
+name: Hex Macro Generalization Selection V6
+
+on:
+  push:
+    branches:
+      - hex-macro-generalization-selection-v6
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select extrapolation by future consequence
+        run: python3 experiments/hex_macro_generalization_selection_v6/run.py
+
+      - name: Seal V6 evidence
+        working-directory: experiments/hex_macro_generalization_selection_v6
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root = pathlib.Path(".")
+          e = json.loads((root/"results/evidence.json").read_text())
+          e["sealed_files"] = {
+              f: hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in ["PROTOCOL.md", "run.py"]
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(e, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(e, indent=2, sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py > results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-macro-generalization-selection-v6-evidence
+          path: experiments/hex_macro_generalization_selection_v6/results/
+          if-no-files-found: error
