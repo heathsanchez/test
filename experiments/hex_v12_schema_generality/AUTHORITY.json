@@ -1,0 +1,25 @@
+{
+  "verdict": "VERIFIED_REPAIR_SCHEMA_GENERALITY_SELECTION_AND_TRANSFER",
+  "workflow_run_id": 34734314335,
+  "workflow_job_id": 103662833064,
+  "head_sha": "fe7b7c80cee0950f7c5160763980ad68d6e7233d",
+  "artifact_id": 10310427933,
+  "artifact_zip_sha256": "93f3446d125129f06f5326c74a1ad06e7a3addb2b5afef1ee1d0e079fa9a4f6a",
+  "selected_schema": {
+    "key_scope": "ANY_KEY",
+    "batch_scope": "ANY_NONEMPTY_BATCH",
+    "preserve_existing": true,
+    "forbid_overwrite": true,
+    "keys_equal_typed_residual": true,
+    "values_require_verifier": true
+  },
+  "candidate_level_semantic_pair_comparisons": 5632,
+  "heldout": {
+    "relation_count": 8,
+    "carrier_size": 2,
+    "hex_kernel_check": "PASS",
+    "positive_route": "witness n=34 nodes=2",
+    "negative_route": "certs n=34 records=2"
+  },
+  "claim_boundary": "schema-description grammar supplied"
+}
