@@ -1,0 +1,103 @@
+name: Hex V19 Cross Arity Promotion
+
+on:
+  push:
+    branches:
+      - hex-v19-arity-promotion
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify frozen V17 V18 evidence hashes
+        working-directory: experiments/hex_v19_arity_promotion
+        run: |
+          echo "4bd358531d126a753f5a88c794ceb61d9ae882ddc5514e63a7c5e63e81fb5606  v17_frozen.json" | sha256sum -c -
+          echo "dc5054e53f2cec05cec1696f113d448c89cbfe5fee2f158e44a29d658e11151c  v18_frozen.json" | sha256sum -c -
+
+      - name: Download exact sealed V16 authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/hex_v19_arity_promotion/prior_v16
+          curl -L             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             https://api.github.com/repos/heathsanchez/test/actions/artifacts/10311390727/zip             -o /tmp/v16.zip
+          echo "d53b6d12d0956a1c7fb86acd603495fba994537ecd557882671b70fb74004cdb  /tmp/v16.zip" | sha256sum -c -
+          unzip -q /tmp/v16.zip -d experiments/hex_v19_arity_promotion/prior_v16
+          test -f experiments/hex_v19_arity_promotion/prior_v16/final_evidence.json
+
+      - name: Select cross-arity law by frozen future consequence
+        run: python3 experiments/hex_v19_arity_promotion/run.py
+
+      - name: Generate held-out arity4 arity5 Lean obligations
+        run: python3 experiments/hex_v19_arity_promotion/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v19_arity_promotion
+          elan override set leanprover/lean4:v4.34.0-rc2
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_v19_arity_promotion
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_v19_arity_promotion
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check held-out arity4 transfer
+        working-directory: experiments/hex_v19_arity_promotion
+        run: |
+          set -o pipefail
+          lake env lean Arity4.lean 2>&1 | tee results/arity4_lean.log
+
+      - name: Kernel-check held-out arity5 transfer
+        working-directory: experiments/hex_v19_arity_promotion
+        run: |
+          set -o pipefail
+          lake env lean Arity5.lean 2>&1 | tee results/arity5_lean.log
+
+      - name: Seal V19 evidence
+        working-directory: experiments/hex_v19_arity_promotion
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          ev=json.loads((root/"results/evidence.json").read_text())
+          ev["generation"]=json.loads((root/"results/generation.json").read_text())
+          ev["lean_kernel_checks"]={"arity4":"PASS","arity5":"PASS"}
+          ev["final_verdict"]="VERIFIED_CROSS_ARITY_OCCURRENCE_NODE_PROMOTION_AND_TRANSFER"
+          files=[
+            "PROTOCOL.md","run.py","generate_lean.py","Arity4.lean","Arity5.lean",
+            "v17_frozen.json","v18_frozen.json","lakefile.toml","lake-manifest.json",
+            "results/selected_law.json"
+          ]
+          ev["sealed_files"]={
+            f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+            for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(
+            json.dumps(ev,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v19-cross-arity-promotion-evidence
+          path: experiments/hex_v19_arity_promotion/results/
+          if-no-files-found: error
