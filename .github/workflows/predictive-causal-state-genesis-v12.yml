@@ -1,0 +1,68 @@
+name: Predictive Causal-State Genesis V12
+
+on:
+  push:
+    branches:
+      - predictive-causal-state-genesis-v12
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V12 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=d0d6d625ee4690b416a68f3f58f7388dffcb5f4c
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/predictive_causal_state_genesis_v12/PROTOCOL.md             experiments/predictive_causal_state_genesis_v12/basis.py             experiments/predictive_causal_state_genesis_v12/kernel.py
+          echo "V12 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/predictive_causal_state_genesis_v12/basis.py             experiments/predictive_causal_state_genesis_v12/kernel.py             experiments/predictive_causal_state_genesis_v12/challenge_pack.py             experiments/predictive_causal_state_genesis_v12/run.py
+
+      - name: Run post-freeze predictive genesis suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/predictive_causal_state_genesis_v12
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/predictive_causal_state_genesis_v12
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: predictive-causal-state-genesis-v12-evidence
+          path: |
+            experiments/predictive_causal_state_genesis_v12/evidence.json
+            experiments/predictive_causal_state_genesis_v12/run.log
+            experiments/predictive_causal_state_genesis_v12/FREEZE.json
+            experiments/predictive_causal_state_genesis_v12/PROTOCOL.md
+          if-no-files-found: error
