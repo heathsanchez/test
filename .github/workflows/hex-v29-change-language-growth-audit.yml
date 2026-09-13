@@ -1,0 +1,61 @@
+name: Hex V29 Change Language Growth Audit
+
+on:
+  push:
+    branches:
+      - hex-v29-change-language-growth-audit
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download and verify exact sealed evidence artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          base=experiments/hex_v29_change_language_growth_audit/prior
+          mkdir -p "$base"/{v8,v10,v11,v12,v13}
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10309732898/zip -o /tmp/v8.zip
+          echo "ee5512a9fa5cc70cbf967112944327adbfe30b310208da75d5aa580523eeaf3c  /tmp/v8.zip" | sha256sum -c -
+          unzip -q /tmp/v8.zip -d "$base/v8"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10310401999/zip -o /tmp/v10.zip
+          echo "96059633cf1a53b94e5d631d1a4822413e2cab7b361cef50e8d3a05ed98c8f87  /tmp/v10.zip" | sha256sum -c -
+          unzip -q /tmp/v10.zip -d "$base/v10"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10309829989/zip -o /tmp/v11.zip
+          echo "8b6c677598df6ab5cb5f034900a66a010bde19798b8fcbd9da9d3ccfd312f907  /tmp/v11.zip" | sha256sum -c -
+          unzip -q /tmp/v11.zip -d "$base/v11"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10310427933/zip -o /tmp/v12.zip
+          echo "93f3446d125129f06f5326c74a1ad06e7a3addb2b5afef1ee1d0e079fa9a4f6a  /tmp/v12.zip" | sha256sum -c -
+          unzip -q /tmp/v12.zip -d "$base/v12"
+
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10311186107/zip -o /tmp/v13.zip
+          echo "1981c1965e973bd2c536827b02c83a8a420afd4ae3c28af20d695313740eb1f9  /tmp/v13.zip" | sha256sum -c -
+          unzip -q /tmp/v13.zip -d "$base/v13"
+
+      - name: Audit bounded change-language growth chain
+        run: python3 experiments/hex_v29_change_language_growth_audit/audit.py
+
+      - name: Seal audit source hashes
+        working-directory: experiments/hex_v29_change_language_growth_audit
+        run: |
+          sha256sum PROTOCOL.md audit.py results/final_evidence.json > results/SHA256SUMS.txt
+          cat results/final_evidence.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v29-change-language-growth-audit-evidence
+          path: experiments/hex_v29_change_language_growth_audit/results/
+          if-no-files-found: error
