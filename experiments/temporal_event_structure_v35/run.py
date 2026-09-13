@@ -12,6 +12,10 @@ SCIENTIFIC_FREEZE_COMMIT = "17e656af253f440980fdf71588ae5b4a1c913b11"
 def sha256(p: Path) -> str:
     return hashlib.sha256(p.read_bytes()).hexdigest()
 
+def git_blob_sha(p: Path) -> str:
+    data = p.read_bytes()
+    return hashlib.sha1(f"blob {len(data)}\0".encode() + data).hexdigest()
+
 def safe(x):
     if isinstance(x, dict):
         return {str(k): safe(v) for k, v in x.items() if not str(k).startswith("_")}
@@ -45,8 +49,9 @@ def fixed_absolute_motif_window_fails() -> bool:
 
 def main() -> int:
     freeze = json.loads((HERE / "FREEZE.json").read_text())
-    observed = {name: sha256(HERE / name) for name in freeze["scientific_core_paths"]}
-    freeze_ok = observed == freeze["sha256"]
+    observed_sha256 = {name: sha256(HERE / name) for name in freeze["scientific_core_paths"]}
+    observed_git_blobs = {name: git_blob_sha(HERE / name) for name in freeze["scientific_core_paths"]}
+    freeze_ok = observed_git_blobs == freeze["git_blob_sha"]
 
     results = {}
     heldout = {}
@@ -130,7 +135,8 @@ def main() -> int:
         "experiment": "temporal_event_structure_genesis_v35",
         "scientific_freeze_commit": SCIENTIFIC_FREEZE_COMMIT,
         "freeze_manifest": freeze,
-        "observed_core_hashes": observed,
+        "observed_core_sha256": observed_sha256,
+        "observed_core_git_blob_sha": observed_git_blobs,
         "training_max_length": TRAIN_MAX,
         "heldout_max_length": TEST_MAX,
         "results": results,
