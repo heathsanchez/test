@@ -1,0 +1,27 @@
+{
+  "experiment":"untyped_relation_repair_genesis_v25",
+  "scientific_freeze_commit":"c2e0837fc36f01fbd70891fb0ecba45256399a4c",
+  "protocol_commit":"7176513185c8917a526fda87e4324b73c4c2e4f6",
+  "basis_commit":"655622a715845d3d07016fccb1eefb3e940a544d",
+  "kernel_commit":"c2e0837fc36f01fbd70891fb0ecba45256399a4c",
+  "github_blob_shas":{
+    "PROTOCOL.md":"6d24b061b475831bc581ecfc52bebaf3c9057c37",
+    "basis.py":"3f0259f5692bae924a5cb51e38008ed5110ba4af",
+    "kernel.py":"1f3a14bb02f0a1c08f8fd21eeb17f38b7231c71f"
+  },
+  "candidate_language":"all binary relations R subseteq P x P",
+  "candidate_count_formula":"2^(|P|^2)",
+  "transformation_properties":"verified after construction only: total, functional, bijective, consequence-preserving",
+  "explicitly_absent":[
+    "total-map candidate typing","function candidate typing","bijection candidate typing",
+    "SET","FLIP","toggle","assignment","redirect","swap constructor",
+    "exchange constructor","transposition constructor","cycle constructor"
+  ],
+  "meta_compiler":"generic first-order structural anti-unification over derived DIFF evidence",
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded exhaustive finite binary-relation repair genesis; relation carrier and verifier remain supplied."
+}
