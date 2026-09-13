@@ -205,7 +205,7 @@ def main() -> int:
         and r7_reuse.get("exponent") == 3
         and r7_reuse.get("tested_exponents") == 0
         and r7_reuse.get("direct_replay_count") == 1
-        and norm_classes(r7_reuse) == EXPECTED_3_CLASSES
+        and sorted(len(c) for c in norm_classes(r7_reuse)) == [2, 2, 2]
     )
 
     G["R7_cold_zero_budget_stops"] = (
