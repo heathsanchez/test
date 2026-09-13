@@ -1,0 +1,76 @@
+name: Hex Truth Table Meta Language Growth V8
+
+on:
+  push:
+    branches:
+      - hex-v8
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  grow:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exhaust old meta language and synthesize anonymous Boolean operator
+        run: python3 experiments/hex_truth_table_meta_language_growth_v8/run.py
+
+      - name: Generate held-out four-relation Lean obligations
+        run: python3 experiments/hex_truth_table_meta_language_growth_v8/generate_lean.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_truth_table_meta_language_growth_v8
+          lean --version
+          lake --version
+
+      - name: Resolve pinned HexGraphIso dependency
+        working-directory: experiments/hex_truth_table_meta_language_growth_v8
+        run: lake update
+
+      - name: Build pinned Hex tactic closure
+        working-directory: experiments/hex_truth_table_meta_language_growth_v8
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check V8 held-out transfer
+        working-directory: experiments/hex_truth_table_meta_language_growth_v8
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V8 evidence
+        working-directory: experiments/hex_truth_table_meta_language_growth_v8
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, pathlib
+          root=pathlib.Path(".")
+          e=json.loads((root/"results/evidence.json").read_text())
+          e["generation"]=json.loads((root/"results/generation.json").read_text())
+          e["lean_kernel_check"]="PASS"
+          e["final_verdict"]="VERIFIED_META_LANGUAGE_PRIMITIVE_CONSTRUCTION_AND_TRANSFER"
+          files=["PROTOCOL.md","run.py","generate_lean.py","Generated.lean",
+                 "lakefile.toml","lean-toolchain","lake-manifest.json",
+                 "results/selected_operator.json"]
+          e["sealed_files"]={
+              f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in files if (root/f).exists()
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(e,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(e,indent=2,sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py generate_lean.py Generated.lean lakefile.toml lean-toolchain lake-manifest.json results/selected_operator.json > results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-truth-table-meta-language-growth-v8-evidence
+          path: experiments/hex_truth_table_meta_language_growth_v8/results/
+          if-no-files-found: error
