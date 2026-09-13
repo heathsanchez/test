@@ -1,0 +1,25 @@
+{
+  "experiment":"consequence_symmetry_genesis_v20",
+  "scientific_freeze_commit":"2dd1d64dacaa049032e704928e26eaea383263cc",
+  "protocol_commit":"013e73a938d803f6eb2764be1d4d412fd690c0b3",
+  "basis_commit":"063fe2946e46c00756b57458d5a4fb4e06a92040",
+  "kernel_commit":"2dd1d64dacaa049032e704928e26eaea383263cc",
+  "github_blob_shas":{
+    "PROTOCOL.md":"3830d5d0aaead4b90a853a27bbb61162f9d357d4",
+    "basis.py":"2345f67f8258e15831a49be6b717b7352cabc8f4",
+    "kernel.py":"a81081941c0e065a014ff16a54227fb4a247afcc"
+  },
+  "primitive_world":"anonymous finite consequence table V:XxC->K",
+  "primitive_transformation_language":"generic label transpositions composed into finite bijections",
+  "symmetry_definition":"V(sigma_X(x),sigma_C(c)) = V(x,c) for all x,c",
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "explicitly_absent":[
+    "geometry","coordinates","rotation","reflection","translation",
+    "group_names","orbit_labels","objects","boundaries","quantum_structure"
+  ],
+  "freeze_rule":"Post-freeze challenge worlds may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite consequence-relative permutation symmetry only."
+}
