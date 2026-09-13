@@ -1,0 +1,69 @@
+name: Behavioral Floor Genesis V46
+
+on:
+  push:
+    branches:
+      - behavioral-floor-v46
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V46 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=8125a1d1e2d4d0f57f55e636b68405461a936cfb
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/behavioral_floor_v46/PROTOCOL.md             experiments/behavioral_floor_v46/basis.py             experiments/behavioral_floor_v46/kernel.py             experiments/behavioral_floor_v46/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V46 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/behavioral_floor_v46/basis.py             experiments/behavioral_floor_v46/kernel.py             experiments/behavioral_floor_v46/challenge_pack.py             experiments/behavioral_floor_v46/run.py
+
+      - name: Run frozen V46 floor experiment
+        working-directory: experiments/behavioral_floor_v46
+        run: |
+          set -o pipefail
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/behavioral_floor_v46
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: behavioral-floor-v46-evidence
+          path: |
+            experiments/behavioral_floor_v46/evidence.json
+            experiments/behavioral_floor_v46/run.log
+            experiments/behavioral_floor_v46/FREEZE.json
+            experiments/behavioral_floor_v46/PROTOCOL.md
