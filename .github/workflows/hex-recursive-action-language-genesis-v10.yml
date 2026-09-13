@@ -1,0 +1,69 @@
+name: Hex Recursive Action Language Genesis V10
+
+on:
+  push:
+    branches:
+      - hex-recursive-action-language-genesis-v10
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Exhaust current action language and recurse on certified residual
+        run: python3 experiments/hex_recursive_action_language_genesis_v10/run.py
+
+      - name: Independent completeness and causal replay
+        run: python3 experiments/hex_recursive_action_language_genesis_v10/verify.py
+
+      - name: Install pinned Lean toolchain
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_recursive_action_language_genesis_v10
+          lean --version
+
+      - name: Kernel-check obstruction and contraction certificate
+        working-directory: experiments/hex_recursive_action_language_genesis_v10
+        run: |
+          set -o pipefail
+          lean Main.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V10 evidence
+        working-directory: experiments/hex_recursive_action_language_genesis_v10
+        env:
+          SCIENTIFIC_HEAD: \${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+          root=pathlib.Path(".")
+          p=root/"results/evidence.json"
+          e=json.loads(p.read_text())
+          e["scientific_head"]=os.environ["SCIENTIFIC_HEAD"]
+          e["independent_verifier"]="PASS"
+          e["lean_kernel_check"]="PASS"
+          e["final_verdict"]="VERIFIED_RECURSIVE_ACTION_LANGUAGE_GENESIS_AND_COMPOUNDING"
+          sealed=["PROTOCOL.md","run.py","verify.py","Main.lean","lean-toolchain"]
+          e["sealed_files"]={
+              f:hashlib.sha256((root/f).read_bytes()).hexdigest()
+              for f in sealed
+          }
+          (root/"results/final_evidence.json").write_text(
+              json.dumps(e,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(e,indent=2,sort_keys=True))
+          PY
+          sha256sum PROTOCOL.md run.py verify.py Main.lean lean-toolchain results/evidence.json results/final_evidence.json > results/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-recursive-action-language-genesis-v10-evidence
+          path: experiments/hex_recursive_action_language_genesis_v10/results/
+          if-no-files-found: error
