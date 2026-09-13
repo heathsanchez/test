@@ -1,0 +1,68 @@
+name: Raw Multichannel Representation Genesis V16
+
+on:
+  push:
+    branches:
+      - raw-multichannel-representation-genesis-v16
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V16 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=4317d32b82c26c84e8425680bf5d51c64520b41d
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/raw_multichannel_representation_genesis_v16/PROTOCOL.md             experiments/raw_multichannel_representation_genesis_v16/basis.py             experiments/raw_multichannel_representation_genesis_v16/kernel.py
+          echo "V16 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        shell: bash
+        run: |
+          python -m py_compile             experiments/raw_multichannel_representation_genesis_v16/basis.py             experiments/raw_multichannel_representation_genesis_v16/kernel.py             experiments/raw_multichannel_representation_genesis_v16/challenge_pack.py             experiments/raw_multichannel_representation_genesis_v16/run.py
+
+      - name: Run raw multichannel representation suite
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/raw_multichannel_representation_genesis_v16
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/raw_multichannel_representation_genesis_v16
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT", e["verdict"])
+          print("FULL_PASS", e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-multichannel-representation-genesis-v16-evidence
+          path: |
+            experiments/raw_multichannel_representation_genesis_v16/evidence.json
+            experiments/raw_multichannel_representation_genesis_v16/run.log
+            experiments/raw_multichannel_representation_genesis_v16/FREEZE.json
+            experiments/raw_multichannel_representation_genesis_v16/PROTOCOL.md
+          if-no-files-found: error
