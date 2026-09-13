@@ -1,0 +1,69 @@
+name: Finite Transformation Monoid Genesis V44
+
+on:
+  push:
+    branches:
+      - finite-transformation-monoid-v44
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V44 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=7295e63edbac1d0a550a15e020f81e50fb557724
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/finite_transformation_monoid_v44/PROTOCOL.md             experiments/finite_transformation_monoid_v44/basis.py             experiments/finite_transformation_monoid_v44/kernel.py             experiments/finite_transformation_monoid_v44/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V44 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/finite_transformation_monoid_v44/basis.py             experiments/finite_transformation_monoid_v44/kernel.py             experiments/finite_transformation_monoid_v44/challenge_pack.py             experiments/finite_transformation_monoid_v44/run.py
+
+      - name: Run frozen V44 experiment
+        working-directory: experiments/finite_transformation_monoid_v44
+        run: |
+          set -o pipefail
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/finite_transformation_monoid_v44
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finite-transformation-monoid-v44-evidence
+          path: |
+            experiments/finite_transformation_monoid_v44/evidence.json
+            experiments/finite_transformation_monoid_v44/run.log
+            experiments/finite_transformation_monoid_v44/FREEZE.json
+            experiments/finite_transformation_monoid_v44/PROTOCOL.md
