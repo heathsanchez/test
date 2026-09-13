@@ -29,6 +29,9 @@ jobs:
           git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
           gunzip -k /tmp/acsolverx/data/AC1M.txt.gz
 
+      - name: Install canonicalization runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+
       - name: Map scored presentations to AC19 and AC1M
         run: |
           set -euo pipefail
