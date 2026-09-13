@@ -1,0 +1,68 @@
+name: Joint Segmentation Persistence V40
+
+on:
+  push:
+    branches:
+      - joint-segmentation-persistence-v40
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V40 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=a4717eb21af5507e29e9d37ec406292b4d308d7a
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/joint_segmentation_persistence_v40/PROTOCOL.md             experiments/joint_segmentation_persistence_v40/basis.py             experiments/joint_segmentation_persistence_v40/kernel.py             experiments/joint_segmentation_persistence_v40/FREEZE.json)"
+          if [ -n "$changed" ]; then
+            echo "Frozen V40 core changed after scientific freeze:"
+            echo "$changed"
+            exit 1
+          fi
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/joint_segmentation_persistence_v40/basis.py             experiments/joint_segmentation_persistence_v40/kernel.py             experiments/joint_segmentation_persistence_v40/challenge_pack.py             experiments/joint_segmentation_persistence_v40/run.py
+
+      - name: Run frozen V40 experiment
+        working-directory: experiments/joint_segmentation_persistence_v40
+        run: |
+          python run.py | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        working-directory: experiments/joint_segmentation_persistence_v40
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path("evidence.json")
+          if not p.exists():
+              print("No evidence.json produced")
+              raise SystemExit(1)
+          e=json.loads(p.read_text())
+          print("verdict:",e.get("verdict"))
+          print("full_pass:",e.get("full_pass"))
+          for k,v in sorted(e.get("gates",{}).items()):
+              print(k,v)
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: joint-segmentation-persistence-v40-evidence
+          path: |
+            experiments/joint_segmentation_persistence_v40/evidence.json
+            experiments/joint_segmentation_persistence_v40/run.log
+            experiments/joint_segmentation_persistence_v40/FREEZE.json
+            experiments/joint_segmentation_persistence_v40/PROTOCOL.md
