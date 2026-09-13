@@ -1,0 +1,179 @@
+name: ACC Number One Controller V1 Synthesis Fix
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-number-one-controller-v1-synthesis-fix.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34751773020"
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  synthesize_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover completed scout and all eight completed attack shards
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scout /tmp/attacks
+          gh run download "$SOURCE_RUN" -n acc-number-one-scout-v1 -D /tmp/scout
+          gh run download "$SOURCE_RUN" --pattern 'acc-number-one-attack-shard-*' -D /tmp/attacks
+          test "$(find /tmp/attacks -name search_results.json | wc -l)" -eq 8
+          test "$(find /tmp/attacks -name submission_v2.txt | wc -l)" -eq 8
+          find /tmp/attacks -name search_results.json -print | sort
+
+      - name: Fetch pinned verifier authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Type competitive outcomes from preserved search evidence
+        run: |
+          set -euo pipefail
+          selected=$(find /tmp/scout -name selected_targets.json -print -quit)
+          test -n "$selected"
+          python3 acc_competitive/competitive_outcome_v1.py \
+            --selected "$selected" \
+            --glob '/tmp/attacks/**/search_results.json' \
+            --out-dir acc_competitive/number_one_outcome_fix \
+            --prior-wins acc_competitive/competitive_wins_seed_v1.json \
+            --prior-attempted acc_competitive/competitive_attempted_seed_v1.json \
+            | tee acc_competitive/number_one_outcome_fix.log
+
+      - name: Merge verifier-clean candidates from preserved shards
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/attacks').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=Path('acc_competitive/number_one_raw_ac_fix.txt')
+          out.write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('RAW_VERIFIED_AC_CANDIDATES',len(best))
+          PY
+
+      - name: Compile all discoveries into Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number_one_atlas_fix
+          if [ ! -s acc_competitive/number_one_raw_ac_fix.txt ]; then
+            : > acc_competitive/number_one_atlas_fix/fortified_ac.txt
+            echo "NO_VERIFIED_CANDIDATES"
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/number_one_raw_ac_fix.txt' \
+            --out-dir acc_competitive/number_one_atlas_fix \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/number_one_atlas_fix.log
+
+      - name: Shorten thin wins and near misses
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number_one_peephole_fix
+          if [ ! -s acc_competitive/number_one_atlas_fix/fortified_ac.txt ]; then
+            : > acc_competitive/number_one_peephole_fix/fortified_ac.txt
+            echo "NO_ATLAS_CANDIDATES"
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/number_one_atlas_fix/fortified_ac.txt \
+            --out-dir acc_competitive/number_one_peephole_fix \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 5 --max-path 6000 \
+            | tee acc_competitive/number_one_peephole_fix.log
+
+      - name: Fresh-recheck and publish strict AC and Stable steals only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/number_one_publish_fix
+          if [ ! -s acc_competitive/number_one_peephole_fix/fortified_ac.txt ]; then
+            echo "NO_VERIFIED_CANDIDATES_TO_PUBLISH"
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v4.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/number_one_peephole_fix/fortified_ac.txt' \
+            --out-dir acc_competitive/number_one_publish_fix \
+            --cycle 1 \
+            | tee acc_competitive/number_one_publish_fix.log
+
+      - name: Final recovered controller report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          o=J('acc_competitive/number_one_outcome_fix/outcome_report.json')
+          a=J('acc_competitive/number_one_atlas_fix/report.json')
+          p=J('acc_competitive/number_one_peephole_fix/report.json')
+          pub=J('acc_competitive/number_one_publish_fix/report.json')
+          rep={
+            'controller':'ACC_NUMBER_ONE_CONTROLLER_V1_RECOVERED',
+            'search_rerun':False,
+            'strict_improvements_frozen':o.get('strict_improvements'),
+            'ties':o.get('ties'),
+            'verified_noncompetitive':o.get('verified_noncompetitive'),
+            'search_failures':o.get('search_failures'),
+            'compile_or_verify_failures':o.get('compile_or_verify_failures'),
+            'not_processed':o.get('not_processed'),
+            'atlas_candidates':a.get('optimized_candidates'),
+            'atlas_moves_saved':a.get('moves_saved'),
+            'peephole_moves_saved':p.get('moves_saved'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ac':pub.get('selected_ac',0),
+            'published_stable':pub.get('selected_stable',0),
+            'submission_id':pub.get('submission_id'),
+            'terminal_status':pub.get('terminal_status'),
+            'failed_rows':pub.get('failed_rows'),
+          }
+          Path('acc_competitive/number_one_controller_recovered_report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
+          print('NUMBER_ONE_CONTROLLER_RECOVERED',json.dumps(rep,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number-one-controller-v1-recovered
+          path: |
+            acc_competitive/number_one_controller_recovered_report.json
+            acc_competitive/number_one_outcome_fix/
+            acc_competitive/number_one_outcome_fix.log
+            acc_competitive/number_one_raw_ac_fix.txt
+            acc_competitive/number_one_atlas_fix/
+            acc_competitive/number_one_atlas_fix.log
+            acc_competitive/number_one_peephole_fix/
+            acc_competitive/number_one_peephole_fix.log
+            acc_competitive/number_one_publish_fix/
+            acc_competitive/number_one_publish_fix.log
+          retention-days: 90
+
+# Synthesis-only recovery: reuses all eight successful attack shards from SOURCE_RUN.
+# No search is rerun. Publication remains fresh-leaderboard-gated and strict-only.
