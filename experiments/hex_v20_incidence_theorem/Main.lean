@@ -42,7 +42,8 @@ theorem injective (e : Bijection α β) : Function.Injective e := by
 @[simp] theorem apply_eq_apply_iff (e : Bijection α β) {x y : α} :
     e x = e y ↔ x = y := by
   constructor
-  · exact e.injective
+  · intro h
+    exact e.injective h
   · intro h
     exact congrArg e h
 
