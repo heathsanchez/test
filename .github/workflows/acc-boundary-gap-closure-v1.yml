@@ -1,0 +1,304 @@
+name: ACC Boundary Gap Closure V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-boundary-gap-closure-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34737558836"
+  FINALIZER_RUN: "34744913633"
+
+jobs:
+  close_gap:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - capability: depth_weighted
+            challenge: ac-01462
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: depth_weighted
+            challenge: ac-00761
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: depth_weighted
+            challenge: ac-08027
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: depth_weighted
+            challenge: ac-00106
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: depth_weighted
+            challenge: ac-01523
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: depth_weighted
+            challenge: ac-01520
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.25
+            quotient_total: 72
+          - capability: gssub_basic
+            challenge: ac-01523
+            max_nodes: 150000
+            reverse_depth: 0
+            reverse_cap: 1
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - capability: gssub_basic
+            challenge: ac-01520
+            max_nodes: 150000
+            reverse_depth: 0
+            reverse_cap: 1
+            compiler_beam: 1
+            depth_weight: 0.0
+            quotient_total: 72
+          - capability: compiler_beam
+            challenge: ac-01520
+            max_nodes: 150000
+            reverse_depth: 7
+            reverse_cap: 250000
+            compiler_beam: 16
+            depth_weight: 0.0
+            quotient_total: 72
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact frozen target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CHALLENGE: ${{ matrix.challenge }}
+          CAPABILITY: ${{ matrix.capability }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "$SOURCE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          rows=json.loads(Path('/tmp/freeze/targets.json').read_text())
+          cid=os.environ['CHALLENGE']
+          matches=[r for r in rows if (r.get('challenge_id') if isinstance(r,dict) else r)==cid]
+          assert len(matches)==1, (cid,matches)
+          Path('/tmp/one_target.json').write_text(json.dumps(matches,indent=2)+'\n')
+          Path('/tmp/gap_meta.json').write_text(json.dumps({'challenge_id':cid,'capability':os.environ['CAPABILITY']},indent=2)+'\n')
+          print('GAP_TARGET', os.environ['CAPABILITY'], json.dumps(matches[0],sort_keys=True))
+          PY
+
+      - name: Add execution swap only
+        run: |
+          set -euo pipefail
+          SWAP=/swapfile-extra-acc-gap
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+          free -h
+          swapon --show
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+
+      - name: Apply exact missing declared capability
+        run: |
+          set -o pipefail
+          out="acc_competitive/gap_runs/${{ matrix.capability }}/${{ matrix.challenge }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/one_target.json \
+            --snapshot-ac-file /tmp/freeze/snapshot_ac.json \
+            --snapshot-stable-file /tmp/freeze/snapshot_stable_ac.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes ${{ matrix.max_nodes }} \
+            --max-quotient-total ${{ matrix.quotient_total }} \
+            --reverse-depth ${{ matrix.reverse_depth }} \
+            --reverse-cap ${{ matrix.reverse_cap }} \
+            --compiler-beam ${{ matrix.compiler_beam }} \
+            --depth-weight ${{ matrix.depth_weight }} \
+            --search-seconds 2100 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-boundary-gap-${{ matrix.capability }}-${{ matrix.challenge }}
+          path: |
+            acc_competitive/gap_runs/${{ matrix.capability }}/${{ matrix.challenge }}/
+            acc_competitive/gap_runs/${{ matrix.capability }}/${{ matrix.challenge }}.log
+            /tmp/one_target.json
+            /tmp/gap_meta.json
+          retention-days: 90
+
+  synthesize:
+    needs: close_gap
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Assemble and patch exact declared portfolio
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/base /tmp/finalizer /tmp/gaps acc_competitive/boundary_gap_collected
+          gh run download "$SOURCE_RUN" -n acc-boundary-freeze -D /tmp/freeze
+
+          for c in gssub_basic reverse_augmented compiler_beam depth_weighted; do
+            mkdir -p "/tmp/base/$c" "acc_competitive/boundary_gap_collected/$c"
+            gh run download "$SOURCE_RUN" -n "acc-boundary-$c" -D "/tmp/base/$c"
+            f=$(find "/tmp/base/$c" -name search_results.json -print -quit)
+            test -n "$f"
+            cp "$f" "acc_competitive/boundary_gap_collected/$c/search_results.json"
+          done
+
+          gh run download "$FINALIZER_RUN" -n acc-boundary-ac01684-finalizer-v1 -D /tmp/finalizer
+          ff=$(find /tmp/finalizer -path '*/boundary_final_collected/full_current/search_results.json' -print -quit)
+          test -n "$ff"
+          mkdir -p acc_competitive/boundary_gap_collected/full_current
+          cp "$ff" acc_competitive/boundary_gap_collected/full_current/search_results.json
+
+          gh run download "${{ github.run_id }}" --pattern 'acc-boundary-gap-*' -D /tmp/gaps || true
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          root=Path('acc_competitive/boundary_gap_collected')
+          expected={
+            ('depth_weighted','ac-01462'),('depth_weighted','ac-00761'),('depth_weighted','ac-08027'),
+            ('depth_weighted','ac-00106'),('depth_weighted','ac-01523'),('depth_weighted','ac-01520'),
+            ('gssub_basic','ac-01523'),('gssub_basic','ac-01520'),('compiler_beam','ac-01520')
+          }
+          patches={}
+          for meta in Path('/tmp/gaps').rglob('gap_meta.json'):
+              m=json.loads(meta.read_text()); key=(m['capability'],m['challenge_id'])
+              sr=next(meta.parent.rglob('search_results.json'),None)
+              if sr is None:
+                  continue
+              data=json.loads(sr.read_text())
+              assert isinstance(data,list) and len(data)==1, (key,sr,data)
+              patches[key]=data[0]
+          print('GAP_PATCHES', sorted(patches))
+          missing=sorted(expected-set(patches))
+          assert not missing, f'missing gap executions: {missing}'
+
+          for cap in ['gssub_basic','compiler_beam','depth_weighted']:
+              p=root/cap/'search_results.json'
+              rows=json.loads(p.read_text()); by={r['challenge_id']:r for r in rows}
+              for (c,cid),row in patches.items():
+                  if c==cap: by[cid]=row
+              targets=json.loads(Path('/tmp/freeze/targets.json').read_text())
+              tids=[x['challenge_id'] if isinstance(x,dict) else str(x) for x in targets]
+              ordered=[by[x] for x in tids if x in by]
+              p.write_text(json.dumps(ordered,indent=2,sort_keys=True)+'\n')
+              print('PATCHED_CAPABILITY',cap,'rows',len(ordered))
+          PY
+
+      - name: Re-synthesize exact declared portfolio
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/boundary_qualification_v1.py \
+            --targets /tmp/freeze/targets.json \
+            --snapshot /tmp/freeze/snapshot_ac.json \
+            --runs-root acc_competitive/boundary_gap_collected \
+            --out-dir acc_competitive/boundary_gap_result \
+            --capabilities gssub_basic reverse_augmented compiler_beam depth_weighted full_current \
+            | tee acc_competitive/boundary_gap_result.log
+
+      - name: Apply fresh leaderboard consequence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          r=json.loads(pathlib.Path('acc_competitive/boundary_gap_result/report.json').read_text())
+          B='https://server-9527.sair.foundation'; H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          u=f'{B}/api/acc/discoveries/snapshot?problem=ac'
+          with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as z:o=json.loads(z.read().decode())
+          d=o.get('data',o); items=d.get('items',d if isinstance(d,list) else []); live={x['challengeId']:x for x in items}
+          surviving=[]
+          for w in r.get('strict_verified_wins',[]):
+              b=(live.get(w['challenge_id']) or {}).get('currentBestLength')
+              if isinstance(b,int) and w['candidate_length']<b:
+                  q=dict(w);q['fresh_live_best']=b;q['fresh_margin']=b-w['candidate_length'];surviving.append(q)
+          pathlib.Path('acc_competitive/boundary_gap_result/fresh_strict_wins.json').write_text(json.dumps(surviving,indent=2)+'\n')
+          print('FRESH_STRICT_WINS',json.dumps(surviving))
+          PY
+
+      - name: Execute developmental controller
+        run: |
+          set -euo pipefail
+          args=(
+            --report acc_competitive/boundary_gap_result/report.json
+            --typed-results acc_competitive/boundary_gap_result/typed_results.json
+            --fresh-wins acc_competitive/boundary_gap_result/fresh_strict_wins.json
+            --out-dir acc_competitive/resolve_acc_gap_result
+          )
+          if [ -f acc_competitive/competitive_wins_seed_v1.json ]; then
+            args+=(--protected-wins acc_competitive/competitive_wins_seed_v1.json)
+          fi
+          python3 acc_competitive/resolve_acc_v1.py "${args[@]}" | tee acc_competitive/resolve_acc_gap_result.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-boundary-gap-closure-v1
+          path: |
+            acc_competitive/boundary_gap_result/
+            acc_competitive/boundary_gap_result.log
+            acc_competitive/resolve_acc_gap_result/
+            acc_competitive/resolve_acc_gap_result.log
+            acc_competitive/boundary_gap_collected/
+            /tmp/freeze/targets.json
+          retention-days: 90
+
+# Constitutional scope: close only previously NOT_PROCESSED applications in the already-declared finite portfolio.
+# No capability, target, search parameter, verifier pin, or consequence rule is added or changed.
