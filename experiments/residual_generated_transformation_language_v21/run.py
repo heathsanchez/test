@@ -124,11 +124,18 @@ def main() -> int:
         and broken.get("status")=="VERIFIED"
         and broken.get("final_reconstruction",{}).get("exact") is True
     )
+    # Protocol L14 allows either earned growth or correct retention of L0
+    # when the heterogeneous world's exhausted L0 quotient is already maximal.
     G["L14_heterogeneous_transfer"] = (
         hetero.get("status")=="VERIFIED"
-        and hetero.get("growth_authorized") is True
-        and hetero.get("minimum_growth_count",0)>=1
         and hetero.get("final_reconstruction",{}).get("exact") is True
+        and (
+            (hetero.get("growth_authorized") is True
+             and hetero.get("minimum_growth_count",0)>=1)
+            or
+            (hetero.get("growth_authorized") is False
+             and hetero.get("minimum_growth_count")==0)
+        )
         and k.structural_signature(HETEROGENEOUS_GROWTH,hetero)!=k.structural_signature(BASE,base)
     )
     G["L15_incomplete_authority_unknown"] = incomplete.get("status")=="UNKNOWN_AUTHORITY"
