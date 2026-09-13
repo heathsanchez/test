@@ -1,0 +1,43 @@
+name: Hex V30 Outer Edit Operation Genesis
+
+on:
+  push:
+    branches:
+      - hex-v30-outer-edit-operation-genesis
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download exact sealed V13 authority
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p experiments/hex_v30_outer_edit_operation_genesis/prior_v13
+          curl -L -H "Authorization: Bearer $GH_TOKEN" https://api.github.com/repos/heathsanchez/test/actions/artifacts/10311186107/zip -o /tmp/v13.zip
+          echo "1981c1965e973bd2c536827b02c83a8a420afd4ae3c28af20d695313740eb1f9  /tmp/v13.zip" | sha256sum -c -
+          unzip -q /tmp/v13.zip -d experiments/hex_v30_outer_edit_operation_genesis/prior_v13
+
+      - name: Exhaust anonymous outer edit transducer substrate
+        run: python3 experiments/hex_v30_outer_edit_operation_genesis/run.py
+
+      - name: Seal V30 evidence
+        working-directory: experiments/hex_v30_outer_edit_operation_genesis
+        run: |
+          sha256sum PROTOCOL.md run.py results/final_evidence.json > results/SHA256SUMS.txt
+          cat results/final_evidence.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v30-outer-edit-operation-genesis-evidence
+          path: experiments/hex_v30_outer_edit_operation_genesis/results/
+          if-no-files-found: error
