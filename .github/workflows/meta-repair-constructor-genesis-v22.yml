@@ -1,0 +1,67 @@
+name: Meta Repair Constructor Genesis V22
+
+on:
+  push:
+    branches:
+      - meta-repair-constructor-genesis-v22
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V22 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=c6552ba10067af7d208cddc06760e574aaae8b84
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          git diff --exit-code "$FREEZE" HEAD --             experiments/meta_repair_constructor_genesis_v22/PROTOCOL.md             experiments/meta_repair_constructor_genesis_v22/basis.py             experiments/meta_repair_constructor_genesis_v22/kernel.py
+          echo "V22 FROZEN CORE UNCHANGED"
+
+      - name: Syntax check
+        run: |
+          python -m py_compile             experiments/meta_repair_constructor_genesis_v22/basis.py             experiments/meta_repair_constructor_genesis_v22/kernel.py             experiments/meta_repair_constructor_genesis_v22/challenge_pack.py             experiments/meta_repair_constructor_genesis_v22/run.py
+
+      - name: Run V22
+        shell: bash
+        run: |
+          set -o pipefail
+          cd experiments/meta_repair_constructor_genesis_v22
+          python -u run.py 2>&1 | tee run.log
+
+      - name: Evidence summary
+        if: always()
+        shell: bash
+        run: |
+          cd experiments/meta_repair_constructor_genesis_v22
+          test -f evidence.json
+          python - <<'PY'
+          import json
+          e=json.load(open("evidence.json"))
+          print("VERDICT",e["verdict"])
+          print("FULL_PASS",e["full_pass"])
+          for k,v in e["gates"].items():
+              print(f"GATE {k}={v}")
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: meta-repair-constructor-genesis-v22-evidence
+          path: |
+            experiments/meta_repair_constructor_genesis_v22/evidence.json
+            experiments/meta_repair_constructor_genesis_v22/run.log
+            experiments/meta_repair_constructor_genesis_v22/FREEZE.json
+            experiments/meta_repair_constructor_genesis_v22/PROTOCOL.md
+          if-no-files-found: error
