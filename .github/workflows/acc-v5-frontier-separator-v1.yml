@@ -1,0 +1,410 @@
+name: ACC V5 Frontier Separator V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-v5-frontier-separator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  CYCLE1_RUN: "34754206724"
+  CYCLE2_RUN: "34755708007"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned competition authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze current consequence scope and our live scoring cells
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/v5_frontier_freeze \
+            --competitive-wins acc_competitive/competitive_wins_seed_v1.json \
+            --competitive-attempted acc_competitive/competitive_attempted_seed_v1.json \
+            --attack-count 1 --defend-fraction 0 --shards 1 \
+            --mechanism-id v5-frontier-separator-freeze \
+            | tee acc_competitive/v5_frontier_freeze.log
+
+      - name: Recover verified responsive history without treating it as current warrant
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/history/c1 /tmp/history/c2
+          gh run download "$CYCLE1_RUN" -n acc-number-one-controller-v1-recovered -D /tmp/history/c1
+          gh run download "$CYCLE2_RUN" -n acc-number-one-controller-v1 -D /tmp/history/c2
+
+      - name: Freeze protected scoring targets plus matched responsive losses
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+
+          root=Path('acc_competitive/v5_frontier_freeze')
+          status=json.load(open(root/'mathgraph_status.json'))
+          snap=json.load(open(root/'snapshot_ac.json'))
+          d=snap.get('data',snap)
+          live={x['challengeId']:x for x in d['items']}
+
+          protected={}
+          for x in status:
+              if x.get('status')!='tied_hold':
+                  continue
+              qid=x['challenge_id']
+              ac=qid if qid.startswith('ac-') else ('ac-'+qid[4:] if qid.startswith('sac-') else None)
+              if not ac or ac not in live:
+                  continue
+              protected.setdefault(ac,[]).append({
+                  'challenge_id':qid,
+                  'our_best':x.get('our_best'),
+                  'live_best':x.get('live_best'),
+                  'kTeams':x.get('kTeams'),
+                  'status':x.get('status'),
+              })
+
+          hist={}
+          for fn in glob.glob('/tmp/history/**/attack_outcomes.json',recursive=True):
+              try: rows=json.load(open(fn))
+              except Exception: continue
+              for r in rows:
+                  cid=r.get('challenge_id')
+                  al=r.get('atomic_length')
+                  if not cid or not isinstance(al,int) or cid in protected:
+                      continue
+                  lr=live.get(cid,{})
+                  lb=lr.get('currentBestLength')
+                  if lr.get('status')!='solved' or not isinstance(lb,int) or lb<=0:
+                      continue
+                  rec={
+                    'challenge_id':cid,
+                    'historical_candidate':al,
+                    'historical_nodes':r.get('nodes'),
+                    'live_best':lb,
+                    'gap_moves':al-lb,
+                    'relative_gap':(al-lb)/lb,
+                  }
+                  old=hist.get(cid)
+                  if old is None or al<old['historical_candidate']:
+                      hist[cid]=rec
+
+          responsive=sorted(
+              hist.values(),
+              key=lambda r:(r['relative_gap'],r['gap_moves'],r['historical_nodes'] or 10**18,r['challenge_id'])
+          )
+
+          selection=[]
+          for cid,cells in sorted(protected.items()):
+              selection.append({
+                'challenge_id':cid,
+                'role':'protected_scoring',
+                'protected_cells':cells,
+                'frozen_ac_best':live[cid].get('currentBestLength'),
+                'frozen_ac_kTeams':live[cid].get('kTeams'),
+              })
+
+          used={x['challenge_id'] for x in selection}
+          for r in responsive:
+              if r['challenge_id'] in used: continue
+              selection.append({
+                'challenge_id':r['challenge_id'],
+                'role':'responsive_loss',
+                'historical_evidence':r,
+                'frozen_ac_best':r['live_best'],
+                'frozen_ac_kTeams':live[r['challenge_id']].get('kTeams'),
+              })
+              used.add(r['challenge_id'])
+              if len(selection)>=12: break
+
+          assert len(selection)>=12, selection
+          selection=selection[:12]
+          protected_cells=[c for x in selection for c in x.get('protected_cells',[])]
+
+          state={
+            'experiment':'ACC_V5_MATCHED_FRONTIER_SEPARATOR_V1',
+            'Pi_t':'pinned official verifier + frozen public AC/Stable leaderboard snapshot',
+            'kappa_t':'OPEN',
+            'P_t':protected_cells,
+            'frontier_policies':[
+              {'policy':'current','status':'retained_current'},
+              {'policy':'mask3','status':'v2_replay_clean_frontier'},
+            ],
+            'provisional_not_promoted':[
+              'V3 guard variants: prior qualification incomplete',
+              'atomic-cost search: recent matched reachability not yet established',
+            ],
+            'selection':selection,
+            'claim_boundary':'Frozen matched diagnostic only; no unrestricted inadequacy or promotion authority.',
+          }
+          (root/'selection.json').write_text(json.dumps(selection,indent=2,sort_keys=True)+'\n')
+          (root/'developmental_state.json').write_text(json.dumps(state,indent=2,sort_keys=True)+'\n')
+          print('V5_FROZEN_STATE',json.dumps({
+            'targets':[x['challenge_id'] for x in selection],
+            'protected_underlying_targets':sum(x['role']=='protected_scoring' for x in selection),
+            'protected_scoring_cells':len(protected_cells),
+            'responsive_losses':sum(x['role']=='responsive_loss' for x in selection),
+            'kappa_t':'OPEN',
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-v5-frontier-freeze
+          path: |
+            acc_competitive/v5_frontier_freeze/
+            acc_competitive/v5_frontier_freeze.log
+          retention-days: 90
+
+  matched:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0,1,2,3,4,5,6,7,8,9,10,11]
+        policy: [current, mask3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable freeze and resolve matched case
+        id: case
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-v5-frontier-freeze -D /tmp/freeze
+          sel=$(find /tmp/freeze -name selection.json -print -quit)
+          ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
+          st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
+          test -n "$sel" && test -n "$ac" && test -n "$st"
+          cp "$ac" /tmp/snapshot_ac.json
+          cp "$st" /tmp/snapshot_stable.json
+          python3 - "$sel" "$IDX" <<'PY'
+          import json,sys
+          xs=json.load(open(sys.argv[1]))
+          x=xs[int(sys.argv[2])]
+          open('/tmp/cid','w').write(x['challenge_id'])
+          open('/tmp/role','w').write(x['role'])
+          print('V5_MATCHED_CASE',x['challenge_id'],x['role'])
+          PY
+          echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
+          echo "role=$(cat /tmp/role)" >> "$GITHUB_OUTPUT"
+
+      - name: Add swap
+        run: |
+          set -euo pipefail
+          SWAP=/swap-v5-${{ matrix.index }}-${{ matrix.policy }}
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Fetch pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Run one variable at a time
+        run: |
+          set -o pipefail
+          out="acc_competitive/v5_frontier_runs/i${{ matrix.index }}_${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 acc_competitive/v5_frontier_separator_v1.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --target-id "${{ steps.case.outputs.cid }}" \
+            --role "${{ steps.case.outputs.role }}" \
+            --policy "${{ matrix.policy }}" \
+            --snapshot-ac /tmp/snapshot_ac.json \
+            --snapshot-stable /tmp/snapshot_stable.json \
+            --out-dir "$out" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-v5-frontier-${{ matrix.index }}-${{ matrix.policy }}
+          path: |
+            acc_competitive/v5_frontier_runs/i${{ matrix.index }}_${{ matrix.policy }}/
+            acc_competitive/v5_frontier_runs/i${{ matrix.index }}_${{ matrix.policy }}.log
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze, matched]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover matched evidence and immutable state
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/runs /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-v5-frontier-*-*' -D /tmp/runs || true
+          gh run download "${{ github.run_id }}" -n acc-v5-frontier-freeze -D /tmp/freeze
+          echo "MATCHED_RESULTS=$(find /tmp/runs -name result.json | wc -l)"
+
+      - name: Classify warrant without over-reading failures
+        run: |
+          set -euo pipefail
+          sel=$(find /tmp/freeze -name selection.json -print -quit)
+          python3 acc_competitive/v5_frontier_separator_synthesis.py \
+            --glob '/tmp/runs/**/result.json' \
+            --selection "$sel" \
+            --out-dir acc_competitive/v5_frontier_result \
+            | tee acc_competitive/v5_frontier_result.log
+
+      - name: Fetch pinned verifier authority for retained consequences
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Compile any verified candidate through retained Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/v5_frontier_atlas
+          src=acc_competitive/v5_frontier_result/best_verified_ac.txt
+          if [ ! -s "$src" ]; then
+            : > acc_competitive/v5_frontier_atlas/fortified_ac.txt
+            echo NO_VERIFIED_CANDIDATES
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob "$src" \
+            --out-dir acc_competitive/v5_frontier_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/v5_frontier_atlas.log
+
+      - name: Peephole compiled candidates
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/v5_frontier_peephole
+          if [ ! -s acc_competitive/v5_frontier_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/v5_frontier_peephole/fortified_ac.txt
+            echo NO_ATLAS_PATHS
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/v5_frontier_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/v5_frontier_peephole \
+            --thin-win-frac 1.0 --near-miss-frac 1.0 --max-window 5 --max-path 20000 \
+            | tee acc_competitive/v5_frontier_peephole.log
+
+      - name: Fresh-check and publish only actual scoring consequences
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/v5_frontier_live
+          if [ ! -s acc_competitive/v5_frontier_peephole/fortified_ac.txt ]; then
+            echo NO_PATHS_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/v5_frontier_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/v5_frontier_live \
+            --cycle 4 \
+            | tee acc_competitive/v5_frontier_live.log
+
+      - name: Final scoped report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p)
+              return json.loads(q.read_text()) if q.exists() else {}
+          syn=J('acc_competitive/v5_frontier_result/report.json')
+          pub=J('acc_competitive/v5_frontier_live/report.json')
+          final={
+            'experiment':'ACC_V5_MATCHED_FRONTIER_SEPARATOR_V1',
+            'global_warrant_class':syn.get('global_warrant_class'),
+            'warrant_horizon':'OPEN',
+            'completed_cases':syn.get('completed_cases'),
+            'missing_cases':syn.get('missing_cases'),
+            'protected_scoring_targets':syn.get('protected_scoring_targets'),
+            'responsive_loss_targets':syn.get('responsive_loss_targets'),
+            'targets_with_verified_separators':syn.get('targets_with_verified_separators'),
+            'verified_candidate_targets':syn.get('verified_candidate_targets'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ties':pub.get('selected_scoring_ties',0),
+            'published_strict':pub.get('selected_strict_improvements',0),
+            'submission_id':pub.get('submission_id'),
+            'promotion_authorized':False,
+            'recursion_authorized':False,
+            'claim_boundary':syn.get('claim_boundary'),
+          }
+          Path('acc_competitive/v5_frontier_final.json').write_text(
+              json.dumps(final,indent=2,sort_keys=True)+'\n')
+          print('V5_FRONTIER_FINAL',json.dumps(final,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-v5-frontier-final
+          path: |
+            acc_competitive/v5_frontier_result/
+            acc_competitive/v5_frontier_result.log
+            acc_competitive/v5_frontier_atlas/
+            acc_competitive/v5_frontier_atlas.log
+            acc_competitive/v5_frontier_peephole/
+            acc_competitive/v5_frontier_peephole.log
+            acc_competitive/v5_frontier_live/
+            acc_competitive/v5_frontier_live.log
+            acc_competitive/v5_frontier_final.json
+            /tmp/freeze/
+          retention-days: 90
+
+# V5 discipline:
+# - AUTHORIZE and freeze Pi/kappa first.
+# - Protect live scoring consequences explicitly.
+# - Compare still-warranted policies under matched apparatus.
+# - Vary one causal layer at a time.
+# - Treat incomplete execution as UNKNOWN_SEARCH.
+# - Treat bounded non-separation as bounded only.
+# - Publish verified scoring consequences, but do not auto-promote a mechanism.
