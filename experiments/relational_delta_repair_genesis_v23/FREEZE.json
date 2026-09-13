@@ -1,0 +1,31 @@
+{
+  "experiment":"relational_delta_repair_genesis_v23",
+  "scientific_freeze_commit":"f7880590cfff1b726fb02c9e918e92b5169f18fe",
+  "protocol_commit":"8a0cbb6682803cb2ce5a9581758d07f2caa04a8e",
+  "basis_commit":"cbe9503517c1801ee1cdd9b320cd8d89ca3f9df0",
+  "kernel_commit":"f7880590cfff1b726fb02c9e918e92b5169f18fe",
+  "github_blob_shas":{
+    "PROTOCOL.md":"90261afd62e8d368167a68ae4a70f1e72ee5d12b",
+    "basis.py":"55b1a08a3b0009f375551f284a39b01da8febfe2",
+    "kernel.py":"b47cd50feb1f8254b3abf3c3ba6aa7e9ec6f41d4"
+  },
+  "primitive_repair_substrate":"anonymous relation-incidence FLIP bits applied by symmetric difference to identity relation",
+  "relation_composition":"generic exact mapping composition after reification",
+  "meta_compiler":"generic first-order structural anti-unification",
+  "explicitly_absent":[
+    "SET edit primitive",
+    "assignment",
+    "redirect",
+    "swap constructor",
+    "exchange constructor",
+    "transposition constructor",
+    "cycle constructor",
+    "domain-specific repair macro"
+  ],
+  "developmental_algorithm":[
+    "EXECUTE","VERIFY","DIAGNOSE","CONSTRAIN",
+    "RESTRUCTURE","CHOOSE","COMPILE","UPDATE"
+  ],
+  "freeze_rule":"Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary":"Bounded finite repair genesis from relation-incidence differences only."
+}
