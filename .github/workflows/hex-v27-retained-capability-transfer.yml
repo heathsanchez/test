@@ -1,0 +1,80 @@
+name: Hex V27 Retained Capability Transfer
+
+on:
+  push:
+    branches:
+      - hex-v27-retained-capability-transfer
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Generate frozen source challenge pack and independently verify source truth
+        run: python experiments/hex_v27_retained_capability_transfer/generate.py
+
+      - name: Install pinned Lean
+        run: |
+          curl -sSfL https://github.com/leanprover/elan/releases/download/v4.2.3/elan-x86_64-unknown-linux-gnu.tar.gz | tar xz
+          ./elan-init -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          source "$HOME/.elan/env"
+          cd experiments/hex_v27_retained_capability_transfer
+          elan override set leanprover/lean4:v4.34.0-rc2
+
+      - name: Resolve pinned HexGraphIso
+        working-directory: experiments/hex_v27_retained_capability_transfer
+        run: lake update
+
+      - name: Build pinned Hex tactic
+        working-directory: experiments/hex_v27_retained_capability_transfer
+        run: lake build HexGraphIso.Tactic
+
+      - name: Kernel-check all retained-capability transfer obligations
+        working-directory: experiments/hex_v27_retained_capability_transfer
+        run: |
+          set -o pipefail
+          lake env lean Generated.lean 2>&1 | tee results/lean.log
+
+      - name: Seal V27 evidence
+        working-directory: experiments/hex_v27_retained_capability_transfer
+        run: |
+          python3 - <<'PY'
+          import hashlib,json,pathlib
+          root=pathlib.Path(".")
+          src=json.loads((root/"results/source_evidence.json").read_text())
+          gates=dict(src["gates"])
+          gates["hex_kernel_check"]="PASS"
+          ev={
+            "verdict":"VERIFIED_PROSPECTIVE_RETAINED_RELATIONAL_CAPABILITY_TRANSFER"
+              if all(bool(x) for x in gates.values()) else "NEGATIVE_OR_PARTIAL",
+            "gates":gates,
+            "source_evidence":src,
+            "generated_lean_sha256":hashlib.sha256((root/"Generated.lean").read_bytes()).hexdigest(),
+            "claim_boundary":[
+              "frozen new relational challenge pack",
+              "retained incidence law supplied from prior verified development",
+              "no representation search or development transition in this run"
+            ]
+          }
+          (root/"results/final_evidence.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          if not ev["verdict"].startswith("VERIFIED_"):
+              raise SystemExit(1)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hex-v27-retained-capability-transfer-evidence
+          path: experiments/hex_v27_retained_capability_transfer/results/
+          if-no-files-found: error
