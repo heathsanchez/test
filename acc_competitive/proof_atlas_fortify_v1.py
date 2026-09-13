@@ -2,6 +2,9 @@
 import argparse, collections, json, sqlite3, sys
 from pathlib import Path
 
+sys.path.insert(0,str(Path(__file__).resolve().parent))
+from finite_group_pdb_v1 import lower_bound as finite_group_lower_bound
+
 INV=(0,1,3,2,5,4,7,6,9,8,11,10,13,12)
 TARGET=((1,),(2,))
 MAP={-2:1,-1:2,1:3,2:4}
@@ -226,7 +229,10 @@ def main():
         rec=compress(core,c["initial_relators"],rec)
         v=core.verify(c,rec,c["move_spec_version"],limits)
         if not v.get("ok"):raise RuntimeError(f"atlas candidate fails verifier {cid}: {v}")
-        lb,parts=certified_lower_bound(c["initial_relators"])
+        mod_lb,mod_parts=certified_lower_bound(c["initial_relators"])
+        fg_lb,fg_parts=finite_group_lower_bound(c["initial_relators"])
+        lb=max(mod_lb,fg_lb)
+        parts={"modular":mod_parts,"finite_groups":fg_parts}
         optimized[cid]=rec
         reports.append({
             "challenge_id":cid,"source":sources.get(cid),
