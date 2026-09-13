@@ -1,0 +1,46 @@
+{
+  "experiment": "recursive_grammar_genesis_v14",
+  "protocol_commit": "6c7fb67c1685283ff58fa0f3569f466248a8b88d",
+  "basis_commit": "46bd1c7032312f19447d7dd4bf12698a62d8efee",
+  "kernel_commit": "aa0848ff59e4dffc323248f9bf008dfe94bacbd3",
+  "scientific_freeze_commit": "aa0848ff59e4dffc323248f9bf008dfe94bacbd3",
+  "github_blob_shas": {
+    "PROTOCOL.md": "d41c299a768a0962e9a6eb1e968840f4d5b034cb",
+    "basis.py": "46bb264f16992557e25b9fd12d91c72edfdba20d",
+    "kernel.py": "64250edbf633dde272207d33c75c32a1f023ed16"
+  },
+  "pinned_lower_layer": {
+    "v13_run": 34750329193,
+    "v13_head": "1bb149700d33dc54de93412e915b73eb26a646c7",
+    "v13_artifact_sha256": "8f88f21d04b292f402dc64a885ea8943935a6938b33618d24529d0f170f7c52c"
+  },
+  "grammar_primitives": [
+    "verified_phrase_atoms",
+    "ordered_episodes",
+    "binary_adjacent_composition",
+    "exact_recursive_expansion",
+    "independent_episode_support",
+    "positive_description_length_gain"
+  ],
+  "explicitly_absent": [
+    "hand_written_phrase_of_phrase_rules",
+    "repeat_operator",
+    "loop_operator",
+    "period_operator",
+    "named_blocks",
+    "parameterized_templates",
+    "natural_language_semantics"
+  ],
+  "developmental_algorithm": [
+    "EXECUTE",
+    "VERIFY",
+    "DIAGNOSE",
+    "CONSTRAIN",
+    "RESTRUCTURE",
+    "CHOOSE",
+    "COMPILE",
+    "UPDATE"
+  ],
+  "freeze_rule": "Post-freeze challenge corpora may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "claim_boundary": "Bounded hierarchical straight-line grammar genesis over V13-verified phrase atoms."
+}
