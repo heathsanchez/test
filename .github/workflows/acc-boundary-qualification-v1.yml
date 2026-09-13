@@ -106,6 +106,7 @@ jobs:
       - name: Fetch pinned search and authority
         run: |
           set -euo pipefail
+          python3 -m pip install --quiet numpy
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
@@ -113,6 +114,7 @@ jobs:
       - name: Exhaust declared capability ${{ matrix.capability }}
         run: |
           set -o pipefail
+          mkdir -p acc_competitive/boundary_runs/${{ matrix.capability }}
           python3 andrews_curtis/solver_v2_gssub.py \
             --acc-root /tmp/acc \
             --acsolverx-root /tmp/acsolverx \
@@ -199,4 +201,4 @@ jobs:
             /tmp/freeze/targets.json
           retention-days: 90
 
-# Triggered prospectively after V3-V5 residual review; no mechanism expansion is authorized by this edit.
+# Boundary Learns discipline: exhaust declared current capabilities first; type residuals before any mechanism growth.
