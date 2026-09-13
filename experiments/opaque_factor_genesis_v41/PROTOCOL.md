@@ -104,7 +104,7 @@ F12. Maximum-factor ablation at two factors preserves two-target worlds but bloc
 F13. Removing the third intervention target class from the full three-target generator restores the broader two-factor frontier.
 F14. Rejected cheaper factorizations retain an explicit target-class or intervention-locality obstruction.
 F15. Incomplete authority remains UNKNOWN_AUTHORITY and verifier ablation authorizes no factor search.
-F16. Named bits, coordinates, sites, graph structure, and hidden challenge factor maps are absent from the frozen executable kernel.
+F16. Named latent bits, raw observation positions, sites, graph structure, and hidden challenge factor maps are absent from the frozen executable kernel. Generic Cartesian coordinate machinery remains explicitly supplied as the candidate factor language.
 
 ## Claim boundary
 
