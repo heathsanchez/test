@@ -1,0 +1,37 @@
+name: V36 Residual Depth Diagnostic
+
+on:
+  push:
+    branches:
+      - consequence-earned-tokenization-v36
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify frozen V36 core
+        shell: bash
+        run: |
+          set -euo pipefail
+          FREEZE=00045bf2fc8441742d3a86946a327e490c7a89c9
+          git merge-base --is-ancestor "$FREEZE" HEAD
+          changed="$(git diff --name-only "$FREEZE"..HEAD --             experiments/consequence_earned_tokenization_v36/PROTOCOL.md             experiments/consequence_earned_tokenization_v36/basis.py             experiments/consequence_earned_tokenization_v36/kernel.py             experiments/consequence_earned_tokenization_v36/FREEZE.json)"
+          test -z "$changed"
+
+      - name: Run depth sweep
+        working-directory: experiments/consequence_earned_tokenization_v36
+        run: |
+          python diagnostic_depth_sweep.py | tee diagnostic_depth_sweep.json
+
+      - name: Upload diagnostic
+        uses: actions/upload-artifact@v4
+        with:
+          name: v36-depth-diagnostic
+          path: experiments/consequence_earned_tokenization_v36/diagnostic_depth_sweep.json
