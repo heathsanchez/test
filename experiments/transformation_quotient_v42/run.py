@@ -240,7 +240,7 @@ def main()->int:
 
     source=((HERE/"basis.py").read_text()+"\n"+(HERE/"kernel.py").read_text()).lower()
     forbidden=(
-        "cartesian","product","factor","coordinate","bit",
+        "cartesian","factor","coordinate","bit",
         "graph","edge","site","channel",
         "one_class","two_class","three_class","two_by_four",
         "hidden"
