@@ -1,0 +1,18 @@
+{
+  "experiment": "compiled_vocabulary_genesis_v3",
+  "protocol_commit": "b7c6f3065d592584c2ca763cbe6ac8431ca1986d",
+  "basis_commit": "b46e5702ade5e3409ff490f94bd3faa0ebc6fbe3",
+  "kernel_commit": "63c43296ff2e0942cb4437ba62e48ac15612fad8",
+  "scientific_freeze_commit": "63c43296ff2e0942cb4437ba62e48ac15612fad8",
+  "github_blob_shas": {
+    "PROTOCOL.md": "8234d239cd8d146846ccbf6c9272b0d5d3922cb6",
+    "basis.py": "074ca9e1a739f8837823aafd9f3e9f38a8725242",
+    "kernel.py": "726988f28913a8e3e7a34213239c9e5ad2b80190"
+  },
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py. Any such edit resets the experiment version.",
+  "primitive_semantics": ["Bool", "Product", "Var", "Const", "Pair", "Fst", "Snd", "Not", "And", "Or", "If"],
+  "explicitly_absent": ["Xor"],
+  "promotion_hits": 2,
+  "promotion_min_program_cost": 6,
+  "claim_boundary": "Finite supplied basis with generic verified macro promotion; no invention of new primitive operational semantics outside the basis."
+}
