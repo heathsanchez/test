@@ -67,7 +67,8 @@ def main():
     # V26: exact theorem/controller authority.
     v26=found["v26"]
     v26_blob=" ".join(json.dumps(x,sort_keys=True).lower() for _,x in jsons("v26"))
-    gates["v26_claim_boundary_preserved"] = "unrestricted action-language invention" in v26_blob\n    gates["v26_all_internal_gates"] = all_bool_gates(v26) is True
+    gates["v26_claim_boundary_preserved"] = "unrestricted action-language invention" in v26_blob
+    gates["v26_all_internal_gates"] = all_bool_gates(v26) is True
 
     # V27 prospective no-search/no-development kernel transfer.
     v27=found["v27"]
