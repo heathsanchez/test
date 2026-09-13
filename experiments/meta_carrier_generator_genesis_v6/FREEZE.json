@@ -1,0 +1,16 @@
+{
+  "experiment": "meta_carrier_generator_genesis_v6",
+  "protocol_commit": "2ae6c98f058521e3b418cc25b9dad2c9829591a9",
+  "basis_commit": "7bce7663369338b7ce0d45bce910a1a29e5919eb",
+  "kernel_commit": "b8417afd3d688c6b4d04291b5f332115a99ef12f",
+  "scientific_freeze_commit": "b8417afd3d688c6b4d04291b5f332115a99ef12f",
+  "github_blob_shas": {
+    "PROTOCOL.md": "c2ca1ff3090bae8c37a9c25a9e8edcb98c19fc89",
+    "basis.py": "b639dac4ae4da6041606d8a51362dfbde4de8729",
+    "kernel.py": "95292c6483f274eae8c442ff185c0c7083868395"
+  },
+  "freeze_rule": "Post-freeze challenges may not alter PROTOCOL.md, basis.py, or kernel.py.",
+  "meta_primitives": ["CURRENT", "DELTA", "ONE", "SUCC", "ADD"],
+  "explicitly_absent": ["TARGET_PROJECTION", "REQUIRED_SIZE"],
+  "claim_boundary": "Bounded construction and revision of a carrier-specification policy in a supplied arithmetic meta-language."
+}
