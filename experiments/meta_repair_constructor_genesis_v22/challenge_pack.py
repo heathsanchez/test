@@ -58,7 +58,7 @@ def three_edit_control_program() -> EditProgram:
     # A generic challenge-side shape mismatch control. These three cells all
     # have consequence 0 in WORLD_A.
     return EditProgram((
-        SetEdit((0,0),(1,1)),
-        SetEdit((1,1),(2,2)),
-        SetEdit((2,2),(0,0)),
+        SetEdit((0,0),(0,2)),
+        SetEdit((0,2),(1,1)),
+        SetEdit((1,1),(0,0)),
     ))
