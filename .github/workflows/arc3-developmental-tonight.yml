@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,13 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run self-compiled constructor Level4 search
+      - name: Probe whole-capability transfer into Level4
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v15_self_compiling_macros_level4.py | tee arc3_v15_self_compiling_macros_level4.log
+          python experiments/arc3_tonight/level4_whole_capability_transfer_probe.py | tee arc3_level4_whole_transfer.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v15-self-compiling-macros-level4
-          path: |
-            arc3_v15_self_compiling_macros_level4.log
-            arc3_developmental_v15_self_compiling_macros_level4_result.json
+          name: arc3-level4-whole-transfer
+          path: arc3_level4_whole_transfer.log
