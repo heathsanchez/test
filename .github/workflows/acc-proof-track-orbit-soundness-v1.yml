@@ -38,10 +38,13 @@ jobs:
           MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
           lake exe cache get
           lake build
-          lake build
 
-      - name: Check orbit soundness lemmas
+      - name: Check proof-track theorem layer
         run: |
-          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean              /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
+          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean \
+             /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
+          cp mda/domains/andrews_curtis/proof_track/ReachabilityEquivalence.lean \
+             /tmp/official-acc/competition/tools/lean/ReachabilityEquivalence.lean
           cd /tmp/official-acc/competition/tools/lean
           lake env lean OrbitSoundness.lean
+          lake env lean ReachabilityEquivalence.lean
