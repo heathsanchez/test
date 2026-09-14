@@ -1,0 +1,33 @@
+name: ACC Exact Nearest-Conjugate Funnel V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py'
+      - '.github/workflows/acc-exact-nearest-conjugate-funnel-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  exact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned official authority
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Run exact nearest-conjugate projection
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py \
+            --acc-root /tmp/acc \
+            --out-dir mda/evidence/andrews_curtis/exact_nearest_conjugate_funnel_v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-exact-nearest-conjugate-funnel-v1
+          path: mda/evidence/andrews_curtis/exact_nearest_conjugate_funnel_v1/
