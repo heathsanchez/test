@@ -24,11 +24,11 @@ jobs:
           ARC_SHARD_ACTION: ${{ matrix.first_action }}
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v30_goal_invariant_sharded_pareto.py | tee arc3_v30_goal_invariant_${ARC_SHARD_ACTION}.log
+          python experiments/arc3_tonight/developmental_ls20_v30b_goal_invariant_sharded_pareto.py | tee arc3_v30b_goal_invariant_${ARC_SHARD_ACTION}.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v30-goal-invariant-${{ matrix.first_action }}
+          name: arc3-v30b-goal-invariant-${{ matrix.first_action }}
           path: |
-            arc3_v30_goal_invariant_*.log
+            arc3_v30b_goal_invariant_*.log
             arc3_v30_goal_invariant_shard_*.json
