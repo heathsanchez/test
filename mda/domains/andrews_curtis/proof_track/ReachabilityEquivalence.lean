@@ -55,13 +55,13 @@ theorem mulRightInv_reachable {n : ℕ} (R : Relators n) (i j : Fin n)
 theorem step_reverse_reachable {n : ℕ} {R S : Relators n}
     (h : Step R S) : Reachable S R := by
   cases h with
-  | inv R i =>
+  | inv i =>
       have hback :
           Step (Function.update R i (R i)⁻¹) R := by
         simpa using Step.inv (Function.update R i (R i)⁻¹) i
       exact step_reachable' hback
 
-  | mulRight R i j hij =>
+  | mulRight i j hij =>
       let S := Function.update R i (R i * R j)
       have hback0 :
           Reachable S (Function.update S i (S i * (S j)⁻¹)) :=
@@ -75,7 +75,7 @@ theorem step_reverse_reachable {n : ℕ} {R S : Relators n}
         · simp [S, hki]
       simpa [S, hrestore] using hback0
 
-  | conj R i w =>
+  | conj i w =>
       let S := Function.update R i (w * R i * w⁻¹)
       have hback0 :
           Reachable S
