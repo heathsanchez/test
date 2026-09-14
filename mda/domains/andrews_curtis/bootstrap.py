@@ -324,7 +324,21 @@ def main() -> None:
         {"id": "protected-certificate-replay", "decision": "RETAIN", "reason": f"{len(protected_replay)}/{len(protected_replay)} protected certificates replay"},
         {"id": "gssub-current", "decision": "PRESERVE_FRONTIER", "reason": "verified on V5 matched scope and wins at least one atomic-cost comparison"},
         {"id": "gssub-mask3-short-plus-long", "decision": "PRESERVE_FRONTIER", "reason": "verified on V5 matched scope and wins multiple atomic-cost comparisons; node tradeoff remains"},
-        {"id": "compiler-beam-1-16-64", "decision": "PRESERVE_FRONTIER", "reason": "verified beam separators exist; compute-vs-certificate economy is not fully identified"},
+        {
+            "id": "compiler-beam1",
+            "decision": "PRESERVE_FRONTIER" if any(x.get("beam") == 1 for x in full_cost.get("pareto_frontier", [])) else "CONTRACT_FROM_ACTIVE_PRESENT",
+            "reason": "reuse frozen full-cost V5 evidence; retain only if beam 1 remains Pareto-undominated",
+        },
+        {
+            "id": "compiler-beam16",
+            "decision": "PRESERVE_FRONTIER" if any(x.get("beam") == 16 for x in full_cost.get("pareto_frontier", [])) else "CONTRACT_FROM_ACTIVE_PRESENT",
+            "reason": "reuse frozen full-cost V5 evidence; retain only if beam 16 remains Pareto-undominated",
+        },
+        {
+            "id": "compiler-beam64",
+            "decision": "PRESERVE_FRONTIER" if any(x.get("beam") == 64 for x in full_cost.get("pareto_frontier", [])) else "CONTRACT_FROM_ACTIVE_PRESENT",
+            "reason": "reuse frozen full-cost V5 evidence; retain only if beam 64 remains Pareto-undominated",
+        },
         {"id": "proof-atlas", "decision": "RETAIN" if (atlas_report or {}).get("moves_saved", 0) > 0 else "UNKNOWN_AUTHORITY", "reason": f"V5 exact replay saved {(atlas_report or {}).get('moves_saved', 0)} moves"},
         {"id": "peephole-superoptimizer", "decision": "RETAIN" if (peephole_report or {}).get("moves_saved", 0) > 0 else "UNKNOWN_AUTHORITY", "reason": f"V5 exact replay saved {(peephole_report or {}).get('moves_saved', 0)} moves"},
         {"id": "v3-guard-variants", "decision": "LEAVE_UNPROMOTED", "reason": "prior qualification incomplete; no inheritance authority"},
@@ -379,12 +393,13 @@ def main() -> None:
     }
     save(out / "genesis" / "report.json", genesis)
 
+    surviving_beams = sorted({int(x["beam"]) for x in full_cost.get("pareto_frontier", []) if isinstance(x.get("beam"), int)})
     surviving = [
         "official-verifier-adapter",
         "protected-certificate-replay",
         "exact-atomic-compiler",
         "search-policy-frontier:{current,mask3}",
-        "compiler-execution-frontier:{beam1,beam16,beam64}",
+        "compiler-execution-frontier:{" + ",".join(f"beam{x}" for x in surviving_beams) + "}",
         "proof-atlas",
         "peephole-superoptimizer",
         "fresh-live-publication-gate",
@@ -419,7 +434,7 @@ def main() -> None:
         "## What remains non-identifiable",
         "",
         "- A universal winner between current and mask3 is not warranted.",
-        "- A universal compiler beam is not warranted under the current multi-cost economy.",
+        "- A universal compiler beam is not warranted among the surviving full-cost frontier; dominated beams are contracted.",
         "",
         "## Solvent result",
         "",
