@@ -1,0 +1,183 @@
+name: ACC MDA Local Official Microbridge V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-local-official-microbridge-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34802566030"
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable exact-closure source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n acc-mda-fixed-route-current -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          cand=$(find /tmp/source -name candidate_ac.txt -print -quit)
+          test -n "$src" && test -n "$cand"
+          cp "$src" /tmp/source_result.json
+          cp "$cand" /tmp/source_candidate.txt
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']=='ac-04402',r
+          assert r['policy']=='current',r
+          assert r['closure_status']=='COMPLETE',r
+          assert r['exact_atomic_cost']==766,r
+          print('MDA_MICROBRIDGE_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'exact_atomic':r['exact_atomic_cost'],
+            'live_best':r['frozen_live_best'],
+            'qsteps':r['quotient_steps'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-micro-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Search the real official move graph below current local cost
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/local_microbridge/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/local_official_microbridge.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --candidate /tmp/source_candidate.txt \
+            --policy current \
+            --rank "${{ matrix.rank }}" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --bfs-state-cap 600000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-local-microbridge-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/local_microbridge/
+          retention-days: 90
+
+  synthesize:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover local discriminators
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results mda/evidence/andrews_curtis/local_microbridge_synthesis
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-local-microbridge-*' -D /tmp/results || true
+          echo "RESULTS=$(find /tmp/results -name result.json | wc -l)"
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 4
+
+      - name: Type residual from separators only
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          rs=sorted(rs,key=lambda r:r['rank'])
+          seps=[r for r in rs if r['status']=='COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND']
+          unknown=[r for r in rs if r['status']=='UNKNOWN_SEARCH']
+          complete=[r for r in rs if r['status']=='NO_SHORTER_MICROBRIDGE_IN_EXHAUSTED_DEPTH']
+          if seps:
+              status='CERTIFIED_LOCAL_COMPILER_TRANSITION_INADEQUACY'
+              next_probe='integrate the smallest found bridge into the same fixed-route continuation and require end-to-end gain + ablation'
+          elif unknown:
+              status='UNKNOWN_SEARCH'
+              next_probe='preserve route-vs-compiler alternatives; only deepen the cheapest unresolved local bridge if it is cheaper than a route discriminator'
+          else:
+              status='LOCAL_COMPILER_LANGUAGE_SURVIVES_TOP4'
+              next_probe='move to route-choice discriminator; do not expand compiler language from intuition'
+          out={
+            'experiment':'ACC_MDA_LOCAL_OFFICIAL_MICROBRIDGE_SYNTHESIS_V1',
+            'results':rs,
+            'status':status,
+            'separator_count':len(seps),
+            'unknown_count':len(unknown),
+            'bounded_complete_count':len(complete),
+            'promotion_authorized':False,
+            'new_solver_growth_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':'Top four highest-cost quotient transitions of the current ac-04402 frozen route only.',
+          }
+          Path('mda/evidence/andrews_curtis/local_microbridge_synthesis/report.json').write_text(
+            json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_LOCAL_MICROBRIDGE_SYNTHESIS',json.dumps({
+            'status':status,
+            'separator_count':len(seps),
+            'unknown_count':len(unknown),
+            'bounded_complete_count':len(complete),
+            'next_probe':next_probe,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-local-microbridge-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# This workflow changes no retained mechanism. It only asks the official move
+# graph whether the current compiler transition language omitted a shorter local
+# bridge on an immutable route.
