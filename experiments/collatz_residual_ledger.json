@@ -1,0 +1,105 @@
+{
+  "version": 1,
+  "target": "shortcut Collatz descent: exists t with T^t(n) < n",
+  "verifier": "exact CNF over seed bits and deterministic shortcut-Collatz arithmetic",
+  "invariant": "retain only exact SAT witnesses or UNSAT interval certificates",
+  "protected_control": {
+    "interval": [
+      524288,
+      1048575
+    ],
+    "expected_boundary": 183,
+    "extremal_seed": 1027431,
+    "status": "passed",
+    "evidence_commit": "8cdf6896a980dee94fa4b1afcc02126db039ed52"
+  },
+  "live_interval": [
+    2.3923121220592075e+21,
+    4.722366482869645e+21
+  ],
+  "horizon_400": {
+    "workflow_run": 34906019998,
+    "completed_sat": [
+      {
+        "shard": 3,
+        "interval": [
+          2.8291973147111646e+21,
+          2.974825712261817e+21
+        ],
+        "witness": 2.832845034582763e+21,
+        "exact_first_descent": 432
+      },
+      {
+        "shard": 5,
+        "interval": [
+          3.1204541098124693e+21,
+          3.2660825073631216e+21
+        ],
+        "witness": 3.1434404823105683e+21,
+        "exact_first_descent": 433
+      },
+      {
+        "shard": 6,
+        "interval": [
+          3.2660825073631216e+21,
+          3.411710904913774e+21
+        ],
+        "witness": 3.314649325744685e+21,
+        "exact_first_descent": 433
+      }
+    ],
+    "pending_shards": [
+      0,
+      1,
+      2,
+      4,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15
+    ]
+  },
+  "active_residuals": [
+    {
+      "kind": "interval_survival",
+      "shard": 3,
+      "next_horizon": 450,
+      "priority": 1
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 5,
+      "next_horizon": 450,
+      "priority": 1
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 6,
+      "next_horizon": 450,
+      "priority": 1
+    }
+  ],
+  "rejected_or_deprioritized": [
+    {
+      "representation": "integer Z3",
+      "reason": "timed out before consequence at shallow horizons"
+    },
+    {
+      "representation": "QF_BV Z3",
+      "reason": "higher cost/no consequence"
+    },
+    {
+      "representation": "BDD",
+      "reason": "exact but ~9x slower than CNF on protected control"
+    },
+    {
+      "representation": "coefficient persistence proxy",
+      "reason": "stronger than required consequence and much costlier"
+    }
+  ]
+}
