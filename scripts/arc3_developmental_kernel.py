@@ -109,11 +109,14 @@ def bootstrap(env):
     acts=list(env.action_space)
     one={}
     baselines={}
+    probe_arrays={}
     for a in acts:
         o0=env.reset(); g0=frame(o0)
         o1=env.step(a,data={},reasoning={"mode":"ONE_STEP_INTERVENTION"})
         g1=frame(o1)
         one[a.name]=(g0,g1,g0!=g1)
+        probe_arrays["reset_"+a.name]=g0
+        probe_arrays["one_"+a.name]=g1
         baselines[a.name]=int(np.count_nonzero(g0!=g1))
     common=np.logical_and.reduce([one[a.name][2] for a in acts])
     nuisance=expand_common(common,pad=4)
@@ -136,6 +139,8 @@ def bootstrap(env):
             gref=frame(oref)
             o2=env.step(a,data={},reasoning={"mode":"SECOND_ORDER_INTERVENTION"})
             g2=frame(o2)
+            probe_arrays["ref_"+a.name]=gref
+            probe_arrays["two_"+a.name]=g2
             d=fdiff(gref,g2,nuisance)
             m,bs=motion_from_reference(d,ref_pos)
             vector_evidence[a.name]={
@@ -145,6 +150,8 @@ def bootstrap(env):
             }
             if m is not None:
                 vectors[a.name]=tuple(m["v"])
+    Path("arc3-results").mkdir(parents=True,exist_ok=True)
+    np.savez_compressed("arc3-results/probes.npz",**probe_arrays,nuisance=nuisance.astype(np.uint8))
     return nuisance,baselines,unique,ref_action,ref_pos,vectors,vector_evidence
 
 
