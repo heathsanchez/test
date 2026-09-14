@@ -1,0 +1,138 @@
+name: ACC MDA Prospective Synthesis Repair V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-prospective-synthesis-repair-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  SOURCE_RUN: "34796578203"
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable freeze and all raw matched consequences
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/runs mda/evidence/andrews_curtis/prospective_repair/candidate_pool
+          gh run download "$SOURCE_RUN" -n acc-mda-prospective-freeze -D /tmp/freeze
+          gh run download "$SOURCE_RUN" --pattern 'acc-mda-probe-*' -D /tmp/runs
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/prospective_repair/candidate_pool/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/runs -name candidate_ac.txt -type f | sort)
+          echo "RAW_RESULTS=$(find /tmp/runs -name result.json | wc -l)"
+          echo "RAW_CANDIDATES=$i"
+          test "$(find /tmp/runs -name result.json | wc -l)" -eq 16
+          test "$i" -eq 14
+
+      - name: Re-synthesize frozen evidence with causal ablation and correct candidate recovery
+        run: |
+          set -euo pipefail
+          sel=$(find /tmp/freeze -name selection.json -print -quit)
+          python3 mda/domains/andrews_curtis/prospective_discriminator.py \
+            --glob '/tmp/runs/**/result.json' \
+            --selection "$sel" \
+            --out-dir mda/evidence/andrews_curtis/prospective_repair \
+            | tee mda/evidence/andrews_curtis/prospective_repair.log
+          python3 - <<'PY'
+          import json
+          r=json.load(open('mda/evidence/andrews_curtis/prospective_repair/report.json'))
+          assert r['candidate_targets'],r
+          assert len(r['candidate_targets'])==8,r
+          print('MDA_REPAIR_ABLATIONS',json.dumps(r['causal_ablations'],sort_keys=True))
+          print('MDA_REPAIR_RETAINED',json.dumps(r['causally_retained_components'],sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Replay retained compiler stack
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/prospective_repair_atlas mda/evidence/andrews_curtis/prospective_repair_peephole
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/prospective_repair/best_ac.txt' \
+            --out-dir mda/evidence/andrews_curtis/prospective_repair_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee mda/evidence/andrews_curtis/prospective_repair_atlas.log
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input mda/evidence/andrews_curtis/prospective_repair_atlas/fortified_ac.txt \
+            --out-dir mda/evidence/andrews_curtis/prospective_repair_peephole \
+            --thin-win-frac 1.0 --near-miss-frac 1.0 --max-window 5 --max-path 20000 \
+            | tee mda/evidence/andrews_curtis/prospective_repair_peephole.log
+
+      - name: Fresh live scoring check
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p mda/evidence/andrews_curtis/prospective_repair_live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/prospective_repair_peephole/fortified_ac.txt' \
+            --out-dir mda/evidence/andrews_curtis/prospective_repair_live \
+            --cycle 8 \
+            | tee mda/evidence/andrews_curtis/prospective_repair_live.log
+
+      - name: Final repair report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          dev=J('mda/evidence/andrews_curtis/prospective_repair/report.json')
+          pub=J('mda/evidence/andrews_curtis/prospective_repair_live/report.json')
+          final={
+            'experiment':'ACC_MDA_PROSPECTIVE_SYNTHESIS_REPAIR_V1',
+            'source_run':34796578203,
+            'raw_scientific_evidence_unchanged':True,
+            'candidate_targets':dev.get('candidate_targets'),
+            'causal_ablations':dev.get('causal_ablations'),
+            'causally_retained_components':dev.get('causally_retained_components'),
+            'fresh_rows_published':pub.get('selected_rows',0),
+            'published_ties':pub.get('selected_scoring_ties',0),
+            'published_strict':pub.get('selected_strict_improvements',0),
+            'submission_id':pub.get('submission_id'),
+            'claim_boundary':'Harness/synthesis repair only: reuses immutable run 34796578203 raw results; no search rerun and no new mechanism.',
+          }
+          Path('mda/evidence/andrews_curtis/prospective_repair_final.json').write_text(json.dumps(final,indent=2,sort_keys=True)+'\n')
+          print('ACC_MDA_PROSPECTIVE_REPAIR_FINAL',json.dumps(final,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-prospective-synthesis-repair-v1
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# Repair scope is intentionally narrow:
+# - raw search/compiler evidence remains frozen from SOURCE_RUN;
+# - fix candidate artifact recovery;
+# - compute causal removal effect before retaining/contracting components;
+# - replay retained compilation and fresh live consequence.
