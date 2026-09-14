@@ -1,0 +1,245 @@
+name: ACC MDA Quotient Fiber Genesis V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-quotient-fiber-genesis-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: discovery-ac04402-current
+            artifact: acc-mda-probe-7-current
+            policy: current
+            role: discovery
+          - name: heldout-ac02012-mask3
+            artifact: acc-mda-probe-6-mask3
+            policy: mask3
+            role: prospective
+          - name: heldout-ac09722-mask3
+            artifact: acc-mda-probe-5-mask3
+            policy: mask3
+            role: prospective
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable source result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ matrix.artifact }}
+          POLICY: ${{ matrix.policy }}
+          ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['policy']==os.environ['POLICY'],(r,os.environ['POLICY'])
+          print('MDA_FIBER_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'role':os.environ['ROLE'],
+            'qsteps':r['quotient_steps'],
+            'beam_best':r['best_atomic_length'],
+            'live_best':r['frozen_ac_best'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Run quotient-fiber Genesis test
+        env:
+          NAME: ${{ matrix.name }}
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/quotient_fiber_genesis/$NAME"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/quotient_fiber_genesis.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy "$POLICY" \
+            --state-cap 512 \
+            --rep-cap 16 \
+            --max-selection-layer 8 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-fiber-${{ matrix.name }}
+          path: mda/evidence/andrews_curtis/quotient_fiber_genesis/
+          retention-days: 90
+
+  synthesize:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all fiber probes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-fiber-*' -D /tmp/results
+          find /tmp/results -name result.json -print
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 3
+
+      - name: Prospectively validate discovery refinements
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/quotient_fiber_genesis_synthesis
+          python3 - <<'PY'
+          import glob,itertools,json
+          from pathlib import Path
+
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          by_id={r['challenge_id']:r for r in rs}
+          d=by_id['ac-04402']
+          hs=[by_id['ac-02012'],by_id['ac-09722']]
+
+          candidates=d.get('minimal_exact_refinements') or []
+          def check(r, subset):
+              rows=r.get('rows') or []
+              if not rows or any(x.get('future2_cost') is None or x.get('fiber_coordinate') is None for x in rows):
+                  return {'status':'UNKNOWN','false_merge_violations':None,'false_split_pairs':None}
+              cells={}
+              for x in rows:
+                  k=tuple(x['fiber_coordinate'][f] for f in subset)
+                  cells.setdefault(k,[]).append(x)
+              fm=0
+              for cell in cells.values():
+                  if len({x['future2_cost'] for x in cell})>1:
+                      fm+=1
+              fs=0
+              for a,b in itertools.combinations(rows,2):
+                  same_label=a['future2_cost']==b['future2_cost']
+                  ka=tuple(a['fiber_coordinate'][f] for f in subset)
+                  kb=tuple(b['fiber_coordinate'][f] for f in subset)
+                  if same_label and ka!=kb:
+                      fs+=1
+              return {'status':'PASS' if fm==0 else 'FAIL','false_merge_violations':fm,'false_split_pairs':fs}
+
+          validations=[]
+          survivors=[]
+          for subset in candidates:
+              checks=[{'challenge_id':r['challenge_id'],**check(r,subset)} for r in hs]
+              v={'subset':subset,'checks':checks}
+              validations.append(v)
+              if all(c['status']=='PASS' for c in checks):
+                  survivors.append(subset)
+
+          all_sep=all(r.get('status')=='CERTIFIED_QUOTIENT_FIBER_FALSE_MERGE' for r in rs)
+          if not candidates:
+              status='NO_DISCOVERY_REFINEMENT'
+              next_probe='expand only the finite quotient-fiber coordinate language if the coordinate extraction itself was complete'
+          elif survivors:
+              status='VERIFIED_PROSPECTIVE_QUOTIENT_FIBER_REFINEMENT'
+              next_probe=(
+                'Preserve every surviving minimal refinement. If more than one survives, '
+                'run the cheapest untouched pair that makes them disagree; only then '
+                'integrate the winner provisionally and require end-to-end causal gain.'
+              )
+          else:
+              status='DISCOVERY_REFINEMENT_FAILED_PROSPECTIVE_TRANSFER'
+              next_probe=(
+                'Do not inherit the discovery split. Preserve the false-merge witnesses '
+                'and enlarge the candidate distinction language minimally.'
+              )
+
+          out={
+            'experiment':'ACC_MDA_QUOTIENT_FIBER_GENESIS_SYNTHESIS_V1',
+            'discovery':{
+              'challenge_id':d['challenge_id'],
+              'status':d['status'],
+              'minimal_refinements':candidates,
+              'future2_class_count':d.get('future2_class_count'),
+            },
+            'heldouts':[{
+              'challenge_id':r['challenge_id'],
+              'status':r['status'],
+              'future2_class_count':r.get('future2_class_count'),
+              'selection_layer':r.get('selection_layer'),
+              'selected_count':r.get('selected_count'),
+            } for r in hs],
+            'all_three_false_merge_witnesses':all_sep,
+            'validations':validations,
+            'surviving_minimal_refinements':survivors,
+            'status':status,
+            'scoped_representation_growth_authorized':bool(survivors),
+            'global_inheritance_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':(
+              'Discovery on ac-04402/current; prospective validation on immutable '
+              'ac-02012/mask3 and ac-09722/mask3. Candidate language is only the '
+              'five coordinates of symmetry information already erased by the '
+              'current quotient.'
+            )
+          }
+          Path('mda/evidence/andrews_curtis/quotient_fiber_genesis_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_FIBER_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-fiber-final
+          path: mda/evidence/andrews_curtis/quotient_fiber_genesis_synthesis/
+          retention-days: 90
+
+# Genesis is restricted to distinctions already erased by the existing quotient.
+# Discovery and prospective validation are separated before any inheritance.
