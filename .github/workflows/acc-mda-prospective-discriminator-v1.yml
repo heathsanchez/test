@@ -171,12 +171,16 @@ jobs:
           echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
 
       - name: Add swap
+        env:
+          IDX: ${{ matrix.index }}
+          POLICY: ${{ matrix.policy }}
         run: |
           set -euo pipefail
-          sudo fallocate -l 8G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          SWAP="/swapfile-mda-${IDX}-${POLICY}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
 
       - name: Fetch pinned ground and retained search dependency
         run: |
