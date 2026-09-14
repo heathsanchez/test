@@ -373,6 +373,14 @@
       "certificate_method": "exact valuation slice; compile k odd steps plus forced even step",
       "wall_seconds_local": 19.28,
       "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 43",
+      "exact_seed_count": 132448256,
+      "max_first_descent": 709,
+      "extremal_seed_decimal": "4627409694411561369599",
+      "certificate_method": "exact valuation slice split across 16 shards; compile k odd steps plus forced even",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -382,8 +390,8 @@
     "source": "exact exhaustive v2(n+1)>=45 compiled region"
   },
   "current_structural_residual": {
-    "predicate": "live interval and v2(n+1) <= 43",
-    "reason": "v2>=45 compiled with max 734; v2=44 compiled with max 715",
-    "next_action": "localize exact-v2=43 cost by shard before changing frame"
+    "predicate": "live interval and v2(n+1) <= 42",
+    "reason": "all v2>=43 slices compiled; global record remains 734 at v2=45",
+    "next_action": "close exact v2=42 slices by shard unless cost forces another reframe"
   }
 }
