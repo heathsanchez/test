@@ -1,0 +1,50 @@
+name: ARC3 Developmental Kernel
+
+on:
+  push:
+    paths:
+      - 'scripts/arc3_developmental_kernel.py'
+      - '.github/workflows/arc3-developmental-kernel.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ls20:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install official ARC-AGI-3 toolkit
+        run: |
+          python -m pip install --upgrade pip
+          pip install arc-agi numpy
+
+      - name: Run observation-only developmental kernel on public ls20
+        run: |
+          mkdir -p arc3-results
+          python scripts/arc3_developmental_kernel.py \
+            --game ls20 \
+            --max-actions 400 \
+            --seed 0 \
+            --out arc3-results/ls20-developmental-result.json \
+            2>&1 | tee arc3-results/run.log
+
+      - name: Hash result packet
+        if: always()
+        run: |
+          sha256sum arc3-results/* || true
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc3-developmental-kernel-ls20
+          path: arc3-results/
+          if-no-files-found: warn
