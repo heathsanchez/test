@@ -1,0 +1,30 @@
+name: State Test Kernel Developmental Boundary
+
+on:
+  push:
+    paths:
+      - "scripts/state_test_kernel_developmental_boundary.py"
+      - ".github/workflows/state-test-kernel-developmental-boundary.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run developmental completeness boundary
+        run: |
+          set -o pipefail
+          python scripts/state_test_kernel_developmental_boundary.py | tee state-test-kernel-developmental-boundary.log
+          grep -F "FALSIFIED_KERNEL_ALONE_AS_COMPLETE_DEVELOPMENTAL_SELECTOR" state-test-kernel-developmental-boundary.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: state-test-kernel-developmental-boundary
+          path: state-test-kernel-developmental-boundary.log
