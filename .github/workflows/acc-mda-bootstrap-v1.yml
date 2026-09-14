@@ -1,0 +1,125 @@
+name: ACC MDA Bootstrap V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-bootstrap-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  V5_RUN: "34790205664"
+  V6_RUN: "34793616748"
+
+jobs:
+  mda:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Freeze exact integration SHA
+        run: |
+          set -euo pipefail
+          echo "MDA_FREEZE_SHA=$GITHUB_SHA" | tee mda_freeze_sha.txt
+
+      - name: Fetch pinned independent grounding authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Baseline official verifier conformance
+        run: |
+          set -euo pipefail
+          (
+            cd /tmp/acc
+            PYTHONPATH=competition/tools python3 -m verifier               --golden competition/tools/verifier/data/golden_vectors.json
+            PYTHONPATH=competition/tools python3 -m verifier               --manifest competition/tools/verifier/data/manifest.json --check-hashes
+          )
+          mkdir -p mda/evidence/andrews_curtis/bootstrap
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          out={
+            "ok":True,
+            "golden_vectors":True,
+            "manifest_hashes":True,
+            "official_pin":"99a65377c5c4f412cd9af7b8d31c41464a855736",
+          }
+          Path("mda/evidence/andrews_curtis/bootstrap/official_conformance.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("MDA_OFFICIAL_CONFORMANCE",json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Fresh economic freeze; do not develop from it yet
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v2.py             --acc-root /tmp/acc             --out-dir mda/evidence/andrews_curtis/bootstrap/scout             --competitive-wins acc_competitive/competitive_wins_seed_v1.json             --competitive-attempted acc_competitive/competitive_attempted_seed_v1.json             --attack-count 1 --defend-fraction 0 --shards 1             --mechanism-id mda-bootstrap-v1             | tee mda/evidence/andrews_curtis/bootstrap/scout.log
+
+      - name: Recover prior warranted evidence by provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v5/final /tmp/v5/raw /tmp/v5/freeze /tmp/v6
+          gh run download "$V5_RUN" -n acc-v5-frontier-final -D /tmp/v5/final
+          gh run download "$V5_RUN" -n acc-v5-frontier-freeze -D /tmp/v5/freeze
+          gh run download "$V5_RUN" --pattern 'acc-v5-frontier-*-*' -D /tmp/v5/raw || true
+          gh run download "$V6_RUN" -n acc-v6-near-miss-window7 -D /tmp/v6
+          echo "V5_RESULT_FILES=$(find /tmp/v5 -name result.json | wc -l)"
+          echo "V6_REPORT_FILES=$(find /tmp/v6 -name report.json | wc -l)"
+
+      - name: Run MDA baseline solvent genesis invariant
+        run: |
+          set -euo pipefail
+          python3 mda/domains/andrews_curtis/bootstrap.py             --acc-root /tmp/acc             --scout-dir mda/evidence/andrews_curtis/bootstrap/scout             --v5-root /tmp/v5             --v6-root /tmp/v6             --protected mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt             --present mda/domains/andrews_curtis/PRESENT.json             --conformance mda/evidence/andrews_curtis/bootstrap/official_conformance.json             --repo-sha "$GITHUB_SHA"             --out-dir mda/evidence/andrews_curtis/bootstrap/result             | tee mda/evidence/andrews_curtis/bootstrap/mda.log
+
+      - name: Constitutional assertions
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          p="mda/evidence/andrews_curtis/bootstrap/result/final.json"
+          r=json.load(open(p))
+          assert r["protected_replay_ok"] is True, r
+          assert r["protected_replay_count"] == 6, r
+          assert r["v5_regression_replay_ok"] is True, r
+          assert r["v5_regression_count"] == 11, r
+          assert r["new_solver_growth_authorized"] is False, r
+          assert r["minimal_lawful_frontier"], r
+          print("MDA_CONSTITUTIONAL_ASSERTIONS_PASS",json.dumps(r,sort_keys=True))
+          PY
+
+      - name: Print invariant report
+        run: |
+          cat mda/evidence/andrews_curtis/bootstrap/result/invariant_report.md
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-bootstrap-v1
+          path: |
+            mda_freeze_sha.txt
+            mda/domains/andrews_curtis/DOMAIN_CONTRACT.md
+            mda/domains/andrews_curtis/PRESENT.json
+            mda/domains/andrews_curtis/replay/protected_cases/
+            mda/evidence/andrews_curtis/bootstrap/
+          retention-days: 90
+
+# This workflow intentionally does not invent or publish a new solver.
+# It establishes V0, Q_t, P_t, the lawful frontier, solvent/genesis endpoints,
+# and the next discriminating question before any further development.
