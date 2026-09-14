@@ -238,7 +238,7 @@ theorem funnel_leftMulInv_reachable {n : ℕ} (R : Relators n)
   let S1 := Function.update R j (R j)⁻¹
   let S2 := Function.update S1 i (S1 i * S1 j)
   let S3 := Function.update S2 j (S2 j)⁻¹
-  let S4 := Function.update R i ((R j)⁻¹ * R i)
+  let S4 := Function.update S3 i ((R j)⁻¹ * R i)
 
   have h1 : Step R S1 := by
     simpa [S1] using Step.inv R j
@@ -253,7 +253,19 @@ theorem funnel_leftMulInv_reachable {n : ℕ} (R : Relators n)
   have p1 : Reachable R S1 := step_reachable h1
   have p2 : Reachable R S2 := Relation.ReflTransGen.tail p1 h2
   have p3 : Reachable R S3 := Relation.ReflTransGen.tail p2 h3
-  exact Relation.ReflTransGen.tail p3 h4
+  have p4 : Reachable R S4 := Relation.ReflTransGen.tail p3 h4
+
+  have hfinal : S4 = Function.update R i ((R j)⁻¹ * R i) := by
+    funext q
+    by_cases hqi : q = i
+    · subst q
+      simp [S4]
+    · by_cases hqj : q = j
+      · subst q
+        simp [S1, S2, S3, S4, hij, Ne.symm hij]
+      · simp [S1, S2, S3, S4, hqi, hqj]
+  rw [hfinal] at p4
+  exact p4
 
 def funnelX : Word 2 := FreeGroup.of (0 : Fin 2)
 def funnelY : Word 2 := FreeGroup.of (1 : Fin 2)
@@ -269,6 +281,18 @@ def funnelC (m k : ℕ) : Word 2 :=
 
 def funnelRelators (m k : ℕ) : Relators 2 :=
   ![funnelA m, funnelB k]
+
+/-- Updating the first coordinate of a rank-two tuple has the expected vector form. -/
+theorem funnel_update_zero (a b c : Word 2) :
+    Function.update (![a, b] : Relators 2) (0 : Fin 2) c = ![c, b] := by
+  funext q
+  fin_cases q <;> simp
+
+/-- Updating the second coordinate of a rank-two tuple has the expected vector form. -/
+theorem funnel_update_one (a b c : Word 2) :
+    Function.update (![a, b] : Relators 2) (1 : Fin 2) c = ![a, c] := by
+  funext q
+  fin_cases q <;> simp
 
 theorem funnel_B_mul_A (m k : ℕ) :
     funnelB k * funnelA m = funnelC m k * funnelY := by
@@ -306,10 +330,16 @@ theorem funnel_eliminate_k (k : ℕ) :
       have hstep := funnel_leftMul_reachable
         (![funnelY, funnelB (k+1)] : Relators 2)
         (1 : Fin 2) (0 : Fin 2) (by decide)
+      have hreduce0 :
+          Reachable (![funnelY, funnelB (k+1)] : Relators 2)
+            (Function.update (![funnelY, funnelB (k+1)] : Relators 2)
+              (1 : Fin 2) (funnelB k)) := by
+        simpa [funnel_Y_mul_B_succ] using hstep
       have hreduce :
           Reachable (![funnelY, funnelB (k+1)] : Relators 2)
             (![funnelY, funnelB k] : Relators 2) := by
-        simpa [funnel_Y_mul_B_succ] using hstep
+        rw [funnel_update_one] at hreduce0
+        exact hreduce0
       exact hreduce.trans ih
 
 /-- Infinite constructive family discovered from the shared proof funnel.
@@ -326,17 +356,28 @@ theorem funnelFamily_reachable (m k : ℕ) :
 
   have h1raw := funnel_leftMul_reachable
     (funnelRelators m k) (0 : Fin 2) (1 : Fin 2) (by decide)
+  have h1u :
+      Reachable (funnelRelators m k)
+        (Function.update (funnelRelators m k) (0 : Fin 2)
+          (C * funnelY)) := by
+    simpa [funnelRelators, C, funnel_B_mul_A] using h1raw
   have h1 :
       Reachable (funnelRelators m k)
         (![C * funnelY, funnelB k] : Relators 2) := by
-    simpa [funnelRelators, C, funnel_B_mul_A] using h1raw
+    rw [funnelRelators, funnel_update_zero] at h1u
+    exact h1u
 
+  have hs2raw :=
+    Step.conj (![C * funnelY, funnelB k] : Relators 2)
+      (1 : Fin 2) ((funnelY⁻¹)^m)
+  have hCB : (funnelY⁻¹)^m * funnelB k * ((funnelY⁻¹)^m)⁻¹ = C := by
+    simpa [C] using funnel_conj_B m k
+  rw [hCB] at hs2raw
   have hs2 :
       Step (![C * funnelY, funnelB k] : Relators 2)
         (![C * funnelY, C] : Relators 2) := by
-    simpa [C, funnel_conj_B] using
-      Step.conj (![C * funnelY, funnelB k] : Relators 2)
-        (1 : Fin 2) ((funnelY⁻¹)^m)
+    rw [funnel_update_one] at hs2raw
+    exact hs2raw
   have h2 :
       Reachable (funnelRelators m k)
         (![C * funnelY, C] : Relators 2) :=
@@ -345,21 +386,30 @@ theorem funnelFamily_reachable (m k : ℕ) :
   have h3raw := funnel_leftMulInv_reachable
     (![C * funnelY, C] : Relators 2)
       (0 : Fin 2) (1 : Fin 2) (by decide)
+  have hCY : C⁻¹ * (C * funnelY) = funnelY := by
+    group
+  rw [hCY] at h3raw
   have h3local :
       Reachable (![C * funnelY, C] : Relators 2)
         (![funnelY, C] : Relators 2) := by
-    simpa using h3raw
+    rw [funnel_update_zero] at h3raw
+    exact h3raw
   have h3 :
       Reachable (funnelRelators m k)
         (![funnelY, C] : Relators 2) :=
     h2.trans h3local
 
+  have hs4raw :=
+    Step.conj (![funnelY, C] : Relators 2)
+      (1 : Fin 2) (funnelY^m)
+  have hBC : funnelY^m * C * (funnelY^m)⁻¹ = funnelB k := by
+    simpa [C] using funnel_unconj_C m k
+  rw [hBC] at hs4raw
   have hs4 :
       Step (![funnelY, C] : Relators 2)
         (![funnelY, funnelB k] : Relators 2) := by
-    simpa [C, funnel_unconj_C] using
-      Step.conj (![funnelY, C] : Relators 2)
-        (1 : Fin 2) (funnelY^m)
+    rw [funnel_update_one] at hs4raw
+    exact hs4raw
   have h4 :
       Reachable (funnelRelators m k)
         (![funnelY, funnelB k] : Relators 2) :=
@@ -370,11 +420,13 @@ theorem funnelFamily_reachable (m k : ℕ) :
         (![funnelY, funnelX⁻¹] : Relators 2) :=
     h4.trans (funnel_eliminate_k k)
 
+  have hs6raw :=
+    Step.inv (![funnelY, funnelX⁻¹] : Relators 2) (1 : Fin 2)
   have hs6 :
       Step (![funnelY, funnelX⁻¹] : Relators 2)
         (![funnelY, funnelX] : Relators 2) := by
-    simpa using
-      Step.inv (![funnelY, funnelX⁻¹] : Relators 2) (1 : Fin 2)
+    rw [funnel_update_one] at hs6raw
+    simpa using hs6raw
   have h6 :
       Reachable (funnelRelators m k)
         (![funnelY, funnelX] : Relators 2) :=
@@ -383,10 +435,12 @@ theorem funnelFamily_reachable (m k : ℕ) :
   have hswap := relatorSwap_reachable
     (![funnelY, funnelX] : Relators 2)
       (0 : Fin 2) (1 : Fin 2) (by decide)
-  have h7 :
-      Reachable (![funnelY, funnelX] : Relators 2) (standard 2) := by
-    simpa [swapRelators, funnelX, funnelY, standard] using hswap
-
-  exact h6.trans h7
+  have htarget :
+      swapRelators (![funnelY, funnelX] : Relators 2)
+        (0 : Fin 2) (1 : Fin 2) = standard 2 := by
+    funext q
+    fin_cases q <;> simp [swapRelators, funnelX, funnelY, standard]
+  rw [htarget] at hswap
+  exact h6.trans hswap
 
 end AC
