@@ -123,8 +123,8 @@ theorem commutatorTwist_target_iff {n : ℕ} (R : Relators n)
     commutatorTwist_contract R i j hij w
   constructor
   · intro htw
-    exact h.trans htw
+    exact (reachable_symm h).trans htw
   · intro hRT
-    exact (reachable_symm h).trans hRT
+    exact h.trans hRT
 
 end AC
