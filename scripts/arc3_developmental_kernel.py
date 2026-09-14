@@ -240,6 +240,10 @@ class Agent:
         self.current_mode=None
         self.event_trigger_pos=None
         self.spatial_graph=defaultdict(Counter)
+        self.physical_tried=defaultdict(set)
+        self.physical_positions=set()
+        self.geometry_frozen=False
+        self.reference_frame=None
         self.blocked_frontiers={}
         self.blocked_mode_tests=defaultdict(set)
         self.mode_change_return=False
@@ -341,11 +345,12 @@ class Agent:
     def frontier_rarity(self,g,pos,action):
         v=self.vectors.get(action)
         if v is None: return 0.0
+        base=self.reference_frame if self.reference_frame is not None else g
         py,px=pos[0]+v[0],pos[1]+v[1]
-        y0,y1=max(0,py-3),min(g.shape[0],py+4)
-        x0,x1=max(0,px-3),min(g.shape[1],px+4)
-        patch=g[y0:y1,x0:x1]
-        vals,cnts=np.unique(g,return_counts=True)
+        y0,y1=max(0,py-3),min(base.shape[0],py+4)
+        x0,x1=max(0,px-3),min(base.shape[1],px+4)
+        patch=base[y0:y1,x0:x1]
+        vals,cnts=np.unique(base,return_counts=True)
         freq={int(v):int(n) for v,n in zip(vals,cnts)}
         return float(sum(1.0/max(1,freq.get(int(v),1)) for v in patch.ravel()))
 
@@ -401,6 +406,38 @@ class Agent:
             return a,{"mode":"RECONSTRUCT_CAUSAL_CARRIER"}
 
         node=self.node
+
+        # Stage 1: compile physical geometry once, independent of latent event mode.
+        # This prevents contextual distinctions from multiplying ordinary navigation.
+        if not self.geometry_frozen:
+            unseen_phys=[a for a in acts if a.name not in self.physical_tried[self.pos]]
+            if unseen_phys:
+                a=min(unseen_phys,key=lambda z:(self.action_counts[z.name],z.name))
+                return a,{"mode":"PHYSICAL_INTERVENTION_FRONTIER","position":list(self.pos)}
+
+            # Route through compiled physical edges to any discovered position with
+            # an untried intervention.
+            targets=[p for p in self.physical_positions if len(self.physical_tried[p])<len(acts)]
+            best=None
+            for target in targets:
+                a=self.position_route_action(target,acts)
+                if a is not None:
+                    # approximate route preference by Manhattan distance; exact edge
+                    # choice still comes from compiled graph.
+                    dist=abs(self.pos[0]-target[0])+abs(self.pos[1]-target[1])
+                    cand=(dist,str(target),a,target)
+                    if best is None or cand[:2]<best[:2]: best=cand
+            if best is not None:
+                _,_,a,target=best
+                return a,{"mode":"ROUTE_PHYSICAL_FRONTIER","target":list(target)}
+
+            self.geometry_frozen=True
+            self.ev("PHYSICAL_GEOMETRY_COMPILED",
+                    positions=len(self.physical_positions),
+                    blocked_frontiers=len(self.blocked_frontiers))
+
+        # Stage 2: only after geometry closes do we spend interventions on latent-mode
+        # counterfactuals.
         cf=self.active_counterfactual(acts)
         if cf is not None:
             return cf
@@ -456,6 +493,7 @@ class Agent:
         if p is not None:
             self.pos=p
             if oldpos is None:
+                self.physical_positions.add(p)
                 self.ev("CAUSAL_CARRIER_RECONSTRUCTED",action=action,pos=list(p),
                         group=[list(desc(c)) for c in grp])
 
@@ -473,6 +511,12 @@ class Agent:
         self.node=self.make_node(g)
 
         if oldpos is not None and self.pos is not None:
+            was_new=self.pos not in self.physical_positions
+            self.physical_positions.add(oldpos); self.physical_positions.add(self.pos)
+            self.physical_tried[oldpos].add(action)
+            if was_new and self.geometry_frozen:
+                self.geometry_frozen=False
+                self.ev("REOPEN_PHYSICAL_GEOMETRY",new_position=list(self.pos))
             v=self.vectors.get(action)
             expected=(oldpos[0]+v[0],oldpos[1]+v[1]) if v is not None else None
             # Compile only ordinary geometry or certified blocked self-loops;
@@ -542,6 +586,7 @@ class Agent:
           distinct_positions=len(self.visits),contextual_state=self.use_local_context,
           event_state=self.use_event_state,event_box=list(self.event_box) if self.event_box else None,
           event_mode_count=len(self.event_modes),
+          geometry_frozen=self.geometry_frozen,physical_position_count=len(self.physical_positions),
           blocked_frontiers=[{"position":list(k[0]),"action":k[1],"rarity":v,
                               "tested_modes":sorted(self.blocked_mode_tests.get(k,set()))}
                              for k,v in sorted(self.blocked_frontiers.items(),key=lambda kv:-kv[1])],
@@ -562,6 +607,7 @@ def main():
     obs=env.reset(); g=frame(obs)
     A=Agent(nuis,ref_action,ref_pos,vectors,group_descs,args.seed)
     A.level=int(getattr(obs,"levels_completed",0)); A.max_level=A.level
+    A.reference_frame=g.copy()
     A.trace_frames=[g.copy()]
     A.reset_boundaries=[0]
     A.ev("CAUSAL_CARRIER_GENESIS",**diag)
