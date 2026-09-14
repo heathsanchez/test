@@ -1,0 +1,326 @@
+name: ACC MDA Orbit Candidate Discriminator V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-orbit-candidate-discriminator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+  V2_RUN: "34821732935"
+
+jobs:
+  freeze:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - rank: 0
+            name: ac08857-current
+            artifact: acc-mda-probe-2-current
+            policy: current
+            challenge: ac-08857
+          - rank: 1
+            name: ac02940-current
+            artifact: acc-mda-probe-3-current
+            policy: current
+            challenge: ac-02940
+          - rank: 2
+            name: ac08534-mask3
+            artifact: acc-mda-probe-0-mask3
+            policy: mask3
+            challenge: ac-08534
+          - rank: 3
+            name: ac05232-current
+            artifact: acc-mda-probe-1-current
+            policy: current
+            challenge: ac-05232
+          - rank: 4
+            name: ac02616-mask3
+            artifact: acc-mda-probe-4-mask3
+            policy: mask3
+            challenge: ac-02616
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Confirm V2 candidate frontier before freeze
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2
+          gh run download "$V2_RUN" -n acc-mda-orbit-final-v2 -D /tmp/v2
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/v2/report.json'))
+          assert r['status']=='VERIFIED_PROSPECTIVE_ORBIT_REFINEMENT',r
+          assert sorted(r['surviving_candidates'])==[['inv'],['rot']],r
+          print('MDA_DISAGREE_FRONTIER',json.dumps(r['surviving_candidates'],sort_keys=True))
+          PY
+
+      - name: Recover immutable route
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ matrix.artifact }}
+          POLICY: ${{ matrix.policy }}
+          CHALLENGE: ${{ matrix.challenge }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']==os.environ['CHALLENGE'],(r,os.environ['CHALLENGE'])
+          assert r['policy']==os.environ['POLICY'],(r,os.environ['POLICY'])
+          print('MDA_DISAGREE_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Freeze earliest inv-vs-rot disagreement without future labels
+        env:
+          NAME: ${{ matrix.name }}
+          POLICY: ${{ matrix.policy }}
+          RANK: ${{ matrix.rank }}
+          ARTIFACT: ${{ matrix.artifact }}
+        run: |
+          set -euo pipefail
+          out="mda/evidence/andrews_curtis/orbit_candidate_discriminator/freeze/$NAME"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/orbit_candidate_discriminator.py \
+            --mode freeze \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy "$POLICY" \
+            --state-cap 512 \
+            --rep-cap 16 \
+            --max-selection-layer 12 \
+            --out-dir "$out" \
+            | tee "$out.log"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          p=next(Path('mda/evidence/andrews_curtis/orbit_candidate_discriminator/freeze').rglob('freeze.json'))
+          r=json.loads(p.read_text())
+          r['freeze_rank']=int(os.environ['RANK'])
+          r['source_artifact']=os.environ['ARTIFACT']
+          p.write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-orbit-disagree-freeze-${{ matrix.rank }}-${{ matrix.name }}
+          path: mda/evidence/andrews_curtis/orbit_candidate_discriminator/freeze/
+          retention-days: 90
+
+  reveal:
+    needs: freeze
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all future-blind freezes and choose two cheapest disagreements
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freezes
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-orbit-disagree-freeze-*' -D /tmp/freezes
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/freezes/**/freeze.json',recursive=True)]
+          hits=[r for r in rs if r.get('status')=='FROZEN_CANDIDATE_DISAGREEMENT']
+          hits.sort(key=lambda r:(r['freeze_rank'],r['witness']['selection_layer'],r['challenge_id'],r['policy']))
+          chosen=hits[:2]
+          out={
+            'experiment':'ACC_MDA_ORBIT_CANDIDATE_DISCRIMINATOR_V1_SELECTION',
+            'candidate_frontier':[['inv'],['rot']],
+            'available_disagreements':len(hits),
+            'selected':[{
+              'freeze_rank':r['freeze_rank'],
+              'challenge_id':r['challenge_id'],
+              'policy':r['policy'],
+              'source_artifact':r['source_artifact'],
+              'selection_layer':r['witness']['selection_layer'],
+              'inv_prediction':r['witness']['inv_prediction'],
+              'rot_prediction':r['witness']['rot_prediction'],
+              'freeze':r,
+            } for r in chosen],
+            'future_consequence_observed_during_selection':False,
+          }
+          Path('/tmp/selection.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_DISAGREE_SELECTION',json.dumps({
+            'available':len(hits),
+            'selected':[(x['challenge_id'],x['policy'],x['witness']['selection_layer']) for x in chosen],
+          },sort_keys=True))
+          if not chosen:
+              raise SystemExit('no candidate-disagreement pair found in frozen scope')
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before reveal
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Reveal only the preselected future consequences
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/orbit_candidate_discriminator/reveal
+          python3 - <<'PY' > /tmp/selected.tsv
+          import json
+          s=json.load(open('/tmp/selection.json'))
+          for i,x in enumerate(s['selected']):
+              print(i,x['challenge_id'],x['policy'],x['source_artifact'],sep='\t')
+              open(f'/tmp/frozen_{i}.json','w').write(json.dumps(x['freeze'],indent=2,sort_keys=True)+'\n')
+          PY
+          while IFS=$'\t' read -r i cid policy artifact; do
+            rm -rf "/tmp/source_$i"
+            mkdir -p "/tmp/source_$i"
+            gh run download "$SOURCE_RUN" -n "$artifact" -D "/tmp/source_$i"
+            src=$(find "/tmp/source_$i" -name result.json -print -quit)
+            test -n "$src"
+            out="mda/evidence/andrews_curtis/orbit_candidate_discriminator/reveal/$i-$cid-$policy"
+            mkdir -p "$out"
+            python3 mda/domains/andrews_curtis/orbit_candidate_discriminator.py \
+              --mode reveal \
+              --acc-root /tmp/acc \
+              --acsolverx-root /tmp/acsolverx \
+              --source-result "$src" \
+              --policy "$policy" \
+              --frozen-pair "/tmp/frozen_$i.json" \
+              --state-cap 512 \
+              --out-dir "$out" \
+              | tee "$out.log"
+          done < /tmp/selected.tsv
+
+      - name: Synthesize discriminator and replication
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/orbit_candidate_discriminator/final
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob(
+              'mda/evidence/andrews_curtis/orbit_candidate_discriminator/reveal/**/reveal.json',
+              recursive=True)]
+          rs=sorted(rs,key=lambda r:(r['challenge_id'],r['policy']))
+          good=[r for r in rs if r['status']=='CERTIFIED_CANDIDATE_SEPARATOR']
+          winners=[r['winner'] for r in good]
+          if len(good)>=2 and len(set(winners))==1:
+              status='VERIFIED_REPLICATED_ORBIT_CANDIDATE_SEPARATOR'
+              surviving=[[winners[0]]]
+              next_probe=(
+                'Integrate the surviving orbit distinction provisionally into state identity/search, '
+                'then demand fresh end-to-end causal certificate improvement and ablate the distinction.'
+              )
+          elif len(good)==1:
+              status='VERIFIED_SINGLE_ORBIT_CANDIDATE_SEPARATOR'
+              surviving=[[winners[0]]]
+              next_probe='Freeze one more untouched disagreement pair before provisional integration.'
+          elif len(good)>=2 and len(set(winners))>1:
+              status='ORBIT_CANDIDATES_CONTEXT_DEPENDENT'
+              surviving=[['inv'],['rot']]
+              next_probe='Do not inherit either alone; test the minimum joint/contextual refinement forced by the conflicting separators.'
+          else:
+              status='UNKNOWN_SEARCH'
+              surviving=[['inv'],['rot']]
+              next_probe='Complete the same frozen future reveal before changing representation.'
+          out={
+            'experiment':'ACC_MDA_ORBIT_CANDIDATE_DISCRIMINATOR_V1',
+            'status':status,
+            'reveals':[{
+              'challenge_id':r['challenge_id'],
+              'policy':r['policy'],
+              'selection_layer':r['frozen_witness']['selection_layer'],
+              'inv_prediction':r['frozen_witness']['inv_prediction'],
+              'rot_prediction':r['frozen_witness']['rot_prediction'],
+              'future2_cost_a':r['future2_cost_a'],
+              'future2_cost_b':r['future2_cost_b'],
+              'actual_future_relation':r['actual_future_relation'],
+              'winner':r['winner'],
+              'status':r['status'],
+            } for r in rs],
+            'surviving_candidates':surviving,
+            'scoped_representation_growth_authorized':status.startswith('VERIFIED_'),
+            'global_inheritance_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':(
+              'inv and rot were frozen by V2 before these candidate-disagreement pairs. '
+              'Pairs were selected without two-step future consequence; future labels were revealed only afterward.'
+            )
+          }
+          Path('mda/evidence/andrews_curtis/orbit_candidate_discriminator/final/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_ORBIT_DISAGREE_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Replay protected consequences after reveal
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-orbit-discriminator-final
+          path: mda/evidence/andrews_curtis/orbit_candidate_discriminator/
+          retention-days: 90
+
+# This is the cheapest forced discriminator after V2: inv and rot both survived,
+# so freeze states on which they disagree before revealing future consequence.
