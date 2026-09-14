@@ -1,5 +1,9 @@
 name: Collatz Lightning Residual Loop
 
+concurrency:
+  group: collatz-lightning-residual-loop
+  cancel-in-progress: true
+
 on:
   workflow_dispatch:
   push:
