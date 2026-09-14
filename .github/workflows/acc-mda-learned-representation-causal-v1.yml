@@ -1,0 +1,228 @@
+name: ACC MDA Learned Representation Causal V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-learned-representation-causal-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  WINNER_RUN: "34823252091"
+
+jobs:
+  freeze-baseline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Confirm learned representation was prospectively selected
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/winner
+          gh run download "$WINNER_RUN" -n acc-mda-orbit-discriminator-final -D /tmp/winner
+          report=$(find /tmp/winner -name report.json -print -quit)
+          test -n "$report"
+          python3 - "$report" <<'PY'
+          import json,sys
+          r=json.load(open(sys.argv[1]))
+          assert r['status']=='VERIFIED_REPLICATED_ORBIT_CANDIDATE_SEPARATOR',r
+          assert r['surviving_candidates']==[['rot']],r
+          assert r['strictly' if False else 'scoped_representation_growth_authorized'] is True
+          print('MDA_CAUSAL_WINNER_FROZEN',json.dumps({
+            'status':r['status'],
+            'surviving_candidates':r['surviving_candidates'],
+            'reveals':r['reveals'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned verifier and GS-Sub substrate
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected official consequences before selection
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 8G /swapfile-mda-causal
+          sudo chmod 600 /swapfile-mda-causal
+          sudo mkswap /swapfile-mda-causal
+          sudo swapon /swapfile-mda-causal
+
+      - name: Freeze fresh targets and baseline certificates only
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/learned_representation_causal/freeze"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/learned_representation_causal.py \
+            --mode select \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --max-nodes 5000 \
+            --candidate-scan 16 \
+            --freeze-count 4 \
+            --reverse-depth 7 \
+            --reverse-cap 150000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+          python3 - <<'PY'
+          import json
+          r=json.load(open('mda/evidence/andrews_curtis/learned_representation_causal/freeze/baseline_freeze.json'))
+          assert r['status']=='FROZEN_BASELINE_BATCH',r
+          assert r['refined_outcomes_observed'] is False
+          assert len(r['frozen_targets'])==4,r
+          PY
+
+      - name: Replay protected consequences after freeze
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-mda-causal-baseline-freeze
+          path: mda/evidence/andrews_curtis/learned_representation_causal/freeze/
+          retention-days: 90
+
+  causal-evaluation:
+    needs: freeze-baseline
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover prospectively frozen baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-mda-causal-baseline-freeze -D /tmp/freeze
+          test -f /tmp/freeze/baseline_freeze.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/freeze/baseline_freeze.json'))
+          print('MDA_CAUSAL_FROZEN_TARGETS',[
+            (x['challenge_id'],x['atomic_length']) for x in r['frozen_targets']
+          ])
+          assert r['refined_outcomes_observed'] is False
+          PY
+
+      - name: Fetch identical pinned verifier and GS-Sub substrate
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected official consequences before intervention
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 8G /swapfile-mda-causal-eval
+          sudo chmod 600 /swapfile-mda-causal-eval
+          sudo mkswap /swapfile-mda-causal-eval
+          sudo swapon /swapfile-mda-causal-eval
+
+      - name: Install learned distinction and run matched causal evaluation
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/learned_representation_causal/final"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/learned_representation_causal.py \
+            --mode evaluate \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --baseline-freeze /tmp/freeze/baseline_freeze.json \
+            --reverse-depth 7 \
+            --reverse-cap 150000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Verify every improved certificate as a standalone official submission
+        run: |
+          set -euo pipefail
+          f=mda/evidence/andrews_curtis/learned_representation_causal/final/improved_submission.txt
+          if test -s "$f"; then
+            PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+              --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+              --submission "$f"
+          else
+            echo "No strict improvements; valid negative experiment."
+          fi
+
+      - name: Replay protected consequences after intervention
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Type final result
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          p='mda/evidence/andrews_curtis/learned_representation_causal/final/result.json'
+          r=json.load(open(p))
+          print('MDA_CAUSAL_FINAL',json.dumps({
+            'status':r['status'],
+            'strict_improvements':r['strict_improvements'],
+            'total_atomic_saving':r['total_atomic_saving'],
+            'causal_ablation_pass':r['causal_ablation_pass'],
+            'transfer_pass':r['transfer_pass'],
+            'cases':[{
+              'cid':x['challenge_id'],
+              'baseline':x['frozen_baseline']['atomic_length'],
+              'refined':x['refined']['atomic_length'],
+              'saving':x['saving'],
+            } for x in r['cases']],
+          },sort_keys=True))
+          assert r['causal_ablation_pass'] is True
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-learned-representation-causal-final
+          path: mda/evidence/andrews_curtis/learned_representation_causal/
+          retention-days: 90
+
+# No leaderboard submission occurs here.
+# The experiment first freezes target identities and baseline certificates, then
+# changes only state identity by adding the already prospectively selected rot
+# coordinate. Any strict official-certificate gain must disappear on ablation.
