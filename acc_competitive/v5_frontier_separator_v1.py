@@ -48,7 +48,11 @@ def main():
     ap.add_argument("--max-quotient-total", type=int, default=100)
     ap.add_argument("--reverse-depth", type=int, default=7)
     ap.add_argument("--reverse-cap", type=int, default=250000)
+    ap.add_argument("--beams", default="1,16,64", help="comma-separated frozen compiler beams")
     a = ap.parse_args()
+    beams = tuple(dict.fromkeys(int(x) for x in a.beams.split(",") if x.strip()))
+    if not beams or any(x < 1 for x in beams):
+        raise ValueError(("bad_beams", a.beams))
 
     root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(root / "andrews_curtis"))
@@ -134,6 +138,7 @@ def main():
         "reverse_hist": reverse_hist,
         "reverse_seconds": reverse_seconds,
         "compiler_trials": [],
+        "declared_beams": list(beams),
     }
 
     out = Path(a.out_dir)
@@ -146,7 +151,7 @@ def main():
         row["quotient_steps"] = len(qpath) - 1
         row["quotient_path_sha256"] = hashlib.sha256(raw).hexdigest()
 
-        for beam in (1, 16, 64):
+        for beam in beams:
             ct0 = time.time()
             atomics, comp = compile_quotient_path_optimized(
                 core, ns, exact, qpath, reverse_paths,
