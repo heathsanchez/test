@@ -14,12 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run multi-level development compile replay
-        run: python experiments/arc3_tonight/developmental_ls20_v4.py | tee arc3_developmental_v4.log
+      - name: Run replay-qualified developmental compilation
+        shell: bash
+        run: |
+          set -o pipefail
+          python experiments/arc3_tonight/developmental_ls20_v4b.py | tee arc3_developmental_v4b.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-developmental-v4
+          name: arc3-developmental-v4b
           path: |
-            arc3_developmental_v4.log
-            arc3_developmental_v4_result.json
+            arc3_developmental_v4b.log
+            arc3_developmental_v4b_result.json
