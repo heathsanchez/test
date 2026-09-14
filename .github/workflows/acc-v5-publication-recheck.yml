@@ -1,0 +1,85 @@
+name: ACC V5 Publication Recheck
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-v5-publication-recheck.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  SOURCE_RUN: "34790205664"
+
+jobs:
+  recheck:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover prior verified V5 frontier candidates
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/prior acc_competitive/v5_publication_recheck_input
+          gh run download "$SOURCE_RUN" -n acc-v5-frontier-final -D /tmp/prior
+          src=$(find /tmp/prior -path '*/v5_frontier_peephole/fortified_ac.txt' -print -quit)
+          test -n "$src"
+          cp "$src" acc_competitive/v5_publication_recheck_input/fortified_ac.txt
+          echo "RECOVERED_ROWS=$(wc -l < acc_competitive/v5_publication_recheck_input/fortified_ac.txt)"
+
+      - name: Fetch pinned verifier authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Fresh scoring recheck with repaired quota gate
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/v5_publication_recheck
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/v5_publication_recheck_input/fortified_ac.txt' \
+            --out-dir acc_competitive/v5_publication_recheck \
+            --cycle 5 \
+            | tee acc_competitive/v5_publication_recheck.log
+          python3 - <<'PY'
+          import json
+          p='acc_competitive/v5_publication_recheck/report.json'
+          r=json.load(open(p))
+          assert r['quota_reason'] in ('ok','daily_quota_exhausted'), r
+          assert r['quota_reason'] != 'quota_history_has_unparseable_timestamps', r
+          print('QUOTA_PARSER_FIXED',json.dumps({
+              'quota_blocked':r['quota_blocked'],
+              'quota_reason':r['quota_reason'],
+              'used':r['daily_submissions_used_pre'],
+              'remaining':r['daily_submissions_remaining_pre'],
+              'selected_rows':r['selected_rows'],
+              'selected_scoring_ties':r['selected_scoring_ties'],
+              'selected_strict_improvements':r['selected_strict_improvements'],
+              'submission_id':r['submission_id'],
+              'terminal_status':r['terminal_status'],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-v5-publication-recheck
+          path: |
+            acc_competitive/v5_publication_recheck/
+            acc_competitive/v5_publication_recheck.log
+            acc_competitive/v5_publication_recheck_input/
+          retention-days: 90
