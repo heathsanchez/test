@@ -291,17 +291,43 @@ class Agent:
         if self.use_event_state or oldpos is None or newpos is None or st=="GAME_OVER":
             return False
         m=self.residual_mask(prev,g,oldpos,newpos)
-        ys,xs=np.where(m)
-        # Ordinary UI/resource ticks are tiny. Authorize a new persistent state
-        # only when a compact non-carrier residual is large enough to be a real
-        # intervention consequence.
-        if len(xs)<6:
+        pts=list(zip(*np.where(m)))
+        if len(pts)<6:
             return False
-        y0,y1=int(ys.min()),int(ys.max())+1
-        x0,x1=int(xs.min()),int(xs.max())+1
-        if (y1-y0)*(x1-x0)>160:
+
+        # Residuals may contain several unrelated effects (e.g. a tiny resource tick
+        # plus a persistent symbol change). Cluster nearby changed pixels and let only
+        # a compact cluster authorize state genesis. Long thin monotonic bars are
+        # explicitly rejected by shape, not by palette/location.
+        remaining=set((int(y),int(x)) for y,x in pts)
+        clusters=[]
+        while remaining:
+            seed=remaining.pop(); q=[seed]; cl=[seed]
+            while q:
+                y,x=q.pop()
+                near=[p for p in list(remaining)
+                      if max(abs(p[0]-y),abs(p[1]-x))<=3]
+                for p in near:
+                    remaining.remove(p); q.append(p); cl.append(p)
+            clusters.append(cl)
+
+        candidates=[]
+        for cl in clusters:
+            if len(cl)<6: continue
+            ys=[p[0] for p in cl]; xs=[p[1] for p in cl]
+            y0,y1=min(ys),max(ys)+1; x0,x1=min(xs),max(xs)+1
+            h,w=y1-y0,x1-x0
+            aspect=max(h,w)/max(1,min(h,w))
+            area=h*w
+            compact=area/max(1,len(cl))
+            if aspect>4.0 or compact>4.0:
+                continue
+            candidates.append((len(cl),-area,(y0,y1,x0,x1),cl))
+        if not candidates:
             return False
-        pad=4
+
+        _,_,(y0,y1,x0,x1),cl=max(candidates)
+        pad=3
         self.event_box=(max(0,y0-pad),min(g.shape[0],y1+pad),
                         max(0,x0-pad),min(g.shape[1],x1+pad))
         self.use_event_state=True
@@ -313,8 +339,8 @@ class Agent:
         # Keep learned geometry, but re-index active consequence state.
         self.graph.clear(); self.tried.clear(); self.consequence.clear()
         self.ev("BIRTH_PERSISTENT_EVENT_STATE",box=list(self.event_box),
-                witness_position=list(newpos),residual_pixels=len(xs),
-                before=before,after=after)
+                witness_position=list(newpos),residual_pixels=len(cl),
+                residual_shape=[y1-y0,x1-x0],before=before,after=after)
         return True
 
     def locate(self,g):
