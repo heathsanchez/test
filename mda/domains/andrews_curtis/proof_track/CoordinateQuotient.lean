@@ -13,6 +13,13 @@ def otherRelatorNormalClosure {n : ℕ} (R : Relators n) (i : Fin n) :
     Subgroup (Word n) :=
   sourceNormalClosure (otherRelatorSet R i)
 
+/-- The other-relator subgroup is a normal closure, hence normal. -/
+instance otherRelatorNormalClosure_normal {n : ℕ}
+    (R : Relators n) (i : Fin n) :
+    (otherRelatorNormalClosure R i).Normal := by
+  unfold otherRelatorNormalClosure sourceNormalClosure
+  infer_instance
+
 /-- A single removable twist from another relator can be inserted into
 coordinate i while all other coordinates are restored exactly. -/
 theorem coordinate_twist_insert_reachable {n : ℕ}
