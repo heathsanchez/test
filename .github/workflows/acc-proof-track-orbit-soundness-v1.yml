@@ -37,6 +37,7 @@ jobs:
         run: |
           MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
           lake exe cache get
+          lake build
 
       - name: Check orbit soundness lemmas
         run: |
