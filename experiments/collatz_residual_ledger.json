@@ -66,50 +66,105 @@
         "exact_first_descent": 406
       }
     ],
-    "pending_shards": [
-      0,
-      1,
-      2,
-      7,
-      8,
-      9,
-      10,
-      11,
-      12,
-      14,
-      15
-    ]
+    "pending_shards": [],
+    "status": "SAT in all 16 shards by exact concrete witnesses"
   },
   "active_residuals": [
     {
       "kind": "interval_survival",
-      "shard": 3,
-      "next_horizon": 475,
-      "priority": 1
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 5,
-      "next_horizon": 594,
-      "priority": 1
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 6,
-      "next_horizon": 542,
-      "priority": 1
+      "shard": 12,
+      "next_horizon": 555,
+      "priority": 555
     },
     {
       "kind": "interval_survival",
       "shard": 4,
-      "next_horizon": 548,
-      "priority": 1
+      "next_horizon": 559,
+      "priority": 559
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 15,
+      "next_horizon": 561,
+      "priority": 561
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 0,
+      "next_horizon": 564,
+      "priority": 564
     },
     {
       "kind": "interval_survival",
       "shard": 13,
       "next_horizon": 564,
-      "priority": 1
+      "priority": 564
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 7,
+      "next_horizon": 567,
+      "priority": 567
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 8,
+      "next_horizon": 575,
+      "priority": 575
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 10,
+      "next_horizon": 577,
+      "priority": 577
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 14,
+      "next_horizon": 585,
+      "priority": 585
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 5,
+      "next_horizon": 594,
+      "priority": 594
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 3,
+      "next_horizon": 597,
+      "priority": 597
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 6,
+      "next_horizon": 602,
+      "priority": 602
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 9,
+      "next_horizon": 624,
+      "priority": 624
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 11,
+      "next_horizon": 632,
+      "priority": 632
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 2,
+      "next_horizon": 635,
+      "priority": 635
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 1,
+      "next_horizon": 707,
+      "priority": 707
     }
   ],
   "rejected_or_deprioritized": [
@@ -200,6 +255,95 @@
       "exact_first_descent": 563,
       "next_exact_horizon": 564,
       "source": "local exact replay after targeted bit search"
+    }
+  ],
+  "best_known_by_shard": {
+    "0": {
+      "witness_decimal": "2461662630508620677119",
+      "first_descent": 563,
+      "v2_n_plus_1": 47
+    },
+    "1": {
+      "witness_decimal": "2680653751195464105983",
+      "first_descent": 706,
+      "v2_n_plus_1": 46
+    },
+    "2": {
+      "witness_decimal": "2728991097102264172543",
+      "first_descent": 634,
+      "v2_n_plus_1": 50
+    },
+    "3": {
+      "witness_decimal": "2832550596477462773759",
+      "first_descent": 596,
+      "v2_n_plus_1": 46
+    },
+    "4": {
+      "witness_decimal": "3039892382671926460415",
+      "first_descent": 558,
+      "v2_n_plus_1": 46
+    },
+    "5": {
+      "witness_decimal": "3162861600394673389567",
+      "first_descent": 593,
+      "v2_n_plus_1": 42
+    },
+    "6": {
+      "witness_decimal": "3305284653269521530879",
+      "first_descent": 601,
+      "v2_n_plus_1": 49
+    },
+    "7": {
+      "witness_decimal": "3556483618535225950207",
+      "first_descent": 566,
+      "v2_n_plus_1": 53
+    },
+    "8": {
+      "witness_decimal": "3653768970310799851519",
+      "first_descent": 574,
+      "v2_n_plus_1": 48
+    },
+    "9": {
+      "witness_decimal": "3750855389646583496703",
+      "first_descent": 623,
+      "v2_n_plus_1": 46
+    },
+    "10": {
+      "witness_decimal": "3933365805239353999359",
+      "first_descent": 576,
+      "v2_n_plus_1": 46
+    },
+    "11": {
+      "witness_decimal": "4093486645653396258815",
+      "first_descent": 631,
+      "v2_n_plus_1": 49
+    },
+    "12": {
+      "witness_decimal": "4151437276808539537407",
+      "first_descent": 554,
+      "v2_n_plus_1": 50
+    },
+    "13": {
+      "witness_decimal": "4407263266262698950655",
+      "first_descent": 563,
+      "v2_n_plus_1": 34
+    },
+    "14": {
+      "witness_decimal": "4451441751236058021887",
+      "first_descent": 584,
+      "v2_n_plus_1": 49
+    },
+    "15": {
+      "witness_decimal": "4639626350515594461183",
+      "first_descent": 560,
+      "v2_n_plus_1": 54
+    }
+  },
+  "compiled_rules": [
+    {
+      "rule": "n = 2^k m - 1 => after k shortcut odd steps, T^k(n) = 3^k m - 1",
+      "use": "compile long trailing-one prefixes into m-space",
+      "status": "exact"
     }
   ]
 }
