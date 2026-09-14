@@ -1,4 +1,5 @@
 import AC
+import Mathlib.Tactic
 
 /-!
 # Orbit soundness lemmas for Andrews--Curtis search
@@ -206,5 +207,186 @@ theorem relatorSwap_standard_iff {n : ℕ} (R : Relators n) (i j : Fin n)
       Reachable (swapRelators R i j) (standard n) := by
   have hb := relatorSwap_bireachable R i j hij
   exact reachable_target_iff_of_bireachable hb.1 hb.2
+
+
+/-! ## Parameterized funnel family
+
+The recurrent-route miner found that two independent verified certificates
+coalesce at
+
+`(x y⁻² x⁻¹ y³, y⁻⁷ x⁻¹)`.
+
+That state is one instance of the following infinite family.  The proof below
+is constructive and uses only the official `Step` relation.
+-/
+
+/-- Derived left multiplication of one relator by another. -/
+theorem funnel_leftMul_reachable {n : ℕ} (R : Relators n)
+    (i j : Fin n) (hij : i ≠ j) :
+    Reachable R (Function.update R i (R j * R i)) := by
+  let S := Function.update R i (R i * R j)
+  have h1 : Step R S := by
+    simpa [S] using Step.mulRight R i j hij
+  have h2 : Step S (Function.update R i (R j * R i)) := by
+    simpa [S, hij, Ne.symm hij, mul_assoc] using Step.conj S i (R j)
+  exact Relation.ReflTransGen.tail (step_reachable h1) h2
+
+/-- Derived left multiplication by the inverse of another relator. -/
+theorem funnel_leftMulInv_reachable {n : ℕ} (R : Relators n)
+    (i j : Fin n) (hij : i ≠ j) :
+    Reachable R (Function.update R i ((R j)⁻¹ * R i)) := by
+  let S1 := Function.update R j (R j)⁻¹
+  let S2 := Function.update S1 i (S1 i * S1 j)
+  let S3 := Function.update S2 j (S2 j)⁻¹
+  let S4 := Function.update R i ((R j)⁻¹ * R i)
+
+  have h1 : Step R S1 := by
+    simpa [S1] using Step.inv R j
+  have h2 : Step S1 S2 := by
+    simpa [S2] using Step.mulRight S1 i j hij
+  have h3 : Step S2 S3 := by
+    simpa [S3] using Step.inv S2 j
+  have h4 : Step S3 S4 := by
+    simpa [S1, S2, S3, S4, hij, Ne.symm hij, mul_assoc] using
+      Step.conj S3 i (R j)⁻¹
+
+  have p1 : Reachable R S1 := step_reachable h1
+  have p2 : Reachable R S2 := Relation.ReflTransGen.tail p1 h2
+  have p3 : Reachable R S3 := Relation.ReflTransGen.tail p2 h3
+  exact Relation.ReflTransGen.tail p3 h4
+
+def funnelX : Word 2 := FreeGroup.of (0 : Fin 2)
+def funnelY : Word 2 := FreeGroup.of (1 : Fin 2)
+
+def funnelA (m : ℕ) : Word 2 :=
+  funnelX * (funnelY⁻¹)^m * funnelX⁻¹ * funnelY^(m+1)
+
+def funnelB (k : ℕ) : Word 2 :=
+  (funnelY⁻¹)^k * funnelX⁻¹
+
+def funnelC (m k : ℕ) : Word 2 :=
+  (funnelY⁻¹)^m * funnelB k * funnelY^m
+
+def funnelRelators (m k : ℕ) : Relators 2 :=
+  ![funnelA m, funnelB k]
+
+theorem funnel_B_mul_A (m k : ℕ) :
+    funnelB k * funnelA m = funnelC m k * funnelY := by
+  simp [funnelA, funnelB, funnelC]
+  group
+
+theorem funnel_conj_B (m k : ℕ) :
+    (funnelY⁻¹)^m * funnelB k * ((funnelY⁻¹)^m)⁻¹ =
+      funnelC m k := by
+  simp [funnelC]
+  group
+
+theorem funnel_unconj_C (m k : ℕ) :
+    funnelY^m * funnelC m k * (funnelY^m)⁻¹ = funnelB k := by
+  simp [funnelC]
+  group
+
+theorem funnel_Y_mul_B_succ (k : ℕ) :
+    funnelY * funnelB (k+1) = funnelB k := by
+  simp [funnelB]
+  group
+
+/-- Once the first relator is `y`, the second relator
+`y^{-k} x^{-1}` is reduced uniformly to `x^{-1}`. -/
+theorem funnel_eliminate_k (k : ℕ) :
+    Reachable (![funnelY, funnelB k] : Relators 2)
+      (![funnelY, funnelX⁻¹] : Relators 2) := by
+  induction k with
+  | zero =>
+      simpa [funnelB] using
+        (Relation.ReflTransGen.refl :
+          Reachable (![funnelY, funnelX⁻¹] : Relators 2)
+            (![funnelY, funnelX⁻¹] : Relators 2))
+  | succ k ih =>
+      have hstep := funnel_leftMul_reachable
+        (![funnelY, funnelB (k+1)] : Relators 2)
+        (1 : Fin 2) (0 : Fin 2) (by decide)
+      have hreduce :
+          Reachable (![funnelY, funnelB (k+1)] : Relators 2)
+            (![funnelY, funnelB k] : Relators 2) := by
+        simpa [funnel_Y_mul_B_succ] using hstep
+      exact hreduce.trans ih
+
+/-- Infinite constructive family discovered from the shared proof funnel.
+
+For every `m,k ≥ 0`, the balanced rank-two presentation
+
+`(x y^{-m} x^{-1} y^{m+1}, y^{-k} x^{-1})`
+
+is Andrews--Curtis reachable to the standard presentation `(x,y)`.
+-/
+theorem funnelFamily_reachable (m k : ℕ) :
+    Reachable (funnelRelators m k) (standard 2) := by
+  let C := funnelC m k
+
+  have h1raw := funnel_leftMul_reachable
+    (funnelRelators m k) (0 : Fin 2) (1 : Fin 2) (by decide)
+  have h1 :
+      Reachable (funnelRelators m k)
+        (![C * funnelY, funnelB k] : Relators 2) := by
+    simpa [funnelRelators, C, funnel_B_mul_A] using h1raw
+
+  have hs2 :
+      Step (![C * funnelY, funnelB k] : Relators 2)
+        (![C * funnelY, C] : Relators 2) := by
+    simpa [C, funnel_conj_B] using
+      Step.conj (![C * funnelY, funnelB k] : Relators 2)
+        (1 : Fin 2) ((funnelY⁻¹)^m)
+  have h2 :
+      Reachable (funnelRelators m k)
+        (![C * funnelY, C] : Relators 2) :=
+    Relation.ReflTransGen.tail h1 hs2
+
+  have h3raw := funnel_leftMulInv_reachable
+    (![C * funnelY, C] : Relators 2)
+      (0 : Fin 2) (1 : Fin 2) (by decide)
+  have h3local :
+      Reachable (![C * funnelY, C] : Relators 2)
+        (![funnelY, C] : Relators 2) := by
+    simpa using h3raw
+  have h3 :
+      Reachable (funnelRelators m k)
+        (![funnelY, C] : Relators 2) :=
+    h2.trans h3local
+
+  have hs4 :
+      Step (![funnelY, C] : Relators 2)
+        (![funnelY, funnelB k] : Relators 2) := by
+    simpa [C, funnel_unconj_C] using
+      Step.conj (![funnelY, C] : Relators 2)
+        (1 : Fin 2) (funnelY^m)
+  have h4 :
+      Reachable (funnelRelators m k)
+        (![funnelY, funnelB k] : Relators 2) :=
+    Relation.ReflTransGen.tail h3 hs4
+
+  have h5 :
+      Reachable (funnelRelators m k)
+        (![funnelY, funnelX⁻¹] : Relators 2) :=
+    h4.trans (funnel_eliminate_k k)
+
+  have hs6 :
+      Step (![funnelY, funnelX⁻¹] : Relators 2)
+        (![funnelY, funnelX] : Relators 2) := by
+    simpa using
+      Step.inv (![funnelY, funnelX⁻¹] : Relators 2) (1 : Fin 2)
+  have h6 :
+      Reachable (funnelRelators m k)
+        (![funnelY, funnelX] : Relators 2) :=
+    Relation.ReflTransGen.tail h5 hs6
+
+  have hswap := relatorSwap_reachable
+    (![funnelY, funnelX] : Relators 2)
+      (0 : Fin 2) (1 : Fin 2) (by decide)
+  have h7 :
+      Reachable (![funnelY, funnelX] : Relators 2) (standard 2) := by
+    simpa [swapRelators, funnelX, funnelY, standard] using hswap
+
+  exact h6.trans h7
 
 end AC
