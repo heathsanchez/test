@@ -670,7 +670,7 @@ def main():
             A.gameovers+=1; A.level_gameovers+=1
             A.ev("GAME_OVER",step=i+1,total_count=A.gameovers,
                  level_count=A.level_gameovers,level=A.level)
-            if A.level_gameovers>=6:
+            if A.level_gameovers>=12:
                 A.ev("LEVEL_FAILURE_BUDGET_EXHAUSTED",level=A.level,
                      failures=A.level_gameovers)
                 break
