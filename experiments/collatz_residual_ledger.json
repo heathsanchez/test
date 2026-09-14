@@ -364,6 +364,15 @@
       "certificate_method": "exhaustive compiled m-space scan using n=2^45 m-1 and T^45(n)=3^45 m-1",
       "wall_seconds_local": 19.99,
       "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 44",
+      "exact_seed_count": 66224128,
+      "max_first_descent": 715,
+      "extremal_seed_decimal": "3535321889981467721727",
+      "certificate_method": "exact valuation slice; compile k odd steps plus forced even step",
+      "wall_seconds_local": 19.28,
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -371,5 +380,10 @@
     "exact_first_descent": 734,
     "v2_n_plus_1": 45,
     "source": "exact exhaustive v2(n+1)>=45 compiled region"
+  },
+  "current_structural_residual": {
+    "predicate": "live interval and v2(n+1) <= 43",
+    "reason": "v2>=45 compiled with max 734; v2=44 compiled with max 715",
+    "next_action": "localize exact-v2=43 cost by shard before changing frame"
   }
 }
