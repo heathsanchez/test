@@ -392,14 +392,19 @@ theorem funnelFamily_reachable (m k : ℕ) :
   have h3raw := funnel_leftMulInv_reachable
     (![C * funnelY, C] : Relators 2)
       (0 : Fin 2) (1 : Fin 2) (by decide)
+  have h3mid :
+      Reachable (![C * funnelY, C] : Relators 2)
+        (Function.update (![C * funnelY, C] : Relators 2)
+          (0 : Fin 2) (C⁻¹ * (C * funnelY))) := by
+    simpa using h3raw
   have hCY : C⁻¹ * (C * funnelY) = funnelY := by
     group
-  rw [hCY] at h3raw
+  rw [hCY] at h3mid
   have h3local :
       Reachable (![C * funnelY, C] : Relators 2)
         (![funnelY, C] : Relators 2) := by
-    rw [funnel_update_zero] at h3raw
-    exact h3raw
+    rw [funnel_update_zero] at h3mid
+    exact h3mid
   have h3 :
       Reachable (funnelRelators m k)
         (![funnelY, C] : Relators 2) :=
