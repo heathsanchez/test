@@ -21,7 +21,7 @@ jobs:
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: '3.12'
 
       - name: Install official ARC-AGI-3 runtime
         run: |
@@ -37,6 +37,7 @@ jobs:
       - name: Hash result packet
         if: always()
         run: |
+          mkdir -p arc3-results
           sha256sum scripts/arc3_developmental_kernel.py > arc3-results/hashes.txt
           if [ -f arc3-results/ls20-developmental-result.json ]; then sha256sum arc3-results/ls20-developmental-result.json >> arc3-results/hashes.txt; fi
           if [ -f arc3-results/run.log ]; then sha256sum arc3-results/run.log >> arc3-results/hashes.txt; fi
