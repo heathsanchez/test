@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run one-bit resource ledger on Level4
+      - name: Run scalar resource-count ledger on Level4
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v22_one_bit_resource_ledger.py | tee arc3_v22_one_bit_resource.log
+          python experiments/arc3_tonight/developmental_ls20_v23_scalar_resource_count_ledger.py | tee arc3_v23_scalar_resource.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v22-one-bit-resource
+          name: arc3-v23-scalar-resource
           path: |
-            arc3_v22_one_bit_resource.log
-            arc3_developmental_v22_one_bit_resource_ledger_result.json
+            arc3_v23_scalar_resource.log
+            arc3_developmental_v22_scalar_resource_count_ledger_result.json
