@@ -1,0 +1,38 @@
+name: MDA Recursive Residue Equation V1
+
+on:
+  push:
+    paths:
+      - "scripts/mda_recursive_residue_equation_v1.py"
+      - ".github/workflows/mda-recursive-residue-equation-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recursive-residue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run recursive residue equation test
+        run: |
+          set -o pipefail
+          python scripts/mda_recursive_residue_equation_v1.py | tee mda-recursive-residue-equation-v1.log
+          grep -F "VERIFIED_RECURSIVE_RESIDUE_EQUATION_WITH_ANTICHAIN_PRESENT" mda-recursive-residue-equation-v1.log
+          grep -F "FALSIFIED_SCALAR_MINIMUM_IMPLIES_IDENTITY_WHEN_MINIMUM_IS_NONUNIQUE" mda-recursive-residue-equation-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mda-recursive-residue-equation-v1-log
+          path: mda-recursive-residue-equation-v1.log
+          if-no-files-found: warn
