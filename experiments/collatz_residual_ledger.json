@@ -345,5 +345,31 @@
       "use": "compile long trailing-one prefixes into m-space",
       "status": "exact"
     }
-  ]
+  ],
+  "compiled_regions": [
+    {
+      "predicate": "live interval and v2(n+1) >= 46",
+      "exact_seed_count": 33112064,
+      "max_first_descent": 706,
+      "extremal_seed_decimal": "2680653751195464105983",
+      "certificate_method": "exhaustive compiled m-space scan using n=2^46 m-1 and T^46(n)=3^46 m-1",
+      "wall_seconds_local": 10.28,
+      "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) >= 45",
+      "exact_seed_count": 66224128,
+      "max_first_descent": 734,
+      "extremal_seed_decimal": "4120704748135735361535",
+      "certificate_method": "exhaustive compiled m-space scan using n=2^45 m-1 and T^45(n)=3^45 m-1",
+      "wall_seconds_local": 19.99,
+      "status": "compiled"
+    }
+  ],
+  "global_best_known": {
+    "witness_decimal": "4120704748135735361535",
+    "exact_first_descent": 734,
+    "v2_n_plus_1": 45,
+    "source": "exact exhaustive v2(n+1)>=45 compiled region"
+  }
 }
