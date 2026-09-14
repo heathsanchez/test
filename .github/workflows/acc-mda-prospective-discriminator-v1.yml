@@ -51,6 +51,7 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$SAIR_API_KEY"
+          mkdir -p mda/evidence/andrews_curtis
           python3 acc_competitive/competitive_scout_v2.py             --acc-root /tmp/acc             --out-dir mda/evidence/andrews_curtis/prospective_freeze             --competitive-wins acc_competitive/competitive_wins_seed_v1.json             --competitive-attempted acc_competitive/competitive_attempted_seed_v1.json             --attack-count 1 --defend-fraction 0 --shards 1             --mechanism-id mda-prospective-freeze-v1             | tee mda/evidence/andrews_curtis/prospective_freeze.log
 
       - name: Recover pre-probe historical responsiveness and prior probe membership
