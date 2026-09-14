@@ -1,0 +1,23 @@
+name: ARC3 developmental probe
+on:
+  push:
+    branches: [arc3-developmental-tonight]
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install ARC SDK
+        run: python -m pip install --upgrade pip && pip install arc-agi
+      - name: Run public ARC-AGI-3 probe
+        run: python experiments/arc3_tonight/probe.py | tee arc3_probe.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc3-probe
+          path: arc3_probe.log
