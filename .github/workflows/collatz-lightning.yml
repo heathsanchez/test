@@ -1,0 +1,113 @@
+name: Collatz Lightning Residual Loop
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/collatz-lightning.yml"
+      - "experiments/collatz_exact_adaptive.py"
+      - "experiments/collatz_exact_cnf_even.py"
+      - "experiments/collatz_residual_ledger.json"
+
+jobs:
+  validate:
+    name: protected-control
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat
+      - name: Exact protected replay
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_cnf_even.py \
+            --bits 20 \
+            --lower 524288 \
+            --upper 1048575 \
+            --horizon 183 \
+            --checkpoints 182,183 \
+            --out results/control.json
+          python - <<'PY'
+          import json
+          d=json.load(open('results/control.json'))
+          rs=d['results']
+          assert [(r['horizon'],r['status']) for r in rs] == [(182,'SAT'),(183,'UNSAT')], rs
+          assert rs[0]['witness'] == 1027431, rs[0]
+          print('PROTECTED_CONTROL_OK')
+          PY
+
+  plan:
+    name: residual-plan
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.plan.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: plan
+        name: Compile active frontier from ledger
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          d=json.load(open('experiments/collatz_residual_ledger.json'))
+          best={}
+          for r in d['active_residuals']:
+              s=int(r['shard'])
+              h=int(r['next_horizon'])
+              p=int(r.get('priority',100))
+              old=best.get(s)
+              if old is None or (p,h)<(old['priority'],old['start']):
+                  best[s]={'shard':s,'start':h,'priority':p}
+          include=sorted(best.values(),key=lambda x:(x['priority'],x['shard']))
+          print('matrix='+json.dumps({'include':include},separators=(',',':')))
+          print('Active frontier:',include)
+          PY
+
+  adaptive:
+    name: residual-${{ matrix.shard }}
+    needs: [validate, plan]
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.plan.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat
+      - name: Adaptive exact solve
+        shell: bash
+        run: |
+          mkdir -p results
+          read LO HI < <(python - <<'PY'
+          L=2392312122059207475200
+          U=4722366482869645213695
+          S=16
+          i=${{ matrix.shard }}
+          total=U-L+1
+          lo=L + total*i//S
+          hi=L + total*(i+1)//S - 1
+          if i==S-1: hi=U
+          print(lo,hi)
+          PY
+          )
+          python experiments/collatz_exact_adaptive.py \
+            --bits 72 \
+            --lower "$LO" \
+            --upper "$HI" \
+            --start-horizon ${{ matrix.start }} \
+            --max-horizon 900 \
+            --min-jump 16 \
+            --replay-limit 5000 \
+            --out results/residual-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-lightning-${{ matrix.shard }}
+          path: results/residual-${{ matrix.shard }}.json
+          if-no-files-found: warn
