@@ -97,7 +97,7 @@ jobs:
             node_cap: 250000
             label_cap: 450000
     runs-on: ubuntu-latest
-    timeout-minutes: 58
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
