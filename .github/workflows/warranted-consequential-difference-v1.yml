@@ -1,0 +1,64 @@
+name: Warranted Consequential Difference V1
+
+on:
+  push:
+    paths:
+      - "experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md"
+      - "scripts/warranted_consequential_difference_v1_test.py"
+      - ".github/workflows/warranted-consequential-difference-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  falsification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prove frozen candidate unchanged since freeze commit
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 978af4e94815128b4c517562f9a0bae26eea1e55 --             experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md
+          echo "WCD_V1_FROZEN_CANDIDATE_UNCHANGED"
+
+      - name: Replay prior independent MDA evidence
+        run: |
+          set -o pipefail
+          python scripts/mda_recursive_residue_equation_v1.py | tee prereq-recursive-residue.log
+          grep -F "VERIFIED_RECURSIVE_RESIDUE_EQUATION_WITH_ANTICHAIN_PRESENT" prereq-recursive-residue.log
+
+          python scripts/mda_genesis_solvent_convergence_v1.py | tee prereq-genesis-solvent.log
+          grep -F "VERIFIED_BIDIRECTIONAL_GENESIS_SOLVENT_CONVERGENCE_ON_JOINT_MINIMUM" prereq-genesis-solvent.log
+
+      - name: Replay historical holdout adjudication
+        run: |
+          set -o pipefail
+          python scripts/mda_historical_holdout_adjudicator_v1.py             experiments/mda_historical_holdout_v1/historical_outcomes_v1.json             | tee prereq-historical-holdout.log
+          grep -F "HISTORICAL_HOLDOUT_ADJUDICATION_PASS" prereq-historical-holdout.log
+
+      - name: Run frozen-candidate falsification suite
+        run: |
+          set -o pipefail
+          python scripts/warranted_consequential_difference_v1_test.py             | tee warranted-consequential-difference-v1.log
+          grep -F "SURVIVED_DEDICATED_FALSIFICATION_SUITE_WARRANTED_CONSEQUENTIAL_DIFFERENCE_V1"             warranted-consequential-difference-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: warranted-consequential-difference-v1-evidence
+          path: |
+            experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md
+            prereq-recursive-residue.log
+            prereq-genesis-solvent.log
+            prereq-historical-holdout.log
+            warranted-consequential-difference-v1.log
+          if-no-files-found: warn
