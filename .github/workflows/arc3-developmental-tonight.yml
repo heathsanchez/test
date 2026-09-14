@@ -1,12 +1,12 @@
-name: ARC3 developmental probe
+name: ARC3 developmental run
 on:
   push:
     branches: [arc3-developmental-tonight]
   workflow_dispatch:
 jobs:
-  probe:
+  run:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,10 +14,12 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run public ARC-AGI-3 probe
-        run: python experiments/arc3_tonight/probe.py | tee arc3_probe.log
+      - name: Run developmental LS20 test
+        run: python experiments/arc3_tonight/developmental_ls20.py | tee arc3_developmental.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-probe
-          path: arc3_probe.log
+          name: arc3-developmental
+          path: |
+            arc3_developmental.log
+            arc3_developmental_result.json
