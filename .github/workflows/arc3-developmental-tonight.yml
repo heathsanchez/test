@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run self-learned search policy on Level4
+      - name: Run continuous curiosity self-ledger on Level4
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v16_self_learned_search_level4.py | tee arc3_v16_self_learned_search.log
+          python experiments/arc3_tonight/developmental_ls20_v19_continuous_curiosity_ledger_level4.py | tee arc3_v19_continuous_curiosity.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v16-self-learned-search
+          name: arc3-v19-continuous-curiosity
           path: |
-            arc3_v16_self_learned_search.log
-            arc3_developmental_v16_self_learned_search_level4_result.json
+            arc3_v19_continuous_curiosity.log
+            arc3_developmental_v19_continuous_curiosity_ledger_level4_result.json
