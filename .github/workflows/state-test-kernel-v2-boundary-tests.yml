@@ -1,0 +1,32 @@
+name: State Test Kernel V2 Boundary Tests
+
+on:
+  push:
+    paths:
+      - "scripts/state_test_kernel_v2_boundary_tests.py"
+      - ".github/workflows/state-test-kernel-v2-boundary-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run boundary tests
+        run: |
+          set -o pipefail
+          python scripts/state_test_kernel_v2_boundary_tests.py | tee state-test-kernel-v2-boundary.log
+          grep -F "STATE_TEST_KERNEL_V2_BOUNDARY_TESTS_PASS" state-test-kernel-v2-boundary.log
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: state-test-kernel-v2-boundary-tests
+          path: state-test-kernel-v2-boundary.log
