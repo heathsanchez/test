@@ -1,0 +1,38 @@
+name: MDA Self Application Meta Kernel V1
+
+on:
+  push:
+    paths:
+      - "scripts/mda_self_application_meta_kernel_v1.py"
+      - ".github/workflows/mda-self-application-meta-kernel-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  self-application:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run MDA self-application test
+        run: |
+          set -o pipefail
+          python scripts/mda_self_application_meta_kernel_v1.py | tee mda-self-application-meta-kernel-v1.log
+          grep -F "VERIFIED_MDA_SELF_APPLICATION_CONVERGES_ON_FOUR_COMMITMENT_META_KERNEL" mda-self-application-meta-kernel-v1.log
+          grep -F "VERIFIED_GENESIS_SOLVENT_DISSOLVE_AS_DERIVED_DYNAMICS_NOT_SEMANTIC_PRIMITIVES" mda-self-application-meta-kernel-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mda-self-application-meta-kernel-v1-log
+          path: mda-self-application-meta-kernel-v1.log
+          if-no-files-found: warn
