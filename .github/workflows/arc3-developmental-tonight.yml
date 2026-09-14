@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Diagnose Level4 causal collision
+      - name: Replay exact Level4 collision policy
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v20_collision_memory_genesis.py | tee arc3_v20_collision_memory.log
+          python experiments/arc3_tonight/developmental_ls20_v20b_collision_memory_genesis.py | tee arc3_v20b_collision_memory.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v20-collision-memory
+          name: arc3-v20b-collision-memory
           path: |
-            arc3_v20_collision_memory.log
+            arc3_v20b_collision_memory.log
             arc3_developmental_v20_collision_memory_result.json
