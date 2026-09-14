@@ -46,20 +46,36 @@
         ],
         "witness": 3.314649325744685e+21,
         "exact_first_descent": 433
+      },
+      {
+        "shard": 4,
+        "interval": [
+          2.974825712261817e+21,
+          3.1204541098124693e+21
+        ],
+        "witness": 3.065618280749606e+21,
+        "exact_first_descent": 406
+      },
+      {
+        "shard": 13,
+        "interval": [
+          4.285481290217688e+21,
+          4.4311096877683405e+21
+        ],
+        "witness": 4.316538113248035e+21,
+        "exact_first_descent": 406
       }
     ],
     "pending_shards": [
       0,
       1,
       2,
-      4,
       7,
       8,
       9,
       10,
       11,
       12,
-      13,
       14,
       15
     ]
@@ -82,6 +98,18 @@
       "shard": 6,
       "next_horizon": 450,
       "priority": 1
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 4,
+      "next_horizon": 450,
+      "priority": 2
+    },
+    {
+      "kind": "interval_survival",
+      "shard": 13,
+      "next_horizon": 450,
+      "priority": 2
     }
   ],
   "rejected_or_deprioritized": [
