@@ -19,6 +19,9 @@ def mux(sel, a, b):
     # sel ? b : a
     return [(~sel & x) | (sel & y) for x, y in zip(a, b)]
 
+def bxor(a, b):
+    return (a & ~b) | (~a & b)
+
 def add2(bdd, a, b, width):
     a = zext(a, width, bdd)
     b = zext(b, width, bdd)
@@ -26,7 +29,7 @@ def add2(bdd, a, b, width):
     carry = bdd.false
     for i in range(width):
         ai, bi = a[i], b[i]
-        s = ai ^ bi ^ carry
+        s = bxor(bxor(ai, bi), carry)
         carry = (ai & bi) | (ai & carry) | (bi & carry)
         out.append(s)
     return out
@@ -80,7 +83,7 @@ def uge_bits(bdd, a, b):
     for i in range(width - 1, -1, -1):
         ai, bi = a[i], b[i]
         gt = gt | (eq & ai & ~bi)
-        eq = eq & ~(ai ^ bi)
+        eq = eq & ~bxor(ai, bi)
     return gt | eq
 
 def pick_seed(bdd, valid, names):
