@@ -38,10 +38,11 @@ def TwistReachable {n : ℕ} : Relators n → Relators n → Prop :=
 theorem twistStep_reachable {n : ℕ} {R S : Relators n}
     (h : TwistStep R S) : Reachable R S := by
   cases h with
-  | insert i j hij w =>
-      exact reachable_symm (commutatorTwist_contract R i j hij w)
-  | remove i j hij w =>
-      exact commutatorTwist_contract R i j hij w
+  | insert =>
+      exact reachable_symm
+        (commutatorTwist_contract _ _ _ (by assumption) _)
+  | remove =>
+      exact commutatorTwist_contract _ _ _ (by assumption) _
 
 /-- Every finite path in the twist calculus expands to an ordinary AC path. -/
 theorem twistReachable_reachable {n : ℕ} {R S : Relators n}
@@ -56,10 +57,10 @@ theorem twistReachable_reachable {n : ℕ} {R S : Relators n}
 theorem twistStep_symm {n : ℕ} {R S : Relators n}
     (h : TwistStep R S) : TwistStep S R := by
   cases h with
-  | insert i j hij w =>
-      exact TwistStep.remove R i j hij w
-  | remove i j hij w =>
-      exact TwistStep.insert R i j hij w
+  | insert =>
+      exact TwistStep.remove _ _ _ (by assumption) _
+  | remove =>
+      exact TwistStep.insert _ _ _ (by assumption) _
 
 /-- Hence finite twist reachability is symmetric. -/
 theorem twistReachable_symm {n : ℕ} {R S : Relators n}
