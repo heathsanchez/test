@@ -21,8 +21,8 @@ theorem wordTwistStep_symm {n : ℕ} {b a c : Word n}
     (h : WordTwistStep b a c) :
     WordTwistStep b c a := by
   cases h with
-  | insert w a => exact WordTwistStep.remove w a
-  | remove w a => exact WordTwistStep.insert w a
+  | insert w => exact WordTwistStep.remove w a
+  | remove w => exact WordTwistStep.insert w c
 
 theorem wordTwistReachable_symm {n : ℕ} {b a c : Word n}
     (h : WordTwistReachable b a c) :
@@ -39,20 +39,20 @@ theorem wordTwistStep_difference_mem {n : ℕ} {b a c : Word n}
     (h : WordTwistStep b a c) :
     c * a⁻¹ ∈ twistGeneratedLayer b := by
   cases h with
-  | insert w a =>
+  | insert w =>
       have hg :
           twistFactor b w ∈ twistGeneratedLayer b := by
         apply Subgroup.subset_closure
         exact ⟨w, rfl⟩
       simpa [twistFactor, mul_assoc] using hg
-  | remove w a =>
+  | remove w =>
       have hg :
           twistFactor b w ∈ twistGeneratedLayer b := by
         apply Subgroup.subset_closure
         exact ⟨w, rfl⟩
       have hi := (twistGeneratedLayer b).inv_mem hg
       have heq :
-          a * (twistFactor b w * a)⁻¹ =
+          c * (twistFactor b w * c)⁻¹ =
             (twistFactor b w)⁻¹ := by
         group
       rw [heq]
