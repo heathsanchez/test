@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,13 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Probe whole-capability transfer into Level4
+      - name: Run self-learned Level4 search
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/level4_whole_capability_transfer_probe.py | tee arc3_level4_whole_transfer.log
+          python experiments/arc3_tonight/developmental_ls20_v16_self_learned_search_level4.py | tee arc3_v16_self_learned_search_level4.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-level4-whole-transfer
-          path: arc3_level4_whole_transfer.log
+          name: arc3-v16-self-learned-search-level4
+          path: |
+            arc3_v16_self_learned_search_level4.log
+            arc3_developmental_v16_self_learned_search_level4_result.json
