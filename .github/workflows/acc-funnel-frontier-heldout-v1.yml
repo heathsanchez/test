@@ -1,0 +1,39 @@
+name: ACC Funnel Frontier Heldout V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - '.github/workflows/acc-funnel-frontier-heldout-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned authorities
+        run: |
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Observe frozen heldout frontier
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/funnel_frontier_census.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --projector-script mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py \
+            --challenge-id ac-01523 \
+            --node-cap 100000 \
+            --out-dir mda/evidence/andrews_curtis/funnel_frontier_heldout_v1/ac-01523
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-funnel-frontier-heldout-ac-01523
+          path: mda/evidence/andrews_curtis/funnel_frontier_heldout_v1/ac-01523/
