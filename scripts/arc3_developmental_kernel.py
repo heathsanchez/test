@@ -286,14 +286,22 @@ class Agent:
         for a in acts:
             v=self.vectors.get(a.name)
             if v is None: continue
+            outs=self.graph.get((node,a.name),Counter())
+            # Once an action is observed only to return to the same active state,
+            # it is no longer a lawful "predicted frontier" move. This prevents
+            # repeatedly paying for a certified self-loop.
+            if outs and set(outs)=={node}:
+                continue
             p2=(self.pos[0]+v[0],self.pos[1]+v[1])
             opts.append((self.visits[p2],self.action_counts[a.name],a,p2))
         if opts:
             _,_,a,p2=min(opts,key=lambda z:(z[0],z[1],z[2].name))
             return a,{"mode":"PREDICTED_POSITION_FRONTIER","predicted_next":list(p2)}
 
+        # If every learned move is a self-loop, preserve UNKNOWN but diversify
+        # rather than deterministically hammering the same action forever.
         a=min(acts,key=lambda z:(self.action_counts[z.name],z.name))
-        return a,{"mode":"UNKNOWN_SEARCH"}
+        return a,{"mode":"UNKNOWN_SEARCH_NO_PRODUCTIVE_EDGE"}
 
     def update(self,prev,g,action,obs,prev_level):
         oldpos=self.pos
