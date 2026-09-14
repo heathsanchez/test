@@ -71,9 +71,10 @@ theorem step_reverse_reachable {n : ℕ} {R S : Relators n}
         funext k
         by_cases hki : k = i
         · subst k
-          simp [S, hij]
+          simp [S, Ne.symm hij, mul_assoc]
         · simp [S, hki]
-      simpa [S, hrestore] using hback0
+      rw [hrestore] at hback0
+      exact hback0
 
   | conj i w =>
       let S := Function.update R i (w * R i * w⁻¹)
@@ -88,7 +89,8 @@ theorem step_reverse_reachable {n : ℕ} {R S : Relators n}
         · subst k
           simp [S, mul_assoc]
         · simp [S, hki]
-      simpa [S, hrestore] using hback0
+      rw [hrestore] at hback0
+      exact hback0
 
 /-- AC reachability is symmetric. -/
 theorem reachable_symm {n : ℕ} {R S : Relators n}
