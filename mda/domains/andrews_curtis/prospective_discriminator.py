@@ -156,7 +156,7 @@ def main() -> None:
     # artifacts.  The shell workflow separately stages the candidate files into
     # candidate_pool/ with names carrying policy/target provenance.
     out = Path(a.out_dir)
-    pool = out.parent / "candidate_pool"
+    pool = out / "candidate_pool"
     if pool.exists():
         for fp in pool.glob("*.txt"):
             for raw in fp.read_text().splitlines():
@@ -175,6 +175,87 @@ def main() -> None:
         encoding="utf-8",
     )
 
+
+    # Causal retention by ablation over the frozen consequences.
+    # A component earns continued membership when removing it either loses a
+    # verified encounter or worsens the best verified atomic consequence.
+    policy_best: dict[str, dict[str, int]] = {"current": {}, "mask3": {}}
+    beam_best: dict[int, dict[str, int]] = {16: {}, 64: {}}
+    all_best: dict[str, int] = {}
+    for cid in expected:
+        for policy in ("current", "mask3"):
+            r = by.get((cid, policy))
+            if not r:
+                continue
+            vals = [
+                int(t["atomic_length"])
+                for t in r.get("compiler_trials", [])
+                if t.get("beam") in (16, 64)
+                and (t.get("ac_verdict") or {}).get("ok") is True
+                and isinstance(t.get("atomic_length"), int)
+            ]
+            if vals:
+                policy_best[policy][cid] = min(vals)
+                all_best[cid] = min(all_best.get(cid, 10**18), min(vals))
+            for t in r.get("compiler_trials", []):
+                beam = t.get("beam")
+                if beam not in (16, 64):
+                    continue
+                if (t.get("ac_verdict") or {}).get("ok") is not True or not isinstance(t.get("atomic_length"), int):
+                    continue
+                beam_best[int(beam)][cid] = min(
+                    beam_best[int(beam)].get(cid, 10**18),
+                    int(t["atomic_length"]),
+                )
+
+    def ablate_policy(policy: str) -> dict[str, Any]:
+        other = "mask3" if policy == "current" else "current"
+        reach_loss = []
+        atomic_penalty = 0
+        worsened = []
+        for cid, best in all_best.items():
+            alt = policy_best[other].get(cid)
+            if alt is None:
+                reach_loss.append(cid)
+            elif alt > best:
+                atomic_penalty += alt - best
+                worsened.append({"challenge_id": cid, "penalty": alt - best})
+        return {
+            "component": policy,
+            "reach_loss_targets": reach_loss,
+            "atomic_penalty_if_removed": atomic_penalty,
+            "worsened_targets": worsened,
+            "earns_retention": bool(reach_loss or atomic_penalty > 0),
+        }
+
+    def ablate_beam(beam: int) -> dict[str, Any]:
+        other = 64 if beam == 16 else 16
+        reach_loss = []
+        atomic_penalty = 0
+        worsened = []
+        for cid, best in all_best.items():
+            alt = beam_best[other].get(cid)
+            if alt is None:
+                reach_loss.append(cid)
+            elif alt > best:
+                atomic_penalty += alt - best
+                worsened.append({"challenge_id": cid, "penalty": alt - best})
+        return {
+            "component": f"beam{beam}",
+            "reach_loss_targets": reach_loss,
+            "atomic_penalty_if_removed": atomic_penalty,
+            "worsened_targets": worsened,
+            "earns_retention": bool(reach_loss or atomic_penalty > 0),
+        }
+
+    causal_ablations = [
+        ablate_policy("current"),
+        ablate_policy("mask3"),
+        ablate_beam(16),
+        ablate_beam(64),
+    ]
+    causally_retained = [x["component"] for x in causal_ablations if x["earns_retention"]]
+
     status = "UNKNOWN_SEARCH" if missing else "VERIFIED" if len(frontier) == 1 else "UNKNOWN_CHOICE"
     report = {
         "experiment": "ACC_MDA_PROSPECTIVE_DISCRIMINATOR_V1",
@@ -192,6 +273,8 @@ def main() -> None:
             for x in frontier
         ],
         "candidate_targets": sorted(best_paths),
+        "causal_ablations": causal_ablations,
+        "causally_retained_components": causally_retained,
         "growth_beyond_boot_language_authorized": False,
         "claim_boundary": (
             "This is a prospective frozen probe over a selected responsive-loss pack. "
