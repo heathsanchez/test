@@ -29,6 +29,7 @@ unchanged. -/
 theorem step_relatorNormalClosure_eq {n : ℕ} {R S : Relators n}
     (h : Step R S) :
     relatorNormalClosure R = relatorNormalClosure S := by
+  unfold relatorNormalClosure
   cases h with
   | inv i =>
       apply le_antisymm
