@@ -1,0 +1,40 @@
+name: MDA Kernel Test v2d
+
+on:
+  push:
+    paths:
+      - "scripts/mda_kernel_test_v2d.py"
+      - ".github/workflows/mda-kernel-test-v2d.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mda-kernel-v2d:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Record source hash
+        run: sha256sum scripts/mda_kernel_test_v2d.py
+
+      - name: Run MDA Kernel Test v2d
+        run: |
+          set -o pipefail
+          python scripts/mda_kernel_test_v2d.py | tee mda-kernel-test-v2d.log
+          grep -F "VERDICT: PASS   20/20 checks" mda-kernel-test-v2d.log
+
+      - name: Upload evidence log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mda-kernel-test-v2d-log
+          path: mda-kernel-test-v2d.log
+          if-no-files-found: warn
