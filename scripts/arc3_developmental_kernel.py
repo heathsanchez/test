@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
 """
-ARC-AGI-3 developmental kernel v5: minimal active ontology.
+ARC-AGI-3 developmental kernel v7: objecthood from intervention-induced co-motion.
 
-No game source, palette meanings, fixed coordinates, stored path, or level logic.
+No game source, fixed coordinates, palette semantics, stored route, or level logic.
 
-Developmental lineage frozen by prior runs:
- v1 raw frames -> over-splitting;
- v2 persistent object identity -> unsupported;
- v3 raw change -> dominated by common action consequence;
- v4 factor common consequence -> reference + 4-axis causal geometry emerged,
-      but full scene hashes over-split every encounter.
+Frozen lineage:
+ v1 raw frame state over-split;
+ v2 appearance-persistent objects were not available;
+ v3 undifferentiated change mixed world and common consequence;
+ v4 common consequence factorization yielded a reference/action geometry but unstable identity;
+ v5 position-only ontology contracted too aggressively because motion estimation was contaminated.
 
-V5 contracts the active state to the least currently warranted executable form:
-    (consequence-earned position, intervention)
-Rich pixels remain provenance only.  A scene distinction is promoted only if
-the same active state/action produces incompatible consequences.
+V7 derives the controlled carrier generically:
+  connected visual components are matched across controlled interventions;
+  components that undergo the same non-zero displacement form a causal co-motion group;
+  the group, not a supplied "player" concept, becomes the active carrier.
 """
 from __future__ import annotations
 import argparse, json, random
@@ -35,7 +35,7 @@ def frame(obs):
     return a.astype(np.int16,copy=False)
 
 
-def blobs(mask,min_n=2):
+def blobs(mask,min_n=1):
     h,w=mask.shape; seen=np.zeros_like(mask,bool); out=[]
     for y in range(h):
         for x in range(w):
@@ -43,7 +43,7 @@ def blobs(mask,min_n=2):
             st=[(y,x)]; seen[y,x]=1; pts=[]
             while st:
                 yy,xx=st.pop(); pts.append((yy,xx))
-                for dy,dx in ((1,0),(-1,0),(0,1),(0,-1),(1,1),(1,-1),(-1,1),(-1,-1)):
+                for dy,dx in ((1,0),(-1,0),(0,1),(0,-1)):
                     ny,nx=yy+dy,xx+dx
                     if 0<=ny<h and 0<=nx<w and mask[ny,nx] and not seen[ny,nx]:
                         seen[ny,nx]=1; st.append((ny,nx))
@@ -62,129 +62,187 @@ def expand_common(common,pad=4):
     return out
 
 
-def fdiff(a,b,nuis):
-    d=a!=b
-    return d if nuis is None else d & ~nuis
+def components(g,nuis=None):
+    out=[]
+    for c in np.unique(g):
+        m=(g==c)
+        if nuis is not None: m=m & ~nuis
+        for b in blobs(m,1):
+            h=b["y1"]-b["y0"]+1; w=b["x1"]-b["x0"]+1
+            out.append(dict(color=int(c),area=b["n"],h=h,w=w,
+                            cy=b["cy"],cx=b["cx"],y0=b["y0"],x0=b["x0"],y1=b["y1"],x1=b["x1"]))
+    return out
 
 
-def local_reference(d):
-    bs=[b for b in blobs(d,2) if b["n"]<=200 and b["y1"]-b["y0"]<24 and b["x1"]-b["x0"]<24]
-    if not bs: return None
-    # Minimal localized consequence is preferred over a broad scene change.
-    b=min(bs,key=lambda z:(z["n"],z["y0"],z["x0"]))
-    return (int(round(b["cy"])),int(round(b["cx"]))),b
+def desc(c):
+    return (c["color"],c["area"],c["h"],c["w"])
 
 
-def motion_from_reference(d,ref):
-    bs=blobs(d,2)
-    if not bs: return None,bs
-    # First try old/new support pair with old nearest known reference.
-    old=min(bs,key=lambda b:abs(b["cy"]-ref[0])+abs(b["cx"]-ref[1]))
-    cand=[]
-    for n in bs:
-        if n is old: continue
-        ratio=max(old["n"],n["n"])/max(1,min(old["n"],n["n"]))
-        if ratio>3: continue
-        p1=(int(round(n["cy"])),int(round(n["cx"])))
-        v=(p1[0]-ref[0],p1[1]-ref[1])
-        if 0<abs(v[0])+abs(v[1])<=24:
-            cand.append((abs(old["n"]-n["n"]),abs(v[0])+abs(v[1]),v,p1,old,n))
-    if cand:
-        _,_,v,p1,o,n=min(cand,key=lambda z:(z[0],z[1]))
-        return dict(v=v,new=p1,old_n=o["n"],new_n=n["n"],mode="paired_support"),bs
-    # If only the destination support is cleanly visible, allow the nearest non-reference blob.
-    far=[]
-    for n in bs:
-        p1=(int(round(n["cy"])),int(round(n["cx"])))
-        v=(p1[0]-ref[0],p1[1]-ref[1]); dist=abs(v[0])+abs(v[1])
-        if 2<=dist<=24 and n["n"]<=200:
-            far.append((dist,n["n"],v,p1,n))
-    if far:
-        _,_,v,p1,n=min(far,key=lambda z:(z[0],z[1]))
-        return dict(v=v,new=p1,old_n=None,new_n=n["n"],mode="destination_support"),bs
-    return None,bs
+def match_components(g0,g1,nuis=None):
+    a=components(g0,nuis); b=components(g1,nuis)
+    by0=defaultdict(list); by1=defaultdict(list)
+    for c in a: by0[desc(c)].append(c)
+    for c in b: by1[desc(c)].append(c)
+    matches=[]
+    for d in set(by0)&set(by1):
+        aa=by0[d]; bb=by1[d]; used=set()
+        # greedy nearest matching is exact for isolated translated components here,
+        # but remains generic and makes no color-role assumption.
+        for c0 in aa:
+            choices=[]
+            for j,c1 in enumerate(bb):
+                if j in used: continue
+                dy=c1["cy"]-c0["cy"]; dx=c1["cx"]-c0["cx"]
+                choices.append((abs(dy)+abs(dx),j,c1))
+            if choices:
+                _,j,c1=min(choices); used.add(j)
+                dy=int(round(c1["cy"]-c0["cy"])); dx=int(round(c1["cx"]-c0["cx"]))
+                matches.append((d,c0,c1,(dy,dx)))
+    return matches
+
+
+def motion_evidence(g0,g1,nuis=None):
+    ms=match_components(g0,g1,nuis)
+    support=defaultdict(lambda:{"weight":0,"count":0,"descs":[]})
+    for d,c0,c1,v in ms:
+        dist=abs(v[0])+abs(v[1])
+        if 2<=dist<=12:
+            support[v]["weight"]+=c0["area"]
+            support[v]["count"]+=1
+            support[v]["descs"].append(d)
+    ranked=sorted(support.items(),key=lambda kv:(-kv[1]["count"],-kv[1]["weight"],abs(kv[0][0])+abs(kv[0][1])))
+    return ranked,ms
+
+
+def locate_group(g,group_descs,nuis=None,near=None):
+    cs=components(g,nuis)
+    cand=[c for c in cs if desc(c) in group_descs]
+    if not cand: return None,[]
+    # If multiple copies exist, form spatial clusters; causal carrier descriptors should co-locate.
+    # Seed candidate groups around each component and score descriptor coverage + compactness.
+    best=None
+    needed=set(group_descs)
+    for seed in cand:
+        group=[c for c in cand if abs(c["cy"]-seed["cy"])+abs(c["cx"]-seed["cx"])<=10]
+        cov=len({desc(c) for c in group}&needed)
+        if cov==0: continue
+        total=sum(c["area"] for c in group)
+        cy=sum(c["cy"]*c["area"] for c in group)/total
+        cx=sum(c["cx"]*c["area"] for c in group)/total
+        compact=sum(abs(c["cy"]-cy)+abs(c["cx"]-cx) for c in group)
+        nearcost=(abs(cy-near[0])+abs(cx-near[1])) if near is not None else 0
+        score=(-cov,compact,nearcost,-total)
+        if best is None or score<best[0]:
+            best=(score,(int(round(cy)),int(round(cx))),group)
+    return (best[1],best[2]) if best else (None,[])
 
 
 def bootstrap(env):
     acts=list(env.action_space)
-    one={}
-    baselines={}
-    probe_arrays={}
+    one={}; raw={}
     for a in acts:
         o0=env.reset(); g0=frame(o0)
-        o1=env.step(a,data={},reasoning={"mode":"ONE_STEP_INTERVENTION"})
-        g1=frame(o1)
-        one[a.name]=(g0,g1,g0!=g1)
-        probe_arrays["reset_"+a.name]=g0
-        probe_arrays["one_"+a.name]=g1
-        baselines[a.name]=int(np.count_nonzero(g0!=g1))
+        o1=env.step(a,data={},reasoning={"mode":"ONE_STEP_INTERVENTION"}); g1=frame(o1)
+        one[a.name]=(g0,g1,g0!=g1); raw[a.name]=int(np.count_nonzero(g0!=g1))
     common=np.logical_and.reduce([one[a.name][2] for a in acts])
-    nuisance=expand_common(common,pad=4)
-    unique={a.name:int(np.count_nonzero(one[a.name][2]&~nuisance)) for a in acts}
+    nuis=expand_common(common,pad=4)
+    unique={a.name:int(np.count_nonzero(one[a.name][2]&~nuis)) for a in acts}
 
-    # Reference action: largest action-specific consequence; deterministic lexical tie-break.
-    ref_action=min([a.name for a in acts],key=lambda n:(-unique[n],n))
-    dref=one[ref_action][2]&~nuisance
-    rp=local_reference(dref)
-    ref_pos=rp[0] if rp else None
+    # Collect first-order motion evidence.
+    action_votes=defaultdict(Counter)
+    action_descs=defaultdict(lambda:defaultdict(list))
+    for a in acts:
+        ranked,_=motion_evidence(one[a.name][0],one[a.name][1],nuis)
+        for v,e in ranked[:3]:
+            action_votes[a.name][v]+=e["count"]*100+e["weight"]
+            action_descs[a.name][v].extend(e["descs"])
+
+    # Pick a reference-forming intervention with strongest coherent nonzero motion.
+    def strength(an):
+        return max(action_votes[an].values()) if action_votes[an] else 0
+    ref_action=min([a.name for a in acts],key=lambda n:(-strength(n),-unique[n],n))
+
+    # Controlled second-order interventions from the same reconstructed reference state.
+    second={}
+    for a in acts:
+        o0=env.reset(); g0=frame(o0)
+        ract=next(x for x in acts if x.name==ref_action)
+        orf=env.step(ract,data={},reasoning={"mode":"REFERENCE_RECONSTRUCTION"}); gr=frame(orf)
+        o2=env.step(a,data={},reasoning={"mode":"SECOND_ORDER_INTERVENTION"}); g2=frame(o2)
+        second[a.name]=(gr,g2)
+        ranked,_=motion_evidence(gr,g2,nuis)
+        for v,e in ranked[:3]:
+            action_votes[a.name][v]+=e["count"]*100+e["weight"]
+            action_descs[a.name][v].extend(e["descs"])
 
     vectors={}
-    vector_evidence={}
-    if ref_pos is not None:
-        # Controlled two-step experiments: recreate the same reference state, then vary one action.
-        for a in acts:
-            o0=env.reset(); g0=frame(o0)
-            ract=next(x for x in acts if x.name==ref_action)
-            oref=env.step(ract,data={},reasoning={"mode":"REFERENCE_RECONSTRUCTION"})
-            gref=frame(oref)
-            o2=env.step(a,data={},reasoning={"mode":"SECOND_ORDER_INTERVENTION"})
-            g2=frame(o2)
-            probe_arrays["ref_"+a.name]=gref
-            probe_arrays["two_"+a.name]=g2
-            d=fdiff(gref,g2,nuisance)
-            m,bs=motion_from_reference(d,ref_pos)
-            vector_evidence[a.name]={
-                "filtered_delta":int(d.sum()),
-                "blobs":bs[:8],
-                "motion":({**m,"v":list(m["v"]),"new":list(m["new"])} if m else None)
-            }
-            if m is not None:
-                vectors[a.name]=tuple(m["v"])
+    for an,votes in action_votes.items():
+        if votes:
+            v,n=votes.most_common(1)[0]
+            # Require at least one coherent translated component with displacement >=2.
+            vectors[an]=v
+
+    # Causal carrier descriptors are those that participate in selected action translations,
+    # preferably across more than one intervention.
+    dc=Counter()
+    for an,v in vectors.items():
+        for d in action_descs[an][v]:
+            dc[d]+=1
+    group_descs={d for d,n in dc.items() if n>=2}
+    if not group_descs and dc:
+        mx=max(dc.values()); group_descs={d for d,n in dc.items() if n==mx}
+
+    # Locate derived carrier after reference intervention.
+    gr=second[next(iter(second))][0] if second else one[ref_action][1]
+    ref_pos,ref_group=locate_group(gr,group_descs,nuis,None)
+
     Path("arc3-results").mkdir(parents=True,exist_ok=True)
-    np.savez_compressed("arc3-results/probes.npz",**probe_arrays,nuisance=nuisance.astype(np.uint8))
-    return nuisance,baselines,unique,ref_action,ref_pos,vectors,vector_evidence
+    np.savez_compressed("arc3-results/probes.npz",
+        nuisance=nuis.astype(np.uint8),**{f"reset_{a}":one[a][0] for a in one},
+        **{f"one_{a}":one[a][1] for a in one},
+        **{f"ref_{a}":second[a][0] for a in second},
+        **{f"two_{a}":second[a][1] for a in second})
+
+    diag={
+      "raw_delta":raw,"unique_delta":unique,"nuisance_pixels":int(nuis.sum()),
+      "reference_action":ref_action,"reference_pos":list(ref_pos) if ref_pos else None,
+      "vectors":{k:list(v) for k,v in vectors.items()},
+      "group_descs":[list(d) for d in sorted(group_descs)],
+      "descriptor_votes":{str(list(d)):n for d,n in dc.items()},
+      "action_votes":{a:{str(list(v)):n for v,n in vs.items()} for a,vs in action_votes.items()}
+    }
+    return nuis,ref_action,ref_pos,vectors,group_descs,diag
 
 
 class Agent:
-    def __init__(self,nuis,ref_action,ref_pos,vectors,seed=0):
+    def __init__(self,nuis,ref_action,ref_pos,vectors,group_descs,seed=0):
         self.nuis=nuis; self.ref_action=ref_action; self.ref_pos=ref_pos
-        self.vectors=dict(vectors); self.rng=random.Random(seed)
+        self.vectors=dict(vectors); self.group_descs=set(group_descs); self.rng=random.Random(seed)
         self.pos=None; self.events=[]; self.records=[]; self.action_counts=Counter()
-        self.graph=defaultdict(Counter)  # (pos,action)->pos'
-        self.tried=defaultdict(set); self.blocked=set(); self.visits=Counter()
-        self.consequence=defaultdict(Counter) # (pos,action)->(pos',delta_bucket,state,level_delta)
-        self.level=0; self.max_level=0; self.gameovers=0; self.phase="MINIMAL_POSITION_ONTOLOGY"
+        self.graph=defaultdict(Counter); self.tried=defaultdict(set); self.visits=Counter()
+        self.consequence=defaultdict(Counter)
+        self.level=0; self.max_level=0; self.gameovers=0; self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
     def ev(self,k,**kw):
         e={"t":len(self.records),"kind":k,**kw}; self.events.append(e)
         print("EVENT",json.dumps(e,sort_keys=True),flush=True)
 
-    def reset(self):
-        self.pos=None
+    def reset(self): self.pos=None
+
+    def locate(self,g):
+        p,grp=locate_group(g,self.group_descs,self.nuis,self.pos)
+        return p,grp
 
     def choose(self,acts):
         if self.pos is None:
-            a=next((x for x in acts if x.name==self.ref_action),None)
-            if a is None: a=min(acts,key=lambda z:z.name)
-            return a,{"mode":"RECONSTRUCT_REFERENCE","reason":"reuse verified reference-forming intervention"}
+            a=next((x for x in acts if x.name==self.ref_action),None) or min(acts,key=lambda z:z.name)
+            return a,{"mode":"RECONSTRUCT_CAUSAL_CARRIER"}
 
         unseen=[a for a in acts if a.name not in self.tried[self.pos]]
         if unseen:
-            # Prioritize actions with known geometry; unknowns still get tested.
-            a=min(unseen,key=lambda z:(z.name not in self.vectors,self.action_counts[z.name],z.name))
-            return a,{"mode":"LOCAL_CAUSAL_PROBE","position":list(self.pos)}
+            a=min(unseen,key=lambda z:(self.action_counts[z.name],z.name))
+            return a,{"mode":"LOCAL_INTERVENTION_FRONTIER","position":list(self.pos)}
 
-        # Route through verified single-outcome graph to nearest unresolved position.
         adj=defaultdict(list)
         for (p,an),outs in self.graph.items():
             if len(outs)==1:
@@ -199,61 +257,54 @@ class Agent:
                 if p2 not in seen:
                     seen.add(p2); q.append((p2,path+[an]))
 
-        # If all known positions are locally closed, expand least-visited predicted continuation.
+        # All observed nodes locally explored: use learned action geometry to seek least visited predicted location.
         opts=[]
         for a in acts:
             v=self.vectors.get(a.name)
-            if v is None or (self.pos,a.name) in self.blocked: continue
+            if v is None: continue
             p2=(self.pos[0]+v[0],self.pos[1]+v[1])
             opts.append((self.visits[p2],self.action_counts[a.name],a,p2))
         if opts:
             _,_,a,p2=min(opts,key=lambda z:(z[0],z[1],z[2].name))
-            return a,{"mode":"POSITION_FRONTIER","predicted_next":list(p2)}
+            return a,{"mode":"PREDICTED_POSITION_FRONTIER","predicted_next":list(p2)}
 
         a=min(acts,key=lambda z:(self.action_counts[z.name],z.name))
-        return a,{"mode":"UNKNOWN_SEARCH","reason":"no licensed continuation in current active ontology"}
+        return a,{"mode":"UNKNOWN_SEARCH"}
 
     def update(self,prev,g,action,obs,prev_level):
-        d=fdiff(prev,g,self.nuis); delta=int(d.sum())
         old=self.pos
-        if self.pos is None and action==self.ref_action and self.ref_pos is not None:
-            self.pos=self.ref_pos
-            self.ev("REFERENCE_RECONSTRUCTED",action=action,pos=list(self.pos))
-        elif self.pos is not None and action in self.vectors:
-            v=self.vectors[action]
-            if delta==0:
-                self.blocked.add((self.pos,action))
-            else:
-                # Minimal executable commitment: use the intervention-derived displacement.
-                self.pos=(self.pos[0]+v[0],self.pos[1]+v[1])
+        p,grp=self.locate(g)
+        if p is not None:
+            self.pos=p
+            if old is None:
+                self.ev("CAUSAL_CARRIER_RECONSTRUCTED",action=action,pos=list(p),
+                        group=[list(desc(c)) for c in grp])
+        delta=int(np.count_nonzero((prev!=g)&~self.nuis))
 
         lvl=int(getattr(obs,"levels_completed",0))
-        state=getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None)))
+        st=getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None)))
         if old is not None and self.pos is not None:
             self.tried[old].add(action); self.graph[(old,action)][self.pos]+=1; self.visits[self.pos]+=1
-            bucket=min(9,delta//10)
-            ck=(self.pos,bucket,state,lvl-prev_level)
+            ck=(self.pos,min(9,delta//10),st,lvl-prev_level)
             self.consequence[(old,action)][ck]+=1
             if len(self.consequence[(old,action)])>1:
-                self.ev("CERTIFIED_POSITION_ONTOLOGY_INADEQUATE",position=list(old),action=action,
+                self.ev("CERTIFIED_CARRIER_STATE_INADEQUATE",position=list(old),action=action,
                         alternatives=[str(x) for x in self.consequence[(old,action)]])
         if lvl>self.max_level:
-            self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action)
-            self.max_level=lvl
+            self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action); self.max_level=lvl
         if lvl!=self.level:
             self.ev("LEVEL_BOUNDARY",old=self.level,new=lvl); self.level=lvl
-            # Geometry transfers; local map does not.
-            self.graph.clear(); self.tried.clear(); self.blocked.clear(); self.visits.clear(); self.consequence.clear()
-            self.pos=None
+            self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear(); self.pos=None
+
         self.records.append(dict(i=len(self.records),action=action,raw_delta=int(np.count_nonzero(prev!=g)),
             filtered_delta=delta,old_pos=list(old) if old else None,pos=list(self.pos) if self.pos else None,
-            vectors={k:list(v) for k,v in self.vectors.items()},level=lvl,state=state,phase=self.phase))
+            group=[list(desc(c)) for c in grp],level=lvl,state=st,phase=self.phase))
 
     def result(self):
         return dict(actions=len(self.records),max_levels_completed=self.max_level,
-                    vectors={k:list(v) for k,v in self.vectors.items()},phase=self.phase,
-                    gameovers=self.gameovers,action_counts=dict(self.action_counts),
-                    distinct_positions=len(self.visits),events=self.events,records=self.records)
+          vectors={k:list(v) for k,v in self.vectors.items()},group_descs=[list(d) for d in sorted(self.group_descs)],
+          phase=self.phase,gameovers=self.gameovers,action_counts=dict(self.action_counts),
+          distinct_positions=len(self.visits),events=self.events,records=self.records)
 
 
 def main():
@@ -265,17 +316,12 @@ def main():
     env=arc.make(args.game,save_recording=True,include_frame_data=True,render_mode=None)
     if env is None: raise SystemExit("make failed")
 
-    nuis,raw,unique,ref_action,ref_pos,vectors,ve=bootstrap(env)
-    print("BOOTSTRAP",json.dumps({"raw_delta":raw,"unique_delta":unique,"nuisance_pixels":int(nuis.sum()),
-          "reference_action":ref_action,"reference_pos":list(ref_pos) if ref_pos else None,
-          "vectors":{k:list(v) for k,v in vectors.items()},"vector_evidence":ve},default=str),flush=True)
-
+    nuis,ref_action,ref_pos,vectors,group_descs,diag=bootstrap(env)
+    print("BOOTSTRAP",json.dumps(diag,sort_keys=True),flush=True)
     obs=env.reset(); g=frame(obs)
-    A=Agent(nuis,ref_action,ref_pos,vectors,args.seed)
+    A=Agent(nuis,ref_action,ref_pos,vectors,group_descs,args.seed)
     A.level=int(getattr(obs,"levels_completed",0)); A.max_level=A.level
-    A.ev("MINIMAL_ONTOLOGY_ACTIVATED",reference_action=ref_action,
-         reference_pos=list(ref_pos) if ref_pos else None,vectors={k:list(v) for k,v in vectors.items()})
-
+    A.ev("CAUSAL_CARRIER_GENESIS",**diag)
     print("START",args.game,"actions",[a.name for a in env.action_space],
           "levels",getattr(obs,"levels_completed",None),"win_levels",getattr(obs,"win_levels",None),flush=True)
 
@@ -288,9 +334,8 @@ def main():
         if obs is None: A.ev("NULL_OBSERVATION",action=a.name); continue
         g=frame(obs); A.update(prev,g,a.name,obs,prev_level)
         r=A.records[-1]
-        print("STEP",i+1,a.name,reason["mode"],"filtered",r["filtered_delta"],
-              "pos",A.pos,"level",getattr(obs,"levels_completed",None),
-              "state",getattr(getattr(obs,"state",None),"name",None),flush=True)
+        print("STEP",i+1,a.name,reason["mode"],"delta",r["filtered_delta"],"pos",A.pos,
+              "level",getattr(obs,"levels_completed",None),"state",getattr(getattr(obs,"state",None),"name",None),flush=True)
         if obs.state==GameState.WIN:
             A.ev("WIN",step=i+1); break
         if obs.state==GameState.GAME_OVER:
@@ -302,11 +347,10 @@ def main():
 
     result=A.result()
     result.update(game=args.game,seed=args.seed,reference_action=ref_action,
-                  reference_pos=list(ref_pos) if ref_pos else None,
-                  bootstrap_unique=unique,nuisance_pixels=int(nuis.sum()),
-                  final_levels_completed=int(getattr(obs,"levels_completed",0)) if obs else None,
-                  final_state=getattr(getattr(obs,"state",None),"name",None) if obs else None,
-                  win_levels=int(getattr(obs,"win_levels",0)) if obs else None)
+      reference_pos=list(ref_pos) if ref_pos else None,nuisance_pixels=int(nuis.sum()),
+      final_levels_completed=int(getattr(obs,"levels_completed",0)) if obs else None,
+      final_state=getattr(getattr(obs,"state",None),"name",None) if obs else None,
+      win_levels=int(getattr(obs,"win_levels",0)) if obs else None)
     try:
         sc=arc.close_scorecard()
         if sc is not None: result["scorecard"]=sc.model_dump(mode="json") if hasattr(sc,"model_dump") else str(sc)
