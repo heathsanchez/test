@@ -13,7 +13,7 @@ permissions:
 jobs:
   ls20:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       PYTHONUNBUFFERED: '1'
     steps:
@@ -32,7 +32,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p arc3-results
-          python scripts/arc3_developmental_kernel.py             --game ls20             --max-actions 400             --seed 0             --out arc3-results/ls20-developmental-result.json             2>&1 | tee arc3-results/run.log
+          python scripts/arc3_developmental_kernel.py             --game ls20             --max-actions 1600             --seed 0             --out arc3-results/ls20-developmental-result.json             2>&1 | tee arc3-results/run.log
 
       - name: Hash result packet
         if: always()
