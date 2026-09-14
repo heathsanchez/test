@@ -237,6 +237,12 @@ class Agent:
         self.use_event_state=False
         self.event_box=None
         self.event_modes=set()
+        self.current_mode=None
+        self.event_trigger_pos=None
+        self.spatial_graph=defaultdict(Counter)
+        self.blocked_frontiers={}
+        self.blocked_mode_tests=defaultdict(set)
+        self.mode_change_return=False
         self.node=None
         self.trace_frames=[]
         self.reset_boundaries=[]
@@ -295,8 +301,10 @@ class Agent:
         self.event_box=(max(0,y0-pad),min(g.shape[0],y1+pad),
                         max(0,x0-pad),min(g.shape[1],x1+pad))
         self.use_event_state=True
+        self.event_trigger_pos=newpos
         before=self.event_sig(prev); after=self.event_sig(g)
         self.event_modes.update([before,after])
+        self.current_mode=after
         self.phase="PERSISTENT_EVENT_STATE_GENESIS"
         # Keep learned geometry, but re-index active consequence state.
         self.graph.clear(); self.tried.clear(); self.consequence.clear()
@@ -309,12 +317,94 @@ class Agent:
         p,grp=locate_group(g,self.group_descs,self.nuis,self.pos)
         return p,grp
 
+    def position_route_action(self,target,acts):
+        if self.pos is None or target is None: return None
+        if self.pos==target: return None
+        adj=defaultdict(list)
+        for (p,an),outs in self.spatial_graph.items():
+            if len(outs)==1:
+                p2=next(iter(outs))
+                if p2!=p:
+                    adj[p].append((an,p2))
+        q=deque([(self.pos,[])])
+        seen={self.pos}
+        while q:
+            p,path=q.popleft()
+            if p==target and path:
+                an=path[0]
+                return next((a for a in acts if a.name==an),None)
+            for an,p2 in adj.get(p,[]):
+                if p2 not in seen:
+                    seen.add(p2); q.append((p2,path+[an]))
+        return None
+
+    def frontier_rarity(self,g,pos,action):
+        v=self.vectors.get(action)
+        if v is None: return 0.0
+        py,px=pos[0]+v[0],pos[1]+v[1]
+        y0,y1=max(0,py-3),min(g.shape[0],py+4)
+        x0,x1=max(0,px-3),min(g.shape[1],px+4)
+        patch=g[y0:y1,x0:x1]
+        vals,cnts=np.unique(g,return_counts=True)
+        freq={int(v):int(n) for v,n in zip(vals,cnts)}
+        return float(sum(1.0/max(1,freq.get(int(v),1)) for v in patch.ravel()))
+
+    def active_counterfactual(self,acts):
+        if not self.use_event_state or self.current_mode is None or not self.blocked_frontiers:
+            return None
+        # Most structurally unusual blocked continuation gets tested first.
+        cand=max(self.blocked_frontiers,key=lambda k:self.blocked_frontiers[k])
+        cpos,can=cand
+        tested=self.blocked_mode_tests[cand]
+        if self.current_mode not in tested:
+            if self.pos==cpos:
+                a=next((x for x in acts if x.name==can),None)
+                if a is not None:
+                    return a,{"mode":"COUNTERFACTUAL_BLOCKED_FRONTIER",
+                              "candidate":str(cand),"event_mode":self.current_mode,
+                              "rarity":self.blocked_frontiers[cand]}
+            a=self.position_route_action(cpos,acts)
+            if a is not None:
+                return a,{"mode":"ROUTE_COUNTERFACTUAL_FRONTIER",
+                          "candidate":str(cand),"event_mode":self.current_mode}
+
+        # This mode has already tested the best obstruction. If another earned
+        # mode exists, deliberately cycle the event intervention and retest.
+        if len(self.event_modes)>len(tested) and self.event_trigger_pos is not None:
+            if self.mode_change_return:
+                if self.pos==self.event_trigger_pos:
+                    self.mode_change_return=False
+                else:
+                    a=self.position_route_action(self.event_trigger_pos,acts)
+                    if a is not None:
+                        return a,{"mode":"RETURN_TO_EVENT_TRIGGER",
+                                  "target":list(self.event_trigger_pos)}
+            if self.pos==self.event_trigger_pos:
+                # Leave by any compiled productive edge; next turn route back.
+                for a in acts:
+                    outs=self.spatial_graph.get((self.pos,a.name),Counter())
+                    if len(outs)==1 and next(iter(outs))!=self.pos:
+                        self.mode_change_return=True
+                        return a,{"mode":"LEAVE_EVENT_TRIGGER_TO_CYCLE_MODE",
+                                  "event_mode":self.current_mode}
+            else:
+                a=self.position_route_action(self.event_trigger_pos,acts)
+                if a is not None:
+                    return a,{"mode":"ROUTE_TO_EVENT_TRIGGER_FOR_NEW_MODE",
+                              "target":list(self.event_trigger_pos),
+                              "event_mode":self.current_mode}
+        return None
+
     def choose(self,acts):
         if self.pos is None:
             a=next((x for x in acts if x.name==self.ref_action),None) or min(acts,key=lambda z:z.name)
             return a,{"mode":"RECONSTRUCT_CAUSAL_CARRIER"}
 
         node=self.node
+        cf=self.active_counterfactual(acts)
+        if cf is not None:
+            return cf
+
         unseen=[a for a in acts if a.name not in self.tried[node]]
         if unseen:
             a=min(unseen,key=lambda z:(self.action_counts[z.name],z.name))
@@ -375,11 +465,26 @@ class Agent:
         born=self.maybe_birth_event_state(prev,g,oldpos,self.pos,st)
         if self.use_event_state:
             mode=self.event_sig(g)
+            self.current_mode=mode
             if mode not in self.event_modes:
                 self.event_modes.add(mode)
                 self.ev("NEW_EVENT_MODE",mode=mode,count=len(self.event_modes),
                         position=list(self.pos) if self.pos else None)
         self.node=self.make_node(g)
+
+        if oldpos is not None and self.pos is not None:
+            v=self.vectors.get(action)
+            expected=(oldpos[0]+v[0],oldpos[1]+v[1]) if v is not None else None
+            # Compile only ordinary geometry or certified blocked self-loops;
+            # exclude resets/teleports from the reusable spatial operator.
+            if self.pos==oldpos or (expected is not None and self.pos==expected):
+                self.spatial_graph[(oldpos,action)][self.pos]+=1
+            if self.pos==oldpos and v is not None:
+                cand=(oldpos,action)
+                self.blocked_frontiers[cand]=max(self.blocked_frontiers.get(cand,0.0),
+                                                  self.frontier_rarity(prev,oldpos,action))
+                if self.use_event_state and self.current_mode is not None:
+                    self.blocked_mode_tests[cand].add(self.current_mode)
 
         if oldpos is not None and self.pos is not None and oldnode is not None and self.node is not None:
             self.tried[oldnode].add(action)
@@ -420,7 +525,8 @@ class Agent:
             self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear()
             self.context_trials.clear(); self.pos=None; self.node=None
             self.use_local_context=False; self.use_event_state=False
-            self.event_box=None; self.event_modes.clear()
+            self.event_box=None; self.event_modes.clear(); self.current_mode=None
+            self.event_trigger_pos=None; self.mode_change_return=False
             self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
         self.trace_frames.append(g.copy())
@@ -436,6 +542,9 @@ class Agent:
           distinct_positions=len(self.visits),contextual_state=self.use_local_context,
           event_state=self.use_event_state,event_box=list(self.event_box) if self.event_box else None,
           event_mode_count=len(self.event_modes),
+          blocked_frontiers=[{"position":list(k[0]),"action":k[1],"rarity":v,
+                              "tested_modes":sorted(self.blocked_mode_tests.get(k,set()))}
+                             for k,v in sorted(self.blocked_frontiers.items(),key=lambda kv:-kv[1])],
           events=self.events,records=self.records)
 
 
@@ -478,6 +587,10 @@ def main():
             obs=env.reset()
             if obs is None: break
             g=frame(obs); A.reset()
+            if A.use_event_state:
+                A.current_mode=A.event_sig(g)
+                A.event_modes.add(A.current_mode)
+                A.node=A.make_node(g)
             A.trace_frames.append(g.copy()); A.reset_boundaries.append(len(A.trace_frames)-1)
 
     result=A.result()
