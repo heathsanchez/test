@@ -37,7 +37,7 @@ theorem same_partial_group_class_reachable {n : ℕ}
     otherRelatorNormalClosure_coordinate_reachable
       R i (h := c / R i) hmem
   have heq : (c / R i) * R i = c := by
-    group
+    exact div_mul_cancel c (R i)
   rw [heq] at p
   exact p
 
