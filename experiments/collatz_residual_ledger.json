@@ -90,13 +90,13 @@
     {
       "kind": "interval_survival",
       "shard": 5,
-      "next_horizon": 453,
+      "next_horizon": 594,
       "priority": 1
     },
     {
       "kind": "interval_survival",
       "shard": 6,
-      "next_horizon": 480,
+      "next_horizon": 542,
       "priority": 1
     },
     {
@@ -108,7 +108,7 @@
     {
       "kind": "interval_survival",
       "shard": 13,
-      "next_horizon": 477,
+      "next_horizon": 564,
       "priority": 1
     }
   ],
@@ -165,6 +165,41 @@
       "exact_first_descent": 476,
       "next_exact_horizon": 477,
       "source": "local exact replay after heuristic proposal"
+    },
+    {
+      "shard": 3,
+      "witness_decimal": "2869738509398620241919",
+      "exact_first_descent": 474,
+      "next_exact_horizon": 475,
+      "source": "local exact replay after targeted bit search"
+    },
+    {
+      "shard": 4,
+      "witness_decimal": "3100204747211346542591",
+      "exact_first_descent": 547,
+      "next_exact_horizon": 548,
+      "source": "local exact replay after targeted bit search"
+    },
+    {
+      "shard": 5,
+      "witness_decimal": "3162861600394673389567",
+      "exact_first_descent": 593,
+      "next_exact_horizon": 594,
+      "source": "local exact replay after targeted bit search"
+    },
+    {
+      "shard": 6,
+      "witness_decimal": "3331219134106059145215",
+      "exact_first_descent": 541,
+      "next_exact_horizon": 542,
+      "source": "local exact replay after targeted bit search"
+    },
+    {
+      "shard": 13,
+      "witness_decimal": "4407263266262698950655",
+      "exact_first_descent": 563,
+      "next_exact_horizon": 564,
+      "source": "local exact replay after targeted bit search"
     }
   ]
 }
