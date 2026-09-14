@@ -49,7 +49,7 @@ theorem sourceTwistLayer_le_commutatorLayer {n : ℕ} (S : Set (Word n)) :
     sourceTwistLayer S ≤
       ⁅sourceNormalClosure S, (⊤ : Subgroup (Word n))⁆ := by
   unfold sourceTwistLayer
-  apply Subgroup.closure_le.mpr
+  rw [Subgroup.closure_le]
   intro x hx
   rcases hx with ⟨b, hb, w, rfl⟩
   have hbN : b⁻¹ ∈ sourceNormalClosure S := by
