@@ -1,0 +1,44 @@
+name: ACC Proof Track Funnel Closure V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/FunnelClosure.lean'
+      - '.github/workflows/acc-proof-track-funnel-closure-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned official ACC repository
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/official-acc
+          git -C /tmp/official-acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare pinned Lean
+        working-directory: /tmp/official-acc/competition/tools/lean
+        run: |
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          lake exe cache get
+          lake build
+      - name: Check finite twist closure
+        run: |
+          cp mda/domains/andrews_curtis/proof_track/ReachabilityEquivalence.lean /tmp/official-acc/competition/tools/lean/ReachabilityEquivalence.lean
+          cp mda/domains/andrews_curtis/proof_track/FunnelCore.lean /tmp/official-acc/competition/tools/lean/FunnelCore.lean
+          cp mda/domains/andrews_curtis/proof_track/FunnelClosure.lean /tmp/official-acc/competition/tools/lean/FunnelClosure.lean
+          cd /tmp/official-acc/competition/tools/lean
+          mkdir -p .lake/build/lib/lean
+          lake env lean -o .lake/build/lib/lean/ReachabilityEquivalence.olean ReachabilityEquivalence.lean
+          lake env lean -o .lake/build/lib/lean/FunnelCore.olean FunnelCore.lean
+          lake env lean FunnelClosure.lean
