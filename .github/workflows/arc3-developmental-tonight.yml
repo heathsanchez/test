@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,12 +14,12 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run consequence-qualified observation genesis
-        run: python experiments/arc3_tonight/developmental_ls20_v3.py | tee arc3_developmental_v3.log
+      - name: Run multi-level development compile replay
+        run: python experiments/arc3_tonight/developmental_ls20_v4.py | tee arc3_developmental_v4.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-developmental-v3
+          name: arc3-developmental-v4
           path: |
-            arc3_developmental_v3.log
-            arc3_developmental_v3_result.json
+            arc3_developmental_v4.log
+            arc3_developmental_v4_result.json
