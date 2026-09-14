@@ -234,6 +234,9 @@ class Agent:
         self.consequence=defaultdict(Counter)
         self.context_trials=defaultdict(lambda:defaultdict(set))
         self.use_local_context=False
+        self.use_event_state=False
+        self.event_box=None
+        self.event_modes=set()
         self.node=None
         self.trace_frames=[]
         self.reset_boundaries=[]
@@ -247,11 +250,60 @@ class Agent:
         self.pos=None
         self.node=None
 
+    def event_sig(self,g):
+        if not self.use_event_state or self.event_box is None: return None
+        y0,y1,x0,x1=self.event_box
+        import hashlib
+        return hashlib.sha1(g[y0:y1,x0:x1].tobytes()).hexdigest()[:12]
+
     def make_node(self,g):
         if self.pos is None: return None
+        parts=[self.pos]
+        if self.use_event_state:
+            parts.append(self.event_sig(g))
         if self.use_local_context:
-            return (self.pos,local_sig(g,self.pos))
-        return self.pos
+            parts.append(local_sig(g,self.pos))
+        return tuple(parts) if len(parts)>1 else self.pos
+
+    def residual_mask(self,prev,g,oldpos,newpos):
+        m=(prev!=g)&~self.nuis
+        # Remove the intervention-induced carrier itself from the residual.
+        # The causal carrier is compact; use a generic padded neighborhood around
+        # its derived centroids rather than a supplied sprite shape.
+        for p in (oldpos,newpos):
+            if p is None: continue
+            y,x=p
+            m[max(0,y-4):min(m.shape[0],y+5),
+              max(0,x-4):min(m.shape[1],x+5)]=False
+        return m
+
+    def maybe_birth_event_state(self,prev,g,oldpos,newpos,st):
+        if self.use_event_state or oldpos is None or newpos is None or st=="GAME_OVER":
+            return False
+        m=self.residual_mask(prev,g,oldpos,newpos)
+        ys,xs=np.where(m)
+        # Ordinary UI/resource ticks are tiny. Authorize a new persistent state
+        # only when a compact non-carrier residual is large enough to be a real
+        # intervention consequence.
+        if len(xs)<6:
+            return False
+        y0,y1=int(ys.min()),int(ys.max())+1
+        x0,x1=int(xs.min()),int(xs.max())+1
+        if (y1-y0)*(x1-x0)>160:
+            return False
+        pad=4
+        self.event_box=(max(0,y0-pad),min(g.shape[0],y1+pad),
+                        max(0,x0-pad),min(g.shape[1],x1+pad))
+        self.use_event_state=True
+        before=self.event_sig(prev); after=self.event_sig(g)
+        self.event_modes.update([before,after])
+        self.phase="PERSISTENT_EVENT_STATE_GENESIS"
+        # Keep learned geometry, but re-index active consequence state.
+        self.graph.clear(); self.tried.clear(); self.consequence.clear()
+        self.ev("BIRTH_PERSISTENT_EVENT_STATE",box=list(self.event_box),
+                witness_position=list(newpos),residual_pixels=len(xs),
+                before=before,after=after)
+        return True
 
     def locate(self,g):
         p,grp=locate_group(g,self.group_descs,self.nuis,self.pos)
@@ -320,6 +372,13 @@ class Agent:
         delta=int(np.count_nonzero((prev!=g)&~self.nuis))
         lvl=int(getattr(obs,"levels_completed",0))
         st=getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None)))
+        born=self.maybe_birth_event_state(prev,g,oldpos,self.pos,st)
+        if self.use_event_state:
+            mode=self.event_sig(g)
+            if mode not in self.event_modes:
+                self.event_modes.add(mode)
+                self.ev("NEW_EVENT_MODE",mode=mode,count=len(self.event_modes),
+                        position=list(self.pos) if self.pos else None)
         self.node=self.make_node(g)
 
         if oldpos is not None and self.pos is not None and oldnode is not None and self.node is not None:
@@ -331,7 +390,7 @@ class Agent:
 
             # While position-only is active, test whether local context is a verified separator
             # for nonterminal divergent consequences at the same position/action.
-            if not self.use_local_context and st!="GAME_OVER":
+            if not self.use_local_context and not self.use_event_state and st!="GAME_OVER":
                 basekey=(oldpos,action)
                 self.context_trials[basekey][oldlocal].add(ck)
                 trials=self.context_trials[basekey]
@@ -360,7 +419,9 @@ class Agent:
             self.ev("LEVEL_BOUNDARY",old=self.level,new=lvl); self.level=lvl
             self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear()
             self.context_trials.clear(); self.pos=None; self.node=None
-            self.use_local_context=False; self.phase="CAUSAL_CARRIER_ONTOLOGY"
+            self.use_local_context=False; self.use_event_state=False
+            self.event_box=None; self.event_modes.clear()
+            self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
         self.trace_frames.append(g.copy())
         self.records.append(dict(i=len(self.records),action=action,raw_delta=int(np.count_nonzero(prev!=g)),
@@ -373,6 +434,8 @@ class Agent:
           vectors={k:list(v) for k,v in self.vectors.items()},group_descs=[list(d) for d in sorted(self.group_descs)],
           phase=self.phase,gameovers=self.gameovers,action_counts=dict(self.action_counts),
           distinct_positions=len(self.visits),contextual_state=self.use_local_context,
+          event_state=self.use_event_state,event_box=list(self.event_box) if self.event_box else None,
+          event_mode_count=len(self.event_modes),
           events=self.events,records=self.records)
 
 
