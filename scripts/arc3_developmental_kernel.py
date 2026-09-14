@@ -250,7 +250,10 @@ class Agent:
         self.node=None
         self.trace_frames=[]
         self.reset_boundaries=[]
-        self.level=0; self.max_level=0; self.gameovers=0; self.phase="CAUSAL_CARRIER_ONTOLOGY"
+        self.level=0; self.max_level=0
+        self.gameovers=0
+        self.level_gameovers=0
+        self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
     def ev(self,k,**kw):
         e={"t":len(self.records),"kind":k,**kw}; self.events.append(e)
@@ -592,11 +595,20 @@ class Agent:
             self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action); self.max_level=lvl
         if lvl!=self.level:
             self.ev("LEVEL_BOUNDARY",old=self.level,new=lvl); self.level=lvl
+            # Level change is a scope change. Retain only the generic intervention
+            # semantics whose transfer is directly observable; do not carry the old
+            # map, blocked edges, or latent mode ontology into a new world.
             self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear()
-            self.context_trials.clear(); self.pos=None; self.node=None
+            self.context_trials.clear()
+            self.spatial_graph.clear(); self.physical_tried.clear(); self.physical_positions.clear()
+            self.blocked_frontiers.clear(); self.blocked_mode_tests.clear()
+            self.geometry_frozen=False
+            self.reference_frame=g.copy()
+            self.pos=None; self.node=None
             self.use_local_context=False; self.use_event_state=False
             self.event_box=None; self.event_modes.clear(); self.current_mode=None
             self.event_trigger_pos=None; self.mode_change_return=False
+            self.level_gameovers=0
             self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
         self.trace_frames.append(g.copy())
@@ -608,7 +620,8 @@ class Agent:
     def result(self):
         return dict(actions=len(self.records),max_levels_completed=self.max_level,
           vectors={k:list(v) for k,v in self.vectors.items()},group_descs=[list(d) for d in sorted(self.group_descs)],
-          phase=self.phase,gameovers=self.gameovers,action_counts=dict(self.action_counts),
+          phase=self.phase,gameovers=self.gameovers,level_gameovers=self.level_gameovers,
+          action_counts=dict(self.action_counts),
           distinct_positions=len(self.visits),contextual_state=self.use_local_context,
           event_state=self.use_event_state,event_box=list(self.event_box) if self.event_box else None,
           event_mode_count=len(self.event_modes),
@@ -654,8 +667,13 @@ def main():
         if obs.state==GameState.WIN:
             A.ev("WIN",step=i+1); break
         if obs.state==GameState.GAME_OVER:
-            A.gameovers+=1; A.ev("GAME_OVER",step=i+1,count=A.gameovers)
-            if A.gameovers>=4: break
+            A.gameovers+=1; A.level_gameovers+=1
+            A.ev("GAME_OVER",step=i+1,total_count=A.gameovers,
+                 level_count=A.level_gameovers,level=A.level)
+            if A.level_gameovers>=6:
+                A.ev("LEVEL_FAILURE_BUDGET_EXHAUSTED",level=A.level,
+                     failures=A.level_gameovers)
+                break
             obs=env.reset()
             if obs is None: break
             g=frame(obs); A.reset()
