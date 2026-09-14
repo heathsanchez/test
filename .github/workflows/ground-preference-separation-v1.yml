@@ -1,0 +1,38 @@
+name: Ground Preference Separation V1
+
+on:
+  push:
+    paths:
+      - "experiments/ground_preference_separation_v1/FROZEN_CANDIDATE.md"
+      - "scripts/ground_preference_separation_v1.py"
+      - ".github/workflows/ground-preference-separation-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove frozen candidate unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 7d14e7668c30288b97aa088b30f0a2b5cc6efe2e --             experiments/ground_preference_separation_v1/FROZEN_CANDIDATE.md
+          echo "GROUND_PREFERENCE_V1_FROZEN_UNCHANGED"
+      - name: Run ground-preference separation test
+        run: |
+          set -o pipefail
+          python scripts/ground_preference_separation_v1.py | tee ground-preference-separation-v1.log
+          grep -F "SURVIVED_GROUND_PREFERENCE_SEPARATION_V1" ground-preference-separation-v1.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ground-preference-separation-v1
+          path: ground-preference-separation-v1.log
