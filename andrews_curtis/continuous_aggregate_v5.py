@@ -56,8 +56,12 @@ def compress(core, initial, moves):
         cur = nxt
 
 
-def strict_candidate(row, candidate_len, our_best=None):
-    """Publish only a genuinely new solve or a strict live-record steal."""
+def scoring_candidate(row, candidate_len, our_best=None):
+    """Publish a new scoring consequence: solve, strict improvement, or new tie.
+
+    A tie is worth reduced ACC score, so it is a valid consequence unless we
+    already hold the same or a better certificate for that exact scoring cell.
+    """
     if isinstance(our_best, int) and our_best <= candidate_len:
         return False, "already_held_by_us_at_same_or_better_length"
     if row.get("status") == "unsolved":
@@ -66,7 +70,7 @@ def strict_candidate(row, candidate_len, our_best=None):
     if isinstance(best, int) and candidate_len < best:
         return True, "strict_improvement"
     if isinstance(best, int) and candidate_len == best:
-        return False, "tie_not_published"
+        return True, "scoring_tie"
     return False, "longer_than_live_best"
 
 
@@ -99,6 +103,8 @@ def parse_utc_timestamp(rec):
     if not isinstance(rec, dict):
         return None
     keys = (
+        # ACC submission history currently exposes receivedAt/updatedAt.
+        "receivedAt", "received_at", "updatedAt", "updated_at",
         "createdAt", "created_at", "submittedAt", "submitted_at",
         "created", "timestamp", "submitted"
     )
@@ -296,7 +302,7 @@ def main():
             if row is None:
                 selection.append({"challenge_id": qid, "length": len(path), "selected": False, "reason": "missing_live_row"})
                 continue
-            ok, reason = strict_candidate(row, len(path), our_best.get(qid))
+            ok, reason = scoring_candidate(row, len(path), our_best.get(qid))
             selection.append({
                 "challenge_id": qid,
                 "length": len(path),
@@ -324,7 +330,7 @@ def main():
         if row is None:
             final_recheck.append({"challenge_id": qid, "length": len(path), "selected": False, "reason": "missing_live_row"})
             continue
-        ok, reason = strict_candidate(row, len(path), our_best.get(qid))
+        ok, reason = scoring_candidate(row, len(path), our_best.get(qid))
         final_recheck.append({
             "challenge_id": qid,
             "length": len(path),
@@ -371,7 +377,7 @@ def main():
             raise RuntimeError(f"{failures} platform verification failures")
 
     report = {
-        "experiment": "acc-continuous-residual-loop-v5-strict-quota",
+        "experiment": "acc-continuous-residual-loop-v5-scoring-quota",
         "cycle": a.cycle,
         "source_files": [str(x) for x in files],
         "raw_ac_candidates": len(raw_candidates),
@@ -380,7 +386,7 @@ def main():
         "selected_rows": len(selected),
         "selected_ac": sum(cid.startswith("ac-") for cid, _ in selected),
         "selected_stable": sum(cid.startswith("sac-") for cid, _ in selected),
-        "selected_scoring_ties": 0,
+        "selected_scoring_ties": sum(x.get("selected") and x.get("reason") == "scoring_tie" for x in final_recheck),
         "selected_strict_improvements": sum(x.get("selected") and x.get("reason") == "strict_improvement" for x in final_recheck),
         "selected_unsolved": sum(x.get("selected") and x.get("reason") == "currently_unsolved" for x in final_recheck),
         "dropped_for_batch_limit": dropped_for_batch_limit,
