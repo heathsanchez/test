@@ -235,6 +235,8 @@ class Agent:
         self.context_trials=defaultdict(lambda:defaultdict(set))
         self.use_local_context=False
         self.node=None
+        self.trace_frames=[]
+        self.reset_boundaries=[]
         self.level=0; self.max_level=0; self.gameovers=0; self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
     def ev(self,k,**kw):
@@ -360,6 +362,7 @@ class Agent:
             self.context_trials.clear(); self.pos=None; self.node=None
             self.use_local_context=False; self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
+        self.trace_frames.append(g.copy())
         self.records.append(dict(i=len(self.records),action=action,raw_delta=int(np.count_nonzero(prev!=g)),
             filtered_delta=delta,old_pos=list(oldpos) if oldpos else None,pos=list(self.pos) if self.pos else None,
             old_local=oldlocal,node=str(self.node),contextual=self.use_local_context,
@@ -387,6 +390,8 @@ def main():
     obs=env.reset(); g=frame(obs)
     A=Agent(nuis,ref_action,ref_pos,vectors,group_descs,args.seed)
     A.level=int(getattr(obs,"levels_completed",0)); A.max_level=A.level
+    A.trace_frames=[g.copy()]
+    A.reset_boundaries=[0]
     A.ev("CAUSAL_CARRIER_GENESIS",**diag)
     print("START",args.game,"actions",[a.name for a in env.action_space],
           "levels",getattr(obs,"levels_completed",None),"win_levels",getattr(obs,"win_levels",None),flush=True)
@@ -410,6 +415,7 @@ def main():
             obs=env.reset()
             if obs is None: break
             g=frame(obs); A.reset()
+            A.trace_frames.append(g.copy()); A.reset_boundaries.append(len(A.trace_frames)-1)
 
     result=A.result()
     result.update(game=args.game,seed=args.seed,reference_action=ref_action,
@@ -422,6 +428,9 @@ def main():
         if sc is not None: result["scorecard"]=sc.model_dump(mode="json") if hasattr(sc,"model_dump") else str(sc)
     except Exception as e: result["scorecard_error"]=repr(e)
     Path(args.out).write_text(json.dumps(result,indent=2,default=str))
+    np.savez_compressed("arc3-results/trajectory_frames.npz",
+        frames=np.stack(A.trace_frames), reset_boundaries=np.asarray(A.reset_boundaries,dtype=np.int32))
+    print("TRACE_FRAMES",len(A.trace_frames),"RESETS",A.reset_boundaries,flush=True)
     print("RESULT",json.dumps({k:v for k,v in result.items() if k not in ("records","events","scorecard")},sort_keys=True),flush=True)
     print("OUTPUT",args.out,flush=True)
 
