@@ -1,0 +1,61 @@
+name: WCD V1 Heterogeneous Domain Audit
+
+on:
+  push:
+    paths:
+      - "experiments/warranted_consequential_difference_v1/HETEROGENEOUS_OBSERVATIONS_V1.json"
+      - "scripts/wcd_heterogeneous_domain_audit_v1.py"
+      - ".github/workflows/wcd-heterogeneous-domain-audit-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Prove WCD kernel and adapter manifest unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 978af4e94815128b4c517562f9a0bae26eea1e55 --             experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md
+          git diff --exit-code c884b39c67f7f30499a3ee4eafb50a8e88c394cb --             experiments/warranted_consequential_difference_v1/HETEROGENEOUS_AUDIT_FROZEN_MANIFEST.md
+          echo "WCD_KERNEL_AND_DOMAIN_ADAPTERS_UNCHANGED"
+
+      - name: Replay controller V9 source-domain invariants
+        run: |
+          python experiments/controller_v9/test_equivalence.py | tee controller-v9-replay.log
+          grep -F "controller_v9_equivalence_invariants=PASS" controller-v9-replay.log
+
+      - name: Replay WCD dedicated finite falsification suite
+        run: |
+          python scripts/warranted_consequential_difference_v1_test.py | tee wcd-dedicated-replay.log
+          grep -F "SURVIVED_DEDICATED_FALSIFICATION_SUITE_WARRANTED_CONSEQUENTIAL_DIFFERENCE_V1" wcd-dedicated-replay.log
+
+      - name: Run heterogeneous audit
+        run: |
+          set -o pipefail
+          python scripts/wcd_heterogeneous_domain_audit_v1.py             experiments/warranted_consequential_difference_v1/HETEROGENEOUS_OBSERVATIONS_V1.json             | tee wcd-heterogeneous-domain-audit-v1.log
+          grep -F "SURVIVED_HETEROGENEOUS_DOMAIN_AUDIT_WCD_V1" wcd-heterogeneous-domain-audit-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wcd-v1-heterogeneous-domain-audit
+          path: |
+            experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md
+            experiments/warranted_consequential_difference_v1/HETEROGENEOUS_AUDIT_FROZEN_MANIFEST.md
+            experiments/warranted_consequential_difference_v1/HETEROGENEOUS_OBSERVATIONS_V1.json
+            controller-v9-replay.log
+            wcd-dedicated-replay.log
+            wcd-heterogeneous-domain-audit-v1.log
+          if-no-files-found: warn
