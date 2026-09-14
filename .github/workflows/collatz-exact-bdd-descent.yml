@@ -1,0 +1,65 @@
+name: Exact Collatz BDD Descent
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/collatz-exact-bdd-descent.yml"
+      - "experiments/collatz_exact_bdd.py"
+
+jobs:
+  validate:
+    name: validate-20bit
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install BDD engine
+        run: python -m pip install --disable-pip-version-check dd
+      - name: Exhaustive symbolic validation
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_bdd.py \
+            --bits 20 \
+            --lower 524288 \
+            --upper 1048575 \
+            --horizon 300 \
+            --checkpoint 25 \
+            --out results/validate20.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-bdd-validate20
+          path: results/validate20.json
+          if-no-files-found: warn
+
+  live:
+    name: live-72bit
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install BDD engine
+        run: python -m pip install --disable-pip-version-check dd
+      - name: Exact live interval descent
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_bdd.py \
+            --bits 72 \
+            --lower 2392312122059207475200 \
+            --upper 4722366482869645213695 \
+            --horizon 1500 \
+            --checkpoint 25 \
+            --out results/live72.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-bdd-live72
+          path: results/live72.json
+          if-no-files-found: warn
