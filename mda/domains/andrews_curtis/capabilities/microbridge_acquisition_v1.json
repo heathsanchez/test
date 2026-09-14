@@ -1,0 +1,65 @@
+{
+  "capability_id": "acc.microbridge_acquisition.v1",
+  "status": "PROVISIONAL_SCOPED",
+  "mechanism": "On an already verified quotient route with COMPLETE exact closure, rank quotient segments by current exact atomic cost; for the top four, breadth-first search the official atomic move graph strictly below the current local cost with a 600000-state cap. A local separator is only usable after end-to-end downstream re-closure verifies a shorter V0-accepted certificate. Noncausal local improvements are discarded.",
+  "qualified_evidence": [
+    {
+      "kind": "development",
+      "target": "ac-04402",
+      "policy": "current",
+      "source_run": 34803570626,
+      "causal_run": 34804253703,
+      "consequence": "rank1/step6 transferred 18->6 locally and 766->749 end-to-end; rank2 local improvement was rejected because 766->813"
+    },
+    {
+      "kind": "prospective_transfer",
+      "target": "ac-02012",
+      "policy": "mask3",
+      "run": 34805450970,
+      "consequence": "top4 acquisition found 4 local separators; only rank3/step273 survived causal test, 1879->1873"
+    }
+  ],
+  "scope": {
+    "authority_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "requires_exact_route_closure": "COMPLETE",
+    "top_k_expensive_segments": 4,
+    "bfs_state_cap": 600000,
+    "acceptance_rule": "V0-verified end-to-end atomic length must strictly improve its exact-closure baseline",
+    "execution_mode": "OPTIONAL_FRONTIER_MEMBER",
+    "not_authorized_as_global_default": true
+  },
+  "protected_replay": [
+    "submission70 six exact scoring certificates",
+    "official verifier conformance"
+  ],
+  "full_future_cost_coordinates": [
+    "final atomic length",
+    "stable length",
+    "official verifier work",
+    "microbridge BFS expanded states",
+    "microbridge BFS seconds",
+    "downstream exact re-closure seconds",
+    "baseline exact-closure seconds",
+    "maintenance/dependency burden: one optional capability + official BFS dependency"
+  ],
+  "provenance": [
+    "mda/domains/andrews_curtis/local_official_microbridge.py",
+    "mda/domains/andrews_curtis/scoped_microbridge_causal_repair.py",
+    "run:34803570626",
+    "run:34804253703",
+    "run:34805450970"
+  ],
+  "revocation_conditions": [
+    "protected replay fails",
+    "official verifier, move spec, manifest, or resource limits change",
+    "a prospective held-out qualification finds no non-dominated verified consequence under the declared scope and budget",
+    "the capability is dominated by retained machinery across its qualified scope after charging acquisition and continuation cost",
+    "the BFS state cap or top-k policy changes without requalification"
+  ],
+  "next_qualification": {
+    "target": "ac-09722",
+    "policy": "mask3",
+    "selection_rule": "next minimum quotient-step count among unused verified routes from immutable run 34796578203, tie broken lexicographically",
+    "purpose": "SOLVENT plus second held-out prospective replay"
+  }
+}
