@@ -36,7 +36,7 @@ theorem oneRelator_mem_normalClosure {n : ℕ} (b : Word n) :
 
 theorem twistFactor_eq_commutator {n : ℕ} (b w : Word n) :
     b⁻¹ * w * b * w⁻¹ = ⁅b⁻¹, w⁆ := by
-  rfl
+  simp only [commutatorElement_def, inv_inv]
 
 theorem twistFactor_mem_commutatorLayer {n : ℕ} (b w : Word n) :
     b⁻¹ * w * b * w⁻¹ ∈
