@@ -408,14 +408,19 @@ theorem funnelFamily_reachable (m k : ℕ) :
   have hs4raw :=
     Step.conj (![funnelY, C] : Relators 2)
       (1 : Fin 2) (funnelY^m)
+  have hs4mid :
+      Step (![funnelY, C] : Relators 2)
+        (Function.update (![funnelY, C] : Relators 2)
+          (1 : Fin 2) (funnelY^m * C * (funnelY^m)⁻¹)) := by
+    simpa using hs4raw
   have hBC : funnelY^m * C * (funnelY^m)⁻¹ = funnelB k := by
     simpa [C] using funnel_unconj_C m k
-  rw [hBC] at hs4raw
+  rw [hBC] at hs4mid
   have hs4 :
       Step (![funnelY, C] : Relators 2)
         (![funnelY, funnelB k] : Relators 2) := by
-    rw [funnel_update_one] at hs4raw
-    exact hs4raw
+    rw [funnel_update_one] at hs4mid
+    exact hs4mid
   have h4 :
       Reachable (funnelRelators m k)
         (![funnelY, funnelB k] : Relators 2) :=
@@ -428,11 +433,16 @@ theorem funnelFamily_reachable (m k : ℕ) :
 
   have hs6raw :=
     Step.inv (![funnelY, funnelX⁻¹] : Relators 2) (1 : Fin 2)
+  have hs6mid :
+      Step (![funnelY, funnelX⁻¹] : Relators 2)
+        (Function.update (![funnelY, funnelX⁻¹] : Relators 2)
+          (1 : Fin 2) funnelX) := by
+    simpa using hs6raw
   have hs6 :
       Step (![funnelY, funnelX⁻¹] : Relators 2)
         (![funnelY, funnelX] : Relators 2) := by
-    rw [funnel_update_one] at hs6raw
-    simpa using hs6raw
+    rw [funnel_update_one] at hs6mid
+    exact hs6mid
   have h6 :
       Reachable (funnelRelators m k)
         (![funnelY, funnelX] : Relators 2) :=
