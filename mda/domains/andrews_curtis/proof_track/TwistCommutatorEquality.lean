@@ -5,6 +5,16 @@ open scoped commutatorElement
 
 namespace AC
 
+theorem twist_commutator_mul_left {n : ℕ} (a c g : Word n) :
+    ⁅a * c, g⁆ = a * ⁅c, g⁆ * a⁻¹ * ⁅a, g⁆ := by
+  simp only [commutatorElement_def]
+  group
+
+theorem twist_commutator_inv_left {n : ℕ} (a g : Word n) :
+    ⁅a⁻¹, g⁆ = a⁻¹ * ⁅g, a⁆ * a := by
+  simp only [commutatorElement_def]
+  group
+
 /-- Words whose commutator with every ambient word lies in the twist layer. -/
 def centralModuloTwist {n : ℕ} (b : Word n) : Subgroup (Word n) where
   carrier := {a | ∀ g : Word n, ⁅a, g⁆ ∈ twistNormalLayer b}
@@ -16,7 +26,7 @@ def centralModuloTwist {n : ℕ} (b : Word n) : Subgroup (Word n) where
     letI : (twistNormalLayer b).Normal := by
       unfold twistNormalLayer
       infer_instance
-    rw [commutatorElement_mul_left_eq_conj_mul]
+    rw [twist_commutator_mul_left]
     exact (twistNormalLayer b).mul_mem
       (Subgroup.Normal.conj_mem inferInstance _ (hc g) a)
       (ha g)
@@ -25,7 +35,7 @@ def centralModuloTwist {n : ℕ} (b : Word n) : Subgroup (Word n) where
     letI : (twistNormalLayer b).Normal := by
       unfold twistNormalLayer
       infer_instance
-    rw [commutatorElement_inv_left]
+    rw [twist_commutator_inv_left]
     have hga : ⁅g, a⁆ ∈ twistNormalLayer b := by
       have hi := (twistNormalLayer b).inv_mem (ha g)
       rw [commutatorElement_inv] at hi
@@ -71,7 +81,7 @@ theorem generator_mem_centralModuloTwist {n : ℕ} (b : Word n) :
     have hc :
         b * ⁅b⁻¹, g⁆ * b⁻¹ ∈ twistNormalLayer b :=
       Subgroup.Normal.conj_mem inferInstance _ hbinv b
-    rw [commutatorElement_inv_left] at hc
+    rw [twist_commutator_inv_left] at hc
     simpa [mul_assoc] using hc
   have hi := (twistNormalLayer b).inv_mem hgb
   rw [commutatorElement_inv] at hi
