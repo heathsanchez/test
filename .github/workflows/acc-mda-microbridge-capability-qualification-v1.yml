@@ -1,0 +1,496 @@
+name: ACC MDA Microbridge Capability Qualification V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-microbridge-capability-qualification-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+  SOURCE_ARTIFACT: "acc-mda-probe-5-mask3"
+  TARGET_ID: "ac-09722"
+  POLICY: "mask3"
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Freeze capability and held-out qualification encounter
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/microbridge_capability_qualification
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          cap=json.load(open('mda/domains/andrews_curtis/capabilities/microbridge_acquisition_v1.json'))
+          assert cap['status']=='PROVISIONAL_SCOPED',cap
+          assert cap['next_qualification']['target']=='ac-09722',cap
+          freeze={
+            'experiment':'ACC_MDA_MICROBRIDGE_CAPABILITY_QUALIFICATION_V1',
+            'repo_sha':'${{ github.sha }}',
+            'capability_id':cap['capability_id'],
+            'capability_status_before':'PROVISIONAL_SCOPED',
+            'held_out_target':'ac-09722',
+            'policy':'mask3',
+            'source_run':34796578203,
+            'selection_rule':cap['next_qualification']['selection_rule'],
+            'solvent_rule':'delete capability and retain deletion unless a non-dominated verified consequence is lost',
+            'top_k':cap['scope']['top_k_expensive_segments'],
+            'bfs_state_cap':cap['scope']['bfs_state_cap'],
+            'global_inheritance_authorized':False,
+          }
+          Path('mda/evidence/andrews_curtis/microbridge_capability_qualification/freeze.json').write_text(
+              json.dumps(freeze,indent=2,sort_keys=True)+'\n')
+          print('MDA_CAPABILITY_FREEZE',json.dumps(freeze,sort_keys=True))
+          PY
+
+      - name: Recover immutable held-out route
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$SOURCE_ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']=='ac-09722',r
+          assert r['policy']=='mask3',r
+          assert r['quotient_found'] is True,r
+          assert r['quotient_steps']==320,r
+          print('MDA_CAPABILITY_HELDOUT_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'qsteps':r['quotient_steps'],
+            'beam_best':r['best_atomic_length'],
+            'live_best':r['frozen_ac_best'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before qualification
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-capability-close"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Construct exact baseline required by capability
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_capability_qualification/closure"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/fixed_route_exact_closure.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy mask3 \
+            --out-dir "$out" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-capability-closure
+          path: mda/evidence/andrews_curtis/microbridge_capability_qualification/
+          retention-days: 90
+
+  acquire:
+    needs: close
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact held-out baseline
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/closure
+          gh run download "${{ github.run_id }}" -n acc-mda-capability-closure -D /tmp/closure
+          result=$(find /tmp/closure -path '*/closure/result.json' -print -quit)
+          cand=$(find /tmp/closure -path '*/closure/candidate_ac.txt' -print -quit)
+          test -n "$result"
+          cp "$result" /tmp/closure_result.json
+          status=$(python3 - <<'PY'
+          import json
+          print(json.load(open('/tmp/closure_result.json'))['closure_status'])
+          PY
+          )
+          echo "closure_status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" = "COMPLETE" ]; then
+            test -n "$cand"
+            cp "$cand" /tmp/closure_candidate.txt
+          fi
+
+      - name: Fetch pinned ground and retained dependency
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-capability-acquire-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Run compiled optional acquisition procedure
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_capability_qualification/acquire/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/local_official_microbridge.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/closure_result.json \
+            --candidate /tmp/closure_candidate.txt \
+            --policy mask3 \
+            --rank "${{ matrix.rank }}" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --bfs-state-cap 600000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-capability-acquire-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/microbridge_capability_qualification/
+          retention-days: 90
+
+  causal:
+    needs: [close, acquire]
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover baseline and acquired local proposal
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/closure /tmp/acquire
+          gh run download "${{ github.run_id }}" -n acc-mda-capability-closure -D /tmp/closure
+          gh run download "${{ github.run_id }}" -n "acc-mda-capability-acquire-${{ matrix.rank }}" -D /tmp/acquire || true
+          cresult=$(find /tmp/closure -path '*/closure/result.json' -print -quit)
+          ccand=$(find /tmp/closure -path '*/closure/candidate_ac.txt' -print -quit)
+          aresult=$(find /tmp/acquire -name result.json -print -quit)
+          test -n "$cresult"
+          cp "$cresult" /tmp/closure_result.json
+          if [ -n "$ccand" ]; then cp "$ccand" /tmp/closure_candidate.txt; fi
+          if [ -n "$aresult" ]; then
+            cp "$aresult" /tmp/acquire_result.json
+            status=$(python3 - <<'PY'
+          import json
+          print(json.load(open('/tmp/acquire_result.json'))['status'])
+          PY
+            )
+          else
+            status="NO_RESULT"
+          fi
+          echo "acquire_status=$status" >> "$GITHUB_OUTPUT"
+          echo "MDA_CAPABILITY_CAUSAL_GATE rank=${{ matrix.rank }} status=$status"
+
+      - name: Fetch pinned ground and retained dependency
+        if: steps.gate.outputs.acquire_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before scoped change
+        if: steps.gate.outputs.acquire_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        if: steps.gate.outputs.acquire_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-capability-causal-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Require end-to-end causal gain
+        if: steps.gate.outputs.acquire_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_capability_qualification/causal/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/scoped_microbridge_causal_repair.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --closure-result /tmp/closure_result.json \
+            --closure-candidate /tmp/closure_candidate.txt \
+            --microbridge-result /tmp/acquire_result.json \
+            --policy mask3 \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after scoped change
+        if: steps.gate.outputs.acquire_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-capability-causal-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/microbridge_capability_qualification/
+          retention-days: 90
+
+  solvent:
+    needs: [close, acquire, causal]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all held-out evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/all mda/evidence/andrews_curtis/microbridge_capability_solvent/candidates
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-capability-*' -D /tmp/all || true
+          echo "RESULT_FILES=$(find /tmp/all -name result.json | wc -l)"
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/microbridge_capability_solvent/candidates/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/all -path '*/causal/*/candidate_ac.txt' -type f | sort)
+          echo "CAUSAL_CANDIDATES=$i"
+
+      - name: SOLVENT — try deleting the compiled capability
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          cap=json.load(open('mda/domains/andrews_curtis/capabilities/microbridge_acquisition_v1.json'))
+          closures=[]; acquired=[]; causals=[]
+          for p in glob.glob('/tmp/all/**/result.json',recursive=True):
+              r=json.load(open(p)); e=r.get('experiment','')
+              if e=='ACC_MDA_FIXED_ROUTE_EXACT_COMPILER_CLOSURE_V1': closures.append(r)
+              elif e=='ACC_MDA_LOCAL_OFFICIAL_MICROBRIDGE_V1': acquired.append(r)
+              elif e=='ACC_MDA_SCOPED_MICROBRIDGE_CAUSAL_REPAIR_V1': causals.append(r)
+          assert closures,'missing closure'
+          closure=closures[0]
+          gains=[r for r in causals if r.get('causal_gain') is True]
+          separators=[r for r in acquired if r.get('status')=='COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND']
+          unknown=[r for r in acquired if r.get('status')=='UNKNOWN_SEARCH']
+
+          baseline={
+            'kind':'WITHOUT_CAPABILITY',
+            'atomic_length':closure.get('exact_atomic_cost'),
+            'stable_length':(closure.get('exact_atomic_cost')+2) if isinstance(closure.get('exact_atomic_cost'),int) else None,
+            'exact_closure_seconds':closure.get('compile_seconds'),
+            'extra_acquisition_seconds':0.0,
+            'extra_acquisition_states':0,
+            'extra_continuation_seconds':0.0,
+            'maintenance_units':0,
+          }
+          candidates=[]
+          by_rank={r.get('rank'):r for r in acquired}
+          for r in gains:
+              m=by_rank.get(r.get('proposal_rank'),{})
+              candidates.append({
+                'kind':'WITH_CAPABILITY',
+                'rank':r.get('proposal_rank'),
+                'atomic_length':r.get('full_candidate_length'),
+                'stable_length':(r.get('full_candidate_length')+2) if isinstance(r.get('full_candidate_length'),int) else None,
+                'exact_closure_seconds':closure.get('compile_seconds'),
+                'extra_acquisition_seconds':m.get('seconds',0.0),
+                'extra_acquisition_states':m.get('expanded_states',0),
+                'extra_continuation_seconds':r.get('continuation_seconds',0.0),
+                'maintenance_units':1,
+                'end_to_end_saving':r.get('end_to_end_saving'),
+              })
+
+          # SOLVENT deletion rule: deleting the capability is lawful unless it
+          # removes a verified consequence that is strictly better in at least
+          # one protected/economic coordinate. Because acquisition carries real
+          # extra cost, a shorter verified certificate is retained as an
+          # optional Pareto point, never as an unconditional replacement.
+          loss_if_deleted=[
+            x for x in candidates
+            if isinstance(x.get('atomic_length'),int)
+            and isinstance(baseline.get('atomic_length'),int)
+            and x['atomic_length'] < baseline['atomic_length']
+          ]
+
+          if closure.get('closure_status')!='COMPLETE':
+              status='UNKNOWN_SEARCH'
+              decision='PRESERVE_PROVISIONAL'
+              reason='held-out exact baseline did not close; deletion not warranted'
+          elif loss_if_deleted:
+              status='VERIFIED_REPEATED_PROSPECTIVE_TRANSFER'
+              decision='RETAIN_OPTIONAL_SCOPED'
+              reason='deleting capability removes at least one shorter V0-verified held-out consequence; baseline remains cheaper and is retained too'
+          elif separators or unknown:
+              status='NO_HELDOUT_CAUSAL_GAIN'
+              decision='CONTRACT_FROM_ACTIVE_PRESENT'
+              reason='on this held-out encounter the capability added acquisition cost without a shorter end-to-end verified consequence'
+          else:
+              status='NO_HELDOUT_TRANSFER'
+              decision='CONTRACT_FROM_ACTIVE_PRESENT'
+              reason='no held-out consequence requires the capability'
+
+          out={
+            'experiment':'ACC_MDA_MICROBRIDGE_CAPABILITY_SOLVENT_V1',
+            'capability_id':cap['capability_id'],
+            'held_out_target':'ac-09722',
+            'policy':'mask3',
+            'closure_status':closure.get('closure_status'),
+            'baseline_without_capability':baseline,
+            'verified_capability_candidates':candidates,
+            'separator_count':len(separators),
+            'unknown_count':len(unknown),
+            'causal_gain_count':len(gains),
+            'loss_if_capability_deleted':loss_if_deleted,
+            'status':status,
+            'solvent_decision':decision,
+            'reason':reason,
+            'full_future_cost_coordinates':cap['full_future_cost_coordinates'],
+            'revocation_conditions':cap['revocation_conditions'],
+            'global_inheritance_authorized':False,
+            'next_action':(
+              'carry as optional scoped capability and seek one further independent domain/policy transfer before broadening scope'
+              if decision=='RETAIN_OPTIONAL_SCOPED'
+              else 'remove from active present; preserve provenance and reopen only on a new certified residual'
+            ),
+            'claim_boundary':'Second held-out prospective qualification only; baseline remains available and capability is never forced as default.',
+          }
+          Path('mda/evidence/andrews_curtis/microbridge_capability_solvent/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_MICROBRIDGE_CAPABILITY_SOLVENT',json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Fresh live consequence for any held-out causal gain
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          n=$(find mda/evidence/andrews_curtis/microbridge_capability_solvent/candidates -name '*.txt' -type f | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo NO_CAPABILITY_CANDIDATES
+            exit 0
+          fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p mda/evidence/andrews_curtis/microbridge_capability_solvent/live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/microbridge_capability_solvent/candidates/*.txt' \
+            --out-dir mda/evidence/andrews_curtis/microbridge_capability_solvent/live \
+            --cycle 12 \
+            | tee mda/evidence/andrews_curtis/microbridge_capability_solvent/live.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-microbridge-capability-solvent-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# This qualification is deliberately deletion-first:
+# capability is provisional; the held-out encounter gets to erase it.
+# A shorter certificate retains it only as an optional Pareto frontier member
+# because acquisition/reclosure cost is charged in full.
