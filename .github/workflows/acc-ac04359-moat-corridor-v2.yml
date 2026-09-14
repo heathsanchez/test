@@ -1,4 +1,4 @@
-name: ACC ac-04359 Moat Corridor V2
+name: ACC ac-04359 Global Moat Completion V3
 
 on:
   push:
@@ -13,7 +13,7 @@ permissions:
 
 env:
   OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
-  SOURCE_RUN: "34825953902"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
   CID: "ac-04359"
 
 jobs:
@@ -24,227 +24,138 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
-      - name: Freeze live record and recover our 18-move seed
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Freeze current live moat
         run: |
           set -euo pipefail
-          mkdir -p /tmp/source freeze_v2
-          gh run download "$SOURCE_RUN" -n acc-mda-causal-strict-steal-publication -D /tmp/source
-          seed=$(find /tmp/source -path '*/mda_causal_fortified/fortified_ac.txt' -print -quit)
-          grep '^ac-04359:' "$seed" > freeze_v2/seed.txt
+          mkdir -p freeze_v3
           python3 - <<'PY'
           import json,urllib.request
           from pathlib import Path
           u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
           req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
           with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
-          d=o.get('data',o); row=next(x for x in d['items'] if x['challengeId']=='ac-04359')
+          d=o.get('data',o)
+          row=next(x for x in d['items'] if x['challengeId']=='ac-04359')
           best=row['currentBestLength']; assert isinstance(best,int)
-          moves=json.loads(Path('freeze_v2/seed.txt').read_text().split(':',1)[1].strip())
-          assert len(moves)==18,(len(moves),moves)
-          Path('freeze_v2/live_best.txt').write_text(str(best)+'\n')
-          Path('freeze_v2/live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
-          print('MOAT_V2_FREEZE',json.dumps({'live_best':best,'seed':len(moves),'strict_target':best-1},sort_keys=True))
+          Path('freeze_v3/live_best.txt').write_text(str(best)+'\n')
+          Path('freeze_v3/live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          print('GLOBAL_MOAT_FREEZE',json.dumps({'live_best':best,'strict_bound':best-1},sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: acc-ac04359-v2-freeze
-          path: freeze_v2/
+          name: acc-ac04359-global-v3-freeze
+          path: freeze_v3/
           retention-days: 90
 
-  local-superopt:
+  bounded-search:
     needs: freeze
     strategy:
       fail-fast: false
       matrix:
-        max_window: [7, 8, 9]
+        identity: [baseline, refined]
     runs-on: ubuntu-latest
-    timeout-minutes: 55
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
       - uses: actions/download-artifact@v4
         with:
-          name: acc-ac04359-v2-freeze
+          name: acc-ac04359-global-v3-freeze
           path: /tmp/freeze
-      - name: Fetch pinned verifier
+      - name: Fetch pinned ground and substrate
         run: |
           set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
-      - name: Exact corridor superoptimization
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          sudo fallocate -l 10G /swapfile-moat
+          sudo chmod 600 /swapfile-moat
+          sudo mkswap /swapfile-moat
+          sudo swapon /swapfile-moat
+      - name: Complete existing strict-bound search
         run: |
           set -o pipefail
           best=$(tr -d '[:space:]' < /tmp/freeze/live_best.txt)
-          out="corridor_w${{ matrix.max_window }}"
-          python3 acc_competitive/peephole_superopt_v1.py \
+          out="global_v3/${{ matrix.identity }}"
+          mkdir -p "$out"
+          python3 -u mda/domains/andrews_curtis/shortest_moat_search.py \
             --acc-root /tmp/acc \
-            --candidate-file /tmp/freeze/seed.txt \
+            --acsolverx-root /tmp/acsolverx \
             --challenge-id "$CID" \
-            --frozen-best "$best" \
+            --live-best "$best" \
+            --identity "${{ matrix.identity }}" \
+            --node-cap 500000 \
+            --reverse-depth 8 \
+            --reverse-cap 750000 \
             --out-dir "$out" \
-            --max-window ${{ matrix.max_window }} \
             | tee "$out.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: acc-ac04359-corridor-w${{ matrix.max_window }}
-          path: |
-            corridor_w${{ matrix.max_window }}/
-            corridor_w${{ matrix.max_window }}.log
-          retention-days: 90
-
-  atlas-seed:
-    needs: freeze
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: acc-competitive-residual-v1
-      - uses: actions/download-artifact@v4
-        with:
-          name: acc-ac04359-v2-freeze
-          path: /tmp/freeze
-      - name: Fetch pinned verifier
-        run: |
-          set -euo pipefail
-          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
-          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
-      - name: Re-fortify seed with deeper cheap reverse atlas
-        run: |
-          set -euo pipefail
-          mkdir -p moat_v2_raw
-          cp /tmp/freeze/seed.txt moat_v2_raw/seed.txt
-          python3 acc_competitive/proof_atlas_fortify_v1.py \
-            --acc-root /tmp/acc \
-            --glob 'moat_v2_raw/*.txt' \
-            --out-dir atlas_v2 \
-            --reverse-depth 8 --reverse-cap 400000 \
-            | tee atlas_v2.log
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: acc-ac04359-atlas-v2
-          path: |
-            atlas_v2/
-            atlas_v2.log
+          name: acc-ac04359-global-v3-${{ matrix.identity }}
+          path: global_v3/
           retention-days: 90
 
   publish:
-    needs: [freeze,local-superopt,atlas-seed]
+    needs: [freeze,bounded-search]
     if: always() && needs.freeze.result == 'success'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     env:
       SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
     steps:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
-
-      - name: Recover all our candidate routes
+      - name: Recover any verified strict candidates
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          mkdir -p /tmp/freeze /tmp/all moat_v2_pool/raw
-          gh run download "${{ github.run_id }}" -n acc-ac04359-v2-freeze -D /tmp/freeze
-          cp /tmp/freeze/seed.txt moat_v2_pool/raw/seed.txt
-          gh run download "${{ github.run_id }}" --pattern 'acc-ac04359-corridor-*' -D /tmp/all || true
-          gh run download "${{ github.run_id }}" -n acc-ac04359-atlas-v2 -D /tmp/atlas || true
-          python3 - <<'PY'
-          from pathlib import Path
-          n=0
-          for p in Path('/tmp/all').rglob('pending_submission.txt'):
-              for line in p.read_text().splitlines():
-                  if line.startswith('ac-04359:'):
-                      q=Path('moat_v2_pool/raw')/f'corridor_{n}.txt'
-                      q.write_text(line+'\n'); n+=1
-          for p in Path('/tmp/atlas').rglob('fortified_ac.txt'):
-              for line in p.read_text().splitlines():
-                  if line.startswith('ac-04359:'):
-                      q=Path('moat_v2_pool/raw')/f'atlas_{n}.txt'
-                      q.write_text(line+'\n'); n+=1
-          print('MOAT_V2_RECOVERED',n)
-          for p in sorted(Path('moat_v2_pool/raw').glob('*.txt')):
-              print(p.name,p.read_text().strip())
-          PY
-
-      - name: Fetch verifier and choose shortest verifier-clean route
-        run: |
-          set -euo pipefail
-          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY secret missing"; exit 1; }
-          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
-          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
-          python3 - <<'PY'
-          import json,sys
-          from pathlib import Path
-          acc=Path('/tmp/acc');sys.path.insert(0,str(acc/'competition/tools'))
-          from verifier import core,stable_core
-          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
-          by={c['challenge_id']:c for c in man['challenges']}; lim=man['limits']
-          c=by['ac-04359']; cand=[]
-          for p in Path('moat_v2_pool/raw').glob('*.txt'):
-              for line in p.read_text().splitlines():
-                  if not line.startswith('ac-04359:'): continue
-                  m=list(json.loads(line.split(':',1)[1].strip()))
-                  v=core.verify(c,m,c['move_spec_version'],lim)
-                  if v.get('ok'): cand.append((len(m),p.name,m,v))
-          cand.sort(key=lambda x:(x[0],x[1]))
-          assert cand,cand
-          L,src,m,v=cand[0]
-          sid='sac-04359'; sm=m+[16,15]; sc=by[sid]
-          sv=stable_core.verify(sc,sm,sc['move_spec_version'],lim); assert sv['ok'],sv
-          Path('moat_v2_pool/final_candidates.txt').write_text(
-              'ac-04359: '+json.dumps(m,separators=(',',':'))+'\n'+
-              'sac-04359: '+json.dumps(sm,separators=(',',':'))+'\n')
-          Path('moat_v2_pool/selection.json').write_text(json.dumps({
-              'source':src,'ac_length':L,'stable_length':len(sm),
-              'candidate_lengths':[(x[0],x[1]) for x in cand],
-              'hash':v.get('certificate_hash')},indent=2,sort_keys=True)+'\n')
-          print('MOAT_V2_SELECTED',json.dumps({'source':src,'length':L,'all':[(x[0],x[1]) for x in cand]},sort_keys=True))
-          PY
-          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
-            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
-            --submission moat_v2_pool/final_candidates.txt
-
-      - name: Live strict-record filter and publication
-        env:
-          ACC_SUBMISSION_FILE: moat_v2_pool/final_candidates.txt
-          ACC_SUBMIT_OUT: moat_v2_pool/publish
-        run: |
-          set -euo pipefail
-          python3 acc_submit/submit_live_filtered.py | tee moat_v2_pool/publish.log
-
-      - name: Final report
-        if: always()
-        run: |
+          mkdir -p /tmp/downloads global_v3_publish
+          gh run download "${{ github.run_id }}" --pattern 'acc-ac04359-global-v3-*' -D /tmp/downloads || true
           python3 - <<'PY'
           import json
           from pathlib import Path
-          def rd(p):
-              p=Path(p); return json.loads(p.read_text()) if p.exists() else None
-          r={
-            'experiment':'ACC_AC04359_MOAT_CORRIDOR_V2',
-            'frozen_live_best':int(Path('/tmp/freeze/live_best.txt').read_text()),
-            'selection':rd('moat_v2_pool/selection.json'),
-            'comparison':rd('moat_v2_pool/publish/comparison.json'),
-            'pre_submit':rd('moat_v2_pool/publish/pre_submit_summary.json'),
-            'post_submit':rd('moat_v2_pool/publish/post_submit_summary.json'),
-          }
-          Path('moat_v2_pool/report.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
-          print('MOAT_V2_TERMINAL',json.dumps(r,sort_keys=True))
+          rows=[]
+          for p in Path('/tmp/downloads').rglob('candidate.txt'):
+              for line in p.read_text().splitlines():
+                  if line.startswith('ac-04359:'):
+                      m=json.loads(line.split(':',1)[1].strip()); rows.append((len(m),line))
+          rows.sort()
+          if rows:
+              Path('global_v3_publish/candidates.txt').write_text(rows[0][1]+'\n')
+              print('GLOBAL_V3_CANDIDATE',rows[0][0])
+          else:
+              Path('global_v3_publish/candidates.txt').write_text('')
+              print('GLOBAL_V3_NO_CANDIDATE')
           PY
-
+      - name: Pinned replay and live strict publication
+        if: hashFiles('global_v3_publish/candidates.txt') != ''
+        env:
+          ACC_SUBMISSION_FILE: global_v3_publish/candidates.txt
+          ACC_SUBMIT_OUT: global_v3_publish/publish
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s global_v3_publish/candidates.txt ]; then echo NO_CANDIDATE; exit 0; fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission global_v3_publish/candidates.txt
+          python3 acc_submit/submit_live_filtered.py | tee global_v3_publish/publish.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: acc-ac04359-moat-v2-final
-          path: moat_v2_pool/
+          name: acc-ac04359-global-v3-final
+          path: global_v3_publish/
           retention-days: 90
 
-# No competitor certificate is available or used.  The live shortest length is
-# treated only as the consequence threshold.  All candidate paths are ours.
+# V2 exhausted exact local windows 7-9 and reverse-atlas salvage without
+# shortening the 18-move seed. V3 changes only execution horizon: it completes
+# the already-defined global strict-bound search. No representation/compiler
+# growth is introduced. Every candidate is pinned-replayed and live-filtered.
