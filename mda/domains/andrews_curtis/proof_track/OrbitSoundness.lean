@@ -70,6 +70,29 @@ theorem cyclicRotation_bireachable {n : ℕ} (R : Relators n) (i : Fin n)
     simpa [hrestore] using hsr0
   exact ⟨hrs, hsr⟩
 
+
+/-- Bireachable presentations have exactly the same reachability consequences. -/
+theorem reachable_target_iff_of_bireachable {n : ℕ} {R S T : Relators n}
+    (hRS : Reachable R S) (hSR : Reachable S R) :
+    Reachable R T ↔ Reachable S T := by
+  constructor
+  · intro hRT
+    exact hSR.trans hRT
+  · intro hST
+    exact hRS.trans hST
+
+/-- Cyclic rotation of one relator preserves the AC question itself: the
+original presentation reaches the standard tuple iff the rotated one does.
+Thus rotation information may legitimately refine shortest-path search while
+being quotiented away for bare AC solvability.
+-/
+theorem cyclicRotation_standard_iff {n : ℕ} (R : Relators n) (i : Fin n)
+    (u v : Word n) (h : R i = u * v) :
+    Reachable R (standard n) ↔
+      Reachable (Function.update R i (v * u)) (standard n) := by
+  have hb := cyclicRotation_bireachable R i u v h
+  exact reachable_target_iff_of_bireachable hb.1 hb.2
+
 /-- Invert a relator and then conjugate it. This captures the other half of
 the usual cyclic/inverse orientation orbit used by search procedures.
 -/
