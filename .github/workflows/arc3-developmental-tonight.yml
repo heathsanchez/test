@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,13 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Probe Level2 dynamics
+      - name: Run observed latent-cycle factoring
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/level2_dynamics_probe.py | tee arc3_level2_dynamics.log
+          python experiments/arc3_tonight/developmental_ls20_v10_latent_cycle.py | tee arc3_developmental_v10_latent_cycle.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-level2-dynamics
-          path: arc3_level2_dynamics.log
+          name: arc3-developmental-v10-latent-cycle
+          path: |
+            arc3_developmental_v10_latent_cycle.log
+            arc3_developmental_v10_latent_cycle_result.json
