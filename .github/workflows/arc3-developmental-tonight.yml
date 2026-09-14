@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run Level2 primed resource quotient BFS
+      - name: Carry cost-dominance into Level3
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v10b_resource_quotient_bfs.py | tee arc3_v10b_resource_quotient.log
+          python experiments/arc3_tonight/developmental_ls20_v12_level3_cost_dominance.py | tee arc3_developmental_v12_level3_cost_dominance.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v10b-resource-quotient
+          name: arc3-developmental-v12-level3
           path: |
-            arc3_v10b_resource_quotient.log
-            arc3_developmental_v10b_resource_quotient_result.json
+            arc3_developmental_v12_level3_cost_dominance.log
+            arc3_developmental_v12_level3_cost_dominance_result.json
