@@ -8,11 +8,11 @@ irrelevant to bare AC reachability: cyclic rotation of an individual relator.
 
 The Discovery-track experiments on branch `acc-competitive-residual-v1`
 found that rotation information is causally useful for finding shorter atomic
-certificates.  In the shared Proof-track semantics, however, a cyclic rotation
-is just conjugation in the ambient free group.  Therefore it may change search
+certificates. In the shared Proof-track semantics, however, a cyclic rotation
+is just conjugation in the ambient free group. Therefore it may change search
 cost without changing the underlying reachability class.
 
-This file is intentionally small and generic.  It imports only the shared
+This file is intentionally small and generic. It imports only the shared
 official `AC` definitions.
 -/
 
@@ -65,12 +65,12 @@ theorem cyclicRotation_bireachable {n : ℕ} (R : Relators n) (i : Fin n)
     by_cases hj : j = i
     · subst j
       simp [S, h]
-    · simp [S, Function.update_noteq hj]
+    · simp [S, hj]
   have hsr : Reachable S R := by
     simpa [hrestore] using hsr0
   exact ⟨hrs, hsr⟩
 
-/-- Invert a relator and then conjugate it.  This captures the other half of
+/-- Invert a relator and then conjugate it. This captures the other half of
 the usual cyclic/inverse orientation orbit used by search procedures.
 -/
 theorem inverseConjugateRelator_reachable {n : ℕ} (R : Relators n)
