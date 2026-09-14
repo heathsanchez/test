@@ -1,0 +1,305 @@
+name: ACC ac-04359 Corridor Splice V3
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-ac04359-corridor-splice-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34825953902"
+  CID: "ac-04359"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Freeze live threshold and our own verified 18-move corridor
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source corridor_freeze
+          gh run download "$SOURCE_RUN" -n acc-mda-causal-strict-steal-publication -D /tmp/source
+          src=$(find /tmp/source -path '*/mda_causal_fortified/fortified_ac.txt' -print -quit)
+          test -n "$src"
+          grep '^ac-04359:' "$src" > corridor_freeze/seed.txt
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          line=Path('corridor_freeze/seed.txt').read_text().strip()
+          seed=json.loads(line.split(':',1)[1].strip())
+          assert len(seed)==18,(len(seed),seed)
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); row=next(x for x in d['items'] if x['challengeId']=='ac-04359')
+          best=row['currentBestLength']; assert isinstance(best,int)
+          Path('corridor_freeze/live_best.txt').write_text(str(best)+'\n')
+          Path('corridor_freeze/live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          print('CORRIDOR_V3_FREEZE',json.dumps({
+            'seed_length':len(seed),'live_best':best,'strict_bound':best-1
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-ac04359-corridor-v3-freeze
+          path: corridor_freeze/
+          retention-days: 90
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: baseline-compiled-d4
+            identity: baseline
+            transition: compiled
+            corridor_depth: 4
+            node_cap: 120000
+            label_cap: 300000
+          - name: refined-compiled-d4
+            identity: refined
+            transition: compiled
+            corridor_depth: 4
+            node_cap: 120000
+            label_cap: 300000
+          - name: refined-compiled-d5
+            identity: refined
+            transition: compiled
+            corridor_depth: 5
+            node_cap: 120000
+            label_cap: 450000
+          - name: exact-atomic-d4
+            identity: exact
+            transition: atomic
+            corridor_depth: 4
+            node_cap: 250000
+            label_cap: 300000
+          - name: exact-atomic-d5
+            identity: exact
+            transition: atomic
+            corridor_depth: 5
+            node_cap: 250000
+            label_cap: 450000
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-ac04359-corridor-v3-freeze
+          path: /tmp/freeze
+
+      - name: Fetch pinned verifier and retained GS-Sub substrate
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          sudo fallocate -l 8G /swapfile-corridor
+          sudo chmod 600 /swapfile-corridor
+          sudo mkswap /swapfile-corridor
+          sudo swapon /swapfile-corridor
+
+      - name: Search exact corridor splice
+        run: |
+          set -o pipefail
+          best=$(tr -d '[:space:]' < /tmp/freeze/live_best.txt)
+          out="corridor_v3/${{ matrix.name }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/corridor_splice_search.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --candidate-file /tmp/freeze/seed.txt \
+            --challenge-id "$CID" \
+            --live-best "$best" \
+            --identity "${{ matrix.identity }}" \
+            --transition "${{ matrix.transition }}" \
+            --corridor-depth ${{ matrix.corridor_depth }} \
+            --corridor-label-cap ${{ matrix.label_cap }} \
+            --node-cap ${{ matrix.node_cap }} \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac04359-corridor-v3-${{ matrix.name }}
+          path: corridor_v3/
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze,search]
+    if: always() && needs.freeze.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen threshold and all search evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/search corridor_v3_final/raw
+          gh run download "${{ github.run_id }}" -n acc-ac04359-corridor-v3-freeze -D /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-ac04359-corridor-v3-*' -D /tmp/search || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          reports=[]
+          n=0
+          for p in Path('/tmp/search').rglob('result.json'):
+              try:r=json.loads(p.read_text())
+              except Exception:continue
+              reports.append(r)
+              c=p.parent/'candidate.txt'
+              if c.exists() and c.stat().st_size:
+                  q=Path('corridor_v3_final/raw')/f'candidate_{n}.txt'
+                  q.write_text(c.read_text());n+=1
+          Path('corridor_v3_final/search_results.json').write_text(
+              json.dumps(reports,indent=2,sort_keys=True)+'\n')
+          print('CORRIDOR_V3_RESULTS',json.dumps([{
+            'identity':r.get('identity'),'transition':r.get('transition'),
+            'depth':r.get('corridor_depth'),'status':r.get('status'),
+            'length':r.get('length'),'nodes':r.get('nodes_popped'),
+            'atlas_states':r.get('corridor_exact_states')
+          } for r in reports],sort_keys=True))
+          print('CORRIDOR_V3_CANDIDATES',n)
+          PY
+
+      - name: Fetch pinned verifier
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY secret missing"; exit 1; }
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Select, fortify, and verify any strict candidate
+        id: choose
+        run: |
+          set -euo pipefail
+          n=$(find corridor_v3_final/raw -name '*.txt' -type f -size +0c | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo "has_candidate=false" >> "$GITHUB_OUTPUT"
+            echo "NO_STRICT_CORRIDOR_CANDIDATE"
+            exit 0
+          fi
+          echo "has_candidate=true" >> "$GITHUB_OUTPUT"
+          mkdir -p corridor_v3_final/fortify
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'corridor_v3_final/raw/*.txt' \
+            --out-dir corridor_v3_final/fortify \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee corridor_v3_final/fortify.log
+          best=$(tr -d '[:space:]' < /tmp/freeze/live_best.txt)
+          python3 acc_competitive/peephole_superopt_v1.py \
+            --acc-root /tmp/acc \
+            --candidate-file corridor_v3_final/fortify/fortified_ac.txt \
+            --challenge-id "$CID" \
+            --frozen-best "$best" \
+            --out-dir corridor_v3_final/superopt \
+            --max-window 7 \
+            | tee corridor_v3_final/superopt.log
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc');sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core,stable_core
+          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']};lim=man['limits']
+          line=next(x for x in Path('corridor_v3_final/superopt/pending_submission.txt').read_text().splitlines()
+                    if x.startswith('ac-04359:'))
+          m=list(json.loads(line.split(':',1)[1].strip()))
+          c=by['ac-04359'];v=core.verify(c,m,c['move_spec_version'],lim);assert v['ok'],v
+          sid='sac-04359';sm=m+[16,15];sc=by[sid]
+          sv=stable_core.verify(sc,sm,sc['move_spec_version'],lim);assert sv['ok'],sv
+          Path('corridor_v3_final/final_candidates.txt').write_text(
+              'ac-04359: '+json.dumps(m,separators=(',',':'))+'\n'+
+              'sac-04359: '+json.dumps(sm,separators=(',',':'))+'\n')
+          print('CORRIDOR_V3_FINAL_CANDIDATE',json.dumps({
+              'ac_length':len(m),'stable_length':len(sm),'hash':v.get('certificate_hash')
+          },sort_keys=True))
+          PY
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission corridor_v3_final/final_candidates.txt
+
+      - name: Live recheck and publish only strict records
+        if: steps.choose.outputs.has_candidate == 'true'
+        env:
+          ACC_SUBMISSION_FILE: corridor_v3_final/final_candidates.txt
+          ACC_SUBMIT_OUT: corridor_v3_final/publish
+        run: |
+          set -euo pipefail
+          python3 acc_submit/submit_live_filtered.py | tee corridor_v3_final/publish.log
+
+      - name: Emit typed terminal result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def rd(p):
+              p=Path(p);return json.loads(p.read_text()) if p.exists() else None
+          rs=rd('corridor_v3_final/search_results.json') or []
+          found=[r for r in rs if r.get('found')]
+          if found:
+              status='VERIFIED_STRICT_CORRIDOR_CANDIDATE'
+          elif any(str(r.get('status','')).startswith('UNKNOWN_') for r in rs):
+              status='UNKNOWN_SEARCH_NO_RECORD_YET'
+          else:
+              status='NO_STRICT_SPLICE_IN_TESTED_SCOPE'
+          out={
+            'experiment':'ACC_AC04359_CORRIDOR_SPLICE_V3',
+            'status':status,
+            'frozen_live_best':int(Path('/tmp/freeze/live_best.txt').read_text()),
+            'search_results':rs,
+            'fortification':rd('corridor_v3_final/fortify/report.json'),
+            'superopt':rd('corridor_v3_final/superopt/report.json'),
+            'comparison':rd('corridor_v3_final/publish/comparison.json'),
+            'pre_submit':rd('corridor_v3_final/publish/pre_submit_summary.json'),
+            'post_submit':rd('corridor_v3_final/publish/post_submit_summary.json'),
+          }
+          Path('corridor_v3_final/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('CORRIDOR_V3_TERMINAL',json.dumps({
+            'status':status,'found':len(found),
+            'best_found':min([r['length'] for r in found],default=None)
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac04359-corridor-v3-final
+          path: corridor_v3_final/
+          retention-days: 90
+
+# The public live record supplies only the threshold. No competitor path is
+# available or used. The learned representation is tested in a matched pair;
+# the exact atomic arm is an independent safety net.
