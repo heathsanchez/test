@@ -1,0 +1,310 @@
+name: ACC MDA Prospective Discriminator V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-prospective-discriminator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  CYCLE1_RUN: "34754206724"
+  CYCLE2_RUN: "34755708007"
+  V5_RUN: "34790205664"
+  MDA_BOOTSTRAP_RUN: "34795355932"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Require carried MDA present
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          p=json.load(open('mda/domains/andrews_curtis/PRESENT.json'))
+          assert p['mda_state']['status']=='UNKNOWN_CHOICE',p
+          assert p['mda_state']['compiler_beam_frontier']==[16,64],p
+          assert p['mda_state']['growth_beyond_boot_language_authorized'] is False,p
+          print('MDA_PRESENT_OK',json.dumps(p['mda_state'],sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze fresh economic authority
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v2.py             --acc-root /tmp/acc             --out-dir mda/evidence/andrews_curtis/prospective_freeze             --competitive-wins acc_competitive/competitive_wins_seed_v1.json             --competitive-attempted acc_competitive/competitive_attempted_seed_v1.json             --attack-count 1 --defend-fraction 0 --shards 1             --mechanism-id mda-prospective-freeze-v1             | tee mda/evidence/andrews_curtis/prospective_freeze.log
+
+      - name: Recover pre-probe historical responsiveness and prior probe membership
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/history/c1 /tmp/history/c2 /tmp/v5
+          gh run download "$CYCLE1_RUN" -n acc-number-one-controller-v1-recovered -D /tmp/history/c1
+          gh run download "$CYCLE2_RUN" -n acc-number-one-controller-v1 -D /tmp/history/c2
+          gh run download "$V5_RUN" -n acc-v5-frontier-freeze -D /tmp/v5
+
+      - name: Freeze eight fresh responsive encounters before candidate execution
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json,os
+          from pathlib import Path
+          root=Path('mda/evidence/andrews_curtis/prospective_freeze')
+          snap=json.load(open(root/'snapshot_ac.json'))
+          d=snap.get('data',snap)
+          live={x['challengeId']:x for x in d['items']}
+          ours=json.load(open(root/'mathgraph_status.json'))
+          held=set()
+          for x in ours:
+              if x.get('status') not in ('unique_hold','tied_hold'): continue
+              q=x['challenge_id']
+              held.add(q if q.startswith('ac-') else 'ac-'+q[4:] if q.startswith('sac-') else q)
+
+          v5sel=glob.glob('/tmp/v5/**/selection.json',recursive=True)
+          assert v5sel,v5sel
+          old=json.load(open(v5sel[0]))
+          excluded={x['challenge_id'] if isinstance(x,dict) else str(x) for x in old}|held
+
+          best={}
+          for fn in glob.glob('/tmp/history/**/attack_outcomes.json',recursive=True):
+              for r in json.load(open(fn)):
+                  cid=r.get('challenge_id'); al=r.get('atomic_length')
+                  if not cid or cid in excluded or not isinstance(al,int): continue
+                  row=live.get(cid,{})
+                  lb=row.get('currentBestLength')
+                  if row.get('status')!='solved' or not isinstance(lb,int) or lb<=0: continue
+                  rec={
+                    'challenge_id':cid,
+                    'historical_candidate':al,
+                    'historical_nodes':r.get('nodes'),
+                    'frozen_live_best':lb,
+                    'frozen_kTeams':row.get('kTeams'),
+                    'gap_moves':al-lb,
+                    'relative_gap':(al-lb)/lb,
+                    'selection_basis':'historically verifier-responsive before this probe; ranked by frozen relative live gap',
+                  }
+                  oldr=best.get(cid)
+                  if oldr is None or al<oldr['historical_candidate']: best[cid]=rec
+
+          rows=sorted(best.values(),key=lambda r:(r['relative_gap'],r['gap_moves'],r['historical_nodes'] or 10**18,r['challenge_id']))
+          selection=rows[:8]
+          assert len(selection)==8,selection
+          (root/'selection.json').write_text(json.dumps(selection,indent=2,sort_keys=True)+'\n')
+          freeze={
+            'experiment':'ACC_MDA_PROSPECTIVE_DISCRIMINATOR_V1',
+            'repo_sha':'${{ github.sha }}',
+            'authority_horizon':'OPEN',
+            'candidate_frontier':[
+              {'policy':'current','beams':[16,64]},
+              {'policy':'mask3','beams':[16,64]},
+            ],
+            'targets':[x['challenge_id'] for x in selection],
+            'selection_is_pre_candidate':True,
+            'growth_beyond_boot_language_authorized':False,
+          }
+          (root/'probe_freeze.json').write_text(json.dumps(freeze,indent=2,sort_keys=True)+'\n')
+          print('MDA_PROSPECTIVE_FREEZE',json.dumps(selection,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-mda-prospective-freeze
+          path: mda/evidence/andrews_curtis/prospective_freeze/
+          retention-days: 90
+
+  probe:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      matrix:
+        index: [0,1,2,3,4,5,6,7]
+        policy: [current, mask3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable encounter
+        id: case
+        env:
+          GH_TOKEN: ${{ github.token }}
+          IDX: ${{ matrix.index }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze
+          gh run download "${{ github.run_id }}" -n acc-mda-prospective-freeze -D /tmp/freeze
+          sel=$(find /tmp/freeze -name selection.json -print -quit)
+          ac=$(find /tmp/freeze -name snapshot_ac.json -print -quit)
+          st=$(find /tmp/freeze -name snapshot_stable.json -print -quit)
+          test -n "$sel" && test -n "$ac" && test -n "$st"
+          cp "$ac" /tmp/snapshot_ac.json
+          cp "$st" /tmp/snapshot_stable.json
+          python3 - "$sel" "$IDX" <<'PY'
+          import json,sys
+          x=json.load(open(sys.argv[1]))[int(sys.argv[2])]
+          open('/tmp/cid','w').write(x['challenge_id'])
+          print('MDA_PROBE_CASE',json.dumps(x,sort_keys=True))
+          PY
+          echo "cid=$(cat /tmp/cid)" >> "$GITHUB_OUTPUT"
+
+      - name: Add swap
+        run: |
+          set -euo pipefail
+          sudo fallocate -l 8G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
+      - name: Fetch pinned ground and retained search dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequence for this candidate continuation
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Run only the surviving search/compiler frontier
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/prospective_runs/i${{ matrix.index }}_${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 acc_competitive/v5_frontier_separator_v1.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --target-id "${{ steps.case.outputs.cid }}"             --role responsive_loss             --policy "${{ matrix.policy }}"             --snapshot-ac /tmp/snapshot_ac.json             --snapshot-stable /tmp/snapshot_stable.json             --out-dir "$out"             --max-nodes 200000             --max-quotient-total 100             --reverse-depth 7 --reverse-cap 250000             --beams 16,64             | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-probe-${{ matrix.index }}-${{ matrix.policy }}
+          path: mda/evidence/andrews_curtis/prospective_runs/
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze, probe]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen probe and all candidate consequences
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/runs mda/evidence/andrews_curtis/prospective_result/candidate_pool
+          gh run download "${{ github.run_id }}" -n acc-mda-prospective-freeze -D /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-probe-*' -D /tmp/runs || true
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/prospective_result/candidate_pool/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/runs -name candidate_ac.txt -type f | sort)
+          echo "RESULTS=$(find /tmp/runs -name result.json | wc -l)"
+          echo "CANDIDATES=$i"
+
+      - name: Synthesize prospectively without forcing a winner
+        run: |
+          set -euo pipefail
+          sel=$(find /tmp/freeze -name selection.json -print -quit)
+          python3 mda/domains/andrews_curtis/prospective_discriminator.py             --glob '/tmp/runs/**/result.json'             --selection "$sel"             --out-dir mda/evidence/andrews_curtis/prospective_result             | tee mda/evidence/andrews_curtis/prospective_result.log
+
+      - name: Fetch pinned ground for compilation/publication
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Retained compilation only
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/prospective_atlas mda/evidence/andrews_curtis/prospective_peephole
+          src=mda/evidence/andrews_curtis/prospective_result/best_ac.txt
+          if [ ! -s "$src" ]; then
+            : > mda/evidence/andrews_curtis/prospective_peephole/fortified_ac.txt
+            echo NO_VERIFIED_PROSPECTIVE_CANDIDATES
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py             --acc-root /tmp/acc --glob "$src"             --out-dir mda/evidence/andrews_curtis/prospective_atlas             --reverse-depth 7 --reverse-cap 250000
+          python3 acc_competitive/batch_peephole_fortify_v1.py             --acc-root /tmp/acc             --input mda/evidence/andrews_curtis/prospective_atlas/fortified_ac.txt             --out-dir mda/evidence/andrews_curtis/prospective_peephole             --thin-win-frac 1.0 --near-miss-frac 1.0 --max-window 5 --max-path 20000
+
+      - name: Fresh live scoring consequence only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p mda/evidence/andrews_curtis/prospective_live
+          if [ ! -s mda/evidence/andrews_curtis/prospective_peephole/fortified_ac.txt ]; then
+            echo NO_PATHS_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v5.py             --acc-root /tmp/acc             --glob 'mda/evidence/andrews_curtis/prospective_peephole/fortified_ac.txt'             --out-dir mda/evidence/andrews_curtis/prospective_live             --cycle 7             | tee mda/evidence/andrews_curtis/prospective_live.log
+
+      - name: Final MDA probe report
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          dev=J('mda/evidence/andrews_curtis/prospective_result/report.json')
+          live=J('mda/evidence/andrews_curtis/prospective_live/report.json')
+          final={
+            'experiment':'ACC_MDA_PROSPECTIVE_DISCRIMINATOR_V1',
+            'developmental_status':dev.get('status'),
+            'pareto_frontier':dev.get('pareto_frontier'),
+            'completed_policy_cases':dev.get('completed_policy_cases'),
+            'missing_cases':dev.get('missing_cases'),
+            'max_verified_targets':dev.get('max_verified_targets'),
+            'max_scoring_rows_frozen':dev.get('max_scoring_rows_frozen'),
+            'max_strict_rows_frozen':dev.get('max_strict_rows_frozen'),
+            'fresh_rows_published':live.get('selected_rows',0),
+            'published_ties':live.get('selected_scoring_ties',0),
+            'published_strict':live.get('selected_strict_improvements',0),
+            'submission_id':live.get('submission_id'),
+            'growth_beyond_boot_language_authorized':False,
+            'claim_boundary':dev.get('claim_boundary'),
+          }
+          Path('mda/evidence/andrews_curtis/prospective_final.json').write_text(json.dumps(final,indent=2,sort_keys=True)+'\n')
+          print('ACC_MDA_PROSPECTIVE_FINAL',json.dumps(final,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-prospective-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# This is a discriminator over the carried lawful frontier, not solver genesis.
+# New solver growth remains forbidden unless a later scoped obstruction earns it.
