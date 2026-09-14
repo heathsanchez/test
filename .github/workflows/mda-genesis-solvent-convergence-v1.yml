@@ -1,0 +1,37 @@
+name: MDA Genesis Solvent Convergence V1
+
+on:
+  push:
+    paths:
+      - "scripts/mda_genesis_solvent_convergence_v1.py"
+      - ".github/workflows/mda-genesis-solvent-convergence-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  convergence:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run convergence test
+        run: |
+          set -o pipefail
+          python scripts/mda_genesis_solvent_convergence_v1.py | tee mda-genesis-solvent-convergence-v1.log
+          grep -F "VERIFIED_BIDIRECTIONAL_GENESIS_SOLVENT_CONVERGENCE_ON_JOINT_MINIMUM" mda-genesis-solvent-convergence-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mda-genesis-solvent-convergence-v1-log
+          path: mda-genesis-solvent-convergence-v1.log
+          if-no-files-found: warn
