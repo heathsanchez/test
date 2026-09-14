@@ -1,0 +1,286 @@
+name: ACC MDA Probe Basis Genesis V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-probe-basis-genesis-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: dev-ac04402-current
+            artifact: acc-mda-probe-7-current
+            policy: current
+            role: development
+          - name: dev-ac02012-mask3
+            artifact: acc-mda-probe-6-mask3
+            policy: mask3
+            role: development
+          - name: dev-ac09722-mask3
+            artifact: acc-mda-probe-5-mask3
+            policy: mask3
+            role: development
+          - name: heldout-ac05232-current
+            artifact: acc-mda-probe-1-current
+            policy: current
+            role: prospective
+          - name: heldout-ac02616-current
+            artifact: acc-mda-probe-4-current
+            policy: current
+            role: prospective
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen source result
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ matrix.artifact }}
+          POLICY: ${{ matrix.policy }}
+          ROLE: ${{ matrix.role }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['policy']==os.environ['POLICY'],(r,os.environ['POLICY'])
+          print('MDA_PROBE_BASIS_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'role':os.environ['ROLE'],
+            'qsteps':r['quotient_steps'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Build generated short-probe table
+        env:
+          NAME: ${{ matrix.name }}
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/probe_basis_genesis/$NAME"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/probe_basis_genesis.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy "$POLICY" \
+            --state-cap 512 \
+            --rep-cap 16 \
+            --max-selection-layer 8 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-probe-basis-${{ matrix.name }}
+          path: mda/evidence/andrews_curtis/probe_basis_genesis/
+          retention-days: 90
+
+  synthesize:
+    needs: probe
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover all frozen probe tables
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-probe-basis-*' -D /tmp/results
+          find /tmp/results -name result.json -print
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 5
+
+      - name: Learn on development only, then reveal held-outs
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/probe_basis_genesis_synthesis
+          python3 - <<'PY'
+          import glob,itertools,json
+          from pathlib import Path
+
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          by={r['challenge_id']:r for r in rs}
+          dev=[by['ac-04402'],by['ac-02012'],by['ac-09722']]
+          held=[by['ac-05232'],by['ac-02616']]
+
+          usable=lambda r: (
+              r.get('status')=='CERTIFIED_FALSE_MERGE_WITH_PROBE_TABLE'
+              and r.get('future2_class_count',0)>1
+          )
+
+          def response(r,row,pid):
+              return tuple(row['probe_responses'][pid])
+
+          def basis_sufficient(r,basis):
+              rows=r.get('rows') or []
+              for a,b in itertools.combinations(rows,2):
+                  if a['future2_cost']==b['future2_cost']:
+                      continue
+                  va=tuple(response(r,a,p) for p in basis)
+                  vb=tuple(response(r,b,p) for p in basis)
+                  if va==vb:
+                      return False
+              return True
+
+          dev_ok=all(usable(r) for r in dev)
+          candidates=[]
+          chosen=[]
+          if dev_ok:
+              pids=sorted(dev[0]['rows'][0]['probe_responses'])
+              # Probe cost is official sequence length. Prefer least total action
+              # cost, then fewer columns, then lexical order.
+              def pcost(pid): return len(pid.split(','))
+              for pid in pids:
+                  if all(basis_sufficient(r,[pid]) for r in dev):
+                      candidates.append([pid])
+              if candidates:
+                  mincost=min(pcost(x[0]) for x in candidates)
+                  chosen=[x for x in candidates if pcost(x[0])==mincost]
+              else:
+                  pair_hits=[]
+                  for i,p in enumerate(pids):
+                      for q in pids[i+1:]:
+                          basis=[p,q]
+                          if all(basis_sufficient(r,basis) for r in dev):
+                              pair_hits.append(basis)
+                  if pair_hits:
+                      mincost=min(sum(pcost(x) for x in b) for b in pair_hits)
+                      chosen=[b for b in pair_hits if sum(pcost(x) for x in b)==mincost]
+
+          validations=[]
+          survivors=[]
+          for basis in chosen:
+              checks=[]
+              for r in held:
+                  if not usable(r):
+                      checks.append({
+                        'challenge_id':r['challenge_id'],
+                        'status':'UNKNOWN_OR_NO_FALSE_MERGE',
+                        'separates':None,
+                      })
+                      continue
+                  ok=basis_sufficient(r,basis)
+                  checks.append({
+                    'challenge_id':r['challenge_id'],
+                    'status':'PASS' if ok else 'FAIL',
+                    'separates':ok,
+                  })
+              validations.append({'basis':basis,'checks':checks})
+              if checks and all(c['status']=='PASS' for c in checks):
+                  survivors.append(basis)
+
+          if not dev_ok:
+              status='UNKNOWN_DEVELOPMENT_PROBE_TABLE'
+              next_probe='complete the same generated probe experiment before representation change'
+          elif not chosen:
+              status='NO_SHORT_PROBE_BASIS_IN_DECLARED_CLASS'
+              next_probe='expand probe depth from <=2 to <=3; do not invent static features'
+          elif survivors:
+              status='VERIFIED_PROSPECTIVE_PROBE_BASIS'
+              next_probe=(
+                'Use every surviving minimum probe basis as a provisional state split, '
+                'then require end-to-end causal improvement on a fresh route before inheritance.'
+              )
+          else:
+              status='SHORT_PROBE_BASIS_FAILED_PROSPECTIVE_TRANSFER'
+              next_probe=(
+                'Preserve false-merge witnesses; expand the generated test family minimally '
+                'to official move sequences of length 3.'
+              )
+
+          out={
+            'experiment':'ACC_MDA_PROBE_BASIS_GENESIS_SYNTHESIS_V1',
+            'development':[{
+              'challenge_id':r['challenge_id'],
+              'status':r.get('status'),
+              'future2_class_count':r.get('future2_class_count'),
+              'selection_layer':r.get('selection_layer'),
+            } for r in dev],
+            'heldouts':[{
+              'challenge_id':r['challenge_id'],
+              'status':r.get('status'),
+              'future2_class_count':r.get('future2_class_count'),
+              'selection_layer':r.get('selection_layer'),
+            } for r in held],
+            'minimum_development_bases':chosen,
+            'prospective_validations':validations,
+            'surviving_minimum_bases':survivors,
+            'status':status,
+            'probe_basis_growth_authorized':bool(survivors),
+            'representation_inheritance_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':(
+              'Basis chosen using ac-04402/ac-02012/ac-09722 only. '
+              'ac-05232 and ac-02616 are revealed only after basis selection. '
+              'Candidate tests are all official move sequences of length <=2; '
+              'observation is the existing quotient after the test.'
+            )
+          }
+          Path('mda/evidence/andrews_curtis/probe_basis_genesis_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_PROBE_BASIS_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-probe-basis-final
+          path: mda/evidence/andrews_curtis/probe_basis_genesis_synthesis/
+          retention-days: 90
+
+# Learn what to ask rather than hand-writing another state feature.
+# Prospective held-outs are frozen before the learned probe basis is selected.
