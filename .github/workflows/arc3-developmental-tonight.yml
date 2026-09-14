@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run directed two-scalar Level4 ledger
+      - name: Run Level4 Pareto-resource ledger
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v26_directed_two_scalar_level4.py | tee arc3_v26_directed_two_scalar_level4.log
+          python experiments/arc3_tonight/developmental_ls20_v27_resource_pareto_level4.py | tee arc3_v27_resource_pareto_level4.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v26-directed-two-scalar-level4
+          name: arc3-v27-resource-pareto-level4
           path: |
-            arc3_v26_directed_two_scalar_level4.log
-            arc3_developmental_v26_directed_two_scalar_level4_result.json
+            arc3_v27_resource_pareto_level4.log
+            arc3_developmental_v27_resource_pareto_level4_result.json
