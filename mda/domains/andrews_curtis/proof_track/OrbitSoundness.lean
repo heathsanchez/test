@@ -169,4 +169,42 @@ theorem relatorSwap_reachable {n : ℕ} (R : Relators n) (i j : Fin n)
       · simp [S1, S2, S3, S4, S5, S6, S7, swapRelators, hki, hkj]
   simpa [hfinal] using p7
 
+
+/-- Swapping the same two distinct relators twice restores the original tuple. -/
+theorem swapRelators_involutive {n : ℕ} (R : Relators n) (i j : Fin n)
+    (hij : i ≠ j) :
+    swapRelators (swapRelators R i j) i j = R := by
+  funext k
+  by_cases hki : k = i
+  · subst k
+    simp [swapRelators, hij, Ne.symm hij]
+  · by_cases hkj : k = j
+    · subst k
+      simp [swapRelators, hij, Ne.symm hij]
+    · simp [swapRelators, hki, hkj]
+
+/-- Relator exchange is AC-bireachable. -/
+theorem relatorSwap_bireachable {n : ℕ} (R : Relators n) (i j : Fin n)
+    (hij : i ≠ j) :
+    Reachable R (swapRelators R i j) ∧
+      Reachable (swapRelators R i j) R := by
+  let S := swapRelators R i j
+  have hrs : Reachable R S := by
+    simpa [S] using relatorSwap_reachable R i j hij
+  have hsr0 : Reachable S (swapRelators S i j) :=
+    relatorSwap_reachable S i j hij
+  have hinv : swapRelators S i j = R := by
+    simpa [S] using swapRelators_involutive R i j hij
+  have hsr : Reachable S R := by
+    simpa [hinv] using hsr0
+  exact ⟨hrs, hsr⟩
+
+/-- Relator exchange preserves reachability to the standard presentation. -/
+theorem relatorSwap_standard_iff {n : ℕ} (R : Relators n) (i j : Fin n)
+    (hij : i ≠ j) :
+    Reachable R (standard n) ↔
+      Reachable (swapRelators R i j) (standard n) := by
+  have hb := relatorSwap_bireachable R i j hij
+  exact reachable_target_iff_of_bireachable hb.1 hb.2
+
 end AC
