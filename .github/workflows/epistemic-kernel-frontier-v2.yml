@@ -1,0 +1,38 @@
+name: Epistemic Kernel Frontier V2
+
+on:
+  push:
+    paths:
+      - "experiments/epistemic_kernel_frontier_v2/FROZEN_CANDIDATE.md"
+      - "scripts/epistemic_kernel_frontier_v2.py"
+      - ".github/workflows/epistemic-kernel-frontier-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove frozen V2 unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 7b67adf37856764008a19ce2ba3b295e43d33a5f --             experiments/epistemic_kernel_frontier_v2/FROZEN_CANDIDATE.md
+          echo "EKF_V2_FROZEN_UNCHANGED"
+      - name: Run exhaustive V2 frontier audit
+        run: |
+          set -o pipefail
+          python scripts/epistemic_kernel_frontier_v2.py | tee epistemic-kernel-frontier-v2.log
+          grep -F "SURVIVED_EPISTEMIC_KERNEL_FRONTIER_V2" epistemic-kernel-frontier-v2.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: epistemic-kernel-frontier-v2
+          path: epistemic-kernel-frontier-v2.log
