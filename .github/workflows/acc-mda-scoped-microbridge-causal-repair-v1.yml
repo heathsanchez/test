@@ -1,0 +1,229 @@
+name: ACC MDA Scoped Microbridge Causal Repair V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-scoped-microbridge-causal-repair-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  CLOSURE_RUN: "34802566030"
+  MICRO_RUN: "34803570626"
+
+jobs:
+  repair:
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [1,2]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable closure and certified separator
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/closure /tmp/micro
+          gh run download "$CLOSURE_RUN" -n acc-mda-fixed-route-current -D /tmp/closure
+          gh run download "$MICRO_RUN" -n "acc-mda-local-microbridge-${{ matrix.rank }}" -D /tmp/micro
+          cresult=$(find /tmp/closure -name result.json -print -quit)
+          ccand=$(find /tmp/closure -name candidate_ac.txt -print -quit)
+          mresult=$(find /tmp/micro -name result.json -print -quit)
+          test -n "$cresult" && test -n "$ccand" && test -n "$mresult"
+          cp "$cresult" /tmp/closure_result.json
+          cp "$ccand" /tmp/closure_candidate.txt
+          cp "$mresult" /tmp/micro_result.json
+          python3 - <<'PY'
+          import json
+          c=json.load(open('/tmp/closure_result.json'))
+          m=json.load(open('/tmp/micro_result.json'))
+          assert c['challenge_id']==m['challenge_id']=='ac-04402',(c,m)
+          assert c['policy']==m['policy']=='current',(c,m)
+          assert m['status']=='COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND',m
+          assert m['rank']==${{ matrix.rank }},m
+          print('MDA_CAUSAL_REPAIR_SOURCE',json.dumps({
+              'rank':m['rank'],
+              'step':m['quotient_step'],
+              'baseline_atomic':c['exact_atomic_cost'],
+              'local_saving':m['local_saving'],
+              'shorter_cost':m['shorter_cost'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before change
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-causal-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Apply exactly one scoped change and re-close downstream
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/scoped_causal_repair/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/scoped_microbridge_causal_repair.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --closure-result /tmp/closure_result.json \
+            --closure-candidate /tmp/closure_candidate.txt \
+            --microbridge-result /tmp/micro_result.json \
+            --policy current \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after change
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-scoped-causal-repair-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/scoped_causal_repair/
+          retention-days: 90
+
+  synthesize:
+    needs: repair
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover both scoped causal tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results mda/evidence/andrews_curtis/scoped_causal_synthesis
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-scoped-causal-repair-*' -D /tmp/results || true
+          echo "RESULTS=$(find /tmp/results -name result.json | wc -l)"
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 2
+
+      - name: Retain only causally effective scoped changes
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          rs=sorted(rs,key=lambda r:r['proposal_rank'])
+          gains=[r for r in rs if r.get('causal_gain') is True]
+          failures=[r for r in rs if r.get('closure_status')!='COMPLETE']
+          if gains:
+              status='VERIFIED_CAUSAL_SCOPED_REPAIR'
+              next_probe=(
+                'preserve each effective local repair as scoped evidence only; '
+                'construct the cheapest prospective transfer test for the discovered '
+                'microbridge acquisition procedure before any general compiler inheritance'
+              )
+          elif failures:
+              status='SCOPED_REPAIR_CONTINUATION_UNKNOWN'
+              next_probe='preserve separator evidence but do not inherit the repair; type continuation failure before changing another layer'
+          else:
+              status='LOCAL_SEPARATOR_DID_NOT_TRANSFER_END_TO_END'
+              next_probe='do not inherit the local repair; move to the next surviving explanation'
+          out={
+            'experiment':'ACC_MDA_SCOPED_MICROBRIDGE_CAUSAL_REPAIR_SYNTHESIS_V1',
+            'results':rs,
+            'status':status,
+            'effective_repairs':[{
+                'rank':r['proposal_rank'],
+                'step':r['proposal_step'],
+                'end_to_end_saving':r['end_to_end_saving'],
+                'candidate_length':r['full_candidate_length'],
+                'baseline_length':r['baseline_atomic_length'],
+            } for r in gains],
+            'global_inheritance_authorized':False,
+            'new_solver_growth_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':'One target and one immutable quotient route. Local causal gain is not transfer.',
+          }
+          Path('mda/evidence/andrews_curtis/scoped_causal_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_SCOPED_CAUSAL_SYNTHESIS',json.dumps({
+              'status':status,
+              'effective_repairs':out['effective_repairs'],
+              'next_probe':next_probe,
+          },sort_keys=True))
+          PY
+
+      - name: Fresh live consequence for any causally improved exact candidate
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/scoped_causal_candidates
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/scoped_causal_candidates/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/results -name candidate_ac.txt -type f | sort)
+          echo "CANDIDATES=$i"
+          if [ "$i" -eq 0 ]; then
+            echo NO_CAUSAL_CANDIDATES
+            exit 0
+          fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p mda/evidence/andrews_curtis/scoped_causal_live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/scoped_causal_candidates/*.txt' \
+            --out-dir mda/evidence/andrews_curtis/scoped_causal_live \
+            --cycle 10 \
+            | tee mda/evidence/andrews_curtis/scoped_causal_live.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-scoped-causal-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# Two independently certified minimal local changes are tested separately.
+# Baseline removal is the exact 766-move ablation control.
+# No general compiler capability is inherited until prospective transfer.
