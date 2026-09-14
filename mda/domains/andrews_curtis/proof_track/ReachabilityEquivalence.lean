@@ -119,4 +119,43 @@ theorem standard_reachable_iff_of_reachable {n : ℕ} {R S : Relators n}
     Reachable R (standard n) ↔ Reachable S (standard n) :=
   reachable_target_iff_of_reachable hRS
 
+/-- A single stable AC step gives a finite stable path. -/
+theorem stableStep_reachable {P Q : Presentation} (h : StableStep P Q) :
+    StableReachable P Q :=
+  Relation.ReflTransGen.tail Relation.ReflTransGen.refl h
+
+/-- Every primitive stable step can be undone by a finite stable path.
+Ordinary AC steps use the symmetry theorem above; stabilization and
+destabilization are exact constructor-level reverses. -/
+theorem stableStep_reverse_reachable {P Q : Presentation}
+    (h : StableStep P Q) : StableReachable Q P := by
+  cases h with
+  | ac h =>
+      exact (step_reverse_reachable h).stable
+  | stabilize R g i =>
+      exact stableStep_reachable (StableStep.destabilize R g i)
+  | destabilize R g i =>
+      exact stableStep_reachable (StableStep.stabilize R g i)
+
+/-- Stable AC reachability is symmetric, with no bound on intermediate rank. -/
+theorem stableReachable_symm {P Q : Presentation}
+    (h : StableReachable P Q) : StableReachable Q P := by
+  induction h with
+  | refl =>
+      exact Relation.ReflTransGen.refl
+  | tail hprefix hstep ih =>
+      exact (stableStep_reverse_reachable hstep).trans ih
+
+/-- A stable-reachable change of presentation preserves every future stable
+reachability consequence. -/
+theorem stableReachable_target_iff_of_reachable {P Q T : Presentation}
+    (hPQ : StableReachable P Q) :
+    StableReachable P T ↔ StableReachable Q T := by
+  constructor
+  · intro hPT
+    exact (stableReachable_symm hPQ).trans hPT
+  · intro hQT
+    exact hPQ.trans hQT
+
+
 end AC
