@@ -1,0 +1,55 @@
+name: ACC Funnel Five Frontier Synthesis V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - '.github/workflows/acc-funnel-five-frontier-synthesis-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_FOUR: "34833042602"
+  SOURCE_HELDOUT: "34837481686"
+
+jobs:
+  synthesize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover all five frozen frontier artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/frontiers
+          for c in ac-01684 ac-08027 ac-00106 ac-01520; do
+            mkdir -p "/tmp/frontiers/$c"
+            gh run download "$SOURCE_FOUR" -n "acc-funnel-frontier-$c" -D "/tmp/frontiers/$c"
+          done
+          mkdir -p /tmp/frontiers/ac-01523
+          gh run download "$SOURCE_HELDOUT" -n acc-funnel-frontier-heldout-ac-01523 -D /tmp/frontiers/ac-01523
+          find /tmp/frontiers -name opportunities.json -print
+      - name: Fetch pinned authorities
+        run: |
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Certify all five quotient collision sets
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/funnel_collision_synthesis.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --projector-script mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py \
+            --artifacts-root /tmp/frontiers \
+            --out-dir mda/evidence/andrews_curtis/funnel_five_frontier_synthesis_v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-funnel-five-frontier-synthesis-v1
+          path: mda/evidence/andrews_curtis/funnel_five_frontier_synthesis_v1/
