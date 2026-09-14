@@ -129,10 +129,10 @@ def main() -> None:
             per_target[policy]["best_gap_ac"] = r.get("best_gap_ac_frozen")
         target_table.append(per_target)
 
-    vals = list(configs.values())
+    config_rows = list(configs.values())
     # Correctness/reach first, then scoring consequence, then economy.
-    max_verified = max((x["verified_targets"] for x in vals), default=0)
-    admissible = [x for x in vals if x["verified_targets"] == max_verified]
+    max_verified = max((x["verified_targets"] for x in config_rows), default=0)
+    admissible = [x for x in config_rows if x["verified_targets"] == max_verified]
     max_scoring = max((x["scoring_rows_frozen"] for x in admissible), default=0)
     admissible = [x for x in admissible if x["scoring_rows_frozen"] == max_scoring]
     max_strict = max((x["strict_rows_frozen"] for x in admissible), default=0)
@@ -150,7 +150,7 @@ def main() -> None:
         if not any(y is not x and dominates(y, x) for y in admissible)
     ]
     frontier.sort(key=lambda x: (x["policy"], x["beam"]))
-    vals.sort(key=lambda x: (x["policy"], x["beam"]))
+    config_rows.sort(key=lambda x: (x["policy"], x["beam"]))
 
     # Recover one shortest verified exact certificate per target across policy
     # artifacts.  The shell workflow separately stages the candidate files into
@@ -177,84 +177,129 @@ def main() -> None:
 
 
     # Causal retention by ablation over the frozen consequences.
-    # A component earns continued membership when removing it either loses a
-    # verified encounter or worsens the best verified atomic consequence.
-    policy_best: dict[str, dict[str, int]] = {"current": {}, "mask3": {}}
-    beam_best: dict[int, dict[str, int]] = {16: {}, 64: {}}
-    all_best: dict[str, int] = {}
+    #
+    # Full-cost rule: a component earns retention iff removing it either
+    # (a) destroys verified reach on a frozen encounter, or
+    # (b) removes an attainable non-dominated consequence vector.  This
+    # treats lower compile time / work / nodes / peak as real future value,
+    # rather than collapsing everything to atomic length.
+    target_options: dict[str, list[dict[str, Any]]] = {cid: [] for cid in expected}
+    cost_keys = (
+        "atomic_length",
+        "stable_length",
+        "work",
+        "nodes",
+        "search_seconds",
+        "compile_seconds",
+        "peak",
+    )
+
     for cid in expected:
         for policy in ("current", "mask3"):
             r = by.get((cid, policy))
             if not r:
                 continue
-            vals = [
-                int(t["atomic_length"])
-                for t in r.get("compiler_trials", [])
-                if t.get("beam") in (16, 64)
-                and (t.get("ac_verdict") or {}).get("ok") is True
-                and isinstance(t.get("atomic_length"), int)
-            ]
-            if vals:
-                policy_best[policy][cid] = min(vals)
-                all_best[cid] = min(all_best.get(cid, 10**18), min(vals))
             for t in r.get("compiler_trials", []):
                 beam = t.get("beam")
                 if beam not in (16, 64):
                     continue
-                if (t.get("ac_verdict") or {}).get("ok") is not True or not isinstance(t.get("atomic_length"), int):
+                if (t.get("ac_verdict") or {}).get("ok") is not True:
                     continue
-                beam_best[int(beam)][cid] = min(
-                    beam_best[int(beam)].get(cid, 10**18),
-                    int(t["atomic_length"]),
-                )
+                if (t.get("stable_verdict") or {}).get("ok") is not True:
+                    continue
+                if not isinstance(t.get("atomic_length"), int):
+                    continue
+                target_options[cid].append({
+                    "policy": policy,
+                    "beam": int(beam),
+                    "atomic_length": int(t["atomic_length"]),
+                    "stable_length": int(t.get("stable_length") or (int(t["atomic_length"]) + 2)),
+                    "work": int((t.get("ac_verdict") or {}).get("work") or 0)
+                            + int((t.get("stable_verdict") or {}).get("work") or 0),
+                    "nodes": int(r.get("nodes") or 0),
+                    "search_seconds": float(r.get("search_seconds") or 0.0),
+                    "compile_seconds": float(t.get("compile_seconds") or 0.0),
+                    "peak": int(t.get("peak") or 0),
+                })
 
-    def ablate_policy(policy: str) -> dict[str, Any]:
-        other = "mask3" if policy == "current" else "current"
-        reach_loss = []
-        atomic_penalty = 0
-        worsened = []
-        for cid, best in all_best.items():
-            alt = policy_best[other].get(cid)
-            if alt is None:
-                reach_loss.append(cid)
-            elif alt > best:
-                atomic_penalty += alt - best
-                worsened.append({"challenge_id": cid, "penalty": alt - best})
-        return {
-            "component": policy,
-            "reach_loss_targets": reach_loss,
-            "atomic_penalty_if_removed": atomic_penalty,
-            "worsened_targets": worsened,
-            "earns_retention": bool(reach_loss or atomic_penalty > 0),
-        }
+    def vec_dominates_or_equals(a: dict[str, Any], b: dict[str, Any]) -> bool:
+        return all(a[k] <= b[k] for k in cost_keys)
 
-    def ablate_beam(beam: int) -> dict[str, Any]:
-        other = 64 if beam == 16 else 16
-        reach_loss = []
-        atomic_penalty = 0
-        worsened = []
-        for cid, best in all_best.items():
-            alt = beam_best[other].get(cid)
-            if alt is None:
+    def vec_strictly_dominates(a: dict[str, Any], b: dict[str, Any]) -> bool:
+        return vec_dominates_or_equals(a, b) and any(a[k] < b[k] for k in cost_keys)
+
+    def target_frontier(options: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        return [
+            x for x in options
+            if not any(y is not x and vec_strictly_dominates(y, x) for y in options)
+        ]
+
+    base_frontiers = {cid: target_frontier(opts) for cid, opts in target_options.items()}
+
+    def option_uses(component: str, x: dict[str, Any]) -> bool:
+        if component in ("current", "mask3"):
+            return x["policy"] == component
+        if component == "beam16":
+            return x["beam"] == 16
+        if component == "beam64":
+            return x["beam"] == 64
+        raise ValueError(component)
+
+    def ablate_component(component: str) -> dict[str, Any]:
+        reach_loss: list[str] = []
+        lost_frontier_points: list[dict[str, Any]] = []
+        best_atomic_penalty = 0
+
+        for cid in expected:
+            before_all = target_options[cid]
+            after_all = [x for x in before_all if not option_uses(component, x)]
+
+            if before_all and not after_all:
                 reach_loss.append(cid)
-            elif alt > best:
-                atomic_penalty += alt - best
-                worsened.append({"challenge_id": cid, "penalty": alt - best})
+                continue
+            if not before_all:
+                continue
+
+            before_frontier = base_frontiers[cid]
+            after_frontier = target_frontier(after_all)
+
+            # Any before-frontier point unsupported by an equal-or-better
+            # survivor is genuine lost capability under the declared full-cost
+            # economy.
+            for p in before_frontier:
+                if option_uses(component, p) and not any(
+                    vec_dominates_or_equals(q, p) for q in after_frontier
+                ):
+                    lost_frontier_points.append({
+                        "challenge_id": cid,
+                        "policy": p["policy"],
+                        "beam": p["beam"],
+                        "cost_vector": {k: p[k] for k in cost_keys},
+                    })
+
+            before_best = min(x["atomic_length"] for x in before_all)
+            after_best = min(x["atomic_length"] for x in after_all) if after_all else None
+            if after_best is not None and after_best > before_best:
+                best_atomic_penalty += after_best - before_best
+
+        earns = bool(reach_loss or lost_frontier_points)
         return {
-            "component": f"beam{beam}",
+            "component": component,
             "reach_loss_targets": reach_loss,
-            "atomic_penalty_if_removed": atomic_penalty,
-            "worsened_targets": worsened,
-            "earns_retention": bool(reach_loss or atomic_penalty > 0),
+            "lost_pareto_capabilities": lost_frontier_points,
+            "lost_pareto_capability_count": len(lost_frontier_points),
+            "best_atomic_penalty_if_removed": best_atomic_penalty,
+            "earns_retention": earns,
         }
 
     causal_ablations = [
-        ablate_policy("current"),
-        ablate_policy("mask3"),
-        ablate_beam(16),
-        ablate_beam(64),
+        ablate_component("current"),
+        ablate_component("mask3"),
+        ablate_component("beam16"),
+        ablate_component("beam64"),
     ]
     causally_retained = [x["component"] for x in causal_ablations if x["earns_retention"]]
+    causally_contractable = [x["component"] for x in causal_ablations if not x["earns_retention"]]
 
     status = "UNKNOWN_SEARCH" if missing else "VERIFIED" if len(frontier) == 1 else "UNKNOWN_CHOICE"
     report = {
@@ -267,7 +312,7 @@ def main() -> None:
         "max_verified_targets": max_verified,
         "max_scoring_rows_frozen": max_scoring,
         "max_strict_rows_frozen": max_strict,
-        "configurations": vals,
+        "configurations": config_rows,
         "pareto_frontier": [
             {"policy": x["policy"], "beam": x["beam"]}
             for x in frontier
@@ -275,6 +320,8 @@ def main() -> None:
         "candidate_targets": sorted(best_paths),
         "causal_ablations": causal_ablations,
         "causally_retained_components": causally_retained,
+        "causally_contractable_components": causally_contractable,
+        "ablation_cost_coordinates": list(cost_keys),
         "growth_beyond_boot_language_authorized": False,
         "claim_boundary": (
             "This is a prospective frozen probe over a selected responsive-loss pack. "
