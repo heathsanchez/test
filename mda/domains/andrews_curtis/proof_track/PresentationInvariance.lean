@@ -105,8 +105,9 @@ theorem step_relatorNormalClosure_eq {n : ℕ} {R S : Relators n}
         · subst k
           have hr : R i ∈ relatorNormalClosure R :=
             relator_mem_normalClosure R i
-          have hfwd : w * R i * w⁻¹ ∈ relatorNormalClosure R :=
-            Subgroup.Normal.conj_mem inferInstance _ hr w
+          have hfwd : w * R i * w⁻¹ ∈ relatorNormalClosure R := by
+            unfold relatorNormalClosure at hr ⊢
+            exact Subgroup.Normal.conj_mem inferInstance _ hr w
           simpa [relatorNormalClosure] using hfwd
         · exact Subgroup.subset_normalClosure ⟨k, by simp [hki]⟩
 
