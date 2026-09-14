@@ -131,7 +131,7 @@ jobs:
           path: mda/evidence/andrews_curtis/
           retention-days: 90
 
-# Repair scope is intentionally narrow:
+# Repair scope is intentionally narrow and full-cost Pareto aware:
 # - raw search/compiler evidence remains frozen from SOURCE_RUN;
 # - fix candidate artifact recovery;
 # - compute causal removal effect before retaining/contracting components;
