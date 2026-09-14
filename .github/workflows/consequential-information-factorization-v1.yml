@@ -1,0 +1,38 @@
+name: Consequential Information Factorization V1
+
+on:
+  push:
+    paths:
+      - "experiments/consequential_information_factorization_v1/FROZEN_CANDIDATE.md"
+      - "scripts/consequential_information_factorization_v1.py"
+      - ".github/workflows/consequential-information-factorization-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove frozen candidate unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 1c0b4f2acf54fef98c1ce6508bc8fff0b328ecf6 --             experiments/consequential_information_factorization_v1/FROZEN_CANDIDATE.md
+          echo "CIF_V1_FROZEN_UNCHANGED"
+      - name: Run factorization suite
+        run: |
+          set -o pipefail
+          python scripts/consequential_information_factorization_v1.py | tee consequential-information-factorization-v1.log
+          grep -F "SURVIVED_CONSEQUENTIAL_INFORMATION_FACTORIZATION_V1" consequential-information-factorization-v1.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: consequential-information-factorization-v1
+          path: consequential-information-factorization-v1.log
