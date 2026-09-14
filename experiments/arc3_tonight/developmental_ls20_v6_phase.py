@@ -66,7 +66,7 @@ class FullExplorer:
             return hash_regions(grid(z),(scene,RETAINED,BOTTOM))
         def structsig(z):
             return hash_regions(grid(z),(scene,RETAINED))
-        cur=fullsig(o); states.add(cur)
+        cur=fullsig(o); root=cur; states.add(cur)
         def untried(s): return [a for a in acts if a not in edges[s]]
         def frontier(st):
             q=deque([st]); prev={st:None}; pa={}
@@ -116,7 +116,7 @@ class FullExplorer:
                 tf=fullsig(z); ts=structsig(z)
                 if edges[sf].get(aid)!=tf: edges[sf].pop(aid,None)
                 trace.append((ss,st,aid,ts,t)); o=z; cur=tf; states.add(tf); continue
-            rfp=frontier(next(iter(states))) if states else None
+            rfp=frontier(root)
             # Use level-local reset + root search when current component frontier exhausted.
             if rfp is None:
                 reset()
