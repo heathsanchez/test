@@ -1,0 +1,47 @@
+name: ACC Funnel Long Proof Compiler V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/funnel_long_proof_compiler.py'
+      - '.github/workflows/acc-funnel-long-proof-compiler-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34732349525"
+
+jobs:
+  compile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover verifier-clean long proof
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pool
+          gh run download "$SOURCE_RUN" -n acc-fresh-frontier-v2-pool -D /tmp/pool
+          test -f /tmp/pool/fresh_frontier_v2_pool/pending_submission.txt
+      - name: Fetch pinned official authority
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Compile theorem shortcuts through trajectory
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/funnel_long_proof_compiler.py \
+            --acc-root /tmp/acc \
+            --submission /tmp/pool/fresh_frontier_v2_pool/pending_submission.txt \
+            --projector-script mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py \
+            --challenge-id ac-08551 \
+            --out-dir mda/evidence/andrews_curtis/funnel_long_proof_compiler_v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-funnel-long-proof-compiler-v1
+          path: mda/evidence/andrews_curtis/funnel_long_proof_compiler_v1/
