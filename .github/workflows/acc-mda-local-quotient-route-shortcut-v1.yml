@@ -1,0 +1,231 @@
+name: ACC MDA Local Quotient Route Shortcut V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-local-quotient-route-shortcut-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+  BASELINE_RUN: "34802566030"
+
+jobs:
+  shortcut:
+    strategy:
+      fail-fast: false
+      matrix:
+        policy: [current, mask3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable route and exact baseline
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source /tmp/baseline
+          gh run download "$SOURCE_RUN" -n "acc-mda-probe-7-${POLICY}" -D /tmp/source
+          gh run download "$BASELINE_RUN" -n "acc-mda-fixed-route-${POLICY}" -D /tmp/baseline
+          src=$(find /tmp/source -name result.json -print -quit)
+          base=$(find /tmp/baseline -name result.json -print -quit)
+          test -n "$src" && test -n "$base"
+          cp "$src" /tmp/source_result.json
+          cp "$base" /tmp/baseline_result.json
+          python3 - <<'PY'
+          import json,os
+          p=os.environ['POLICY']
+          s=json.load(open('/tmp/source_result.json'))
+          b=json.load(open('/tmp/baseline_result.json'))
+          assert s['challenge_id']==b['challenge_id']=='ac-04402',(s,b)
+          assert s['policy']==b['policy']==p,(s,b,p)
+          assert b['closure_status']=='COMPLETE',b
+          print('MDA_ROUTE_SHORTCUT_SOURCE',json.dumps({
+            'policy':p,
+            'qsteps':b['quotient_steps'],
+            'exact_atomic':b['exact_atomic_cost'],
+            'live_best':b['frozen_live_best'],
+            'route_sha':b['source_result_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        env:
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-route-${POLICY}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Exhaust width-4 local quotient shortcuts and exact-close best separator
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/local_route_shortcut/${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/local_quotient_route_shortcut.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --baseline-result /tmp/baseline_result.json \
+            --policy "${{ matrix.policy }}" \
+            --window 4 \
+            --window-state-cap 100000 \
+            --exact-state-cap 100000 \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after diagnostic
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-route-shortcut-${{ matrix.policy }}
+          path: mda/evidence/andrews_curtis/local_route_shortcut/
+          retention-days: 90
+
+  synthesize:
+    needs: shortcut
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover both route-search discriminators
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results mda/evidence/andrews_curtis/local_route_shortcut_synthesis/candidates
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-route-shortcut-*' -D /tmp/results
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 2
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/local_route_shortcut_synthesis/candidates/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/results -name candidate_ac.txt -type f | sort)
+          echo "CANDIDATES=$i"
+
+      - name: Type the upstream residual without preselecting repair
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          rs=sorted(rs,key=lambda r:r['policy'])
+          causal=[r for r in rs if r['diagnosis']=='CERTIFIED_ROUTE_SEARCH_INADEQUACY_CAUSAL']
+          noncausal=[r for r in rs if r['diagnosis']=='CERTIFIED_ROUTE_SEARCH_INADEQUACY_NONCAUSAL']
+          blocked=[r for r in rs if r['diagnosis']=='CERTIFIED_ROUTE_SEARCH_INADEQUACY_COMPILER_BLOCKED']
+          unknown=[r for r in rs if r['diagnosis'] in ('UNKNOWN_SEARCH_ROUTE_SHORTCUT','CERTIFIED_ROUTE_SEARCH_INADEQUACY_CAUSAL_UNKNOWN')]
+          if causal:
+              status='CERTIFIED_CURRENT_ROUTE_SEARCH_RESIDUAL'
+              next_probe='retain only the causally improved spliced route as scoped evidence; test whether the same bounded shortcut procedure transfers before changing route language'
+          elif noncausal:
+              status='CERTIFIED_LOCAL_ROUTE_SEARCH_INADEQUACY_NONCAUSAL'
+              next_probe='do not optimize quotient step count by itself; test a different existing search-policy class before authorizing route-language growth'
+          elif blocked:
+              status='ROUTE_SEPARATOR_FOUND_COMPILER_CAUSALITY_BLOCKED'
+              next_probe='preserve both route-search and compiler-language explanations; discriminate at the blocked splice only'
+          elif unknown:
+              status='UNKNOWN_SEARCH'
+              next_probe='do not authorize route-language growth; either raise the cheapest capped local window or test the finite existing anonymous priority class'
+          else:
+              status='NO_WIDTH4_LOCAL_ROUTE_SEPARATOR'
+              next_probe='test the complete existing anonymous priority class or a wider bounded window; absence here is only local'
+          out={
+            'experiment':'ACC_MDA_LOCAL_QUOTIENT_ROUTE_SHORTCUT_SYNTHESIS_V1',
+            'results':[{
+              'policy':r['policy'],
+              'diagnosis':r['diagnosis'],
+              'shortcut_count':r['shortcut_count'],
+              'unknown_windows':r['unknown_window_count'],
+              'baseline_qsteps':r['baseline_quotient_steps'],
+              'spliced_qsteps':r['spliced_quotient_steps'],
+              'baseline_atomic':r['baseline_exact_atomic'],
+              'spliced_atomic':r['spliced_exact_atomic'],
+              'atomic_saving':r['end_to_end_atomic_saving'],
+            } for r in rs],
+            'status':status,
+            'causal_separator_count':len(causal),
+            'new_route_language_growth_authorized':False,
+            'global_inheritance_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':'All width-4 windows on the two retained ac-04402 routes only.'
+          }
+          Path('mda/evidence/andrews_curtis/local_route_shortcut_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_ROUTE_SHORTCUT_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Fresh live consequence for any exact spliced candidate
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          n=$(find mda/evidence/andrews_curtis/local_route_shortcut_synthesis/candidates -name '*.txt' -type f | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo NO_ROUTE_SHORTCUT_CANDIDATES
+            exit 0
+          fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p mda/evidence/andrews_curtis/local_route_shortcut_synthesis/live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/local_route_shortcut_synthesis/candidates/*.txt' \
+            --out-dir mda/evidence/andrews_curtis/local_route_shortcut_synthesis/live \
+            --cycle 13 \
+            | tee mda/evidence/andrews_curtis/local_route_shortcut_synthesis/live.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-route-shortcut-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# Existing route language only. No new heuristic, representation, or compiler
+# rule is introduced. This asks whether the retained routes contain a bounded,
+# provable shortcut that their own search failed to discover.
