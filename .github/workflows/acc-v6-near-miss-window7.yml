@@ -1,0 +1,98 @@
+name: ACC V6 Near-Miss Window7
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-v6-near-miss-window7.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  SOURCE_RUN: "34790205664"
+  TARGET: "ac-08491"
+  FROZEN_BEST: "8"
+
+jobs:
+  salvage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover the verified three-move near miss only
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/prior acc_competitive/v6_near_miss_input
+          gh run download "$SOURCE_RUN" -n acc-v5-frontier-final -D /tmp/prior
+          src=$(find /tmp/prior -path '*/v5_frontier_peephole/fortified_ac.txt' -print -quit)
+          test -n "$src"
+          grep "^${TARGET}:" "$src" > acc_competitive/v6_near_miss_input/candidate.txt
+          test -s acc_competitive/v6_near_miss_input/candidate.txt
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Expand only the exhausted local compiler bound 5 to 7
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/v6_near_miss_window7
+          python3 acc_competitive/peephole_superopt_v1.py \
+            --acc-root /tmp/acc \
+            --candidate-file acc_competitive/v6_near_miss_input/candidate.txt \
+            --challenge-id "$TARGET" \
+            --frozen-best "$FROZEN_BEST" \
+            --max-window 7 \
+            --out-dir acc_competitive/v6_near_miss_window7 \
+            | tee acc_competitive/v6_near_miss_window7.log
+
+          python3 - <<'PY'
+          import json
+          p='acc_competitive/v6_near_miss_window7/report.json'
+          r=json.load(open(p))
+          print('V6_BOUNDED_RESIDUAL',json.dumps({
+              'challenge_id':r['challenge_id'],
+              'old_length':r['old_length'],
+              'new_length':r['new_length'],
+              'moves_saved':r['moves_saved'],
+              'frozen_best':r['frozen_best'],
+              'strictly_better_frozen':r['strictly_better_frozen'],
+          },sort_keys=True))
+          PY
+
+      - name: Publish only if still scoring on a fresh live recheck
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/v6_near_miss_publish
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/v6_near_miss_window7/pending_submission.txt' \
+            --out-dir acc_competitive/v6_near_miss_publish \
+            --cycle 6 \
+            | tee acc_competitive/v6_near_miss_publish.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-v6-near-miss-window7
+          path: |
+            acc_competitive/v6_near_miss_input/
+            acc_competitive/v6_near_miss_window7/
+            acc_competitive/v6_near_miss_window7.log
+            acc_competitive/v6_near_miss_publish/
+            acc_competitive/v6_near_miss_publish.log
+          retention-days: 90
