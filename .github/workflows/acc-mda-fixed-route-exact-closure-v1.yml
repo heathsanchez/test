@@ -1,0 +1,206 @@
+name: ACC MDA Fixed Route Exact Closure V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-fixed-route-exact-closure-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+
+jobs:
+  close:
+    strategy:
+      fail-fast: false
+      matrix:
+        policy: [current, mask3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable source consequence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "acc-mda-probe-7-${{ matrix.policy }}" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']=='ac-04402',r
+          assert r['policy']=='${{ matrix.policy }}',r
+          assert r['quotient_found'] is True,r
+          print('MDA_FIXED_ROUTE_SOURCE',json.dumps({
+              'challenge_id':r['challenge_id'],
+              'policy':r['policy'],
+              'route_sha':r['quotient_path_sha256'],
+              'qsteps':r['quotient_steps'],
+              'best_atomic':r.get('best_atomic_length'),
+              'frozen_live_best':r.get('frozen_ac_best'),
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        env:
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-fixed-${POLICY}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Remove compiler beam on the identical frozen route
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/fixed_route_exact/${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/fixed_route_exact_closure.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy "${{ matrix.policy }}" \
+            --out-dir "$out" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-fixed-route-${{ matrix.policy }}
+          path: mda/evidence/andrews_curtis/fixed_route_exact/
+          retention-days: 90
+
+  synthesize:
+    needs: close
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover both exact-closure consequences
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results mda/evidence/andrews_curtis/fixed_route_synthesis
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-fixed-route-*' -D /tmp/results || true
+          echo "RESULTS=$(find /tmp/results -name result.json | wc -l)"
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 2
+
+      - name: Type the residual without choosing a repair layer
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          rs=sorted(rs,key=lambda r:r['policy'])
+          diagnoses=[r['diagnosis'] for r in rs]
+          if any(d=='CERTIFIED_COMPILER_BEAM_INADEQUACY' for d in diagnoses):
+              status='CERTIFIED_INADEQUATE_BEAM_SELECTION'
+              next_probe='smallest compiler-state-retention change on the same fixed route, followed by exact ablation'
+          elif any(d=='COMPILER_BEAM_PARTIAL_RESIDUAL' for d in diagnoses):
+              status='PARTIAL_COMPILER_RESIDUAL'
+              next_probe='measure whether exact compiler closure can close the remaining live gap before changing search'
+          elif all(d=='BEAM_SEARCH_NOT_RESIDUAL_ON_FIXED_ROUTE' for d in diagnoses):
+              status='BEAM_SEARCH_NOT_RESIDUAL'
+              next_probe='cheapest test separating alternative quotient-route choice from compiler-transition-language inadequacy'
+          elif any(d=='UNKNOWN_SEARCH_COMPILER_EXACT_CLOSURE' for d in diagnoses):
+              status='UNKNOWN_SEARCH'
+              next_probe='increase exact-closure authority only if cheaper than the next route/language discriminator'
+          else:
+              status='MIXED_OR_SCOPED_INADEQUACY'
+              next_probe='preserve all surviving explanations and construct the cheapest discriminator'
+          out={
+              'experiment':'ACC_MDA_FIXED_ROUTE_EXACT_CLOSURE_SYNTHESIS_V1',
+              'target':'ac-04402',
+              'results':rs,
+              'status':status,
+              'new_solver_growth_authorized':False,
+              'next_probe':next_probe,
+              'claim_boundary':'One frozen target, two reproduced quotient routes, existing compiler transition language only.',
+          }
+          Path('mda/evidence/andrews_curtis/fixed_route_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_FIXED_ROUTE_SYNTHESIS',json.dumps({
+              'status':status,
+              'diagnoses':diagnoses,
+              'next_probe':next_probe,
+          },sort_keys=True))
+          PY
+
+      - name: If exact closure found a scoring certificate, ground and fresh-check it
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/fixed_route_candidates
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/fixed_route_candidates/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/results -name candidate_ac.txt -type f | sort)
+          echo "CANDIDATES=$i"
+          if [ "$i" -eq 0 ]; then
+            echo NO_EXACT_CANDIDATES
+            exit 0
+          fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p mda/evidence/andrews_curtis/fixed_route_live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/fixed_route_candidates/*.txt' \
+            --out-dir mda/evidence/andrews_curtis/fixed_route_live \
+            --cycle 9 \
+            | tee mda/evidence/andrews_curtis/fixed_route_live.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-fixed-route-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# Diagnostic only.  No new solver or compiler language is introduced here.
+# The existing fixed routes and existing compiler transitions decide which
+# explanation survives: beam search, route choice, transition language, or UNKNOWN.
