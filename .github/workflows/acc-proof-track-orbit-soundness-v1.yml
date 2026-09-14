@@ -36,11 +36,10 @@ jobs:
         working-directory: /tmp/official-acc/competition/tools/lean
         run: |
           MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
-          lake exe cache get Mathlib/GroupTheory/PresentedGroup.lean Mathlib/Data/Fin/Tuple/Basic.lean
+          lake exe cache get
 
       - name: Check orbit soundness lemmas
         run: |
-          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean \
-             /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
+          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean              /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
           cd /tmp/official-acc/competition/tools/lean
           lake env lean OrbitSoundness.lean
