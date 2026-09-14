@@ -1,0 +1,202 @@
+name: ACC MDA Future Consequence Kernel V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-future-consequence-kernel-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+
+jobs:
+  kernel:
+    strategy:
+      fail-fast: false
+      matrix:
+        policy: [current, mask3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable prospective route
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "acc-mda-probe-7-${POLICY}" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open('/tmp/source_result.json'))
+          p=os.environ['POLICY']
+          assert r['challenge_id']=='ac-04402',r
+          assert r['policy']==p,(r,p)
+          print('MDA_KERNEL_SOURCE',json.dumps({
+            'policy':p,
+            'qsteps':r['quotient_steps'],
+            'beam_best':r['best_atomic_length'],
+            'live_best':r['frozen_ac_best'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        env:
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-kernel-${POLICY}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Test same-present states against hidden future probes
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/future_consequence_kernel/${{ matrix.policy }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/future_consequence_kernel.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy "${{ matrix.policy }}" \
+            --selection-state-cap 256 \
+            --future-state-cap 50000 \
+            --rep-cap 8 \
+            --horizons 2,4,8,16 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after test
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-future-kernel-${{ matrix.policy }}
+          path: mda/evidence/andrews_curtis/future_consequence_kernel/
+          retention-days: 90
+
+  synthesize:
+    needs: kernel
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover both finite kernel tests
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/results
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-future-kernel-*' -D /tmp/results
+          find /tmp/results -name result.json -print
+          test "$(find /tmp/results -name result.json | wc -l)" -eq 2
+
+      - name: Synthesize the bounded kernel result
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/future_consequence_kernel_synthesis
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/results/**/result.json',recursive=True)]
+          rs=sorted(rs,key=lambda r:r['policy'])
+          seps=[r for r in rs if r['status']=='CERTIFIED_BOUNDED_DELAYED_FUTURE_SEPARATOR']
+          unknown=[r for r in rs if r['status']=='UNKNOWN_SEARCH']
+          if seps:
+              status='VERIFIED_STATE_TEST_KERNEL_SEPARATOR'
+              interpretation=(
+                'At least one retained policy contains exact states that are identical '
+                'under the current quotient representation and immediate one-step cost '
+                'but are separated by a longer frozen continuation. This is a bounded '
+                'false merge witness for the tested consequence.'
+              )
+              next_probe=(
+                'Use the minimal separating probe basis to search for the smallest '
+                'state distinction predicting the split; do not hand-design the feature.'
+              )
+          elif unknown:
+              status='UNKNOWN_SEARCH'
+              interpretation='The finite probe experiment did not identify the bounded kernel.'
+              next_probe='Lower the apparatus cost or raise only the capped closure needed to complete the same test.'
+          else:
+              status='BOUNDED_NONSEPARATION'
+              interpretation='No delayed separator occurred in the declared finite horizons; this is not global equivalence.'
+              next_probe='Expand the probe basis before changing representation.'
+          out={
+            'experiment':'ACC_MDA_FUTURE_CONSEQUENCE_KERNEL_SYNTHESIS_V1',
+            'results':[{
+              'policy':r['policy'],
+              'status':r['status'],
+              'selection_layer':r.get('selection_layer'),
+              'selected_count':r.get('selected_count'),
+              'one_step_cost':r.get('selected_one_step_cost'),
+              'complete_horizons':r.get('complete_horizons'),
+              'observed_class_count':r.get('observed_class_count'),
+              'minimal_probe_bases':r.get('minimal_probe_bases'),
+              'false_merge_witness':r.get('false_merge_witness'),
+            } for r in rs],
+            'status':status,
+            'separator_count':len(seps),
+            'interpretation':interpretation,
+            'representation_growth_authorized':bool(seps),
+            'global_route_language_growth_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':'Finite ac-04402 frozen routes and declared horizons only.'
+          }
+          Path('mda/evidence/andrews_curtis/future_consequence_kernel_synthesis/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_KERNEL_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-future-kernel-final
+          path: mda/evidence/andrews_curtis/future_consequence_kernel_synthesis/
+          retention-days: 90
+
+# This workflow tests the finite evaluation-pairing claim directly:
+# same represented present + same immediate consequence, then reveal longer
+# future continuations. It changes no scientific mechanism under test.
