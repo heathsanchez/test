@@ -1,0 +1,41 @@
+name: ACC Proof Track Presentation Invariance V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/PresentationInvariance.lean'
+      - '.github/workflows/acc-proof-track-presentation-invariance-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned official ACC repository
+        run: |
+          git clone https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/official-acc
+          cd /tmp/official-acc
+          git checkout 99a65377c5c4f412cd9af7b8d31c41464a855736
+          test "$(git rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare pinned Lean environment
+        working-directory: /tmp/official-acc/competition/tools/lean
+        run: |
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          lake exe cache get
+          lake build
+      - name: Check presentation invariance theorem layer
+        run: |
+          cp mda/domains/andrews_curtis/proof_track/PresentationInvariance.lean              /tmp/official-acc/competition/tools/lean/PresentationInvariance.lean
+          cd /tmp/official-acc/competition/tools/lean
+          lake env lean PresentationInvariance.lean
