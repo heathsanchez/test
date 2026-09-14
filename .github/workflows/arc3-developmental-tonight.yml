@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run scalar resource-count ledger on Level4
+      - name: Diagnose second Level4 collision
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v23_scalar_resource_count_ledger.py | tee arc3_v23_scalar_resource.log
+          python experiments/arc3_tonight/developmental_ls20_v24_second_collision_diagnosis.py | tee arc3_v24_second_collision.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v23-scalar-resource
+          name: arc3-v24-second-collision
           path: |
-            arc3_v23_scalar_resource.log
-            arc3_developmental_v22_scalar_resource_count_ledger_result.json
+            arc3_v24_second_collision.log
+            arc3_developmental_v24_second_collision_result.json
