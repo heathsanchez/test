@@ -1,0 +1,45 @@
+{
+  "schema": "mda.historical.holdout.outcomes.v1",
+  "provenance": {
+    "adjudicator_frozen_commit": "e3edcb5988384d2f67231f9acebaba524f915924",
+    "logs_opened_after_adjudicator_commit": true,
+    "runs": {
+      "active_latent_disambiguation_v1": 32780169533,
+      "right_question_transfer_v1": 32785929911,
+      "target_quotient_right_question_v1": 32786380149,
+      "verified_comparative_quotient_v1": 32793637490
+    }
+  },
+  "cases": {
+    "active_latent_disambiguation_v1": {
+      "no_extra_accuracy": 0.3125,
+      "random_accuracy": 0.75,
+      "info_gain_accuracy": 1.0,
+      "oracle_accuracy": 1.0
+    },
+    "right_question_transfer_v1": {
+      "random_accuracy": 0.6041666666666666,
+      "generic_accuracy": 0.6666666666666666,
+      "target_info_accuracy": 0.7083333333333334,
+      "target_info_optimal_query_rate": 0.3125,
+      "target_info_mean_info_gain_regret": 0.7662748661778278,
+      "random_mean_info_gain_regret": 0.949895307661516
+    },
+    "target_quotient_right_question_v1": {
+      "obs_only_optimal_query_rate": 0.3541666666666667,
+      "obs_only_accuracy": 0.7083333333333334,
+      "sham_marginal_optimal_query_rate": 0.2916666666666667,
+      "sham_marginal_accuracy": 0.5416666666666666,
+      "target_quotient_optimal_query_rate": 0.9583333333333334,
+      "target_quotient_accuracy": 1.0
+    },
+    "verified_comparative_quotient_v1": {
+      "one_shot_optimal_query_rate": 0.5,
+      "one_shot_accuracy": 0.7708333333333334,
+      "verified_optimal_query_rate": 0.875,
+      "verified_accuracy": 1.0,
+      "hand_optimal_query_rate": 1.0,
+      "hand_accuracy": 1.0
+    }
+  }
+}
