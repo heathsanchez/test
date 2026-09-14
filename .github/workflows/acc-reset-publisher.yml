@@ -85,13 +85,33 @@ jobs:
             --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 5 --max-path 6000 \
             | tee acc_competitive/batch_peephole.log
 
-      - name: Fresh live filter and publish one packed batch
+      - name: Fresh live strict-only quota gate and publish one packed batch
         run: |
-          set -o pipefail
+          set -euo pipefail
           if [ ! -s acc_competitive/peephole_fortified/fortified_ac.txt ]; then echo "No fortified candidates."; exit 0; fi
-          python3 andrews_curtis/continuous_aggregate_v4.py --acc-root /tmp/acc \
+          python3 andrews_curtis/continuous_aggregate_v5.py --acc-root /tmp/acc \
             --glob 'acc_competitive/peephole_fortified/fortified_ac.txt' \
             --out-dir acc_competitive/reset_publish_out --cycle 0 | tee acc_competitive/reset_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          p=Path('acc_competitive/reset_publish_out/report.json')
+          if not p.exists():
+              raise SystemExit('missing publication report')
+          r=json.loads(p.read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0):
+              raise SystemExit('non-strict row selected for publication')
+          print('STRICT_QUOTA_GATE_OK', json.dumps({
+              'used': r.get('daily_submissions_used_pre'),
+              'remaining': r.get('daily_submissions_remaining_pre'),
+              'strict': r.get('selected_strict_improvements'),
+              'submission_id': r.get('submission_id')
+          }, sort_keys=True))
+          PY
 
       - name: Persist compounding proof atlas
         if: always()
