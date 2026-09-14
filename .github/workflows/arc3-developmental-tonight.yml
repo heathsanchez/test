@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run continuous self-optimizing ledger kernel
+      - name: Run self-compiled constructor Level4 search
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v14_continuous_self_optimizer.py | tee arc3_v14_continuous_self_optimizer.log
+          python experiments/arc3_tonight/developmental_ls20_v15_self_compiling_macros_level4.py | tee arc3_v15_self_compiling_macros_level4.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v14-continuous-self-optimizer
+          name: arc3-v15-self-compiling-macros-level4
           path: |
-            arc3_v14_continuous_self_optimizer.log
-            arc3_developmental_v14_continuous_self_optimizer_result.json
+            arc3_v15_self_compiling_macros_level4.log
+            arc3_developmental_v15_self_compiling_macros_level4_result.json
