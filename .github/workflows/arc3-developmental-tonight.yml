@@ -4,13 +4,13 @@ on:
     branches: [arc3-developmental-tonight]
   workflow_dispatch:
 jobs:
-  goal-invariant:
+  goal-kernel:
     strategy:
       fail-fast: false
       matrix:
         first_action: [1, 2, 3, 4]
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -18,17 +18,17 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Search replay-verified GOAL shard
+      - name: Test GOAL-kernel separator
         shell: bash
         env:
           ARC_SHARD_ACTION: ${{ matrix.first_action }}
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v30b_goal_invariant_sharded_pareto.py | tee arc3_v30b_goal_invariant_${ARC_SHARD_ACTION}.log
+          python experiments/arc3_tonight/developmental_ls20_v31_goal_kernel_collision_probe.py | tee arc3_v31_goal_kernel_${ARC_SHARD_ACTION}.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v30b-goal-invariant-${{ matrix.first_action }}
+          name: arc3-v31-goal-kernel-${{ matrix.first_action }}
           path: |
-            arc3_v30b_goal_invariant_*.log
-            arc3_v30_goal_invariant_shard_*.json
+            arc3_v31_goal_kernel_*.log
+            arc3_v31_goal_kernel_collision_probe_*.json
