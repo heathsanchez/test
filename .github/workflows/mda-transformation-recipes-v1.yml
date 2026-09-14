@@ -1,0 +1,58 @@
+name: MDA Transformation Recipes V1
+
+on:
+  push:
+    paths:
+      - "scripts/mda_transformation_recipes_v1.py"
+      - ".github/workflows/mda-transformation-recipes-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  transformation-recipes:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Replay prerequisite MDA evidence
+        run: |
+          set -o pipefail
+          python scripts/mda_genesis_solvent_convergence_v1.py | tee prereq-genesis-solvent.log
+          grep -F "VERIFIED_BIDIRECTIONAL_GENESIS_SOLVENT_CONVERGENCE_ON_JOINT_MINIMUM" prereq-genesis-solvent.log
+
+          python scripts/mda_recursive_residue_equation_v1.py | tee prereq-recursive-residue.log
+          grep -F "VERIFIED_RECURSIVE_RESIDUE_EQUATION_WITH_ANTICHAIN_PRESENT" prereq-recursive-residue.log
+
+          python scripts/mda_self_application_meta_kernel_v1.py | tee prereq-self-application.log
+          grep -F "VERIFIED_MDA_SELF_APPLICATION_CONVERGES_ON_FOUR_COMMITMENT_META_KERNEL" prereq-self-application.log
+
+      - name: Run transformation recipe suite
+        run: |
+          set -o pipefail
+          python scripts/mda_transformation_recipes_v1.py | tee mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_COHOBATION_FIXED_POINT" mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_CALCINATION_IRREDUCIBLE_ASH" mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_PUTREFACTION_REGENESIS" mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_CROSS_SUBSTRATE_DISTILLATION" mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_DEGREES_OF_FIRE_PHASE_TRANSITIONS" mda-transformation-recipes-v1.log
+          grep -F "VERIFIED_TRANSFORMATION_RECIPES_CONVERGE_ON_RECURSIVE_RESIDUE_KERNEL" mda-transformation-recipes-v1.log
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mda-transformation-recipes-v1-logs
+          path: |
+            prereq-genesis-solvent.log
+            prereq-recursive-residue.log
+            prereq-self-application.log
+            mda-transformation-recipes-v1.log
+          if-no-files-found: warn
