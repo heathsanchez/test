@@ -1,0 +1,39 @@
+name: ACC Funnel Future Consequence V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/funnel_future_consequence.py'
+      - '.github/workflows/acc-funnel-future-consequence-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  future:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned authorities
+        run: |
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Run frozen future discriminator
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/funnel_future_consequence.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --separator-script mda/domains/andrews_curtis/proof_track/funnel_operator_separator.py \
+            --out-dir mda/evidence/andrews_curtis/funnel_future_consequence_v1 \
+            --max-w-len 4
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-funnel-future-consequence-v1
+          path: mda/evidence/andrews_curtis/funnel_future_consequence_v1/
