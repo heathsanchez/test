@@ -1,0 +1,24 @@
+{
+  "schema": "mda.cross_experiment.blind_prediction.outcome.v1",
+  "prediction_commit": "20c3cc69cc99ca3953e166fe53a7f9f420c994e7",
+  "source_run": 32793637490,
+  "target_run": 32791097464,
+  "historical_temporal_order": "target_run_precedes_source_run",
+  "audit_blinding": "prediction committed before target run log was opened in this audit",
+  "prediction": {
+    "verified_accuracy_gt_one_shot": true,
+    "verified_decision_complete_gt_one_shot": true
+  },
+  "observed": {
+    "one_shot_accuracy": 0.8541666666666666,
+    "one_shot_decision_complete_rate": 0.75,
+    "verified_accuracy": 0.7708333333333334,
+    "verified_decision_complete_rate": 0.6666666666666666
+  },
+  "prediction_pass": false,
+  "residue_update": {
+    "remove": ["CROSS_REPRESENTATION_VERIFIER_REPAIR_TRANSFER"],
+    "retain_scoped": ["VERIFIED_COMPARATIVE_REPAIR_CAUSALLY_USEFUL@comparative_quotient_scope"],
+    "new_residual": ["certificate_verifier_feedback_assimilation_or_search_failure"]
+  }
+}
