@@ -1,0 +1,47 @@
+name: Exact Collatz Seed Interval
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/collatz-exact-seed.yml"
+      - "experiments/collatz_exact_seed_interval.py"
+
+jobs:
+  exact:
+    name: shard-${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install exact solver
+        run: python -m pip install --disable-pip-version-check z3-solver
+
+      - name: Solve shard exactly
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_seed_interval.py \
+            --shards 16 \
+            --shard-index ${{ matrix.shard }} \
+            --max-horizon 1500 \
+            --checkpoints 400,600,800,1000,1200,1500 \
+            --timeout-ms 900000 \
+            --out results/shard-${{ matrix.shard }}.json
+
+      - name: Upload exact result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: collatz-exact-shard-${{ matrix.shard }}
+          path: results/shard-${{ matrix.shard }}.json
+          if-no-files-found: warn
