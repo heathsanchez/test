@@ -1,0 +1,40 @@
+name: ACC Lazy Funnel Quotient Search V2
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/lazy_funnel_quotient_search.py'
+      - '.github/workflows/acc-lazy-funnel-quotient-search-v2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned authorities
+        run: |
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 6a12515fe1d95178a483b76d5553266e61122417
+      - name: Compare baseline with lazy theorem quotient
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/lazy_funnel_quotient_search.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --projector-script mda/domains/andrews_curtis/proof_track/exact_nearest_conjugate_funnel.py \
+            --challenge-id ac-01684 \
+            --expansion-cap 60000 \
+            --out-dir mda/evidence/andrews_curtis/lazy_funnel_quotient_search_v2
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-lazy-funnel-quotient-search-v2
+          path: mda/evidence/andrews_curtis/lazy_funnel_quotient_search_v2/
