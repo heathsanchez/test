@@ -146,4 +146,33 @@ theorem mTransform_target_iff {n : ℕ} (R : Relators n)
   · intro h2
     exact (reachable_symm h).trans h2
 
+/-- Local quotient geometry: any two values for coordinate `i` that differ
+by an element of the normal closure of the other relators are AC-reachable.
+
+Equivalently, the actual local state variable is the coset of the relator
+modulo that normal closure, not its chosen free-group word representative.
+-/
+theorem coordinateCoset_reachable {n : ℕ} (R : Relators n)
+    (i : Fin n) (a b : Word n)
+    (hcoset : a⁻¹ * b ∈ Subgroup.normalClosure (otherRelators R i)) :
+    Reachable
+      (Function.update R i a)
+      (Function.update R i b) := by
+  have h :=
+    mTransform_update_reachable R i a (a⁻¹ * b) hcoset
+  have hab : a * (a⁻¹ * b) = b := by group
+  simpa [hab] using h
+
+/-- Replacing one coordinate by any representative of the same local normal-
+closure coset preserves every future AC reachability consequence. -/
+theorem coordinateCoset_target_iff {n : ℕ} (R : Relators n)
+    (i : Fin n) (a b : Word n)
+    (hcoset : a⁻¹ * b ∈ Subgroup.normalClosure (otherRelators R i))
+    (T : Relators n) :
+    Reachable (Function.update R i a) T ↔
+      Reachable (Function.update R i b) T := by
+  have h := coordinateCoset_reachable R i a b hcoset
+  exact reachable_target_iff_of_reachable h
+
+
 end AC
