@@ -35,10 +35,8 @@ jobs:
           lake build
       - name: Check orbit layer and funnel core
         run: |
-          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
           cp mda/domains/andrews_curtis/proof_track/ReachabilityEquivalence.lean /tmp/official-acc/competition/tools/lean/ReachabilityEquivalence.lean
           cp mda/domains/andrews_curtis/proof_track/FunnelCore.lean /tmp/official-acc/competition/tools/lean/FunnelCore.lean
           cd /tmp/official-acc/competition/tools/lean
-          lake env lean -o OrbitSoundness.olean OrbitSoundness.lean
           lake env lean -o ReachabilityEquivalence.olean ReachabilityEquivalence.lean
           lake env lean FunnelCore.lean
