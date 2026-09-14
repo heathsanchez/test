@@ -1,0 +1,467 @@
+name: ACC MDA Microbridge Transfer V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-microbridge-transfer-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+  SOURCE_ARTIFACT: "acc-mda-probe-6-mask3"
+  TARGET_ID: "ac-02012"
+  POLICY: "mask3"
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Freeze prospective transfer encounter
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/microbridge_transfer
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          freeze={
+            "experiment":"ACC_MDA_MICROBRIDGE_TRANSFER_V1",
+            "target":"ac-02012",
+            "policy":"mask3",
+            "selection_rule":"minimum quotient-step count among unused verified routes from immutable run 34796578203; tie broken lexicographically by challenge id",
+            "source_run":34796578203,
+            "procedure_under_test":"official atomic microbridge search on highest-cost exact-closure quotient transitions",
+            "source_development_target":"ac-04402",
+            "growth_authorized":False,
+            "inheritance_authorized":False,
+          }
+          Path("mda/evidence/andrews_curtis/microbridge_transfer/freeze.json").write_text(
+              json.dumps(freeze,indent=2,sort_keys=True)+"\n")
+          print("MDA_TRANSFER_FREEZE",json.dumps(freeze,sort_keys=True))
+          PY
+
+      - name: Recover immutable source route
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$SOURCE_ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']=='ac-02012',r
+          assert r['policy']=='mask3',r
+          assert r['quotient_found'] is True,r
+          assert r['quotient_steps']==320,r
+          print('MDA_TRANSFER_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'qsteps':r['quotient_steps'],
+            'best_atomic':r['best_atomic_length'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-transfer-close"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Exact-close the frozen transfer route in existing language
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_transfer/closure"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/fixed_route_exact_closure.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/source_result.json \
+            --policy mask3 \
+            --out-dir "$out" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-transfer-closure
+          path: mda/evidence/andrews_curtis/microbridge_transfer/
+          retention-days: 90
+
+  microbridge:
+    needs: close
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact transfer closure
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/closure
+          gh run download "${{ github.run_id }}" -n acc-mda-transfer-closure -D /tmp/closure
+          result=$(find /tmp/closure -path '*/closure/result.json' -print -quit)
+          cand=$(find /tmp/closure -path '*/closure/candidate_ac.txt' -print -quit)
+          test -n "$result"
+          cp "$result" /tmp/closure_result.json
+          status=$(python3 - <<'PY'
+          import json
+          print(json.load(open('/tmp/closure_result.json'))['closure_status'])
+          PY
+          )
+          echo "closure_status=$status" >> "$GITHUB_OUTPUT"
+          if [ "$status" = "COMPLETE" ]; then
+            test -n "$cand"
+            cp "$cand" /tmp/closure_candidate.txt
+          fi
+
+      - name: Fetch pinned ground and retained dependency
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-transfer-micro-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Apply frozen acquisition procedure
+        if: steps.gate.outputs.closure_status == 'COMPLETE'
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_transfer/micro/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/local_official_microbridge.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --source-result /tmp/closure_result.json \
+            --candidate /tmp/closure_candidate.txt \
+            --policy mask3 \
+            --rank "${{ matrix.rank }}" \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --bfs-state-cap 600000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-transfer-micro-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/microbridge_transfer/
+          retention-days: 90
+
+  causal:
+    needs: [close, microbridge]
+    if: always()
+    strategy:
+      fail-fast: false
+      matrix:
+        rank: [0,1,2,3]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover closure and local consequence
+        id: gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/closure /tmp/micro
+          gh run download "${{ github.run_id }}" -n acc-mda-transfer-closure -D /tmp/closure
+          gh run download "${{ github.run_id }}" -n "acc-mda-transfer-micro-${{ matrix.rank }}" -D /tmp/micro || true
+          cresult=$(find /tmp/closure -path '*/closure/result.json' -print -quit)
+          ccand=$(find /tmp/closure -path '*/closure/candidate_ac.txt' -print -quit)
+          mresult=$(find /tmp/micro -name result.json -print -quit)
+          test -n "$cresult"
+          cp "$cresult" /tmp/closure_result.json
+          if [ -n "$ccand" ]; then cp "$ccand" /tmp/closure_candidate.txt; fi
+          if [ -n "$mresult" ]; then
+            cp "$mresult" /tmp/micro_result.json
+            status=$(python3 - <<'PY'
+          import json
+          print(json.load(open('/tmp/micro_result.json'))['status'])
+          PY
+            )
+          else
+            status="NO_RESULT"
+          fi
+          echo "micro_status=$status" >> "$GITHUB_OUTPUT"
+          echo "MDA_TRANSFER_CAUSAL_GATE rank=${{ matrix.rank }} status=$status"
+
+      - name: Fetch pinned ground and retained dependency
+        if: steps.gate.outputs.micro_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before candidate
+        if: steps.gate.outputs.micro_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Add isolated swap
+        if: steps.gate.outputs.micro_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        env:
+          RANK: ${{ matrix.rank }}
+        run: |
+          set -euo pipefail
+          SWAP="/swapfile-mda-transfer-causal-${RANK}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Causal end-to-end test
+        if: steps.gate.outputs.micro_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/microbridge_transfer/causal/rank_${{ matrix.rank }}"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/scoped_microbridge_causal_repair.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --closure-result /tmp/closure_result.json \
+            --closure-candidate /tmp/closure_candidate.txt \
+            --microbridge-result /tmp/micro_result.json \
+            --policy mask3 \
+            --max-nodes 200000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --exact-state-cap 100000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+
+      - name: Replay protected consequences after candidate
+        if: steps.gate.outputs.micro_status == 'COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND'
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-transfer-causal-${{ matrix.rank }}
+          path: mda/evidence/andrews_curtis/microbridge_transfer/
+          retention-days: 90
+
+  synthesize:
+    needs: [close, microbridge, causal]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover transfer evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/all mda/evidence/andrews_curtis/microbridge_transfer_final/candidates
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-transfer-*' -D /tmp/all || true
+          echo "RESULT_FILES=$(find /tmp/all -name result.json | wc -l)"
+          i=0
+          while IFS= read -r f; do
+            cp "$f" "mda/evidence/andrews_curtis/microbridge_transfer_final/candidates/candidate_${i}.txt"
+            i=$((i+1))
+          done < <(find /tmp/all -path '*/causal/*/candidate_ac.txt' -type f | sort)
+          echo "CAUSAL_CANDIDATES=$i"
+
+      - name: Classify transfer and inheritance warrant
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+          closures=[]
+          micros=[]
+          causals=[]
+          for p in glob.glob('/tmp/all/**/result.json',recursive=True):
+              r=json.load(open(p))
+              e=r.get('experiment','')
+              if e=='ACC_MDA_FIXED_ROUTE_EXACT_COMPILER_CLOSURE_V1': closures.append(r)
+              elif e=='ACC_MDA_LOCAL_OFFICIAL_MICROBRIDGE_V1': micros.append(r)
+              elif e=='ACC_MDA_SCOPED_MICROBRIDGE_CAUSAL_REPAIR_V1': causals.append(r)
+          assert closures, 'missing closure result'
+          closure=closures[0]
+          seps=[r for r in micros if r.get('status')=='COMPILER_TRANSITION_LANGUAGE_SEPARATOR_FOUND']
+          unknown=[r for r in micros if r.get('status')=='UNKNOWN_SEARCH']
+          gains=[r for r in causals if r.get('causal_gain') is True]
+          causal_fail=[r for r in causals if r.get('causal_gain') is False]
+          if closure.get('closure_status')!='COMPLETE':
+              status='UNKNOWN_SEARCH' if closure.get('closure_status')=='UNKNOWN_SEARCH' else 'SCOPED_CLOSURE_FAILURE'
+              inherit=False
+              next_probe='do not generalize; preserve source scoped repair and type transfer closure failure'
+          elif gains:
+              status='VERIFIED_PROSPECTIVE_TRANSFER'
+              inherit=True
+              next_probe='compile microbridge acquisition as an optional scoped capability with provenance/revocation, then run SOLVENT and a held-out prospective replay'
+          elif seps:
+              status='SEPARATOR_TRANSFER_WITHOUT_CAUSAL_GAIN'
+              inherit=False
+              next_probe='do not compile; local bridge discovery transfers but end-to-end value does not yet'
+          elif unknown:
+              status='UNKNOWN_SEARCH'
+              inherit=False
+              next_probe='do not generalize; preserve uncertainty'
+          else:
+              status='NO_TRANSFER_ON_FROZEN_ENCOUNTER'
+              inherit=False
+              next_probe='do not compile; source repair remains local'
+          full_cost=[]
+          for r in micros:
+              full_cost.append({
+                'rank':r.get('rank'),
+                'expanded_states':r.get('expanded_states'),
+                'seconds':r.get('seconds'),
+                'status':r.get('status'),
+                'local_saving':r.get('local_saving'),
+              })
+          out={
+            'experiment':'ACC_MDA_MICROBRIDGE_TRANSFER_SYNTHESIS_V1',
+            'target':'ac-02012',
+            'policy':'mask3',
+            'closure_status':closure.get('closure_status'),
+            'baseline_exact_length':closure.get('exact_atomic_cost'),
+            'separator_count':len(seps),
+            'unknown_count':len(unknown),
+            'causal_gain_count':len(gains),
+            'causal_fail_count':len(causal_fail),
+            'effective_repairs':[{
+                'rank':r['proposal_rank'],
+                'step':r['proposal_step'],
+                'baseline_length':r['baseline_atomic_length'],
+                'candidate_length':r['full_candidate_length'],
+                'end_to_end_saving':r['end_to_end_saving'],
+                'continuation_seconds':r['continuation_seconds'],
+            } for r in gains],
+            'acquisition_full_cost':full_cost,
+            'status':status,
+            'scoped_inheritance_authorized':inherit,
+            'global_inheritance_authorized':False,
+            'next_probe':next_probe,
+            'claim_boundary':'Prospective transfer from ac-04402/current to ac-02012/mask3; same frozen acquisition procedure, top four expensive transitions.',
+          }
+          Path('mda/evidence/andrews_curtis/microbridge_transfer_final/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_MICROBRIDGE_TRANSFER_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Fresh live consequence for causally improved transfer candidates
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          n=$(find mda/evidence/andrews_curtis/microbridge_transfer_final/candidates -name '*.txt' -type f | wc -l)
+          if [ "$n" -eq 0 ]; then
+            echo NO_TRANSFER_CANDIDATES
+            exit 0
+          fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p mda/evidence/andrews_curtis/microbridge_transfer_final/live
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'mda/evidence/andrews_curtis/microbridge_transfer_final/candidates/*.txt' \
+            --out-dir mda/evidence/andrews_curtis/microbridge_transfer_final/live \
+            --cycle 11 \
+            | tee mda/evidence/andrews_curtis/microbridge_transfer_final/live.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-microbridge-transfer-final
+          path: mda/evidence/andrews_curtis/
+          retention-days: 90
+
+# Prospective transfer test:
+# - target/policy frozen before acquisition is run;
+# - exact baseline first;
+# - same top-4 official microbridge procedure;
+# - each separator is causally tested end-to-end;
+# - protected replay before/after;
+# - inheritance only if value transfers.
