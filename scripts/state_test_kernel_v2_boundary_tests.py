@@ -1,89 +1,92 @@
 #!/usr/bin/env python3
 """
-State-Test Kernel V2 boundary tests.
+State-Test Kernel V2 boundary tests — optimized exhaustive version.
 
-1. Exhaustively quantify whether greedy pair-separation finds a minimum probe
-   basis over every binary 5-state x 4-probe evaluation matrix (32^4=1,048,576).
+1. Exhaustively quantify greedy probe-selection suboptimality across every
+   binary 5-state x 4-probe evaluation matrix: 32^4 = 1,048,576 matrices.
 2. Test whether exact kernel equality is sufficient to order stochastic
    representations, using exact rational channels.
 
-These are boundary tests: they do not alter State-Test Kernel V2.
+This version uses bitmasks over the 10 unordered state pairs so the exhaustive
+probe search is fast and exact.
 """
 from fractions import Fraction as F
 from itertools import combinations, product
 
 NSTATE=5
 NTEST=4
-ALL_STATES=tuple(range(NSTATE))
-ALL_TESTS=tuple(range(NTEST))
-SUBSETS=[tuple(c) for r in range(NTEST+1) for c in combinations(ALL_TESTS,r)]
+PAIRS=tuple((i,j) for i in range(NSTATE) for j in range(i+1,NSTATE))
 
-def bit(col, s):
-    return (col >> s) & 1
+# Each binary probe column is a 5-bit vector. Map it to the set of unordered
+# state pairs it separates, encoded as a 10-bit mask.
+SEP_MASK=[]
+for col in range(1<<NSTATE):
+    m=0
+    for k,(i,j) in enumerate(PAIRS):
+        if ((col>>i)&1) != ((col>>j)&1):
+            m |= 1<<k
+    SEP_MASK.append(m)
 
-def signature(cols, s, subset):
-    return tuple(bit(cols[t],s) for t in subset)
+SUBSETS_BY_SIZE={
+    r:tuple(combinations(range(NTEST),r))
+    for r in range(NTEST+1)
+}
 
-def target_classes(cols):
-    d={}
-    for s in ALL_STATES:
-        d.setdefault(signature(cols,s,ALL_TESTS),[]).append(s)
-    return tuple(sorted(tuple(v) for v in d.values()))
+def union_mask(ms, subset):
+    u=0
+    for i in subset:
+        u |= ms[i]
+    return u
 
-def classes(cols, subset):
-    d={}
-    for s in ALL_STATES:
-        d.setdefault(signature(cols,s,subset),[]).append(s)
-    return tuple(sorted(tuple(v) for v in d.values()))
-
-def merged_pairs(part):
-    return sum(len(b)*(len(b)-1)//2 for b in part)
-
-def min_basis_size(cols, target):
-    for r in range(NTEST+1):
-        for sub in combinations(ALL_TESTS,r):
-            if classes(cols,sub)==target:
+def min_basis_size(ms,target):
+    if target==0:
+        return 0
+    for r in range(1,NTEST+1):
+        for sub in SUBSETS_BY_SIZE[r]:
+            if union_mask(ms,sub)==target:
                 return r
     raise AssertionError
 
-def greedy_basis(cols, target):
-    chosen=[]
-    remain=set(ALL_TESTS)
-    while classes(cols,tuple(sorted(chosen))) != target:
-        opts=[]
-        for t in sorted(remain):
-            p=classes(cols,tuple(sorted(chosen+[t])))
-            opts.append((merged_pairs(p),t))
-        _,t=min(opts)
-        chosen.append(t); remain.remove(t)
-    return tuple(chosen)
+def greedy_size(ms,target):
+    remaining=target
+    chosen=set()
+    n=0
+    while remaining:
+        best=None
+        for i,m in enumerate(ms):
+            if i in chosen:
+                continue
+            gain=(m & remaining).bit_count()
+            cand=(-gain,i)
+            if best is None or cand<best[0]:
+                best=(cand,i)
+        i=best[1]
+        chosen.add(i)
+        n+=1
+        remaining &= ~ms[i]
+    return n
 
 def stochastic_boundary():
-    # Representation/channel r1: perfect state revelation.
-    # Rows are P(output | state).
+    # r1: perfect state revelation.
     r1=((F(1),F(0)),(F(0),F(1)))
-    # r2: BSC(1/4), a stochastic garbling of r1.
+    # r2: binary symmetric channel with crossover 1/4.
     r2=((F(3,4),F(1,4)),(F(1,4),F(3,4)))
-    # r3: constant/no-information channel.
+    # r3: no-information channel.
     r3=((F(1,2),F(1,2)),(F(1,2),F(1,2)))
 
     def kernel(ch):
         return "DISCRETE" if ch[0] != ch[1] else "MERGED"
 
-    # Exact forward garbling r1 -> r2 is the BSC itself.
-    G=((F(3,4),F(1,4)),(F(1,4),F(3,4)))
-
-    def row_times_channel(row, M):
+    def row_times_channel(row,M):
         return tuple(sum(row[i]*M[i][j] for i in range(2)) for j in range(2))
 
+    G=((F(3,4),F(1,4)),(F(1,4),F(3,4)))
     forward=tuple(row_times_channel(row,G) for row in r1)
 
-    # Reverse would require H parameters a=P(z0|y0), b=P(z0|y1):
-    # 3a+b=4 and a+3b=0. Exact solution a=3/2,b=-1/2, invalid.
+    # Reverse recovery r2 -> r1 would require:
+    # 3a+b=4 and a+3b=0, hence a=3/2,b=-1/2, not stochastic.
     a=F(3,2); b=F(-1,2)
-    reverse_candidate_valid=(F(0)<=a<=F(1) and F(0)<=b<=F(1))
 
-    # r2 -> r3 by output-forgetting channel.
     Hforget=((F(1,2),F(1,2)),(F(1,2),F(1,2)))
     to_constant=tuple(row_times_channel(row,Hforget) for row in r2)
 
@@ -92,7 +95,7 @@ def stochastic_boundary():
         "r2_kernel":kernel(r2),
         "r3_kernel":kernel(r3),
         "r1_to_r2_exact":forward==r2,
-        "r2_to_r1_stochastic_possible":reverse_candidate_valid,
+        "r2_to_r1_stochastic_possible":F(0)<=a<=F(1) and F(0)<=b<=F(1),
         "reverse_linear_solution":(str(a),str(b)),
         "r2_to_r3_exact":to_constant==r3,
     }
@@ -101,7 +104,8 @@ def run():
     checks=[]; failures=[]
     def chk(name,cond,detail=""):
         checks.append((name,bool(cond),detail))
-        if not cond: failures.append((name,detail))
+        if not cond:
+            failures.append((name,detail))
         print(f"  [{'PASS' if cond else 'FAIL'}] {name}" + (f" — {detail}" if detail else ""))
 
     print("="*104)
@@ -109,41 +113,63 @@ def run():
     print("="*104)
 
     print("\n--- A. EXHAUSTIVE GREEDY PROBE ACQUISITION ---")
-    total=0; failures_greedy=0; max_overhead=0; first=None
+    total=0
+    suboptimal=0
+    max_overhead=0
+    first=None
     dist={}
-    # Four binary probe columns, each a 5-bit vector => 32^4 matrices.
+
     for cols in product(range(1<<NSTATE), repeat=NTEST):
         total+=1
-        target=target_classes(cols)
-        opt=min_basis_size(cols,target)
-        g=greedy_basis(cols,target)
-        overhead=len(g)-opt
-        dist[(opt,len(g))]=dist.get((opt,len(g)),0)+1
-        if overhead>0:
-            failures_greedy+=1
+        ms=tuple(SEP_MASK[c] for c in cols)
+        target=ms[0]|ms[1]|ms[2]|ms[3]
+        opt=min_basis_size(ms,target)
+        g=greedy_size(ms,target)
+        dist[(opt,g)]=dist.get((opt,g),0)+1
+        if g>opt:
+            suboptimal+=1
+            max_overhead=max(max_overhead,g-opt)
             if first is None:
-                first=(cols,target,opt,g)
-            max_overhead=max(max_overhead,overhead)
+                first={
+                    "columns":cols,
+                    "separation_masks":ms,
+                    "target_mask":target,
+                    "optimal_size":opt,
+                    "greedy_size":g,
+                }
 
     chk("A1 enumerated all 1,048,576 binary 5x4 evaluation matrices",total==1048576,total)
-    chk("A2 greedy immediate pair-separation is NOT universally minimum-cardinality",
-        failures_greedy>0,
-        f"greedy_suboptimal={failures_greedy} first={first}")
-    chk("A3 quantified a positive maximum greedy overhead",max_overhead>0,max_overhead)
-    print("probe_size_distribution",sorted(dist.items()))
+    chk("A2 greedy immediate pair-separation is not universally optimal",
+        suboptimal>0,
+        f"suboptimal={suboptimal} ({100*suboptimal/total:.6f}%) first={first}")
+    chk("A3 exact suboptimal count is 29,760",suboptimal==29760,suboptimal)
+    chk("A4 maximum greedy overhead is one probe",max_overhead==1,max_overhead)
+    chk("A5 full optimal-vs-greedy distribution matches exhaustive census",
+        dist=={
+            (0,0):16,
+            (1,1):3600,
+            (2,2):295200,
+            (3,3):672000,
+            (2,3):22080,
+            (4,4):48000,
+            (3,4):7680,
+        },
+        sorted(dist.items()))
 
     print("\n--- B. STOCHASTIC CHANNEL ORDER ---")
     s=stochastic_boundary()
     chk("B1 perfect and noisy channels have the same exact kernel",
         s["r1_kernel"]==s["r2_kernel"]=="DISCRETE",s)
-    chk("B2 noisy channel is an exact stochastic garbling of perfect channel",
+    chk("B2 noisy channel is a stochastic garbling of perfect channel",
         s["r1_to_r2_exact"],s)
     chk("B3 reverse stochastic recovery is impossible",
         not s["r2_to_r1_stochastic_possible"],s["reverse_linear_solution"])
-    chk("B4 noisy channel can be further garbled to no-information channel",
+    chk("B4 noisy channel further garbles to no-information channel",
         s["r2_to_r3_exact"],s)
-    chk("B5 exact kernel equality therefore does not determine stochastic information order",
-        s["r1_kernel"]==s["r2_kernel"] and s["r1_to_r2_exact"] and not s["r2_to_r1_stochastic_possible"])
+    chk("B5 exact kernel equality does not determine stochastic information order",
+        s["r1_kernel"]==s["r2_kernel"]
+        and s["r1_to_r2_exact"]
+        and not s["r2_to_r1_stochastic_possible"])
 
     passed=sum(ok for _,ok,_ in checks); totalc=len(checks)
     print("\n"+"="*104)
