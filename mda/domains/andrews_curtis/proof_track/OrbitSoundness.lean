@@ -110,4 +110,63 @@ theorem inverseConjugateRelator_reachable {n : ℕ} (R : Relators n)
     Relation.ReflTransGen.tail hRS hstep
   simpa [S] using hpath
 
+
+/-- Exchange two distinct relators, leaving every other relator fixed. -/
+def swapRelators {n : ℕ} (R : Relators n) (i j : Fin n) : Relators n :=
+  Function.update (Function.update R i (R j)) j (R i)
+
+/-- Relator exchange is derivable from the three primitive AC moves.
+
+The seven-step Nielsen sequence is
+`(A,B) → (AB,B) → ((AB)⁻¹,B) → ((AB)⁻¹,A⁻¹)
+→ (AB,A⁻¹) → (ABA⁻¹,A⁻¹) → (B,A⁻¹) → (B,A)`.
+-/
+theorem relatorSwap_reachable {n : ℕ} (R : Relators n) (i j : Fin n)
+    (hij : i ≠ j) :
+    Reachable R (swapRelators R i j) := by
+  let S1 := Function.update R i (R i * R j)
+  let S2 := Function.update S1 i ((R i * R j)⁻¹)
+  let S3 := Function.update S2 j (R i)⁻¹
+  let S4 := Function.update S3 i (R i * R j)
+  let S5 := Function.update S4 i (R i * R j * (R i)⁻¹)
+  let S6 := Function.update S5 i (R j)
+  let S7 := Function.update S6 j (R i)
+
+  have h1 : Step R S1 := by
+    simpa [S1] using Step.mulRight R i j hij
+  have h2 : Step S1 S2 := by
+    simpa [S1, S2] using Step.inv S1 i
+  have h3 : Step S2 S3 := by
+    simpa [S1, S2, S3, hij, Ne.symm hij, mul_assoc] using
+      Step.mulRight S2 j i (Ne.symm hij)
+  have h4 : Step S3 S4 := by
+    simpa [S1, S2, S3, S4, hij, Ne.symm hij] using Step.inv S3 i
+  have h5 : Step S4 S5 := by
+    simpa [S1, S2, S3, S4, S5, hij, Ne.symm hij, mul_assoc] using
+      Step.mulRight S4 i j hij
+  have h6 : Step S5 S6 := by
+    simpa [S1, S2, S3, S4, S5, S6, hij, Ne.symm hij, mul_assoc] using
+      Step.conj S5 i (R i)⁻¹
+  have h7 : Step S6 S7 := by
+    simpa [S1, S2, S3, S4, S5, S6, S7, hij, Ne.symm hij] using Step.inv S6 j
+
+  have p1 : Reachable R S1 := step_reachable h1
+  have p2 : Reachable R S2 := Relation.ReflTransGen.tail p1 h2
+  have p3 : Reachable R S3 := Relation.ReflTransGen.tail p2 h3
+  have p4 : Reachable R S4 := Relation.ReflTransGen.tail p3 h4
+  have p5 : Reachable R S5 := Relation.ReflTransGen.tail p4 h5
+  have p6 : Reachable R S6 := Relation.ReflTransGen.tail p5 h6
+  have p7 : Reachable R S7 := Relation.ReflTransGen.tail p6 h7
+
+  have hfinal : S7 = swapRelators R i j := by
+    funext k
+    by_cases hki : k = i
+    · subst k
+      simp [S1, S2, S3, S4, S5, S6, S7, swapRelators, hij, Ne.symm hij]
+    · by_cases hkj : k = j
+      · subst k
+        simp [S1, S2, S3, S4, S5, S6, S7, swapRelators, hij, Ne.symm hij]
+      · simp [S1, S2, S3, S4, S5, S6, S7, swapRelators, hki, hkj]
+  simpa [hfinal] using p7
+
 end AC
