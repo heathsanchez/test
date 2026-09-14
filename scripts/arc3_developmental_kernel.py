@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 """
-ARC-AGI-3 observation-only developmental kernel, v2.
+ARC-AGI-3 developmental kernel v3: change-before-object.
 
-Constitution:
-- begin from public frames + public legal actions only;
-- infer a controllable visual carrier from intervention-linked motion;
-- treat that carrier/position quotient as the active executable state when warranted;
-- keep a fallback perceptual frontier for unresolved cases;
-- plan toward unresolved structural candidates without reading game implementation;
-- retain causal action->displacement laws only after repeated agreement;
-- revoke blocked/failed transitions locally.
+No game source, fixed route, coordinates, palette meanings, or level-number logic.
 
-This is an experiment, not a claimed general ARC-3 solver.
+The first two frozen runs established a specific obstruction:
+  - frames changed consistently under action,
+  - object/component persistence did not survive the representation,
+  - therefore persistent object identity was not warranted.
+
+V3 moves one layer down. It derives a controllable position directly from the
+boundary of pixel change (disappearing/appearing support), learns action ->
+displacement from intervention, compiles that causal geometry, and explores a
+position/action graph. Objecthood is optional and comes later.
 """
 from __future__ import annotations
-
-import argparse
-import hashlib
-import json
-import math
-import random
+import argparse, hashlib, json, random
 from collections import Counter, defaultdict, deque
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -31,353 +26,257 @@ from arcengine import GameState
 
 
 def latest_grid(obs: Any) -> np.ndarray:
-    frames = getattr(obs, "frame", None)
-    if frames is None:
-        raise RuntimeError("observation has no frame")
-    arr = np.asarray(frames[-1] if isinstance(frames, (list, tuple)) else frames)
-    arr = np.squeeze(arr)
-    if arr.ndim != 2:
-        raise RuntimeError(f"expected 2D frame, got {arr.shape}")
-    return arr.astype(np.int16, copy=False)
+    frames=getattr(obs,"frame",None)
+    if frames is None: raise RuntimeError("observation has no frame")
+    a=np.asarray(frames[-1] if isinstance(frames,(list,tuple)) else frames)
+    a=np.squeeze(a)
+    if a.ndim!=2: raise RuntimeError(a.shape)
+    return a.astype(np.int16,copy=False)
 
 
-@dataclass(frozen=True)
-class Comp:
-    key: str
-    area: int
-    cy: float
-    cx: float
-    y0: int
-    x0: int
-    y1: int
-    x1: int
-    dominant: int
-    palette: tuple[int, ...]
+def mode_color(g:np.ndarray)->int:
+    v,c=np.unique(g,return_counts=True)
+    return int(v[np.argmax(c)])
 
 
-def components(grid: np.ndarray, min_area: int = 3) -> list[Comp]:
-    """Generic foreground components: background := modal colour."""
-    h, w = grid.shape
-    vals, counts = np.unique(grid, return_counts=True)
-    bg = int(vals[np.argmax(counts)])
-    fg = grid != bg
-    seen = np.zeros((h, w), dtype=bool)
-    out: list[Comp] = []
+def blobs(mask:np.ndarray,min_n:int=2):
+    h,w=mask.shape; seen=np.zeros_like(mask,dtype=bool); out=[]
     for y in range(h):
         for x in range(w):
-            if seen[y, x] or not fg[y, x]:
-                continue
-            stack=[(y,x)]; seen[y,x]=True; pts=[]
-            while stack:
-                yy,xx=stack.pop(); pts.append((yy,xx))
-                for dy,dx in ((1,0),(-1,0),(0,1),(0,-1)):
+            if seen[y,x] or not mask[y,x]: continue
+            st=[(y,x)]; seen[y,x]=True; pts=[]
+            while st:
+                yy,xx=st.pop(); pts.append((yy,xx))
+                for dy,dx in ((1,0),(-1,0),(0,1),(0,-1),(1,1),(1,-1),(-1,1),(-1,-1)):
                     ny,nx=yy+dy,xx+dx
-                    if 0<=ny<h and 0<=nx<w and not seen[ny,nx] and fg[ny,nx]:
-                        seen[ny,nx]=True; stack.append((ny,nx))
-            if len(pts) < min_area:
-                continue
-            ys=np.array([p[0] for p in pts]); xs=np.array([p[1] for p in pts])
-            y0,y1,x0,x1=int(ys.min()),int(ys.max()),int(xs.min()),int(xs.max())
-            # Skip huge frame-sized structures, but keep normal walls/objects.
-            if (y1-y0+1) > 0.95*h and (x1-x0+1) > 0.95*w:
-                continue
-            patch = np.full((y1-y0+1, x1-x0+1), -99, dtype=np.int16)
-            colors=[]
-            for yy,xx in pts:
-                patch[yy-y0,xx-x0]=grid[yy,xx]
-                colors.append(int(grid[yy,xx]))
-            cvals, ccnts = np.unique(np.array(colors), return_counts=True)
-            dom = int(cvals[np.argmax(ccnts)])
-            pal = tuple(sorted(int(v) for v in cvals))
-            # Translation-invariant exact visual key.
-            key = hashlib.sha1(patch.tobytes()).hexdigest()[:14]
-            out.append(Comp(key,len(pts),float(ys.mean()),float(xs.mean()),y0,x0,y1,x1,dom,pal))
+                    if 0<=ny<h and 0<=nx<w and mask[ny,nx] and not seen[ny,nx]:
+                        seen[ny,nx]=True; st.append((ny,nx))
+            if len(pts)>=min_n:
+                ys=np.array([p[0] for p in pts]); xs=np.array([p[1] for p in pts])
+                out.append({"n":len(pts),"cy":float(ys.mean()),"cx":float(xs.mean()),
+                            "y0":int(ys.min()),"x0":int(xs.min()),"y1":int(ys.max()),"x1":int(xs.max())})
     return out
 
 
-def match_motion(prev: list[Comp], nxt: list[Comp]) -> list[tuple[Comp,Comp,tuple[int,int]]]:
-    """Match same visual component by nearest position and return nonzero displacements."""
-    by0=defaultdict(list); by1=defaultdict(list)
-    for c in prev: by0[c.key].append(c)
-    for c in nxt: by1[c.key].append(c)
-    moved=[]
-    for k in set(by0) & set(by1):
-        a=by0[k][:]; b=by1[k][:]
-        used=set()
-        for c0 in a:
-            choices=[(abs(c1.cy-c0.cy)+abs(c1.cx-c0.cx),j,c1)
-                     for j,c1 in enumerate(b) if j not in used]
-            if not choices: continue
-            _,j,c1=min(choices)
-            used.add(j)
-            dy=int(round(c1.cy-c0.cy)); dx=int(round(c1.cx-c0.cx))
-            if dy or dx:
-                moved.append((c0,c1,(dy,dx)))
-    return moved
+def boundary_motion(prev:np.ndarray,nxt:np.ndarray):
+    """Candidate old->new carrier motion from changed support, without object identity."""
+    bp,bn=mode_color(prev),mode_color(nxt)
+    d=prev!=nxt
+    # support that disappears into modal field / appears out of modal field
+    old=blobs(d & (prev!=bp) & (nxt==bn),2)
+    new=blobs(d & (prev==bp) & (nxt!=bn),2)
+    cand=[]
+    for o in old:
+        for n in new:
+            ratio=max(o["n"],n["n"])/max(1,min(o["n"],n["n"]))
+            if ratio>2.5: continue
+            dy=int(round(n["cy"]-o["cy"])); dx=int(round(n["cx"]-o["cx"]))
+            dist=abs(dy)+abs(dx)
+            if dist==0 or dist>24: continue
+            # Similar support size is stronger; shorter plausible displacement wins ties.
+            score=(abs(o["n"]-n["n"]),ratio,dist)
+            cand.append((score,(dy,dx),(int(round(o["cy"])),int(round(o["cx"]))),
+                         (int(round(n["cy"])),int(round(n["cx"]))),o["n"],n["n"]))
+    cand.sort(key=lambda z:z[0])
+    return cand
 
 
-def coarse_frame_sig(grid: np.ndarray) -> str:
-    # Deliberately coarse fallback: 8x8 block histograms quantized to suppress tiny HUD changes.
-    vals=np.clip(grid,0,15)
+def structural_sig(g:np.ndarray, ignore_center:tuple[int,int]|None=None)->str:
+    """Coarse scene signature; suppress a small carrier neighborhood if known."""
+    a=g.copy()
+    if ignore_center:
+        y,x=ignore_center
+        y0,y1=max(0,y-5),min(a.shape[0],y+6); x0,x1=max(0,x-5),min(a.shape[1],x+6)
+        a[y0:y1,x0:x1]=mode_color(a)
+    # 8x8 palette counts: enough to notice structural events, intentionally not full pixels.
     feat=[]
-    for y in range(0,grid.shape[0],8):
-        for x in range(0,grid.shape[1],8):
-            b=vals[y:y+8,x:x+8].ravel()
-            feat.extend((np.bincount(b,minlength=16)//4).tolist())
+    q=np.clip(a,0,15)
+    for y in range(0,a.shape[0],8):
+        for x in range(0,a.shape[1],8):
+            feat.extend((np.bincount(q[y:y+8,x:x+8].ravel(),minlength=16)//4).tolist())
     return hashlib.sha1(np.asarray(feat,dtype=np.int16).tobytes()).hexdigest()[:16]
 
 
-class Kernel:
-    def __init__(self, seed:int=0):
+class Agent:
+    def __init__(self,seed=0):
         self.rng=random.Random(seed)
-        self.events=[]
-        self.records=[]
-        self.motion_evidence=defaultdict(lambda: defaultdict(Counter))  # compkey -> action -> vector counts
-        self.control_key: str|None=None
-        self.action_vectors: dict[str,tuple[int,int]]={}
-        self.current_pos: tuple[int,int]|None=None
-        self.prev_pos: tuple[int,int]|None=None
-        self.pos_action_outcomes=defaultdict(Counter)  # (pos,action)->nextpos counts
-        self.blocked=set()
-        self.tried_actions=defaultdict(set)
-        self.visited_pos=Counter()
-        self.target_fail=set()
-        self.current_target: tuple[int,int]|None=None
-        self.current_level=0
-        self.max_level=0
-        self.phase="DISCOVER_CONTROL"
+        self.events=[]; self.records=[]
         self.action_counts=Counter()
-        self.gameovers=0
-        self.prev_components: list[Comp]|None=None
+        self.motion=defaultdict(Counter)              # action -> vector counts
+        self.vectors={}                               # compiled best vector per action
+        self.pos=None
+        self.graph=defaultdict(Counter)               # (scene,pos,action) -> (scene2,pos2) counts
+        self.tried=defaultdict(set)                   # (scene,pos) -> actions
+        self.blocked=set()
+        self.visits=Counter()
+        self.scene=None
+        self.level=0; self.max_level=0; self.gameovers=0
+        self.phase="CHANGE_BOUNDARY_GENESIS"
+        self.last_boundary=None
 
-    def event(self,kind:str,**kw):
-        e={"t":len(self.records),"kind":kind,**kw}
-        self.events.append(e)
+    def event(self,kind,**kw):
+        e={"t":len(self.records),"kind":kind,**kw}; self.events.append(e)
         print("EVENT",json.dumps(e,sort_keys=True),flush=True)
 
-    def infer_control(self):
-        best=None
-        for key, amap in self.motion_evidence.items():
-            action_support=0; consistent=0; vectors=set()
-            for an,cnt in amap.items():
-                if not cnt: continue
-                vec,n=cnt.most_common(1)[0]
-                if n>=1:
-                    action_support+=1; consistent+=n; vectors.add(vec)
-            # Prefer components that move under several actions with action-specific vectors.
-            score=(len(vectors)>=2, action_support, consistent)
-            if best is None or score>best[0]:
-                best=(score,key)
-        if best and best[0][0] and best[0][1]>=2:
-            key=best[1]
-            if key!=self.control_key:
-                self.control_key=key
-                self.phase="CONTROL_MODEL"
-                self.event("CONTROLLED_CARRIER_BIRTH",carrier=key,score=best[0])
-            amap=self.motion_evidence[key]
-            vecs={}
-            for an,cnt in amap.items():
-                if cnt:
-                    vec,n=cnt.most_common(1)[0]
-                    if n>=1:
-                        vecs[an]=vec
-            old=dict(self.action_vectors)
-            self.action_vectors=vecs
-            if old!=vecs:
-                self.event("ACTION_GEOMETRY_UPDATE",vectors={k:list(v) for k,v in vecs.items()})
+    def compile_vectors(self):
+        old=dict(self.vectors)
+        for an,c in self.motion.items():
+            if not c: continue
+            v,n=c.most_common(1)[0]
+            total=sum(c.values())
+            # One exact intervention is provisional; repeated agreement compiles.
+            if n>=2 or (n==1 and total==1):
+                self.vectors[an]=v
+        if self.vectors!=old:
+            self.phase="COMPILED_CAUSAL_GEOMETRY"
+            self.event("ACTION_GEOMETRY_COMPILED",
+                       vectors={k:list(v) for k,v in self.vectors.items()},
+                       evidence={k:{str(list(v)):n for v,n in c.items()} for k,c in self.motion.items()})
 
-    def locate_control(self, comps:list[Comp]) -> tuple[int,int]|None:
-        if self.control_key:
-            cs=[c for c in comps if c.key==self.control_key]
-            if cs:
-                if self.current_pos is None:
-                    c=cs[0]
-                else:
-                    c=min(cs,key=lambda z:abs(z.cy-self.current_pos[0])+abs(z.cx-self.current_pos[1]))
-                return (int(round(c.cy)),int(round(c.cx)))
-        return None
+    def reset_episode(self,grid,keep_compiled=True):
+        self.pos=None
+        self.scene=structural_sig(grid,None)
+        self.graph.clear(); self.tried.clear(); self.blocked.clear(); self.visits.clear()
+        self.last_boundary=None
+        if not keep_compiled:
+            self.motion.clear(); self.vectors.clear(); self.phase="CHANGE_BOUNDARY_GENESIS"
 
-    def update_after(self, prev_grid, grid, action_name, obs):
-        prev_comps=self.prev_components if self.prev_components is not None else components(prev_grid)
-        comps=components(grid)
-        moved=match_motion(prev_comps,comps)
-        for c0,c1,vec in moved:
-            # Ignore implausibly huge jumps for control induction; those are more likely HUD/scene changes.
-            if abs(vec[0])+abs(vec[1]) <= 24:
-                self.motion_evidence[c0.key][action_name][vec]+=1
-        self.infer_control()
+    def update(self,prev,grid,action,obs):
+        cands=boundary_motion(prev,grid)
+        chosen=cands[0] if cands else None
+        oldpos=self.pos
 
-        before=self.current_pos
-        now=self.locate_control(comps)
-
-        # If the exact carrier key changed, use an already-warranted action vector to reacquire
-        # the nearest plausible component near the expected destination. This is exaptation, not
-        # a claim of persistent object identity.
-        if now is None and before is not None and action_name in self.action_vectors:
-            dy,dx=self.action_vectors[action_name]
-            ey,ex=before[0]+dy,before[1]+dx
-            cands=[c for c in comps if 2<=c.area<=200]
-            if cands:
-                c=min(cands,key=lambda z:abs(z.cy-ey)+abs(z.cx-ex))
-                if abs(c.cy-ey)+abs(c.cx-ex)<=6:
-                    old=self.control_key
-                    self.control_key=c.key
-                    now=(int(round(c.cy)),int(round(c.cx)))
-                    self.event("CARRIER_REQUALIFY",old=old,new=c.key,expected=[ey,ex],observed=list(now))
-
-        self.prev_pos=before
-        self.current_pos=now
-        if now is not None:
-            self.visited_pos[now]+=1
-        if before is not None and now is not None:
-            self.pos_action_outcomes[(before,action_name)][now]+=1
-            self.tried_actions[before].add(action_name)
-            if now==before:
-                self.blocked.add((before,action_name))
+        if chosen:
+            _,vec,p0,p1,n0,n1=chosen
+            # If we have a compiled vector for this action, prefer a candidate agreeing with it.
+            if action in self.vectors:
+                matches=[c for c in cands if c[1]==self.vectors[action]]
+                if matches: chosen=matches[0]; _,vec,p0,p1,n0,n1=chosen
+            self.last_boundary={"vector":list(vec),"old":list(p0),"new":list(p1),"support":[n0,n1]}
+            self.motion[action][vec]+=1
+            self.compile_vectors()
+            # Boundary itself supplies the first provisional carrier position.
+            if self.pos is None:
+                self.pos=p1
+                self.event("POSITION_GENESIS_FROM_CHANGE",action=action,old=list(p0),new=list(p1),vector=list(vec))
             else:
-                # Observed displacement gets authority even if visual key changed.
-                vec=(now[0]-before[0],now[1]-before[1])
-                self.motion_evidence[self.control_key][action_name][vec]+=1
-                self.infer_control()
+                # Prefer observed boundary destination when it agrees with our current position or compiled law.
+                if abs(p0[0]-self.pos[0])+abs(p0[1]-self.pos[1])<=8 or self.vectors.get(action)==vec:
+                    self.pos=p1
+        else:
+            self.last_boundary=None
+            # No boundary motion: under a compiled vector, this is a blocked or non-motion intervention.
+            if self.pos is not None and action in self.vectors:
+                self.blocked.add((self.scene,self.pos,action))
 
+        newscene=structural_sig(grid,self.pos)
+        if oldpos is not None and self.pos is not None:
+            k=(self.scene,oldpos)
+            self.tried[k].add(action)
+            self.graph[(self.scene,oldpos,action)][(newscene,self.pos)]+=1
+            self.visits[(newscene,self.pos)]+=1
+            # If coarse world structure changed beyond ordinary carrier motion, preserve it as state.
+            if newscene!=self.scene:
+                self.event("STRUCTURAL_STATE_SPLIT",old_scene=self.scene,new_scene=newscene,
+                           at=list(self.pos),action=action)
+
+        self.scene=newscene
         lvl=int(getattr(obs,"levels_completed",0))
         if lvl>self.max_level:
-            self.event("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action_name)
+            self.event("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action)
             self.max_level=lvl
-        if lvl!=self.current_level:
-            self.event("LEVEL_BOUNDARY",old=self.current_level,new=lvl)
-            self.current_level=lvl
-            self.reset_level_model(keep_motion=True)
+        if lvl!=self.level:
+            self.event("LEVEL_BOUNDARY",old=self.level,new=lvl)
+            self.level=lvl
+            # Compile action geometry across levels; discard local position graph.
+            self.graph.clear(); self.tried.clear(); self.blocked.clear(); self.visits.clear()
+            self.pos=None; self.scene=structural_sig(grid,None)
 
-        self.prev_components=comps
-        rec={
-            "i":len(self.records),"action":action_name,
-            "pixel_delta":int(np.count_nonzero(grid!=prev_grid)),
-            "moved_components":[{"key":a.key,"vec":list(v),"area":a.area} for a,b,v in moved[:20]],
-            "control_key":self.control_key,
-            "control_pos":list(self.current_pos) if self.current_pos else None,
-            "vectors":{k:list(v) for k,v in self.action_vectors.items()},
-            "level":lvl,
-            "state":getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None))),
-            "phase":self.phase,
-        }
-        self.records.append(rec)
+        self.records.append({
+            "i":len(self.records),"action":action,
+            "pixel_delta":int(np.count_nonzero(prev!=grid)),
+            "boundary_candidates":[{"vec":list(c[1]),"old":list(c[2]),"new":list(c[3]),"support":[c[4],c[5]]}
+                                   for c in cands[:8]],
+            "chosen_boundary":self.last_boundary,
+            "pos":list(self.pos) if self.pos else None,
+            "scene":self.scene,
+            "vectors":{k:list(v) for k,v in self.vectors.items()},
+            "phase":self.phase,"level":lvl,
+            "state":getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None)))
+        })
 
-    def reset_level_model(self,keep_motion=True):
-        self.current_pos=None; self.prev_pos=None
-        self.pos_action_outcomes.clear(); self.blocked.clear(); self.tried_actions.clear()
-        self.visited_pos.clear(); self.target_fail.clear(); self.current_target=None
-        self.prev_components=None
-        if not keep_motion:
-            self.motion_evidence.clear(); self.control_key=None; self.action_vectors.clear(); self.phase="DISCOVER_CONTROL"
+    def choose(self,actions):
+        # Before position exists, balanced interventions seek a separating change boundary.
+        if self.pos is None:
+            # Prefer already compiled movement action after reset, otherwise balance.
+            known=[a for a in actions if a.name in self.vectors]
+            if known:
+                a=min(known,key=lambda z:(self.action_counts[z.name],z.name))
+                return a,{"mode":"REACQUIRE_POSITION","reason":"reuse compiled action geometry to recover change-defined position"}
+            a=min(actions,key=lambda z:(self.action_counts[z.name],z.name))
+            return a,{"mode":"BOUNDARY_PROBE","reason":"balanced intervention; object identity not assumed"}
 
-    def candidate_targets(self, comps:list[Comp]) -> list[tuple[float,tuple[int,int],str,int]]:
-        if self.current_pos is None: return []
-        out=[]
-        for c in comps:
-            if c.key==self.control_key: continue
-            if not (3<=c.area<=400): continue
-            # Exclude long wall-like components.
-            hh=c.y1-c.y0+1; ww=c.x1-c.x0+1
-            if max(hh,ww)>36 and min(hh,ww)<=3: continue
-            p=(int(round(c.cy)),int(round(c.cx)))
-            if p in self.target_fail: continue
-            d=abs(p[0]-self.current_pos[0])+abs(p[1]-self.current_pos[1])
-            # Small distinct components get preference, but geometry remains generic.
-            score=d + 0.03*c.area
-            out.append((score,p,c.key,c.area))
-        return sorted(out)
-
-    def choose(self, actions:list[Any], grid:np.ndarray):
+        node=(self.scene,self.pos)
         names=[a.name for a in actions]
-        comps=components(grid)
-        # Before a causal carrier exists: balanced interventions.
-        if self.control_key is None or self.current_pos is None:
-            a=min(actions,key=lambda x:(self.action_counts[x.name],x.name))
-            return a,{"mode":"DISCOVER_CONTROL","reason":"balanced intervention to identify action-linked visual carrier"}
+        # Test untried interventions at a newly warranted state.
+        unseen=[a for a in actions if a.name not in self.tried[node]]
+        if unseen:
+            # Prefer actions whose geometry is unknown first, then least used.
+            a=min(unseen,key=lambda z:(z.name in self.vectors,self.action_counts[z.name],z.name))
+            return a,{"mode":"CAUSAL_PROBE","state":[self.scene,list(self.pos)],
+                      "reason":"untried intervention at consequence-derived state"}
 
-        pos=self.current_pos
+        # Search known graph for nearest state with unresolved intervention.
+        adj=defaultdict(list)
+        for (sc,p,an),outs in self.graph.items():
+            if len(outs)==1:
+                (sc2,p2),n=next(iter(outs.items()))
+                adj[(sc,p)].append((an,(sc2,p2)))
+        q=deque([(node,[])]); seen={node}
+        while q:
+            n,path=q.popleft()
+            if n!=node and len(self.tried[n])<len(actions) and path:
+                first=path[0]
+                for a in actions:
+                    if a.name==first:
+                        return a,{"mode":"ROUTE_TO_FRONTIER","target":[n[0],list(n[1])],
+                                  "reason":"shortest learned route to unresolved intervention"}
+            for an,n2 in adj.get(n,[]):
+                if n2 not in seen:
+                    seen.add(n2); q.append((n2,path+[an]))
 
-        # Ensure every action is tested at least once from the current carrier position when affordable.
-        unseen=[a for a in actions if a.name not in self.tried_actions[pos]]
-        if unseen and sum(self.action_counts.values())<24:
-            a=min(unseen,key=lambda x:(self.action_counts[x.name],x.name))
-            return a,{"mode":"LOCAL_CAUSAL_PROBE","reason":"untried intervention at current derived carrier state"}
-
-        # Choose/refresh a structural candidate target.
-        targets=self.candidate_targets(comps)
-        if self.current_target is None and targets:
-            self.current_target=targets[0][1]
-            self.event("TARGET_HYPOTHESIS",target=list(self.current_target),source="generic visual component")
-        if self.current_target is not None:
-            if abs(self.current_target[0]-pos[0])+abs(self.current_target[1]-pos[1])<=2:
-                self.target_fail.add(self.current_target)
-                self.event("TARGET_REACHED_WITHOUT_PROGRESS",target=list(self.current_target))
-                self.current_target=None
-                targets=self.candidate_targets(comps)
-                if targets:
-                    self.current_target=targets[0][1]
-                    self.event("TARGET_HYPOTHESIS",target=list(self.current_target),source="next unresolved component")
-
-        # Goal-directed movement using only action vectors learned by intervention.
-        movement=[]
-        if self.current_target is not None:
-            ty,tx=self.current_target
-            d0=abs(ty-pos[0])+abs(tx-pos[1])
-            for a in actions:
-                vec=self.action_vectors.get(a.name)
-                if vec is None or (pos,a.name) in self.blocked: continue
-                np0=(pos[0]+vec[0],pos[1]+vec[1])
-                d1=abs(ty-np0[0])+abs(tx-np0[1])
-                movement.append((d1-d0,self.visited_pos[np0],self.action_counts[a.name],a,np0))
-            if movement:
-                movement.sort(key=lambda z:(z[0],z[1],z[2],z[3].name))
-                gain,_,_,a,np0=movement[0]
-                if gain<0:
-                    return a,{"mode":"PLAN_TO_HYPOTHESIS","target":list(self.current_target),
-                              "predicted_next":list(np0),"reason":"learned action vector reduces distance to unresolved structure"}
-
-        # Frontier exploration in derived position space.
+        # Expand position frontier using compiled vectors, preferring unseen predicted positions.
         opts=[]
         for a in actions:
-            vec=self.action_vectors.get(a.name)
-            if vec is None: continue
-            if (pos,a.name) in self.blocked: continue
-            np0=(pos[0]+vec[0],pos[1]+vec[1])
-            opts.append((self.visited_pos[np0], self.action_counts[a.name], a, np0))
+            v=self.vectors.get(a.name)
+            if v is None or (self.scene,self.pos,a.name) in self.blocked: continue
+            p2=(self.pos[0]+v[0],self.pos[1]+v[1])
+            opts.append((self.visits[(self.scene,p2)],self.action_counts[a.name],a,p2))
         if opts:
-            _,_,a,np0=min(opts,key=lambda z:(z[0],z[1],z[2].name))
-            return a,{"mode":"POSITION_FRONTIER","predicted_next":list(np0),
-                      "reason":"least-visited consequence-derived carrier position"}
+            _,_,a,p2=min(opts,key=lambda z:(z[0],z[1],z[2].name))
+            return a,{"mode":"POSITION_FRONTIER","predicted_next":list(p2),
+                      "reason":"least-visited position under compiled causal geometry"}
 
-        # If movement model cannot make progress, probe the least-used action and keep UNKNOWN explicit.
-        a=min(actions,key=lambda x:(self.action_counts[x.name],x.name))
-        return a,{"mode":"UNKNOWN_SEARCH","reason":"no currently warranted progress edge"}
+        a=min(actions,key=lambda z:(self.action_counts[z.name],z.name))
+        return a,{"mode":"UNKNOWN_SEARCH","reason":"current causal graph has no warranted progress route"}
 
-    def summary(self):
-        return {
-            "actions":len(self.records),"max_levels_completed":self.max_level,
-            "control_key":self.control_key,"action_vectors":{k:list(v) for k,v in self.action_vectors.items()},
-            "phase":self.phase,"gameovers":self.gameovers,"action_counts":dict(self.action_counts),
-            "events":self.events,"records":self.records,
-        }
+    def result(self):
+        return {"actions":len(self.records),"max_levels_completed":self.max_level,
+                "vectors":{k:list(v) for k,v in self.vectors.items()},
+                "motion_evidence":{k:{str(list(v)):n for v,n in c.items()} for k,c in self.motion.items()},
+                "phase":self.phase,"gameovers":self.gameovers,"action_counts":dict(self.action_counts),
+                "events":self.events,"records":self.records}
 
 
-def action_data(action,grid,rng):
-    if not action.is_complex(): return {}
-    comps=components(grid)
-    if comps:
-        c=min(comps,key=lambda z:z.area)
-        return {"x":int(round(c.cx)),"y":int(round(c.cy))}
+def action_data(a,grid,rng):
+    if not a.is_complex(): return {}
     return {"x":grid.shape[1]//2,"y":grid.shape[0]//2}
 
 
 def main():
     ap=argparse.ArgumentParser()
-    ap.add_argument("--game",default="ls20")
-    ap.add_argument("--max-actions",type=int,default=400)
-    ap.add_argument("--seed",type=int,default=0)
-    ap.add_argument("--out",default="arc3_developmental_result.json")
+    ap.add_argument("--game",default="ls20"); ap.add_argument("--max-actions",type=int,default=400)
+    ap.add_argument("--seed",type=int,default=0); ap.add_argument("--out",default="arc3_developmental_result.json")
     args=ap.parse_args()
 
     arc=arc_agi.Arcade()
@@ -386,10 +285,8 @@ def main():
     obs=env.reset()
     if obs is None: raise SystemExit("reset returned None")
     grid=latest_grid(obs)
-    K=Kernel(args.seed)
-    K.current_level=int(getattr(obs,"levels_completed",0))
-    K.max_level=K.current_level
-    K.prev_components=components(grid)
+    A=Agent(args.seed); A.level=int(getattr(obs,"levels_completed",0)); A.max_level=A.level
+    A.reset_episode(grid,keep_compiled=True)
 
     print("START",args.game,"actions",[a.name for a in env.action_space],
           "levels",getattr(obs,"levels_completed",None),"win_levels",getattr(obs,"win_levels",None),flush=True)
@@ -397,47 +294,38 @@ def main():
     for i in range(args.max_actions):
         acts=list(env.action_space)
         if not acts: break
-        a,reason=K.choose(acts,grid)
-        K.action_counts[a.name]+=1
-        data=action_data(a,grid,K.rng)
+        a,reason=A.choose(acts); A.action_counts[a.name]+=1
         prev=grid
-        obs=env.step(a,data=data,reasoning=reason)
+        obs=env.step(a,data=action_data(a,grid,A.rng),reasoning=reason)
         if obs is None:
-            K.event("NULL_OBSERVATION",action=a.name); continue
-        grid=latest_grid(obs)
-        K.update_after(prev,grid,a.name,obs)
-        print("STEP",i+1,a.name,reason["mode"],"delta",K.records[-1]["pixel_delta"],
-              "control",K.current_pos,"vectors",K.action_vectors,
-              "level",getattr(obs,"levels_completed",None),
+            A.event("NULL_OBSERVATION",action=a.name); continue
+        grid=latest_grid(obs); A.update(prev,grid,a.name,obs)
+        r=A.records[-1]
+        print("STEP",i+1,a.name,reason["mode"],"delta",r["pixel_delta"],
+              "pos",A.pos,"vectors",A.vectors,"level",getattr(obs,"levels_completed",None),
               "state",getattr(getattr(obs,"state",None),"name",None),flush=True)
-
         if obs.state==GameState.WIN:
-            K.event("WIN",step=i+1); break
+            A.event("WIN",step=i+1); break
         if obs.state==GameState.GAME_OVER:
-            K.gameovers+=1
-            K.event("GAME_OVER",step=i+1,count=K.gameovers)
-            if K.gameovers>=4: break
+            A.gameovers+=1; A.event("GAME_OVER",step=i+1,count=A.gameovers)
+            if A.gameovers>=4: break
             obs=env.reset()
             if obs is None: break
             grid=latest_grid(obs)
-            K.reset_level_model(keep_motion=False)
-            K.prev_components=components(grid)
+            # Retention test: causal geometry survives; local trajectory does not.
+            A.reset_episode(grid,keep_compiled=True)
 
-    result=K.summary()
+    result=A.result()
     result.update({"game":args.game,"seed":args.seed,
                    "final_levels_completed":int(getattr(obs,"levels_completed",0)) if obs else None,
                    "final_state":getattr(getattr(obs,"state",None),"name",None) if obs else None,
                    "win_levels":int(getattr(obs,"win_levels",0)) if obs else None})
     try:
         sc=arc.close_scorecard()
-        if sc is not None:
-            result["scorecard"]=sc.model_dump(mode="json") if hasattr(sc,"model_dump") else str(sc)
-    except Exception as e:
-        result["scorecard_error"]=repr(e)
+        if sc is not None: result["scorecard"]=sc.model_dump(mode="json") if hasattr(sc,"model_dump") else str(sc)
+    except Exception as e: result["scorecard_error"]=repr(e)
     Path(args.out).write_text(json.dumps(result,indent=2,default=str))
-    print("RESULT",json.dumps({k:v for k,v in result.items() if k not in ("records","events","scorecard")},sort_keys=True),flush=True)
+    print("RESULT",json.dumps({k:v for k,v in result.items() if k not in ("records","events","scorecard","motion_evidence")},sort_keys=True),flush=True)
     print("OUTPUT",args.out,flush=True)
 
-
-if __name__=="__main__":
-    main()
+if __name__=="__main__": main()
