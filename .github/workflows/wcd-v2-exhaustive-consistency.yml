@@ -1,0 +1,39 @@
+name: WCD V2 Exhaustive Consistency
+
+on:
+  push:
+    paths:
+      - "experiments/warranted_consequential_difference_v2/FROZEN_CANDIDATE.md"
+      - "scripts/wcd_v2_consistency_falsification.py"
+      - ".github/workflows/wcd-v2-exhaustive-consistency.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove frozen V2 unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 46ab2f010255211f368c421e70011d9b3bf4a18d --             experiments/warranted_consequential_difference_v2/FROZEN_CANDIDATE.md
+          echo "WCD_V2_FROZEN_UNCHANGED"
+      - name: Run exhaustive V2 suite
+        run: |
+          set -o pipefail
+          python scripts/wcd_v2_consistency_falsification.py | tee wcd-v2.log
+          grep -F "SURVIVED_WCD_V2_EXHAUSTIVE_SUITE" wcd-v2.log
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wcd-v2-exhaustive-consistency
+          path: wcd-v2.log
