@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run self-ledger kernel on Level3
+      - name: Run self-ledger kernel on Level4
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v11_self_ledger.py | tee arc3_v11_self_ledger.log
+          python experiments/arc3_tonight/developmental_ls20_v13_level4_self_ledger.py | tee arc3_v13_level4_self_ledger.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v11-self-ledger
+          name: arc3-v13-level4-self-ledger
           path: |
-            arc3_v11_self_ledger.log
-            arc3_developmental_v11_self_ledger_result.json
+            arc3_v13_level4_self_ledger.log
+            arc3_developmental_v13_level4_self_ledger_result.json
