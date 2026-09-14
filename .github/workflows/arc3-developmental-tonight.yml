@@ -4,31 +4,23 @@ on:
     branches: [arc3-developmental-tonight]
   workflow_dispatch:
 jobs:
-  goal-kernel:
-    strategy:
-      fail-fast: false
-      matrix:
-        first_action: [1, 2, 3, 4]
+  finite-goal-kernel:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Install ARC SDK
-        run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Test environmental vs GOAL consequence
+      - name: Verify finite GOAL-evaluation kernel
         shell: bash
-        env:
-          ARC_SHARD_ACTION: ${{ matrix.first_action }}
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v31b_goal_kernel_collision_probe.py | tee arc3_v31b_goal_kernel_${ARC_SHARD_ACTION}.log
+          python experiments/arc3_tonight/minimal_goal_evaluation_kernel.py | tee minimal_goal_evaluation_kernel.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v31b-goal-kernel-${{ matrix.first_action }}
+          name: minimal-goal-evaluation-kernel
           path: |
-            arc3_v31b_goal_kernel_*.log
-            arc3_v31b_goal_kernel_collision_probe_*.json
+            minimal_goal_evaluation_kernel.log
+            minimal_goal_evaluation_kernel_result.json
