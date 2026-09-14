@@ -1,4 +1,5 @@
-import OrbitSoundness
+import ReachabilityEquivalence
+import Mathlib.Tactic
 
 /-!
 # The AC funnel law
@@ -24,6 +25,50 @@ This is the compressed theorem behind the mined funnel.
 
 namespace AC
 
+/-- Derived left multiplication of relator i by a distinct relator j. -/
+theorem funnelCore_leftMul_reachable {n : ℕ} (R : Relators n)
+    (i j : Fin n) (hij : i ≠ j) :
+    Reachable R (Function.update R i (R j * R i)) := by
+  let S := Function.update R i (R i * R j)
+  have h1 : Step R S := by
+    simpa [S] using Step.mulRight R i j hij
+  have h2 : Step S (Function.update R i (R j * R i)) := by
+    simpa [S, hij, Ne.symm hij, mul_assoc] using Step.conj S i (R j)
+  exact Relation.ReflTransGen.tail (step_reachable' h1) h2
+
+/-- Derived left multiplication by the inverse of a distinct relator. -/
+theorem funnelCore_leftMulInv_reachable {n : ℕ} (R : Relators n)
+    (i j : Fin n) (hij : i ≠ j) :
+    Reachable R (Function.update R i ((R j)⁻¹ * R i)) := by
+  let S1 := Function.update R j (R j)⁻¹
+  have h1 : Reachable R S1 :=
+    step_reachable' (by simpa [S1] using Step.inv R j)
+
+  have h2raw :=
+    funnelCore_leftMul_reachable S1 i j hij
+  let S2 := Function.update S1 i ((R j)⁻¹ * R i)
+  have h2 : Reachable S1 S2 := by
+    simpa [S1, S2, hij, Ne.symm hij] using h2raw
+
+  let S3 := Function.update S2 j (R j)
+  have hs3 : Step S2 S3 := by
+    simpa [S1, S2, S3, hij, Ne.symm hij] using Step.inv S2 j
+  have h3 : Reachable R S3 :=
+    Relation.ReflTransGen.tail (h1.trans h2) hs3
+
+  have hfinal : S3 = Function.update R i ((R j)⁻¹ * R i) := by
+    funext q
+    by_cases hqi : q = i
+    · subst q
+      simp [S1, S2, S3, hij, Ne.symm hij]
+    · by_cases hqj : q = j
+      · subst q
+        simp [S1, S2, S3, hij, Ne.symm hij]
+      · simp [S1, S2, S3, hqi, hqj]
+  rw [hfinal] at h3
+  exact h3
+
+
 /-- Generic funnel contraction.
 
 If left-multiplying relator i by relator j exposes a conjugate of relator j
@@ -36,7 +81,7 @@ theorem funnel_contract {n : ℕ} (R : Relators n)
   let C : Word n := w * R j * w⁻¹
   let S1 : Relators n := Function.update R i (C * y)
 
-  have h1raw := funnel_leftMul_reachable R i j hij
+  have h1raw := funnelCore_leftMul_reachable R i j hij
   have h1 : Reachable R S1 := by
     simpa [S1, C, h] using h1raw
 
@@ -46,7 +91,7 @@ theorem funnel_contract {n : ℕ} (R : Relators n)
   have h2 : Reachable R S2 :=
     Relation.ReflTransGen.tail h1 hs2
 
-  have h3raw := funnel_leftMulInv_reachable S2 i j hij
+  have h3raw := funnelCore_leftMulInv_reachable S2 i j hij
   have hcollapse : (S2 j)⁻¹ * S2 i = y := by
     simp [S1, S2, C, hij, Ne.symm hij]
   rw [hcollapse] at h3raw
