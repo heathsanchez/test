@@ -120,6 +120,6 @@ jobs:
             mda/evidence/andrews_curtis/bootstrap/
           retention-days: 90
 
-# This workflow intentionally does not invent or publish a new solver.
+# Parser/harness fixes are rerun under a new exact integration SHA.\n# This workflow intentionally does not invent or publish a new solver.
 # It establishes V0, Q_t, P_t, the lawful frontier, solvent/genesis endpoints,
 # and the next discriminating question before any further development.
