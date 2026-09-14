@@ -94,6 +94,7 @@ theorem funnel_contract {n : ℕ} (R : Relators n)
   have h3raw := funnelCore_leftMulInv_reachable S2 i j hij
   have hcollapse : (S2 j)⁻¹ * S2 i = y := by
     simp [S1, S2, C, hij, Ne.symm hij]
+    group
   rw [hcollapse] at h3raw
   let S3 : Relators n := Function.update S2 i y
   have h3local : Reachable S2 S3 := by
@@ -101,11 +102,17 @@ theorem funnel_contract {n : ℕ} (R : Relators n)
   have h3 : Reachable R S3 := h2.trans h3local
 
   let S4 : Relators n := Function.update S3 j (R j)
+  have hS3j : S3 j = C := by
+    simp [S1, S2, S3, C, hij, Ne.symm hij]
+  have hback : w⁻¹ * S3 j * (w⁻¹)⁻¹ = R j := by
+    rw [hS3j]
+    simp [C, mul_assoc]
+  have hs4raw :
+      Step S3 (Function.update S3 j (w⁻¹ * S3 j * (w⁻¹)⁻¹)) :=
+    Step.conj S3 j w⁻¹
+  rw [hback] at hs4raw
   have hs4 : Step S3 S4 := by
-    have hback : w⁻¹ * C * (w⁻¹)⁻¹ = R j := by
-      simp [C, mul_assoc]
-    simpa [S1, S2, S3, S4, C, hij, Ne.symm hij, hback] using
-      Step.conj S3 j w⁻¹
+    simpa [S4] using hs4raw
   have h4 : Reachable R S4 :=
     Relation.ReflTransGen.tail h3 hs4
 
