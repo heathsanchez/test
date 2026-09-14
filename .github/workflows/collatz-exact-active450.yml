@@ -1,0 +1,81 @@
+name: Exact Collatz Active 450
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/collatz-exact-active450.yml"
+
+jobs:
+  validate:
+    name: validate-even20
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install exact SAT solver
+        run: python -m pip install --disable-pip-version-check python-sat
+      - name: Replay protected control
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_cnf_even.py \
+            --bits 20 \
+            --lower 524288 \
+            --upper 1048575 \
+            --horizon 183 \
+            --checkpoints 182,183 \
+            --out results/validate-even20.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-even-validate20
+          path: results/validate-even20.json
+          if-no-files-found: warn
+
+  active:
+    name: h450-${{ matrix.shard }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [3, 5, 6]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install exact SAT solver
+        run: python -m pip install --disable-pip-version-check python-sat
+      - name: Solve active residual
+        shell: bash
+        run: |
+          mkdir -p results
+          read LO HI < <(python - <<'PY'
+          L=2392312122059207475200
+          U=4722366482869645213695
+          S=16
+          i=${{ matrix.shard }}
+          total=U-L+1
+          lo=L + total*i//S
+          hi=L + total*(i+1)//S - 1
+          if i==S-1: hi=U
+          print(lo, hi)
+          PY
+          )
+          python experiments/collatz_exact_cnf_even.py \
+            --bits 72 \
+            --lower "$LO" \
+            --upper "$HI" \
+            --horizon 450 \
+            --checkpoints 450 \
+            --out results/h450-${{ matrix.shard }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-h450-${{ matrix.shard }}
+          path: results/h450-${{ matrix.shard }}.json
+          if-no-files-found: warn
