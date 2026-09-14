@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run parallel self-ledger Level4 search
+      - name: Run living self-ledger Level4 search
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v17_parallel_ledger_level4.py | tee arc3_v17_parallel_ledger_level4.log
+          python experiments/arc3_tonight/developmental_ls20_v18_living_ledger_level4.py | tee arc3_v18_living_ledger_level4.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v17-parallel-ledger-level4
+          name: arc3-v18-living-ledger-level4
           path: |
-            arc3_v17_parallel_ledger_level4.log
-            arc3_developmental_v17_parallel_ledger_level4_result.json
+            arc3_v18_living_ledger_level4.log
+            arc3_developmental_v18_living_ledger_level4_result.json
