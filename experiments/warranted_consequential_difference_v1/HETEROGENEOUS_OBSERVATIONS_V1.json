@@ -1,0 +1,70 @@
+{
+  "schema": "wcd.heterogeneous.audit.observations.v1",
+  "frozen_kernel_commit": "978af4e94815128b4c517562f9a0bae26eea1e55",
+  "adapter_manifest_commit": "c884b39c67f7f30499a3ee4eafb50a8e88c394cb",
+  "domains": {
+    "lean_e0034": {
+      "run_id": 31910955956,
+      "ground": {
+        "a0": {"good_pass": 103, "good_total": 103, "bad_reject": 58, "bad_total": 58},
+        "a1": {"good_pass": 103, "good_total": 103, "bad_reject": 58, "bad_total": 58},
+        "abl": {"good_pass": 103, "good_total": 103, "bad_reject": 58, "bad_total": 58}
+      },
+      "median_cpu_s": {"a0": 0.7690539999999992, "a1": 0.7822120000000002, "abl": 0.7708410000000008},
+      "a1_cpu_delta_pct": 1.710933172443152,
+      "abl_cpu_delta_pct": 0.232363397108859,
+      "frozen_interpretation": "A1 hurts total CPU => reject"
+    },
+    "proof_regenesis": {
+      "run_id": 33156720074,
+      "passed": false,
+      "gates": {
+        "agent_completed": false,
+        "cold_amputation_fails": true,
+        "exact_ablation_restores_failure": true,
+        "four_consumers_use_interface": true,
+        "full_build_verifies": true,
+        "no_cross_target_references": true,
+        "no_forbidden_tokens": true,
+        "no_original_names_restored": true,
+        "not_original_text": true,
+        "only_allowed_file_changed": false,
+        "only_allowed_slot_changed": true,
+        "proof_hygiene_clean": true,
+        "ring_verifies": false
+      },
+      "workflow_summary": "FAIL / RESIDUAL"
+    },
+    "target_quotient": {
+      "run_id": 32786380149,
+      "obs_only": {"optimal_query_rate": 0.3541666666666667, "accuracy": 0.7083333333333334},
+      "sham_marginal": {"optimal_query_rate": 0.2916666666666667, "accuracy": 0.5416666666666666},
+      "target_quotient": {"optimal_query_rate": 0.9583333333333334, "accuracy": 1.0},
+      "primary_pass": true
+    },
+    "controller_v9": {
+      "run_id": 32661179379,
+      "suite_pass": true,
+      "cases": {
+        "same_complete_signature": "EQ",
+        "different_complete_signature": "DIST",
+        "protected_outcome_access": "UNKNOWN",
+        "unfrozen_protocol": "UNKNOWN",
+        "incomplete_probe_coverage": "UNKNOWN"
+      }
+    },
+    "acc_publisher": {
+      "run_id": 34814554456,
+      "evidence_timing": "retrospective_pre_adapter-freeze",
+      "pending_source_files": 4,
+      "pending_lines": 16,
+      "input_candidates": 8,
+      "optimized_candidates": 8,
+      "fortification_moves_saved": 402,
+      "verified_ac_candidates": 8,
+      "strict_wins_after": 0,
+      "selected_rows": 0,
+      "selected_ac": 0
+    }
+  }
+}
