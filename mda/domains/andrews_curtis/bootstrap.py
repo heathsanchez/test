@@ -20,7 +20,7 @@ def save(path: Path, obj: Any) -> None:
 
 def parse_solution_file(path: Path) -> dict[str, list[int]]:
     out: dict[str, list[int]] = {}
-    pat = re.compile(r"^([A-Za-z0-9_-]+)\\s*:\\s*(\\[.*\\])\\s*$")
+    pat = re.compile(r"^([A-Za-z0-9_-]+)\s*:\s*(\[.*\])\s*$")
     for raw in path.read_text(encoding="utf-8").splitlines():
         line = raw.split("#", 1)[0].strip()
         if not line:
