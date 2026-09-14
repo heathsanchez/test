@@ -238,12 +238,19 @@ class Agent:
         self.event_box=None
         self.event_modes=set()
         self.current_mode=None
+        self.event_bg=None
+        self.event_fg=None
+        # Cross-level knowledge is retained only after a verified level transition
+        # demonstrates the relation. It is not assumed from game semantics.
+        self.compiled_symbol_match=False
+        self.compiled_symbol_match_evidence=[]
         self.event_trigger_pos=None
         self.spatial_graph=defaultdict(Counter)
         self.physical_tried=defaultdict(set)
         self.physical_positions=set()
         self.geometry_frozen=False
         self.reference_frame=None
+        self.current_frame=None
         self.blocked_frontiers={}
         self.blocked_mode_tests=defaultdict(set)
         self.mode_change_return=False
@@ -290,6 +297,104 @@ class Agent:
               max(0,x-4):min(m.shape[1],x+5)]=False
         return m
 
+    def canonical_symbol(self,mask):
+        """Canonicalize a binary glyph under translation and integer pixel scale."""
+        m=np.asarray(mask,dtype=bool)
+        ys,xs=np.where(m)
+        if len(xs)==0: return None
+        m=m[ys.min():ys.max()+1,xs.min():xs.max()+1]
+
+        # Collapse consecutive duplicate rows/columns. ARC display glyphs often
+        # render the same abstract bit at different integer pixel scales.
+        changed=True
+        while changed and m.size:
+            changed=False
+            if m.shape[0]>1:
+                keep=[0]+[i for i in range(1,m.shape[0])
+                          if not np.array_equal(m[i],m[i-1])]
+                if len(keep)<m.shape[0]:
+                    m=m[keep,:]; changed=True
+            if m.shape[1]>1:
+                keep=[0]+[j for j in range(1,m.shape[1])
+                          if not np.array_equal(m[:,j],m[:,j-1])]
+                if len(keep)<m.shape[1]:
+                    m=m[:,keep]; changed=True
+        return (m.shape,tuple(int(x) for x in m.ravel()))
+
+    def symbol_in_box(self,g,box):
+        if box is None or self.event_fg is None: return None
+        y0,y1,x0,x1=box
+        return self.canonical_symbol(g[y0:y1,x0:x1]==self.event_fg)
+
+    def symbol_panels(self,g):
+        """Find compact background regions containing the event foreground color."""
+        if self.event_bg is None or self.event_fg is None: return []
+        out=[]
+        bg=(g==self.event_bg)
+        for b in blobs(bg,1):
+            h=b["y1"]-b["y0"]+1; w=b["x1"]-b["x0"]+1
+            if h<3 or w<3 or h>20 or w>20: continue
+            if max(h,w)/max(1,min(h,w))>3.0: continue
+            box=(b["y0"],b["y1"]+1,b["x0"],b["x1"]+1)
+            if self.event_box is not None:
+                ey0,ey1,ex0,ex1=self.event_box
+                y0,y1,x0,x1=box
+                if not (y1<=ey0 or y0>=ey1 or x1<=ex0 or x0>=ex1):
+                    continue
+            y0,y1,x0,x1=box
+            if not np.any(g[y0:y1,x0:x1]==self.event_fg): continue
+            sym=self.symbol_in_box(g,box)
+            if sym is not None:
+                out.append((box,sym))
+        return out
+
+    def matching_symbol_frontiers(self,g):
+        """Blocked transitions whose destination panel matches the current mode glyph."""
+        if not self.compiled_symbol_match or not self.use_event_state:
+            return []
+        cur=self.symbol_in_box(g,self.event_box)
+        if cur is None: return []
+        panels=[(box,sym) for box,sym in self.symbol_panels(g) if sym==cur]
+        matches=[]
+        for cand,rarity in self.blocked_frontiers.items():
+            pos,an=cand; v=self.vectors.get(an)
+            if v is None: continue
+            py,px=pos[0]+v[0],pos[1]+v[1]
+            for box,sym in panels:
+                y0,y1,x0,x1=box
+                # Carrier centroid may stop just outside a collidable display frame.
+                d=max(y0-py,0,py-(y1-1),x0-px,0,px-(x1-1))
+                if d<=5:
+                    matches.append((d,-rarity,cand,box))
+        matches.sort(key=lambda z:(z[0],z[1],str(z[2])))
+        return matches
+
+    def maybe_compile_success_relation(self,prev,oldpos,action):
+        """Compile a cross-level relation only from an actually verified transition."""
+        if not self.use_event_state or self.event_box is None:
+            return False
+        cur=self.symbol_in_box(prev,self.event_box)
+        if cur is None: return False
+        v=self.vectors.get(action)
+        if v is None or oldpos is None: return False
+        py,px=oldpos[0]+v[0],oldpos[1]+v[1]
+        witnesses=[]
+        for box,sym in self.symbol_panels(prev):
+            y0,y1,x0,x1=box
+            d=max(y0-py,0,py-(y1-1),x0-px,0,px-(x1-1))
+            if d<=5 and sym==cur:
+                witnesses.append((d,box))
+        if not witnesses:
+            return False
+        witnesses.sort()
+        d,box=witnesses[0]
+        self.compiled_symbol_match=True
+        ev={"level":self.level,"position":list(oldpos),"action":action,
+            "panel":list(box),"distance":int(d)}
+        self.compiled_symbol_match_evidence.append(ev)
+        self.ev("COMPILED_VERIFIED_SYMBOL_MATCH_RELATION",**ev)
+        return True
+
     def maybe_birth_event_state(self,prev,g,oldpos,newpos,st):
         if self.use_event_state or oldpos is None or newpos is None or st=="GAME_OVER":
             return False
@@ -333,6 +438,24 @@ class Agent:
         pad=3
         self.event_box=(max(0,y0-pad),min(g.shape[0],y1+pad),
                         max(0,x0-pad),min(g.shape[1],x1+pad))
+
+        # The only colors allowed into the symbol relation are colors that actually
+        # changed in the compact causal residual. Background/foreground roles are
+        # then induced from prevalence inside that residual's display box.
+        changed_colors=Counter()
+        for yy,xx in cl:
+            changed_colors[int(prev[yy,xx])]+=1
+            changed_colors[int(g[yy,xx])]+=1
+        by_change=[c for c,_ in changed_colors.most_common()]
+        by_box=Counter(int(x) for x in g[self.event_box[0]:self.event_box[1],
+                                         self.event_box[2]:self.event_box[3]].ravel())
+        if len(by_change)>=2:
+            self.event_bg=max(by_change,key=lambda c:by_box[c])
+            fg_candidates=[c for c in by_change if c!=self.event_bg]
+            self.event_fg=max(fg_candidates,key=lambda c:changed_colors[c]) if fg_candidates else None
+        else:
+            self.event_bg=None; self.event_fg=None
+
         self.use_event_state=True
         self.event_trigger_pos=newpos
         before=self.event_sig(prev); after=self.event_sig(g)
@@ -343,7 +466,8 @@ class Agent:
         self.graph.clear(); self.tried.clear(); self.consequence.clear()
         self.ev("BIRTH_PERSISTENT_EVENT_STATE",box=list(self.event_box),
                 witness_position=list(newpos),residual_pixels=len(cl),
-                residual_shape=[y1-y0,x1-x0],before=before,after=after)
+                residual_shape=[y1-y0,x1-x0],before=before,after=after,
+                induced_background=self.event_bg,induced_foreground=self.event_fg)
         return True
 
     def locate(self,g):
@@ -386,7 +510,53 @@ class Agent:
     def active_counterfactual(self,acts):
         if not self.use_event_state or self.current_mode is None or not self.blocked_frontiers:
             return None
-        # Most structurally unusual blocked continuation gets tested first.
+        # First use only relations that a previous verified level transition
+        # actually earned. If the current latent glyph matches a destination glyph,
+        # that counterfactual dominates heuristic rarity.
+        frame=self.current_frame
+        if self.compiled_symbol_match and frame is not None:
+            matched=self.matching_symbol_frontiers(frame)
+            if matched:
+                _d,_nr,cand,panel=matched[0]
+                cpos,can=cand
+                tested=self.blocked_mode_tests[cand]
+                if self.current_mode not in tested:
+                    if self.pos==cpos:
+                        a=next((x for x in acts if x.name==can),None)
+                        if a is not None:
+                            return a,{"mode":"COMPILED_SYMBOL_MATCH_FRONTIER",
+                                      "candidate":str(cand),"panel":list(panel),
+                                      "event_mode":self.current_mode}
+                    a=self.position_route_action(cpos,acts)
+                    if a is not None:
+                        return a,{"mode":"ROUTE_COMPILED_SYMBOL_MATCH",
+                                  "candidate":str(cand),"panel":list(panel),
+                                  "event_mode":self.current_mode}
+            else:
+                # No destination currently matches: change the earned mode rather
+                # than spend tests on unrelated blocked boundaries.
+                if self.event_trigger_pos is not None:
+                    if self.mode_change_return:
+                        if self.pos==self.event_trigger_pos:
+                            self.mode_change_return=False
+                        else:
+                            a=self.position_route_action(self.event_trigger_pos,acts)
+                            if a is not None:
+                                return a,{"mode":"RETURN_TO_EVENT_TRIGGER_FOR_SYMBOL_MATCH"}
+                    if self.pos==self.event_trigger_pos:
+                        for a in acts:
+                            outs=self.spatial_graph.get((self.pos,a.name),Counter())
+                            if len(outs)==1 and next(iter(outs))!=self.pos:
+                                self.mode_change_return=True
+                                return a,{"mode":"CYCLE_MODE_FOR_SYMBOL_MATCH",
+                                          "event_mode":self.current_mode}
+                    else:
+                        a=self.position_route_action(self.event_trigger_pos,acts)
+                        if a is not None:
+                            return a,{"mode":"ROUTE_TO_MODE_CYCLE_FOR_SYMBOL_MATCH",
+                                      "target":list(self.event_trigger_pos)}
+
+        # Before a verified cross-level relation exists, fall back to structural rarity.
         cand=max(self.blocked_frontiers,key=lambda k:self.blocked_frontiers[k])
         cpos,can=cand
         tested=self.blocked_mode_tests[cand]
@@ -537,6 +707,7 @@ class Agent:
                 self.event_modes.add(mode)
                 self.ev("NEW_EVENT_MODE",mode=mode,count=len(self.event_modes),
                         position=list(self.pos) if self.pos else None)
+        self.current_frame=g.copy()
         self.node=self.make_node(g)
 
         if oldpos is not None and self.pos is not None:
@@ -592,7 +763,10 @@ class Agent:
                             current_node=str(self.node))
 
         if lvl>self.max_level:
-            self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action); self.max_level=lvl
+            # Success can compile a relation, but only from the pre-transition frame.
+            self.maybe_compile_success_relation(prev,oldpos,action)
+            self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action)
+            self.max_level=lvl
         if lvl!=self.level:
             self.ev("LEVEL_BOUNDARY",old=self.level,new=lvl); self.level=lvl
             # Level change is a scope change. Retain only the generic intervention
@@ -607,6 +781,7 @@ class Agent:
             self.pos=None; self.node=None
             self.use_local_context=False; self.use_event_state=False
             self.event_box=None; self.event_modes.clear(); self.current_mode=None
+            self.event_bg=None; self.event_fg=None
             self.event_trigger_pos=None; self.mode_change_return=False
             self.level_gameovers=0
             self.phase="CAUSAL_CARRIER_ONTOLOGY"
@@ -625,6 +800,9 @@ class Agent:
           distinct_positions=len(self.visits),contextual_state=self.use_local_context,
           event_state=self.use_event_state,event_box=list(self.event_box) if self.event_box else None,
           event_mode_count=len(self.event_modes),
+          event_background=self.event_bg,event_foreground=self.event_fg,
+          compiled_symbol_match=self.compiled_symbol_match,
+          compiled_symbol_match_evidence=self.compiled_symbol_match_evidence,
           geometry_frozen=self.geometry_frozen,physical_position_count=len(self.physical_positions),
           blocked_frontiers=[{"position":list(k[0]),"action":k[1],"rarity":v,
                               "tested_modes":sorted(self.blocked_mode_tests.get(k,set()))}
@@ -647,6 +825,7 @@ def main():
     A=Agent(nuis,ref_action,ref_pos,vectors,group_descs,args.seed)
     A.level=int(getattr(obs,"levels_completed",0)); A.max_level=A.level
     A.reference_frame=g.copy()
+    A.current_frame=g.copy()
     A.trace_frames=[g.copy()]
     A.reset_boundaries=[0]
     A.ev("CAUSAL_CARRIER_GENESIS",**diag)
@@ -677,6 +856,7 @@ def main():
             obs=env.reset()
             if obs is None: break
             g=frame(obs); A.reset()
+            A.current_frame=g.copy()
             if A.use_event_state:
                 A.current_mode=A.event_sig(g)
                 A.event_modes.add(A.current_mode)
