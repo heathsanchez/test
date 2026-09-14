@@ -1,0 +1,29 @@
+name: ACC Miller Schupp Identity Census V1
+on:
+  push:
+    branches: [acc-proof-track-orbit-v1]
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/ms_identity_census.py'
+      - '.github/workflows/acc-ms-identity-census-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned authority
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Resolve exact Miller-Schupp coordinates
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/ms_identity_census.py \
+            --acc-root /tmp/acc \
+            --out-dir mda/evidence/andrews_curtis/ms_identity_census_v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-ms-identity-census-v1
+          path: mda/evidence/andrews_curtis/ms_identity_census_v1/
