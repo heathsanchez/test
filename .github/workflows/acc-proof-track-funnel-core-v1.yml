@@ -1,0 +1,44 @@
+name: ACC Proof Track Funnel Core V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/FunnelCore.lean'
+      - '.github/workflows/acc-proof-track-funnel-core-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned official ACC repository
+        run: |
+          git clone https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/official-acc
+          cd /tmp/official-acc
+          git checkout 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Install elan
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prepare Lean
+        working-directory: /tmp/official-acc/competition/tools/lean
+        run: |
+          MATHLIB_NO_CACHE_ON_UPDATE=1 lake update
+          lake exe cache get
+          lake build
+      - name: Check orbit layer and funnel core
+        run: |
+          cp mda/domains/andrews_curtis/proof_track/OrbitSoundness.lean /tmp/official-acc/competition/tools/lean/OrbitSoundness.lean
+          cp mda/domains/andrews_curtis/proof_track/ReachabilityEquivalence.lean /tmp/official-acc/competition/tools/lean/ReachabilityEquivalence.lean
+          cp mda/domains/andrews_curtis/proof_track/FunnelCore.lean /tmp/official-acc/competition/tools/lean/FunnelCore.lean
+          cd /tmp/official-acc/competition/tools/lean
+          lake env lean -o OrbitSoundness.olean OrbitSoundness.lean
+          lake env lean -o ReachabilityEquivalence.olean ReachabilityEquivalence.lean
+          lake env lean FunnelCore.lean
