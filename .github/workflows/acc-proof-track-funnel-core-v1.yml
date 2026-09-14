@@ -38,5 +38,6 @@ jobs:
           cp mda/domains/andrews_curtis/proof_track/ReachabilityEquivalence.lean /tmp/official-acc/competition/tools/lean/ReachabilityEquivalence.lean
           cp mda/domains/andrews_curtis/proof_track/FunnelCore.lean /tmp/official-acc/competition/tools/lean/FunnelCore.lean
           cd /tmp/official-acc/competition/tools/lean
-          lake env lean -o ReachabilityEquivalence.olean ReachabilityEquivalence.lean
+          mkdir -p .lake/build/lib/lean
+          lake env lean -o .lake/build/lib/lean/ReachabilityEquivalence.olean ReachabilityEquivalence.lean
           lake env lean FunnelCore.lean
