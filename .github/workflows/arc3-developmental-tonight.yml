@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,13 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Run consequence-defined causal-state search
+      - name: Probe Level2 dynamics
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v9_causal_state.py | tee arc3_developmental_v9_causal_state.log
+          python experiments/arc3_tonight/level2_dynamics_probe.py | tee arc3_level2_dynamics.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-developmental-v9-causal-state
-          path: |
-            arc3_developmental_v9_causal_state.log
-            arc3_developmental_v9_causal_state_result.json
+          name: arc3-level2-dynamics
+          path: arc3_level2_dynamics.log
