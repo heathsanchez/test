@@ -1,0 +1,102 @@
+{
+  "version": "acc-mda-bootstrap-v1",
+  "source_present_sha": "7d729961a2292e8a77efba4287d18c227e543263",
+  "runtime_freeze_sha": "SET_BY_WORKFLOW",
+  "toolchain": {
+    "language": "Python 3",
+    "runner": "GitHub Actions ubuntu-24.04"
+  },
+  "verifier_version": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "acsolverx_version": "6a12515fe1d95178a483b76d5553266e61122417",
+  "protected_replay_version": "submission70+official-golden+v5-regression",
+  "retained_capabilities": [
+    {
+      "id": "official-verifier-adapter",
+      "status": "retained",
+      "warrant": "grounding authority"
+    },
+    {
+      "id": "protected-certificate-replay",
+      "status": "retained",
+      "warrant": "six platform-accepted scoring certificates"
+    },
+    {
+      "id": "gssub-current",
+      "status": "frontier",
+      "warrant": "V5 matched verified reach"
+    },
+    {
+      "id": "gssub-mask3-short-plus-long",
+      "status": "frontier",
+      "warrant": "V2 replay clean; V5 matched verified separators"
+    },
+    {
+      "id": "exact-atomic-compiler",
+      "status": "retained",
+      "warrant": "officially verified compiled certificates"
+    },
+    {
+      "id": "compiler-beam-1-16-64",
+      "status": "frontier",
+      "warrant": "V5 verified beam separators; cost tradeoff unresolved"
+    },
+    {
+      "id": "proof-atlas",
+      "status": "retained",
+      "warrant": "V5 saved 270 moves over 11 candidates"
+    },
+    {
+      "id": "peephole-superoptimizer",
+      "status": "retained",
+      "warrant": "V5 saved 372 moves over 11 candidates"
+    },
+    {
+      "id": "fresh-live-publication-gate",
+      "status": "retained",
+      "warrant": "correct scoring/quota gate after timestamp fix"
+    }
+  ],
+  "provisional_uninherited": [
+    {
+      "id": "v3-guard-variants",
+      "reason": "qualification incomplete; no inheritance authority"
+    },
+    {
+      "id": "atomic-cost-first-search",
+      "reason": "24 bounded cases produced no verified certificate; this is UNKNOWN_SEARCH, not impossibility"
+    },
+    {
+      "id": "v6-window7-near-miss",
+      "reason": "ac-08491 ablation saved 0 moves and changed no protected consequence"
+    }
+  ],
+  "known_regressions": [
+    "At V5 freeze: 0 unique holds, 6 tied scoring cells, 106 previously submitted cells had been surpassed."
+  ],
+  "known_unknowns": [
+    "Live competitive future is open and non-stationary.",
+    "No certified obstruction currently licenses unrestricted solver-language growth.",
+    "Current and mask3 search policies remain behaviorally distinct and economically incomparable on the frozen V5 scope.",
+    "Compiler beam economy is not fully identified because atomic length and compute trade off.",
+    "Failure to beat live records is not evidence of unreachable shorter paths."
+  ],
+  "development_permissions": [
+    "enable/disable existing retained mechanisms",
+    "matched search-policy probes",
+    "compiler-beam probes",
+    "Atlas and peephole ablations",
+    "reopen attempt memory when mechanism/snapshot/budget changes",
+    "fresh live scoring rechecks",
+    "expand continuation language only after scoped CERTIFIED_OBSTRUCTION"
+  ],
+  "forbidden_mutations": [
+    "official verifier semantics",
+    "official move specs",
+    "official challenge data",
+    "official scoring rule",
+    "official resource limits",
+    "grounding authority"
+  ],
+  "evidence_root": "mda/evidence/andrews_curtis/",
+  "protected_replay": "mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt"
+}
