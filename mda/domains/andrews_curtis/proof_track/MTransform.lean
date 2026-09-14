@@ -126,7 +126,8 @@ theorem mTransform_left_reachable {n : ℕ} (R : Relators n)
     Reachable R (Function.update R i (u * R i)) := by
   let N := Subgroup.normalClosure (otherRelators R i)
   have hconj : (R i)⁻¹ * u * R i ∈ N := by
-    exact Subgroup.Normal.conj_mem inferInstance _ hu (R i)⁻¹
+    simpa using
+      (Subgroup.Normal.conj_mem inferInstance _ hu (R i)⁻¹)
   have h :=
     mTransform_reachable R i ((R i)⁻¹ * u * R i) hconj
   have heq : R i * ((R i)⁻¹ * u * R i) = u * R i := by group
@@ -141,8 +142,8 @@ theorem mTransform_target_iff {n : ℕ} (R : Relators n)
   have h := mTransform_reachable R i u hu
   constructor
   · intro h1
-    exact (reachable_symm h).trans h1
+    exact h.trans h1
   · intro h2
-    exact h.trans h2
+    exact (reachable_symm h).trans h2
 
 end AC
