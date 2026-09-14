@@ -1,0 +1,149 @@
+name: ACC MDA Causal Gain Strict-Steal Publish V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-causal-publish-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_RUN: "34824822035"
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+
+jobs:
+  fortify-and-publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Require competition credential
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY secret is empty"; exit 1; }
+          echo "SAIR_API_KEY_PRESENT"
+
+      - name: Recover causal improvements
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/causal
+          gh run download "$SOURCE_RUN" -n acc-mda-learned-representation-causal-final -D /tmp/causal
+          src=$(find /tmp/causal -name improved_submission.txt -print -quit)
+          test -n "$src"
+          test -s "$src"
+          cp "$src" /tmp/causal_improved.txt
+          echo "CAUSAL_CANDIDATES"
+          cat /tmp/causal_improved.txt
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Fortify learned-representation certificates before publication
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/mda_causal_publish_input
+          cp /tmp/causal_improved.txt acc_competitive/mda_causal_publish_input/causal.txt
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/mda_causal_publish_input/*.txt' \
+            --out-dir acc_competitive/mda_causal_fortified \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/mda_causal_fortified.log
+          cat acc_competitive/mda_causal_fortified/fortification.json
+
+      - name: Add stable counterparts and verify every candidate
+        run: |
+          set -euo pipefail
+          mkdir -p acc_submit/mda_causal_out
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc')
+          sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core,stable_core
+          manifest=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          byid={c['challenge_id']:c for c in manifest['challenges']}
+          limits=manifest['limits']
+          out=[]
+          for line in Path('acc_competitive/mda_causal_fortified/fortified_ac.txt').read_text().splitlines():
+              if not line.strip(): continue
+              cid,raw=line.split(':',1)
+              cid=cid.strip(); moves=list(json.loads(raw.strip()))
+              c=byid[cid]
+              v=core.verify(c,moves,c['move_spec_version'],limits)
+              assert v['ok'],(cid,v)
+              out.append((cid,moves))
+              sid='sac-'+cid[3:]
+              smoves=moves+[16,15]
+              sc=byid[sid]
+              sv=stable_core.verify(sc,smoves,sc['move_spec_version'],limits)
+              assert sv['ok'],(sid,sv)
+              out.append((sid,smoves))
+              print('FORTIFIED_PAIR',cid,len(moves),sid,len(smoves))
+          text='\n'.join(f"{cid}: {json.dumps(m,separators=(',',':'))}" for cid,m in out)+'\n'
+          Path('acc_submit/mda_causal_candidates.txt').write_text(text)
+          PY
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission acc_submit/mda_causal_candidates.txt
+
+      - name: Strict live-frontier filter and single packed publication
+        env:
+          ACC_SUBMISSION_FILE: acc_submit/mda_causal_candidates.txt
+          ACC_SUBMIT_OUT: acc_submit/mda_causal_out
+        run: |
+          set -euo pipefail
+          python3 acc_submit/submit_live_filtered.py | tee acc_submit/mda_causal_live_submit.log
+
+      - name: Summarize moat result
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path('acc_submit/mda_causal_out')
+          pre=out/'pre_submit_summary.json'
+          if pre.exists():
+              p=json.loads(pre.read_text())
+              print('MDA_MOAT_PRE',json.dumps(p,sort_keys=True))
+              cmp=out/'comparison.json'
+              if cmp.exists():
+                  print('MDA_MOAT_COMPARISON',json.dumps(json.loads(cmp.read_text()),sort_keys=True))
+          post=out/'post_submit_summary.json'
+          if post.exists():
+              p=json.loads(post.read_text())
+              print('MDA_MOAT_POST',json.dumps(p,sort_keys=True))
+          else:
+              print('MDA_MOAT_POST',"NO_BATCH_SUBMITTED")
+          fort=Path('acc_competitive/mda_causal_fortified/fortification.json')
+          if fort.exists():
+              print('MDA_MOAT_FORTIFICATION',json.dumps(json.loads(fort.read_text()),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-causal-strict-steal-publication
+          path: |
+            acc_competitive/mda_causal_fortified/
+            acc_competitive/mda_causal_fortified.log
+            acc_submit/mda_causal_candidates.txt
+            acc_submit/mda_causal_out/
+            acc_submit/mda_causal_live_submit.log
+          retention-days: 90
+
+# Publication economics: ties are deliberately skipped.
+# Only currently unsolved rows or strict live record improvements are POSTed.
