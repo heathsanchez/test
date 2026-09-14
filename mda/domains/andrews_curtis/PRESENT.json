@@ -1,14 +1,14 @@
 {
-  "version": "acc-mda-present-v2",
-  "source_present_sha": "38f0a40d257a87807e388808df03b8e859b8f230",
-  "runtime_freeze_sha": "38f0a40d257a87807e388808df03b8e859b8f230",
+  "version": "acc-mda-present-v3",
+  "source_present_sha": "35e1cfb5835b7304c8f3ca3e2aa2f56b2541f6b3",
+  "runtime_freeze_sha": "35e1cfb5835b7304c8f3ca3e2aa2f56b2541f6b3",
   "toolchain": {
     "language": "Python 3",
     "runner": "GitHub Actions ubuntu-24.04"
   },
   "verifier_version": "99a65377c5c4f412cd9af7b8d31c41464a855736",
   "acsolverx_version": "6a12515fe1d95178a483b76d5553266e61122417",
-  "protected_replay_version": "submission70+official-golden+v5-regression@run34795355932",
+  "protected_replay_version": "submission70+official-golden+v5-regression",
   "retained_capabilities": [
     {
       "id": "official-verifier-adapter",
@@ -23,37 +23,42 @@
     {
       "id": "gssub-current",
       "status": "frontier",
-      "warrant": "V5 matched verified reach"
+      "warrant": "V5 matched verified reach; full-cost causal ablation retained it in run 34801299516"
     },
     {
       "id": "gssub-mask3-short-plus-long",
       "status": "frontier",
-      "warrant": "V2 replay clean; V5 matched verified separators"
+      "warrant": "V2 replay clean; V5 matched verified separators; full-cost causal ablation retained it in run 34801299516"
     },
     {
       "id": "exact-atomic-compiler",
       "status": "retained",
-      "warrant": "officially verified compiled certificates"
+      "warrant": "officially verified compiled certificates; exact fixed-route closure exposed beam residual on ac-04402"
     },
     {
       "id": "proof-atlas",
       "status": "retained",
-      "warrant": "V5 saved 270 moves over 11 candidates"
+      "warrant": "saved 270 moves on V5 pack and 198 moves on fresh prospective pack"
     },
     {
       "id": "peephole-superoptimizer",
-      "status": "retained",
-      "warrant": "V5 saved 372 moves over 11 candidates"
+      "status": "retained_scoped",
+      "warrant": "saved 372 moves on V5 pack; saved 0 on fresh prospective pack, so transfer remains mixed rather than globally revoked"
     },
     {
       "id": "fresh-live-publication-gate",
       "status": "retained",
-      "warrant": "correct scoring/quota gate after timestamp fix"
+      "warrant": "correct scoring/quota gate with repeated fresh no-submit decisions"
     },
     {
-      "id": "compiler-beam-frontier-16-64",
+      "id": "compiler-beam16",
       "status": "frontier",
-      "warrant": "MDA bootstrap run 34795355932: beam1 Pareto-dominated in reused V5 full-cost evidence; beam16/64 survive"
+      "warrant": "per-target full-cost causal ablation retained it in run 34801299516"
+    },
+    {
+      "id": "compiler-beam64",
+      "status": "frontier",
+      "warrant": "per-target full-cost causal ablation retained it in run 34801299516"
     }
   ],
   "provisional_uninherited": [
@@ -63,7 +68,11 @@
     },
     {
       "id": "atomic-cost-first-search",
-      "reason": "24 bounded cases produced no verified certificate; this is UNKNOWN_SEARCH, not impossibility"
+      "reason": "24 bounded cases produced no verified certificate; UNKNOWN_SEARCH, not impossibility"
+    },
+    {
+      "id": "local-official-microbridge-repairs",
+      "reason": "scoped causal successes on ac-04402 and ac-02012 are preserved as provenance but do not justify active general inheritance"
     }
   ],
   "known_regressions": [
@@ -71,15 +80,18 @@
   ],
   "known_unknowns": [
     "Live competitive future is open and non-stationary.",
-    "No certified obstruction currently licenses unrestricted solver-language growth.",
-    "Current and mask3 search policies remain behaviorally distinct and economically incomparable on the frozen V5 scope.",
-    "Compiler beam economy is not fully identified because atomic length and compute trade off.",
-    "Failure to beat live records is not evidence of unreachable shorter paths."
+    "Current and mask3 remain behaviorally distinct and economically incomparable on the fresh matched scope.",
+    "Exact closure proves beam selection can leave atomic cost on the table, but fixed-route compiler improvement is far too small to explain the live gap.",
+    "Official atomic microbridge search proves local compiler-transition-language inadequacy exists, but its gains are not reliably end-to-end causal.",
+    "The dominant unresolved ambiguity is now upstream: inadequate search over the current GS-Sub route language versus inadequacy of the route language itself.",
+    "Failure to find a better route under bounded search is UNKNOWN_SEARCH unless the declared route class is actually exhausted."
   ],
   "development_permissions": [
     "enable/disable existing retained mechanisms",
     "matched search-policy probes",
     "compiler-beam probes",
+    "exact fixed-route closure",
+    "bounded local route-shortcut discriminators in the existing GS-Sub language",
     "Atlas and peephole ablations",
     "reopen attempt memory when mechanism/snapshot/budget changes",
     "fresh live scoring rechecks",
@@ -100,13 +112,30 @@
       "id": "compiler-beam1",
       "scope": "V5 matched full-cost evidence",
       "reason": "Pareto-dominated by surviving configurations; reopenable if target scope/economy changes",
-      "evidence": "MDA bootstrap run 34795355932"
+      "evidence": "run 34795355932"
     },
     {
       "id": "v6-window7-near-miss",
       "scope": "ac-08491 bounded local peephole expansion",
       "reason": "window 5->7 saved 0 moves and changed no protected consequence",
       "evidence": "run 34793616748"
+    },
+    {
+      "id": "microbridge-acquisition-v1",
+      "scope": "active general inheritance",
+      "reason": "second held-out qualification ac-09722/mask3 produced two certified local shortcuts but zero end-to-end causal gain; SOLVENT deleted the capability while preserving local provenance",
+      "evidence": "run 34807991464"
+    }
+  ],
+  "scoped_evidence": [
+    {
+      "id": "microbridge-acquisition-v1",
+      "status": "proven_local_not_active_general",
+      "evidence": [
+        "run 34804253703: ac-04402/current 766->749 from one certified local bridge",
+        "run 34805450970: ac-02012/mask3 1879->1873 from one prospectively transferred bridge",
+        "run 34807991464: ac-09722/mask3 local shortcuts 24->2 and 21->5 both worsened end-to-end; capability contracted"
+      ]
     }
   ],
   "mda_state": {
@@ -120,7 +149,9 @@
       16,
       64
     ],
+    "active_general_microbridge_capability": false,
     "growth_beyond_boot_language_authorized": false,
-    "evidence_run": 34795355932
+    "dominant_residual": "current-route search adequacy versus GS-Sub route-language adequacy",
+    "latest_evidence_run": 34807991464
   }
 }
