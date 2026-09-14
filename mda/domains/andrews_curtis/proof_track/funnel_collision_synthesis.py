@@ -93,7 +93,7 @@ def main():
       "induced_collisions":sum(x["induced_collisions"] for x in all_reports),
       "largest_class":max([x["largest_class"] for x in all_reports] or [1]),
       "status":"VERIFIED_MANY_TO_ONE_FUNNEL_QUOTIENT" if sum(x["induced_collisions"] for x in all_reports)>0 else "NO_FUNNEL_COLLISIONS",
-      "claim_boundary":"Synthesis over the four completed observation-only 100k-node frontier shards. Each selected funnel macro is replayed through the pinned official transition semantics; projected keys additionally use the already-proved orientation/permutation quotient."
+      "claim_boundary":"Synthesis over the supplied completed observation-only 100k-node frontier shards. Each selected funnel macro is replayed through the pinned official transition semantics; projected keys additionally use the already-proved orientation/permutation quotient."
     }
     out=Path(a.out_dir);out.mkdir(parents=True,exist_ok=True)
     (out/"report.json").write_text(json.dumps(summary,indent=2,sort_keys=True)+"\n")
