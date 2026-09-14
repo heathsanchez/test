@@ -1,0 +1,43 @@
+name: WCD V1 Consistency Falsification
+
+on:
+  push:
+    paths:
+      - "scripts/wcd_v1_consistency_falsification.py"
+      - ".github/workflows/wcd-v1-consistency-falsification.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  falsification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Prove WCD V1 unchanged
+        run: |
+          set -euxo pipefail
+          git diff --exit-code 978af4e94815128b4c517562f9a0bae26eea1e55 --             experiments/warranted_consequential_difference_v1/FROZEN_CANDIDATE.md
+          echo "WCD_V1_FROZEN_UNCHANGED"
+      - name: Run empty-world attack
+        id: attack
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          python scripts/wcd_v1_consistency_falsification.py | tee wcd-v1-consistency.log
+      - name: Require falsifier to be recorded
+        run: |
+          grep -F "FALSIFIED_WCD_V1_EMPTY_WORLD_VACUITY" wcd-v1-consistency.log
+          echo "WCD_V1_CONSISTENCY_FALSIFICATION_RECORDED"
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wcd-v1-consistency-falsification
+          path: wcd-v1-consistency.log
