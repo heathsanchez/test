@@ -134,6 +134,88 @@ def aggregate_policy_evidence(target_reports: list[dict[str, Any]]) -> dict[str,
     }
 
 
+def full_cost_frontier(v5_root: Path) -> dict[str, Any]:
+    """Use already-frozen V5 raw matched artifacts as the cheapest discriminator.
+
+    Search is paid once per (target, policy).  Compiler cost is then measured
+    for each frozen beam on the same reached quotient route.
+    """
+    raw = []
+    for p in v5_root.rglob("result.json"):
+        obj = load_json(p, {})
+        if isinstance(obj, dict) and obj.get("experiment") == "ACC_V5_MATCHED_FRONTIER_SEPARATOR_V1":
+            raw.append(obj)
+
+    configs: dict[tuple[str, int], dict[str, Any]] = {}
+    for r in raw:
+        policy = r.get("policy")
+        if policy not in ("current", "mask3"):
+            continue
+        for t in r.get("compiler_trials", []):
+            beam = t.get("beam")
+            if not isinstance(beam, int):
+                continue
+            key = (policy, beam)
+            q = configs.setdefault(key, {
+                "policy": policy,
+                "beam": beam,
+                "cases": 0,
+                "verified": 0,
+                "protected_scoring_regenerated": 0,
+                "total_atomic": 0,
+                "total_work": 0,
+                "total_nodes": 0,
+                "total_search_seconds": 0.0,
+                "total_compile_seconds": 0.0,
+                "max_peak": 0,
+            })
+            q["cases"] += 1
+            # Search cost is identical across beam trials for a target/policy.
+            q["total_nodes"] += int(r.get("nodes") or 0)
+            q["total_search_seconds"] += float(r.get("search_seconds") or 0.0)
+            q["total_compile_seconds"] += float(t.get("compile_seconds") or 0.0)
+            ok = (t.get("ac_verdict") or {}).get("ok") is True
+            if ok:
+                q["verified"] += 1
+                n = int(t.get("atomic_length") or 0)
+                q["total_atomic"] += n
+                q["total_work"] += int((t.get("ac_verdict") or {}).get("work") or 0)
+                q["max_peak"] = max(q["max_peak"], int(t.get("peak") or 0))
+                if r.get("role") == "protected_scoring" and isinstance(r.get("frozen_ac_best"), int) and n <= r["frozen_ac_best"]:
+                    q["protected_scoring_regenerated"] += 1
+
+    vals = list(configs.values())
+    # Admission before economy: compare only configs with maximal verified reach
+    # and maximal protected regeneration in this frozen scope.
+    max_verified = max((x["verified"] for x in vals), default=0)
+    eligible = [x for x in vals if x["verified"] == max_verified]
+    max_protected = max((x["protected_scoring_regenerated"] for x in eligible), default=0)
+    eligible = [x for x in eligible if x["protected_scoring_regenerated"] == max_protected]
+
+    def dominates(a: dict[str, Any], b: dict[str, Any]) -> bool:
+        keys = ("total_atomic", "total_work", "total_nodes", "total_search_seconds", "total_compile_seconds", "max_peak")
+        no_worse = all(a[k] <= b[k] for k in keys)
+        better = any(a[k] < b[k] for k in keys)
+        return no_worse and better
+
+    frontier = [
+        x for x in eligible
+        if not any(y is not x and dominates(y, x) for y in eligible)
+    ]
+    frontier.sort(key=lambda x: (x["policy"], x["beam"]))
+    for x in vals:
+        x["total_wall_proxy_seconds"] = x["total_search_seconds"] + x["total_compile_seconds"]
+    vals.sort(key=lambda x: (x["policy"], x["beam"]))
+    return {
+        "raw_matched_cases": len(raw),
+        "configurations": vals,
+        "max_verified": max_verified,
+        "max_protected_scoring_regenerated": max_protected,
+        "pareto_frontier": [{"policy": x["policy"], "beam": x["beam"]} for x in frontier],
+        "scope": "frozen V5 matched target pack; historical wall-clock measurements",
+    }
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--acc-root", required=True)
@@ -179,6 +261,7 @@ def main() -> None:
     target_reports = load_json(target_reports_path, [])
     separators = load_json(separators_path, [])
     policy_evidence = aggregate_policy_evidence(target_reports)
+    full_cost = full_cost_frontier(v5)
 
     v5_candidate_path = None
     for p in v5.rglob("fortified_ac.txt"):
@@ -257,6 +340,7 @@ def main() -> None:
         "scope": "existing ACC machinery only; no new solver construction",
         "protected_replay_ok": protected_ok,
         "policy_evidence": policy_evidence,
+        "full_cost_discriminator": full_cost,
         "components": solvent_components,
         "status": Status.VERIFIED.value if protected_ok else Status.UNKNOWN_AUTHORITY.value,
         "claim_boundary": "Contraction decisions are scoped to recovered evidence and pinned dependencies.",
@@ -313,6 +397,7 @@ def main() -> None:
             "compiler beam as a universal active execution policy",
         ],
         "verified_separators": separators,
+        "reused_full_cost_discriminator": full_cost,
         "next_authorized_probe": {
             "question": "Which retained search/compiler frontier member minimizes full prospective cost on the same frozen encounters?",
             "hold_fixed": ["official verifier pin", "target pack", "resource ceilings", "protected replay", "exact atomic correctness"],
@@ -431,7 +516,8 @@ def main() -> None:
         "solvent_unpromoted": [x["id"] for x in retained["unpromoted"]],
         "survives_both": surviving,
         "new_solver_growth_authorized": False,
-        "next_action": "run the cheapest matched full-cost discriminator over the preserved frontier",
+        "full_cost_frontier": full_cost.get("pareto_frontier", []),
+        "next_action": "if the reused full-cost evidence still leaves a frontier, construct the cheapest new probe that separates those survivors; do not invent a new solver",
         "claim_boundary": "live competitive future OPEN; no unrestricted inadequacy claim",
     }
     save(out / "final.json", final)
