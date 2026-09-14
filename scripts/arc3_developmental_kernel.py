@@ -137,6 +137,17 @@ def locate_group(g,group_descs,nuis=None,near=None):
     return (best[1],best[2]) if best else (None,[])
 
 
+def local_sig(g,pos,r=6):
+    if pos is None: return "NONE"
+    y,x=pos
+    y0,y1=max(0,y-r),min(g.shape[0],y+r+1)
+    x0,x1=max(0,x-r),min(g.shape[1],x+r+1)
+    patch=g[y0:y1,x0:x1]
+    # Position is already in active state; this hash represents only local contextual appearance.
+    import hashlib
+    return hashlib.sha1(patch.tobytes()).hexdigest()[:12]
+
+
 def bootstrap(env):
     acts=list(env.action_space)
     one={}; raw={}
@@ -221,13 +232,24 @@ class Agent:
         self.pos=None; self.events=[]; self.records=[]; self.action_counts=Counter()
         self.graph=defaultdict(Counter); self.tried=defaultdict(set); self.visits=Counter()
         self.consequence=defaultdict(Counter)
+        self.context_trials=defaultdict(lambda:defaultdict(set))
+        self.use_local_context=False
+        self.node=None
         self.level=0; self.max_level=0; self.gameovers=0; self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
     def ev(self,k,**kw):
         e={"t":len(self.records),"kind":k,**kw}; self.events.append(e)
         print("EVENT",json.dumps(e,sort_keys=True),flush=True)
 
-    def reset(self): self.pos=None
+    def reset(self):
+        self.pos=None
+        self.node=None
+
+    def make_node(self,g):
+        if self.pos is None: return None
+        if self.use_local_context:
+            return (self.pos,local_sig(g,self.pos))
+        return self.pos
 
     def locate(self,g):
         p,grp=locate_group(g,self.group_descs,self.nuis,self.pos)
@@ -238,21 +260,23 @@ class Agent:
             a=next((x for x in acts if x.name==self.ref_action),None) or min(acts,key=lambda z:z.name)
             return a,{"mode":"RECONSTRUCT_CAUSAL_CARRIER"}
 
-        unseen=[a for a in acts if a.name not in self.tried[self.pos]]
+        node=self.node
+        unseen=[a for a in acts if a.name not in self.tried[node]]
         if unseen:
             a=min(unseen,key=lambda z:(self.action_counts[z.name],z.name))
-            return a,{"mode":"LOCAL_INTERVENTION_FRONTIER","position":list(self.pos)}
+            return a,{"mode":"LOCAL_INTERVENTION_FRONTIER","position":list(self.pos),
+                      "contextual":self.use_local_context}
 
         adj=defaultdict(list)
         for (p,an),outs in self.graph.items():
             if len(outs)==1:
                 p2=next(iter(outs)); adj[p].append((an,p2))
-        q=deque([(self.pos,[])]); seen={self.pos}
+        q=deque([(node,[])]); seen={node}
         while q:
             p,path=q.popleft()
-            if p!=self.pos and len(self.tried[p])<len(acts) and path:
+            if p!=node and len(self.tried[p])<len(acts) and path:
                 an=path[0]; a=next(x for x in acts if x.name==an)
-                return a,{"mode":"ROUTE_TO_FRONTIER","target":list(p)}
+                return a,{"mode":"ROUTE_TO_FRONTIER","target":str(p)}
             for an,p2 in adj.get(p,[]):
                 if p2 not in seen:
                     seen.add(p2); q.append((p2,path+[an]))
@@ -272,39 +296,73 @@ class Agent:
         return a,{"mode":"UNKNOWN_SEARCH"}
 
     def update(self,prev,g,action,obs,prev_level):
-        old=self.pos
+        oldpos=self.pos
+        oldnode=self.node
+        oldlocal=local_sig(prev,oldpos) if oldpos is not None else "NONE"
+
         p,grp=self.locate(g)
         if p is not None:
             self.pos=p
-            if old is None:
+            if oldpos is None:
                 self.ev("CAUSAL_CARRIER_RECONSTRUCTED",action=action,pos=list(p),
                         group=[list(desc(c)) for c in grp])
-        delta=int(np.count_nonzero((prev!=g)&~self.nuis))
 
+        delta=int(np.count_nonzero((prev!=g)&~self.nuis))
         lvl=int(getattr(obs,"levels_completed",0))
         st=getattr(getattr(obs,"state",None),"name",str(getattr(obs,"state",None)))
-        if old is not None and self.pos is not None:
-            self.tried[old].add(action); self.graph[(old,action)][self.pos]+=1; self.visits[self.pos]+=1
+        self.node=self.make_node(g)
+
+        if oldpos is not None and self.pos is not None and oldnode is not None and self.node is not None:
+            self.tried[oldnode].add(action)
+            self.graph[(oldnode,action)][self.node]+=1
+            self.visits[self.pos]+=1
             ck=(self.pos,min(9,delta//10),st,lvl-prev_level)
-            self.consequence[(old,action)][ck]+=1
-            if len(self.consequence[(old,action)])>1:
-                self.ev("CERTIFIED_CARRIER_STATE_INADEQUATE",position=list(old),action=action,
-                        alternatives=[str(x) for x in self.consequence[(old,action)]])
+            self.consequence[(oldnode,action)][ck]+=1
+
+            # While position-only is active, test whether local context is a verified separator
+            # for nonterminal divergent consequences at the same position/action.
+            if not self.use_local_context and st!="GAME_OVER":
+                basekey=(oldpos,action)
+                self.context_trials[basekey][oldlocal].add(ck)
+                trials=self.context_trials[basekey]
+                outcomes=set()
+                locally_deterministic=True
+                for sig,outs in trials.items():
+                    nonterm={o for o in outs if o[2]!="GAME_OVER"}
+                    if len(nonterm)>1:
+                        locally_deterministic=False
+                    outcomes |= nonterm
+                if len(outcomes)>1 and len(trials)>1 and locally_deterministic:
+                    witness={sig:[str(o) for o in outs if o[2]!="GAME_OVER"] for sig,outs in trials.items()}
+                    self.ev("VERIFIED_LOCAL_CONTEXT_SEPARATOR",position=list(oldpos),action=action,
+                            witness=witness)
+                    self.use_local_context=True
+                    self.phase="CONTEXT_SPLIT_ON_CONSEQUENCE"
+                    # Recompile the active graph under the finer state; provenance remains in records.
+                    self.graph.clear(); self.tried.clear(); self.consequence.clear()
+                    self.node=self.make_node(g)
+                    self.ev("ACTIVE_STATE_RECOMPILED",state="position_plus_local_context",
+                            current_node=str(self.node))
+
         if lvl>self.max_level:
             self.ev("VERIFIED_PROGRESS",from_level=self.max_level,to_level=lvl,action=action); self.max_level=lvl
         if lvl!=self.level:
             self.ev("LEVEL_BOUNDARY",old=self.level,new=lvl); self.level=lvl
-            self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear(); self.pos=None
+            self.graph.clear(); self.tried.clear(); self.visits.clear(); self.consequence.clear()
+            self.context_trials.clear(); self.pos=None; self.node=None
+            self.use_local_context=False; self.phase="CAUSAL_CARRIER_ONTOLOGY"
 
         self.records.append(dict(i=len(self.records),action=action,raw_delta=int(np.count_nonzero(prev!=g)),
-            filtered_delta=delta,old_pos=list(old) if old else None,pos=list(self.pos) if self.pos else None,
+            filtered_delta=delta,old_pos=list(oldpos) if oldpos else None,pos=list(self.pos) if self.pos else None,
+            old_local=oldlocal,node=str(self.node),contextual=self.use_local_context,
             group=[list(desc(c)) for c in grp],level=lvl,state=st,phase=self.phase))
 
     def result(self):
         return dict(actions=len(self.records),max_levels_completed=self.max_level,
           vectors={k:list(v) for k,v in self.vectors.items()},group_descs=[list(d) for d in sorted(self.group_descs)],
           phase=self.phase,gameovers=self.gameovers,action_counts=dict(self.action_counts),
-          distinct_positions=len(self.visits),events=self.events,records=self.records)
+          distinct_positions=len(self.visits),contextual_state=self.use_local_context,
+          events=self.events,records=self.records)
 
 
 def main():
