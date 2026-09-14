@@ -1,0 +1,354 @@
+name: ACC MDA Quotient Fiber Orbit Genesis V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-quotient-fiber-orbit-genesis-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  SOURCE_RUN: "34796578203"
+  DEVELOPMENT_RUN: "34820909311"
+
+jobs:
+  freeze-candidate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover only development witnesses
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/development
+          gh run download "$DEVELOPMENT_RUN" --pattern 'acc-mda-fiber-*' -D /tmp/development
+          find /tmp/development -name result.json -print
+          test "$(find /tmp/development -name result.json | wc -l)" -eq 3
+
+      - name: Freeze minimum swap-orbit candidate set
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/frozen
+          python3 - <<'PY'
+          import glob,itertools,json
+          from pathlib import Path
+
+          paths=glob.glob('/tmp/development/**/result.json',recursive=True)
+          rs=[json.load(open(p)) for p in paths]
+          expected={('ac-04402','current'),('ac-02012','mask3'),('ac-09722','mask3')}
+          got={(r['challenge_id'],r['policy']) for r in rs}
+          assert got==expected,(got,expected)
+          assert all(r.get('status')=='CERTIFIED_QUOTIENT_FIBER_FALSE_MERGE' for r in rs),rs
+
+          FIELDS=('slot','inv','rot')
+          schemas=[]
+          for k in range(1,len(FIELDS)+1):
+              schemas.extend(itertools.combinations(FIELDS,k))
+
+          def orbit_code(row,fields):
+              c=row['fiber_coordinate']
+              recs=[]
+              for i in (0,1):
+                  vals={
+                    'slot': c['slot0'] if i==0 else 1-c['slot0'],
+                    'inv': c[f'inv{i}'],
+                    'rot': c[f'rot{i}'],
+                  }
+                  recs.append(tuple(vals[f] for f in fields))
+              return tuple(sorted(recs))
+
+          def check(r,fields):
+              cells={}
+              for row in r['rows']:
+                  if row.get('future2_cost') is None or row.get('fiber_coordinate') is None:
+                      return {'status':'UNKNOWN','false_merge_violations':None}
+                  cells.setdefault(orbit_code(row,fields),[]).append(row)
+              fm=sum(
+                  1 for cell in cells.values()
+                  if len({x['future2_cost'] for x in cell})>1
+              )
+              return {'status':'PASS' if fm==0 else 'FAIL','false_merge_violations':fm}
+
+          evaluations=[]
+          sufficient=[]
+          for s in schemas:
+              checks=[{
+                  'challenge_id':r['challenge_id'],
+                  'policy':r['policy'],
+                  **check(r,s)
+              } for r in sorted(rs,key=lambda x:x['challenge_id'])]
+              ok=all(c['status']=='PASS' for c in checks)
+              evaluations.append({'fields':list(s),'field_count':len(s),'checks':checks,'sufficient':ok})
+              if ok:
+                  sufficient.append(s)
+
+          if sufficient:
+              k=min(len(s) for s in sufficient)
+              frontier=[list(s) for s in sufficient if len(s)==k]
+              status='FROZEN_SWAP_ORBIT_CANDIDATES'
+          else:
+              frontier=[]
+              status='NO_SWAP_ORBIT_CANDIDATE'
+
+          out={
+            'experiment':'ACC_MDA_QUOTIENT_FIBER_ORBIT_GENESIS_V2_FREEZE',
+            'development_run':34820909311,
+            'development_witnesses':[
+              {'challenge_id':r['challenge_id'],'policy':r['policy'],'route_sha256':r['route_sha256']}
+              for r in sorted(rs,key=lambda x:x['challenge_id'])
+            ],
+            'grammar':{
+              'generator':'S2 relator-swap orbit closure of existing quotient-fiber coordinates',
+              'fields':list(FIELDS),
+              'candidate_schema_count':len(schemas),
+              'schemas':[list(s) for s in schemas],
+            },
+            'evaluations':evaluations,
+            'frozen_candidates':frontier,
+            'status':status,
+            'holdouts_not_observed_at_freeze':[
+              ['ac-08534','current'],
+              ['ac-05232','mask3'],
+              ['ac-02616','current'],
+            ],
+            'claim_boundary':'Candidate set frozen using development witnesses only; no fresh holdout quotient-fiber future result is read here.'
+          }
+          p=Path('mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/frozen/candidates.json')
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_ORBIT_FREEZE',json.dumps({
+            'status':status,
+            'frozen_candidates':frontier,
+            'schema_count':len(schemas),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-mda-orbit-candidate-v2
+          path: mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/frozen/
+          retention-days: 90
+
+  holdout:
+    needs: freeze-candidate
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: fresh-ac08534-current
+            artifact: acc-mda-probe-0-current
+            policy: current
+            challenge: ac-08534
+          - name: fresh-ac05232-mask3
+            artifact: acc-mda-probe-1-mask3
+            policy: mask3
+            challenge: ac-05232
+          - name: fresh-ac02616-current
+            artifact: acc-mda-probe-4-current
+            policy: current
+            challenge: ac-02616
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover immutable fresh route
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ARTIFACT: ${{ matrix.artifact }}
+          POLICY: ${{ matrix.policy }}
+          CHALLENGE: ${{ matrix.challenge }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/source
+          gh run download "$SOURCE_RUN" -n "$ARTIFACT" -D /tmp/source
+          src=$(find /tmp/source -name result.json -print -quit)
+          test -n "$src"
+          cp "$src" /tmp/source_result.json
+          python3 - <<'PY'
+          import json,os
+          r=json.load(open('/tmp/source_result.json'))
+          assert r['challenge_id']==os.environ['CHALLENGE'],(r,os.environ['CHALLENGE'])
+          assert r['policy']==os.environ['POLICY'],(r,os.environ['POLICY'])
+          print('MDA_ORBIT_HOLDOUT_SOURCE',json.dumps({
+            'challenge_id':r['challenge_id'],
+            'policy':r['policy'],
+            'route_sha':r['quotient_path_sha256'],
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned ground and retained dependency
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+
+      - name: Replay protected consequences before holdout
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - name: Reveal fresh quotient-fiber witness
+        env:
+          NAME: ${{ matrix.name }}
+          POLICY: ${{ matrix.policy }}
+        run: |
+          set -o pipefail
+          out="mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/holdouts/$NAME"
+          mkdir -p "$out"
+          python3 mda/domains/andrews_curtis/quotient_fiber_genesis.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --source-result /tmp/source_result.json             --policy "$POLICY"             --state-cap 512             --rep-cap 16             --max-selection-layer 8             --out-dir "$out"             | tee "$out.log"
+
+      - name: Replay protected consequences after holdout
+        run: |
+          set -euo pipefail
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission mda/domains/andrews_curtis/replay/protected_cases/scoring_holds_submission70.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-orbit-holdout-${{ matrix.name }}
+          path: mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/holdouts/
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze-candidate, holdout]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen candidates and fresh holdouts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/frozen /tmp/holdouts
+          gh run download "${{ github.run_id }}" -n acc-mda-orbit-candidate-v2 -D /tmp/frozen
+          gh run download "${{ github.run_id }}" --pattern 'acc-mda-orbit-holdout-*' -D /tmp/holdouts
+          test -f /tmp/frozen/candidates.json
+          test "$(find /tmp/holdouts -name result.json | wc -l)" -eq 3
+
+      - name: Prospectively validate frozen orbit candidates
+        run: |
+          set -euo pipefail
+          mkdir -p mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/final
+          python3 - <<'PY'
+          import glob,json
+          from pathlib import Path
+
+          frozen=json.load(open('/tmp/frozen/candidates.json'))
+          candidates=frozen.get('frozen_candidates') or []
+          rs=[json.load(open(p)) for p in glob.glob('/tmp/holdouts/**/result.json',recursive=True)]
+          expected={('ac-08534','current'),('ac-05232','mask3'),('ac-02616','current')}
+          got={(r['challenge_id'],r['policy']) for r in rs}
+          assert got==expected,(got,expected)
+
+          def orbit_code(row,fields):
+              c=row['fiber_coordinate']
+              recs=[]
+              for i in (0,1):
+                  vals={
+                    'slot': c['slot0'] if i==0 else 1-c['slot0'],
+                    'inv': c[f'inv{i}'],
+                    'rot': c[f'rot{i}'],
+                  }
+                  recs.append(tuple(vals[f] for f in fields))
+              return tuple(sorted(recs))
+
+          def check(r,fields):
+              rows=r.get('rows') or []
+              if r.get('status')!='CERTIFIED_QUOTIENT_FIBER_FALSE_MERGE':
+                  return {'status':'NO_EVALUABLE_FALSE_MERGE','false_merge_violations':None}
+              if any(x.get('future2_cost') is None or x.get('fiber_coordinate') is None for x in rows):
+                  return {'status':'UNKNOWN','false_merge_violations':None}
+              cells={}
+              for row in rows:
+                  cells.setdefault(orbit_code(row,fields),[]).append(row)
+              fm=sum(1 for cell in cells.values() if len({x['future2_cost'] for x in cell})>1)
+              return {'status':'PASS' if fm==0 else 'FAIL','false_merge_violations':fm}
+
+          evaluable=[r for r in rs if r.get('status')=='CERTIFIED_QUOTIENT_FIBER_FALSE_MERGE']
+          validations=[]
+          survivors=[]
+          for fields in candidates:
+              checks=[{
+                'challenge_id':r['challenge_id'],
+                'policy':r['policy'],
+                **check(r,fields)
+              } for r in sorted(rs,key=lambda x:x['challenge_id'])]
+              validations.append({'fields':fields,'checks':checks})
+              if len(evaluable)>=2 and all(
+                  c['status']=='PASS' for c in checks if c['status']!='NO_EVALUABLE_FALSE_MERGE'
+              ) and not any(c['status']=='UNKNOWN' for c in checks):
+                  survivors.append(fields)
+
+          if not candidates:
+              status='NO_FROZEN_ORBIT_CANDIDATE'
+          elif len(evaluable)<2:
+              status='UNKNOWN_SEARCH_INSUFFICIENT_FRESH_FALSE_MERGES'
+          elif survivors:
+              status='VERIFIED_PROSPECTIVE_ORBIT_REFINEMENT'
+          else:
+              status='ORBIT_CLOSURE_FAILED_TRANSFER'
+
+          out={
+            'experiment':'ACC_MDA_QUOTIENT_FIBER_ORBIT_GENESIS_V2',
+            'status':status,
+            'development_run':frozen['development_run'],
+            'frozen_candidates':candidates,
+            'holdouts':[{
+              'challenge_id':r['challenge_id'],
+              'policy':r['policy'],
+              'status':r.get('status'),
+              'selection_layer':r.get('selection_layer'),
+              'selected_count':r.get('selected_count'),
+              'future2_class_count':r.get('future2_class_count'),
+              'route_sha256':r.get('route_sha256'),
+            } for r in sorted(rs,key=lambda x:x['challenge_id'])],
+            'evaluable_fresh_holdouts':len(evaluable),
+            'validations':validations,
+            'surviving_candidates':survivors,
+            'scoped_representation_growth_authorized':bool(survivors) and len(evaluable)>=2,
+            'global_inheritance_authorized':False,
+            'next_probe':(
+              'If multiple candidates survive, freeze an untouched separator that makes them disagree. '
+              'If one survives, integrate only provisionally and require causal end-to-end gain plus ablation. '
+              'If none survive, preserve the witnesses and expand the representation grammar minimally again.'
+            ),
+            'claim_boundary':(
+              'Candidate grammar is only the S2 relator-swap orbit closure of the pre-existing quotient-fiber '
+              'coordinates. Candidate set was frozen before fresh holdout future labels were generated.'
+            )
+          }
+          Path('mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/final/report.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('MDA_ORBIT_SYNTHESIS',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-mda-orbit-final-v2
+          path: mda/evidence/andrews_curtis/quotient_fiber_orbit_genesis_v2/final/
+          retention-days: 90
+
+# V2 changes only the representation candidate language, not the solver.
+# The expansion is the finite relator-swap orbit closure forced by V1 transfer failure.
