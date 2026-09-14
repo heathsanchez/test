@@ -1,0 +1,49 @@
+name: ACC Funnel Quotient Ablation V1
+
+on:
+  push:
+    branches:
+      - acc-proof-track-orbit-v1
+    paths:
+      - 'mda/domains/andrews_curtis/proof_track/funnel_quotient_ablation.py'
+      - '.github/workflows/acc-funnel-quotient-ablation-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  SOURCE_LONG: "34732349525"
+  SOURCE_FUNNEL: "34834332332"
+
+jobs:
+  ablate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Recover frozen proof and funnel quotient
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p /tmp/pool /tmp/funnel
+          gh run download "$SOURCE_LONG" -n acc-fresh-frontier-v2-pool -D /tmp/pool
+          gh run download "$SOURCE_FUNNEL" -n acc-funnel-normal-form-compiler-v1 -D /tmp/funnel
+      - name: Fetch pinned official authority
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Compare exact-state contraction with funnel quotient
+        run: |
+          python3 mda/domains/andrews_curtis/proof_track/funnel_quotient_ablation.py \
+            --acc-root /tmp/acc \
+            --submission /tmp/pool/fresh_frontier_v2_pool/pending_submission.txt \
+            --challenge-id ac-08551 \
+            --funnel-report /tmp/funnel/report.json \
+            --funnel-optimized /tmp/funnel/optimized_submission.txt \
+            --out-dir mda/evidence/andrews_curtis/funnel_quotient_ablation_v1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-funnel-quotient-ablation-v1
+          path: mda/evidence/andrews_curtis/funnel_quotient_ablation_v1/
