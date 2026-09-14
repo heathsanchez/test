@@ -6,7 +6,7 @@ on:
 jobs:
   run:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,15 +14,15 @@ jobs:
           python-version: '3.12'
       - name: Install ARC SDK
         run: python -m pip install --upgrade pip && pip install arc-agi
-      - name: Extract Level4 resource scalar
+      - name: Run one-bit resource ledger on Level4
         shell: bash
         run: |
           set -o pipefail
-          python experiments/arc3_tonight/developmental_ls20_v21_resource_scalar_diagnosis.py | tee arc3_v21_resource_scalar.log
+          python experiments/arc3_tonight/developmental_ls20_v22_one_bit_resource_ledger.py | tee arc3_v22_one_bit_resource.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: arc3-v21-resource-scalar
+          name: arc3-v22-one-bit-resource
           path: |
-            arc3_v21_resource_scalar.log
-            arc3_developmental_v21_resource_scalar_result.json
+            arc3_v22_one_bit_resource.log
+            arc3_developmental_v22_one_bit_resource_ledger_result.json
