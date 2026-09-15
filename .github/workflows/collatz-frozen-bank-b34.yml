@@ -1,0 +1,118 @@
+name: Collatz frozen B24 bank transfer to B34
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-frozen-bank-b34.yml"
+      - "experiments/collatz_frozen_deep_bank_b24_h16.txt"
+      - "experiments/collatz_compiled_deep_future.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+      - "experiments/collatz_global_constructor_product.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-frozen-bank-b34
+  cancel-in-progress: true
+
+jobs:
+  future34:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare frozen banks
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          grep -v '^#' experiments/collatz_frozen_deep_bank_b24_h16.txt             | sed '/^[[:space:]]*$/d' > results/deep-bank.txt
+          test "$(wc -l < results/deep-bank.txt)" -eq 128
+
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Replay frozen B24 bank at untouched B34
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/future 34 results/q14-bank.txt results/deep-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/census.txt
+          grep -q "new_search_calls=0" results/census.txt
+
+      - name: Score B34 transfer and exact mixed residual
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"COMPILED_FUTURE_DONE K=34 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_compiled=(\d+) "
+              r"controls=(\d+) new_search_calls=0",s)
+          assert m,s[-8000:]
+          live,des,bridge,do,compiled,controls=map(int,m.groups())
+
+          deep_o=120420841
+          full_h16=85313088
+          full_gain=deep_o-full_h16
+          transfer_gain=deep_o-live
+          ratio=transfer_gain/full_gain
+
+          assert live>=full_h16,(live,full_h16)
+          assert transfer_gain>0
+          assert ratio>0.99,(ratio,live)
+
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"frozen_b24_bank_to_b34",
+              "discovery_max_B":24,
+              "future_B":34,
+              "frozen_exact_constructors":128,
+              "new_search_calls":0,
+              "compiled_live":live,
+              "deep_o_baseline_live":deep_o,
+              "full_h16_search_live":full_h16,
+              "full_h16_gain":full_gain,
+              "compiled_transfer_gain":transfer_gain,
+              "gain_transfer_ratio":ratio,
+              "compiled_direct_closures":compiled,
+              "controls":controls,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("FROZEN_B24_TO_B34_TRANSFER",json.dumps(out,separators=(",",":")))
+          PY
+
+          LIVE=$(python - <<'PY'
+          import json
+          print(json.load(open("results/summary.json"))["compiled_live"])
+          PY
+          )
+          python experiments/collatz_global_constructor_product.py             --two-bits 34 --two-live "$LIVE"             --q 14 --q-killed 2233499             --out results/product.json | tee results/product.txt
+          python - <<'PY'
+          import json
+          r=json.load(open("results/product.json"))
+          print("FROZEN_B24_TO_B34_PRODUCT_RESIDUAL",
+                r["mixed_residual_fraction_exact"],
+                r["mixed_residual_fraction"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frozen-b24-bank-transfer-b34
+          path: results
+          retention-days: 30
