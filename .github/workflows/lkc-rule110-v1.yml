@@ -1,0 +1,89 @@
+name: LKC Rule110 verified compilation v1
+
+on:
+  push:
+    branches: [lkc-rule110-fused-v1]
+    paths:
+      - "experiments/lkc_rule110/**"
+      - ".github/workflows/lkc-rule110-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-rule110-v1
+  cancel-in-progress: true
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Exact fusion census
+        run: |
+          mkdir -p artifacts
+          python3 experiments/lkc_rule110/fusion_census.py             --out artifacts/rule110-fusion.json             | tee artifacts/fusion-census.log
+
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf             https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh             | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout frozen official challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+          git rev-parse HEAD | tee ../artifacts/lkc-commit.txt
+
+      - name: Prepare official Rule 110 evaluator
+        working-directory: lkc
+        run: |
+          bash evaluation/setup.sh --problem ca-rule110
+
+      - name: Build candidate universal proof
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission.lean" Submission.lean
+          lake build 2>&1 | tee "$GITHUB_WORKSPACE/artifacts/candidate-build.log"
+
+      - name: Evaluate official bit-packed example
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py             --problem ca-rule110             --submission "$GITHUB_WORKSPACE/lkc/examples/ca-rule110/Submission.lean"             --timeout 120             2>&1 | tee "$GITHUB_WORKSPACE/artifacts/baseline-eval.log"
+
+      - name: Evaluate scored-path candidate
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py             --problem ca-rule110             --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission.lean"             --timeout 120             2>&1 | tee "$GITHUB_WORKSPACE/artifacts/candidate-eval.log"
+
+      - name: Capture evaluator JSON
+        if: always()
+        run: |
+          mkdir -p artifacts/evaluator-results
+          if [ -d lkc/results/local-evaluation/ca-rule110 ]; then
+            cp -R lkc/results/local-evaluation/ca-rule110/. artifacts/evaluator-results/
+          fi
+          {
+            echo "# Rule 110 v1 run"
+            echo
+            echo "Official challenge commit: $LKC_COMMIT"
+            echo
+            echo "Candidate: scored-path unrolled bstep for 2/4/8, universal fallback otherwise."
+            echo "Fusion census: exact local T^k truth functions plus packed/list cross-checks."
+          } > artifacts/README.md
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v1-evidence
+          path: artifacts/
+          if-no-files-found: error
