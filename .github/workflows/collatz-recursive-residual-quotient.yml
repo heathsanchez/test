@@ -1,0 +1,142 @@
+name: Collatz recursive residual consequence quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-recursive-residual-quotient.yml"
+      - "experiments/collatz_recursive_residual_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-recursive-residual-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        depth: [22, 24, 26, 28, 30, 32]
+    name: recursive-residual-k${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact recursive quotient
+        run: |
+          g++ -O3 -march=native -std=c++20             experiments/collatz_recursive_residual_quotient.cpp             -o /tmp/recursive-residual
+          if [ "${{ matrix.depth }}" -le 24 ]; then
+            g++ -O3 -march=native -std=c++20               experiments/collatz_strong_sieve_scout.cpp               -o /tmp/strong-sieve
+          fi
+
+      - name: Run exact live-only recursive quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/recursive-residual "${{ matrix.depth }}"             | tee results/census.txt
+          grep -q "VERIFIED_RECURSIVE_RESIDUAL_CONSEQUENCE_QUOTIENT" results/census.txt
+          grep -q "RECURSIVE_QUOTIENT_DONE K=${{ matrix.depth }}" results/census.txt
+
+      - name: Compare against full strong-sieve control
+        if: matrix.depth <= 24
+        run: |
+          set -euo pipefail
+          /tmp/strong-sieve "${{ matrix.depth }}" | tee results/strong-sieve.txt
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          depth=int("${{ matrix.depth }}")
+          a=Path("results/census.txt").read_text()
+          b=Path("results/strong-sieve.txt").read_text()
+          ra=re.findall(r"RECURSIVE_LEVEL k=(\d+) live=(\d+)",a)
+          rb=re.findall(r"STRONG_SIEVE_LEVEL k=(\d+).*? live=(\d+)",b)
+          A={int(k):int(v) for k,v in ra}
+          B={int(k):int(v) for k,v in rb}
+          assert depth in A and depth in B
+          # The recursive scout deliberately omits global coalescence, so it
+          # must be weaker (never close more classes) than the canonical scout.
+          assert A[depth] >= B[depth], (depth,A[depth],B[depth])
+          print("RECURSIVE_SAFE_WEAKENING_CONTROL_OK",
+                f"k={depth}",f"recursive={A[depth]}",f"canonical={B[depth]}")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recursive-residual-k${{ matrix.depth }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: recursive-residual-k*
+          path: gathered
+      - name: Aggregate recursive quotient curve
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("recursive-residual-k*")):
+              p=d/"census.txt"
+              if not p.exists():
+                  continue
+              s=p.read_text()
+              m=re.search(
+                  r"RECURSIVE_QUOTIENT_DONE K=(\d+) "
+                  r"frontier_live=(\d+) raw_live_nodes=(\d+) "
+                  r"signature_types=(\d+) root_signature=(\d+) "
+                  r"max_unique_signatures=(\d+) max_unique_depth=(\d+)",
+                  s)
+              assert m,s[-4000:]
+              k,frontier,raw,types,root,mx,mxd=map(int,m.groups())
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              levels=[]
+              for z in re.finditer(
+                  r"RECURSIVE_QUOTIENT_LEVEL k=(\d+) remaining=(\d+) "
+                  r"nodes=(\d+) unique_signatures=(\d+) "
+                  r"compression=([0-9.eE+-]+)",s):
+                  levels.append({
+                    "k":int(z.group(1)),
+                    "remaining":int(z.group(2)),
+                    "nodes":int(z.group(3)),
+                    "unique_signatures":int(z.group(4)),
+                    "compression":float(z.group(5)),
+                  })
+              rows.append({
+                "K":k,
+                "frontier_live":frontier,
+                "raw_live_nodes":raw,
+                "signature_types":types,
+                "raw_to_signature_compression":raw/max(types,1),
+                "root_signature":root,
+                "max_unique_signatures":mx,
+                "max_unique_depth":mxd,
+                "wall_seconds":float(tm[0]) if tm else None,
+                "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+                "levels":levels,
+              })
+          rows.sort(key=lambda x:x["K"])
+          assert len(rows)==6,rows
+          out={"kind":"exact_recursive_residual_consequence_quotient","rows":rows}
+          Path("recursive-residual-quotient-field.json").write_text(
+              json.dumps(out,indent=2)+"\n")
+          print("RECURSIVE_RESIDUAL_QUOTIENT_FIELD",
+                json.dumps(out,separators=(",",":")))
+          # Scientific gate: consequence quotient must actually compress the
+          # live tree substantially; this is not a global-closure gate.
+          assert all(r["raw_to_signature_compression"]>50 for r in rows if r["K"]>=26),rows
+          print("RECURSIVE_RESIDUAL_QUOTIENT_COMPRESSION_GATE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recursive-residual-quotient-field
+          path: recursive-residual-quotient-field.json
+          retention-days: 30
