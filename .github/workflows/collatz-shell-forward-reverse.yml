@@ -1,0 +1,116 @@
+name: Collatz shell forward reverse coalescence
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-shell-forward-reverse.yml"
+      - "experiments/collatz_shell_forward_reverse.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-shell-forward-reverse
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        forward_h: [0,1,2,4,8]
+    name: forward-h${{ matrix.forward_h }}-reverse8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+      - name: Run exact forward reverse coalescence
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_shell_forward_reverse.cpp -o /tmp/fr
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/fr 24 results/q14-bank.txt 8 ${{ matrix.forward_h }} | tee results/census.txt
+          grep -q "VERIFIED_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+      - name: Parse result
+        run: |
+          python - <<'PY'
+          import json,re
+          F=int("${{ matrix.forward_h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"SHELL_FORWARD_REVERSE_RESULT K=24 reverse_depth=8 forward_h=(\d+) "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-6000:]
+          f,u,fw,rv,hard,co=map(int,m.groups())
+          assert f==F and u==173180 and fw+rv+hard==u
+          fh={str(int(z.group(1))):int(z.group(2))
+              for z in re.finditer(r"SHELL_FORWARD_HIT f=(\d+) closed=(\d+)",s)}
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"forward_h":F,"reverse_depth":8,"universal_residual":u,
+               "shell_forward":fw,"shell_reverse":rv,"shell_closed":fw+rv,
+               "shell_hard":hard,"closed_fraction":(fw+rv)/u,
+               "forward_hit_hist":fh,
+               "controls":co,"wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("SHELL_FORWARD_REVERSE_SCOUT",json.dumps(out,separators=(",",":")))
+          if F==0:
+              assert rv==72800 and hard==100380,(rv,hard)
+              print("FORWARD_ZERO_REPRODUCES_DIRECT_SHELL_DEPTH8")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shell-forward-reverse-h${{ matrix.forward_h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shell-forward-reverse-h*
+          path: gathered
+      - name: Aggregate forward reverse curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("shell-forward-reverse-h*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["forward_h"])
+          assert [r["forward_h"] for r in rows]==[0,1,2,4,8],rows
+          prev=100380
+          for r in rows:
+              assert r["shell_hard"]<=prev,(prev,r)
+              prev=r["shell_hard"]
+          out={"kind":"shell_forward_reverse_curve","rows":rows,"best":rows[-1]}
+          Path("shell-forward-reverse-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("SHELL_FORWARD_REVERSE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shell-forward-reverse-field
+          path: shell-forward-reverse-field.json
+          retention-days: 30
