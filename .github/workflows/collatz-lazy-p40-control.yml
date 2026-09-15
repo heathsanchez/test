@@ -1,0 +1,155 @@
+name: Collatz staged p40 veto control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-lazy-p40-control.yml"
+      - "experiments/collatz_vslice_lazy_p40_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-lazy-p40-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [15,10,8]
+    name: p40-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build retained and staged scanners
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_fused_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p28_scan.cpp -o /tmp/p28
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p40_scan.cpp -o /tmp/p40
+          g++ -O3 -march=native -fopenmp -DSELF_CHECK_P40=1 -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p40_scan.cpp -o /tmp/p40-check
+
+      - name: Independent staged-vs-direct p40 control
+        run: |
+          set -o pipefail
+          mkdir -p results
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          target=1<<18
+          print(L+target*(1<<(K+1)))
+          PY
+          )
+          /tmp/p40-check "$K" 5000 1 0 "$L" "$U" | tee results/selfcheck.txt
+          grep -q "STATUS LAZY_P40_VETO_SCAN_CLOSED" results/selfcheck.txt
+          ! grep -q "P40_STAGE_MISMATCH" results/selfcheck.txt
+          echo P40_STAGED_DIRECT_CONTROL_OK
+
+      - name: Protect 920-step record
+        run: |
+          N=2874993894540242321407
+          /tmp/p40 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS LAZY_P40_VETO_SCAN_CLOSED" results/record.txt
+
+      - name: Benchmark sealed 2^30-seed world
+        run: |
+          set -euo pipefail
+          export OMP_NUM_THREADS=4
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<30
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/p24.time /tmp/p24 "$K" 5000 1 0 "$L" "$U" > results/p24.txt
+          /usr/bin/time -f '%e' -o results/p28.time /tmp/p28 "$K" 5000 1 0 "$L" "$U" > results/p28.txt
+          /usr/bin/time -f '%e' -o results/p40.time /tmp/p40 "$K" 5000 1 0 "$L" "$U" > results/p40.txt
+          python - <<'PY'
+          import json,re
+          k=int("${{ matrix.k }}")
+          a=open("results/p24.txt").read()
+          b=open("results/p28.txt").read()
+          c=open("results/p40.txt").read()
+          assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in a
+          assert "STATUS LAZY_P28_VETO_SCAN_CLOSED" in b
+          assert "STATUS LAZY_P40_VETO_SCAN_CLOSED" in c
+          ma=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+          mb=re.search(r"LAZY_P28_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) EXPLICIT (\d+)",b)
+          mc=re.search(r"LAZY_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",c)
+          assert ma and mb and mc,(a[-2000:],b[-2000:],c[-2000:])
+          p24_exp=int(ma.group(3))
+          p28_exp=int(mb.group(4))
+          p40_exp=int(mc.group(5))
+          assert p40_exp<p28_exp<p24_exp,(p24_exp,p28_exp,p40_exp)
+          at=float(open("results/p24.time").read())
+          bt=float(open("results/p28.time").read())
+          ct=float(open("results/p40.time").read())
+          row={"k":k,"p24_explicit":p24_exp,"p28_explicit":p28_exp,"p40_explicit":p40_exp,
+               "p24_seconds":at,"p28_seconds":bt,"p40_seconds":ct,
+               "p40_vs_p24_speedup":at/ct if ct else None,
+               "p40_vs_p28_speedup":bt/ct if ct else None,
+               "p40_extra_reduction":1-p40_exp/p28_exp}
+          print("LAZY_P40_COMPARISON",json.dumps(row,separators=(",",":")))
+          print("LAZY_P40_EXACT_CONTROL_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lazy-p40-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: benchmark
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: lazy-p40-k*
+          path: gathered
+      - name: Aggregate staged p40 economics
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("lazy-p40-k*")):
+              a=(d/"p24.txt").read_text()
+              b=(d/"p28.txt").read_text()
+              c=(d/"p40.txt").read_text()
+              k=int(re.search(r" k=(\d+) ",c).group(1))
+              ma=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+              mb=re.search(r"LAZY_P28_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) EXPLICIT (\d+)",b)
+              mc=re.search(r"LAZY_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",c)
+              assert ma and mb and mc
+              at=float((d/"p24.time").read_text())
+              bt=float((d/"p28.time").read_text())
+              ct=float((d/"p40.time").read_text())
+              rows.append({"k":k,"p24_explicit":int(ma.group(3)),"p28_explicit":int(mb.group(4)),
+                           "p40_explicit":int(mc.group(5)),"p24_seconds":at,"p28_seconds":bt,"p40_seconds":ct,
+                           "p40_vs_p24_speedup":at/ct if ct else None,
+                           "p40_vs_p28_speedup":bt/ct if ct else None})
+          assert len(rows)==3,rows
+          out={"kind":"staged_p40_transfer_veto","rows":sorted(rows,key=lambda x:-x["k"])}
+          Path("lazy-p40-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("LAZY_P40_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lazy-p40-field
+          path: lazy-p40-field.json
+          retention-days: 30
