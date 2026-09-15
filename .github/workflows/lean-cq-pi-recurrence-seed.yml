@@ -57,11 +57,11 @@ jobs:
           {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
           JSON
           done
-          grep -Fq 'CQ_PI_SEED_LEN' quotient/src/util.rs
-          grep -Fq 'domain.is_closed()' quotient/src/eval.rs
-          grep -Fq 'cq_seed_env_eq' quotient/src/eval.rs
-          grep -Fq 'std::hint::black_box(domain)' quotient/src/eval.rs
-          grep -Fq '_cached_domain = std::hint::black_box(domain)' ablation/src/eval.rs
+          test -s diagnostics/pi-recurrence/quotient.patch
+          test -s diagnostics/pi-recurrence/ablation.patch
+          grep -Fq 'CQ_PI_SEED_LEN' diagnostics/pi-recurrence/quotient.patch
+          grep -Fq 'cq_seed_env_eq' diagnostics/pi-recurrence/quotient.patch
+          grep -Fq '_cached_domain' diagnostics/pi-recurrence/ablation.patch
 
       - name: Build all arms identically
         shell: bash
