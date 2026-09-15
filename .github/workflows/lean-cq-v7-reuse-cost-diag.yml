@@ -1,0 +1,117 @@
+name: Lean V7 avoided consequence cost diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-cq-v7-reuse-cost-diag.yml'
+      - 'scripts/patch_cq_v7_reuse_cost_diag.py'
+      - 'scripts/patch_cq_pi_recurrence_seed_ablation.py'
+      - 'scripts/patch_cq_pi_recurrence_seed.py'
+      - 'scripts/patch_a6.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a6 results/v7-cost diagnostics/v7-cost
+          mkdir -p arena-tests artifact results/v7-cost diagnostics/v7-cost
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct V7 recompute diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout -q "$SOKO_PIN"
+          python3 scripts/patch_a6.py
+          python3 scripts/patch_cq_v7_reuse_cost_diag.py
+          git -C a6 diff --check
+          git -C a6 diff > diagnostics/v7-cost/diagnostic.patch
+          cat > a6/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+
+      - name: Freeze A and B workloads
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          ds=sorted(pathlib.Path('arena-tests/good').rglob('*grind-ring-5*.ndjson'))
+          if len(ds)!=1: raise SystemExit(len(ds))
+          d=ds[0].resolve()
+          good=[p for p in pathlib.Path('arena-tests/good').rglob('*.ndjson') if p.resolve()!=d]
+          ordered=sorted(good,key=lambda p:(-p.stat().st_size,str(p)))
+          A=ordered[:24]; B=ordered[24:48]
+          pathlib.Path('diagnostics/v7-cost/set_a.txt').write_text('\n'.join(map(str,A))+'\n')
+          pathlib.Path('diagnostics/v7-cost/set_b.txt').write_text('\n'.join(map(str,B))+'\n')
+          PY
+
+      - name: Measure avoided evaluator work
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          rx=re.compile(
+            r'V7_REUSE_COST matches=(\d+) recompute_eval_calls=(\d+) max_eval_calls=(\d+) b1=(\d+) b2_4=(\d+) b5_16=(\d+) b17_64=(\d+) b65_256=(\d+) b257p=(\d+)'
+          )
+          fields=['matches','recompute_eval_calls','max_eval_calls','b1','b2_4','b5_16','b17_64','b65_256','b257p']
+          sets={
+            'A':[pathlib.Path(x) for x in pathlib.Path('diagnostics/v7-cost/set_a.txt').read_text().splitlines() if x],
+            'B':[pathlib.Path(x) for x in pathlib.Path('diagnostics/v7-cost/set_b.txt').read_text().splitlines() if x],
+          }
+          out={}
+          for name,cases in sets.items():
+              total={k:0 for k in fields}
+              total['max_eval_calls']=0
+              rows=[]
+              for p in cases:
+                  with p.open('rb') as f:
+                      r=subprocess.run(
+                        ['a6/target/release/sokonanoda','a6/config.json'],
+                        stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                        env={**os.environ,'SOKONANODA_V7_REUSE_COST_DIAG':'1'},
+                      )
+                  if r.returncode: raise SystemExit(f'{p} rc={r.returncode}')
+                  m=rx.search(r.stderr.decode(errors='replace'))
+                  if not m: raise SystemExit(f'missing telemetry {p}')
+                  row=dict(zip(fields,map(int,m.groups())))
+                  rows.append({'case':str(p),**row})
+                  for k in fields:
+                      if k=='max_eval_calls':
+                          total[k]=max(total[k],row[k])
+                      else:
+                          total[k]+=row[k]
+              total['mean_eval_calls_per_match']=total['recompute_eval_calls']/total['matches'] if total['matches'] else 0
+              out[name]={'total':total,'rows':rows}
+          pathlib.Path('results/v7-cost/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-v7-avoided-consequence-cost
+          path: |
+            results/v7-cost/
+            diagnostics/v7-cost/
