@@ -1,0 +1,98 @@
+name: Collatz q7 reverse-predecessor swarm control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-predq7-swarm-control.yml"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+      - "experiments/collatz_vslice_prefix_predq7_scan.cpp"
+      - "experiments/collatz_vslice_prefix_mod9_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-predq7-swarm-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independently verify q7 reverse tree
+        run: |
+          python experiments/collatz_reverse_predecessor_tree.py --q 7 | tee /tmp/q7.txt
+          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt
+          grep -q "TOTAL_RESIDUES 2187" /tmp/q7.txt
+          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
+      - name: Build exact mod9 and q7 candidates
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_prefix_mod9_scan.cpp -o /tmp/mod9
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_prefix_predq7_scan.cpp -o /tmp/q7
+      - name: Protect exact 920 record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/q7 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS PREFIX_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/record.txt
+          echo PREDQ7_RECORD_CONTROL_OK
+      - name: Compare exact large sealed worlds
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          for K in 15 10 8; do
+            U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+            )
+            /usr/bin/time -f '%e' -o results/mod9-k$K.time               /tmp/mod9 $K 5000 1 0 "$L" "$U" > results/mod9-k$K.txt
+            /usr/bin/time -f '%e' -o results/q7-k$K.time               /tmp/q7 $K 5000 1 0 "$L" "$U" > results/q7-k$K.txt
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          for k in (15,10,8):
+              a=open(f"results/mod9-k{k}.txt").read()
+              b=open(f"results/q7-k{k}.txt").read()
+              assert "STATUS PREFIX_MOD9_SIEVE_AND_SCAN_CLOSED" in a,a[-4000:]
+              assert "STATUS PREFIX_PREDQ7_SIEVE_AND_SCAN_CLOSED" in b,b[-4000:]
+              ah=re.search(r"full_count=(\d+).*explicit_count=(\d+)",a)
+              ak=re.search(r"MOD9_KILLED (\d+) EXPLICIT (\d+)",a)
+              bh=re.search(r"full_count=(\d+).*explicit_count=(\d+)",b)
+              bk=re.search(r"PREDQ7_KILLED (\d+) EXPLICIT (\d+)",b)
+              assert ah and ak and bh and bk
+              full,prefix=map(int,ah.groups())
+              amod9,aexp=map(int,ak.groups())
+              bfull,bprefix=map(int,bh.groups())
+              bkill,bexp=map(int,bk.groups())
+              assert (full,prefix)==(bfull,bprefix)
+              assert amod9+aexp==prefix
+              assert bkill+bexp==prefix
+              at=float(open(f"results/mod9-k{k}.time").read())
+              bt=float(open(f"results/q7-k{k}.time").read())
+              rows.append({
+                  "k":k,"full":full,"prefix_live":prefix,
+                  "mod9_explicit":aexp,"q7_explicit":bexp,
+                  "q7_extra_killed":aexp-bexp,
+                  "residual_reduction":aexp/bexp if bexp else float("inf"),
+                  "mod9_seconds":at,"q7_seconds":bt,
+                  "speedup":at/bt if bt else float("inf"),
+              })
+          print("PREDQ7_SWARM_COMPARISON",json.dumps(rows,separators=(",",":")))
+          assert all(r["q7_explicit"] < r["mod9_explicit"] for r in rows),rows
+          print("PREDQ7_SWARM_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-predq7-swarm-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
