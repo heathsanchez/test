@@ -48,8 +48,8 @@ def analyze(r0,m0,cap):
     x=x0
     # stack nodes are r values; edges[i] maps nodes[i] -> nodes[i+1]
     nodes=[r0]
+    node_m=[m0]
     edge_branches=[]
-    edge_entry_m=[]
     pos={r0:0}
     cycles=[]
     max_spine=1
@@ -64,7 +64,7 @@ def analyze(r0,m0,cap):
         if rp in pos:
             start=pos[rp]
             bs=edge_branches[start:]+[b]
-            entry_m=edge_entry_m[start] if start<len(edge_entry_m) else m
+            entry_m=node_m[start]
             A,B,D=compose(bs)
             assert (A*entry_m+B)%(1<<D)==0
             exit_m=(A*entry_m+B)//(1<<D)
@@ -94,14 +94,14 @@ def analyze(r0,m0,cap):
             for rr in nodes[start+1:]:
                 pos.pop(rr,None)
             nodes=nodes[:start+1]
+            node_m=node_m[:start+1]
             edge_branches=edge_branches[:start]
-            edge_entry_m=edge_entry_m[:start]
-            # Current episode lands at retained node rp with new cofactor mp.
-            # The next outgoing edge will use mp; store state via x below.
+            # Current episode lands at retained node rp with a new cofactor.
+            node_m[start]=mp
         else:
-            edge_entry_m.append(m)
             edge_branches.append(b)
             nodes.append(rp)
+            node_m.append(mp)
             pos[rp]=len(nodes)-1
 
         max_spine=max(max_spine,len(nodes))
