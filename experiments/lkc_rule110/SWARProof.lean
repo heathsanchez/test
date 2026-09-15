@@ -241,4 +241,39 @@ theorem mixPairSWAR_eq (x y : Nat) (hx : x < 2 ^ 64) :
   rw [bit31_pack2_high _ _ (v32_mul_c2_lt64 (y32 x))]
   rfl
 
+
+def scalarRef (x : Nat) : Nat :=
+  let y := ((x ^^^ (x >>> 16)) * c1) &&& mask32
+  (((y ^^^ (y >>> 15)) * c2) >>> 31) % 2
+
+theorem y32_eq_ref (x : Nat) :
+    y32 x = ((x ^^^ (x >>> 16)) * c1) &&& mask32 := by
+  unfold y32 u32
+  rw [mask32_eq]
+  simp only [Nat.and_two_pow_sub_one_eq_mod]
+  have hc : c1 < 2 ^ 32 := by decide
+  simp [Nat.mul_mod, Nat.mod_eq_of_lt hc]
+
+theorem v32_eq_raw (x : Nat) (hx : x < 2 ^ 32) :
+    v32 x = x ^^^ (x >>> 15) := by
+  have hs : x >>> 15 < 2 ^ 32 :=
+    Nat.lt_of_le_of_lt (Nat.shiftRight_le x 15) hx
+  have hz : (x ^^^ (x >>> 15)) < 2 ^ 32 :=
+    Nat.xor_lt_two_pow hx hs
+  unfold v32
+  rw [mask32_eq]
+  exact Nat.and_two_pow_sub_one_of_lt_two_pow hz
+
+theorem mixScalarNat_eq_ref (x : Nat) :
+    mixScalarNat x = scalarRef x := by
+  unfold mixScalarNat scalarRef bit31Nat
+  rw [y32_eq_ref]
+  let y := ((x ^^^ (x >>> 16)) * c1) &&& mask32
+  have hy : y < 2 ^ 32 := by
+    dsimp [y]
+    exact masked32_lt32 _
+  have hv : v32 y = y ^^^ (y >>> 15) :=
+    v32_eq_raw y hy
+  rw [hv]
+
 end SWAR
