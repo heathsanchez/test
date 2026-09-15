@@ -1725,7 +1725,6 @@ theorem pack8SWAR8_eq (x : Nat) (h : x + 7 * stepConst < 2 ^ 64) :
         (x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst)
         h0 h1 h2 h3 h4 h5 h6 h7]
   simp only [Vec8.mixScalarNat_eq_ref, vec8Scalar_eq]
-  omega
 
 theorem pack6SWAR8_eq (x : Nat) (h : x + 5 * stepConst < 2 ^ 64) :
     pack6SWAR8 x = pack6Nat x := by
