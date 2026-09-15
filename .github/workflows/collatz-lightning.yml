@@ -6,12 +6,6 @@ concurrency:
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-lightning.yml"
-      - "experiments/collatz_exact_adaptive.py"
-      - "experiments/collatz_exact_cnf_even.py"
-      - "experiments/collatz_residual_ledger.json"
 
 jobs:
   validate:
