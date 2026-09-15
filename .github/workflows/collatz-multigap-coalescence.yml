@@ -1,0 +1,33 @@
+name: Collatz multi-gap coalescence scout
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-multigap-coalescence.yml"
+      - "experiments/collatz_multigap_coalescence.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-multigap-coalescence
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact k28 gap census
+        run: |
+          python experiments/collatz_multigap_coalescence.py --k 28 --s 16 --max-gap 5 | tee gap.txt
+          grep -q "GAP_CENSUS K=28 S=16 gap=1 raw=17917 new=17917 union=17917" gap.txt
+          grep -q "GAP_CENSUS K=28 S=16 gap=2 raw=3066 new=0 union=17917" gap.txt
+          grep -q "GAP_CENSUS K=28 S=16 gap=3 raw=1564 new=21 union=17938" gap.txt
+          grep -q "GAP_CENSUS K=28 S=16 gap=4 raw=62 new=0 union=17938" gap.txt
+          grep -q "GAP_CENSUS K=28 S=16 gap=5 raw=31 new=0 union=17938" gap.txt
+          grep -q "VERIFIED_MULTI_GAP_COALESCENCE_SCOUT" gap.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-multigap-coalescence
+          path: gap.txt
+          retention-days: 30
