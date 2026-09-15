@@ -1,0 +1,95 @@
+name: Collatz coalesced symbolic shell closure
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-symbolic-coalesced-shell.yml"
+      - "experiments/collatz_symbolic_coalesced_shell.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-symbolic-coalesced-shell
+  cancel-in-progress: true
+
+jobs:
+  symbolic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        k: [32,36,40]
+    name: coalesced-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Run exact coalesced symbolic closure
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_symbolic_coalesced_shell.cpp -o /tmp/coalesced
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/coalesced ${{ matrix.k }} 512 | tee results/census.txt
+      - name: Parse result
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"COALESCED_SYMBOLIC_DONE K={K} extra=512 final_t=(\d+) "
+              r"live=(\d+) peak_states=(\d+) peak_t=(\d+) total_merged=(\d+)",s)
+          assert m,s[-7000:]
+          final_t,live,peak,peak_t,merged=map(int,m.groups())
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"K":K,"extra":512,"final_t":final_t,"live":live,
+               "peak_states":peak,"peak_t":peak_t,"total_merged":merged,
+               "closed":live==0,"wall_seconds":float(tm[0]),
+               "max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("COALESCED_SYMBOLIC_CELL",json.dumps(out,separators=(",",":")))
+          if live==0:
+              assert "VERIFIED_COALESCED_SYMBOLIC_ODD_SHELL_CLOSURE" in s
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coalesced-symbolic-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: symbolic
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coalesced-symbolic-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("coalesced-symbolic-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==[32,36,40],rows
+          out={"kind":"coalesced_symbolic_shell_curve","rows":rows,
+               "all_closed":all(x["closed"] for x in rows)}
+          Path("coalesced-symbolic-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("COALESCED_SYMBOLIC_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coalesced-symbolic-field
+          path: coalesced-symbolic-field.json
+          retention-days: 30
