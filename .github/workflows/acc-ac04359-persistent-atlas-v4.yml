@@ -56,10 +56,10 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
-          sudo fallocate -l 10G /swapfile
-          sudo chmod 600 /swapfile
-          sudo mkswap /swapfile
-          sudo swapon /swapfile
+          sudo fallocate -l 10G /swapfile-atlas-v4
+          sudo chmod 600 /swapfile-atlas-v4
+          sudo mkswap /swapfile-atlas-v4
+          sudo swapon /swapfile-atlas-v4
 
       - name: Augment persistent atlas with our latest route
         run: |
