@@ -1,0 +1,217 @@
+name: Lean A6 materialized-key spine Mathlib
+
+on:
+  push:
+    paths:
+      - 'MATERIALIZED_KEY_SPINE_MATHLIB_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  mathlib:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    env:
+      ARENA_SHA: 4543f486677a6cb56c7656767712cd017f8058ea
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      FROZEN_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Checkout frozen Lean Kernel Arena
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena.git arena
+          git -C arena checkout -q "$ARENA_SHA"
+          test "$(git -C arena rev-parse HEAD)" = "$ARENA_SHA"
+          grep -q 'ref: v4.29.1' arena/tests/mathlib.yaml
+          grep -q 'rev: 5e932f97dd25535344f80f9dd8da3aab83df0fe6' arena/tests/mathlib.yaml
+          mkdir -p results/materialized-spine-mathlib diagnostics/materialized-spine-mathlib
+          git -C arena rev-parse HEAD > diagnostics/materialized-spine-mathlib/arena-sha.txt
+          cat arena/tests/mathlib.yaml > diagnostics/materialized-spine-mathlib/mathlib.yaml
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build frozen Mathlib export through Arena
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          python lka.py build-test mathlib
+          test -f _build/tests/mathlib.ndjson
+          ls -lh _build/tests/mathlib.ndjson
+          sha256sum _build/tests/mathlib.ndjson | tee ../diagnostics/materialized-spine-mathlib/mathlib-export.sha256
+
+      - name: Fetch frozen small corpus for PGO training
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p frozen artifact
+          curl --fail --location --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$FROZEN_ARTIFACT/zip" \
+            -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C frozen
+          test -f frozen/good/init-prelude.ndjson
+
+      - name: Reconstruct frozen checker arms
+        run: |
+          set -euo pipefail
+          for arm in a0 raws rawkey; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            case "$arm" in
+              raws) python3 scripts/patch_a6_prehashed_spine.py ;;
+              rawkey) python3 scripts/patch_a6_materialized_key_spine.py ;;
+              a0) ;;
+            esac
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/materialized-spine-mathlib/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+          test -s diagnostics/materialized-spine-mathlib/raws.patch
+          test -s diagnostics/materialized-spine-mathlib/rawkey.patch
+          grep -q "HashTable<(usize, u64, S" rawkey/src/util.rs
+
+      - name: Arena-style PGO build all arms
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          test -x "$LLVM_PROFDATA"
+          TRAIN="$PWD/frozen/good/init-prelude.ndjson"
+          for arm in a0 raws rawkey; do
+            rm -rf "$arm/pgo"; mkdir -p "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+            "$arm/target/release/sokonanoda" "$arm/config.json" < "$TRAIN" >/dev/null 2>/dev/null || true
+            "$LLVM_PROFDATA" merge -o "$arm/pgo/merged.profdata" "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+            test -x "$arm/target/release/sokonanoda"
+          done
+
+      - name: Mathlib correctness and paired performance
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess,time
+          ndjson=pathlib.Path('arena/_build/tests/mathlib.ndjson')
+          arms=['a0','raws','rawkey']
+
+          def one(arm):
+              before=resource.getrusage(resource.RUSAGE_CHILDREN)
+              start=time.perf_counter()
+              with ndjson.open('rb') as f:
+                  r=subprocess.run(
+                      [f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],
+                      stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                  )
+              wall=time.perf_counter()-start
+              after=resource.getrusage(resource.RUSAGE_CHILDREN)
+              cpu=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+              if r.returncode!=0:
+                  raise SystemExit(
+                      f'Mathlib rejection arm={arm} rc={r.returncode}: '
+                      + r.stderr.decode(errors='replace')[-4000:]
+                  )
+              return cpu,wall
+
+          warm={}
+          for arm in arms:
+              cpu,wall=one(arm)
+              warm[arm]={'cpu_s':cpu,'wall_s':wall}
+
+          rows=[]; by={}
+          for rep in range(7):
+              order=arms.copy()
+              random.Random(193000+rep).shuffle(order)
+              by[rep]={}
+              for arm in order:
+                  cpu,wall=one(arm)
+                  row={'rep':rep,'arm':arm,'cpu_s':cpu,'wall_s':wall}
+                  rows.append(row)
+                  by[rep][arm]=row
+
+          def pair(c,b,metric):
+              ds=[];wins=0
+              for rep in range(7):
+                  cv=by[rep][c][metric]
+                  bv=by[rep][b][metric]
+                  ds.append(100*(cv/bv-1))
+                  wins+=cv<bv
+              return {
+                  'median_delta_pct':statistics.median(ds),
+                  'wins':wins,
+                  'losses':7-wins,
+                  'deltas_pct':ds,
+              }
+
+          out={
+              'warmup':warm,
+              'summary':{
+                  arm:{
+                      'median_cpu_s':statistics.median(by[r][arm]['cpu_s'] for r in range(7)),
+                      'median_wall_s':statistics.median(by[r][arm]['wall_s'] for r in range(7)),
+                  } for arm in arms
+              },
+              'rawkey_vs_a0_cpu':pair('rawkey','a0','cpu_s'),
+              'rawkey_vs_raws_cpu':pair('rawkey','raws','cpu_s'),
+              'raws_vs_a0_cpu':pair('raws','a0','cpu_s'),
+              'rawkey_vs_a0_wall':pair('rawkey','a0','wall_s'),
+              'rawkey_vs_raws_wall':pair('rawkey','raws','wall_s'),
+              'rows':rows,
+          }
+          pathlib.Path('results/materialized-spine-mathlib/performance.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({k:v for k,v in out.items() if k!='rows'},indent=2,sort_keys=True))
+          PY
+
+      - name: Classify frozen Mathlib result
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          p=json.loads(pathlib.Path('results/materialized-spine-mathlib/performance.json').read_text())
+          a=p['rawkey_vs_a0_cpu']
+          s=p['rawkey_vs_raws_cpu']
+          net=a['median_delta_pct']<0 and a['wins']>=5
+          causal=s['median_delta_pct']<0 and s['wins']>=5
+          verdict='VERIFIED_MATERIALIZED_SPINE_MATHLIB_GAIN' if net and causal else 'MATERIALIZED_SPINE_MATHLIB_NOT_VERIFIED'
+          out={
+              'verdict':verdict,
+              'net_gate':net,
+              'identity_materialization_gate':causal,
+              'rawkey_vs_a0_cpu':a,
+              'rawkey_vs_raws_cpu':s,
+              'raws_vs_a0_cpu':p['raws_vs_a0_cpu'],
+          }
+          pathlib.Path('results/materialized-spine-mathlib/verdict.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          pathlib.Path('results/materialized-spine-mathlib/VERDICT.txt').write_text(verdict+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload Mathlib evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-a6-materialized-key-spine-mathlib
+          path: |
+            results/materialized-spine-mathlib/
+            diagnostics/materialized-spine-mathlib/
+            A6_MATERIALIZED_KEY_SPINE_MATHLIB_PROTOCOL.md
