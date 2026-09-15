@@ -39,21 +39,7 @@ jobs:
               1)
           start=s.index("theorem initPackedHexProgression_eq (n : Nat) :")
           end=s.index("\ndef impl : Nat → Nat := fun n =>", start)
-          fixed='''theorem initPackedHexProgression_eq (n : Nat) :
-    initPackedHexProgression (caSeed n) = initPackedSWAR8 (caSeed n) := by
-  simp only [initPackedHexProgression, initPackedSWAR8]
-  have hs : caSeed n < 2 ^ 32 := by
-    unfold caSeed
-    exact Nat.and_lt_two_pow n (by decide)
-  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
-    unfold stepConst
-    decide
-  have hb :
-      caSeed n + 3 * stepConst + (16 * 15 + 13) * stepConst < 2 ^ 64 := by
-    unfold stepConst at *
-    omega
-  rw [packHexTail_eq (caSeed n + 3 * stepConst) 15 hb]
-'''
+          fixed="theorem initPackedHexProgression_eq (n : Nat) :\\n    initPackedHexProgression (caSeed n) = initPackedSWAR8 (caSeed n) := by\\n  simp only [initPackedHexProgression, initPackedSWAR8]\\n  have hs : caSeed n < 2 ^ 32 := by\\n    unfold caSeed\\n    exact Nat.and_lt_two_pow n (by decide)\\n  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by\\n    unfold stepConst\\n    decide\\n  have hb :\\n      caSeed n + 3 * stepConst + (16 * 15 + 13) * stepConst < 2 ^ 64 := by\\n    unfold stepConst at *\\n    omega\\n  rw [packHexTail_eq (caSeed n + 3 * stepConst) 15 hb]\\n"
           s=s[:start]+fixed+s[end:]
           Path("experiments/lkc_rule110/Submission_v26.fixed.lean").write_text(s)
       - name: Install elan
