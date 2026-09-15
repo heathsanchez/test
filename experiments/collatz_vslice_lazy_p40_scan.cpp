@@ -31,6 +31,9 @@ using u128=unsigned __int128;
 #ifndef COAL_BITS
 #define COAL_BITS 16
 #endif
+#ifndef SELF_CHECK_P40
+#define SELF_CHECK_P40 0
+#endif
 static constexpr int B=BLOCK_BITS,S=PREFIX_BITS,C=COAL_BITS;
 static constexpr int D28=28,D40=40;
 static_assert(B>=4&&B<=20);
@@ -193,6 +196,15 @@ static inline void build_p28_states(int k,uint32_t r,std::array<PrefixState,PHAS
   }
 }
 
+static inline bool direct_survives_to_p40(int k,uint64_t m){
+  u128 x=(u128(m)<<k)-1;uint8_t q=0;
+  for(int t=1;t<=k+D40;++t){
+    if(x&1){++q;x=(3*x+1)>>1;}else x>>=1;
+    if(P3FULL[q]<(u128(1)<<t))return false;
+  }
+  return true;
+}
+
 // Continue one exact p28 state through the concrete bits 28..39.
 static inline bool survives_to_p40(int k,const PrefixState&st,uint64_t m){
   u128 d=st.d;uint8_t q=st.q;
@@ -284,9 +296,18 @@ int main(int argc,char**argv){
       while(positions){
         const uint32_t phase=uint32_t((m>>S)&(PHASES28-1));
         const PrefixState&st=states[phase];
+        const bool staged40=st.live && survives_to_p40(k,st,m);
+        if constexpr(SELF_CHECK_P40){
+          const bool direct40=direct_survives_to_p40(k,m);
+          if(staged40!=direct40){
+#pragma omp critical
+            std::cerr<<"P40_STAGE_MISMATCH m="<<m<<" staged="<<staged40<<" direct="<<direct40<<"\n";
+            std::abort();
+          }
+        }
         if(!st.live){
           ++lv28;
-        }else if(!survives_to_p40(k,st,m)){
+        }else if(!staged40){
           ++lv40;
         }else{
           const u128 seed=(u128(m)<<k)-1;
