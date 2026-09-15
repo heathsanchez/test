@@ -269,6 +269,7 @@ theorem packMixBit_eq_packMix (x k : Nat) :
   | succ k ih =>
       unfold packMixBit packMix
       rw [mixBit31_eq, ih]
+      rfl
 
 def initPackedFastBit (seed : Nat) : Nat :=
   1 + 4 * packMixBit (seed + 3 * stepConst) 254
