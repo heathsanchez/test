@@ -4,6 +4,10 @@ import Submission
 
 namespace WideHierarchy
 
+set_option maxRecDepth 1048576
+set_option exponentiation.threshold 20000
+set_option maxHeartbeats 2000000
+
 open GenericPack
 open GenericMix
 open Submission
