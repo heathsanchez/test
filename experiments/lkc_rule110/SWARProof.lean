@@ -233,8 +233,12 @@ theorem mixPairSWAR_eq (x y : Nat) (hx : x < 2 ^ 64) :
   rw [packed_y32 x y hx]
   rw [packed_v32 (y32 x) (y32 y) (y32_lt64 x)]
   rw [packed_p2]
-  rw [bit31_pack2_low _ _ (v32_mul_c2_lt64 x)]
-  rw [bit31_pack2_high _ _ (v32_mul_c2_lt64 x)]
+  change
+    bit31Nat (pack2 (v32 (y32 x) * c2) (v32 (y32 y) * c2)) +
+      2 * ((pack2 (v32 (y32 x) * c2) (v32 (y32 y) * c2) >>> 95) % 2) =
+      mixScalarNat x + 2 * mixScalarNat y
+  rw [bit31_pack2_low _ _ (v32_mul_c2_lt64 (y32 x))]
+  rw [bit31_pack2_high _ _ (v32_mul_c2_lt64 (y32 x))]
   rfl
 
 end SWAR
