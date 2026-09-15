@@ -2,10 +2,6 @@ name: Exact Collatz Seed Interval
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-seed.yml"
-      - "experiments/collatz_exact_seed_interval.py"
 
 jobs:
   exact:
