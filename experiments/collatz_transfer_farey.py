@@ -29,6 +29,11 @@ Mathematical ingredients:
      A/3^q <= q/(6 ln 2) + 2/3,
    because the live q is the sum of two consecutive convergent
    denominators and Var(f)=1/3 on the circle.
+6. For any seed n>=L that is still live at the resonance,
+     0 <= T^t(n)-n
+        <= A/3^q - epsilon*n
+        <= q/(6 ln 2)+2/3-epsilon*L.
+   This gives an exact rational near-return gap ceiling.
 """
 
 from fractions import Fraction
@@ -102,6 +107,17 @@ dk_live_ceiling_int = (dk_live_ceiling.numerator + dk_live_ceiling.denominator -
 assert dk_live_ceiling_int < (1 << 72)
 assert dk_live_ceiling_int > L
 
+# Exact near-return certificate.
+# For a seed that actually survives the live contraction, the numerator
+# of its displacement is nonnegative. Since exp(eps)>=1 and
+# exp(eps)-1>=eps, its displacement is at most
+#   A/3^q - eps*n
+# and hence at most the following rational bound for n>=L.
+live_gap_hi = dk_numerator_hi - eps1_lo * L
+assert live_gap_hi > 0
+live_gap_ceiling = (live_gap_hi.numerator + live_gap_hi.denominator - 1) // live_gap_hi.denominator
+assert live_gap_ceiling == 4142380787
+
 def decimal_ratio(x: Fraction, digits=30):
     # deterministic decimal rendering from exact rational
     scale = 10 ** digits
@@ -121,9 +137,13 @@ print("EPS_LIVE_LO", decimal_ratio(eps1_lo, 40))
 print("EPS_LIVE_HI", decimal_ratio(eps1_hi, 40))
 print("COARSE_LIVE_CERTIFICATE_FAILS_GT", L)
 print("DK_LIVE_RESCUE_CEILING", dk_live_ceiling_int)
+print("LIVE_NEAR_RETURN_GAP_CEILING", live_gap_ceiling)
 print("THEOREM",
       "every first coefficient contraction with t < 114208327604 "
       "forces descent for every n >= 2075*2^60")
 print("BOUND",
       "at t=114208327604, even the extremal latest-odd rescue "
       f"requires n <= {dk_live_ceiling_int}")
+print("NEAR_RETURN",
+      "any live seed surviving that contraction satisfies "
+      f"0 <= T^t(n)-n <= {live_gap_ceiling}")
