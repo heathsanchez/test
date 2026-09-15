@@ -1,0 +1,95 @@
+name: Collatz finite-tail frontier split
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-tail-exception-frontier.yml"
+      - "experiments/collatz_tail_exception_frontier.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-tail-exception-frontier
+  cancel-in-progress: true
+
+jobs:
+  tail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 reverse bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import (
+              enumerate_first_contractions,sparse_quotient
+          )
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Split B34 frontier into finite tails and hard families
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_tail_exception_frontier.cpp             -o /tmp/tail
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/tail 34 results/q14-bank.txt | tee results/census.txt
+          grep -q "VERIFIED_TAIL_EXCEPTION_FRONTIER" results/census.txt
+
+      - name: Record exact frontier
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"TAIL_FRONTIER K=34 live_families=(\d+) "
+              r"tail_direct=(\d+) tail_bridge=(\d+) tail_deep_o=(\d+) "
+              r"finite_tail_families=(\d+) hard_families=(\d+) "
+              r"total_finite_exceptions=(\d+) max_exception_a=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          (live,td,tb,to,finite,hard,total_exc,max_a)=vals
+          assert live==120420841,(live,120420841)
+          assert td+tb+to==finite
+          assert finite+hard==live
+          assert finite>0,(finite,hard)
+
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"finite_tail_frontier_split",
+              "K":34,
+              "live_families":live,
+              "tail_direct":td,
+              "tail_bridge":tb,
+              "tail_deep_o":to,
+              "finite_tail_families":finite,
+              "hard_families":hard,
+              "hard_fraction_of_live":hard/live,
+              "total_finite_exceptions":total_exc,
+              "max_exception_a":max_a,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("TAIL_EXCEPTION_FRONTIER_FIELD",
+                json.dumps(out,separators=(",",":")))
+          print("FINITE_TAILS_SEPARATED_FROM_HARD_FRONTIER")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-tail-exception-frontier-b34
+          path: results
+          retention-days: 30
