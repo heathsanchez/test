@@ -1,0 +1,133 @@
+name: Collatz reverse macro grammar
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-reverse-macro-grammar.yml"
+      - "experiments/collatz_reverse_macro_grammar.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-reverse-macro-grammar
+  cancel-in-progress: true
+
+jobs:
+  macro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        depth: [1,2,3,4]
+    name: macro-depth${{ matrix.depth }}-b24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run exact macro grammar
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_reverse_macro_grammar.cpp -o /tmp/macro
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/macro 24 results/q14-bank.txt ${{ matrix.depth }}             | tee results/census.txt
+          grep -q "VERIFIED_REVERSE_MACRO_GRAMMAR_SIEVE" results/census.txt
+
+      - name: Score macro depth
+        run: |
+          python - <<'PY'
+          import json,re
+          D=int("${{ matrix.depth }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"LIVE_RECURSIVE_DONE K=24 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_macro=(\d+) "
+              r"bridge_controls=(\d+) deep_o_controls=(\d+) "
+              r"macro_controls=(\d+)",s)
+          assert m,s[-8000:]
+          live,des,bridge,do,macro,bc,dc,mc=map(int,m.groups())
+          deep_o=238727
+          h16=173280
+          gain=deep_o-live
+          h16gain=deep_o-h16
+          hist={str(int(x.group(1))):int(x.group(2))
+                for x in re.finditer(r"MACRO_DEPTH_HIST depth=(\d+) closed=(\d+)",s)}
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"reverse_macro_grammar",
+              "K":24,"macro_depth":D,
+              "live":live,
+              "deep_o_baseline":deep_o,
+              "h16_reference":h16,
+              "gain":gain,
+              "fraction_of_h16_gain":gain/h16gain,
+              "direct_macro_closures":macro,
+              "macro_depth_hist":hist,
+              "controls":mc,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("REVERSE_MACRO_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macro-depth${{ matrix.depth }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: macro
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macro-depth*
+          path: gathered
+      - name: Aggregate macro grammar curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("macro-depth*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["macro_depth"])
+          assert [r["macro_depth"] for r in rows]==[1,2,3,4],rows
+          prev=238727
+          for r in rows:
+              assert r["live"]<=prev,(prev,r)
+              prev=r["live"]
+          out={"kind":"reverse_macro_grammar_curve","rows":rows}
+          Path("reverse-macro-field.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("REVERSE_MACRO_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("REVERSE_MACRO_GRAMMAR_MONOTONIC_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverse-macro-field
+          path: reverse-macro-field.json
+          retention-days: 30
