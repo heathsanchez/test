@@ -1,0 +1,46 @@
+name: Collatz predecessor-depth swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-pred-depth-swarm.yml"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-pred-depth-swarm
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Measure exact reverse-tree depth field
+        run: |
+          mkdir -p results
+          for Q in 2 3 4 5 6 7 8 9 10 11 12; do
+            /usr/bin/time -f '%e' -o results/q$Q.time               python experiments/collatz_reverse_predecessor_tree.py --q $Q               > results/q$Q.txt
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          prev=None
+          for q in range(2,13):
+              s=open(f"results/q{q}.txt").read()
+              k=int(re.search(r"KILLED_RESIDUES (\d+)",s).group(1))
+              m=int(re.search(r"TOTAL_RESIDUES (\d+)",s).group(1))
+              c=int(re.search(r"NONREDUNDANT_CERTIFICATES (\d+)",s).group(1))
+              t=float(open(f"results/q{q}.time").read())
+              frac=k/m
+              extra=None if prev is None else frac-prev
+              rows.append({"q":q,"killed":k,"total":m,"kill_fraction":frac,"incremental_fraction":extra,"certificates":c,"seconds":t})
+              prev=frac
+          print("PRED_DEPTH_FIELD",json.dumps(rows,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-pred-depth-field
+          path: results
+          retention-days: 30
