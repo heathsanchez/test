@@ -2191,7 +2191,7 @@ lane-independence proof, emits two bytes per mixer invocation, and keeps the
 scalar progression between chunks.  No persistent 1024-bit state is involved.
 -/
 
-set_option maxRecDepth 131072 in
+set_option maxRecDepth 1048576 in
 theorem mix16_eq_two8
     (a b c d e f g h i j k l m n o p : Nat)
     (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
@@ -2231,7 +2231,7 @@ def pack16SWAR16 (x : Nat) : Nat :=
   Vec16.mix16SWAR
     x x1 x2 x3 x4 x5 x6 x7 x8 x9 x10 x11 x12 x13 x14 x15
 
-set_option maxRecDepth 131072 in
+set_option maxRecDepth 1048576 in
 theorem pack16SWAR16_eq (x : Nat) (h : x + 15 * stepConst < 2 ^ 64) :
     pack16SWAR16 x =
       pack8SWAR8 x + 256 * pack8SWAR8 (advance8 x) := by
@@ -2278,6 +2278,12 @@ theorem pack16SWAR16_eq (x : Nat) (h : x + 15 * stepConst < 2 ^ 64) :
 def advance16 (x : Nat) : Nat :=
   advance8 (advance8 x)
 
+theorem advance16_eq (x : Nat) :
+    advance16 x = x + 16 * stepConst := by
+  unfold advance16
+  rw [advance8_eq_swar, advance8_eq_swar]
+  omega
+
 def pack14SWAR16 (x : Nat) : Nat :=
   pack8SWAR8 x + 256 * pack6SWAR8 (advance8 x)
 
@@ -2290,7 +2296,7 @@ def pack16Tail : Nat → Nat → Nat
   | x, n + 1 =>
       pack16SWAR16 x + 65536 * pack16Tail (advance16 x) n
 
-set_option maxRecDepth 131072 in
+set_option maxRecDepth 1048576 in
 theorem pack16Tail_eq (x n : Nat)
     (h : x + (16 * n + 13) * stepConst < 2 ^ 64) :
     pack16Tail x n = packByteTailSWAR8 x (2 * n + 1) := by
@@ -2306,11 +2312,16 @@ theorem pack16Tail_eq (x n : Nat)
           Nat.mul_le_mul_right stepConst hk
         exact Nat.lt_of_le_of_lt (Nat.add_le_add_left hm x) h
       rw [pack16SWAR16_eq x h15]
+      have heq :
+          advance16 x + (16 * n + 13) * stepConst =
+            x + (16 * (n + 1) + 13) * stepConst := by
+        rw [advance16_eq, Nat.add_assoc, ← Nat.add_mul]
+        have hcoef : 16 + (16 * n + 13) = 16 * (n + 1) + 13 := by omega
+        rw [hcoef]
       have hr :
           advance16 x + (16 * n + 13) * stepConst < 2 ^ 64 := by
-        unfold advance16
-        rw [advance8_eq_swar, advance8_eq_swar]
-        omega
+        rw [heq]
+        exact h
       rw [ih (advance16 x) hr]
       have hidx : 2 * (n + 1) + 1 = (2 * n + 1) + 2 := by omega
       rw [hidx]
@@ -2324,17 +2335,18 @@ def initPackedSWAR16 (seed : Nat) : Nat :=
 
 theorem initPackedSWAR16_eq (n : Nat) :
     initPackedSWAR16 (caSeed n) = initPackedSWAR8 (caSeed n) := by
-  simp only [initPackedSWAR16, initPackedSWAR8]
-  rw [pack16Tail_eq]
-  · rfl
-  · have hs : caSeed n < 2 ^ 32 := by
-      unfold caSeed
-      exact Nat.and_lt_two_pow n (by decide)
-    have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
-      unfold stepConst
-      decide
+  have hs : caSeed n < 2 ^ 32 := by
+    unfold caSeed
+    exact Nat.and_lt_two_pow n (by decide)
+  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
+    unfold stepConst
+    decide
+  have hb :
+      caSeed n + 3 * stepConst + (16 * 15 + 13) * stepConst < 2 ^ 64 := by
     unfold stepConst at *
     omega
+  simp only [initPackedSWAR16, initPackedSWAR8]
+  rw [pack16Tail_eq (caSeed n + 3 * stepConst) 15 hb]
 
 def impl : Nat → Nat := fun n =>
   biterFast (caSteps n) (initPackedSWAR16 (caSeed n))
