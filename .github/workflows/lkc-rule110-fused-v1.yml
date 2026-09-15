@@ -4,7 +4,7 @@ on:
   push:
     branches: [lkc-rule110-fused-v1]
     paths:
-      - 'experiments/lkc_rule110/**'
+      - 'experiments/lkc_rule110/Submission.lean'
       - '.github/workflows/lkc-rule110-fused-v1.yml'
   workflow_dispatch:
 
