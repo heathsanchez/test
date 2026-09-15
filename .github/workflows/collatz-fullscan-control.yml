@@ -1,0 +1,62 @@
+name: Collatz fullscan synchronization control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-fullscan-control.yml"
+      - "experiments/collatz_vslice_fullscan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-fullscan-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact reference and fullscan kernels
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_survivor_tuned.cpp -o /tmp/ref
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_fullscan.cpp -o /tmp/full
+      - name: Protected survivor and overflow controls
+        run: |
+          mkdir -p results
+          N=3079334581550404599807
+          /tmp/full 35 803 1 0 "$N" "$N" > results/survivor.txt
+          grep -q "SURVIVOR seed=$N horizon=803" results/survivor.txt
+          grep -q "STATUS SURVIVOR_FOUND" results/survivor.txt
+          O=2662382980693604958207
+          /tmp/full 35 853 1 0 "$O" "$O" > results/overflow.txt
+          grep -q "OVERFLOW_SEED seed=$O" results/overflow.txt
+          grep -q "STATUS OVERFLOW_REPLAY_REQUIRED" results/overflow.txt
+      - name: Exact finite no-survivor benchmark
+        run: |
+          export OMP_NUM_THREADS=4
+          /usr/bin/time -f 'REF_SECONDS %e' -o results/ref.time             /tmp/ref 34 853 256 0 2392312122059207475200 3143983941795894239301             > results/ref.txt
+          /usr/bin/time -f 'FULL_SECONDS %e' -o results/full.time             /tmp/full 34 853 256 0 2392312122059207475200 3143983941795894239301             > results/full.txt
+          python - <<'PY'
+          import re
+          a=open("results/ref.txt").read()
+          b=open("results/full.txt").read()
+          for p in [
+              r"SCANNED (\d+).*overflows=(\d+)",
+              r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+              r"STATUS (\S+)",
+          ]:
+              x=re.search(p,a); y=re.search(p,b)
+              assert x and y,(p,a[-1000:],b[-1000:])
+              assert x.groups()==y.groups(),(p,x.groups(),y.groups())
+          print(open("results/ref.time").read().strip())
+          print(open("results/full.time").read().strip())
+          print("FULLSCAN_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-fullscan-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
