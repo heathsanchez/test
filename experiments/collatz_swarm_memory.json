@@ -209,6 +209,12 @@
       "evidence_run": 34946452438,
       "reason": "q12 improves global kill fraction only from 46.319% to 46.645%; defer until residual economics justify it",
       "status": "deferred"
+    },
+    {
+      "id": "future-state-prefix-quotient",
+      "evidence_run": 34956619725,
+      "reason": "all scouts exact; nodes == represented live classes at every tested depth, so identical (d,q) states never merged. Aggregate red was artifact-path bookkeeping only.",
+      "status": "scientifically_rejected"
     }
   ],
   "pending": [
@@ -218,9 +224,8 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     },
     {
-      "id": "future-state-prefix-quotient",
-      "run": 34956619725,
-      "hypothesis": "merge sparse prefix residues with identical (d,q) into a consequence-equivalent DAG and push much deeper than p24"
+      "id": "future-consequence-language-dag",
+      "hypothesis": "minimize the finite live/dead suffix language bottom-up; merge numerically distinct states when their entire remaining consequence trees are identical"
     }
   ],
   "next_residual": "v2(n+1) <=25 plus deferred v2=28; high-k fused stack retained, low-k sparse transition monitored"
