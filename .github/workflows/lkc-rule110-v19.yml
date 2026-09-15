@@ -33,14 +33,14 @@ jobs:
           git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
           cd lkc
           git checkout "$LKC_COMMIT"
-      - name: Prepare evaluator
-        working-directory: lkc
-        run: bash evaluation/setup.sh --problem ca-rule110
       - name: Build v19 universal proof
         working-directory: lkc/problems/ca-rule110
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v19.lean" Submission.lean
           lake build
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
       - name: Compare v13 and v19 over three local replays
         working-directory: lkc
         shell: bash
