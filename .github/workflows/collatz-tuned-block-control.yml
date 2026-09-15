@@ -1,0 +1,75 @@
+name: Collatz tuned block width control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-tuned-block-control.yml"
+      - "experiments/collatz_vslice_survivor_tuned.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-tuned-block-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact block-width variants
+        run: |
+          for B in 10 12 14 16; do
+            g++ -O3 -march=native -fopenmp -DBLOCK_BITS=$B experiments/collatz_vslice_survivor_tuned.cpp -o /tmp/tuned$B
+          done
+          g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fast.cpp -o /tmp/reference
+      - name: Exact protected controls
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=3079334581550404599807
+          O=2662382980693604958207
+          for B in 10 12 14 16; do
+            /tmp/tuned$B 35 853 1 0 "$N" "$N" > results/record-$B.txt
+            grep -q "BEST first_descent_or_survival=853 seed=$N" results/record-$B.txt
+            grep -q "STATUS EXHAUSTED_NO_SURVIVOR" results/record-$B.txt
+            /tmp/tuned$B 35 853 1 0 "$O" "$O" > results/overflow-$B.txt
+            grep -q "OVERFLOW_SEED seed=$O" results/overflow-$B.txt
+            grep -q "STATUS OVERFLOW_REPLAY_REQUIRED" results/overflow-$B.txt
+          done
+      - name: Benchmark exact finite subshard
+        run: |
+          set -o pipefail
+          mkdir -p results
+          export OMP_NUM_THREADS=4
+          /usr/bin/time -f 'REF_SECONDS %e' -o results/ref.time             /tmp/reference 34 853 256 0 2392312122059207475200 3143983941795894239301             > results/ref.txt
+          for B in 10 12 14 16; do
+            /usr/bin/time -f "B${B}_SECONDS %e" -o results/b$B.time               /tmp/tuned$B 34 853 256 0 2392312122059207475200 3143983941795894239301               > results/b$B.txt
+          done
+          python - <<'PY'
+          import re
+          ref=open("results/ref.txt").read()
+          rs=re.search(r"SCANNED (\d+).*overflows=(\d+)",ref)
+          rb=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",ref)
+          rt=re.search(r"STATUS (\S+)",ref)
+          assert rs and rb and rt
+          for B in (10,12,14,16):
+              s=open(f"results/b{B}.txt").read()
+              ss=re.search(r"SCANNED (\d+).*overflows=(\d+)",s)
+              bb=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+              tt=re.search(r"STATUS (\S+)",s)
+              assert ss and bb and tt
+              assert ss.groups()==rs.groups(),(B,ss.groups(),rs.groups())
+              assert bb.groups()==rb.groups(),(B,bb.groups(),rb.groups())
+              assert tt.groups()==rt.groups(),(B,tt.groups(),rt.groups())
+          for p in ["results/ref.time","results/b10.time","results/b12.time","results/b14.time","results/b16.time"]:
+              print(open(p).read().strip())
+          print("TUNED_BLOCK_WIDTH_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-tuned-block-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
