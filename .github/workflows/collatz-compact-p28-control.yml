@@ -20,7 +20,7 @@ jobs:
       max-parallel: 3
       matrix:
         k: [15,10,8]
-    name: compact-p28-k\${{ matrix.k }}
+    name: compact-p28-k${{ matrix.k }}
     steps:
       - uses: actions/checkout@v4
       - name: Build retained and compact scanners
@@ -39,7 +39,7 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p results
-          K="\${{ matrix.k }}"
+          K="${{ matrix.k }}"
           N=2874993894540242321407
           /tmp/p28-compact 30 5000 1 0 "$N" "$N" | tee results/record.txt
           grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
@@ -54,7 +54,7 @@ jobs:
         run: |
           set -o pipefail
           export OMP_NUM_THREADS=4
-          K="\${{ matrix.k }}"
+          K="${{ matrix.k }}"
           L=2392312122059207475200
           U=$(python - <<PY
           L=$L
@@ -72,7 +72,7 @@ jobs:
             /tmp/p28-compact "$K" 5000 1 0 "$L" "$U" > results/compact.txt
           python - <<'PY'
           import json,re
-          k=int("\${{ matrix.k }}")
+          k=int("${{ matrix.k }}")
           a=open("results/p24.txt").read()
           b=open("results/old.txt").read()
           c=open("results/compact.txt").read()
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: compact-p28-k\${{ matrix.k }}
+          name: compact-p28-k${{ matrix.k }}
           path: results
           retention-days: 30
 
