@@ -1,0 +1,245 @@
+name: Collatz DFS symbolic shell closure
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-dfs-symbolic-shell.yml"
+      - "experiments/collatz_absolute_cone_dfs.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-dfs-symbolic-shell
+  cancel-in-progress: true
+
+jobs:
+  shard:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 20
+      matrix:
+        include:
+          - { k: 32, shard: 0, shards: 8, h: 640 }
+          - { k: 32, shard: 1, shards: 8, h: 640 }
+          - { k: 32, shard: 2, shards: 8, h: 640 }
+          - { k: 32, shard: 3, shards: 8, h: 640 }
+          - { k: 32, shard: 4, shards: 8, h: 640 }
+          - { k: 32, shard: 5, shards: 8, h: 640 }
+          - { k: 32, shard: 6, shards: 8, h: 640 }
+          - { k: 32, shard: 7, shards: 8, h: 640 }
+          - { k: 33, shard: 0, shards: 8, h: 660 }
+          - { k: 33, shard: 1, shards: 8, h: 660 }
+          - { k: 33, shard: 2, shards: 8, h: 660 }
+          - { k: 33, shard: 3, shards: 8, h: 660 }
+          - { k: 33, shard: 4, shards: 8, h: 660 }
+          - { k: 33, shard: 5, shards: 8, h: 660 }
+          - { k: 33, shard: 6, shards: 8, h: 660 }
+          - { k: 33, shard: 7, shards: 8, h: 660 }
+          - { k: 34, shard: 0, shards: 8, h: 680 }
+          - { k: 34, shard: 1, shards: 8, h: 680 }
+          - { k: 34, shard: 2, shards: 8, h: 680 }
+          - { k: 34, shard: 3, shards: 8, h: 680 }
+          - { k: 34, shard: 4, shards: 8, h: 680 }
+          - { k: 34, shard: 5, shards: 8, h: 680 }
+          - { k: 34, shard: 6, shards: 8, h: 680 }
+          - { k: 34, shard: 7, shards: 8, h: 680 }
+          - { k: 36, shard: 0, shards: 32, h: 720 }
+          - { k: 36, shard: 1, shards: 32, h: 720 }
+          - { k: 36, shard: 2, shards: 32, h: 720 }
+          - { k: 36, shard: 3, shards: 32, h: 720 }
+          - { k: 36, shard: 4, shards: 32, h: 720 }
+          - { k: 36, shard: 5, shards: 32, h: 720 }
+          - { k: 36, shard: 6, shards: 32, h: 720 }
+          - { k: 36, shard: 7, shards: 32, h: 720 }
+          - { k: 36, shard: 8, shards: 32, h: 720 }
+          - { k: 36, shard: 9, shards: 32, h: 720 }
+          - { k: 36, shard: 10, shards: 32, h: 720 }
+          - { k: 36, shard: 11, shards: 32, h: 720 }
+          - { k: 36, shard: 12, shards: 32, h: 720 }
+          - { k: 36, shard: 13, shards: 32, h: 720 }
+          - { k: 36, shard: 14, shards: 32, h: 720 }
+          - { k: 36, shard: 15, shards: 32, h: 720 }
+          - { k: 36, shard: 16, shards: 32, h: 720 }
+          - { k: 36, shard: 17, shards: 32, h: 720 }
+          - { k: 36, shard: 18, shards: 32, h: 720 }
+          - { k: 36, shard: 19, shards: 32, h: 720 }
+          - { k: 36, shard: 20, shards: 32, h: 720 }
+          - { k: 36, shard: 21, shards: 32, h: 720 }
+          - { k: 36, shard: 22, shards: 32, h: 720 }
+          - { k: 36, shard: 23, shards: 32, h: 720 }
+          - { k: 36, shard: 24, shards: 32, h: 720 }
+          - { k: 36, shard: 25, shards: 32, h: 720 }
+          - { k: 36, shard: 26, shards: 32, h: 720 }
+          - { k: 36, shard: 27, shards: 32, h: 720 }
+          - { k: 36, shard: 28, shards: 32, h: 720 }
+          - { k: 36, shard: 29, shards: 32, h: 720 }
+          - { k: 36, shard: 30, shards: 32, h: 720 }
+          - { k: 36, shard: 31, shards: 32, h: 720 }
+          - { k: 40, shard: 0, shards: 64, h: 800 }
+          - { k: 40, shard: 1, shards: 64, h: 800 }
+          - { k: 40, shard: 2, shards: 64, h: 800 }
+          - { k: 40, shard: 3, shards: 64, h: 800 }
+          - { k: 40, shard: 4, shards: 64, h: 800 }
+          - { k: 40, shard: 5, shards: 64, h: 800 }
+          - { k: 40, shard: 6, shards: 64, h: 800 }
+          - { k: 40, shard: 7, shards: 64, h: 800 }
+          - { k: 40, shard: 8, shards: 64, h: 800 }
+          - { k: 40, shard: 9, shards: 64, h: 800 }
+          - { k: 40, shard: 10, shards: 64, h: 800 }
+          - { k: 40, shard: 11, shards: 64, h: 800 }
+          - { k: 40, shard: 12, shards: 64, h: 800 }
+          - { k: 40, shard: 13, shards: 64, h: 800 }
+          - { k: 40, shard: 14, shards: 64, h: 800 }
+          - { k: 40, shard: 15, shards: 64, h: 800 }
+          - { k: 40, shard: 16, shards: 64, h: 800 }
+          - { k: 40, shard: 17, shards: 64, h: 800 }
+          - { k: 40, shard: 18, shards: 64, h: 800 }
+          - { k: 40, shard: 19, shards: 64, h: 800 }
+          - { k: 40, shard: 20, shards: 64, h: 800 }
+          - { k: 40, shard: 21, shards: 64, h: 800 }
+          - { k: 40, shard: 22, shards: 64, h: 800 }
+          - { k: 40, shard: 23, shards: 64, h: 800 }
+          - { k: 40, shard: 24, shards: 64, h: 800 }
+          - { k: 40, shard: 25, shards: 64, h: 800 }
+          - { k: 40, shard: 26, shards: 64, h: 800 }
+          - { k: 40, shard: 27, shards: 64, h: 800 }
+          - { k: 40, shard: 28, shards: 64, h: 800 }
+          - { k: 40, shard: 29, shards: 64, h: 800 }
+          - { k: 40, shard: 30, shards: 64, h: 800 }
+          - { k: 40, shard: 31, shards: 64, h: 800 }
+          - { k: 40, shard: 32, shards: 64, h: 800 }
+          - { k: 40, shard: 33, shards: 64, h: 800 }
+          - { k: 40, shard: 34, shards: 64, h: 800 }
+          - { k: 40, shard: 35, shards: 64, h: 800 }
+          - { k: 40, shard: 36, shards: 64, h: 800 }
+          - { k: 40, shard: 37, shards: 64, h: 800 }
+          - { k: 40, shard: 38, shards: 64, h: 800 }
+          - { k: 40, shard: 39, shards: 64, h: 800 }
+          - { k: 40, shard: 40, shards: 64, h: 800 }
+          - { k: 40, shard: 41, shards: 64, h: 800 }
+          - { k: 40, shard: 42, shards: 64, h: 800 }
+          - { k: 40, shard: 43, shards: 64, h: 800 }
+          - { k: 40, shard: 44, shards: 64, h: 800 }
+          - { k: 40, shard: 45, shards: 64, h: 800 }
+          - { k: 40, shard: 46, shards: 64, h: 800 }
+          - { k: 40, shard: 47, shards: 64, h: 800 }
+          - { k: 40, shard: 48, shards: 64, h: 800 }
+          - { k: 40, shard: 49, shards: 64, h: 800 }
+          - { k: 40, shard: 50, shards: 64, h: 800 }
+          - { k: 40, shard: 51, shards: 64, h: 800 }
+          - { k: 40, shard: 52, shards: 64, h: 800 }
+          - { k: 40, shard: 53, shards: 64, h: 800 }
+          - { k: 40, shard: 54, shards: 64, h: 800 }
+          - { k: 40, shard: 55, shards: 64, h: 800 }
+          - { k: 40, shard: 56, shards: 64, h: 800 }
+          - { k: 40, shard: 57, shards: 64, h: 800 }
+          - { k: 40, shard: 58, shards: 64, h: 800 }
+          - { k: 40, shard: 59, shards: 64, h: 800 }
+          - { k: 40, shard: 60, shards: 64, h: 800 }
+          - { k: 40, shard: 61, shards: 64, h: 800 }
+          - { k: 40, shard: 62, shards: 64, h: 800 }
+          - { k: 40, shard: 63, shards: 64, h: 800 }
+    name: dfs-k${{ matrix.k }}-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Run exact DFS symbolic shard
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_cone_dfs.cpp -o /tmp/dfs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/dfs ${{ matrix.k }} ${{ matrix.h }}             ${{ matrix.shard }} ${{ matrix.shards }}             | tee results/census.txt
+          grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" results/census.txt
+      - name: Parse shard
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          sid=int("${{ matrix.shard }}")
+          shards=int("${{ matrix.shards }}")
+          H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+            rf"DFS_SYMBOLIC_RESULT K={K} H={H} shard={sid} shards={shards} "
+            r"represented=(\d+) closed=(\d+) hard=(\d+) nodes=(\d+) "
+            r"uniform_nodes=(\d+) singleton_nodes=(\d+) max_depth=(\d+) "
+            r"max_close_t=(\d+) max_close_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["represented","closed","hard","nodes","uniform_nodes",
+                "singleton_nodes","max_depth","max_close_t","max_close_seed"]
+          out={"K":K,"H":H,"shard":sid,"shards":shards,**dict(zip(keys,vals))}
+          assert out["closed"]+out["hard"]==out["represented"]
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]); out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("DFS_SYMBOLIC_SHARD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dfs-k${{ matrix.k }}-s${{ matrix.shard }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: dfs-k*-s*
+          path: gathered
+      - name: Aggregate exact shell proofs
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          groups={}
+          for d in Path("gathered").glob("dfs-k*-s*"):
+              p=d/"summary.json"
+              if not p.exists(): continue
+              r=json.loads(p.read_text())
+              groups.setdefault(r["K"],[]).append(r)
+          expected={32:8,33:8,34:8,36:32,40:64}
+          rows=[]
+          for K,nsh in expected.items():
+              rs=sorted(groups.get(K,[]),key=lambda x:x["shard"])
+              assert len(rs)==nsh,(K,len(rs),nsh)
+              assert [x["shard"] for x in rs]==list(range(nsh))
+              represented=sum(x["represented"] for x in rs)
+              closed=sum(x["closed"] for x in rs)
+              hard=sum(x["hard"] for x in rs)
+              assert represented==(1<<(K-1)),(K,represented,1<<(K-1))
+              assert closed+hard==represented
+              rows.append({
+                "K":K,"H":rs[0]["H"],"shards":nsh,
+                "represented":represented,"closed":closed,"hard":hard,
+                "closed_fraction":closed/represented,
+                "total_nodes":sum(x["nodes"] for x in rs),
+                "total_singletons":sum(x["singleton_nodes"] for x in rs),
+                "max_depth":max(x["max_depth"] for x in rs),
+                "max_close_t":max(x["max_close_t"] for x in rs),
+                "max_close_seed":max(rs,key=lambda x:x["max_close_t"])["max_close_seed"],
+                "max_shard_seconds":max(x["wall_seconds"] for x in rs),
+                "max_shard_rss_kb":max(x["max_rss_kb"] for x in rs),
+              })
+          out={"kind":"dfs_symbolic_shell_field","rows":rows,
+               "all_closed":all(r["hard"]==0 for r in rows)}
+          Path("dfs-symbolic-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("DFS_SYMBOLIC_FIELD",json.dumps(out,separators=(",",":")))
+          if out["all_closed"]:
+              print("DFS_SYMBOLIC_ALL_TESTED_SHELLS_CLOSED")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dfs-symbolic-field
+          path: dfs-symbolic-field.json
+          retention-days: 30
