@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "authority": "search allocation only; exact theorem/scanner/proof remains sovereign",
+  "current_record": {
+    "seed": "2874993894540242321407",
+    "first_descent": 920,
+    "v2_n_plus_1": 30,
+    "run": 34935254514
+  },
+  "compiled_regions": [
+    {
+      "k": 30,
+      "status": "closed_through_h5000",
+      "max_first_descent": 920,
+      "run": 34935254514
+    },
+    {
+      "k": 29,
+      "status": "closed_through_h5000",
+      "max_first_descent": 829,
+      "run": 34935480770
+    }
+  ],
+  "accepted": [
+    {
+      "id": "block10-fullscan",
+      "scope": "valuation explicit scan",
+      "evidence": "exact-equivalent to prior kernels; cache/synchronization tuning",
+      "consequence": "fast exact explicit first-descent scan",
+      "status": "retained"
+    },
+    {
+      "id": "predecessor-half-merge",
+      "scope": "tightened interval U < 2L+1",
+      "evidence_run": 34934693956,
+      "consequence": "inductively closes one m mod 4 class per valuation slice",
+      "status": "retained"
+    },
+    {
+      "id": "transfer-prefix",
+      "scope": "live interval; prefix before first dangerous transfer resonance",
+      "evidence_run": 34935397174,
+      "consequence": "kills coefficient-contraction prefix classes exactly",
+      "status": "retained"
+    },
+    {
+      "id": "representation-swarm-v1",
+      "scope": "search allocator",
+      "evidence_run": 34939151043,
+      "consequence": "measures/quotients competing exact representations before funding",
+      "status": "retained"
+    }
+  ],
+  "rejected": [
+    {
+      "id": "ctz-runlength-executor-v1",
+      "evidence_run": 34939599881,
+      "reason": "exact-equivalent but 0.33s vs 0.07s block kernel on sealed k30 subshard",
+      "ratio_vs_block": 4.7142857143,
+      "status": "dominated"
+    },
+    {
+      "id": "nspace-strong22-standalone",
+      "evidence_run": 34940001838,
+      "reason": "exact record preserved but p24 killed more and ran faster at k10/k8",
+      "status": "dominated"
+    },
+    {
+      "id": "p24-intersect-nspace-strong22",
+      "evidence_run": 34940182859,
+      "reason": "only 2.32% extra residual reduction at k10 and 1.21% at k8 while ~2x slower",
+      "status": "dominated"
+    },
+    {
+      "id": "mspace-strong-sieve-v1",
+      "evidence_run": 34940329659,
+      "reason": "zero coalescences in all tested worlds; much weaker live fractions than transfer-prefix at comparable depth",
+      "status": "dominated"
+    }
+  ],
+  "pending": [
+    {
+      "id": "compiled-prefix-transform",
+      "run": 34940585589,
+      "hypothesis": "compile verified p24 affine prefix once and start each seed after W=k+24"
+    }
+  ],
+  "next_residual": "v2(n+1) <= 28; representation selection precedes further large scans"
+}
