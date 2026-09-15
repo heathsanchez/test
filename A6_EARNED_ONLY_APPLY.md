@@ -98,8 +98,11 @@ These cases are not held out and authorize no general performance claim:
 - `perf/grind-ring-5`;
 - `init-prelude`;
 - `perf/app-lam`;
-- `perf/beta-ladder`;
-- `perf/let-ladder`.
+- `perf/shift-cascade`.
+
+The frozen artifact contains only these three `perf/` cases; later Arena
+`beta-ladder` / `let-ladder` tests are not present and are therefore not
+introduced into this frozen-corpus development gate.
 
 All present cases are run as one combined development workload for 30 paired,
 deterministically randomized repetitions.
@@ -129,7 +132,7 @@ itself.
 
 Freeze a disjoint held-out workload before inspecting its timing:
 
-- remove all five development cases;
+- remove all four development cases;
 - order remaining frozen good cases by descending bytes, path tie-break;
 - take the first 24.
 
