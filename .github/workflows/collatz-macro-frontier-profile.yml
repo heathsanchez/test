@@ -1,0 +1,137 @@
+name: Collatz stabilized macro frontier profile
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-macro-frontier-profile.yml"
+      - "experiments/collatz_macro_frontier_profile.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-macro-frontier-profile
+  cancel-in-progress: true
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [24,30]
+    name: profile-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run exact stabilized macro profile
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_macro_frontier_profile.cpp             -o /tmp/profile
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/profile ${{ matrix.k }} results/q14-bank.txt 6             | tee results/census.txt
+          grep -q "VERIFIED_REVERSE_MACRO_GRAMMAR_SIEVE" results/census.txt
+
+      - name: Parse obstruction field
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"MACRO_FRONTIER_PROFILE K={K} macro_depth=6 "
+              r"critical_c=(\d+) live=(\d+) no_base=(\d+)",s)
+          assert m,s[-6000:]
+          critical_c,live,no_base=map(int,m.groups())
+          def hist(tag,key):
+              out={}
+              for z in re.finditer(rf"^{tag} {key}=(-?\d+) count=(\d+)$",s,re.M):
+                  out[str(int(z.group(1)))]=int(z.group(2))
+              return out
+          excess=hist("MACRO_FRONTIER_C_EXCESS","excess")
+          donor_o=hist("MACRO_FRONTIER_DONOR_O","o")
+          donor_steps=hist("MACRO_FRONTIER_DONOR_STEPS","steps")
+          rmax=hist("MACRO_FRONTIER_RMAX","rmax")
+          assert sum(excess.values())==live,(sum(excess.values()),live)
+          assert sum(donor_o.values())+no_base==live
+          assert sum(rmax.values())+no_base==live
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+            "kind":"stabilized_macro_frontier_profile",
+            "K":K,"macro_depth":6,
+            "critical_c":critical_c,
+            "live":live,"no_base":no_base,
+            "no_base_fraction":no_base/live,
+            "c_excess_hist":excess,
+            "donor_o_hist":donor_o,
+            "donor_steps_hist":donor_steps,
+            "rmax_hist":rmax,
+            "wall_seconds":float(tm[0]) if tm else None,
+            "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("STABILIZED_MACRO_FRONTIER_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macro-frontier-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: profile
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macro-frontier-b*
+          path: gathered
+
+      - name: Compare normalized residual structure
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("macro-frontier-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[24,30],rows
+          out={"kind":"normalized_macro_frontier_comparison","rows":rows}
+          Path("macro-frontier-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("NORMALIZED_MACRO_FRONTIER_COMPARISON",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("MACRO_FRONTIER_PROFILE_COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macro-frontier-field
+          path: macro-frontier-field.json
+          retention-days: 30
