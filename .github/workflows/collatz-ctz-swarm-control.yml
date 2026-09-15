@@ -1,0 +1,78 @@
+name: Collatz ctz run-length swarm control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-ctz-swarm-control.yml"
+      - "experiments/collatz_vslice_ctz_scan.cpp"
+      - "experiments/collatz_vslice_merge_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-ctz-swarm-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact block and ctz kernels
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 \
+            experiments/collatz_vslice_merge_scan.cpp -o /tmp/block
+          g++ -O3 -march=native -fopenmp \
+            experiments/collatz_vslice_ctz_scan.cpp -o /tmp/ctz
+      - name: Protect current exact record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/ctz 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" results/record.txt
+          echo CTZ_RECORD_CONTROL_OK
+      - name: Exact finite equivalence and speed
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=30
+          # 2^22 seeds in the k30 valuation slice.
+          print(L + (1<<22)*(1<<(K+1)))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/block.time \
+            /tmp/block 30 5000 1 0 "$L" "$U" > results/block.txt
+          /usr/bin/time -f '%e' -o results/ctz.time \
+            /tmp/ctz 30 5000 1 0 "$L" "$U" > results/ctz.txt
+          python - <<'PY'
+          import re
+          a=open("results/block.txt").read()
+          b=open("results/ctz.txt").read()
+          for p in [
+              r"full_count=(\d+) survivor_count=(\d+) killed_count=(\d+)",
+              r"SCANNED (\d+).*overflows=(\d+)",
+              r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+              r"STATUS (\S+)",
+          ]:
+              x=re.search(p,a); y=re.search(p,b)
+              assert x and y,(p,a[-3000:],b[-3000:])
+              assert x.groups()==y.groups(),(p,x.groups(),y.groups())
+          bt=float(open("results/block.time").read())
+          ct=float(open("results/ctz.time").read())
+          print(f"BLOCK_SECONDS {bt}")
+          print(f"CTZ_SECONDS {ct}")
+          print(f"CTZ_SPEEDUP {bt/ct if ct else float('inf')}")
+          print("CTZ_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-ctz-swarm-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
