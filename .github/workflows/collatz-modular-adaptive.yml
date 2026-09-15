@@ -30,7 +30,7 @@ jobs:
             --horizon 182 \
             --parent-bits 8 --parent-value 103 \
             --start-bits 12 --max-bits 16 --step-bits 4 \
-            --conflicts 5000 --protected-control \
+            --conflicts 5000 --propagations 5000000 --protected-control \
             --out results/h182.json
           python experiments/collatz_modular_adaptive_refine.py \
             --bits 20 --lower 524288 --upper 1048575 \
@@ -108,6 +108,7 @@ jobs:
             --max-bits 16 \
             --step-bits 4 \
             --conflicts 100 \
+            --propagations 100000 \
             --replay-limit 5000 \
             --out results/modular-${{ matrix.parent }}.json
       - uses: actions/upload-artifact@v4
