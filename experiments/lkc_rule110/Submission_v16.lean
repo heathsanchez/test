@@ -479,7 +479,7 @@ theorem packByteTailShared_eq (x n : Nat) :
       rfl
   | succ n ih =>
       unfold packByteTailShared packByteTailNat pack8Nat advance8
-      rw [ih]
+      simp only [ih]
 
 def initPackedShared (seed : Nat) : Nat :=
   1 + 4 * packByteTailShared (seed + 3 * stepConst) 31
