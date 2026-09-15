@@ -1,0 +1,175 @@
+name: Collatz exact v2=30 survivor frontier
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-v30-survivor.yml"
+      - "experiments/collatz_vslice_merge_scan.cpp"
+      - "experiments/collatz_predecessor_merge.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-v30-survivor
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify predecessor merge theorem
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
+      - name: Build exact scanner
+        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_merge_scan.cpp -o /tmp/vscan
+      - name: Recover exact 802 boundary of known v2=39 extremal
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2760016646173626466303
+          /tmp/vscan 39 801 1 0 "$N" "$N" | tee results/control-801.txt
+          /tmp/vscan 39 802 1 0 "$N" "$N" | tee results/control-802.txt
+          grep -q "STATUS SURVIVOR_FOUND" results/control-801.txt
+          grep -q "SURVIVOR seed=$N horizon=801" results/control-801.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" results/control-802.txt
+          grep -q "BEST first_descent_or_survival=802 seed=$N" results/control-802.txt
+          echo VSLICE_SURVIVOR_CONTROL_OK
+
+  scan:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [5,0,1,2,3,4,6,7,8,9,10,11,12,13,14,15]
+    name: v30-h853-${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact scanner
+        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_merge_scan.cpp -o /tmp/vscan
+      - name: Exact tightened v2=30 scan through H853
+        run: |
+          set -o pipefail
+          mkdir -p results
+          /tmp/vscan 30 853 16 ${{ matrix.shard }} \
+            2392312122059207475200 \
+            3143983941795894239301 \
+            | tee results/v30-${{ matrix.shard }}.txt
+      - name: Exact replay for u128 survivors and overflow seeds
+        run: |
+          python - <<'PY' | tee -a results/v30-${{ matrix.shard }}.txt
+          import re
+          p="results/v30-${{ matrix.shard }}.txt"
+          s=open(p).read()
+          candidates=[]
+          candidates += [("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=853",s)
+          if m:
+              candidates.append(("u128-survivor",int(m.group(1))))
+          seen=set(); survivors=[]
+          for kind,n in candidates:
+              if n in seen: continue
+              seen.add(n)
+              x=n; peak=n; first=None
+              for t in range(1,5001):
+                  x=(3*x+1)//2 if x&1 else x//2
+                  peak=max(peak,x)
+                  if x<n:
+                      first=t
+                      break
+              print(f"BIG_REPLAY kind={kind} seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              if first is None or first>853:
+                  survivors.append((n,first,peak,t))
+          if survivors:
+              n,first,peak,t=survivors[0]
+              print(f"SURVIVOR_REPLAY seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              print("STATUS SURVIVOR_FOUND")
+          elif "STATUS OVERFLOW_REPLAY_REQUIRED" in s:
+              print("STATUS EXHAUSTED_NO_SURVIVOR")
+          elif "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" in s:
+              print("EXACT_SURVIVOR_CLASS_ALREADY_EXHAUSTED")
+          elif "STATUS EXHAUSTED_NO_SURVIVOR" in s:
+              print("EXACT_SHARD_ALREADY_EXHAUSTED")
+          elif "STATUS SURVIVOR_FOUND" in s:
+              raise SystemExit("u128 survivor failed exact replay invariant")
+          else:
+              raise SystemExit("missing scanner terminal status")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v30-${{ matrix.shard }}
+          path: results/v30-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: scan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-v30-*
+          path: gathered
+          merge-multiple: true
+      - name: Aggregate exact slice consequence
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          fs=sorted(Path("gathered").glob("v30-*.txt"))
+          rows=[]; survivors=[]
+          for p in fs:
+              s=p.read_text()
+              sm=re.search(r"SCANNED (\d+)",s)
+              bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+              rms=re.findall(r"SURVIVOR_REPLAY seed=(\d+) first_descent=(None|\d+) peak=(\d+)",s)
+              row={"file":p.name,
+                   "scanned":int(sm.group(1)) if sm else None,
+                   "best":int(bm.group(1)) if bm else None,
+                   "best_seed":bm.group(2) if bm else None,
+                   "overflow_count":len(re.findall(r"OVERFLOW_SEED seed=(\d+)",s)),
+                   "status":"SURVIVOR" if "STATUS SURVIVOR_FOUND" in s else "EXHAUSTED" if ("STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" in s or "STATUS EXHAUSTED_NO_SURVIVOR" in s) else "UNKNOWN"}
+              for rm in rms:
+                  hit={"file":p.name,"survivor_seed":rm[0],
+                       "first_descent":None if rm[1]=="None" else int(rm[1]),
+                       "peak":rm[2]}
+                  survivors.append(hit)
+              rows.append(row)
+          counts=[]
+          for p in fs:
+              s=p.read_text()
+              h=re.search(r"full_count=(\d+) survivor_count=(\d+) killed_count=(\d+)",s)
+              if h: counts.append(tuple(map(int,h.groups())))
+          assert counts and all(x==counts[0] for x in counts),counts
+          full_count,survivor_count,killed_count=counts[0]
+          summary={
+              "kind":"exact_v2_30_h853_tightened_interval_with_predecessor_merge",
+              "completed_shards":len(rows),
+              "expected_shards":16,
+              "full_slice_seed_count":full_count,
+              "inductively_killed_seed_count":killed_count,
+              "explicit_survivor_class_seed_count":survivor_count,
+              "explicitly_scanned_seed_count":sum(r["scanned"] or 0 for r in rows),
+              "overflow_seed_count":sum(r["overflow_count"] for r in rows),
+              "survivors":survivors,
+              "all_exhausted_no_survivor":len(rows)==16 and all(r["status"]=="EXHAUSTED" for r in rows),
+              "best_observed_nonoverflow":max([r["best"] or 0 for r in rows] or [0]),
+          }
+          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("V30_AGGREGATE",json.dumps(summary,separators=(",",":")))
+          if len(rows)!=16:
+              raise SystemExit(f"incomplete exact coverage: {len(rows)}/16")
+          if any(r["status"]=="UNKNOWN" for r in rows):
+              raise SystemExit("one or more shards lack an exact terminal verdict")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v30-aggregate
+          path: gathered/summary.json
+          retention-days: 30
