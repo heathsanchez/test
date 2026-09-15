@@ -25,6 +25,12 @@
       "status": "closed_through_h5000",
       "max_first_descent": 804,
       "run": 34944491776
+    },
+    {
+      "k": 26,
+      "status": "closed_through_h5000",
+      "max_first_descent": 890,
+      "run": 34946925694
     }
   ],
   "accepted": [
@@ -194,5 +200,5 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1) <= 28, with v2=27 compiled; sparse-prefix swarm pending"
+  "next_residual": "v2(n+1) <=25 plus deferred v2=28; high-k fused stack retained, low-k sparse transition monitored"
 }
