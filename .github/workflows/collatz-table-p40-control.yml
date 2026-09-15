@@ -1,0 +1,165 @@
+name: Collatz table-compiled p40 veto control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-table-p40-control.yml"
+      - "experiments/collatz_vslice_table_p40_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-table-p40-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [15,10,8]
+    name: table-p40-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build retained and p40 scanners
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_fused_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p28_scan.cpp -o /tmp/p28
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p40_scan.cpp -o /tmp/p40-arith
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_table_p40_scan.cpp -o /tmp/p40-table
+          g++ -O3 -march=native -fopenmp -DSELF_CHECK_P40=1 -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_table_p40_scan.cpp -o /tmp/p40-check
+
+      - name: Verify table quotient against direct p40
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          target=1<<18
+          print(L+target*(1<<(K+1)))
+          PY
+          )
+          /tmp/p40-check "$K" 5000 1 0 "$L" "$U" | tee results/selfcheck.txt
+          grep -q "STATUS TABLE_P40_VETO_SCAN_CLOSED" results/selfcheck.txt
+          ! grep -q "P40_TABLE_MISMATCH" results/selfcheck.txt
+          echo TABLE_P40_DIRECT_CONTROL_OK
+
+      - name: Protect 920-step record
+        run: |
+          N=2874993894540242321407
+          /tmp/p40-table 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS TABLE_P40_VETO_SCAN_CLOSED" results/record.txt
+
+      - name: Benchmark sealed 2^30-seed world
+        run: |
+          set -euo pipefail
+          export OMP_NUM_THREADS=4
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<30
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/p24.time /tmp/p24 "$K" 5000 1 0 "$L" "$U" > results/p24.txt
+          /usr/bin/time -f '%e' -o results/p28.time /tmp/p28 "$K" 5000 1 0 "$L" "$U" > results/p28.txt
+          /usr/bin/time -f '%e' -o results/arith.time /tmp/p40-arith "$K" 5000 1 0 "$L" "$U" > results/arith.txt
+          /usr/bin/time -f '%e' -o results/table.time /tmp/p40-table "$K" 5000 1 0 "$L" "$U" > results/table.txt
+          python - <<'PY'
+          import json,re
+          k=int("${{ matrix.k }}")
+          a=open("results/p24.txt").read()
+          b=open("results/p28.txt").read()
+          c=open("results/arith.txt").read()
+          d=open("results/table.txt").read()
+          assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in a
+          assert "STATUS LAZY_P28_VETO_SCAN_CLOSED" in b
+          assert "STATUS LAZY_P40_VETO_SCAN_CLOSED" in c
+          assert "STATUS TABLE_P40_VETO_SCAN_CLOSED" in d
+          ma=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+          mb=re.search(r"LAZY_P28_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) EXPLICIT (\d+)",b)
+          mc=re.search(r"LAZY_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",c)
+          md=re.search(r"TABLE_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",d)
+          assert ma and mb and mc and md,(a[-1500:],b[-1500:],c[-1500:],d[-1500:])
+          arith=tuple(map(int,mc.groups()))
+          table=tuple(map(int,md.groups()))
+          assert table==arith,(arith,table)
+          at=float(open("results/p24.time").read())
+          bt=float(open("results/p28.time").read())
+          ct=float(open("results/arith.time").read())
+          dt=float(open("results/table.time").read())
+          row={"k":k,"p24_explicit":int(ma.group(3)),"p28_explicit":int(mb.group(4)),
+               "p40_explicit":table[4],"p24_seconds":at,"p28_seconds":bt,
+               "arith_p40_seconds":ct,"table_p40_seconds":dt,
+               "table_vs_arith_speedup":ct/dt if dt else None,
+               "table_vs_p28_speedup":bt/dt if dt else None,
+               "table_vs_p24_speedup":at/dt if dt else None}
+          print("TABLE_P40_COMPARISON",json.dumps(row,separators=(",",":")))
+          print("TABLE_P40_EXACT_CONTROL_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: table-p40-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: benchmark
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: table-p40-k*
+          path: gathered
+      - name: Aggregate table p40 economics
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("table-p40-k*")):
+              a=(d/"p24.txt").read_text()
+              b=(d/"p28.txt").read_text()
+              c=(d/"arith.txt").read_text()
+              z=(d/"table.txt").read_text()
+              k=int(re.search(r" k=(\d+) ",z).group(1))
+              ma=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+              mb=re.search(r"LAZY_P28_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) EXPLICIT (\d+)",b)
+              mc=re.search(r"LAZY_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",c)
+              mz=re.search(r"TABLE_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",z)
+              assert ma and mb and mc and mz and tuple(mc.groups())==tuple(mz.groups())
+              at=float((d/"p24.time").read_text());bt=float((d/"p28.time").read_text())
+              ct=float((d/"arith.time").read_text());dt=float((d/"table.time").read_text())
+              rows.append({"k":k,"p24_explicit":int(ma.group(3)),"p28_explicit":int(mb.group(4)),
+                           "p40_explicit":int(mz.group(5)),"p24_seconds":at,"p28_seconds":bt,
+                           "arith_p40_seconds":ct,"table_p40_seconds":dt,
+                           "table_vs_arith_speedup":ct/dt if dt else None,
+                           "table_vs_p28_speedup":bt/dt if dt else None,
+                           "table_vs_p24_speedup":at/dt if dt else None})
+          assert len(rows)==3,rows
+          out={"kind":"table_compiled_p40_veto","rows":sorted(rows,key=lambda x:-x["k"])}
+          Path("table-p40-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("TABLE_P40_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: table-p40-field
+          path: table-p40-field.json
+          retention-days: 30
