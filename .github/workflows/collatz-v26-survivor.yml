@@ -140,7 +140,7 @@ jobs:
               s=p.read_text()
               sm=re.search(r"SCANNED (\d+)",s)
               bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
-              cm=re.search(r"COALESCENCE_EXTRA_KILLED (\\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\\d+) EXPLICIT (\d+)",s)
+              cm=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",s)
               hm=re.search(r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",s)
               if hm: headers.append(tuple(map(int,hm.groups())))
               status=(
