@@ -13,11 +13,15 @@ def main():
     ap.add_argument("--max-horizon",type=int,default=1000)
     ap.add_argument("--min-jump",type=int,default=16)
     ap.add_argument("--replay-limit",type=int,default=5000)
+    ap.add_argument("--low-bits",type=int,default=0)
+    ap.add_argument("--low-value",type=int,default=0)
     ap.add_argument("--out",default="adaptive.json")
     A=ap.parse_args()
     K=A.bits
     assert 0<=A.lower<=A.upper<(1<<K)
     assert 1<=A.start_horizon<=A.max_horizon
+    assert 0<=A.low_bits<=K
+    assert (0<=A.low_value<(1<<A.low_bits)) if A.low_bits else A.low_value==0
 
     widths=worst_widths(A.upper,A.max_horizon)
     results=[]
@@ -29,11 +33,14 @@ def main():
         seed=[C.var() for _ in range(K)]
         C.add([C.uge_const(seed,A.lower)])
         C.add([C.ule_const(seed,A.upper)])
+        for i in range(A.low_bits):
+            C.add([seed[i] if ((A.low_value>>i)&1) else -seed[i]])
         x=list(seed)
 
         print(
             f"ADAPTIVE_EXACT bits={K} lower={A.lower} upper={A.upper} "
-            f"start={A.start_horizon} max={A.max_horizon}",
+            f"start={A.start_horizon} max={A.max_horizon} "
+            f"low_bits={A.low_bits} low_value={A.low_value}",
             flush=True,
         )
 
@@ -108,6 +115,8 @@ def main():
             "start_horizon":A.start_horizon,
             "max_horizon":A.max_horizon,
             "min_jump":A.min_jump,
+            "low_bits":A.low_bits,
+            "low_value":A.low_value,
             "status":status,
             "results":results,
             "wall_seconds":time.time()-start,
