@@ -1,0 +1,108 @@
+name: Collatz sparse-prefix swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-sparse-prefix-swarm.yml"
+      - "experiments/collatz_sparse_prefix_scout.cpp"
+      - "experiments/collatz_vslice_prefix_sieve_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-sparse-prefix-swarm
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sparse and dense p24 controls
+        run: |
+          g++ -O3 -march=native experiments/collatz_sparse_prefix_scout.cpp -o /tmp/sparse
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_prefix_sieve_scan.cpp -o /tmp/dense
+      - name: Cross-check exact p24 live-class census
+        run: |
+          mkdir -p results
+          N=2874993894540242321407
+          for K in 15 10 8; do
+            /tmp/sparse $K 24 50000000 > results/sparse-$K.txt
+            /tmp/dense $K 5000 1 0 "$N" "$N" > results/dense-$K.txt
+          done
+          python - <<'PY'
+          import re
+          for k in (15,10,8):
+              s=open(f"results/sparse-{k}.txt").read()
+              d=open(f"results/dense-{k}.txt").read()
+              sm=re.search(rf"SPARSE_PREFIX_LEVEL K={k} p=24 W=\d+ live=(\d+)",s)
+              dm=re.search(r"residue_live_classes=(\d+)",d)
+              assert sm and dm,(k,s[-3000:],d[-3000:])
+              assert sm.group(1)==dm.group(1),(k,sm.group(1),dm.group(1))
+              print("SPARSE_P24_CENSUS_OK",k,sm.group(1))
+          PY
+
+  scout:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        k: [28,24,20,15,10,8]
+    name: sparse-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: g++ -O3 -march=native experiments/collatz_sparse_prefix_scout.cpp -o /tmp/sparse
+      - name: Deepen exact sparse prefix
+        run: |
+          /usr/bin/time -f '%e' -o time.txt /tmp/sparse ${{ matrix.k }} 40 50000000 | tee census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sparse-k${{ matrix.k }}
+          path: |
+            census.txt
+            time.txt
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sparse-k*
+          path: gathered
+      - name: Aggregate sparse consequence field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          worlds=[]
+          for d in sorted(Path("gathered").glob("sparse-k*")):
+              s=(d/"census.txt").read_text()
+              t=float((d/"time.txt").read_text().strip())
+              levels=[]
+              for m in re.finditer(r"SPARSE_PREFIX_LEVEL K=(\d+) p=(\d+) W=(\d+) live=(\d+).*live_fraction=([0-9.eE+-]+)",s):
+                  levels.append({
+                      "k":int(m.group(1)),"p":int(m.group(2)),"W":int(m.group(3)),
+                      "live":int(m.group(4)),"live_fraction":float(m.group(5))
+                  })
+              assert levels,s
+              abort=re.search(r"SPARSE_PREFIX_ABORT K=(\d+) p=(\d+) live_exceeded=(\d+)",s)
+              worlds.append({
+                  "k":levels[-1]["k"],"wall_seconds":t,"levels":levels,
+                  "aborted":bool(abort),
+                  "abort_p":int(abort.group(2)) if abort else None
+              })
+          out={"kind":"exact_sparse_transfer_prefix_field","worlds":worlds}
+          Path("sparse-prefix-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("SPARSE_PREFIX_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-sparse-prefix-field
+          path: sparse-prefix-field.json
+          retention-days: 30
