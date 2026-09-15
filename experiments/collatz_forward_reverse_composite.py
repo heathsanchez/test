@@ -121,7 +121,7 @@ def main() -> None:
         num_const = (1 << cert.steps) * d - cert.c
         assert num_const % den == 0, (b, c, d, cert)
         p_const = num_const // den
-        p_coef = (1 << cert.steps) * powers3[c - cert.o]
+        p_coef = (1 << cert.steps) * (3 ** (c - cert.o))
 
         L = p_coef - (1 << B)
         R = b - p_const
