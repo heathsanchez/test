@@ -1,0 +1,155 @@
+name: Collatz cross-valuation coalescence swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-coalescence-swarm.yml"
+      - "experiments/collatz_predecessor_coalescence.py"
+      - "experiments/collatz_vslice_prefix_coalescence_scan.cpp"
+      - "experiments/collatz_vslice_prefix_mod9_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-coalescence-swarm
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact coalescence censuses independently
+        run: |
+          python experiments/collatz_predecessor_coalescence.py --k 10 --s 16 | tee /tmp/c16.txt
+          python experiments/collatz_predecessor_coalescence.py --k 10 --s 18 | tee /tmp/c18.txt
+          python experiments/collatz_predecessor_coalescence.py --k 10 --s 20 | tee /tmp/c20.txt
+          python experiments/collatz_predecessor_coalescence.py --k 28 --s 16 | tee /tmp/k28.txt
+          grep -q "killed=17917 odd_classes=32768" /tmp/c16.txt
+          grep -q "killed=72418 odd_classes=131072" /tmp/c18.txt
+          grep -q "killed=292321 odd_classes=524288" /tmp/c20.txt
+          grep -q "killed=17917 odd_classes=32768" /tmp/k28.txt
+          grep -q "VERIFIED_CROSS_VALUATION_PREDECESSOR_COALESCENCE" /tmp/c20.txt
+      - name: Protect current 920 record with deepest candidate
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=20 \
+            experiments/collatz_vslice_prefix_coalescence_scan.cpp -o /tmp/coal
+          N=2874993894540242321407
+          /tmp/coal 30 5000 1 0 "$N" "$N" | tee /tmp/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" /tmp/record.txt
+          grep -q "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" /tmp/record.txt
+          echo COALESCENCE_RECORD_CONTROL_OK
+
+  scout:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 9
+      matrix:
+        k: [15,10,8]
+        c: [16,18,20]
+    name: coal-k${{ matrix.k }}-c${{ matrix.c }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build baseline and candidate
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 \
+            experiments/collatz_vslice_prefix_mod9_scan.cpp -o /tmp/base
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=${{ matrix.c }} \
+            experiments/collatz_vslice_prefix_coalescence_scan.cpp -o /tmp/coal
+      - name: Run exact sealed world
+        run: |
+          set -o pipefail
+          mkdir -p results
+          K=${{ matrix.k }}
+          C=${{ matrix.c }}
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          export OMP_NUM_THREADS=4
+          /usr/bin/time -f '%e' -o results/base.time \
+            /tmp/base "$K" 5000 1 0 "$L" "$U" > results/base.txt
+          /usr/bin/time -f '%e' -o results/coal.time \
+            /tmp/coal "$K" 5000 1 0 "$L" "$U" > results/coal.txt
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          k=int("${{ matrix.k }}"); c=int("${{ matrix.c }}")
+          a=Path("results/base.txt").read_text()
+          b=Path("results/coal.txt").read_text()
+          assert "STATUS PREFIX_MOD9_SIEVE_AND_SCAN_CLOSED" in a,a[-4000:]
+          assert "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" in b,b[-4000:]
+          ah=re.search(r"full_count=(\d+).*explicit_count=(\d+)",a)
+          ak=re.search(r"MOD9_KILLED (\d+) EXPLICIT (\d+)",a)
+          bh=re.search(r"full_count=(\d+).*explicit_count=(\d+)",b)
+          ck=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) MOD9_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",b)
+          ct=re.search(r"COALESCENCE_TABLE K=(\d+) C=(\d+) killed_classes=(\d+) odd_classes=(\d+)",b)
+          assert ah and ak and bh and ck and ct,(a[-3000:],b[-3000:])
+          full,prefix=map(int,ah.groups())
+          mod9,base_exp=map(int,ak.groups())
+          bfull,bprefix=map(int,bh.groups())
+          coal_extra,mod9_after,explicit=map(int,ck.groups())
+          assert (full,prefix)==(bfull,bprefix)
+          assert mod9+base_exp==prefix
+          assert coal_extra+mod9_after+explicit==prefix,(coal_extra,mod9_after,explicit,prefix)
+          bt=float(Path("results/base.time").read_text())
+          ctme=float(Path("results/coal.time").read_text())
+          row={
+              "k":k,"c":c,"full":full,"prefix_live":prefix,
+              "baseline_explicit":base_exp,
+              "coalescence_extra_killed":coal_extra,
+              "mod9_killed_after_coalescence":mod9_after,
+              "candidate_explicit":explicit,
+              "residual_reduction":base_exp/explicit if explicit else float("inf"),
+              "baseline_seconds":bt,"candidate_seconds":ctme,
+              "speedup":bt/ctme if ctme else float("inf"),
+              "table_killed_classes":int(ct.group(3)),
+              "table_odd_classes":int(ct.group(4)),
+          }
+          Path(f"results/scout-k{k}-c{c}.json").write_text(json.dumps(row,indent=2)+"\n")
+          print("COALESCENCE_SCOUT",json.dumps(row,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coal-k${{ matrix.k }}-c${{ matrix.c }}
+          path: results/scout-*.json
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coal-k*
+          path: gathered
+          merge-multiple: true
+      - name: Compile coalescence consequence field
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(p.read_text()) for p in sorted(Path("gathered").glob("scout-*.json"))]
+          assert len(rows)==9,len(rows)
+          winners={}
+          for k in (15,10,8):
+              g=[r for r in rows if r["k"]==k]
+              winners[str(k)]=min(g,key=lambda r:(r["candidate_seconds"],r["candidate_explicit"],r["c"]))
+          out={"kind":"cross_valuation_coalescence_field","rows":rows,"runtime_winners":winners}
+          Path("coalescence-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("COALESCENCE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-coalescence-field
+          path: coalescence-field.json
+          retention-days: 30
