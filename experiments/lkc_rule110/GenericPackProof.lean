@@ -224,7 +224,7 @@ theorem packW_lt_double
       Nat.add_le_add hp' hmul
     _ = P * P - 1 := by
       rw [Nat.sub_mul]
-      simp only [one_mul]
+      simp
       omega
     _ < P * P := by omega
     _ = 2 ^ (w + w) := by
