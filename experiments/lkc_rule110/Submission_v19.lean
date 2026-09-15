@@ -636,7 +636,7 @@ theorem advance8_eq (x : Nat) :
   simp only [advance8]
   omega
 
-set_option maxRecDepth 4096 in
+set_option maxRecDepth 16384 in
 theorem packByteTailPair_eq (x n : Nat)
     (h : x + (8 * n + 5) * stepConst < 2 ^ 40) :
     packByteTailPair x n = packByteTailNat x n := by
