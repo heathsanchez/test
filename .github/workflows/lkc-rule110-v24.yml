@@ -1,0 +1,85 @@
+name: LKC Rule110 eight-lane SWAR v24
+
+on:
+  push:
+    branches: [lkc-rule110-fused-v1]
+    paths:
+      - 'experiments/lkc_rule110/Submission_v24.lean'
+      - '.github/workflows/lkc-rule110-v24.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-rule110-v24
+  cancel-in-progress: true
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+      - name: Build V24 universal proof
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v24.lean" Submission.lean
+          lake build
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+      - name: Compare V20 and V24 over three local replays
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/artifacts-v24"
+          for rep in 1 2 3; do
+            for who in v20 v24; do
+              if [ "$who" = v20 ]; then
+                sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v20.lean"
+              else
+                sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v24.lean"
+              fi
+              python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 2>&1 |
+                tee "$GITHUB_WORKSPACE/artifacts-v24/${who}-rep${rep}.log"
+            done
+          done
+      - name: Summarize
+        if: always()
+        shell: python
+        run: |
+          import glob,re,statistics,pathlib,json
+          pathlib.Path("artifacts-v24").mkdir(exist_ok=True)
+          out={}
+          for who in ("v20","v24"):
+              vals=[]
+              for p in sorted(glob.glob(f"artifacts-v24/{who}-rep*.log")):
+                  m=re.search(r"Computation replay T: ([0-9.]+) s",pathlib.Path(p).read_text())
+                  if m: vals.append(float(m.group(1)))
+              out[who]={"runs":vals,"median":statistics.median(vals) if vals else None}
+          if out["v20"]["median"] and out["v24"]["median"]:
+              out["improvement_pct"]=(1-out["v24"]["median"]/out["v20"]["median"])*100
+              out["speedup_x"]=out["v20"]["median"]/out["v24"]["median"]
+          pathlib.Path("artifacts-v24/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v24-evidence
+          path: artifacts-v24/
+          if-no-files-found: error
