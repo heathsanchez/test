@@ -14,8 +14,8 @@
     "evidence_commit": "8cdf6896a980dee94fa4b1afcc02126db039ed52"
   },
   "live_interval": [
-    2.3923121220592075e+21,
-    4.722366482869645e+21
+    "2392312122059207475200",
+    "4722366482869645213695"
   ],
   "horizon_400": {
     "workflow_run": 34906019998,
@@ -381,17 +381,42 @@
       "extremal_seed_decimal": "4627409694411561369599",
       "certificate_method": "exact valuation slice split across 16 shards; compile k odd steps plus forced even",
       "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 42",
+      "exact_seed_count": 264896512,
+      "max_first_descent": 747,
+      "extremal_seed_decimal": "3823946441051737161727",
+      "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
+      "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 41",
+      "exact_seed_count": 529793024,
+      "max_first_descent": 726,
+      "extremal_seed_decimal": "4142258705472470122495",
+      "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
+      "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 40",
+      "exact_seed_count": 1059586048,
+      "max_first_descent": 745,
+      "extremal_seed_decimal": "2867959830788802871295",
+      "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
-    "witness_decimal": "4120704748135735361535",
-    "exact_first_descent": 734,
-    "v2_n_plus_1": 45,
-    "source": "exact exhaustive v2(n+1)>=45 compiled region"
+    "witness_decimal": "3823946441051737161727",
+    "exact_first_descent": 747,
+    "v2_n_plus_1": 42,
+    "source": "exact exhaustive v2(n+1)=42 block-compiled region"
   },
   "current_structural_residual": {
-    "predicate": "live interval and v2(n+1) <= 42",
-    "reason": "all v2>=43 slices compiled; global record remains 734 at v2=45",
-    "next_action": "close exact v2=42 slices by shard unless cost forces another reframe"
-  }
+    "predicate": "live interval and v2(n+1) <= 39",
+    "reason": "all v2>=40 slices compiled exactly; current record is first descent 747 at v2=42",
+    "next_action": "continue exact block-compiled valuation slices downward until cost or residual shape forces another reframe"
+  },
+  "numeric_encoding": "large integers should be stored as decimal strings"
 }
