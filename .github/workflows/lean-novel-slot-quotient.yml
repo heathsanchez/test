@@ -1,0 +1,347 @@
+name: Lean novel canonical-slot consequence quotient
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-novel-slot-quotient.yml'
+      - 'scripts/patch_novel_slot_quotient.py'
+      - 'scripts/patch_novel_slot_quotient_ablation.py'
+      - 'scripts/patch_novel_slot_quotient_red.py'
+      - 'scripts/patch_a6.py'
+      - 'NOVEL_CONSEQUENCE_QUOTIENT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  novel-quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+      RED_RUN: 34913712534
+      RED_FALSE_SPLITS: 5317
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen external Arena oracle
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a0 quotient ablation green results/novel-cq diagnostics/novel-cq
+          mkdir -p arena-tests artifact results/novel-cq diagnostics/novel-cq
+          {
+            echo "repo_commit=$GITHUB_SHA"
+            echo "sokonanoda_pin=$SOKO_PIN"
+            echo "arena_artifact=$ARENA_ARTIFACT"
+            echo "red_run=$RED_RUN"
+            echo "red_false_splits=$RED_FALSE_SPLITS"
+          } | tee diagnostics/novel-cq/provenance.txt
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          test -f artifact/lean-arena-tests.tar.gz
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          find arena-tests/good -type f -name '*.ndjson' | sort > diagnostics/novel-cq/good_manifest.txt
+          find arena-tests/bad -type f -name '*.ndjson' | sort > diagnostics/novel-cq/bad_manifest.txt
+          test -s diagnostics/novel-cq/good_manifest.txt
+          test -s diagnostics/novel-cq/bad_manifest.txt
+
+      - name: Reconstruct frozen arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 quotient ablation green; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6
+            cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            case "$arm" in
+              quotient)
+                python3 scripts/patch_novel_slot_quotient.py
+                ;;
+              ablation)
+                python3 scripts/patch_novel_slot_quotient_ablation.py
+                ;;
+              green)
+                python3 scripts/patch_novel_slot_quotient.py
+                python3 scripts/patch_novel_slot_quotient_red.py
+                ;;
+              a0)
+                ;;
+            esac
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/novel-cq/$arm.patch"
+            test -s "diagnostics/novel-cq/$arm.patch"
+            rm -rf "$arm"
+            mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+          cmp --silent a0/config.json quotient/config.json
+          cmp --silent a0/config.json ablation/config.json
+          grep -Fq 'let sv = self.canonicalize_for_spine(slots[i]);' quotient/src/eval.rs
+          grep -Fq 'let cv = self.canonicalize_for_spine(*v);' quotient/src/eval.rs
+          grep -Fq 'let _canonical = self.canonicalize_for_spine(sv);' ablation/src/eval.rs
+          grep -Fq 'CQ_SLOT_FALSE_SPLITS' green/src/eval.rs
+
+      - name: Build all arms identically
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 quotient ablation green; do
+            echo "=== BUILD $arm ===" | tee "diagnostics/novel-cq/$arm-build.log"
+            (
+              cd "$arm"
+              RUSTFLAGS="-C target-cpu=native" cargo build --release
+            ) 2>&1 | tee -a "diagnostics/novel-cq/$arm-build.log"
+            test -x "$arm/target/release/sokonanoda"
+          done
+
+      - name: GREEN - original false-split property now closes
+        shell: bash
+        run: |
+          set -euo pipefail
+          find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | sort > diagnostics/novel-cq/discovery_candidates.txt
+          test "$(wc -l < diagnostics/novel-cq/discovery_candidates.txt)" -eq 1
+          CASE=$(cat diagnostics/novel-cq/discovery_candidates.txt)
+          printf '%s\n' "$CASE" > diagnostics/novel-cq/discovery_case.txt
+
+          SOKONANODA_CQ_SLOT_RED=1             green/target/release/sokonanoda green/config.json             < "$CASE"             > diagnostics/novel-cq/green_stdout.txt             2> diagnostics/novel-cq/green_stderr.txt
+
+          python3 - <<'PY'
+          import json, pathlib, re
+          text = pathlib.Path('diagnostics/novel-cq/green_stderr.txt').read_text(errors='replace')
+          m = re.search(r'CQ_SLOT_RED calls=(\d+) canon_changed=(\d+) canon_repeat=(\d+) false_splits=(\d+)', text)
+          if not m:
+              raise SystemExit('missing GREEN CQ_SLOT_RED telemetry')
+          calls, changed, repeat, false_splits = map(int, m.groups())
+          result = {
+              'red_run': 34913712534,
+              'red_false_splits': 5317,
+              'green_calls': calls,
+              'green_canonicalization_changed_slot_vector': changed,
+              'green_canonical_signature_repeats': repeat,
+              'green_false_splits': false_splits,
+          }
+          pathlib.Path('results/novel-cq/green.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          if false_splits != 0:
+              raise SystemExit(f'GREEN failed: {false_splits} canonical-slot false splits remain')
+          PY
+
+      - name: External semantic gate before performance
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, subprocess
+          arms = ['a0', 'quotient', 'ablation']
+          good = sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad = sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if not good or not bad:
+              raise SystemExit(f'non-vacuity failure: good={len(good)} bad={len(bad)}')
+          out = {'oracle_artifact': 8931227426, 'arms': {}}
+          for arm in arms:
+              exe = pathlib.Path(arm) / 'target/release/sokonanoda'
+              cfg = pathlib.Path(arm) / 'config.json'
+              gp = br = 0
+              failures = []
+              for p in good:
+                  with p.open('rb') as f:
+                      r = subprocess.run([str(exe), str(cfg)], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                  if r.returncode == 0:
+                      gp += 1
+                  elif len(failures) < 20:
+                      failures.append({'kind':'good_rejected','case':str(p),'rc':r.returncode,'stderr_tail':r.stderr.decode(errors='replace')[-1000:]})
+              for p in bad:
+                  with p.open('rb') as f:
+                      r = subprocess.run([str(exe), str(cfg)], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                  if r.returncode != 0:
+                      br += 1
+                  elif len(failures) < 20:
+                      failures.append({'kind':'bad_accepted','case':str(p),'rc':r.returncode})
+              out['arms'][arm] = {
+                  'good_pass': gp, 'good_total': len(good),
+                  'bad_reject': br, 'bad_total': len(bad),
+                  'failures': failures,
+              }
+          pathlib.Path('results/novel-cq/semantics.json').write_text(json.dumps(out, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(out, indent=2, sort_keys=True))
+          for arm, x in out['arms'].items():
+              if x['good_pass'] != x['good_total'] or x['bad_reject'] != x['bad_total']:
+                  raise SystemExit(f'external semantic gate failed for {arm}')
+          PY
+
+      - name: Freeze held-out workload
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          discovery = pathlib.Path('diagnostics/novel-cq/discovery_case.txt').read_text().strip()
+          discovery_path = pathlib.Path(discovery).resolve()
+          good = [p for p in pathlib.Path('arena-tests/good').rglob('*.ndjson') if p.resolve() != discovery_path]
+          if len(good) < 24:
+              raise SystemExit(f'need >=24 held-out cases, found {len(good)}')
+          workload = sorted(good, key=lambda p: (-p.stat().st_size, str(p)))[:24]
+          if any(p.resolve() == discovery_path for p in workload):
+              raise SystemExit('discovery case leaked into held-out workload')
+          manifest = [str(p) for p in workload]
+          pathlib.Path('diagnostics/novel-cq/heldout_manifest.txt').write_text('\n'.join(manifest) + '\n')
+          result = {
+              'selection_rule': '24 largest frozen good cases by byte size, path tie-break; discovery case excluded',
+              'performance_observed_during_selection': False,
+              'cases': manifest,
+          }
+          pathlib.Path('results/novel-cq/heldout_selection.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+          PY
+
+      - name: Paired held-out causal benchmark
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib, random, resource, statistics, subprocess, time
+
+          arms = ['a0', 'quotient', 'ablation']
+          workload = [pathlib.Path(x) for x in pathlib.Path('diagnostics/novel-cq/heldout_manifest.txt').read_text().splitlines() if x.strip()]
+          if not workload:
+              raise SystemExit('empty held-out workload')
+
+          # Warm the binary/page cache without recording data.
+          for arm in arms:
+              exe = pathlib.Path(arm) / 'target/release/sokonanoda'
+              cfg = pathlib.Path(arm) / 'config.json'
+              for p in workload:
+                  with p.open('rb') as f:
+                      r = subprocess.run([str(exe), str(cfg)], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                  if r.returncode != 0:
+                      raise SystemExit(f'warmup failure {arm} {p}: rc={r.returncode}')
+
+          rows = []
+          by_rep = {}
+          for rep in range(15):
+              order = arms.copy()
+              random.Random(rep).shuffle(order)
+              by_rep[rep] = {}
+              for arm in order:
+                  exe = pathlib.Path(arm) / 'target/release/sokonanoda'
+                  cfg = pathlib.Path(arm) / 'config.json'
+                  before = resource.getrusage(resource.RUSAGE_CHILDREN)
+                  start = time.perf_counter()
+                  for p in workload:
+                      with p.open('rb') as f:
+                          r = subprocess.run([str(exe), str(cfg)], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                      if r.returncode != 0:
+                          raise SystemExit(f'{arm} failed held-out case {p}: rc={r.returncode}')
+                  wall = time.perf_counter() - start
+                  after = resource.getrusage(resource.RUSAGE_CHILDREN)
+                  cpu = (after.ru_utime-before.ru_utime) + (after.ru_stime-before.ru_stime)
+                  row = {'rep':rep,'arm':arm,'cpu_s':cpu,'wall_s':wall}
+                  rows.append(row)
+                  by_rep[rep][arm] = row
+
+          summary = {
+              arm: {
+                  'median_cpu_s': statistics.median(r['cpu_s'] for r in rows if r['arm']==arm),
+                  'median_wall_s': statistics.median(r['wall_s'] for r in rows if r['arm']==arm),
+              }
+              for arm in arms
+          }
+
+          def paired(candidate, control, metric):
+              deltas=[]; wins=0
+              for rep in range(15):
+                  c=by_rep[rep][candidate][metric]
+                  b=by_rep[rep][control][metric]
+                  deltas.append(100.0*(c/b-1.0))
+                  wins += c < b
+              return {
+                  'median_delta_pct': statistics.median(deltas),
+                  'wins': wins,
+                  'deltas_pct': deltas,
+              }
+
+          perf = {
+              'primary_metric': 'paired CPU seconds',
+              'repetitions': 15,
+              'heldout_case_count': len(workload),
+              'summary': summary,
+              'quotient_vs_ablation_cpu': paired('quotient','ablation','cpu_s'),
+              'quotient_vs_a0_cpu': paired('quotient','a0','cpu_s'),
+              'quotient_vs_ablation_wall': paired('quotient','ablation','wall_s'),
+              'quotient_vs_a0_wall': paired('quotient','a0','wall_s'),
+              'rows': rows,
+          }
+          pathlib.Path('results/novel-cq/performance.json').write_text(json.dumps(perf, indent=2, sort_keys=True) + '\n')
+          print(json.dumps(perf, indent=2, sort_keys=True))
+          PY
+
+      - name: Classify frozen experiment
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+          green = json.loads(pathlib.Path('results/novel-cq/green.json').read_text())
+          sem = json.loads(pathlib.Path('results/novel-cq/semantics.json').read_text())
+          perf = json.loads(pathlib.Path('results/novel-cq/performance.json').read_text())
+
+          semantic_ok = all(
+              x['good_pass']==x['good_total'] and x['bad_reject']==x['bad_total']
+              for x in sem['arms'].values()
+          )
+          green_ok = green['green_false_splits'] == 0
+          qa = perf['quotient_vs_ablation_cpu']
+          q0 = perf['quotient_vs_a0_cpu']
+          causal = qa['median_delta_pct'] < 0 and qa['wins'] >= 12
+          net = q0['median_delta_pct'] < 0 and q0['wins'] >= 10
+
+          if not semantic_ok:
+              verdict='SEMANTIC_REJECTION'
+          elif not green_ok:
+              verdict='GREEN_PROPERTY_NOT_CLOSED'
+          elif causal and net:
+              verdict='VERIFIED_NOVEL_QUOTIENT_GAIN'
+          elif causal:
+              verdict='VERIFIED_CAUSAL_QUOTIENT_BUT_NET_NEGATIVE'
+          else:
+              verdict='VERIFIED_FALSE_SPLIT_NO_CAUSAL_GAIN'
+
+          result = {
+              'verdict': verdict,
+              'red_run': 34913712534,
+              'red_false_splits': 5317,
+              'green_false_splits': green['green_false_splits'],
+              'external_semantic_gate': semantic_ok,
+              'quotient_vs_ablation_cpu_median_delta_pct': qa['median_delta_pct'],
+              'quotient_vs_ablation_cpu_wins_of_15': qa['wins'],
+              'quotient_vs_a0_cpu_median_delta_pct': q0['median_delta_pct'],
+              'quotient_vs_a0_cpu_wins_of_15': q0['wins'],
+              'claim_boundary': 'Novel residual-derived canonical-slot quotient; no claim beyond frozen Arena semantics and held-out workload.',
+          }
+          pathlib.Path('results/novel-cq/verdict.json').write_text(json.dumps(result, indent=2, sort_keys=True) + '\n')
+          pathlib.Path('results/novel-cq/VERDICT.txt').write_text(verdict + '\n')
+          print(json.dumps(result, indent=2, sort_keys=True))
+
+          if not semantic_ok or not green_ok:
+              raise SystemExit(verdict)
+          PY
+
+      - name: Upload complete novel quotient evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-novel-canonical-slot-quotient
+          path: |
+            results/novel-cq/
+            diagnostics/novel-cq/
+            NOVEL_CONSEQUENCE_QUOTIENT.md
