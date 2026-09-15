@@ -1,0 +1,82 @@
+name: Collatz macro-fixpoint finite-tail classification
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-macro-fixpoint-tails.yml"
+      - "experiments/collatz_macro_fixpoint_tails.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-macro-fixpoint-tails
+  cancel-in-progress: true
+
+jobs:
+  tails:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Exhaust macro grammar and classify tails
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_macro_fixpoint_tails.cpp             -o /tmp/tails
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/tails 24 results/q14-bank.txt | tee results/census.txt
+          grep -q "VERIFIED_MACRO_FIXPOINT_TAIL_CLASSIFICATION" results/census.txt
+
+      - name: Freeze tail verdict
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"MACRO_FIXPOINT_TAILS K=24 live=(\d+) "
+              r"finite_tail_families=(\d+) hard_families=(\d+) "
+              r"total_finite_exceptions=(\d+) max_exception_a=(\d+)",s)
+          assert m,s[-6000:]
+          live,finite,hard,total_exc,max_a=map(int,m.groups())
+          assert live==173180,(live,173180)
+          assert finite+hard==live,(finite,hard,live)
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"macro_fixpoint_tail_classification",
+              "K":24,"live":live,
+              "finite_tail_families":finite,
+              "hard_families":hard,
+              "finite_tail_fraction":finite/live,
+              "total_finite_exceptions":total_exc,
+              "max_exception_a":max_a,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("MACRO_FIXPOINT_TAIL_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macro-fixpoint-tail-classification
+          path: results
+          retention-days: 30
