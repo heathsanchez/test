@@ -1,0 +1,127 @@
+name: Lean A6 spine recency locality
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-a6-spine-recency-diag.yml'
+      - 'scripts/patch_a6_spine_recency_diag.py'
+      - 'scripts/patch_a6.py'
+      - 'A6_SPINE_RECENCY_PROTOCOL.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/spine-recency diagnostics/spine-recency
+          curl --fail --location --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" \
+            -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct and build diagnostic A6
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout -q 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+          python3 scripts/patch_a6.py
+          python3 scripts/patch_a6_spine_recency_diag.py
+          git -C a6 diff --check
+          git -C a6 diff > diagnostics/spine-recency/diagnostic.patch
+          cat > a6/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+
+      - name: Measure exact temporal recurrence
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          root=pathlib.Path('arena-tests/good')
+          cases={
+            'grind-ring-5':root/'perf/grind-ring-5.ndjson',
+            'init-prelude':root/'init-prelude.ndjson',
+            'app-lam':root/'perf/app-lam.ndjson',
+            'shift-cascade':root/'perf/shift-cascade.ndjson',
+          }
+          for k,p in cases.items():
+            if not p.exists(): raise SystemExit(f'missing {k}: {p}')
+          rx=re.compile(r'SPINE_RECENCY total=(\d+) map_hit=(\d+) map_miss=(\d+) last1=(\d+) last2=(\d+) last4=(\d+) last8=(\d+) last16=(\d+)')
+          fields=['total','map_hit','map_miss','last1','last2','last4','last8','last16']
+          out={}
+          for name,p in cases.items():
+            with p.open('rb') as f:
+              r=subprocess.run(
+                ['a6/target/release/sokonanoda','a6/config.json'],
+                stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                env={**os.environ,'SOKONANODA_SPINE_RECENCY_DIAG':'1'},
+              )
+            if r.returncode: raise SystemExit(f'{name} rc={r.returncode}: {r.stderr.decode(errors="replace")[-1200:]}')
+            m=rx.search(r.stderr.decode(errors='replace'))
+            if not m: raise SystemExit(f'missing telemetry {name}')
+            row=dict(zip(fields,map(int,m.groups())))
+            for k in [1,2,4,8,16]:
+              row[f'last{k}_capture_of_map_hits']=row[f'last{k}']/row['map_hit'] if row['map_hit'] else 0
+            out[name]=row
+          agg={k:0 for k in fields}
+          for row in out.values():
+            for k in fields: agg[k]+=row[k]
+          for k in [1,2,4,8,16]:
+            agg[f'last{k}_capture_of_map_hits']=agg[f'last{k}']/agg['map_hit'] if agg['map_hit'] else 0
+          selected=None
+          for k in [1,2,4,8,16]:
+            if agg[f'last{k}_capture_of_map_hits']>=0.45:
+              selected=k; break
+          result={'cases':out,'aggregate':agg,'frozen_threshold':0.45,'selected_smallest_k':selected}
+          pathlib.Path('results/spine-recency/result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - name: Frozen semantic replay
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          gp=br=0
+          for p in good:
+            with p.open('rb') as f:
+              r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            gp+=r.returncode==0
+          for p in bad:
+            with p.open('rb') as f:
+              r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+            br+=r.returncode!=0
+          out={'good_pass':gp,'good_total':len(good),'bad_reject':br,'bad_total':len(bad)}
+          pathlib.Path('results/spine-recency/semantics.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          if gp!=len(good) or br!=len(bad): raise SystemExit('semantic diagnostic regression')
+          PY
+
+      - name: Upload recency evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-a6-spine-recency
+          path: |
+            results/spine-recency/
+            diagnostics/spine-recency/
+            A6_SPINE_RECENCY_PROTOCOL.md
