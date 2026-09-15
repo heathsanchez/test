@@ -34,5 +34,6 @@ jobs:
       - name: Check SWAR proof
         working-directory: lkc/problems/ca-rule110
         run: |
+          lake build Spec
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/SWARProof.lean" SWARProof.lean
           lake env lean SWARProof.lean
