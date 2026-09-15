@@ -478,8 +478,6 @@ theorem initPacked32_eq (seed : Nat) :
     initPacked32 seed = initPackedFastBit seed := by
   unfold initPacked32 initPackedFastBit
   rw [packTail32_eq]
-  have h : 32 * 7 + 30 = 254 := by decide
-  rw [h]
 
 def impl : Nat → Nat := fun n =>
   biterFast (caSteps n) (initPacked32 (caSeed n))
