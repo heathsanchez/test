@@ -1,0 +1,44 @@
+name: Collatz cone coefficient paradox falsifier
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-cone-coefficient-paradox.yml"
+      - "experiments/collatz_cone_coefficient_paradox.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-cone-coefficient-paradox
+  cancel-in-progress: true
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [20, 22, 24, 26]
+    name: coefficient-paradox-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Exhaustive exact scan
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_cone_coefficient_paradox.cpp -o /tmp/cone_coeff
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/cone_coeff ${{ matrix.k }} | tee results/census.txt
+          grep -q "VERIFIED_PARADOX_TEST_SENSITIVITY" results/census.txt
+          grep -q "NO_PRE_CLOSURE_COEFFICIENT_PARADOX" results/census.txt
+          grep -q "FINAL_GATE=CONE_KILLS_COEFFICIENT_PARADOX_K${{ matrix.k }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coefficient-paradox-k${{ matrix.k }}
+          path: results
+          retention-days: 30
