@@ -1,0 +1,112 @@
+name: Collatz one-step O cone
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-one-step-cone.yml"
+      - "experiments/collatz_one_step_cone_bigint.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-one-step-cone
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        k: [20,21,22,23,24,25,26,27,28]
+    name: one-step-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bigint headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Generate frozen q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+      - name: Run exact one-step cone
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_one_step_cone_bigint.cpp -o /tmp/one
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/one ${{ matrix.k }} results/q14-bank.txt 0 512 | tee results/census.txt
+          grep -q "VERIFIED_DETERMINISTIC_ONE_STEP_O_CONE" results/census.txt
+      - name: Parse
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"ONE_STEP_CONE_RESULT K={K} forward_h=512 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_cone=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-8000:]
+          u,fw,cone,hard,controls=map(int,m.groups())
+          assert fw+cone+hard==u
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"K":K,"universal_residual":u,"shell_forward":fw,
+               "shell_cone":cone,"shell_hard":hard,
+               "closed_fraction":(fw+cone)/u if u else 1.0,
+               "controls":controls,"wall_seconds":float(tm[0]),
+               "max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("ONE_STEP_CONE_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: one-step-cone-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shell
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: one-step-cone-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("one-step-cone-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==list(range(20,29)),rows
+          out={"kind":"one_step_o_cone_across_k","rows":rows,
+               "all_closed":all(x["shell_hard"]==0 for x in rows)}
+          Path("one-step-cone-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("ONE_STEP_CONE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-step-cone-field
+          path: one-step-cone-field.json
+          retention-days: 30
