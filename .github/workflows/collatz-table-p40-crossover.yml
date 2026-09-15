@@ -1,0 +1,132 @@
+name: Collatz table p40 crossover field
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-table-p40-crossover.yml"
+      - "experiments/collatz_vslice_table_p40_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-table-p40-crossover
+  cancel-in-progress: true
+
+jobs:
+  crossover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [25,20,15,10,8]
+    name: p40-crossover-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build p24 and table p40
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_fused_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_table_p40_scan.cpp -o /tmp/p40
+          g++ -O3 -march=native -fopenmp -DSELF_CHECK_P40=1 -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_table_p40_scan.cpp -o /tmp/p40-check
+
+      - name: Direct equivalence control
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          target=1<<16
+          print(L+target*(1<<(K+1)))
+          PY
+          )
+          /tmp/p40-check "$K" 5000 1 0 "$L" "$U" > results/selfcheck.txt
+          grep -q "STATUS TABLE_P40_VETO_SCAN_CLOSED" results/selfcheck.txt
+          ! grep -q "P40_TABLE_MISMATCH" results/selfcheck.txt
+          echo TABLE_P40_CROSSOVER_DIRECT_OK
+
+      - name: Three alternating sealed repeats
+        run: |
+          set -euo pipefail
+          export OMP_NUM_THREADS=4
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<30
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          for R in 1 2 3; do
+            if [ $((R%2)) -eq 1 ]; then
+              /usr/bin/time -f '%e' -o "results/p40.$R.time" /tmp/p40 "$K" 5000 1 0 "$L" "$U" > "results/p40.$R.txt"
+              /usr/bin/time -f '%e' -o "results/p24.$R.time" /tmp/p24 "$K" 5000 1 0 "$L" "$U" > "results/p24.$R.txt"
+            else
+              /usr/bin/time -f '%e' -o "results/p24.$R.time" /tmp/p24 "$K" 5000 1 0 "$L" "$U" > "results/p24.$R.txt"
+              /usr/bin/time -f '%e' -o "results/p40.$R.time" /tmp/p40 "$K" 5000 1 0 "$L" "$U" > "results/p40.$R.txt"
+            fi
+          done
+          python - <<'PY'
+          import json,re,statistics,pathlib
+          k=int("${{ matrix.k }}")
+          a=[];b=[];p24_exp=p40_exp=None
+          for r in range(1,4):
+              p=pathlib.Path(f"results/p24.{r}.txt").read_text()
+              q=pathlib.Path(f"results/p40.{r}.txt").read_text()
+              assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in p
+              assert "STATUS TABLE_P40_VETO_SCAN_CLOSED" in q
+              mp=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",p)
+              mq=re.search(r"TABLE_P40_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) P40_VETOED_AFTER_P28 (\d+) EXPLICIT (\d+)",q)
+              assert mp and mq
+              p24_exp=int(mp.group(3));p40_exp=int(mq.group(5))
+              a.append(float(pathlib.Path(f"results/p24.{r}.time").read_text()))
+              b.append(float(pathlib.Path(f"results/p40.{r}.time").read_text()))
+          row={"k":k,"p24_times":a,"p40_times":b,
+               "p24_median":statistics.median(a),"p40_median":statistics.median(b),
+               "median_speedup":statistics.median(a)/statistics.median(b),
+               "p24_explicit":p24_exp,"p40_explicit":p40_exp,
+               "explicit_reduction":1-p40_exp/p24_exp}
+          pathlib.Path("results/summary.json").write_text(json.dumps(row,indent=2)+"\n")
+          print("TABLE_P40_CROSSOVER",json.dumps(row,separators=(",",":")))
+          print("TABLE_P40_CROSSOVER_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: table-p40-crossover-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: crossover
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: table-p40-crossover-k*
+          path: gathered
+      - name: Aggregate adaptive crossover
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[json.loads(p.read_text()) for p in Path("gathered").glob("table-p40-crossover-k*/summary.json")]
+          assert len(rows)==5,rows
+          rows=sorted(rows,key=lambda x:-x["k"])
+          out={"kind":"table_p40_adaptive_crossover","rows":rows}
+          Path("table-p40-crossover-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("TABLE_P40_CROSSOVER_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: table-p40-crossover-field
+          path: table-p40-crossover-field.json
+          retention-days: 30
