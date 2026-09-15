@@ -325,60 +325,34 @@ theorem lift_pair_stage (p q s : Nat)
   simp only [pairStage, Nat.testBit_and, Nat.testBit_xor, Nat.testBit_shiftRight]
   by_cases h128 : i < 128
   · rw [if_pos h128, if_pos h128]
-    by_cases h32 : i < 32
-    · have his : s + i < 128 := by omega
-      rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
-      simp [h128, his, h32, testBit_mask2]
-    · by_cases h64 : i < 64
-      · have hn64 : ¬64 ≤ i := by omega
-        simp [h32, h64, hn64, testBit_mask2]
-      · by_cases h96 : i < 96
-        · have hi64 : 64 ≤ i := by omega
-          have hj32 : i - 64 < 32 := by omega
-          have his : s + i < 128 := by omega
-          rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
-          simp [h128, his, h32, h64, hi64, hj32, testBit_mask2]
-        · have hi64 : 64 ≤ i := by omega
-          have hji : ¬i - 64 < 32 := by omega
-          simp [h32, h64, hi64, hji, testBit_mask2]
+    by_cases hm : mask2.testBit i = true
+    · have hrange : i < 32 ∨ (64 ≤ i ∧ i - 64 < 32) := by
+        rw [testBit_mask2] at hm
+        simpa using hm
+      have hi96 : i < 96 := by omega
+      have his : s + i < 128 := by omega
+      rw [testBit_pack128 p q i hp, testBit_pack128 p q (s + i) hp]
+      simp [h128, his, hm]
+    · have hmf : mask2.testBit i = false := by
+        cases h : mask2.testBit i <;> simp_all
+      simp [hmf]
   · rw [if_neg h128, if_neg h128]
-    by_cases h256 : i < 256
-    · have hi128 : 128 ≤ i := by omega
-      let j := i - 128
-      have hj128 : j < 128 := by dsimp [j]; omega
-      have hij : i = 128 + j := by dsimp [j]; omega
-      by_cases hj32 : j < 32
-      · have hsj : s + j < 128 := by omega
-        have hsihi : ¬s + i < 128 := by omega
-        have hslt256 : s + i < 256 := by
-          rw [hij]
-          omega
-        rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
-        have hsub : (s + i) - 128 = s + j := by rw [hij]; omega
-        simp [j, h128, hi128, h256, hsihi, hslt256, hj32, hsub, testBit_mask2]
-      · by_cases hj64 : j < 64
-        · have hn64 : ¬64 ≤ j := by omega
-          simp [j, hj32, hj64, hn64, testBit_mask2]
-        · by_cases hj96 : j < 96
-          · have hj64le : 64 ≤ j := by omega
-            have hjj32 : j - 64 < 32 := by omega
-            have hsihi : ¬s + i < 128 := by omega
-            have hslt256 : s + i < 256 := by
-              rw [hij]
-              omega
-            rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
-            have hsub : (s + i) - 128 = s + j := by rw [hij]; omega
-            simp [j, h128, hi128, h256, hsihi, hslt256, hj32, hj64, hj64le,
-              hjj32, hsub, testBit_mask2]
-          · have hj64le : 64 ≤ j := by omega
-            have hjj : ¬j - 64 < 32 := by omega
-            simp [j, hj32, hj64, hj64le, hjj, testBit_mask2]
-    · have hi256 : 256 ≤ i := by omega
-      have hj : ¬(i - 128 < 128) := by omega
-      have hj32 : ¬(i - 128 < 32) := by omega
-      have hj64 : 64 ≤ i - 128 := by omega
-      have hjj : ¬(i - 128) - 64 < 32 := by omega
-      simp [h128, h256, hi256, hj, hj32, hj64, hjj, testBit_mask2]
+    have hi128 : 128 ≤ i := by omega
+    let j := i - 128
+    have hij : i = 128 + j := by dsimp [j]; omega
+    by_cases hm : mask2.testBit j = true
+    · have hrange : j < 32 ∨ (64 ≤ j ∧ j - 64 < 32) := by
+        rw [testBit_mask2] at hm
+        simpa using hm
+      have hj96 : j < 96 := by omega
+      have hsj : s + j < 128 := by omega
+      have hsihi : ¬s + i < 128 := by omega
+      have hsub : (s + i) - 128 = s + j := by rw [hij]; omega
+      rw [testBit_pack128 p q i hp, testBit_pack128 p q (s + i) hp]
+      simp [h128, hi128, hsihi, j, hsub, hm]
+    · have hmf : mask2.testBit j = false := by
+        cases h : mask2.testBit j <;> simp_all
+      simp [j, hmf]
 
 theorem pack128_mul (p q k : Nat) :
     pack128 p q * k = pack128 (p * k) (q * k) := by
