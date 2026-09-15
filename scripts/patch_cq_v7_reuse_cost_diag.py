@@ -62,11 +62,11 @@ assert marker in s
 s=s.replace(marker,insert,1)
 
 old="""    pub(crate) fn eval(&mut self, depth: u32, env: E<'t>, e: ExprPtr<'t>) -> V<'t> {
-        if e.is_closed() {
+        if e.num_loose_bvars() == 0 && env.lsub().is_none() {
 """
 new="""    pub(crate) fn eval(&mut self, depth: u32, env: E<'t>, e: ExprPtr<'t>) -> V<'t> {
         RC_EVAL_CALLS.fetch_add(1, Relaxed);
-        if e.is_closed() {
+        if e.num_loose_bvars() == 0 && env.lsub().is_none() {
 """
 assert old in s
 s=s.replace(old,new,1)
