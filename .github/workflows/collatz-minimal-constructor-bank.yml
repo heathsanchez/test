@@ -1,0 +1,137 @@
+name: Collatz minimal sufficient constructor bank
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-minimal-constructor-bank.yml"
+      - "experiments/collatz_frozen_deep_bank_b24_h16.txt"
+      - "experiments/collatz_compiled_deep_future.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-minimal-constructor-bank
+  cancel-in-progress: true
+
+jobs:
+  ablate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        n: [5,10,20,40,64,128]
+    name: top${{ matrix.n }}-b30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare top-N frozen constructor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          grep -v '^#' experiments/collatz_frozen_deep_bank_b24_h16.txt             | sed '/^[[:space:]]*$/d'             | head -n ${{ matrix.n }} > results/deep-bank.txt
+          test "$(wc -l < results/deep-bank.txt)" -eq ${{ matrix.n }}
+
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Replay top-N bank at untouched B30
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/future 30 results/q14-bank.txt results/deep-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/census.txt
+
+      - name: Score minimal bank
+        run: |
+          python - <<'PY'
+          import json,re
+          N=int("${{ matrix.n }}")
+          s=open("results/census.txt").read()
+          m=re.search(r"COMPILED_FUTURE_DONE K=30 final_live=(\d+).*?total_compiled=(\d+).*?new_search_calls=0",s)
+          assert m,s[-6000:]
+          live,compiled=map(int,m.groups())
+          deep_o=9590847
+          full_h16=6947941
+          full_gain=deep_o-full_h16
+          gain=deep_o-live
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"minimal_sufficient_constructor_bank",
+              "N":N,"K":30,
+              "compiled_live":live,
+              "compiled_gain":gain,
+              "full_h16_gain":full_gain,
+              "gain_fraction_of_full_h16":gain/full_gain,
+              "compiled_direct_closures":compiled,
+              "new_search_calls":0,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("MINIMAL_BANK_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minimal-bank-top${{ matrix.n }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: ablate
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: minimal-bank-top*
+          path: gathered
+
+      - name: Aggregate bank sufficiency curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("minimal-bank-top*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["N"])
+          assert [r["N"] for r in rows]==[5,10,20,40,64,128],rows
+          prev=0
+          for r in rows:
+              assert r["compiled_gain"]>=prev,(prev,r)
+              prev=r["compiled_gain"]
+          best95=next((r["N"] for r in rows if r["gain_fraction_of_full_h16"]>=0.95),None)
+          best99=next((r["N"] for r in rows if r["gain_fraction_of_full_h16"]>=0.99),None)
+          out={
+              "kind":"minimal_sufficient_constructor_curve",
+              "K":30,
+              "smallest_bank_at_least_95pct":best95,
+              "smallest_bank_at_least_99pct":best99,
+              "rows":rows,
+          }
+          Path("minimal-bank-field.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("MINIMAL_BANK_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-bank-field
+          path: minimal-bank-field.json
+          retention-days: 30
