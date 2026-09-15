@@ -442,6 +442,15 @@
       "workflow_run": "34930853077",
       "overflow_seed_count": 0,
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 33",
+      "exact_seed_count": 43753058401,
+      "max_first_descent": 777,
+      "certificate_method": "exact exhaustive cache-tuned synchronization-free block compiler across 16 shards through H853",
+      "workflow_run": "34931874874",
+      "overflow_seed_count": 0,
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -451,9 +460,9 @@
     "source": "exact overflow-safe v2(n+1)=35 tightened-interval scan; run 34930171144"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 33",
-    "reason": "all valuation slices v2(n+1) >= 34 are now compiled on the tightened interval; v2=35 has the exact global record 853 while v2=34 maxes at 788.",
-    "next_action": "scan v2(n+1)=33 through H853 with the overflow-safe exact block compiler; any survivor sets a new record, otherwise compile the slice and descend."
+    "predicate": "tightened live interval with v2(n+1) <= 32",
+    "reason": "all valuation slices v2(n+1) >= 33 are now compiled; v2=35 remains the exact global record at 853, while v2=34 and v2=33 max at 788 and 777.",
+    "next_action": "scan v2(n+1)=32 through H853 with the cache-tuned full scanner while testing a residue-class sieve to avoid linear doubling below this point."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
