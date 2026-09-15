@@ -364,4 +364,173 @@ theorem pack128_mul (p q k : Nat) :
     _ = q * (k * 2 ^ 128) := by rw [Nat.mul_comm (2 ^ 128) k]
     _ = (q * k) * 2 ^ 128 := (Nat.mul_assoc _ _ _).symm
 
+
+/-! Complete four-lane SWAR composition. -/
+
+theorem pack2_lt128 (x y : Nat) (hx : x < 2 ^ 64) (hy : y < 2 ^ 64) :
+    pack2 x y < 2 ^ 128 := by
+  unfold pack2
+  rw [Nat.shiftLeft_eq]
+  have hx' : x ≤ 2 ^ 64 - 1 := by omega
+  have hy' : y ≤ 2 ^ 64 - 1 := by omega
+  have hm := Nat.mul_le_mul_right (2 ^ 64) hy'
+  calc
+    x + y * 2 ^ 64 ≤ (2 ^ 64 - 1) + (2 ^ 64 - 1) * 2 ^ 64 :=
+      Nat.add_le_add hx' hm
+    _ < 2 ^ 128 := by decide
+
+theorem masked_pair_lt128 (p : Nat) :
+    (p &&& mask2) < 2 ^ 128 := by
+  have hle : (p &&& mask2) ≤ mask2 := Nat.and_le_right
+  exact Nat.lt_of_le_of_lt hle mask2_lt128
+
+theorem mask_pack128 (p q : Nat) (hp : p < 2 ^ 128) :
+    (pack128 p q &&& mask4) =
+      pack128 (p &&& mask2) (q &&& mask2) := by
+  apply Nat.eq_of_testBit_eq
+  intro i
+  rw [Nat.testBit_and, testBit_mask4]
+  rw [testBit_pack128 (p &&& mask2) (q &&& mask2) i (masked_pair_lt128 p)]
+  simp only [Nat.testBit_and]
+  by_cases h128 : i < 128
+  · rw [if_pos h128, if_pos h128]
+    rw [testBit_pack128 p q i hp]
+    simp [h128]
+  · rw [if_neg h128, if_neg h128]
+    rw [testBit_pack128 p q i hp]
+    simp [h128]
+
+theorem pairStage_lt96 (s p : Nat) :
+    pairStage s p < 2 ^ 96 := by
+  unfold pairStage
+  have hle : ((p ^^^ (p >>> s)) &&& mask2) ≤ mask2 := Nat.and_le_right
+  have hm : mask2 < 2 ^ 96 := by decide
+  exact Nat.lt_of_le_of_lt hle hm
+
+theorem pairStage_mul_c1_lt128 (s p : Nat) :
+    pairStage s p * c1 < 2 ^ 128 := by
+  calc
+    pairStage s p * c1 < (2 ^ 96) * c1 :=
+      Nat.mul_lt_mul_of_pos_right (pairStage_lt96 s p) (by decide)
+    _ < (2 ^ 96) * (2 ^ 32) :=
+      Nat.mul_lt_mul_of_pos_left (by decide) (Nat.two_pow_pos 96)
+    _ = 2 ^ 128 := by decide
+
+theorem packed4_y32 (a b c d : Nat)
+    (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
+    (hc : c < 2 ^ 64) (hd : d < 2 ^ 64) :
+    ((((pack4 a b c d ^^^ (pack4 a b c d >>> 16)) &&& mask4) * c1) &&& mask4) =
+      pack4 (y32 a) (y32 b) (y32 c) (y32 d) := by
+  unfold pack4
+  have hp : pack2 a b < 2 ^ 128 := pack2_lt128 a b ha hb
+  rw [lift_pair_stage (pack2 a b) (pack2 c d) 16 hp (by decide) (by decide)]
+  rw [pack128_mul]
+  rw [mask_pack128 _ _ (pairStage_mul_c1_lt128 16 (pack2 a b))]
+  have e0 :
+      (pairStage 16 (pack2 a b) * c1) &&& mask2 =
+        pack2 (y32 a) (y32 b) := by
+    unfold pairStage
+    exact packed_y32 a b ha
+  have e1 :
+      (pairStage 16 (pack2 c d) * c1) &&& mask2 =
+        pack2 (y32 c) (y32 d) := by
+    unfold pairStage
+    exact packed_y32 c d hc
+  rw [e0, e1]
+
+theorem packed4_v32 (a b c d : Nat)
+    (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
+    (hc : c < 2 ^ 64) (hd : d < 2 ^ 64) :
+    ((pack4 a b c d ^^^ (pack4 a b c d >>> 15)) &&& mask4) =
+      pack4 (v32 a) (v32 b) (v32 c) (v32 d) := by
+  unfold pack4
+  have hp : pack2 a b < 2 ^ 128 := pack2_lt128 a b ha hb
+  rw [lift_pair_stage (pack2 a b) (pack2 c d) 15 hp (by decide) (by decide)]
+  have e0 :
+      pairStage 15 (pack2 a b) = pack2 (v32 a) (v32 b) := by
+    unfold pairStage
+    exact packed_v32 a b ha
+  have e1 :
+      pairStage 15 (pack2 c d) = pack2 (v32 c) (v32 d) := by
+    unfold pairStage
+    exact packed_v32 c d hc
+  rw [e0, e1]
+
+theorem packed4_p2 (a b c d : Nat) :
+    pack4 (v32 a) (v32 b) (v32 c) (v32 d) * c2 =
+      pack4 (v32 a * c2) (v32 b * c2) (v32 c * c2) (v32 d * c2) := by
+  unfold pack4
+  rw [pack128_mul, pack2_mul, pack2_mul]
+
+def bitAtNat (x i : Nat) : Nat := (x >>> i) % 2
+
+theorem bitAt_pack128_low (p q i : Nat) (hp : p < 2 ^ 128) (hi : i < 128) :
+    bitAtNat (pack128 p q) i = bitAtNat p i := by
+  have h := congrArg Bool.toNat (testBit_pack128 p q i hp)
+  rw [if_pos hi] at h
+  unfold bitAtNat
+  simpa [Nat.toNat_testBit, Nat.shiftRight_eq_div_pow] using h
+
+theorem bitAt_pack128_high (p q i : Nat) (hp : p < 2 ^ 128) (hi : ¬i < 128) :
+    bitAtNat (pack128 p q) i = bitAtNat q (i - 128) := by
+  have h := congrArg Bool.toNat (testBit_pack128 p q i hp)
+  rw [if_neg hi] at h
+  unfold bitAtNat
+  simpa [Nat.toNat_testBit, Nat.shiftRight_eq_div_pow] using h
+
+def mixQuadSWAR (a b c d : Nat) : Nat :=
+  let p0 := pack4 a b c d
+  let u := (p0 ^^^ (p0 >>> 16)) &&& mask4
+  let yv := (u * c1) &&& mask4
+  let v := (yv ^^^ (yv >>> 15)) &&& mask4
+  let p := v * c2
+  bitAtNat p 31 +
+    2 * bitAtNat p 95 +
+    4 * bitAtNat p 159 +
+    8 * bitAtNat p 223
+
+theorem mixQuadSWAR_eq (a b c d : Nat)
+    (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
+    (hc : c < 2 ^ 64) (hd : d < 2 ^ 64) :
+    mixQuadSWAR a b c d =
+      mixScalarNat a + 2 * mixScalarNat b +
+      4 * mixScalarNat c + 8 * mixScalarNat d := by
+  simp only [mixQuadSWAR]
+  rw [packed4_y32 a b c d ha hb hc hd]
+  rw [packed4_v32
+        (y32 a) (y32 b) (y32 c) (y32 d)
+        (y32_lt64 a) (y32_lt64 b) (y32_lt64 c) (y32_lt64 d)]
+  rw [packed4_p2]
+  unfold pack4
+  let p := pack2 (v32 (y32 a) * c2) (v32 (y32 b) * c2)
+  let q := pack2 (v32 (y32 c) * c2) (v32 (y32 d) * c2)
+  have hp : p < 2 ^ 128 := by
+    dsimp [p]
+    exact pack2_lt128 _ _
+      (v32_mul_c2_lt64 (y32 a)) (v32_mul_c2_lt64 (y32 b))
+  change
+    bitAtNat (pack128 p q) 31 +
+      2 * bitAtNat (pack128 p q) 95 +
+      4 * bitAtNat (pack128 p q) 159 +
+      8 * bitAtNat (pack128 p q) 223 =
+    mixScalarNat a + 2 * mixScalarNat b +
+      4 * mixScalarNat c + 8 * mixScalarNat d
+  rw [bitAt_pack128_low p q 31 hp (by decide)]
+  rw [bitAt_pack128_low p q 95 hp (by decide)]
+  rw [bitAt_pack128_high p q 159 hp (by decide)]
+  rw [bitAt_pack128_high p q 223 hp (by decide)]
+  dsimp [p, q]
+  change
+    bit31Nat (pack2 (v32 (y32 a) * c2) (v32 (y32 b) * c2)) +
+      2 * ((pack2 (v32 (y32 a) * c2) (v32 (y32 b) * c2) >>> 95) % 2) +
+      4 * bit31Nat (pack2 (v32 (y32 c) * c2) (v32 (y32 d) * c2)) +
+      8 * ((pack2 (v32 (y32 c) * c2) (v32 (y32 d) * c2) >>> 95) % 2) =
+    mixScalarNat a + 2 * mixScalarNat b +
+      4 * mixScalarNat c + 8 * mixScalarNat d
+  rw [bit31_pack2_low _ _ (v32_mul_c2_lt64 (y32 a))]
+  rw [bit31_pack2_high _ _ (v32_mul_c2_lt64 (y32 a))]
+  rw [bit31_pack2_low _ _ (v32_mul_c2_lt64 (y32 c))]
+  rw [bit31_pack2_high _ _ (v32_mul_c2_lt64 (y32 c))]
+  rfl
+
 end SWAR
