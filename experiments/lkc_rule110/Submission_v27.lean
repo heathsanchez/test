@@ -1888,15 +1888,15 @@ theorem packOctTailConst_eq (x n : Nat) :
       packByteTailSWAR8 x n := by
   induction n generalizing x with
   | zero =>
-      simp only [packOctTailConst, packByteTailSWAR8, Nat.mul_zero, Nat.zero_add]
+      simp [packOctTailConst, packByteTailSWAR8]
   | succ n ih =>
       simp only [packOctTailConst, packByteTailSWAR8]
       rw [mix8Packed_state_eq, advanceOct_state]
+      have hcoef : 8 * (n + 1) = 8 + 8 * n := by omega
       have hfinal :
           x + (8 * (n + 1)) * stepConst =
             advance8 x + (8 * n) * stepConst := by
-        rw [advance8_eq_swar]
-        omega
+        rw [advance8_eq_swar, hcoef, Nat.add_mul, Nat.add_assoc]
       rw [hfinal, ih]
 
 def initPackedOctContracted (seed : Nat) : Nat :=
