@@ -219,6 +219,13 @@
       "exact_first_descent": 875,
       "next_exact_horizon": 876,
       "source": "exact cache-tuned predecessor-half-sieve scan; workflow 34934788520"
+    },
+    {
+      "shard": "v2=30 H5000 merge-survivor shard 10/16",
+      "witness_decimal": "2874993894540242321407",
+      "exact_first_descent": 920,
+      "next_exact_horizon": 921,
+      "source": "exact H5000 predecessor-half scan; workflow 34935254514"
     }
   ],
   "best_known_by_shard": {
@@ -479,18 +486,32 @@
       "certificate_method": "exact lower-predecessor merge closes one m mod 4 class; complementary class exhaustively scanned with cache-tuned exact block compiler through H5000",
       "workflow_run": "34935248406",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 30",
+      "exact_seed_count": 350024467212,
+      "inductively_killed_seed_count": 175012233606,
+      "explicitly_scanned_seed_count": 175012233606,
+      "best_explicit_first_descent": 920,
+      "extremal_seed_decimal": "2874993894540242321407",
+      "overflow_seed_count": 1,
+      "overflow_seed_decimal": "2883257894436494901247",
+      "overflow_seed_first_descent": 493,
+      "certificate_method": "exact lower-predecessor merge closes one m mod 4 class; complementary class exhaustively scanned with cache-tuned exact block compiler through H5000; overflow replayed with Python big integers",
+      "workflow_run": "34935254514",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
-    "witness_decimal": "2890058857883145076735",
-    "exact_first_descent": 875,
-    "v2_n_plus_1": 31,
-    "source": "exact predecessor-merge survivor scan plus arbitrary-precision replay; workflow 34934788520"
+    "witness_decimal": "2874993894540242321407",
+    "exact_first_descent": 920,
+    "v2_n_plus_1": 30,
+    "source": "exact H5000 predecessor-merge scan; workflow 34935254514"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 30",
-    "reason": "v2=31 is fully closed: 87,506,116,803 seeds inductively by exact predecessor merge and 87,506,116,803 explicitly through H5000, with explicit maximum 875.",
-    "next_action": "continue H5000 predecessor-sieved scans for k30-k16; use the verified transfer-prefix sieve from k15 downward."
+    "predicate": "tightened live interval with v2(n+1) <= 29",
+    "reason": "v2=30 is fully closed through H5000 with exact explicit maximum first descent 920; half the slice was inductively closed by predecessor merge.",
+    "next_action": "run RealityGraph-style consequence-field swarm across candidate sieve depths and representative low-k residuals; quotient equivalent strategies, then fund only distinct high-payoff survivors while k29/k28 continue."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
