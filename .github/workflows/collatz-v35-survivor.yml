@@ -41,16 +41,16 @@ jobs:
       max-parallel: 4
       matrix:
         shard: [5,0,1,2,3,4,6,7,8,9,10,11,12,13,14,15]
-    name: v35-h803-${{ matrix.shard }}
+    name: v35-h900-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
         run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fallback.cpp -o /tmp/vscan
-      - name: Exact tightened v2=35 scan through H803
+      - name: Exact tightened v2=35 scan through H900
         run: |
           set -o pipefail
           mkdir -p results
-          /tmp/vscan 35 803 16 ${{ matrix.shard }} \
+          /tmp/vscan 35 900 16 ${{ matrix.shard }} \
             2392312122059207475200 \
             3143983941795894239301 \
             | tee results/v35-${{ matrix.shard }}.txt
@@ -62,7 +62,7 @@ jobs:
           s=open(p).read()
           candidates=[]
           candidates += [("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
-          m=re.search(r"SURVIVOR seed=(\d+) horizon=803",s)
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=900",s)
           if m:
               candidates.append(("u128-survivor",int(m.group(1))))
           seen=set(); survivors=[]
@@ -77,7 +77,7 @@ jobs:
                       first=t
                       break
               print(f"BIG_REPLAY kind={kind} seed={n} first_descent={first} peak={peak} stopped_at={t}")
-              if first is None or first>803:
+              if first is None or first>900:
                   survivors.append((n,first,peak,t))
           if survivors:
               n,first,peak,t=survivors[0]
@@ -135,7 +135,7 @@ jobs:
                   survivors.append(hit)
               rows.append(row)
           summary={
-              "kind":"exact_v2_35_h803_tightened_interval",
+              "kind":"exact_v2_35_h900_tightened_interval",
               "completed_shards":len(rows),
               "expected_shards":16,
               "scanned_before_early_exit":sum(r["scanned"] or 0 for r in rows),
