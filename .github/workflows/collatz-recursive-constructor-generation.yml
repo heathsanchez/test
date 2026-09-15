@@ -1,0 +1,213 @@
+name: Collatz recursive constructor generation B32 to B34
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-recursive-constructor-generation.yml"
+      - "experiments/collatz_deep_program_profile.cpp"
+      - "experiments/collatz_compiled_deep_future.cpp"
+      - "experiments/collatz_frozen_deep_bank_b24_h16.txt"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-recursive-constructor-generation
+  cancel-in-progress: true
+
+jobs:
+  discover32:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Discover exact B32 H16 constructor vocabulary
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_deep_program_profile.cpp -o /tmp/profile
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/profile 32 results/q14-bank.txt 16             | tee results/profile.txt
+          grep -q "DEEP_CONT_DONE K=32 H=16 final_live=23935800" results/profile.txt
+          grep -q "VERIFIED_TARGETED_DEEP_REVERSE_CONTINUATIONS" results/profile.txt
+
+      - name: Compile generation delta and retained union
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          def normalize_row(row):
+              p=row.split()
+              assert len(p)==5,row
+              return " ".join(p)
+
+          old=set()
+          for line in Path("experiments/collatz_frozen_deep_bank_b24_h16.txt").read_text().splitlines():
+              line=line.strip()
+              if not line or line.startswith("#"):
+                  continue
+              old.add(normalize_row(line))
+          assert len(old)==128,len(old)
+
+          s=Path("results/profile.txt").read_text()
+          discovered={}
+          for m in re.finditer(
+              r"DEEP_EXACT_CONSTRUCTOR rank=(\d+) count=(\d+) signature=(\S+)",s):
+              rank,count,sig=int(m.group(1)),int(m.group(2)),m.group(3)
+              parts=sig.split(":")
+              assert len(parts)==5,(rank,sig)
+              o,steps,word,C,residue=parts
+              row=f"{o} {steps} {C} {residue} {word}"
+              discovered[row]=count
+
+          assert discovered, "no B32 exact constructors parsed"
+          new=set(discovered)-old
+          retained=set(discovered)&old
+          union=old|set(discovered)
+
+          Path("results/b32-discovered-bank.txt").write_text(
+              "\n".join(sorted(discovered))+"\n")
+          Path("results/b32-delta-bank.txt").write_text(
+              "\n".join(sorted(new))+"\n")
+          Path("results/b32-union-bank.txt").write_text(
+              "\n".join(sorted(union))+"\n")
+
+          new_direct_uses=sum(discovered[r] for r in new)
+          retained_direct_uses=sum(discovered[r] for r in retained)
+
+          p=re.search(
+              r"DEEP_PROGRAM_PROFILE unique_program_shapes=(\d+) "
+              r"unique_exact_constructors=(\d+) total_deep_closures=(\d+)",s)
+          assert p
+          shapes,exact,total=map(int,p.groups())
+          assert exact==len(discovered),(exact,len(discovered))
+
+          tm=Path("results/time-memory.txt").read_text().strip().split()
+          out={
+              "kind":"recursive_constructor_generation_b32",
+              "parent_B":24,
+              "generation_B":32,
+              "parent_bank_size":len(old),
+              "b32_active_exact_constructors":len(discovered),
+              "retained_parent_constructors_active":len(retained),
+              "new_exact_constructors":len(new),
+              "union_bank_size":len(union),
+              "unique_program_shapes":shapes,
+              "total_deep_closures":total,
+              "new_constructor_direct_uses":new_direct_uses,
+              "retained_constructor_direct_uses":retained_direct_uses,
+              "new_direct_use_fraction":new_direct_uses/total if total else 0,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          Path("results/generation-summary.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("RECURSIVE_CONSTRUCTOR_GENERATION_B32",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: b32-constructor-generation
+          path: results
+          retention-days: 30
+
+  future34:
+    needs: discover32
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: b32-constructor-generation
+          path: frozen
+
+      - name: Replay recursively compiled bank at untouched B34
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          cp frozen/q14-bank.txt results/
+          cp frozen/b32-union-bank.txt results/deep-bank.txt
+
+          g++ -O3 -march=native -std=c++20             experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/future 34 results/q14-bank.txt results/deep-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/census.txt
+          grep -q "new_search_calls=0" results/census.txt
+
+      - name: Score recursive generation transfer
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          gen=json.loads(Path("frozen/generation-summary.json").read_text())
+          s=Path("results/census.txt").read_text()
+          m=re.search(
+              r"COMPILED_FUTURE_DONE K=34 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_compiled=(\d+) "
+              r"controls=(\d+) new_search_calls=0",s)
+          assert m,s[-8000:]
+          live,des,bridge,do,compiled,controls=map(int,m.groups())
+
+          deep_o=120420841
+          full_h16=85313088
+          full_gain=deep_o-full_h16
+          transfer_gain=deep_o-live
+          ratio=transfer_gain/full_gain
+
+          assert live>=full_h16,(live,full_h16)
+          assert ratio>0.99,(ratio,live)
+
+          tm=Path("results/time-memory.txt").read_text().strip().split()
+          out={
+              "kind":"recursive_generation_zero_search_b34",
+              "parent_B":24,
+              "generation_B":32,
+              "future_B":34,
+              "parent_bank_size":gen["parent_bank_size"],
+              "new_exact_constructors_at_B32":gen["new_exact_constructors"],
+              "union_bank_size":gen["union_bank_size"],
+              "new_search_calls_at_B34":0,
+              "compiled_live":live,
+              "full_h16_search_live":full_h16,
+              "deep_o_baseline_live":deep_o,
+              "gain_transfer_ratio":ratio,
+              "compiled_direct_closures":compiled,
+              "controls":controls,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("RECURSIVE_GENERATION_B34_FUTURE",
+                json.dumps(out,separators=(",",":")))
+          print("VERIFIED_RECURSIVE_SELF_COMPILED_FUTURE_TRANSFER")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recursive-generation-b34-future
+          path: results
+          retention-days: 30
