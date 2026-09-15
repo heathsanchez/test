@@ -636,7 +636,7 @@ theorem advance8_eq (x : Nat) :
   simp only [advance8]
   omega
 
-set_option maxRecDepth 16384 in
+set_option maxRecDepth 32768 in
 theorem packByteTailPair_eq (x n : Nat)
     (h : x + (8 * n + 5) * stepConst < 2 ^ 40) :
     packByteTailPair x n = packByteTailNat x n := by
@@ -646,15 +646,21 @@ theorem packByteTailPair_eq (x n : Nat)
       exact pack6Pair_eq x h
   | succ n ih =>
       simp only [packByteTailPair, packByteTailNat]
-      have hb : x + 7 * stepConst < 2 ^ 40 := by
-        unfold stepConst at h ⊢
-        omega
+      have hk : 7 ≤ 8 * (n + 1) + 5 := by omega
+      have hm : 7 * stepConst ≤ (8 * (n + 1) + 5) * stepConst :=
+        Nat.mul_le_mul_right stepConst hk
+      have hb : x + 7 * stepConst < 2 ^ 40 :=
+        Nat.lt_of_le_of_lt (Nat.add_le_add_left hm x) h
       rw [pack8Pair_eq x hb]
+      have heq :
+          advance8 x + (8 * n + 5) * stepConst =
+            x + (8 * (n + 1) + 5) * stepConst := by
+        rw [advance8_eq]
+        omega
       have hr :
           advance8 x + (8 * n + 5) * stepConst < 2 ^ 40 := by
-        rw [advance8_eq]
-        unfold stepConst at h ⊢
-        omega
+        rw [heq]
+        exact h
       rw [ih (advance8 x) hr]
 
 theorem caSeed_lt_40 (n : Nat) :
