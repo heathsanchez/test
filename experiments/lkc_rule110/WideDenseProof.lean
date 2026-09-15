@@ -3,6 +3,10 @@ import Submission
 
 namespace WideDense
 
+set_option maxRecDepth 1048576
+set_option exponentiation.threshold 20000
+set_option maxHeartbeats 2000000
+
 open GenericPack
 open WideHierarchy
 open WideGather
@@ -30,9 +34,11 @@ theorem packMixBit_add (x a b : Nat) :
       rw [ih (x + stepConst)]
       have hx :
           x + stepConst + a * stepConst =
-            x + (a + 1) * stepConst := by omega
-      rw [hx]
-      omega
+            x + (a + 1) * stepConst := by
+        unfold stepConst
+        omega
+      rw [hx, Nat.mul_add]
+      simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
 
 theorem packMixBit_mod_pow (x a b : Nat) :
     packMixBit x (a + b) % 2 ^ a = packMixBit x a := by
