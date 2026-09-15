@@ -14,7 +14,7 @@ permissions:
 
 jobs:
   red:
-    runs-on: ubuntu-24.04
+    runs-on: macos-15
     timeout-minutes: 35
     env:
       SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
