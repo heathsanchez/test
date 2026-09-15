@@ -46,16 +46,16 @@ jobs:
       max-parallel: 16
       matrix:
         shard: [5,0,1,2,3,4,6,7,8,9,10,11,12,13,14,15]
-    name: v30-h853-${{ matrix.shard }}
+    name: v30-h5000-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
         run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_merge_scan.cpp -o /tmp/vscan
-      - name: Exact tightened v2=30 scan through H853
+      - name: Exact tightened v2=30 scan through H5000
         run: |
           set -o pipefail
           mkdir -p results
-          /tmp/vscan 30 853 16 ${{ matrix.shard }} \
+          /tmp/vscan 30 5000 16 ${{ matrix.shard }} \
             2392312122059207475200 \
             3143983941795894239301 \
             | tee results/v30-${{ matrix.shard }}.txt
@@ -67,7 +67,7 @@ jobs:
           s=open(p).read()
           candidates=[]
           candidates += [("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
-          m=re.search(r"SURVIVOR seed=(\d+) horizon=853",s)
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=5000",s)
           if m:
               candidates.append(("u128-survivor",int(m.group(1))))
           seen=set(); survivors=[]
@@ -82,7 +82,7 @@ jobs:
                       first=t
                       break
               print(f"BIG_REPLAY kind={kind} seed={n} first_descent={first} peak={peak} stopped_at={t}")
-              if first is None or first>853:
+              if first is None or first>5000:
                   survivors.append((n,first,peak,t))
           if survivors:
               n,first,peak,t=survivors[0]
@@ -149,7 +149,7 @@ jobs:
           assert counts and all(x==counts[0] for x in counts),counts
           full_count,survivor_count,killed_count=counts[0]
           summary={
-              "kind":"exact_v2_30_h853_tightened_interval_with_predecessor_merge",
+              "kind":"exact_v2_30_h5000_tightened_interval_with_predecessor_merge",
               "completed_shards":len(rows),
               "expected_shards":16,
               "full_slice_seed_count":full_count,
