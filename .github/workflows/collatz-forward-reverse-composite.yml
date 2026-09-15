@@ -1,0 +1,110 @@
+name: Collatz forward reverse composite constructor
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-forward-reverse-composite.yml"
+      - "experiments/collatz_strong_sieve_export.cpp"
+      - "experiments/collatz_forward_reverse_composite.py"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-forward-reverse-composite
+  cancel-in-progress: true
+
+jobs:
+  composite:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        b: [18,20,22,24]
+    name: composite-b${{ matrix.b }}-q14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Export exact canonical binary residual
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_strong_sieve_export.cpp -o /tmp/export
+          /usr/bin/time -f '%e %M' -o results/export-time-memory.txt             /tmp/export ${{ matrix.b }} results/live.txt             | tee results/export.txt
+          grep -q "VERIFIED_STRONG_SIEVE_LIVE_AFFINE_EXPORT" results/export.txt
+
+      - name: Cross-check frozen live census
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          B=int("${{ matrix.b }}")
+          refs={18:6104,20:22244,22:75969,24:234156}
+          s=open("results/export.txt").read()
+          m=re.search(rf"STRONG_EXPORT_DONE K={B} live=(\d+)",s)
+          assert m,s[-4000:]
+          got=int(m.group(1))
+          assert got==refs[B],(B,got,refs[B])
+          lines=sum(1 for _ in open("results/live.txt"))
+          assert lines==got,(lines,got)
+          print("STRONG_EXPORT_REFERENCE_CENSUS_OK",B,got)
+          PY
+
+      - name: Compose with exact q14 reverse constructor bank
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/composite-time-memory.txt             python experiments/collatz_forward_reverse_composite.py               --bits ${{ matrix.b }}               --q 14               --states results/live.txt               --out results/summary.json             | tee results/composite.txt
+          grep -q "VERIFIED_FORWARD_REVERSE_COMPOSITE_CONSTRUCTOR" results/composite.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: forward-reverse-b${{ matrix.b }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: composite
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: forward-reverse-b*
+          path: gathered
+
+      - name: Aggregate exact composed-constructor field
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          rows=[]
+          for d in Path("gathered").glob("forward-reverse-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              row=json.loads(p.read_text())
+              for name in ("export","composite"):
+                  tm=(d/f"{name}-time-memory.txt").read_text().strip().split()
+                  row[f"{name}_seconds"]=float(tm[0]) if tm else None
+                  row[f"{name}_rss_kb"]=int(tm[1]) if len(tm)>1 else None
+              rows.append(row)
+          rows.sort(key=lambda r:r["bits"])
+          assert [r["bits"] for r in rows]==[18,20,22,24],rows
+          assert all(r["newly_closed_binary_classes"]>0 for r in rows),rows
+          out={"kind":"forward_reverse_composite_constructor_curve","rows":rows}
+          Path("forward-reverse-composite-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("FORWARD_REVERSE_COMPOSITE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("FORWARD_REVERSE_COMPOSITE_NEW_CLOSURE_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forward-reverse-composite-field
+          path: forward-reverse-composite-field.json
+          retention-days: 30
