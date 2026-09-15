@@ -358,7 +358,8 @@ theorem initPackedByte_eq (seed : Nat) :
     initPackedByte seed = initPackedFastBit seed := by
   unfold initPackedByte initPackedFastBit
   rw [packByteTail_eq]
-  norm_num
+  have h : 8 * 31 + 6 = 254 := by decide
+  rw [h]
 
 def impl : Nat → Nat := fun n =>
   biterFast (caSteps n) (initPackedByte (caSeed n))
