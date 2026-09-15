@@ -1,0 +1,216 @@
+name: Collatz rescue-state minimal interface
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-rescue-state-interface.yml"
+      - "experiments/collatz_shell_rescue_state_export.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-rescue-state-interface
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [20,22,24,26,28]
+    name: interface-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Export F128-hard states and H512 rescue programs
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_rescue_state_export.cpp -o /tmp/export
+          /tmp/export ${{ matrix.k }} results/q14-bank.txt 8 512             | tee results/census.txt
+          grep -q "VERIFIED_SHELL_RESCUE_STATE_EXPORT" results/census.txt
+          grep '^SHELL_RESCUE_STATE ' results/census.txt > results/rescue-states.txt
+
+      - name: Check export count
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          expected={20:6,22:29,24:114,26:382,28:1615}[K]
+          n=sum(1 for _ in Path("results/rescue-states.txt").open())
+          assert n==expected,(K,n,expected)
+          print("RESCUE_STATE_EXPORT_OK",K,n)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rescue-state-k${{ matrix.k }}
+          path: results/rescue-states.txt
+          retention-days: 30
+
+  analyze:
+    needs: export
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: rescue-state-k*
+          path: gathered
+
+      - name: Search minimal consequence-preserving feature interface
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re,itertools
+          from collections import defaultdict,Counter
+          from pathlib import Path
+
+          Ks=[20,22,24,26,28]
+          expected={20:6,22:29,24:114,26:382,28:1615}
+          rows=[]
+          for K in Ks:
+              p=Path("gathered")/f"rescue-state-k{K}"/"rescue-states.txt"
+              assert p.exists(),p
+              for line in p.read_text().splitlines():
+                  m=re.match(r"SHELL_RESCUE_STATE K=(\d+) b=(\d+) c=(\d+) d=(\d+) key=(.*)",line)
+                  assert m,line
+                  k,b,c,d=map(int,m.groups()[:4]); key=m.group(5)
+                  assert k==K
+                  cc=0
+                  while 3**cc<=2**K: cc+=1
+                  parts=key.split(":")
+                  if parts[0]=="F":
+                      shape="F"
+                      f=int(parts[1])
+                  else:
+                      f=int(parts[1])
+                      shape="R:"+":".join(parts[2:])
+                  rows.append({"K":K,"b":b,"c":c,"d":d,"e":c-cc,
+                               "key":key,"shape":shape,"f":f})
+          assert Counter(r["K"] for r in rows)==Counter(expected)
+
+          def feat(r,q3=0,rb=0,rt=0,rd=0,fe=False):
+              out=[r["e"]]
+              if q3: out.append(r["d"]%(3**q3))
+              if rb: out.append(r["b"]&((1<<rb)-1))
+              if rt:
+                  K=r["K"]
+                  out.append(r["b"]>>(K-rt))
+              if rd: out.append(r["d"]&((1<<rd)-1))
+              if fe: out.append(r["f"]%3)
+              return tuple(out)
+
+          def assess(subset,label,q3=0,rb=0,rt=0,rd=0,fe=False):
+              buckets=defaultdict(Counter)
+              for r in subset:
+                  buckets[feat(r,q3,rb,rt,rd,fe)][r[label]]+=1
+              ambiguous=sum(1 for c in buckets.values() if len(c)>1)
+              bad=sum(sum(c.values())-max(c.values()) for c in buckets.values())
+              return {"buckets":len(buckets),"ambiguous":ambiguous,"minority":bad}
+
+          candidates=[]
+          # Search small exact interfaces in increasing rough complexity.
+          specs=[]
+          for q3 in range(0,9):
+              specs.append((q3,0,0,0))
+          for q3 in range(0,9):
+              for rb in range(1,13):
+                  specs.append((q3,rb,0,0))
+              for rt in range(1,9):
+                  specs.append((q3,0,rt,0))
+              for rd in range(1,13):
+                  specs.append((q3,0,0,rd))
+          for q3 in range(0,9):
+              for rb in range(1,9):
+                  for rd in range(1,9):
+                      specs.append((q3,rb,0,rd))
+
+          for label in ["shape","key"]:
+              best=None
+              exact=[]
+              for q3,rb,rt,rd in specs:
+                  a=assess(rows,label,q3,rb,rt,rd)
+                  complexity=q3+rb+rt+rd
+                  rec={"label":label,"q3":q3,"rb":rb,"rt":rt,"rd":rd,
+                       "complexity":complexity,**a}
+                  if best is None or (a["minority"],a["ambiguous"],complexity,a["buckets"]) <                                       (best["minority"],best["ambiguous"],best["complexity"],best["buckets"]):
+                      best=rec
+                  if a["minority"]==0:
+                      exact.append(rec)
+              exact.sort(key=lambda z:(z["complexity"],z["buckets"],z["q3"],z["rb"],z["rt"],z["rd"]))
+              candidates.append({"label":label,"best":best,"smallest_exact":exact[:10]})
+
+          # Strict untouched-K28 transfer: choose each training-derived mapping
+          # by majority and score K28. Report best low-complexity generalizer.
+          train=[r for r in rows if r["K"]<28]
+          test=[r for r in rows if r["K"]==28]
+          transfer=[]
+          for q3,rb,rt,rd in specs:
+              maps=defaultdict(Counter)
+              for r in train: maps[feat(r,q3,rb,rt,rd)][r["shape"]]+=1
+              correct=covered=0
+              for r in test:
+                  k=feat(r,q3,rb,rt,rd)
+                  if k in maps:
+                      covered+=1
+                      pred=maps[k].most_common(1)[0][0]
+                      correct+=pred==r["shape"]
+              complexity=q3+rb+rt+rd
+              transfer.append({
+                  "q3":q3,"rb":rb,"rt":rt,"rd":rd,"complexity":complexity,
+                  "covered":covered,"coverage":covered/len(test),
+                  "correct":correct,
+                  "accuracy_on_covered":correct/covered if covered else None,
+                  "overall_correct":correct/len(test),
+              })
+          transfer.sort(key=lambda z:(-z["overall_correct"],z["complexity"],-z["coverage"]))
+
+          # Coarser cone class: direct / initial-only / macro.
+          for r in rows:
+              if r["shape"]=="F": r["cone"]="F"
+              else:
+                  tail=r["shape"].split(":",2)[2] if r["shape"].count(":")>=2 else ""
+                  r["cone"]="O" if tail=="" else "M"
+          cone_counts={str(K):dict(Counter(r["cone"] for r in rows if r["K"]==K)) for K in Ks}
+
+          out={
+              "kind":"rescue_state_minimal_sufficient_interface",
+              "samples":len(rows),
+              "counts":expected,
+              "cone_counts":cone_counts,
+              "feature_search":candidates,
+              "best_k28_transfer":transfer[:20],
+          }
+          Path("rescue-state-interface-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("RESCUE_STATE_INTERFACE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rescue-state-interface-field
+          path: rescue-state-interface-field.json
+          retention-days: 30
