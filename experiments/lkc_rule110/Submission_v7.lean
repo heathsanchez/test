@@ -286,6 +286,7 @@ recursor away entirely while preserving the arithmetic-progression and
 bit-31 projection learned in V4/V5.
 -/
 
+set_option maxHeartbeats 1000000 in
 def packMixBit254 (x0 : Nat) : Nat :=
   let x1 := x0 + stepConst
   let x2 := x1 + stepConst
