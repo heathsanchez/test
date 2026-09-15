@@ -87,12 +87,12 @@
       "predicate": "tightened live interval [2392312122059207475200,3143983941795894239301]",
       "question": "does any seed retain coefficient persistence through shortcut horizon 1000?",
       "exact_runs": [
-        "34921504101",
-        "34922181244"
+        "34922181244",
+        "34922925936"
       ],
       "representations": [
-        "four numeric interval shards",
-        "low-4-bit exhaustive partition with learned-clause reuse"
+        "low-4-bit exhaustive partition with learned-clause reuse",
+        "four emitted exact CNFs solved by pinned Kissat 4.0.4"
       ],
       "status": "running"
     }
@@ -129,6 +129,10 @@
     {
       "representation": "PySAT Cadical195 get_proof() as final UNSAT certificate",
       "reason": "H183 solver returned UNSAT but extracted proof was rejected by pinned DRAT-trim; solver verdict retained only as search evidence, not proof evidence"
+    },
+    {
+      "representation": "four PySAT/CaDiCaL numeric H1000 shards",
+      "reason": "no separator after ~20 minutes; retired to free runner capacity for solver portfolio"
     }
   ],
   "witness_guided_leaps": [
@@ -442,6 +446,9 @@
     "final_unsat_requirement": "standalone emitted DIMACS -> pinned CaDiCaL 1.9.5 -> pinned DRAT-trim verification",
     "cadical_commit": "146207318796f094dcded87349a64f0c6927309e",
     "drat_trim_commit": "2e5e29cb0019d5cfd547d4208dca1b3ec290349f",
-    "status": "control rerun pending"
+    "status": "passed",
+    "control_workflow_run": "34922707276",
+    "control_boundary": "H183 UNSAT independently verified by pinned DRAT-trim",
+    "py_sat_extracted_proofs": "rejected for final evidence"
   }
 }
