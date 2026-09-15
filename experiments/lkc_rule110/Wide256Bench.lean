@@ -53,3 +53,7 @@ def main : IO Unit := do
   IO.println s!"equal_all={seeds.all (fun s => wideInit s == initPackedOctProgression s)}"
 
 end Wide256Bench
+
+end Wide256Bench
+
+def main : IO Unit := Wide256Bench.main
