@@ -1,0 +1,26 @@
+name: Collatz absolute cone falsifier
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-absolute-cone-falsifier.yml"
+      - "experiments/collatz_absolute_cone_falsifier.py"
+  workflow_dispatch:
+
+jobs:
+  falsifier:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject K-independent fixed-horizon lemma exactly
+        run: |
+          set -euo pipefail
+          python experiments/collatz_absolute_cone_falsifier.py --h 512 --margin 64 | tee falsifier.txt
+          grep -q "FIXED_HORIZON_FROM_TIME_ZERO_REJECTED" falsifier.txt
+          grep -q "BIT_LENGTH_NORMALIZED_CONE_NOT_AFFECTED" falsifier.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: absolute-cone-falsifier
+          path: falsifier.txt
+          retention-days: 30
