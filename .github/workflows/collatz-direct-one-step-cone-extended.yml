@@ -1,0 +1,92 @@
+name: Collatz direct one-step cone extension
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-direct-one-step-cone-extended.yml"
+      - "experiments/collatz_direct_one_step_cone.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-direct-one-step-cone-extended
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        k: [24,25,26,27]
+    name: direct-one-step-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exhaustive exact one-step cone
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20 experiments/collatz_direct_one_step_cone.cpp -o /tmp/direct1
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/direct1 ${{ matrix.k }} 512 | tee results/census.txt
+          grep -q "VERIFIED_DIRECT_SHELL_ONE_STEP_CONE" results/census.txt
+      - name: Parse
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"DIRECT_ONE_STEP_CONE_RESULT K={K} H=512 checked=(\d+) "
+              r"direct=(\d+) cone=(\d+) hard=(\d+) overflow=(\d+) "
+              r"max_f=(\d+) max_f_seed=(\d+) max_r=(\d+) max_r_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["checked","direct","cone","hard","overflow","max_f","max_f_seed","max_r","max_r_seed"]
+          out={"K":K,**dict(zip(keys,vals))}
+          assert out["checked"]==(1<<(K-1))
+          assert out["direct"]+out["cone"]+out["hard"]==out["checked"]
+          assert out["overflow"]==0
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("DIRECT_ONE_STEP_CONE_EXT_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: direct-one-step-ext-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shell
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: direct-one-step-ext-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("direct-one-step-ext-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==[24,25,26,27],rows
+          out={"kind":"direct_one_step_cone_extended","rows":rows,
+               "all_closed":all(x["hard"]==0 for x in rows)}
+          Path("direct-one-step-extended-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("DIRECT_ONE_STEP_CONE_EXTENDED_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: direct-one-step-extended-field
+          path: direct-one-step-extended-field.json
+          retention-days: 30
