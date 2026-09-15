@@ -1,0 +1,55 @@
+{
+  "version": 1,
+  "consequence": "close tightened valuation slice through H5000 with exact verifier",
+  "authority": "allocation only; scanner/theorem outputs remain authoritative",
+  "regimes": [
+    {
+      "name": "high-k-fused",
+      "k_min": 16,
+      "k_max": 50,
+      "scanner": "experiments/collatz_vslice_fused_scan.cpp",
+      "defines": {
+        "BLOCK_BITS": 10,
+        "PREFIX_BITS": 24,
+        "COAL_BITS": 16
+      },
+      "predecessor_depth_q": 7,
+      "shards": 16,
+      "schedule": "all shards concurrently",
+      "evidence": {
+        "fused_speedup_run": 34944847542,
+        "block_width_run": 34945210855,
+        "coalescence_crossover_run": 34945121358,
+        "exact_slice_runs": [
+          34944491776,
+          34946925694
+        ]
+      },
+      "rationale": "B10 fastest post-sieve; C16 runtime winner; q7 gives additional exact predecessor closure at near-zero marginal runtime."
+    },
+    {
+      "name": "mid-k-sparse-transition",
+      "k_min": 8,
+      "k_max": 15,
+      "scanner": "pending_sparse_compiled_scanner",
+      "scout": "experiments/collatz_sparse_prefix_scout.cpp",
+      "initial_prefix_bits": 24,
+      "max_sparse_classes": 50000000,
+      "evidence": {
+        "sparse_field_run": 34946026284
+      },
+      "rationale": "deeper sparse transfer becomes materially stronger as k falls; do not materialize dense 2^p tables blindly."
+    },
+    {
+      "name": "low-k-unresolved",
+      "k_min": 1,
+      "k_max": 7,
+      "scanner": "unknown",
+      "rationale": "requires another representation collapse before large-scale execution."
+    }
+  ],
+  "deferred_slices": [
+    28
+  ],
+  "next_primary_slice": 25
+}
