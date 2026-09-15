@@ -85,15 +85,15 @@ jobs:
           for arm in current raws rawkey; do
             git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
             git -C "$arm" checkout -q "$SOKO_PIN"
-            rm -rf candidate && cp -a "$arm" candidate
+            rm -rf a6 && cp -a "$arm" a6
             case "$arm" in
               raws) python3 scripts/patch_a6_prehashed_spine.py ;;
               rawkey) python3 scripts/patch_a6_materialized_key_spine.py ;;
               current) ;;
             esac
-            git -C candidate diff --check
-            git -C candidate diff > "diagnostics/current-materialized/$arm.patch"
-            rm -rf "$arm" && mv candidate "$arm"
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/current-materialized/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
             cat > "$arm/config.json" <<'JSON'
           {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
           JSON
