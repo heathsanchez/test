@@ -1,0 +1,25 @@
+name: Collatz transfer ladder certificate
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-transfer-ladder.yml"
+      - "experiments/collatz_transfer_ladder.py"
+  workflow_dispatch:
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact rational transfer ladder
+        run: |
+          python experiments/collatz_transfer_ladder.py | tee transfer-ladder.log
+          grep -q "RUNG1 72057431991 114208327604 3143983941795894239301" transfer-ladder.log
+          grep -q "BRIDGE_STRICT_LOWER_CEILING 2276494896546098592457" transfer-ladder.log
+          grep -q "RUNG2 137528045312 217976794617 36797780659016653495980" transfer-ladder.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-transfer-ladder
+          path: transfer-ladder.log
