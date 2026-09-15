@@ -1,0 +1,93 @@
+name: LKC Rule110 packed initializer v3
+
+on:
+  push:
+    branches: [lkc-rule110-fused-v1]
+    paths:
+      - 'experiments/lkc_rule110/Submission_v3.lean'
+      - '.github/workflows/lkc-rule110-v3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-rule110-v3
+  cancel-in-progress: true
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+
+      - name: Prepare official evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+
+      - name: Build v3 universal proof
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v3.lean" Submission.lean
+          lake build
+
+      - name: Compare v2 and v3 over three local replays
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$GITHUB_WORKSPACE/artifacts-v3"
+          for who in v2 v3; do
+            if [ "$who" = v2 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v2.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v3.lean"
+            fi
+            for rep in 1 2 3; do
+              python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 \
+                2>&1 | tee "$GITHUB_WORKSPACE/artifacts-v3/\${who}-rep\${rep}.log"
+            done
+          done
+
+      - name: Summarize medians
+        if: always()
+        shell: python
+        run: |
+          import glob, re, statistics, pathlib, json
+          out = {}
+          for who in ("v2","v3"):
+              vals=[]
+              for p in sorted(glob.glob(f"artifacts-v3/{who}-rep*.log")):
+                  s=pathlib.Path(p).read_text()
+                  m=re.search(r"Computation replay T: ([0-9.]+) s", s)
+                  if m: vals.append(float(m.group(1)))
+              out[who]={"runs":vals,"median":statistics.median(vals) if vals else None}
+          if out["v2"]["median"] and out["v3"]["median"]:
+              out["ratio"]=out["v3"]["median"]/out["v2"]["median"]
+              out["improvement_pct"]=(1-out["ratio"])*100
+          pathlib.Path("artifacts-v3/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v3-evidence
+          path: artifacts-v3/
+          if-no-files-found: error
