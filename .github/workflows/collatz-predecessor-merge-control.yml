@@ -1,0 +1,94 @@
+name: Collatz predecessor merge sieve control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-predecessor-merge-control.yml"
+      - "experiments/collatz_predecessor_merge.py"
+      - "experiments/collatz_vslice_merge_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-predecessor-merge-control
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact affine merge theorem
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee merge-certificate.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" merge-certificate.txt
+          grep -q "K31 killed_m_mod4=3 survivor_m_mod4=1" merge-certificate.txt
+          grep -q "K32 killed_m_mod4=1 survivor_m_mod4=3" merge-certificate.txt
+      - name: Build merge scanner
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10             experiments/collatz_vslice_merge_scan.cpp -o /tmp/merge-scan
+      - name: Preserve exact 853 record boundary
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=3079334581550404599807
+          /tmp/merge-scan 35 852 1 0 "$N" "$N" | tee results/record-852.txt
+          /tmp/merge-scan 35 853 1 0 "$N" "$N" | tee results/record-853.txt
+          grep -q "SURVIVOR seed=$N horizon=852" results/record-852.txt
+          grep -q "STATUS SURVIVOR_FOUND" results/record-852.txt
+          grep -q "BEST first_descent_or_survival=853 seed=$N" results/record-853.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" results/record-853.txt
+      - name: Check killed branch merges below live interval
+        run: |
+          python - <<'PY' | tee results/killed-merge.txt
+          L=2392312122059207475200
+          U=3143983941795894239301
+          K=31
+          M=1<<K
+          m=(L+1+M-1)//M
+          while m%4 != 3:
+              m += 1
+          n=M*m-1
+          p=(n-1)//2
+          assert L <= n <= U
+          assert p < L
+          def T(x): return (3*x+1)//2 if x&1 else x//2
+          x=n
+          for _ in range(K+2): x=T(x)
+          y=p
+          for _ in range(K+1): y=T(y)
+          assert x==y
+          print("KILLED_BRANCH_EXACT_MERGE",n,p,x)
+          print("KILLED_PREDECESSOR_LT_L",p<L)
+          PY
+          grep -q "KILLED_PREDECESSOR_LT_L True" results/killed-merge.txt
+      - name: Recheck a previously closed k32 finite subshard
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          /tmp/merge-scan 32 853 256 0             2392312122059207475200             3143983941795894239301             | tee results/k32-subshard.txt
+          grep -q "MERGE_KILLED_MOD4 1 SURVIVOR_MOD4 3" results/k32-subshard.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" results/k32-subshard.txt
+          python - <<'PY'
+          import re
+          s=open("results/k32-subshard.txt").read()
+          h=re.search(r"full_count=(\d+) survivor_count=(\d+) killed_count=(\d+)",s)
+          q=re.search(r"SCANNED (\d+)",s)
+          assert h and q,s
+          full,surv,killed=map(int,h.groups())
+          scanned=int(q.group(1))
+          # Header reports whole-slice counts; shard scans 1/256 of survivors.
+          assert surv+killed==full
+          assert abs(surv-killed)<=1
+          assert scanned in (surv//256,(surv+255)//256), (scanned,surv)
+          print("MERGE_COUNT_PARTITION_OK",full,surv,killed,scanned)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-predecessor-merge-control
+          path: |
+            merge-certificate.txt
+            results
+          if-no-files-found: error
+          retention-days: 30
