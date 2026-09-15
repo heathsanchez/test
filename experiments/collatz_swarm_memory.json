@@ -228,5 +228,5 @@
       "hypothesis": "minimize the finite live/dead suffix language bottom-up; merge numerically distinct states when their entire remaining consequence trees are identical"
     }
   ],
-  "next_residual": "v2(n+1) <=25 plus deferred v2=28; high-k fused stack retained, low-k sparse transition monitored"
+  "next_residual": "v2(n+1) <= 28, with v2=27 and v2=26 compiled; retain fused high-k stack and sparse low-k strategy"
 }
