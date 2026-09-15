@@ -45,7 +45,7 @@ jobs:
           git -C a6 diff --check
           git -C a6 diff > diagnostics/hc-front/diagnostic.patch
           test -s diagnostics/hc-front/diagnostic.patch
-          printf '%s\\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a6/config.json
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}' > a6/config.json
 
       - name: Build diagnostic
         run: |
