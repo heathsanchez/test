@@ -145,29 +145,34 @@ static bool deep_o_closes(
 //
 // For m with 3^(r+1) | (2m+1), define
 //
-//   p_r = 2^(r+1) * (2m+1)/3^(r+1) - 1.
+//   p_r = 2^r * (4m+1)/3^(r+1) - 1.
 //
-// Then the first r+1 shortcut steps from p_r are odd, reaching 2m,
-// followed by one even step, so T^(r+2)(p_r)=m.
+// This is exactly the reverse word O,E,O^r.  In affine numerator form the
+// recurrence gives C_r = 3^(r+1)-2^r, hence
+//
+//   p_r = [2^(r+2)m - (3^(r+1)-2^r)] / 3^(r+1)
+//       = 2^r*(4m+1)/3^(r+1)-1.
+//
+// Therefore T^(r+2)(p_r)=m.
 //
 // For m(a)=a*3^c+d this is uniform whenever c>=r+1 and
-// 3^(r+1)|(2d+1), with affine predecessor
+// 3^(r+1)|(4d+1), with affine predecessor
 //
 //   A = 2^(r+2) * 3^(c-r-1)
-//   D = 2^(r+1) * (2d+1)/3^(r+1) - 1.
+//   D = 2^r * (4d+1)/3^(r+1) - 1.
 static bool param_eor_closes(
     uint64_t b,int c,uint64_t d,int k,
     const std::vector<uint64_t>& p3,
     int& used_r,i128& outA,i128& outD){
-  if(c<2 || d>(UINT64_MAX-1)/2)return false;
-  const uint64_t z=2*d+1;
+  if(c<2 || d>(UINT64_MAX-1)/4)return false;
+  const uint64_t z=4*d+1;
 
   for(int r=1;r+1<=c;++r){
     const uint64_t den=p3[r+1];
     if(z%den!=0)break; // divisibility is nested in r
     const uint64_t q=z/den;
     const i128 A=(i128(1)<<(r+2))*i128(p3[c-r-1]);
-    const i128 D=(i128(1)<<(r+1))*i128(q)-1;
+    const i128 D=(i128(1)<<r)*i128(q)-1;
     const i128 M=i128(1)<<k;
     const i128 L=A-M;
     const i128 R=i128(b)-D;
