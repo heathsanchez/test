@@ -1,0 +1,115 @@
+name: Collatz lazy p28 repeated crossover
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-lazy-p28-repeat-control.yml"
+      - "experiments/collatz_vslice_lazy_p28_scan.cpp"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-lazy-p28-repeat-control
+  cancel-in-progress: true
+
+jobs:
+  repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [15,10,8]
+    name: repeat-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build p24 and lazy p28
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_fused_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_lazy_p28_scan.cpp -o /tmp/lazy
+
+      - name: Five alternating sealed repeats
+        run: |
+          set -euo pipefail
+          export OMP_NUM_THREADS=4
+          mkdir -p results
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<30
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          for R in 1 2 3 4 5; do
+            if [ $((R%2)) -eq 1 ]; then
+              /usr/bin/time -f '%e' -o "results/lazy.$R.time" /tmp/lazy "$K" 5000 1 0 "$L" "$U" > "results/lazy.$R.txt"
+              /usr/bin/time -f '%e' -o "results/p24.$R.time" /tmp/p24 "$K" 5000 1 0 "$L" "$U" > "results/p24.$R.txt"
+            else
+              /usr/bin/time -f '%e' -o "results/p24.$R.time" /tmp/p24 "$K" 5000 1 0 "$L" "$U" > "results/p24.$R.txt"
+              /usr/bin/time -f '%e' -o "results/lazy.$R.time" /tmp/lazy "$K" 5000 1 0 "$L" "$U" > "results/lazy.$R.txt"
+            fi
+          done
+          python - <<'PY'
+          import json,re,statistics,pathlib
+          k=int("${{ matrix.k }}")
+          p=[];q=[]
+          pexp=None;lexp=None
+          for r in range(1,6):
+              a=pathlib.Path(f"results/p24.{r}.txt").read_text()
+              b=pathlib.Path(f"results/lazy.{r}.txt").read_text()
+              assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in a
+              assert "STATUS LAZY_P28_VETO_SCAN_CLOSED" in b
+              ma=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+              mb=re.search(r"LAZY_P28_COUNTS COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) P28_VETOED_AFTER_Q7 (\d+) EXPLICIT (\d+)",b)
+              assert ma and mb
+              pexp=int(ma.group(3)); lexp=int(mb.group(4))
+              p.append(float(pathlib.Path(f"results/p24.{r}.time").read_text()))
+              q.append(float(pathlib.Path(f"results/lazy.{r}.time").read_text()))
+          row={"k":k,"p24_times":p,"lazy_times":q,
+               "p24_median":statistics.median(p),"lazy_median":statistics.median(q),
+               "median_speedup":statistics.median(p)/statistics.median(q),
+               "p24_explicit":pexp,"lazy_explicit":lexp}
+          pathlib.Path("results/summary.json").write_text(json.dumps(row,indent=2)+"\n")
+          print("LAZY_P28_REPEAT",json.dumps(row,separators=(",",":")))
+          print("LAZY_P28_REPEAT_CONTROL_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lazy-p28-repeat-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: repeat
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: lazy-p28-repeat-k*
+          path: gathered
+      - name: Aggregate medians
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for p in Path("gathered").glob("lazy-p28-repeat-k*/summary.json"):
+              rows.append(json.loads(p.read_text()))
+          assert len(rows)==3,rows
+          out={"kind":"lazy_p28_repeated_crossover","rows":sorted(rows,key=lambda x:-x["k"])}
+          Path("lazy-p28-repeat-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("LAZY_P28_REPEAT_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lazy-p28-repeat-field
+          path: lazy-p28-repeat-field.json
+          retention-days: 30
