@@ -1,0 +1,72 @@
+name: Collatz global-coalescence swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-global-coalescence-swarm.yml"
+      - "experiments/collatz_global_coalescence.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-coalescence-swarm
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [27,20,10]
+    name: global-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Hash all lower-family affine states
+        run: |
+          /usr/bin/time -f '%e' -o time.txt             python experiments/collatz_global_coalescence.py               --k ${{ matrix.k }} --s 14 --max-gap 3               | tee census.txt
+          grep -q "VERIFIED_GLOBAL_CROSS_VALUATION_COALESCENCE" census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-k${{ matrix.k }}
+          path: |
+            census.txt
+            time.txt
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-k*
+          path: gathered
+      - name: Aggregate global coalescence field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("global-k*")):
+              s=(d/"census.txt").read_text()
+              t=float((d/"time.txt").read_text().strip())
+              m=re.search(r"GLOBAL_COALESCENCE K=(\d+) S=(\d+) max_gap=(\d+) bank_states=(\d+) baseline=(\d+) killed=(\d+) strict_extra=(\d+) odd_classes=(\d+)",s)
+              assert m,s[-4000:]
+              vals=list(map(int,m.groups()))
+              rows.append({
+                  "k":vals[0],"s":vals[1],"max_gap":vals[2],"bank_states":vals[3],
+                  "baseline":vals[4],"killed":vals[5],"strict_extra":vals[6],
+                  "odd_classes":vals[7],"wall_seconds":t,
+              })
+          out={"kind":"exact_global_cross_valuation_coalescence_field","rows":rows}
+          Path("global-coalescence-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_COALESCENCE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-global-coalescence-field
+          path: global-coalescence-field.json
+          retention-days: 30
