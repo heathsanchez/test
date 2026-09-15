@@ -236,7 +236,7 @@ int main(int argc,char**argv){
   const int K=std::stoi(argv[1]);
   const std::string bankpath=argv[2];
   const int H=std::stoi(argv[3]);
-  if(K<1||K>30||H<1||H>16){std::cerr<<"BAD_RANGE\n";return 2;}
+  if(K<1||K>34||H<1||H>16){std::cerr<<"BAD_RANGE\n";return 2;}
 
   std::vector<uint64_t> p3(K+2,1);
   for(int i=1;i<(int)p3.size();++i){
