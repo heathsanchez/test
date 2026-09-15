@@ -1,0 +1,43 @@
+name: LKC Rule110 wide-256 native probe v33
+
+on:
+  push:
+    branches: [lkc-rule110-wide256-probe-v33]
+    paths:
+      - 'experiments/lkc_rule110/Wide256Bench.lean'
+      - '.github/workflows/lkc-rule110-wide256-probe-v33.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
+      - name: Build V25 module
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v25.lean" Submission.lean
+          lake build
+      - name: Run wide-256 native probe
+        working-directory: lkc/problems/ca-rule110
+        shell: bash
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Wide256Bench.lean" .
+          for rep in 1 2 3 4 5; do
+            echo "REP=$rep"
+            lake env lean --run Wide256Bench.lean
+          done
