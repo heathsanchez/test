@@ -1,0 +1,268 @@
+name: Lean A6 adaptive spine representation gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-a6-adaptive-spine.yml'
+      - 'scripts/patch_a6_adaptive_spine.py'
+      - 'scripts/patch_a6_prehashed_spine.py'
+      - 'scripts/patch_a6.py'
+      - 'A6_ADAPTIVE_SPINE_REPRESENTATION_PROTOCOL.md'
+      - 'A6_SPINE_SCALE_SEPARATOR_RESULT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 100
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/adaptive-spine diagnostics/adaptive-spine
+          curl --fail --location --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" \
+            -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Freeze development and held-out manifests
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('arena-tests/good')
+          dev=[root/x for x in ['perf/grind-ring-5.ndjson','init-prelude.ndjson','perf/app-lam.ndjson','perf/shift-cascade.ndjson']]
+          if any(not p.exists() for p in dev): raise SystemExit('missing development case')
+          held=[
+            pathlib.Path(x) for x in '''
+          arena-tests/good/undecidability/alg-conv-trans-acc-right.ndjson
+          arena-tests/good/undecidability/alg-conv-trans-acc-left.ndjson
+          arena-tests/good/undecidability/subject-reduction-redex.ndjson
+          arena-tests/good/tutorial/080_RBTree.id_spec.ndjson
+          arena-tests/good/tutorial/079_listRecReduction.ndjson
+          arena-tests/good/tutorial/069_rbTreeRef.ndjson
+          arena-tests/good/tutorial/043_rbTreeDef.ndjson
+          arena-tests/good/tutorial/121_accRecReduction.ndjson
+          arena-tests/good/tutorial/078_nRecReduction.ndjson
+          arena-tests/good/tutorial/108_structEta.ndjson
+          arena-tests/good/tutorial/119_rtreeRecReduction.ndjson
+          arena-tests/good/tutorial/076_boolRecEqns.ndjson
+          arena-tests/good/tutorial/077_prodRecEqns.ndjson
+          arena-tests/good/tutorial/096_projRed.ndjson
+          arena-tests/good/undecidability/alg-conv-trans-quot-right.ndjson
+          arena-tests/good/tutorial/087_projProp1.ndjson
+          arena-tests/good/tutorial/089_projProp3.ndjson
+          arena-tests/good/tutorial/073_typeSingletonRecReduction.ndjson
+          arena-tests/good/tutorial/127_quotLiftReduction.ndjson
+          arena-tests/good/tutorial/128_quotIndReduction.ndjson
+          arena-tests/good/tutorial/120_accRecType.ndjson
+          arena-tests/good/tutorial/126_quotSoundType.ndjson
+          arena-tests/good/tutorial/093_projDataIndexRec.ndjson
+          arena-tests/good/tutorial/075_sortElimProp2Rec.ndjson
+          '''.split()
+          ]
+          if len(held)!=24 or any(not p.exists() for p in held): raise SystemExit('heldout mismatch')
+          pathlib.Path('diagnostics/adaptive-spine/development.txt').write_text('\n'.join(map(str,dev))+'\n')
+          pathlib.Path('diagnostics/adaptive-spine/heldout.txt').write_text('\n'.join(map(str,held))+'\n')
+          pathlib.Path('results/adaptive-spine/manifests.json').write_text(json.dumps({
+            'development':list(map(str,dev)),'heldout':list(map(str,held)),
+            'threshold':65,
+            'threshold_provenance':'run 34926408611: max development-control peak 64 + 1',
+          },indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Reconstruct A0 hybrid alwaysraw
+        run: |
+          set -euo pipefail
+          for arm in a0 hybrid alwaysraw; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            case "$arm" in
+              hybrid) python3 scripts/patch_a6_adaptive_spine.py ;;
+              alwaysraw) python3 scripts/patch_a6_prehashed_spine.py ;;
+              a0) ;;
+            esac
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/adaptive-spine/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+          test -s diagnostics/adaptive-spine/hybrid.patch
+          test -s diagnostics/adaptive-spine/alwaysraw.patch
+          grep -q 'SPINE_RAW_THRESHOLD: usize = 65' hybrid/src/util.rs
+          grep -q 'spine_hc_raw_active' hybrid/src/eval.rs
+
+      - name: Arena-style PGO build all arms
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          test -x "$LLVM_PROFDATA"
+          TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
+          for arm in a0 hybrid alwaysraw; do
+            rm -rf "$arm/pgo"; mkdir -p "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+            "$arm/target/release/sokonanoda" "$arm/config.json" < "$TRAIN" >/dev/null 2>/dev/null || true
+            "$LLVM_PROFDATA" merge -o "$arm/pgo/merged.profdata" "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+            test -x "$arm/target/release/sokonanoda"
+          done
+
+      - name: Full frozen semantic gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if len(good)!=103 or len(bad)!=58: raise SystemExit((len(good),len(bad)))
+          out={}
+          for arm in ['a0','hybrid','alwaysraw']:
+              gp=br=0; failures=[]
+              for p in good:
+                  with p.open('rb') as f:r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode==0:gp+=1
+                  elif len(failures)<15: failures.append({'kind':'good_rejected','case':str(p),'rc':r.returncode,'stderr':r.stderr.decode(errors='replace')[-1200:]})
+              for p in bad:
+                  with p.open('rb') as f:r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode!=0:br+=1
+                  elif len(failures)<15: failures.append({'kind':'bad_accepted','case':str(p)})
+              out[arm]={'good_pass':gp,'bad_reject':br,'failures':failures}
+          pathlib.Path('results/adaptive-spine/semantics.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          if any(x['good_pass']!=103 or x['bad_reject']!=58 for x in out.values()): raise SystemExit('semantic rejection')
+          PY
+
+      - name: Development paired CPU economics
+        id: devperf
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess
+          arms=['a0','hybrid','alwaysraw']
+          cases=[pathlib.Path(x) for x in pathlib.Path('diagnostics/adaptive-spine/development.txt').read_text().splitlines() if x]
+          def one(a,p):
+              before=resource.getrusage(resource.RUSAGE_CHILDREN)
+              with p.open('rb') as f:r=subprocess.run([f'{a}/target/release/sokonanoda',f'{a}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              after=resource.getrusage(resource.RUSAGE_CHILDREN)
+              if r.returncode:raise SystemExit(f'{a} {p} {r.returncode}')
+              return (after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+          for a in arms:
+              for p in cases:one(a,p)
+          by={};rows=[]
+          for rep in range(30):
+              order=arms.copy();random.Random(151000+rep).shuffle(order);by[rep]={}
+              for a in order:
+                  total=0.;per={}
+                  for p in cases:
+                      cpu=one(a,p);total+=cpu;per[str(p)]=cpu
+                  by[rep][a]=total;rows.append({'rep':rep,'arm':a,'cpu_s':total,'per_case_cpu_s':per})
+          def pair(c,b):
+              ds=[];wins=0
+              for rep in range(30):
+                  cv=by[rep][c];bv=by[rep][b];ds.append(100*(cv/bv-1));wins+=cv<bv
+              return {'median_delta_pct':statistics.median(ds),'wins':wins,'losses':30-wins,'deltas_pct':ds}
+          out={
+            'summary':{a:{'median_cpu_s':statistics.median(by[r][a] for r in range(30))} for a in arms},
+            'hybrid_vs_a0':pair('hybrid','a0'),
+            'hybrid_vs_alwaysraw':pair('hybrid','alwaysraw'),
+            'alwaysraw_vs_a0':pair('alwaysraw','a0'),
+            'rows':rows,
+          }
+          pathlib.Path('results/adaptive-spine/development-performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:v for k,v in out.items() if k!='rows'},indent=2,sort_keys=True))
+          PY
+
+      - name: Classify development gate
+        id: dev
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,os
+          p=json.loads(pathlib.Path('results/adaptive-spine/development-performance.json').read_text())
+          x=p['hybrid_vs_a0']; ok=x['median_delta_pct']<0 and x['wins']>=18
+          verdict='ADAPTIVE_SPINE_PROCEED_HELDOUT' if ok else 'ADAPTIVE_SPINE_STOP_DEVELOPMENT'
+          out={'verdict':verdict,'gate':ok,'hybrid_vs_a0':x,'hybrid_vs_alwaysraw':p['hybrid_vs_alwaysraw'],'alwaysraw_vs_a0':p['alwaysraw_vs_a0']}
+          pathlib.Path('results/adaptive-spine/development-verdict.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:f.write(f"proceed={'true' if ok else 'false'}\n")
+          PY
+
+      - name: Disjoint held-out paired CPU gate
+        if: steps.dev.outputs.proceed == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess
+          arms=['a0','hybrid','alwaysraw']
+          cases=[pathlib.Path(x) for x in pathlib.Path('diagnostics/adaptive-spine/heldout.txt').read_text().splitlines() if x]
+          def run(a):
+              before=resource.getrusage(resource.RUSAGE_CHILDREN)
+              for p in cases:
+                  with p.open('rb') as f:r=subprocess.run([f'{a}/target/release/sokonanoda',f'{a}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  if r.returncode:raise SystemExit(f'{a} {p} {r.returncode}')
+              after=resource.getrusage(resource.RUSAGE_CHILDREN)
+              return (after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+          for a in arms:run(a)
+          by={};rows=[]
+          for rep in range(30):
+              order=arms.copy();random.Random(163000+rep).shuffle(order);by[rep]={}
+              for a in order:
+                  cpu=run(a);by[rep][a]=cpu;rows.append({'rep':rep,'arm':a,'cpu_s':cpu})
+          def pair(c,b):
+              ds=[];wins=0
+              for rep in range(30):
+                  cv=by[rep][c];bv=by[rep][b];ds.append(100*(cv/bv-1));wins+=cv<bv
+              return {'median_delta_pct':statistics.median(ds),'wins':wins,'losses':30-wins,'deltas_pct':ds}
+          out={
+            'summary':{a:{'median_cpu_s':statistics.median(by[r][a] for r in range(30))} for a in arms},
+            'hybrid_vs_a0':pair('hybrid','a0'),
+            'hybrid_vs_alwaysraw':pair('hybrid','alwaysraw'),
+            'alwaysraw_vs_a0':pair('alwaysraw','a0'),
+            'rows':rows,
+          }
+          pathlib.Path('results/adaptive-spine/heldout-performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:v for k,v in out.items() if k!='rows'},indent=2,sort_keys=True))
+          PY
+
+      - name: Classify held-out gate
+        if: steps.dev.outputs.proceed == 'true'
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=json.loads(pathlib.Path('results/adaptive-spine/heldout-performance.json').read_text())
+          x=p['hybrid_vs_a0']; ok=x['median_delta_pct']<0 and x['wins']>=18
+          verdict='ADAPTIVE_SPINE_PROCEED_MATHLIB' if ok else 'ADAPTIVE_SPINE_STOP_HELDOUT'
+          out={'verdict':verdict,'gate':ok,'hybrid_vs_a0':x,'hybrid_vs_alwaysraw':p['hybrid_vs_alwaysraw'],'alwaysraw_vs_a0':p['alwaysraw_vs_a0']}
+          pathlib.Path('results/adaptive-spine/heldout-verdict.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-a6-adaptive-spine
+          path: |
+            results/adaptive-spine/
+            diagnostics/adaptive-spine/
+            A6_ADAPTIVE_SPINE_REPRESENTATION_PROTOCOL.md
+            A6_SPINE_SCALE_SEPARATOR_RESULT.md
