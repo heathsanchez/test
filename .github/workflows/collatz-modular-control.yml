@@ -1,0 +1,57 @@
+name: Collatz shrinking modular control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-modular-control.yml"
+      - "experiments/collatz_modular_coefficient.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-modular-control
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
+      - name: Recover protected coefficient boundary with shrinking state
+        run: |
+          mkdir -p results
+          python experiments/collatz_modular_coefficient.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 182 --protected-control \
+            --out results/h182.json
+          python experiments/collatz_modular_coefficient.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 183 --protected-control \
+            --out results/h183.json
+          python - <<'PY'
+          import json
+          a=json.load(open("results/h182.json"))
+          b=json.load(open("results/h183.json"))
+          assert a["status"] == "SAT", a
+          assert a["witness"] == "1027431", a
+          assert a["replay"]["first_contract"] == 183, a
+          assert b["status"] == "UNSAT", b
+          assert a["width_max"] < a["absolute_width_max"], a
+          assert b["width_max"] < b["absolute_width_max"], b
+          print("SHRINKING_MODULAR_CONTROL_OK",
+                "182 SAT witness=1027431 / 183 UNSAT",
+                f"h183_width_sum={b['width_sum']}",
+                f"h183_width_max={b['width_max']}",
+                f"h183_abs_max={b['absolute_width_max']}")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-modular-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
