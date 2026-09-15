@@ -1,0 +1,70 @@
+name: Collatz shifted-coalescence swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-shifted-coalescence-swarm.yml"
+      - "experiments/collatz_shifted_coalescence.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-shifted-coalescence-swarm
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [27,20,10]
+    name: shifted-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enumerate exact shifted families
+        run: |
+          /usr/bin/time -f '%e' -o time.txt             python experiments/collatz_shifted_coalescence.py               --k ${{ matrix.k }} --s 14 --max-gap 3 --shift 16               | tee census.txt
+          grep -q "VERIFIED_SHIFTED_CROSS_VALUATION_COALESCENCE" census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shifted-k${{ matrix.k }}
+          path: |
+            census.txt
+            time.txt
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: shifted-k*
+          path: gathered
+      - name: Aggregate shifted consequence field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("shifted-k*")):
+              s=(d/"census.txt").read_text()
+              t=float((d/"time.txt").read_text().strip())
+              k=int(re.search(r"SHIFTED_COALESCENCE_BASELINE K=(\d+)",s).group(1))
+              base=int(re.search(r"SHIFTED_COALESCENCE_BASELINE.*classes=(\d+)",s).group(1))
+              extra=int(re.search(r"STRICT_EXTRA (\d+)",s).group(1))
+              final=int(re.search(r"FINAL_UNION (\d+)",s).group(1))
+              top=re.search(r"TOP_SHIFTS (.*)",s).group(1)
+              rows.append({"k":k,"baseline":base,"strict_extra":extra,"final_union":final,"wall_seconds":t,"top_shifts":top})
+          out={"kind":"exact_shifted_coalescence_field","rows":rows}
+          Path("shifted-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("SHIFTED_COALESCENCE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-shifted-coalescence-field
+          path: shifted-field.json
+          retention-days: 30
