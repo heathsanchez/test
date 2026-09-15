@@ -1,0 +1,197 @@
+name: Collatz adaptive frontier slice
+
+on:
+  workflow_dispatch:
+    inputs:
+      k:
+        description: "valuation k = v2(n+1)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: collatz-adaptive-k-${{ inputs.k }}
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    outputs:
+      should_scan: ${{ steps.policy.outputs.should_scan }}
+      scanner: ${{ steps.policy.outputs.scanner }}
+      block_bits: ${{ steps.policy.outputs.block_bits }}
+      prefix_bits: ${{ steps.policy.outputs.prefix_bits }}
+      coal_bits: ${{ steps.policy.outputs.coal_bits }}
+      shards: ${{ steps.policy.outputs.shards }}
+      reason: ${{ steps.policy.outputs.reason }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: policy
+        name: Resolve retained frontier policy
+        run: python experiments/collatz_frontier_guard.py --k "${{ inputs.k }}" --github-output "$GITHUB_OUTPUT"
+      - name: Explain skipped slice
+        if: steps.policy.outputs.should_scan != 'true'
+        run: echo "SKIP k=${{ inputs.k }} reason=${{ steps.policy.outputs.reason }}"
+      - name: Verify retained theorem stack
+        if: steps.policy.outputs.should_scan == 'true'
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
+          python experiments/collatz_transfer_farey.py | tee /tmp/transfer.txt
+          python experiments/collatz_reverse_predecessor_tree.py --q 7 | tee /tmp/q7.txt
+          python experiments/collatz_predecessor_coalescence.py --k "${{ inputs.k }}" --s "${{ steps.policy.outputs.coal_bits }}" | tee /tmp/coal.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
+          grep -q "every first coefficient contraction with t < 114208327604 forces descent" /tmp/transfer.txt
+          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt
+          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
+          grep -q "VERIFIED_CROSS_VALUATION_PREDECESSOR_COALESCENCE" /tmp/coal.txt
+      - name: Protect retained 920 record
+        if: steps.policy.outputs.should_scan == 'true'
+        run: |
+          g++ -O3 -march=native -fopenmp             -DBLOCK_BITS="${{ steps.policy.outputs.block_bits }}"             -DPREFIX_BITS="${{ steps.policy.outputs.prefix_bits }}"             -DCOAL_BITS="${{ steps.policy.outputs.coal_bits }}"             "${{ steps.policy.outputs.scanner }}" -o /tmp/vscan
+          N=2874993894540242321407
+          /tmp/vscan 30 5000 1 0 "$N" "$N" | tee /tmp/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" /tmp/record.txt
+          grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" /tmp/record.txt
+          echo ADAPTIVE_FRONTIER_CONTROL_OK
+
+  scan:
+    needs: control
+    if: needs.control.outputs.should_scan == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    name: k${{ inputs.k }}-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build retained production scanner
+        run: |
+          g++ -O3 -march=native -fopenmp             -DBLOCK_BITS="${{ needs.control.outputs.block_bits }}"             -DPREFIX_BITS="${{ needs.control.outputs.prefix_bits }}"             -DCOAL_BITS="${{ needs.control.outputs.coal_bits }}"             "${{ needs.control.outputs.scanner }}" -o /tmp/vscan
+      - name: Exact H5000 scan
+        run: |
+          set -o pipefail
+          mkdir -p results
+          /tmp/vscan "${{ inputs.k }}" 5000 16 "${{ matrix.shard }}"             2392312122059207475200             3143983941795894239301             | tee "results/k${{ inputs.k }}-${{ matrix.shard }}.txt"
+      - name: Exact arbitrary-precision replay
+        run: |
+          python - <<'PY' | tee -a "results/k${{ inputs.k }}-${{ matrix.shard }}.txt"
+          import re
+          p="results/k${{ inputs.k }}-${{ matrix.shard }}.txt"
+          s=open(p).read()
+          candidates=[("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=5000",s)
+          if m: candidates.append(("u128-survivor",int(m.group(1))))
+          seen=set(); survivors=[]
+          for kind,n in candidates:
+              if n in seen: continue
+              seen.add(n)
+              x=n; peak=n; first=None
+              for t in range(1,5001):
+                  x=(3*x+1)//2 if x&1 else x//2
+                  peak=max(peak,x)
+                  if x<n:
+                      first=t; break
+              print(f"BIG_REPLAY kind={kind} seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              if first is None or first>5000:
+                  survivors.append((n,first,peak,t))
+          if survivors:
+              n,first,peak,t=survivors[0]
+              print(f"SURVIVOR_REPLAY seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              print("STATUS SURVIVOR_FOUND")
+          elif "STATUS OVERFLOW_REPLAY_REQUIRED" in s:
+              print("STATUS EXHAUSTED_NO_SURVIVOR")
+          elif "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in s:
+              print("EXACT_SHARD_ALREADY_EXHAUSTED")
+          elif "STATUS SURVIVOR_FOUND" in s:
+              raise SystemExit("u128 survivor failed exact replay invariant")
+          else:
+              raise SystemExit("missing scanner terminal status")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-adaptive-k${{ inputs.k }}-${{ matrix.shard }}
+          path: results/k${{ inputs.k }}-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: [control,scan]
+    if: always() && needs.control.outputs.should_scan == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-adaptive-k${{ inputs.k }}-*
+          path: gathered
+          merge-multiple: true
+      - name: Aggregate exact adaptive slice
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          k=int("${{ inputs.k }}")
+          fs=sorted(Path("gathered").glob(f"k{k}-*.txt"))
+          rows=[]; survivors=[]; headers=[]
+          for p in fs:
+              s=p.read_text()
+              sm=re.search(r"SCANNED (\d+)",s)
+              bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+              cm=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",s)
+              hm=re.search(r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",s)
+              if hm: headers.append(tuple(map(int,hm.groups())))
+              status=(
+                  "SURVIVOR" if "SURVIVOR_REPLAY seed=" in s else
+                  "EXHAUSTED" if ("EXACT_SHARD_ALREADY_EXHAUSTED" in s or "STATUS EXHAUSTED_NO_SURVIVOR" in s) else
+                  "UNKNOWN"
+              )
+              row={
+                  "file":p.name,
+                  "scanned":int(sm.group(1)) if sm else None,
+                  "coalescence_extra":int(cm.group(1)) if cm else None,
+                  "predq7_after_coalescence":int(cm.group(2)) if cm else None,
+                  "explicit":int(cm.group(3)) if cm else None,
+                  "best":int(bm.group(1)) if bm else None,
+                  "best_seed":bm.group(2) if bm else None,
+                  "actual_overflow_count":len(re.findall(r"^.* OVERFLOW_SEED seed=\d+ reached_after_t=\d+$",s,re.M)),
+                  "status":status,
+              }
+              for rm in re.findall(r"^.* SURVIVOR_REPLAY seed=(\d+) first_descent=(None|\d+) peak=(\d+).*$",s,re.M):
+                  survivors.append({"file":p.name,"seed":rm[0],"first_descent":None if rm[1]=="None" else int(rm[1]),"peak":rm[2]})
+              rows.append(row)
+          assert len(rows)==16,(len(rows),[p.name for p in fs])
+          assert headers and all(x==headers[0] for x in headers),headers
+          full,merge,transfer,prefix_live=headers[0]
+          coal=sum(r["coalescence_extra"] or 0 for r in rows)
+          pred=sum(r["predq7_after_coalescence"] or 0 for r in rows)
+          explicit=sum(r["explicit"] or 0 for r in rows)
+          scanned=sum(r["scanned"] or 0 for r in rows)
+          assert coal+pred+explicit==prefix_live,(coal,pred,explicit,prefix_live)
+          assert scanned==explicit,(scanned,explicit)
+          assert merge+transfer+prefix_live==full
+          if any(r["status"]=="UNKNOWN" for r in rows): raise SystemExit("unknown shard verdict")
+          if survivors: raise SystemExit("H5000 survivor remains")
+          best=max(rows,key=lambda r:r["best"] or 0)
+          summary={
+              "kind":"exact_adaptive_frontier_slice",
+              "k":k,"full_seed_count":full,
+              "merge_killed":merge,"transfer_killed":transfer,
+              "coalescence_killed":coal,"predq7_killed":pred,
+              "explicitly_scanned":explicit,
+              "actual_overflow_count":sum(r["actual_overflow_count"] for r in rows),
+              "best_first_descent":best["best"],"best_seed":best["best_seed"],
+              "closed_through_h5000":True,
+          }
+          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("ADAPTIVE_FRONTIER_AGGREGATE",json.dumps(summary,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-adaptive-k${{ inputs.k }}-aggregate
+          path: gathered/summary.json
+          retention-days: 30
