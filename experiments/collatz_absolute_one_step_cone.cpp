@@ -39,7 +39,7 @@ int main(int argc,char**argv){
   if(argc!=3){std::cerr<<"usage: absolute_cone K H\n";return 2;}
   const int K=std::stoi(argv[1]);
   const int H=std::stoi(argv[2]);
-  if(K<2||K>30||H<0||H>4096)return 2;
+  if(K<2||K>40||H<0||H>4096)return 2;
 
   const uint64_t L=UINT64_C(1)<<K;
   const uint64_t U=UINT64_C(1)<<(K+1);
