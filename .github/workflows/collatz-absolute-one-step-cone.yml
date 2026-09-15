@@ -1,0 +1,97 @@
+name: Collatz absolute one-step cone
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-absolute-one-step-cone.yml"
+      - "experiments/collatz_absolute_one_step_cone.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-absolute-one-step-cone
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        k: [18,19,20,21,22,23,24,25]
+    name: absolute-k${{ matrix.k }}-h512
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact fixed-horizon cone
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_one_step_cone.cpp -o /tmp/abs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/abs ${{ matrix.k }} 512 | tee results/census.txt
+          grep -q "VERIFIED_ABSOLUTE_ONE_STEP_CONE_SHELL" results/census.txt
+      - name: Parse
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"ABSOLUTE_ONE_STEP_CONE_RESULT K={K} H=512 checked=(\d+) "
+              r"direct=(\d+) cone=(\d+) hard=(\d+) overflow=(\d+) "
+              r"max_t=(\d+) max_t_seed=(\d+) cone_controls=(\d+)",s)
+          assert m,s[-4000:]
+          checked,direct,cone,hard,overflow,max_t,max_seed,controls=map(int,m.groups())
+          assert checked==(1<<(K-1)),(K,checked)
+          assert direct+cone+hard==checked
+          assert overflow==0
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"K":K,"H":512,"checked":checked,"direct":direct,"cone":cone,
+               "hard":hard,"max_t":max_t,"max_t_seed":max_seed,
+               "cone_controls":controls,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("ABSOLUTE_ONE_STEP_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: absolute-one-step-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shell
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: absolute-one-step-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("absolute-one-step-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==list(range(18,26)),rows
+          out={"kind":"absolute_one_step_cone","rows":rows,
+               "all_closed":all(x["hard"]==0 for x in rows),
+               "max_t":max(x["max_t"] for x in rows),
+               "max_t_row":max(rows,key=lambda x:x["max_t"])}
+          Path("absolute-one-step-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("ABSOLUTE_ONE_STEP_FIELD",json.dumps(out,separators=(",",":")))
+          if out["all_closed"]:
+              print("ABSOLUTE_H512_CLOSES_K18_TO_K25")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: absolute-one-step-field
+          path: absolute-one-step-field.json
+          retention-days: 30
