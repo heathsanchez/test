@@ -1,0 +1,183 @@
+name: Lean V8 closed type consequence development gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-cq-v8-infer-seed-dev.yml'
+      - 'scripts/patch_cq_infer_seed.py'
+      - 'scripts/patch_cq_infer_seed_ablation.py'
+      - 'scripts/patch_a6.py'
+      - 'NOVEL_CONSEQUENCE_QUOTIENT_V8.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 70
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a0 quotient ablation results/v8-dev diagnostics/v8-dev
+          mkdir -p arena-tests artifact results/v8-dev diagnostics/v8-dev
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          test -f arena-tests/good/init-prelude.ndjson
+          find arena-tests/good -type f -name '*grind-ring-5*.ndjson' | sort > diagnostics/v8-dev/grind.txt
+          test "$(wc -l < diagnostics/v8-dev/grind.txt)" -eq 1
+
+      - name: Reconstruct frozen arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 quotient ablation; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            case "$arm" in
+              quotient) python3 scripts/patch_cq_infer_seed.py ;;
+              ablation) python3 scripts/patch_cq_infer_seed_ablation.py ;;
+              a0) ;;
+            esac
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/v8-dev/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+          test -s diagnostics/v8-dev/quotient.patch
+          test -s diagnostics/v8-dev/ablation.patch
+
+      - name: Arena-style PGO build all arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          test -x "$LLVM_PROFDATA"
+          TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
+          for arm in a0 quotient ablation; do
+            rm -rf "$arm/pgo"; mkdir -p "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+            "$arm/target/release/sokonanoda" "$arm/config.json" < "$TRAIN" >/dev/null
+            "$LLVM_PROFDATA" merge -o "$arm/pgo/merged.profdata" "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+            test -x "$arm/target/release/sokonanoda"
+          done
+
+      - name: External semantic gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if len(good)!=103 or len(bad)!=58: raise SystemExit((len(good),len(bad)))
+          out={'arms':{}}
+          for arm in ['a0','quotient','ablation']:
+              exe=pathlib.Path(arm)/'target/release/sokonanoda'; cfg=pathlib.Path(arm)/'config.json'
+              gp=br=0; failures=[]
+              for p in good:
+                  with p.open('rb') as f:
+                      r=subprocess.run([str(exe),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode==0: gp+=1
+                  elif len(failures)<20: failures.append({'kind':'good_rejected','case':str(p),'rc':r.returncode,'stderr':r.stderr.decode(errors='replace')[-1000:]})
+              for p in bad:
+                  with p.open('rb') as f:
+                      r=subprocess.run([str(exe),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode!=0: br+=1
+                  elif len(failures)<20: failures.append({'kind':'bad_accepted','case':str(p)})
+              out['arms'][arm]={'good_pass':gp,'bad_reject':br,'failures':failures}
+          pathlib.Path('results/v8-dev/semantics.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          for arm,x in out['arms'].items():
+              if x['good_pass']!=103 or x['bad_reject']!=58: raise SystemExit(f'SEMANTIC_REJECTION {arm}')
+          PY
+
+      - name: Paired development economics
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess,time
+          arms=['a0','quotient','ablation']
+          cases={
+              'grind-ring-5':pathlib.Path(pathlib.Path('diagnostics/v8-dev/grind.txt').read_text().strip()),
+              'init-prelude':pathlib.Path('arena-tests/good/init-prelude.ndjson'),
+          }
+          out={}
+          for name,p in cases.items():
+              for arm in arms:
+                  with p.open('rb') as f:
+                      r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  if r.returncode: raise SystemExit(f'warmup {name} {arm} rc={r.returncode}')
+              rows=[]; by={}
+              for rep in range(30):
+                  order=arms.copy(); random.Random((0 if name=='grind-ring-5' else 1000)+rep).shuffle(order); by[rep]={}
+                  for arm in order:
+                      before=resource.getrusage(resource.RUSAGE_CHILDREN); t=time.perf_counter()
+                      with p.open('rb') as f:
+                          r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                      wall=time.perf_counter()-t; after=resource.getrusage(resource.RUSAGE_CHILDREN)
+                      if r.returncode: raise SystemExit(f'{name} {arm} rc={r.returncode}')
+                      cpu=(after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+                      row={'rep':rep,'arm':arm,'cpu_s':cpu,'wall_s':wall}; rows.append(row); by[rep][arm]=row
+              def pair(c,b,m):
+                  ds=[]; wins=0
+                  for rep in range(30):
+                      cv=by[rep][c][m]; bv=by[rep][b][m]
+                      ds.append(100*(cv/bv-1)); wins+=cv<bv
+                  return {'median_delta_pct':statistics.median(ds),'wins':wins,'deltas_pct':ds}
+              out[name]={
+                  'summary':{a:{'median_cpu_s':statistics.median(r['cpu_s'] for r in rows if r['arm']==a),'median_wall_s':statistics.median(r['wall_s'] for r in rows if r['arm']==a)} for a in arms},
+                  'quotient_vs_ablation_cpu':pair('quotient','ablation','cpu_s'),
+                  'quotient_vs_a0_cpu':pair('quotient','a0','cpu_s'),
+                  'rows':rows,
+              }
+          pathlib.Path('results/v8-dev/performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Classify development gate
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import json,pathlib
+          p=json.loads(pathlib.Path('results/v8-dev/performance.json').read_text())
+          per={}
+          for name,x in p.items():
+              qa=x['quotient_vs_ablation_cpu']
+              per[name]={'median_delta_pct':qa['median_delta_pct'],'wins':qa['wins'],'pass':qa['median_delta_pct']<0 and qa['wins']>=18}
+          proceed=all(x['pass'] for x in per.values())
+          verdict='V8_PROCEED_TO_HELDOUT_MATHLIB' if proceed else 'V8_STOP_BEFORE_MATHLIB'
+          out={'verdict':verdict,'development_only':True,'threshold_wins_of_30':18,'cases':per}
+          pathlib.Path('results/v8-dev/verdict.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('results/v8-dev/VERDICT.txt').write_text(verdict+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload V8 development evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-v8-type-consequence-development-gate
+          path: |
+            results/v8-dev/
+            diagnostics/v8-dev/
+            NOVEL_CONSEQUENCE_QUOTIENT_V8.md
