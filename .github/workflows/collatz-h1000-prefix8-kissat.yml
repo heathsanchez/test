@@ -38,6 +38,20 @@ jobs:
           print("residues="+json.dumps(d["residues"],separators=(",",":")))
           print("count="+str(d["lawful_count"]))
           PY
+      - name: Verify quotient covers the goal-native residual
+        run: |
+          python experiments/collatz_transfer_farey.py | tee results/transfer.txt
+          python - <<'PY'
+          L=2392312122059207475200
+          certified_lower=2075*(1<<60)
+          H=1000
+          first_dangerous=114208327604
+          assert L >= certified_lower
+          assert H < first_dangerous
+          print("PREFIX8_GOAL_EQUIVALENCE_OK",
+                "no-descent-through-H iff coefficient-persistence-through-H",
+                "on the live interval for H=1000")
+          PY
       - name: Build pinned Kissat 4.0.4 once
         run: |
           git clone https://github.com/arminbiere/kissat.git /tmp/kissat
@@ -73,10 +87,10 @@ jobs:
       - name: Protected exact boundary under fixed prefix residue
         run: |
           mkdir -p results/control-182 results/control-183
-          python experiments/collatz_coefficient_cnf_emit.py \
+          python experiments/collatz_no_descent_cnf_emit.py \
             --bits 20 --lower 524288 --upper 1048575 --horizon 182 \
             --low-bits 8 --low-value 103 --out-dir results/control-182
-          python experiments/collatz_coefficient_cnf_emit.py \
+          python experiments/collatz_no_descent_cnf_emit.py \
             --bits 20 --lower 524288 --upper 1048575 --horizon 183 \
             --low-bits 8 --low-value 103 --out-dir results/control-183
 
@@ -94,7 +108,7 @@ jobs:
 
           python - <<'PY'
           from pathlib import Path
-          from experiments.collatz_coefficient_cnf import replay
+          from experiments.collatz_exact_cnf_even import replay
           lits=set()
           for line in Path("results/control-182/kissat.log").read_text().splitlines():
               if line.startswith("v "):
@@ -106,7 +120,7 @@ jobs:
           assert 524288 <= n <= 1048575, n
           assert n % 256 == 103, n
           rep=replay(n,5000)
-          assert rep["first_contract"] is None or rep["first_contract"] > 182, (n,rep)
+          assert rep["first_descent"] is None or rep["first_descent"] > 182, (n,rep)
           print("PREFIX8_CONTROL_SAT",n,rep)
           print("PREFIX8_CONTROL_BOUNDARY 182 SAT / 183 UNSAT")
           PY
@@ -132,10 +146,10 @@ jobs:
           name: collatz-prefix8-kissat-tool
           path: tool
       - run: chmod +x tool/tool/kissat
-      - name: Emit exact fixed-prefix H1000 CNF
+      - name: Emit exact goal-native fixed-prefix H1000 CNF
         run: |
           mkdir -p results/r-${{ matrix.residue }}
-          python experiments/collatz_coefficient_cnf_emit.py \
+          python experiments/collatz_no_descent_cnf_emit.py \
             --bits 72 \
             --lower 2392312122059207475200 \
             --upper 3143983941795894239301 \
@@ -162,7 +176,7 @@ jobs:
           python - <<'PY'
           import json
           from pathlib import Path
-          from experiments.collatz_coefficient_cnf import replay
+          from experiments.collatz_exact_cnf_even import replay
 
           residue=int("${{ matrix.residue }}")
           rc=int("${{ steps.solve.outputs.rc }}")
@@ -190,14 +204,14 @@ jobs:
               assert 2392312122059207475200 <= n <= 3143983941795894239301, n
               assert n % 256 == residue, (n,residue)
               rep=replay(n,10000)
-              assert rep["first_contract"] is None or rep["first_contract"] > 1000, (n,rep)
+              assert rep["first_descent"] is None or rep["first_descent"] > 1000, (n,rep)
               out.update(status="SAT",witness=str(n),replay=rep)
-              print("PREFIX8_EXACT_WITNESS",json.dumps(out,separators=(",",":")))
+              print("PREFIX8_NO_DESCENT_WITNESS",json.dumps(out,separators=(",",":")))
           else:
               assert "s UNSATISFIABLE" in log
               out.update(status="UNSAT",
                          note="search verdict; final proof acceptance remains DRAT-gated")
-              print("PREFIX8_SEARCH_UNSAT",json.dumps(out,separators=(",",":")))
+              print("PREFIX8_NO_DESCENT_UNSAT",json.dumps(out,separators=(",",":")))
 
           (d/f"result-{residue}.json").write_text(json.dumps(out,indent=2)+"\n")
           PY
@@ -233,7 +247,7 @@ jobs:
           for r in rows:
               statuses[r["status"]]=statuses.get(r["status"],0)+1
           summary={
-              "kind":"collatz_h1000_prefix8_aggregate",
+              "kind":"collatz_h1000_goal_native_prefix8_aggregate",
               "expected_lawful_classes":19,
               "completed_results":len(rows),
               "status_counts":statuses,
