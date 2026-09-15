@@ -1,0 +1,95 @@
+name: Lean Pi recurrence diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-pi-recurrence-diag.yml'
+      - 'scripts/patch_pi_recurrence_diag.py'
+      - 'scripts/patch_a6.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a6 results/pi-recur diagnostics/pi-recur
+          mkdir -p arena-tests artifact results/pi-recur diagnostics/pi-recur
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct and build
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout -q "$SOKO_PIN"
+          python3 scripts/patch_a6.py
+          python3 scripts/patch_pi_recurrence_diag.py
+          git -C a6 diff --check
+          cat > a6/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+
+      - name: Freeze case sets
+        run: |
+          python3 - <<'PY'
+          import pathlib
+          ds=sorted(pathlib.Path('arena-tests/good').rglob('*grind-ring-5*.ndjson'))
+          if len(ds)!=1: raise SystemExit(len(ds))
+          d=ds[0].resolve()
+          pathlib.Path('diagnostics/pi-recur/discovery.txt').write_text(str(ds[0])+'\n')
+          good=[p for p in pathlib.Path('arena-tests/good').rglob('*.ndjson') if p.resolve()!=d]
+          held=sorted(good,key=lambda p:(-p.stat().st_size,str(p)))[:24]
+          pathlib.Path('diagnostics/pi-recur/heldout.txt').write_text('\n'.join(map(str,held))+'\n')
+          PY
+
+      - name: Measure Pi recurrence
+        run: |
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          rx=re.compile(r'PI_RECURRENCE miss=(\d+) first=(\d+) repeat=(\d+)')
+          sets={
+            'discovery':[pathlib.Path(pathlib.Path('diagnostics/pi-recur/discovery.txt').read_text().strip())],
+            'heldout':[pathlib.Path(x) for x in pathlib.Path('diagnostics/pi-recur/heldout.txt').read_text().splitlines() if x],
+          }
+          out={}
+          for name,cases in sets.items():
+              total={'miss':0,'first':0,'repeat':0}; rows=[]
+              for p in cases:
+                  with p.open('rb') as f:
+                      r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env={**os.environ,'SOKONANODA_PI_RECURRENCE_DIAG':'1'})
+                  if r.returncode: raise SystemExit(f'{p} {r.returncode}')
+                  m=rx.search(r.stderr.decode(errors='replace'))
+                  if not m: raise SystemExit(f'missing {p}')
+                  vals=dict(zip(total,map(int,m.groups())))
+                  rows.append({'case':str(p),**vals})
+                  for k in total: total[k]+=vals[k]
+              total['repeat_fraction']=total['repeat']/total['miss'] if total['miss'] else 0
+              out[name]={'total':total,'rows':rows}
+          pathlib.Path('results/pi-recur/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lean-pi-recurrence-diagnostic
+          path: |
+            results/pi-recur/
+            diagnostics/pi-recur/
