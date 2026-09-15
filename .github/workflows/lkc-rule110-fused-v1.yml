@@ -1,0 +1,85 @@
+name: LKC Rule110 fused v1
+
+on:
+  push:
+    branches: [lkc-rule110-fused-v1]
+    paths:
+      - 'experiments/lkc_rule110/**'
+      - '.github/workflows/lkc-rule110-fused-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Install elan
+        shell: bash
+        run: |
+          set -euxo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Fetch frozen challenge snapshot
+        shell: bash
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
+          git rev-parse HEAD
+
+      - name: Prepare evaluator
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd lkc
+          bash evaluation/setup.sh --problem ca-rule110
+
+      - name: Build candidate proof
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cp experiments/lkc_rule110/Submission.lean lkc/problems/ca-rule110/Submission.lean
+          cd lkc/problems/ca-rule110
+          lake build
+
+      - name: Evaluate official baseline
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd lkc
+          python3 evaluation/run.py --problem ca-rule110 --submission examples/ca-rule110/Submission.lean --timeout 120 | tee ../baseline.txt
+
+      - name: Evaluate scored-path candidate
+        shell: bash
+        run: |
+          set -euxo pipefail
+          cd lkc
+          python3 evaluation/run.py --problem ca-rule110 --submission ../experiments/lkc_rule110/Submission.lean --timeout 120 | tee ../candidate.txt
+
+      - name: Summarize
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo '## Rule 110 verified compilation v1'
+            echo
+            echo 'Challenge snapshot: `eb5e8850cdec9acf52d615529f9d1d64894e44b9`'
+            echo
+            echo '### Baseline'
+            echo '```'
+            cat baseline.txt 2>/dev/null || true
+            echo '```'
+            echo
+            echo '### Candidate'
+            echo '```'
+            cat candidate.txt 2>/dev/null || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
