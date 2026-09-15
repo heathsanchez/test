@@ -44,11 +44,12 @@ theorem gatherPair_eq
       rw [if_neg h1]
       have hi64 : i < 64 * g := by omega
       have hsHigh : 64 * g ≤ 64 * g - g + i := by omega
+      have hsNot : ¬ (64 * g - g + i < 64 * g) := by omega
       have hsub : (64 * g - g + i) - 64 * g = i - g := by omega
       rw [testBit_packW (64 * g) p q i hp64]
       rw [testBit_packW (64 * g) p q (64 * g - g + i) hp64]
       have hpi : p.testBit i = false := bit_false_above_pow hp hgi
-      simp [hi64, hsHigh, hsub, hpi]
+      simp [hi64, hsNot, hsub, hpi]
   · have h2f : decide (i < 2 * g) = false := by simp [h2]
     rw [h2f, Bool.and_false]
     by_cases h1 : i < g
