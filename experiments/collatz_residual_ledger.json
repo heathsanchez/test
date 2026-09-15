@@ -15,7 +15,7 @@
   },
   "live_interval": [
     "2392312122059207475200",
-    "4722366482869645213695"
+    "3143983941795894239301"
   ],
   "horizon_400": {
     "workflow_run": 34906019998,
@@ -269,6 +269,21 @@
       "rule": "For 0≤r<2^K and t≤K: T^t(2^K+r)=T^t(r)+3^{q_t(r)}2^{K-t}",
       "use": "exact bit-width lift coupling; transfer residual is additive rescue / coefficient-surviving prefixes",
       "status": "exact"
+    },
+    {
+      "rule": "For a first coefficient contraction with odd positions p_j, prefix survival forces p_j <= floor((j-1) log_2 3), hence A < q*3^(q-1) and rescue threshold x_* < q/(3 epsilon), epsilon=t ln2-q ln3.",
+      "use": "collapse all first-crossing parity words at fixed (t,q) to the latest-odd extremal envelope",
+      "status": "exact"
+    },
+    {
+      "rule": "6586818670/10439860591 and 65470613321/103768467013 bracket ln2/ln3 and are Farey neighbors; their mediant is 72057431991/114208327604.",
+      "use": "certify no hidden closer lower crossing rational exists before the live resonance",
+      "status": "exact"
+    },
+    {
+      "rule": "For the live extremal latest-odd word, Denjoy-Koksma gives A/3^q <= q/(6 ln2)+2/3.",
+      "use": "rigorous live-resonance additive-rescue ceiling",
+      "status": "exact"
     }
   ],
   "compiled_regions": [
@@ -355,14 +370,24 @@
     "source": "exact exhaustive v2(n+1)=39 block-compiled region"
   },
   "current_structural_residual": {
-    "predicate": "live interval, after exact compilation of v2(n+1)>=38 and universal n≡1 mod4 class",
-    "reason": "enumeration doubles per valuation slice; raw residue/accelerated trees still preserve too many future-distinct phases",
-    "next_action": "quotient the positive-drift coefficient-survivor language while preserving the additive-rescue/2-adic phase needed by the exact evaluator"
+    "predicate": "tightened live interval with 72 seed bits",
+    "reason": "all first coefficient contractions before t=114208327604 are certified descending; any remaining seed must encode coefficient persistence to that frontier or survive the first live resonance",
+    "next_action": "exactly decide coefficient persistence for the 72-bit tightened interval at modest horizons; if UNSAT, the live interval closes immediately by the transfer theorem"
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
     "identity": "T^t(2^K+r)=T^t(r)+3^{q_t(r)}2^{K-t} for t≤K",
     "exhaustive_small_K": "for K=8..22, lifted no-descent-through-K set exactly matched coefficient-surviving prefixes",
-    "status": "experimental equivalence only; NOT promoted to general theorem because that would assume the unresolved first-contraction/additive-rescue claim"
+    "status": "experimental equivalence only; NOT promoted to general theorem because that would assume the unresolved first-contraction/additive-rescue claim",
+    "first_dangerous_resonance": {
+      "q": "72057431991",
+      "t": "114208327604",
+      "theorem": "every first coefficient contraction with smaller t forces descent for n >= 2075*2^60",
+      "previous_rescue_ceiling": "216890155340527007303",
+      "live_rescue_ceiling": "3143983941795894239301",
+      "certificate": "experiments/collatz_transfer_farey.py",
+      "note": "experiments/COLLATZ_TRANSFER_FRONTIER.md",
+      "status": "certified"
+    }
   }
 }
