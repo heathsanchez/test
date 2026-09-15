@@ -50,6 +50,8 @@ jobs:
           for who in v24 v25 v31; do
             if [ "$who" = v24 ]; then
               sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v24.lean"
+            elif [ "$who" = v25 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v25.lean"
             else
               sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v31.lean"
             fi
