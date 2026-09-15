@@ -24,7 +24,6 @@ theorem testBit_mask2 (i : Nat) :
       (decide (i < 32) || (decide (64 ≤ i) && decide (i - 64 < 32))) := by
   unfold mask2
   rw [Nat.testBit_or, Nat.testBit_shiftLeft, testBit_mask32, testBit_mask32]
-  rfl
 
 theorem testBit_pack2 (x y i : Nat) (hx : x < 2 ^ 64) :
     (pack2 x y).testBit i =
@@ -45,31 +44,27 @@ theorem packed_u32 (x y : Nat) (hx : x < 2 ^ 64) :
   apply Nat.eq_of_testBit_eq
   intro i
   rw [Nat.testBit_and, testBit_mask2]
-  rw [Nat.testBit_xor, Nat.testBit_shiftRight]
-  rw [testBit_pack2 x y i hx]
-  rw [testBit_pack2 x y (16 + i) hx]
   rw [testBit_pack2 (u32 x) (u32 y) i (u32_lt x)]
   simp only [u32, Nat.testBit_and, Nat.testBit_xor, Nat.testBit_shiftRight,
     testBit_mask32]
   by_cases h32 : i < 32
   · have h64 : i < 64 := by omega
     have h80 : 16 + i < 64 := by omega
+    rw [Nat.testBit_xor, Nat.testBit_shiftRight]
+    rw [testBit_pack2 x y i hx, testBit_pack2 x y (16 + i) hx]
     simp [h32, h64, h80]
   · by_cases h64 : i < 64
-    · have h80 : 16 + i < 64 := by omega
-      simp [h32, h64, h80]
+    · simp [h32, h64]
     · by_cases h96 : i < 96
       · have hi64 : 64 ≤ i := by omega
-        have h16lo : ¬ 16 + i < 64 := by omega
-        have h16hi : 64 ≤ 16 + i := by omega
         have hj32 : i - 64 < 32 := by omega
+        have h16hi : ¬ 16 + i < 64 := by omega
         have hj16 : (16 + i) - 64 = 16 + (i - 64) := by omega
-        simp [h32, h64, hi64, h16lo, hj32, hj16]
+        rw [Nat.testBit_xor, Nat.testBit_shiftRight]
+        rw [testBit_pack2 x y i hx, testBit_pack2 x y (16 + i) hx]
+        simp [h32, h64, hi64, hj32, h16hi, hj16]
       · have hi64 : 64 ≤ i := by omega
         have hji : ¬ i - 64 < 32 := by omega
-        have h16lo : ¬ 16 + i < 64 := by omega
-        have h16hi : 64 ≤ 16 + i := by omega
-        have hj16 : (16 + i) - 64 = 16 + (i - 64) := by omega
-        simp [h32, h64, hi64, hji, h16lo, hj16]
+        simp [h32, h64, hi64, hji]
 
 end SWAR
