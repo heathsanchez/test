@@ -1,0 +1,146 @@
+name: Lean quotient prune-memo interference diagnostic
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-quotient-prune-memo-diag.yml'
+      - 'scripts/patch_prune_memo_interference_diag.py'
+      - 'scripts/patch_novel_slot_earned.py'
+      - 'scripts/patch_a6.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a0 quotient results/memo-diag diagnostics/memo-diag
+          mkdir -p arena-tests artifact results/memo-diag diagnostics/memo-diag
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct A0 and earned quotient with identical diagnostic
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 quotient; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            if [ "$arm" = quotient ]; then
+              python3 scripts/patch_novel_slot_earned.py
+            fi
+            python3 scripts/patch_prune_memo_interference_diag.py
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/memo-diag/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+
+      - name: Build arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 quotient; do
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+          done
+
+      - name: Freeze discovery and held-out manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib
+          discovery=sorted(pathlib.Path('arena-tests/good').rglob('*grind-ring-5*.ndjson'))
+          if len(discovery)!=1:
+              raise SystemExit(f'expected 1 discovery case, found {len(discovery)}')
+          d=discovery[0].resolve()
+          pathlib.Path('diagnostics/memo-diag/discovery.txt').write_text(str(discovery[0])+'\n')
+          good=[p for p in pathlib.Path('arena-tests/good').rglob('*.ndjson') if p.resolve()!=d]
+          held=sorted(good,key=lambda p:(-p.stat().st_size,str(p)))[:24]
+          pathlib.Path('diagnostics/memo-diag/heldout.txt').write_text('\n'.join(map(str,held))+'\n')
+          PY
+
+      - name: Measure prune memo consequences
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,re,subprocess
+
+          rx=re.compile(
+            r'PRUNE_MEMO_DIAG req=(\d+) frame_self=(\d+) frame_local=(\d+) cons_local=(\d+) '
+            r'frame_dm=(\d+) cons_dm=(\d+) frame_cold=(\d+) cons_cold=(\d+)'
+          )
+          names=['req','frame_self','frame_local','cons_local','frame_dm','cons_dm','frame_cold','cons_cold']
+
+          sets={
+            'discovery':[pathlib.Path(pathlib.Path('diagnostics/memo-diag/discovery.txt').read_text().strip())],
+            'heldout':[pathlib.Path(x) for x in pathlib.Path('diagnostics/memo-diag/heldout.txt').read_text().splitlines() if x],
+          }
+
+          def run_one(arm,p):
+              with p.open('rb') as f:
+                  r=subprocess.run(
+                    [f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],
+                    stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                    env={**__import__('os').environ,'SOKONANODA_PRUNE_MEMO_DIAG':'1'},
+                  )
+              if r.returncode!=0:
+                  raise SystemExit(f'{arm} failed {p}: rc={r.returncode}')
+              text=r.stderr.decode(errors='replace')
+              m=rx.search(text)
+              if not m:
+                  raise SystemExit(f'missing memo telemetry: {arm} {p}')
+              return dict(zip(names,map(int,m.groups())))
+
+          out={}
+          for set_name,cases in sets.items():
+              out[set_name]={}
+              for arm in ['a0','quotient']:
+                  total={k:0 for k in names}
+                  rows=[]
+                  for p in cases:
+                      row=run_one(arm,p)
+                      rows.append({'case':str(p),**row})
+                      for k in names: total[k]+=row[k]
+                  out[set_name][arm]={'total':total,'rows':rows}
+              a=out[set_name]['a0']['total']; q=out[set_name]['quotient']['total']
+              out[set_name]['delta_quotient_minus_a0']={k:q[k]-a[k] for k in names}
+              for arm in ['a0','quotient']:
+                  t=out[set_name][arm]['total']
+                  resolved=t['frame_local']+t['frame_dm']+t['frame_cold']
+                  t['frame_local_hit_rate_over_nonself_frame_prunes']=(t['frame_local']/resolved if resolved else 0.0)
+                  t['frame_cold_rate_over_nonself_frame_prunes']=(t['frame_cold']/resolved if resolved else 0.0)
+
+          pathlib.Path('results/memo-diag/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Upload diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-quotient-prune-memo-diagnostic
+          path: |
+            results/memo-diag/
+            diagnostics/memo-diag/
