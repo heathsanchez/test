@@ -263,7 +263,7 @@ int main(int argc, char** argv) {
     std::cout << "RECURSIVE_LEVEL"
               << " k=" << k
               << " parents=" << states.size()
-              << " generated=" << (u128(states.size())*2)
+              << " generated=" << (states.size()*2ULL)
               << " killed_by_descent=" << killed
               << " live=" << next.size()
               << "\n";
