@@ -81,6 +81,14 @@
       "consequence": "q7 removes another 3.492% of c16+mod9 explicit residual",
       "performance": "2.05s vs 2.08s on sealed k28 world; ~1.015x faster and smaller residual",
       "status": "retained"
+    },
+    {
+      "id": "fused-zero-touch-sieve-execution",
+      "scope": "p24 + coalescence + q7 exact scanner",
+      "evidence_run": 34944847542,
+      "consequence": "identical verifier consequence and explicit best witness to reference q7+c16 scanner",
+      "performance": "2.00s vs 2.14s on sealed k28 world; 1.07x speedup by class-level coalescence and q7 next-live jumps",
+      "status": "retained"
     }
   ],
   "rejected": [
@@ -141,5 +149,5 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1)=28 exact production scan active; k27 should use p24+c16+q7 if k28 closes"
+  "next_residual": "v2(n+1)=27 active on q7+c16; fused zero-touch scanner retained for k26 onward"
 }
