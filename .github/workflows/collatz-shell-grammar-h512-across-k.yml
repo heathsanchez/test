@@ -1,0 +1,125 @@
+name: Collatz H512 grammar across shells scout
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-shell-grammar-h512-across-k.yml"
+      - "experiments/collatz_shell_forward_reverse.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-shell-grammar-h512-across-k
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [20,22,24,26,28]
+    name: scout-k${{ matrix.k }}-f512-r8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run frozen H512 structural grammar scout
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_forward_reverse.cpp -o /tmp/fr
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/fr ${{ matrix.k }} results/q14-bank.txt 8 512             | tee results/census.txt
+          grep -q "VERIFIED_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+
+      - name: Parse scout result
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"SHELL_FORWARD_REVERSE_RESULT K={K} reverse_depth=8 forward_h=512 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-8000:]
+          u,fw,rv,hard,co=map(int,m.groups())
+          odd=1<<(K-1)
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"h512_across_k_scout_fixed_width",
+              "K":K,"forward_h":512,"reverse_depth":8,
+              "universal_residual":u,
+              "shell_closed":fw+rv,"shell_hard":hard,
+              "closure_fraction_of_universal":(fw+rv)/u if u else 1.0,
+              "hard_fraction_of_odd":hard/odd,
+              "controls":co,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+              "proof_status":"scout_pending_bigint_validation",
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("H512_ACROSS_K_SCOUT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h512-across-k-scout-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shell
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h512-across-k-scout-k*
+          path: gathered
+      - name: Aggregate scout
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("h512-across-k-scout-k*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==[20,22,24,26,28],rows
+          out={"kind":"h512_across_k_scout","rows":rows,
+               "all_zero":all(x["shell_hard"]==0 for x in rows),
+               "proof_status":"scout_pending_bigint_validation"}
+          Path("h512-across-k-scout-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("H512_ACROSS_K_SCOUT_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h512-across-k-scout-field
+          path: h512-across-k-scout-field.json
+          retention-days: 30
