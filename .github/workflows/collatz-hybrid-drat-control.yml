@@ -1,0 +1,77 @@
+name: Collatz hybrid DRAT boundary control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-hybrid-drat-control.yml"
+      - "experiments/collatz_hybrid_cnf_emit.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-hybrid-drat-control
+  cancel-in-progress: true
+
+jobs:
+  proof-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned CaDiCaL 1.9.5
+        run: |
+          git clone https://github.com/arminbiere/cadical.git /tmp/cadical
+          git -C /tmp/cadical checkout 146207318796f094dcded87349a64f0c6927309e
+          cd /tmp/cadical
+          ./configure
+          make -j2
+      - name: Build pinned independent DRAT-trim
+        run: |
+          git clone https://github.com/marijnheule/drat-trim.git /tmp/drat-trim
+          git -C /tmp/drat-trim checkout 2e5e29cb0019d5cfd547d4208dca1b3ec290349f
+          make -C /tmp/drat-trim
+      - name: Emit exact H182/H183 child-3431 hybrid CNFs
+        run: |
+          mkdir -p results/h182 results/h183
+          python experiments/collatz_hybrid_cnf_emit.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 182 --low-bits 12 --low-value 3431 \
+            --protected-control --out-dir results/h182
+          python experiments/collatz_hybrid_cnf_emit.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 183 --low-bits 12 --low-value 3431 \
+            --protected-control --out-dir results/h183
+      - name: Confirm H182 SAT
+        run: |
+          set +e
+          /tmp/cadical/build/cadical results/h182/problem.cnf | tee results/h182/cadical.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          test "$rc" -eq 10
+          grep -q "s SATISFIABLE" results/h182/cadical.log
+          echo HYBRID_H182_CHILD3431_SAT_OK
+      - name: Produce standalone H183 DRAT
+        run: |
+          set +e
+          /tmp/cadical/build/cadical --no-binary \
+            results/h183/problem.cnf \
+            results/h183/proof.drat \
+            | tee results/h183/cadical.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          test "$rc" -eq 20
+          grep -q "s UNSATISFIABLE" results/h183/cadical.log
+      - name: Independently verify H183 DRAT
+        run: |
+          /tmp/drat-trim/drat-trim \
+            results/h183/problem.cnf \
+            results/h183/proof.drat \
+            | tee results/h183/check.log
+          grep -q "s VERIFIED" results/h183/check.log
+          echo HYBRID_CHILD3431_INDEPENDENT_DRAT_OK
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-hybrid-drat-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
