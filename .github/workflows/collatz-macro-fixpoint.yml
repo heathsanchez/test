@@ -1,0 +1,136 @@
+name: Collatz exhaustive reverse macro fixpoint
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-macro-fixpoint.yml"
+      - "experiments/collatz_macro_fixpoint.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-macro-fixpoint
+  cancel-in-progress: true
+
+jobs:
+  fixpoint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [20,22,24]
+    name: fixpoint-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Exhaust exact macro grammar
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_macro_fixpoint.cpp             -o /tmp/fixpoint
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/fixpoint ${{ matrix.k }} results/q14-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_EXHAUSTIVE_REVERSE_MACRO_FIXPOINT" results/census.txt
+
+      - name: Record exact fixpoint
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          done=re.search(
+              rf"LIVE_RECURSIVE_DONE K={K} final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_macro=(\d+) "
+              r"bridge_controls=(\d+) deep_o_controls=(\d+) macro_controls=(\d+)",s)
+          assert done,s[-6000:]
+          vals=list(map(int,done.groups()))
+          live,des,bridge,deep_o,macro,bc,oc,mc=vals
+          srch=re.search(
+              r"MACRO_FIXPOINT_SEARCH total_states=(\d+) max_states_per_family=(\d+)",s)
+          assert srch
+          total_states,max_states=map(int,srch.groups())
+          depths={str(int(m.group(1))):int(m.group(2))
+                  for m in re.finditer(r"MACRO_FIXPOINT_DEPTH blocks=(\d+) closed=(\d+)",s)}
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"exhaustive_reverse_macro_fixpoint",
+              "K":K,"live":live,
+              "total_macro":macro,
+              "macro_block_depth_hist":depths,
+              "total_search_states":total_states,
+              "max_search_states_per_family":max_states,
+              "controls":mc,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          if K==24:
+              out["depth6_reference_live"]=173180
+              out["improvement_vs_depth6"]=173180-live
+              assert live<=173180,(live,173180)
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("EXHAUSTIVE_MACRO_FIXPOINT_RESULT",
+                json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macro-fixpoint-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: fixpoint
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macro-fixpoint-b*
+          path: gathered
+
+      - name: Aggregate exact fixpoint curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("macro-fixpoint-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[20,22,24],rows
+          out={"kind":"exhaustive_macro_fixpoint_curve","rows":rows}
+          Path("macro-fixpoint-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("EXHAUSTIVE_MACRO_FIXPOINT_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("EXHAUSTIVE_MACRO_FIXPOINT_COMPLETE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macro-fixpoint-field
+          path: macro-fixpoint-field.json
+          retention-days: 30
