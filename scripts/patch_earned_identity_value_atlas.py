@@ -321,5 +321,5 @@ new="""    if std::env::var_os("SOKONANODA_EARNED_IDENTITY_ATLAS").is_some() {
 # TypeChecker associated fn inaccessible this way; use module free wrappers instead later.
 # Adjust eval printer to free fn, quote printer to free fn for easy calls.
 # Modify generated source snippets accordingly before writing main.
-if old not in s: throw new Error("main marker missing");
+if old not in s:\n    raise RuntimeError("main marker missing")
 p.write_text(s.replace(old,new,1))
