@@ -3,7 +3,7 @@ import Submission
 
 namespace WideDense
 
-set_option maxRecDepth 1048576
+set_option maxRecDepth 4194304
 set_option exponentiation.threshold 20000
 set_option maxHeartbeats 2000000
 
@@ -38,13 +38,13 @@ theorem packMixBit_add (x a b : Nat) :
         unfold stepConst
         omega
       rw [hx, Nat.mul_add]
-      simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      omega
 
 theorem packMixBit_mod_pow (x a b : Nat) :
     packMixBit x (a + b) % 2 ^ a = packMixBit x a := by
   rw [packMixBit_add]
   have hp := packMixBit_lt x a
-  simp [Nat.add_mod, Nat.mul_mod, Nat.mod_eq_of_lt hp]
+  simp [Nat.add_mod, Nat.mod_eq_of_lt hp]
 
 theorem dense1_eq (x : Nat) :
     dense1 x = packMixBit x 1 := by
