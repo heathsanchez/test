@@ -27,16 +27,7 @@ jobs:
           mkdir -p results
           L=2392312122059207475200
           for K in 15 10 8; do
-            N=$(python - <<PY
-L=$L
-K=$K
-M=1<<K
-m=(L+1+M-1)//M
-if m%2==0:
-    m+=1
-print((m<<K)-1)
-PY
-)
+            N=$(python -c "L=$L; K=$K; M=1<<K; m=(L+1+M-1)//M; m += (m%2==0); print((m<<K)-1)")
             /tmp/sparse $K 24 50000000 > results/sparse-$K.txt
             /tmp/dense $K 5000 1 0 "$N" "$N" > results/dense-$K.txt
           done
