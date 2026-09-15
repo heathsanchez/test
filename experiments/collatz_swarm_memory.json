@@ -122,6 +122,34 @@
       "consequence": "compose transfer-prefix, same-frontier coalescence, and q7 predecessor induction before exact B10 scan",
       "performance": "1.07x faster than unfused reference on sealed k28 world; k27 explicitly scanned 679,856,938,442 of 2,800,195,737,692 seeds",
       "status": "retained"
+    },
+    {
+      "id": "future-consequence-language-dag",
+      "scope": "finite transfer-prefix survival language",
+      "evidence_run": 34957415704,
+      "consequence": "numerically distinct prefix states quotient when their entire remaining live/dead suffix language is identical",
+      "results": {
+        "k15": {
+          "raw_transition_parents": 51607124,
+          "bdd_nonterminal_nodes": 52332,
+          "compression": 986.1,
+          "target_p": 28
+        },
+        "k10": {
+          "raw_transition_parents": 30027228,
+          "bdd_nonterminal_nodes": 30593,
+          "compression": 981.5,
+          "target_p": 28
+        },
+        "k8": {
+          "raw_transition_parents": 21100471,
+          "bdd_nonterminal_nodes": 27022,
+          "compression": 780.9,
+          "target_p": 28
+        }
+      },
+      "note": "all scientific scouts green; workflow aggregate red only because k25 intentionally exceeded raw p28 construction cap",
+      "status": "retained_research_capability"
     }
   ],
   "rejected": [
@@ -224,8 +252,9 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     },
     {
-      "id": "future-consequence-language-dag",
-      "hypothesis": "minimize the finite live/dead suffix language bottom-up; merge numerically distinct states when their entire remaining consequence trees are identical"
+      "id": "p28-sparse-production-filter",
+      "run": 34957901349,
+      "hypothesis": "compile the p28 consequence language into a sparse live-residue filter ahead of C16+q7+B10 and measure end-to-end gain"
     }
   ],
   "next_residual": "v2(n+1) <= 28, with v2=27 and v2=26 compiled; retain fused high-k stack and sparse low-k strategy"
