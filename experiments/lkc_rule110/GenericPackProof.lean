@@ -196,6 +196,41 @@ theorem lift_or_stage
     rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
     simp [hi, hsi, j, hsub]
 
+theorem packW_lt_double
+    (w p q : Nat)
+    (hp : p < 2 ^ w)
+    (hq : q < 2 ^ w) :
+    packW w p q < 2 ^ (w + w) := by
+  unfold packW
+  rw [Nat.shiftLeft_eq]
+  let P := 2 ^ w
+  have hP : 0 < P := by
+    dsimp [P]
+    exact Nat.two_pow_pos w
+  have hp' : p ≤ P - 1 := by
+    dsimp [P] at hp ⊢
+    omega
+  have hq' : q ≤ P - 1 := by
+    dsimp [P] at hq ⊢
+    omega
+  have hmul : q * P ≤ (P - 1) * P :=
+    Nat.mul_le_mul_right P hq'
+  have hPP : P ≤ P * P := by
+    have h1 : 1 ≤ P := by omega
+    have hm := Nat.mul_le_mul_left P h1
+    simpa using hm
+  calc
+    p + q * P ≤ (P - 1) + (P - 1) * P :=
+      Nat.add_le_add hp' hmul
+    _ = P * P - 1 := by
+      rw [Nat.sub_mul]
+      simp only [one_mul]
+      omega
+    _ < P * P := by omega
+    _ = 2 ^ (w + w) := by
+      dsimp [P]
+      rw [Nat.pow_add]
+
 theorem packW_mul (w p q k : Nat) :
     packW w p q * k = packW w (p * k) (q * k) := by
   unfold packW
