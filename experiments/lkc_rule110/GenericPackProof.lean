@@ -64,11 +64,12 @@ theorem lift_stage
   · rw [if_pos hi, if_pos hi]
     by_cases hb : m.testBit i = true
     · have hik : i < w - s := by
-        by_contra hnot
-        have hki : w - s ≤ i := by omega
-        have hf := bit_false_above_pow hm hki
-        rw [hf] at hb
-        simp at hb
+        by_cases hsmall : i < w - s
+        · exact hsmall
+        · have hki : w - s ≤ i := by omega
+          have hf := bit_false_above_pow hm hki
+          rw [hf] at hb
+          simp at hb
       have his : s + i < w := by omega
       rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
       simp [hi, his, hb]
