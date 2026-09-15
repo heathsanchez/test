@@ -1,0 +1,137 @@
+name: Collatz macro residual persistence tree
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-macro-persistence.yml"
+      - "experiments/collatz_macro_persistence.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-macro-persistence
+  cancel-in-progress: true
+
+jobs:
+  persistence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        checkpoint: [20,22,24]
+    name: persist-b${{ matrix.checkpoint }}-to-b30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Track exact persistent residual
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_macro_persistence.cpp -o /tmp/persist
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/persist 30 results/q14-bank.txt 5 ${{ matrix.checkpoint }}             | tee results/census.txt
+          grep -q "VERIFIED_MACRO_RESIDUAL_PERSISTENCE_TREE" results/census.txt
+
+      - name: Parse persistence curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          cp=int("${{ matrix.checkpoint }}")
+          s=open("results/census.txt").read()
+          rows=[]
+          for m in re.finditer(
+              r"PERSISTENCE_LEVEL checkpoint=(\d+) k=(\d+) live=(\d+) "
+              r"surviving_ancestors=(\d+) extinct_ancestors=(\d+) "
+              r"singleton_ancestors=(\d+) min_live_descendants=(\d+) "
+              r"max_live_descendants=(\d+)",s):
+              vals=list(map(int,m.groups()))
+              rows.append(dict(zip(
+                  ["checkpoint","k","live","surviving_ancestors",
+                   "extinct_ancestors","singleton_ancestors",
+                   "min_live_descendants","max_live_descendants"],vals)))
+          assert rows and rows[0]["checkpoint"]==cp
+          baseline=rows[0]["surviving_ancestors"]
+          assert rows[0]["k"]==cp
+          assert rows[0]["extinct_ancestors"]==0
+          # Persistence is monotone: once an ancestor has no live descendant,
+          # deeper exact partitions cannot resurrect it.
+          prev=baseline
+          for r in rows:
+              assert r["surviving_ancestors"]<=prev,(prev,r)
+              prev=r["surviving_ancestors"]
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"macro_residual_persistence_tree",
+              "checkpoint":cp,
+              "final_k":30,
+              "checkpoint_live":baseline,
+              "final_surviving_ancestors":rows[-1]["surviving_ancestors"],
+              "extinct_ancestors_by_b30":rows[-1]["extinct_ancestors"],
+              "extinction_fraction":rows[-1]["extinct_ancestors"]/baseline,
+              "rows":rows,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("MACRO_PERSISTENCE_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: macro-persistence-b${{ matrix.checkpoint }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: persistence
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: macro-persistence-b*
+          path: gathered
+      - name: Aggregate persistence field
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("macro-persistence-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["checkpoint"])
+          assert [r["checkpoint"] for r in rows]==[20,22,24],rows
+          out={"kind":"macro_residual_persistence_field","rows":rows}
+          Path("macro-persistence-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("MACRO_PERSISTENCE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("MACRO_RESIDUAL_PERSISTENCE_MEASURED")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macro-persistence-field
+          path: macro-persistence-field.json
+          retention-days: 30
