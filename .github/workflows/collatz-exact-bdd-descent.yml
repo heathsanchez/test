@@ -2,10 +2,6 @@ name: Exact Collatz BDD Descent
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-bdd-descent.yml"
-      - "experiments/collatz_exact_bdd.py"
 
 jobs:
   validate:
