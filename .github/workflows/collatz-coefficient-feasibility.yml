@@ -1,10 +1,9 @@
-name: Exact Collatz Coefficient Feasibility
+name: Exact Collatz Coefficient Feasibility (superseded)
 
 on:
   push:
     paths:
       - ".github/workflows/collatz-coefficient-feasibility.yml"
-      - "experiments/collatz_coefficient_cnf.py"
   workflow_dispatch:
 
 concurrency:
@@ -12,42 +11,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  exact:
+  superseded:
     runs-on: ubuntu-latest
-    timeout-minutes: 110
+    timeout-minutes: 2
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: python -m pip install --disable-pip-version-check python-sat
-      - name: Protected coefficient control
-        run: |
-          mkdir -p results
-          python experiments/collatz_coefficient_cnf.py \
-            --bits 20 --lower 524288 --upper 1048575 \
-            --horizon 183 --checkpoints 182,183 \
-            --out results/control.json
-          python - <<'PY'
-          import json
-          r=json.load(open('results/control.json'))['results']
-          assert [(x['horizon'],x['status']) for x in r] == [(182,'SAT'),(183,'UNSAT')], r
-          assert r[0]['witness']==1027431, r[0]
-          print('COEFFICIENT_CONTROL_OK')
-          PY
-      - name: Live tightened interval
-        run: |
-          python experiments/collatz_coefficient_cnf.py \
-            --bits 72 \
-            --lower 2392312122059207475200 \
-            --upper 3143983941795894239301 \
-            --horizon 1500 \
-            --checkpoints 600,800,1000,1200,1500 \
-            --replay-limit 10000 \
-            --out results/live.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collatz-coefficient-feasibility
-          path: results/*.json
-          if-no-files-found: warn
+      - run: echo "Superseded by compressed exact sharded frontier run 34921504101"
