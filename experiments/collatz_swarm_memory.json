@@ -104,6 +104,18 @@
       "performance": "k8 live fraction 0.174535 at p24 -> 0.131271 at p29; k10 0.253089 at p24 -> 0.210935 at p27",
       "limitation": "high-k frontier does not benefit materially: k28 remains ~0.498 live at p27",
       "status": "retained-specialist"
+    },
+    {
+      "id": "fused-p24-coalescence16-predq7",
+      "scope": "remaining high-k valuation slices",
+      "evidence_runs": [
+        34944847542,
+        34944221819,
+        34944491776
+      ],
+      "consequence": "compose transfer-prefix, same-frontier coalescence, and q7 predecessor induction before exact B10 scan",
+      "performance": "1.07x faster than unfused reference on sealed k28 world; k27 explicitly scanned 679,856,938,442 of 2,800,195,737,692 seeds",
+      "status": "retained"
     }
   ],
   "rejected": [
@@ -182,5 +194,5 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1)=26 active on fused p24 + c16 coalescence + q7 + block10; current global first-descent record remains 920 at k30"
+  "next_residual": "v2(n+1) <= 28, with v2=27 compiled; sparse-prefix swarm pending"
 }
