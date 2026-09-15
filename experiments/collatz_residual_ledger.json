@@ -528,6 +528,23 @@
       "workflow_run": "34943311712",
       "status": "compiled",
       "note": "best_explicit_first_descent is only over explicitly scanned survivors; induction-closed classes prove eventual descent but do not assert a <=5000 first-descent bound"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 27",
+      "exact_seed_count": 2800195737692,
+      "predecessor_half_merge_killed_seed_count": 1400097868846,
+      "transfer_contraction_killed_seed_count": 3120449681,
+      "coalescence_extra_killed_seed_count": 130497756130,
+      "predq7_predecessor_killed_seed_count": 586622724593,
+      "inductively_or_theorem_closed_seed_count": 2120338799250,
+      "explicitly_scanned_seed_count": 679856938442,
+      "best_explicit_first_descent": 804,
+      "best_explicit_seed_decimal": "3143431438262238969855",
+      "overflow_seed_count": 0,
+      "certificate_method": "p24 transfer sieve + exact c16 cross-valuation coalescence + exact q7 reverse-predecessor induction; remaining 679,856,938,442 seeds explicitly scanned through H5000",
+      "workflow_run": "34944491776",
+      "status": "compiled",
+      "note": "all 16 shard jobs green; original aggregate job failed only from an escaped-regex bookkeeping bug, and the aggregate was independently recovered from all 16 exact shard logs with partition/scanned/full-count identities checked"
     }
   ],
   "global_best_known": {
@@ -537,9 +554,9 @@
     "source": "exact H5000 predecessor-merge scan; workflow 34935254514"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 27",
-    "reason": "v2=28 is fully discharged: 1,047,826,456,766 seeds by exact theorem/induction certificates and 352,271,412,080 explicit H5000 scans, with no unresolved survivor.",
-    "next_action": "run v2=27 with swarm-selected p24 + c16 coalescence + q7 predecessor sieve; continue compiling verifier distinctions out of the per-seed loop."
+    "predicate": "tightened live interval with v2(n+1) <= 26",
+    "reason": "v2=27 is fully discharged: 2,120,338,799,250 seeds by exact theorem/induction certificates and 679,856,938,442 explicit H5000 scans, with no unresolved survivor and explicit maximum 804.",
+    "next_action": "continue active v2=26 fused p24+c16+q7+block10 run; preserve sparse-prefix as a lower-k specialization and do not deepen q7/global coalescence absent new residual evidence."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
