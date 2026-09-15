@@ -31,7 +31,7 @@ jobs:
           - shard: 3
             lo: "2956065986861722548276"
             hi: "3143983941795894239301"
-    name: coeff1000-\${{ matrix.shard }}
+    name: coeff1000-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -43,15 +43,15 @@ jobs:
           mkdir -p results
           python experiments/collatz_coefficient_cnf.py \
             --bits 72 \
-            --lower "\${{ matrix.lo }}" \
-            --upper "\${{ matrix.hi }}" \
+            --lower "${{ matrix.lo }}" \
+            --upper "${{ matrix.hi }}" \
             --horizon 1000 \
             --checkpoints 1000 \
             --replay-limit 10000 \
-            --out results/shard-\${{ matrix.shard }}.json
+            --out results/shard-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: collatz-coeff1000-\${{ matrix.shard }}
-          path: results/shard-\${{ matrix.shard }}.json
+          name: collatz-coeff1000-${{ matrix.shard }}
+          path: results/shard-${{ matrix.shard }}.json
           if-no-files-found: warn
