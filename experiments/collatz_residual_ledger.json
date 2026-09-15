@@ -421,6 +421,18 @@
       "certificate_method": "exact exhaustive 16-step affine block compiler across 16 shards; no survivor through H803",
       "workflow_run": "34929694232",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 35",
+      "exact_seed_count": 10938264600,
+      "max_first_descent": 853,
+      "extremal_seed_decimal": "3079334581550404599807",
+      "overflow_seed_count": 1,
+      "overflow_seed_decimal": "2662382980693604958207",
+      "overflow_seed_first_descent": 466,
+      "certificate_method": "exact exhaustive overflow-safe 16-step affine block compiler across 16 shards through H900; rare u128 overflow replayed with Python arbitrary-precision integers",
+      "workflow_run": "34930530336",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -430,9 +442,9 @@
     "source": "exact overflow-safe v2(n+1)=35 tightened-interval scan; run 34930171144"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval; v2(n+1)=35 is the active productive slice after an exact first-descent-853 witness",
-    "reason": "v2=37 and v2=36 are exactly closed through H803 with maxima 711 and 720. The overflow-safe v2=35 H803 run found seed 3079334581550404599807 with exact first descent 853; one separate u128-overflow seed was replayed exactly and descended at 466.",
-    "next_action": "scan the full tightened v2=35 slice through H900 with the overflow-safe compiler. If no H900 survivor exists, its shard maxima recover the exact v2=35 frontier below 900; otherwise replay the new survivor and raise the frontier again."
+    "predicate": "tightened live interval with v2(n+1) <= 34",
+    "reason": "all valuation slices v2(n+1) >= 35 are now compiled for the tightened interval; v2=35 has exact maximum first descent 853, v2=36 max 720, v2=37 max 711, and the prior higher-valuation slices are below 853.",
+    "next_action": "scan v2(n+1)=34 exactly through H853 with the overflow-safe block compiler. Any survivor has first descent >853 and sets a new record; if none survives, the slice maximum is recovered exactly and the frontier descends to v2<=33."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
