@@ -1,0 +1,118 @@
+name: Collatz minimal H512 cone grammar
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-minimal-h512-cone-grammar.yml"
+      - "experiments/collatz_shell_forward_reverse_bigint.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-minimal-h512-cone-grammar
+  cancel-in-progress: true
+
+jobs:
+  cone:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 9
+      matrix:
+        r: [0,1,2,3,4,5,6,7,8]
+    name: bigint-h512-r${{ matrix.r }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bigint headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Generate frozen q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+      - name: Run exact cone cell
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_forward_reverse_bigint.cpp -o /tmp/big
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/big 24 results/q14-bank.txt ${{ matrix.r }} 512             | tee results/census.txt
+          grep -q "VERIFIED_BIGINT_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+      - name: Record result
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          R=int("${{ matrix.r }}")
+          s=Path("results/census.txt").read_text()
+          m=re.search(
+              rf"BIG_SHELL_FORWARD_REVERSE_RESULT K=24 reverse_depth={R} forward_h=512 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-9000:]
+          u,fw,rv,hard,co=map(int,m.groups())
+          assert u==173180 and fw+rv+hard==u
+          tm=Path("results/time-memory.txt").read_text().strip().split()
+          out={"kind":"minimal_h512_cone_cell","K":24,"forward_h":512,
+               "reverse_macro_depth":R,"universal_residual":u,
+               "shell_forward":fw,"shell_reverse":rv,"shell_hard":hard,
+               "closed_fraction":(fw+rv)/u,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("MINIMAL_H512_CONE_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-h512-cone-r${{ matrix.r }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: cone
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: minimal-h512-cone-r*
+          path: gathered
+      - name: Find minimal sufficient macro depth
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("minimal-h512-cone-r*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["reverse_macro_depth"])
+          assert [x["reverse_macro_depth"] for x in rows]==list(range(9)),rows
+          for a,b in zip(rows,rows[1:]):
+              assert b["shell_hard"]<=a["shell_hard"],(a,b)
+          zero=[r for r in rows if r["shell_hard"]==0]
+          out={"kind":"minimal_h512_cone_grammar","rows":rows,
+               "minimal_zero_depth":zero[0]["reverse_macro_depth"] if zero else None}
+          Path("minimal-h512-cone-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("MINIMAL_H512_CONE_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-h512-cone-field
+          path: minimal-h512-cone-field.json
+          retention-days: 30
