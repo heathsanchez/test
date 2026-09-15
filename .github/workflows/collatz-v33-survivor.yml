@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - ".github/workflows/collatz-v33-survivor.yml"
-      - "experiments/collatz_vslice_survivor_fallback.cpp"
+      - "experiments/collatz_vslice_survivor_fast.cpp"
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fallback.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fast.cpp -o /tmp/vscan
       - name: Recover exact 802 boundary of known v2=39 extremal
         run: |
           set -o pipefail
@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fallback.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fast.cpp -o /tmp/vscan
       - name: Exact tightened v2=33 scan through H853
         run: |
           set -o pipefail
