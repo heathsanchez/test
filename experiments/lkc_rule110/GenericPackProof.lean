@@ -68,7 +68,7 @@ theorem lift_stage
         have hki : w - s ≤ i := by omega
         have hf := bit_false_above_pow hm hki
         rw [hf] at hb
-        contradiction
+        simp at hb
       have his : s + i < w := by omega
       rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
       simp [hi, his, hb]
