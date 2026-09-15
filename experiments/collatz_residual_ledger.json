@@ -543,6 +543,21 @@
       "certificate_method": "p24 transfer + C16 same-frontier coalescence + q7 reverse-predecessor sieve + exact B10 explicit scan through H5000 across 16 shards",
       "workflow_run": "34944491776",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 26",
+      "exact_seed_count": 5600391475385,
+      "predecessor_half_merge_killed_seed_count": 2800195737693,
+      "transfer_contraction_killed_seed_count": 7155537134,
+      "coalescence_extra_killed_seed_count": 260863991313,
+      "predq7_predecessor_killed_seed_count": 1172882715934,
+      "explicitly_scanned_seed_count": 1359293493311,
+      "best_explicit_first_descent": 890,
+      "extremal_seed_decimal": "2656689310154692231167",
+      "overflow_seed_count": 0,
+      "certificate_method": "fused p24 transfer + C16 coalescence + q7 reverse-predecessor induction + exact B10 scan through H5000 across 16 shards",
+      "workflow_run": "34946925694",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -552,9 +567,9 @@
     "source": "exact H5000 predecessor-merge scan; workflow 34935254514"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 28, excluding compiled v2=27 and all previously compiled higher slices",
-    "reason": "v2=27 is exactly closed through H5000; all 16 scientific shards succeeded with zero overflow and zero replay residuals. Aggregate failure was bookkeeping only.",
-    "next_action": "finish sparse-prefix consequence field, then choose whether k28 is best attacked by deeper sparse transfer or the fused p24+C16+q7 stack."
+    "predicate": "tightened live interval with v2(n+1) <= 25 plus the not-yet-compiled v2=28 slice",
+    "reason": "v2=26 is exactly closed through H5000; all 16 shards completed, zero actual overflow seeds, zero replay residuals, explicit maximum 890.",
+    "next_action": "use adaptive frontier policy: fused p24+C16+q7 for high-k slices; defer k28 restart until it is economically scheduled; transition toward sparse/deeper prefix regime as k falls."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
