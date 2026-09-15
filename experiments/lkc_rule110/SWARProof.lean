@@ -50,21 +50,20 @@ theorem packed_u32 (x y : Nat) (hx : x < 2 ^ 64) :
   by_cases h32 : i < 32
   · have h64 : i < 64 := by omega
     have h80 : 16 + i < 64 := by omega
-    rw [Nat.testBit_xor, Nat.testBit_shiftRight]
     rw [testBit_pack2 x y i hx, testBit_pack2 x y (16 + i) hx]
     simp [h32, h64, h80]
   · by_cases h64 : i < 64
-    · simp [h32, h64]
+    · have hn64 : ¬64 ≤ i := by omega
+      simp [h32, h64, hn64]
     · by_cases h96 : i < 96
       · have hi64 : 64 ≤ i := by omega
         have hj32 : i - 64 < 32 := by omega
-        have h16hi : ¬ 16 + i < 64 := by omega
+        have h16hi : ¬16 + i < 64 := by omega
         have hj16 : (16 + i) - 64 = 16 + (i - 64) := by omega
-        rw [Nat.testBit_xor, Nat.testBit_shiftRight]
         rw [testBit_pack2 x y i hx, testBit_pack2 x y (16 + i) hx]
         simp [h32, h64, hi64, hj32, h16hi, hj16]
       · have hi64 : 64 ≤ i := by omega
-        have hji : ¬ i - 64 < 32 := by omega
+        have hji : ¬i - 64 < 32 := by omega
         simp [h32, h64, hi64, hji]
 
 end SWAR
