@@ -315,7 +315,7 @@ int main(int argc,char**argv){
   const std::string bankpath=argv[2];
   const int shell_macro_depth=std::stoi(argv[3]);
   const int macro_depth=6;
-  if(K<1||K>30||shell_macro_depth<0||shell_macro_depth>12){
+  if(K<1||K>30||shell_macro_depth<0||shell_macro_depth>20){
     std::cerr<<"K_OR_SHELL_DEPTH_OUT_OF_RANGE\n";return 2;
   }
 
