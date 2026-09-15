@@ -1,0 +1,164 @@
+name: Collatz recursive compiled constructor sieve
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-recursive-constructor-sieve.yml"
+      - "experiments/collatz_recursive_constructor_sieve.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-recursive-constructor-sieve
+  cancel-in-progress: true
+
+jobs:
+  recursive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [20,22,24]
+    name: recursive-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate exact retained q14 reverse bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import (
+              enumerate_first_contractions,sparse_quotient
+          )
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          print("Q14_BANK_READY",
+                f"selected={len(selected)} killed={killed}/{total}")
+          PY
+
+      - name: Run recursively compiled exact sieve
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_recursive_constructor_sieve.cpp             -o /tmp/recursive
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/recursive ${{ matrix.k }} results/q14-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_RECURSIVE_COMPILED_CONSTRUCTOR_SIEVE" results/census.txt
+
+      - name: Protect baseline and bridge regressions
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          rows={}
+          for m in re.finditer(
+              r"RECURSIVE_CONSTRUCTOR_LEVEL k=(\d+) "
+              r"inherited=(\d+) coalesce=(\d+) descent=(\d+) "
+              r"bridge=(\d+) live=(\d+) "
+              r"odd_live_fraction=([0-9.eE+-]+)",s):
+              k,inh,coal,des,bridge,live=m.groups()[:6]
+              rows[int(k)]={
+                  "inherited":int(inh),"coalesce":int(coal),
+                  "descent":int(des),"bridge":int(bridge),"live":int(live)
+              }
+          assert K in rows
+          # Before the first observed bridge resonance the new machine must
+          # exactly reproduce the frozen canonical strong sieve.
+          refs={12:182,13:297,14:593,15:1049,16:1720}
+          for k,v in refs.items():
+              if k<=K:
+                  assert rows[k]["live"]==v,(k,rows[k],v)
+                  assert rows[k]["bridge"]==0,(k,rows[k])
+          if K>=17:
+              assert rows[17]["bridge"]==294,rows[17]
+              assert rows[17]["live"]==3145,rows[17]
+          print("RECURSIVE_CONSTRUCTOR_BASELINE_GATES_OK",K)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: recursive-constructor-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: recursive
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: recursive-constructor-k*
+          path: gathered
+
+      - name: Aggregate compounding closure curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          runs=[]
+          for d in sorted(Path("gathered").glob("recursive-constructor-k*")):
+              s=(d/"census.txt").read_text()
+              done=re.search(
+                  r"RECURSIVE_CONSTRUCTOR_DONE K=(\d+) "
+                  r"final_live=(\d+) total_bridge=(\d+) "
+                  r"bridge_controls=(\d+)",s)
+              assert done,s[-4000:]
+              K,final_live,total_bridge,controls=map(int,done.groups())
+              levels=[]
+              for m in re.finditer(
+                  r"RECURSIVE_CONSTRUCTOR_LEVEL k=(\d+) "
+                  r"inherited=(\d+) coalesce=(\d+) descent=(\d+) "
+                  r"bridge=(\d+) live=(\d+) "
+                  r"odd_live_fraction=([0-9.eE+-]+)",s):
+                  levels.append({
+                      "k":int(m.group(1)),
+                      "inherited":int(m.group(2)),
+                      "coalesce":int(m.group(3)),
+                      "descent":int(m.group(4)),
+                      "bridge":int(m.group(5)),
+                      "live":int(m.group(6)),
+                      "odd_live_fraction":float(m.group(7)),
+                  })
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              runs.append({
+                  "K":K,"final_live":final_live,
+                  "total_bridge":total_bridge,
+                  "bridge_controls":controls,
+                  "wall_seconds":float(tm[0]) if tm else None,
+                  "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+                  "levels":levels,
+              })
+          runs.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in runs]==[20,22,24],runs
+          k24=runs[-1]
+          # Must beat the frozen canonical B24 residual after feeding bridge
+          # closures back into inheritance.
+          assert k24["final_live"] < 234156,k24
+          assert k24["total_bridge"] > 0,k24
+          out={"kind":"recursive_compiled_constructor_sieve","runs":runs}
+          Path("recursive-constructor-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("RECURSIVE_CONSTRUCTOR_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("RECURSIVE_CONSTRUCTOR_COMPOUNDING_CLOSURE_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recursive-constructor-field
+          path: recursive-constructor-field.json
+          retention-days: 30
