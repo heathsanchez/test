@@ -2,6 +2,8 @@ import Spec
 
 namespace SWAR
 
+set_option linter.unusedSimpArgs false
+
 def mask32 : Nat := 0xffffffff
 
 def mask2 : Nat :=
@@ -325,7 +327,6 @@ theorem lift_pair_stage (p q s : Nat)
   · rw [if_pos h128, if_pos h128]
     by_cases h32 : i < 32
     · have his : s + i < 128 := by omega
-      rw [Nat.testBit_xor, Nat.testBit_shiftRight]
       rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
       simp [h128, his, h32, testBit_mask2]
     · by_cases h64 : i < 64
@@ -353,13 +354,12 @@ theorem lift_pair_stage (p q s : Nat)
         have hslt256 : s + i < 256 := by
           rw [hij]
           omega
-        rw [Nat.testBit_xor, Nat.testBit_shiftRight]
         rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
         have hsub : (s + i) - 128 = s + j := by rw [hij]; omega
-        simp [h128, hi128, h256, hsihi, hslt256, hj32, hsub, testBit_mask2]
+        simp [j, h128, hi128, h256, hsihi, hslt256, hj32, hsub, testBit_mask2]
       · by_cases hj64 : j < 64
         · have hn64 : ¬64 ≤ j := by omega
-          simp [hj32, hj64, hn64, testBit_mask2]
+          simp [j, hj32, hj64, hn64, testBit_mask2]
         · by_cases hj96 : j < 96
           · have hj64le : 64 ≤ j := by omega
             have hjj32 : j - 64 < 32 := by omega
@@ -367,14 +367,13 @@ theorem lift_pair_stage (p q s : Nat)
             have hslt256 : s + i < 256 := by
               rw [hij]
               omega
-            rw [Nat.testBit_xor, Nat.testBit_shiftRight]
             rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
             have hsub : (s + i) - 128 = s + j := by rw [hij]; omega
-            simp [h128, hi128, h256, hsihi, hslt256, hj32, hj64, hj64le,
+            simp [j, h128, hi128, h256, hsihi, hslt256, hj32, hj64, hj64le,
               hjj32, hsub, testBit_mask2]
           · have hj64le : 64 ≤ j := by omega
             have hjj : ¬j - 64 < 32 := by omega
-            simp [hj32, hj64, hj64le, hjj, testBit_mask2]
+            simp [j, hj32, hj64, hj64le, hjj, testBit_mask2]
     · have hi256 : 256 ≤ i := by omega
       have hj : ¬(i - 128 < 128) := by omega
       have hj32 : ¬(i - 128 < 32) := by omega
