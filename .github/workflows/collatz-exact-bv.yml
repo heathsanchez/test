@@ -2,10 +2,6 @@ name: Exact Collatz BitVec
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-bv.yml"
-      - "experiments/collatz_exact_bv.py"
 
 jobs:
   exact-bv:
