@@ -814,7 +814,8 @@ theorem packByteTailSWAR_eq (x n : Nat)
           advance8 x + (8 * n + 5) * stepConst =
             x + (8 * (n + 1) + 5) * stepConst := by
         rw [advance8_eq_swar, Nat.add_assoc, ← Nat.add_mul]
-        congr 1 <;> omega
+        have hcoef : 8 + (8 * n + 5) = 8 * (n + 1) + 5 := by omega
+        rw [hcoef]
       have hr :
           advance8 x + (8 * n + 5) * stepConst < 2 ^ 64 := by
         rw [heq]
