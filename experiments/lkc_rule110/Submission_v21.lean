@@ -1052,7 +1052,7 @@ theorem pairY_eq (a b : Nat) (ha : a < 2 ^ 64) :
       pack2 (y32 a) (y32 b) := by
   simpa [pairStage] using packed_y32 a b ha
 
-theorem pairY_mul_lt128 (a b : Nat) (ha : a < 2 ^ 64) (hb : b < 2 ^ 64) :
+theorem pairY_mul_lt128 (a b : Nat) (ha : a < 2 ^ 64) (_hb : b < 2 ^ 64) :
     pairStage 16 (pack2 a b) * c1 < 2 ^ 128 := by
   have hstage :
       pairStage 16 (pack2 a b) = pack2 (u32 a) (u32 b) := by
@@ -1062,7 +1062,7 @@ theorem pairY_mul_lt128 (a b : Nat) (ha : a < 2 ^ 64) (hb : b < 2 ^ 64) :
 
 theorem packed_y4 (a b c d : Nat)
     (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
-    (hc : c < 2 ^ 64) (hd : d < 2 ^ 64) :
+    (hc : c < 2 ^ 64) (_hd : d < 2 ^ 64) :
     ((((pack4 a b c d ^^^ (pack4 a b c d >>> 16)) &&& mask4) * c1) &&& mask4) =
       pack4 (y32 a) (y32 b) (y32 c) (y32 d) := by
   unfold pack4
@@ -1078,7 +1078,7 @@ theorem pairV_eq (a b : Nat) (ha : a < 2 ^ 64) :
 
 theorem packed_v4 (a b c d : Nat)
     (ha : a < 2 ^ 64) (hb : b < 2 ^ 64)
-    (hc : c < 2 ^ 64) (hd : d < 2 ^ 64) :
+    (hc : c < 2 ^ 64) (_hd : d < 2 ^ 64) :
     ((pack4 a b c d ^^^ (pack4 a b c d >>> 15)) &&& mask4) =
       pack4 (v32 a) (v32 b) (v32 c) (v32 d) := by
   unfold pack4
