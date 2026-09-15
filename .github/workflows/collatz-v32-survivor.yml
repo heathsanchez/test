@@ -38,7 +38,7 @@ jobs:
     timeout-minutes: 45
     strategy:
       fail-fast: false
-      max-parallel: 4
+      max-parallel: 16
       matrix:
         shard: [5,0,1,2,3,4,6,7,8,9,10,11,12,13,14,15]
     name: v32-h853-${{ matrix.shard }}
