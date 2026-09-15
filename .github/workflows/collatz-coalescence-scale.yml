@@ -1,0 +1,80 @@
+name: Collatz coalescence scale crossover
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-coalescence-scale.yml"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-coalescence-scale
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build fused depths
+        run: |
+          for C in 16 18 20 22; do
+            g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=$C               experiments/collatz_vslice_fused_scan.cpp -o /tmp/fused$C
+          done
+      - name: Measure exact runtime slope
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          mkdir -p results
+          L=2392312122059207475200
+          K=26
+          for E in 24 27 30; do
+            U=$(python - <<PY
+          L=$L
+          K=$K
+          E=$E
+          GLOBAL_U=3143983941795894239301
+          target=1<<E
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+            )
+            for C in 16 18 20 22; do
+              /usr/bin/time -f '%e' -o results/c${C}-e${E}.time                 /tmp/fused$C $K 5000 1 0 "$L" "$U" > results/c${C}-e${E}.txt
+              grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/c${C}-e${E}.txt
+            done
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          for C in (16,18,20,22):
+              samples=[]
+              for E in (24,27,30):
+                  s=open(f"results/c{C}-e{E}.txt").read()
+                  h=re.search(r"full_count=(\d+)",s)
+                  cm=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",s)
+                  assert h and cm,s[-3000:]
+                  t=float(open(f"results/c{C}-e{E}.time").read())
+                  samples.append({
+                      "E":E,"full":int(h.group(1)),
+                      "coal":int(cm.group(1)),
+                      "predq7":int(cm.group(2)),
+                      "explicit":int(cm.group(3)),
+                      "seconds":t,
+                  })
+              n0,n1=samples[0]["full"],samples[-1]["full"]
+              t0,t1=samples[0]["seconds"],samples[-1]["seconds"]
+              b=(t1-t0)/(n1-n0)
+              a=t0-b*n0
+              rows.append({"c":C,"samples":samples,"intercept_seconds":a,"seconds_per_full_seed":b})
+          out={"kind":"coalescence_scale_crossover","rows":rows}
+          print("COALESCENCE_SCALE_FIELD",json.dumps(out,separators=(",",":")))
+          print("COALESCENCE_SCALE_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coalescence-scale
+          path: results
+          if-no-files-found: error
+          retention-days: 30
