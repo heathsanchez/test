@@ -1,0 +1,180 @@
+name: Collatz verifier-gated representation swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-representation-swarm.yml"
+      - "experiments/collatz_swarm_controller.py"
+      - "experiments/collatz_vslice_merge_scan.cpp"
+      - "experiments/collatz_vslice_prefix_sieve_scan.cpp"
+      - "experiments/collatz_predecessor_merge.py"
+      - "experiments/collatz_transfer_farey.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-representation-swarm
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact prerequisite laws
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
+          python experiments/collatz_transfer_farey.py | tee /tmp/transfer.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
+          grep -q "every first coefficient contraction with t < 114208327604 forces descent" /tmp/transfer.txt
+      - name: Protect current exact record
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 \
+            experiments/collatz_vslice_merge_scan.cpp -o /tmp/merge-scan
+          N=2874993894540242321407
+          /tmp/merge-scan 30 5000 1 0 "$N" "$N" | tee /tmp/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" /tmp/record.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" /tmp/record.txt
+          echo SWARM_RECORD_CONTROL_OK
+
+  scout:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        k: [15,12,10,8]
+        action: [merge,p16,p18,p20,p22,p24]
+    name: scout-k${{ matrix.k }}-${{ matrix.action }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build candidate representation
+        run: |
+          case "${{ matrix.action }}" in
+            merge)
+              g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 \
+                experiments/collatz_vslice_merge_scan.cpp -o /tmp/scout
+              ;;
+            p16|p18|p20|p22|p24)
+              BITS="${{ matrix.action }}"
+              BITS="${BITS#p}"
+              g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS="$BITS" \
+                experiments/collatz_vslice_prefix_sieve_scan.cpp -o /tmp/scout
+              ;;
+            *) exit 2;;
+          esac
+      - name: Run exact sealed micro-world
+        run: |
+          set -o pipefail
+          mkdir -p results
+          K="${{ matrix.k }}"
+          ACTION="${{ matrix.action }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          # About 2^20 seeds in this valuation slice. Every action gets the
+          # identical sealed micro-world for a given k.
+          target=1<<20
+          span=target*(1<<(K+1))
+          print(min(GLOBAL_U,L+span))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/time.txt \
+            /tmp/scout "$K" 5000 1 0 "$L" "$U" \
+            | tee results/raw.txt
+      - name: Verify residual and emit consequence fingerprint
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          k=int("${{ matrix.k }}")
+          action="${{ matrix.action }}"
+          s=Path("results/raw.txt").read_text()
+          wall=float(Path("results/time.txt").read_text().strip())
+          residuals=[]
+          candidates=[]
+          candidates += [("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=5000",s)
+          if m: candidates.append(("survivor",int(m.group(1))))
+          seen=set()
+          for kind,n in candidates:
+              if n in seen: continue
+              seen.add(n)
+              x=n; first=None
+              for t in range(1,20001):
+                  x=(3*x+1)//2 if x&1 else x//2
+                  if x<n:
+                      first=t; break
+              if first is None or first>5000:
+                  residuals.append({"kind":kind,"seed":str(n),"first_descent":first})
+          bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+          assert bm,s[-3000:]
+          best=int(bm.group(1)); best_seed=bm.group(2)
+
+          if action=="merge":
+              h=re.search(r"full_count=(\d+) survivor_count=(\d+) killed_count=(\d+)",s)
+              assert h,s[-3000:]
+              full,explicit,merge=map(int,h.groups())
+              transfer=0
+              state_classes=4
+          else:
+              h=re.search(r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+).*?residue_merge_classes=(\d+) residue_transfer_classes=(\d+) residue_live_classes=(\d+)",s)
+              assert h,s[-3000:]
+              full,merge,transfer,explicit,mclasses,tclasses,lclasses=map(int,h.groups())
+              bits=int(action[1:])
+              state_classes=1<<bits
+              assert mclasses+tclasses+lclasses==(1<<(bits-1)),(mclasses,tclasses,lclasses,bits)
+
+          row={
+              "kind":"collatz_swarm_scout_v1",
+              "k":k,
+              "action":action,
+              "full_seed_count":full,
+              "merge_killed_seed_count":merge,
+              "transfer_killed_seed_count":transfer,
+              "explicit_seed_count":explicit,
+              "best_first_descent":best,
+              "best_seed":best_seed,
+              "closed_through_h5000":not residuals,
+              "residuals":residuals,
+              "wall_seconds":wall,
+              "state_classes":state_classes,
+          }
+          out=Path(f"results/scout-k{k}-{action}.json")
+          out.write_text(json.dumps(row,indent=2)+"\n")
+          print("SWARM_SCOUT",json.dumps(row,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-scout-k${{ matrix.k }}-${{ matrix.action }}
+          path: results/scout-*.json
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-scout-*
+          path: gathered
+          merge-multiple: true
+      - name: Compile verifier-gated swarm policy
+        run: |
+          COUNT=$(find gathered -name 'scout-*.json' | wc -l)
+          test "$COUNT" -eq 24
+          python experiments/collatz_swarm_controller.py gathered --out gathered/swarm-policy.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-swarm-policy
+          path: gathered/swarm-policy.json
+          retention-days: 30
