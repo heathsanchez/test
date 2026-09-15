@@ -1,0 +1,127 @@
+name: Collatz live-only recursive bridges B34
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-live-recursive-bridges-b34.yml"
+      - "experiments/collatz_live_recursive_bridges.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-live-recursive-bridges-b34
+  cancel-in-progress: true
+
+jobs:
+  live34:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen exact q14 bridge bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import (
+              enumerate_first_contractions,sparse_quotient
+          )
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          print("Q14_BANK_READY",
+                f"selected={len(selected)} killed={killed}/{total}")
+          PY
+
+      - name: Run frozen constructor system to B34
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_live_recursive_bridges.cpp             -o /tmp/live
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/live 34 results/q14-bank.txt | tee results/census.txt
+          grep -q "VERIFIED_LIVE_ONLY_RECURSIVE_BRIDGE_SIEVE" results/census.txt
+
+      - name: Certify continuation and exact product
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          s=open("results/census.txt").read()
+          rows=[]
+          for m in re.finditer(
+              r"LIVE_RECURSIVE_LEVEL k=(\d+) parents=(\d+) "
+              r"descent=(\d+) bridge=(\d+) live=(\d+) "
+              r"odd_live_fraction=([0-9.eE+-]+)",s):
+              rows.append({
+                "k":int(m.group(1)),
+                "parents":int(m.group(2)),
+                "descent":int(m.group(3)),
+                "bridge":int(m.group(4)),
+                "live":int(m.group(5)),
+                "odd_live_fraction":float(m.group(6)),
+              })
+          assert len(rows)==34,len(rows)
+          by={r["k"]:r for r in rows}
+          # Exact replay of the already-green B32 prefix.
+          assert by[32]["live"]==33909874,by[32]
+          assert by[32]["odd_live_fraction"]==0.0157905,by[32]
+
+          done=re.search(
+              r"LIVE_RECURSIVE_DONE K=34 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"bridge_controls=(\d+)",s)
+          assert done
+          final_live,total_descent,total_bridge,controls=map(int,done.groups())
+          assert final_live==by[34]["live"]
+
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+            "kind":"live_only_recursive_bridge_sieve",
+            "K":34,
+            "final_live":final_live,
+            "odd_live_fraction":by[34]["odd_live_fraction"],
+            "b32_live":by[32]["live"],
+            "b32_fraction":by[32]["odd_live_fraction"],
+            "fraction_ratio_b34_vs_b32":(
+                by[34]["odd_live_fraction"]/by[32]["odd_live_fraction"]
+            ),
+            "total_descent":total_descent,
+            "total_bridge":total_bridge,
+            "bridge_controls":controls,
+            "wall_seconds":float(tm[0]) if tm else None,
+            "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+            "levels":rows,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("LIVE_RECURSIVE_B34_FIELD",
+                json.dumps(out,separators=(",",":")))
+          PY
+
+          LIVE=$(python - <<'PY'
+          import json
+          print(json.load(open("results/summary.json"))["final_live"])
+          PY
+          )
+          python experiments/collatz_global_constructor_product.py             --two-bits 34 --two-live "$LIVE"             --q 14 --q-killed 2233499             --out results/product.json | tee results/product.txt
+          python - <<'PY'
+          import json
+          r=json.load(open("results/product.json"))
+          assert r["two_bits"]==34
+          print("LIVE_RECURSIVE_B34_Q14_PRODUCT",
+                r["mixed_residual_fraction_exact"],
+                r["mixed_residual_fraction"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-recursive-bridge-b34
+          path: results
+          retention-days: 30
