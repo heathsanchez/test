@@ -1,0 +1,131 @@
+name: Collatz global coalescence normal form
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-global-coalescence-normal-form.yml"
+      - "experiments/collatz_global_coalescence_normal_form.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-coalescence-normal-form
+  cancel-in-progress: true
+
+jobs:
+  canonical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        include:
+          - { s: 8,  max_gap: 3 }
+          - { s: 10, max_gap: 3 }
+          - { s: 12, max_gap: 3 }
+          - { s: 14, max_gap: 3 }
+          - { s: 16, max_gap: 5 }
+    name: canonical-s${{ matrix.s }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and lift exact canonical constructor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt \
+            python experiments/collatz_global_coalescence_normal_form.py \
+              --s ${{ matrix.s }} \
+              --max-gap ${{ matrix.max_gap }} \
+              --verify-k 4,5,6,7,8,10,20,27,40,64,127 \
+              --out results/summary.json \
+            | tee results/census.txt
+          grep -q "VERIFIED_GLOBAL_K_INDEPENDENT_COALESCENCE_NORMAL_FORM" results/census.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-normal-form-s${{ matrix.s }}
+          path: results
+          retention-days: 30
+
+  legacy-control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [10, 20, 27]
+    name: legacy-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Replay independent pre-normalization constructor search
+        run: |
+          set -euo pipefail
+          python experiments/collatz_global_coalescence.py \
+            --k ${{ matrix.k }} --s 14 --max-gap 3 \
+            | tee legacy.txt
+          grep -q "GLOBAL_COALESCENCE K=${{ matrix.k }} S=14 max_gap=3 .*killed=4427 .*odd_classes=8192" legacy.txt
+          grep -q "VERIFIED_GLOBAL_CROSS_VALUATION_COALESCENCE" legacy.txt
+          echo LEGACY_GLOBAL_COALESCENCE_CONTROL_OK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: legacy-global-coalescence-k${{ matrix.k }}
+          path: legacy.txt
+          retention-days: 30
+
+  aggregate:
+    needs: [canonical, legacy-control]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-normal-form-s*
+          path: gathered
+      - name: Aggregate exact normal-form field
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected = {
+              8:  (65,    {"1":65}),
+              10: (267,   {"1":267}),
+              12: (1090,  {"1":1090}),
+              14: (4427,  {"1":4425,"3":2}),
+              16: (17938, {"1":17917,"3":21}),
+          }
+
+          rows=[]
+          for d in sorted(Path("gathered").glob("global-normal-form-s*")):
+              p=d/"summary.json"
+              assert p.exists(), d
+              row=json.loads(p.read_text())
+              s=row["S"]
+              count,gaps=expected[s]
+              assert row["constructors"]==count,(s,row)
+              assert row["by_gap"]==gaps,(s,row["by_gap"],gaps)
+              assert row["affine_lift_checks"]>0
+              assert row["concrete_replay_checks"]>0
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              row["wall_seconds"]=float(tm[0]) if tm else None
+              row["max_rss_kb"]=int(tm[1]) if len(tm)>1 else None
+              rows.append(row)
+
+          assert sorted(r["S"] for r in rows)==sorted(expected)
+          out={
+              "kind":"global_k_independent_coalescence_normal_form",
+              "rows":sorted(rows,key=lambda r:r["S"]),
+          }
+          Path("global-coalescence-normal-form-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("GLOBAL_COALESCENCE_NORMAL_FORM_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("GLOBAL_COALESCENCE_NORMAL_FORM_REGRESSION_GATES_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-coalescence-normal-form-field
+          path: global-coalescence-normal-form-field.json
+          retention-days: 30
