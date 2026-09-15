@@ -582,23 +582,27 @@ theorem pack8Pair_eq (x : Nat)
     pack8Pair x = pack8Nat x := by
   have h0 : x < 2 ^ 40 := by omega
   have h1 : x + stepConst < 2 ^ 40 := by omega
-  have h2 : x + 2 * stepConst < 2 ^ 40 := by omega
-  have h3 : x + 2 * stepConst + stepConst < 2 ^ 40 := by omega
-  have h4 : x + 2 * stepConst + stepConst + stepConst < 2 ^ 40 := by omega
-  have h5 : x + 2 * stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
-  have h6 : x + 2 * stepConst + stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h2 : x + stepConst + stepConst < 2 ^ 40 := by omega
+  have h3 : x + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h4 : x + stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h5 : x + stepConst + stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h6 :
+      x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst <
+        2 ^ 40 := by omega
   have h7 :
-      x + 2 * stepConst + stepConst + stepConst + stepConst + stepConst + stepConst <
+      x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst <
         2 ^ 40 := by omega
   dsimp [pack8Pair, pack8Nat]
   rw [mixPairNat_eq x (x + stepConst) h0 h1]
-  rw [mixPairNat_eq (x + 2 * stepConst) (x + 2 * stepConst + stepConst) h2 h3]
   rw [mixPairNat_eq
-        (x + 2 * stepConst + stepConst + stepConst)
-        (x + 2 * stepConst + stepConst + stepConst + stepConst) h4 h5]
+        (x + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst) h2 h3]
   rw [mixPairNat_eq
-        (x + 2 * stepConst + stepConst + stepConst + stepConst + stepConst)
-        (x + 2 * stepConst + stepConst + stepConst + stepConst + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst + stepConst + stepConst) h4 h5]
+  rw [mixPairNat_eq
+        (x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst)
         h6 h7]
   simp only [mixBit31NatModBase_eq]
   omega
@@ -608,16 +612,18 @@ theorem pack6Pair_eq (x : Nat)
     pack6Pair x = pack6Nat x := by
   have h0 : x < 2 ^ 40 := by omega
   have h1 : x + stepConst < 2 ^ 40 := by omega
-  have h2 : x + 2 * stepConst < 2 ^ 40 := by omega
-  have h3 : x + 2 * stepConst + stepConst < 2 ^ 40 := by omega
-  have h4 : x + 2 * stepConst + stepConst + stepConst < 2 ^ 40 := by omega
-  have h5 : x + 2 * stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h2 : x + stepConst + stepConst < 2 ^ 40 := by omega
+  have h3 : x + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h4 : x + stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
+  have h5 : x + stepConst + stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
   dsimp [pack6Pair, pack6Nat]
   rw [mixPairNat_eq x (x + stepConst) h0 h1]
-  rw [mixPairNat_eq (x + 2 * stepConst) (x + 2 * stepConst + stepConst) h2 h3]
   rw [mixPairNat_eq
-        (x + 2 * stepConst + stepConst + stepConst)
-        (x + 2 * stepConst + stepConst + stepConst + stepConst) h4 h5]
+        (x + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst) h2 h3]
+  rw [mixPairNat_eq
+        (x + stepConst + stepConst + stepConst + stepConst)
+        (x + stepConst + stepConst + stepConst + stepConst + stepConst) h4 h5]
   simp only [mixBit31NatModBase_eq]
   omega
 
@@ -630,6 +636,7 @@ theorem advance8_eq (x : Nat) :
   simp only [advance8]
   omega
 
+set_option maxRecDepth 4096 in
 theorem packByteTailPair_eq (x n : Nat)
     (h : x + (8 * n + 5) * stepConst < 2 ^ 40) :
     packByteTailPair x n = packByteTailNat x n := by
