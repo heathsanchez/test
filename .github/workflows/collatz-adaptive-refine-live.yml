@@ -4,7 +4,6 @@ on:
   push:
     paths:
       - ".github/workflows/collatz-adaptive-refine-live.yml"
-      - "experiments/collatz_hybrid_adaptive_refine.py"
   workflow_dispatch:
 
 concurrency:
@@ -12,119 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  prepare:
-    runs-on: ubuntu-latest
-    outputs:
-      parents: ${{ steps.partition.outputs.parents }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: partition
-        run: |
-          mkdir -p results
-          python experiments/collatz_prefix_residues.py --bits 8 --out results/prefix8.json
-          python experiments/collatz_transfer_farey.py | tee results/transfer.txt
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
-          d=json.load(open("results/prefix8.json"))
-          assert d["lawful_count"] == 19, d
-          print("parents="+json.dumps(d["residues"],separators=(",",":")))
-          PY
-
-  parent:
-    needs: prepare
-    runs-on: ubuntu-latest
-    timeout-minutes: 55
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        parent: ${{ fromJSON(needs.prepare.outputs.parents) }}
-    name: adaptive-parent-${{ matrix.parent }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
-      - name: Exact budgeted adaptive refinement at H803
-        run: |
-          mkdir -p results
-          python experiments/collatz_hybrid_adaptive_refine.py \
-            --bits 72 \
-            --lower 2392312122059207475200 \
-            --upper 3143983941795894239301 \
-            --horizon 803 \
-            --parent-bits 8 \
-            --parent-value ${{ matrix.parent }} \
-            --start-bits 12 \
-            --max-bits 16 \
-            --step-bits 4 \
-            --conflicts 100 \
-            --replay-limit 5000 \
-            --out results/adaptive-${{ matrix.parent }}.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collatz-adaptive-${{ matrix.parent }}
-          path: results/adaptive-${{ matrix.parent }}.json
-          if-no-files-found: warn
-          retention-days: 7
-
-  aggregate:
-    needs: [parent]
-    if: always()
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: collatz-adaptive-*
-          path: gathered
-          merge-multiple: true
-      - name: Aggregate exact adaptive frontier
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          files=sorted(Path("gathered").glob("adaptive-*.json"))
-          rows=[json.loads(p.read_text()) for p in files]
-          sat=[]
-          unresolved=[]
-          unsat_parents=[]
-          for r in rows:
-              if r["status"]=="UNSAT":
-                  unsat_parents.append(r["parent_value"])
-              for x in r["sat_leaves"]:
-                  sat.append({
-                      "parent":r["parent_value"],
-                      "value":x["value"],
-                      "bits":x["bits"],
-                      "witness":x["witness"],
-                      "first_descent":x["replay"]["first_descent"],
-                  })
-              for x in r["unresolved_leaves"]:
-                  unresolved.append({
-                      "parent":r["parent_value"],
-                      "value":x["value"],
-                      "bits":x["bits"],
-                      "conflicts":x["conflicts"],
-                  })
-          summary={
-              "kind":"collatz_h803_adaptive_prefix_frontier",
-              "completed_parents":len(rows),
-              "expected_parents":19,
-              "unsat_parents":sorted(unsat_parents),
-              "sat_leaves":sat,
-              "unresolved_leaves":unresolved,
-              "all_h803_unsat":len(rows)==19 and not sat and not unresolved and len(unsat_parents)==19,
-              "max_exact_witness_descent":max([x["first_descent"] or 0 for x in sat] or [0]),
-          }
-          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
-          print("ADAPTIVE_LIVE_AGGREGATE",json.dumps(summary,separators=(",",":")))
-          if len(rows)!=19:
-              raise SystemExit(f"incomplete parent coverage: {len(rows)}/19")
-          PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: collatz-adaptive-live-aggregate
-          path: gathered/summary.json
-          retention-days: 30
+      - run: |
+          echo "RETIRED"
+          echo "Exact budgeted UNKNOWN-to-refine semantics passed protected control."
+          echo "At H803, magnitude-heavy state remained the bottleneck even at cheap conflict budgets."
+          echo "Superseded by collatz-modular-adaptive.yml using exact shrinking parity state."
