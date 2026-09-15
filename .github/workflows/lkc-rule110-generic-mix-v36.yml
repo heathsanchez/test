@@ -37,4 +37,5 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/GenericPackProof.lean" .
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/GenericMixProof.lean" .
-          lake env lean GenericMixProof.lean
+          lake env lean -o GenericPackProof.olean GenericPackProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean GenericMixProof.lean
