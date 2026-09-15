@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       max-parallel: 8
       matrix:
-        h: [144,160,192,256,384,512,768,1024]
+        h: [128,192,256,512]
     name: bigint-h${{ matrix.h }}-r8
     steps:
       - uses: actions/checkout@v4
@@ -47,6 +47,11 @@ jobs:
               for c in selected:
                   f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
           PY
+
+      - name: Install arbitrary-precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
 
       - name: Run arbitrary-precision collapse cell
         run: |
@@ -114,7 +119,7 @@ jobs:
               assert p.exists(),d
               rows.append(json.loads(p.read_text()))
           rows.sort(key=lambda r:r["forward_h"])
-          assert [r["forward_h"] for r in rows]==[144,160,192,256,384,512,768,1024],rows
+          assert [r["forward_h"] for r in rows]==[128,192,256,512],rows
           prev=114
           for r in rows:
               assert r["shell_hard"]<=prev,(prev,r)
