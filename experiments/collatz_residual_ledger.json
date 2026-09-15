@@ -205,6 +205,13 @@
       "exact_first_descent": 563,
       "next_exact_horizon": 564,
       "source": "local exact replay after targeted bit search"
+    },
+    {
+      "shard": "v2=35 shard 14/16",
+      "witness_decimal": "3079334581550404599807",
+      "exact_first_descent": 853,
+      "next_exact_horizon": 854,
+      "source": "exact overflow-safe 16-step affine block compiler; concrete Python big-int replay; workflow 34930171144"
     }
   ],
   "best_known_by_shard": {
@@ -417,15 +424,15 @@
     }
   ],
   "global_best_known": {
-    "witness_decimal": "2760016646173626466303",
-    "exact_first_descent": 802,
-    "v2_n_plus_1": 39,
-    "source": "exact exhaustive v2(n+1)=39 block-compiled region"
+    "witness_decimal": "3079334581550404599807",
+    "exact_first_descent": 853,
+    "v2_n_plus_1": 35,
+    "source": "exact overflow-safe v2(n+1)=35 tightened-interval scan; run 34930171144"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval, restricted after exact compilation of v2(n+1) >= 36 through H803",
-    "reason": "v2=39 remains the exact global record at first descent 802; tightened v2=37 and v2=36 are now exhausted through H803 with maxima 711 and 720. v2=35 exposed rare u128 overflow, so overflow seeds must be replayed with arbitrary precision before that slice can receive any verdict.",
-    "next_action": "recover every v2=35 overflow seed with exact arbitrary-precision replay; if none survives H803, finish the slice and descend to v2=34 using the same overflow-safe compiler"
+    "predicate": "tightened live interval; v2(n+1)=35 is the active productive slice after an exact first-descent-853 witness",
+    "reason": "v2=37 and v2=36 are exactly closed through H803 with maxima 711 and 720. The overflow-safe v2=35 H803 run found seed 3079334581550404599807 with exact first descent 853; one separate u128-overflow seed was replayed exactly and descended at 466.",
+    "next_action": "scan the full tightened v2=35 slice through H900 with the overflow-safe compiler. If no H900 survivor exists, its shard maxima recover the exact v2=35 frontier below 900; otherwise replay the new survivor and raise the frontier again."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
