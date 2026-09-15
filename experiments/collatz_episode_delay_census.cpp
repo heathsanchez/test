@@ -80,10 +80,12 @@ int main(int argc,char**argv){
   if(max_r<1||max_r>28||P<8||P>26||max_eps<1||max_eps>10000||
      top_n<1||top_n>1000) return 2;
 
-  std::vector<u128> p3(max_r+64,1);
+  // 3^80 fits in unsigned 128-bit; 3^81 does not.  The bounded census
+  // aborts if an episode ever requires r>80 rather than silently truncating.
+  std::vector<u128> p3(81,1);
   for(size_t i=1;i<p3.size();++i){
     if(!mul_checked(p3[i-1],u128(3),p3[i])){
-      std::cerr<<"POW3_OVERFLOW\n"; return 4;
+      std::cerr<<"POW3_OVERFLOW_AT i="<<i<<"\n"; return 4;
     }
   }
 
