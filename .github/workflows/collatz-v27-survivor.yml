@@ -25,11 +25,12 @@ jobs:
         run: |
           python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
           python experiments/collatz_transfer_farey.py | tee /tmp/transfer.txt
-          python experiments/collatz_reverse_predecessor_tree.py | tee /tmp/mod9.txt
-          python experiments/collatz_predecessor_coalescence.py --k 28 --s 16 | tee /tmp/coal.txt
+          python experiments/collatz_reverse_predecessor_tree.py --q 7 | tee /tmp/q7.txt
+          python experiments/collatz_predecessor_coalescence.py --k 27 --s 16 | tee /tmp/coal.txt
           grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
           grep -q "every first coefficient contraction with t < 114208327604 forces descent" /tmp/transfer.txt
-          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt\n          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
+          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt
+          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
           grep -q "killed=17917 odd_classes=32768" /tmp/coal.txt
           grep -q "VERIFIED_CROSS_VALUATION_PREDECESSOR_COALESCENCE" /tmp/coal.txt
       - name: Build production exact scanner
@@ -170,26 +171,26 @@ jobs:
           assert headers and all(x==headers[0] for x in headers),headers
           full_count,merge_killed,transfer_killed,prefix_live=headers[0]
           coal=sum(r["coalescence_extra"] or 0 for r in rows)
-          mod9=sum(r["predq7_after_coalescence"] or 0 for r in rows)
+          predq7=sum(r["predq7_after_coalescence"] or 0 for r in rows)
           explicit=sum(r["explicit"] or 0 for r in rows)
           scanned=sum(r["scanned"] or 0 for r in rows)
 
-          assert coal+mod9+explicit==prefix_live,(coal,mod9,explicit,prefix_live)
+          assert coal+predq7+explicit==prefix_live,(coal,predq7,explicit,prefix_live)
           assert scanned==explicit,(scanned,explicit)
           assert merge_killed+transfer_killed+prefix_live==full_count
 
           best_row=max(rows,key=lambda r:r["best"] or 0) if rows else None
           summary={
-              "kind":"exact_v2_28_h5000_p24_coalescence16_predq7",
+              "kind":"exact_v2_27_h5000_p24_coalescence16_predq7",
               "completed_shards":len(rows),
               "expected_shards":16,
               "full_slice_seed_count":full_count,
               "predecessor_half_merge_killed_seed_count":merge_killed,
               "transfer_contraction_killed_seed_count":transfer_killed,
               "coalescence_extra_killed_seed_count":coal,
-              "predq7_predecessor_killed_seed_count":mod9,
+              "predq7_predecessor_killed_seed_count":predq7,
               "explicitly_scanned_seed_count":explicit,
-              "closed_without_explicit_scan":merge_killed+transfer_killed+coal+mod9,
+              "closed_without_explicit_scan":merge_killed+transfer_killed+coal+predq7,
               "overflow_seed_count":sum(r["overflow_count"] for r in rows),
               "survivors":survivors,
               "all_exhausted_no_survivor":len(rows)==16 and all(r["status"]=="EXHAUSTED" for r in rows),
