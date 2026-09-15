@@ -1,0 +1,120 @@
+name: Collatz exact global constructor product
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-global-constructor-product.yml"
+      - "experiments/collatz_global_constructor_product.py"
+      - "experiments/collatz_strong_sieve_scout.cpp"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-constructor-product
+  cancel-in-progress: true
+
+jobs:
+  product:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { b: 16, q: 7 }
+          - { b: 18, q: 9 }
+          - { b: 20, q: 11 }
+          - { b: 22, q: 12 }
+          - { b: 22, q: 14 }
+    name: product-b${{ matrix.b }}-q${{ matrix.q }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build exact binary strong-sieve census
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_strong_sieve_scout.cpp -o /tmp/strong
+          /tmp/strong ${{ matrix.b }} | tee results/two.txt
+          grep -q "STRONG_SIEVE_DONE k=${{ matrix.b }}" results/two.txt
+
+      - name: Build exact reverse-predecessor census
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/q-time-memory.txt             python experiments/collatz_reverse_predecessor_tree.py --q ${{ matrix.q }}             | tee results/q.txt
+          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" results/q.txt
+
+      - name: Compile exact CRT product residual
+        run: |
+          set -euo pipefail
+          B=${{ matrix.b }}
+          Q=${{ matrix.q }}
+          TWO_LIVE=$(python - <<'PY'
+          import re
+          s=open("results/two.txt").read()
+          B=int("${{ matrix.b }}")
+          m=re.search(rf"STRONG_SIEVE_LEVEL k={B} .*?odd_live=(\d+)",s)
+          assert m,s[-4000:]
+          print(m.group(1))
+          PY
+          )
+          Q_KILLED=$(python - <<'PY'
+          import re
+          s=open("results/q.txt").read()
+          m=re.search(r"KILLED_RESIDUES (\d+)",s)
+          assert m,s[-4000:]
+          print(m.group(1))
+          PY
+          )
+          python experiments/collatz_global_constructor_product.py             --two-bits "$B" --two-live "$TWO_LIVE"             --q "$Q" --q-killed "$Q_KILLED"             --out results/product.json | tee results/product.txt
+          grep -q "VERIFIED_EXACT_GLOBAL_CONSTRUCTOR_PRODUCT_QUOTIENT" results/product.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-product-b${{ matrix.b }}-q${{ matrix.q }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: product
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-product-b*-q*
+          path: gathered
+      - name: Aggregate exact product curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("global-product-b*-q*"):
+              p=d/"product.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:(r["two_bits"],r["q"]))
+          assert len(rows)==5,rows
+          for r in rows:
+              assert r["mixed_residual_classes"] < r["mixed_total_classes"]
+              assert r["crt_controls"] > 0
+          best=min(rows,key=lambda r:r["mixed_residual_fraction"])
+          out={"kind":"exact_global_constructor_product_curve",
+               "rows":rows,"best":best}
+          Path("global-constructor-product-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("GLOBAL_CONSTRUCTOR_PRODUCT_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          # The deepest existing independent constructor families should
+          # leave less than two percent of odd mixed residue space unresolved.
+          assert best["mixed_residual_fraction"] < 0.02,best
+          print("GLOBAL_CONSTRUCTOR_PRODUCT_LT_TWO_PERCENT_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-constructor-product-field
+          path: global-constructor-product-field.json
+          retention-days: 30
