@@ -1,0 +1,340 @@
+name: Lean A6 earned-only apply gate
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-a6-earned-only-apply.yml'
+      - 'scripts/patch_a6_earned_only_apply.py'
+      - 'scripts/patch_a6.py'
+      - 'A6_EARNED_ONLY_APPLY.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    outputs:
+      mathlib: ${{ steps.held_class.outputs.mathlib }}
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a0 earned raw results/earned-apply diagnostics/earned-apply
+          mkdir -p arena-tests artifact results/earned-apply diagnostics/earned-apply
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+          printf 'good=%s\nbad=%s\n'             "$(find arena-tests/good -name '*.ndjson' | wc -l)"             "$(find arena-tests/bad -name '*.ndjson' | wc -l)"             | tee diagnostics/earned-apply/corpus-counts.txt
+
+      - name: Freeze development and held-out manifests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('arena-tests/good')
+          wanted=[
+            'perf/grind-ring-5.ndjson',
+            'init-prelude.ndjson',
+            'perf/app-lam.ndjson',
+            'perf/beta-ladder.ndjson',
+            'perf/let-ladder.ndjson',
+          ]
+          dev=[]
+          missing=[]
+          for rel in wanted:
+              p=root/rel
+              if p.exists(): dev.append(p)
+              else: missing.append(rel)
+          if missing:
+              raise SystemExit(f'missing frozen development cases: {missing}')
+          all_good=sorted(root.rglob('*.ndjson'))
+          dev_abs={p.resolve() for p in dev}
+          remaining=[p for p in all_good if p.resolve() not in dev_abs]
+          held=sorted(remaining,key=lambda p:(-p.stat().st_size,str(p)))[:24]
+          if len(held)!=24 or set(dev)&set(held):
+              raise SystemExit('invalid held-out freeze')
+          pathlib.Path('diagnostics/earned-apply/development.txt').write_text('\n'.join(map(str,dev))+'\n')
+          pathlib.Path('diagnostics/earned-apply/heldout.txt').write_text('\n'.join(map(str,held))+'\n')
+          out={
+            'development':list(map(str,dev)),
+            'heldout':list(map(str,held)),
+            'heldout_rule':'remove five frozen development cases; descending bytes; path tie-break; first 24',
+          }
+          pathlib.Path('results/earned-apply/manifests.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+
+      - name: Reconstruct A0 earned raw
+        shell: bash
+        run: |
+          set -euo pipefail
+          for arm in a0 earned raw; do
+            git clone -q https://github.com/intgrah/sokonanoda.git "$arm"
+            git -C "$arm" checkout -q "$SOKO_PIN"
+            rm -rf a6 && cp -a "$arm" a6
+            python3 scripts/patch_a6.py
+            case "$arm" in
+              earned) python3 scripts/patch_a6_earned_only_apply.py --mode earned ;;
+              raw) python3 scripts/patch_a6_earned_only_apply.py --mode raw ;;
+              a0) ;;
+            esac
+            git -C a6 diff --check
+            git -C a6 diff > "diagnostics/earned-apply/$arm.patch"
+            rm -rf "$arm" && mv a6 "$arm"
+            cat > "$arm/config.json" <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          done
+          test -s diagnostics/earned-apply/earned.patch
+          test -s diagnostics/earned-apply/raw.patch
+
+      - name: Arena-style PGO build all arms
+        shell: bash
+        run: |
+          set -euo pipefail
+          rustup component add llvm-tools-preview
+          LLVM_PROFDATA=$(find "$(rustc --print sysroot)" -type f -name llvm-profdata | head -1)
+          test -x "$LLVM_PROFDATA"
+          TRAIN="$PWD/arena-tests/good/init-prelude.ndjson"
+          : > diagnostics/earned-apply/pgo-train-rc.txt
+          for arm in a0 earned raw; do
+            rm -rf "$arm/pgo"; mkdir -p "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release)
+            set +e
+            "$arm/target/release/sokonanoda" "$arm/config.json" < "$TRAIN" >/dev/null 2>/dev/null
+            rc=$?
+            set -e
+            echo "$arm=$rc" >> diagnostics/earned-apply/pgo-train-rc.txt
+            "$LLVM_PROFDATA" merge -o "$arm/pgo/merged.profdata" "$arm/pgo"
+            (cd "$arm" && RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release)
+            test -x "$arm/target/release/sokonanoda"
+          done
+          cat diagnostics/earned-apply/pgo-train-rc.txt
+
+      - name: Full frozen semantic gate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if len(good)!=103 or len(bad)!=58:
+              raise SystemExit(f'frozen corpus mismatch good={len(good)} bad={len(bad)}')
+          out={'arms':{}}
+          for arm in ['a0','earned','raw']:
+              exe=pathlib.Path(arm)/'target/release/sokonanoda'; cfg=pathlib.Path(arm)/'config.json'
+              gp=br=0; failures=[]
+              for p in good:
+                  with p.open('rb') as f:
+                      r=subprocess.run([str(exe),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode==0: gp+=1
+                  elif len(failures)<25:
+                      failures.append({'kind':'good_rejected','case':str(p),'rc':r.returncode,'stderr':r.stderr.decode(errors='replace')[-1200:]})
+              for p in bad:
+                  with p.open('rb') as f:
+                      r=subprocess.run([str(exe),str(cfg)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+                  if r.returncode!=0: br+=1
+                  elif len(failures)<25:
+                      failures.append({'kind':'bad_accepted','case':str(p)})
+              out['arms'][arm]={
+                'good_pass':gp,'good_total':len(good),
+                'bad_reject':br,'bad_total':len(bad),
+                'semantic_green':gp==len(good) and br==len(bad),
+                'failures':failures,
+              }
+          pathlib.Path('results/earned-apply/semantics.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          for arm in ['a0','earned']:
+              if not out['arms'][arm]['semantic_green']:
+                  raise SystemExit(f'SEMANTIC_REJECTION {arm}')
+          PY
+
+      - name: Development paired CPU economics
+        id: dev_perf
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess
+          sem=json.loads(pathlib.Path('results/earned-apply/semantics.json').read_text())
+          raw_green=sem['arms']['raw']['semantic_green']
+          arms=['a0','earned'] + (['raw'] if raw_green else [])
+          cases=[pathlib.Path(x) for x in pathlib.Path('diagnostics/earned-apply/development.txt').read_text().splitlines() if x]
+
+          def one(arm,p):
+              before=resource.getrusage(resource.RUSAGE_CHILDREN)
+              with p.open('rb') as f:
+                  r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              after=resource.getrusage(resource.RUSAGE_CHILDREN)
+              if r.returncode!=0: raise SystemExit(f'dev benchmark failure {arm} {p} rc={r.returncode}')
+              return (after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+
+          for arm in arms:
+              for p in cases: one(arm,p)
+
+          rows=[]; totals={}
+          for rep in range(30):
+              order=arms.copy(); random.Random(73000+rep).shuffle(order); totals[rep]={}
+              for arm in order:
+                  total=0.0; per={}
+                  for p in cases:
+                      cpu=one(arm,p); total+=cpu; per[str(p)]=cpu
+                  totals[rep][arm]=total
+                  rows.append({'rep':rep,'arm':arm,'cpu_s':total,'per_case_cpu_s':per})
+
+          def pair(c,b):
+              ds=[]; wins=0
+              for rep in range(30):
+                  cv=totals[rep][c]; bv=totals[rep][b]
+                  ds.append(100*(cv/bv-1)); wins += cv < bv
+              return {'median_delta_pct':statistics.median(ds),'wins':wins,'losses':30-wins,'deltas_pct':ds}
+
+          def per_case_pair(c,b,p):
+              ds=[]
+              for rep in range(30):
+                  cr=next(r for r in rows if r['rep']==rep and r['arm']==c)
+                  br=next(r for r in rows if r['rep']==rep and r['arm']==b)
+                  cv=cr['per_case_cpu_s'][str(p)]; bv=br['per_case_cpu_s'][str(p)]
+                  ds.append(100*(cv/bv-1))
+              return {'median_delta_pct':statistics.median(ds),'wins':sum(x<0 for x in ds)}
+
+          out={
+            'raw_semantic_green':raw_green,
+            'summary':{a:{'median_cpu_s':statistics.median(totals[r][a] for r in range(30))} for a in arms},
+            'earned_vs_a0':pair('earned','a0'),
+            'per_case_earned_vs_a0':{str(p):per_case_pair('earned','a0',p) for p in cases},
+            'rows':rows,
+          }
+          if raw_green: out['earned_vs_raw']=pair('earned','raw')
+          pathlib.Path('results/earned-apply/development-performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:v for k,v in out.items() if k!='rows'},indent=2,sort_keys=True))
+          PY
+
+      - name: Classify development gate
+        id: dev_class
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,os
+          sem=json.loads(pathlib.Path('results/earned-apply/semantics.json').read_text())
+          p=json.loads(pathlib.Path('results/earned-apply/development-performance.json').read_text())
+          ea=p['earned_vs_a0']
+          grind=next(v for k,v in p['per_case_earned_vs_a0'].items() if k.endswith('/perf/grind-ring-5.ndjson'))
+          raw_green=sem['arms']['raw']['semantic_green']
+          raw_ok=True
+          if raw_green:
+              er=p['earned_vs_raw']
+              raw_ok=er['median_delta_pct']<0 and er['wins']>=18
+          a0_ok=ea['median_delta_pct']<0 and ea['wins']>=18
+          grind_ok=grind['median_delta_pct']<0
+          proceed=a0_ok and grind_ok and raw_ok
+          verdict='EARNED_ONLY_PROCEED_HELDOUT' if proceed else 'EARNED_ONLY_STOP_DEVELOPMENT'
+          out={
+            'verdict':verdict,
+            'a0_gate':a0_ok,
+            'grind_direction_gate':grind_ok,
+            'raw_semantic_green':raw_green,
+            'raw_gate_or_separator':raw_ok if raw_green else True,
+            'earned_vs_a0':ea,
+            'grind_earned_vs_a0':grind,
+            'earned_vs_raw':p.get('earned_vs_raw'),
+          }
+          pathlib.Path('results/earned-apply/development-verdict.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f"proceed={'true' if proceed else 'false'}\n")
+          PY
+
+      - name: Disjoint held-out paired CPU gate
+        if: steps.dev_class.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,random,resource,statistics,subprocess
+          sem=json.loads(pathlib.Path('results/earned-apply/semantics.json').read_text())
+          arms=['a0','earned'] + (['raw'] if sem['arms']['raw']['semantic_green'] else [])
+          cases=[pathlib.Path(x) for x in pathlib.Path('diagnostics/earned-apply/heldout.txt').read_text().splitlines() if x]
+
+          def run_arm(arm):
+              before=resource.getrusage(resource.RUSAGE_CHILDREN)
+              for p in cases:
+                  with p.open('rb') as f:
+                      r=subprocess.run([f'{arm}/target/release/sokonanoda',f'{arm}/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  if r.returncode!=0: raise SystemExit(f'heldout failure {arm} {p} rc={r.returncode}')
+              after=resource.getrusage(resource.RUSAGE_CHILDREN)
+              return (after.ru_utime-before.ru_utime)+(after.ru_stime-before.ru_stime)
+
+          for arm in arms: run_arm(arm)
+          rows=[]; by={}
+          for rep in range(30):
+              order=arms.copy(); random.Random(91000+rep).shuffle(order); by[rep]={}
+              for arm in order:
+                  cpu=run_arm(arm); by[rep][arm]=cpu; rows.append({'rep':rep,'arm':arm,'cpu_s':cpu})
+
+          def pair(c,b):
+              ds=[]; wins=0
+              for rep in range(30):
+                  cv=by[rep][c]; bv=by[rep][b]
+                  ds.append(100*(cv/bv-1)); wins+=cv<bv
+              return {'median_delta_pct':statistics.median(ds),'wins':wins,'losses':30-wins,'deltas_pct':ds}
+
+          out={
+            'summary':{a:{'median_cpu_s':statistics.median(by[r][a] for r in range(30))} for a in arms},
+            'earned_vs_a0':pair('earned','a0'),
+            'rows':rows,
+          }
+          if 'raw' in arms: out['earned_vs_raw']=pair('earned','raw')
+          pathlib.Path('results/earned-apply/heldout-performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:v for k,v in out.items() if k!='rows'},indent=2,sort_keys=True))
+          PY
+
+      - name: Classify held-out gate
+        id: held_class
+        if: steps.dev_class.outputs.proceed == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,os
+          p=json.loads(pathlib.Path('results/earned-apply/heldout-performance.json').read_text())
+          ea=p['earned_vs_a0']
+          ok=ea['median_delta_pct']<0 and ea['wins']>=18
+          verdict='EARNED_ONLY_PROCEED_MATHLIB' if ok else 'EARNED_ONLY_STOP_HELDOUT'
+          out={'verdict':verdict,'heldout_gate':ok,'earned_vs_a0':ea,'earned_vs_raw':p.get('earned_vs_raw')}
+          pathlib.Path('results/earned-apply/heldout-verdict.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,indent=2,sort_keys=True))
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f"mathlib={'true' if ok else 'false'}\n")
+          PY
+
+      - name: Ensure skipped heldout exports false
+        if: steps.dev_class.outputs.proceed != 'true'
+        shell: bash
+        run: |
+          echo '{"verdict":"EARNED_ONLY_HELDOUT_NOT_RUN"}' > results/earned-apply/heldout-verdict.json
+
+      - name: Upload earned-only evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-a6-earned-only-apply
+          path: |
+            results/earned-apply/
+            diagnostics/earned-apply/
+            A6_EARNED_ONLY_APPLY.md
