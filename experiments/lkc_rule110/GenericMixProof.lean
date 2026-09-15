@@ -60,7 +60,7 @@ theorem mixCore_double
   have hy :
       ((stage m 16 p * Submission.Vec8.c1) &&& m) < 2 ^ w :=
     and_mask_lt w m _ hmw
-  unfold mixCore
+  simp only [mixCore]
   rw [lift_stage w m 16 p q hp hm16 (by decide) (by omega)]
   rw [packW_mul]
   rw [and_maskW w m
