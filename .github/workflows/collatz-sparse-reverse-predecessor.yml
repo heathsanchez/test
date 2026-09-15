@@ -1,0 +1,118 @@
+name: Collatz sparse reverse predecessor quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-sparse-reverse-predecessor.yml"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-sparse-reverse-predecessor
+  cancel-in-progress: true
+
+jobs:
+  sparse:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        q: [14,16,18,20]
+    name: sparse-q${{ matrix.q }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run sparse exact quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_reverse_predecessor_sparse.py --q ${{ matrix.q }}             | tee results/sparse.txt
+          grep -q "VERIFIED_SPARSE_REVERSE_PREDECESSOR_QUOTIENT" results/sparse.txt
+
+      - name: Independent bitmap regression at q14
+        if: matrix.q == 14
+        run: |
+          set -euo pipefail
+          python experiments/collatz_reverse_predecessor_tree.py --q 14             | tee results/bitmap.txt
+          python - <<'PY'
+          import re
+          a=open("results/sparse.txt").read()
+          b=open("results/bitmap.txt").read()
+          def grab(s,key):
+              m=re.search(rf"^{key} (\d+)$",s,re.M)
+              assert m,(key,s[-4000:])
+              return int(m.group(1))
+          assert grab(a,"KILLED_RESIDUES")==grab(b,"KILLED_RESIDUES")
+          assert grab(a,"TOTAL_RESIDUES")==grab(b,"TOTAL_RESIDUES")
+          assert grab(a,"NONREDUNDANT_CERTIFICATES")==grab(b,"NONREDUNDANT_CERTIFICATES")
+          print("SPARSE_BITMAP_Q14_EXACT_EQUIVALENCE_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sparse-reverse-q${{ matrix.q }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: sparse
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: sparse-reverse-q*
+          path: gathered
+
+      - name: Aggregate predecessor-language curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          rows=[]
+          for d in sorted(Path("gathered").glob("sparse-reverse-q*")):
+              p=d/"sparse.txt"
+              assert p.exists(),d
+              s=p.read_text()
+              q=int(re.search(r"SPARSE_REVERSE_TREE_Q (\d+)",s).group(1))
+              first=int(re.search(r"FIRST_CONTRACTION_CERTIFICATES (\d+)",s).group(1))
+              retained=int(re.search(r"NONREDUNDANT_CERTIFICATES (\d+)",s).group(1))
+              killed=int(re.search(r"KILLED_RESIDUES (\d+)",s).group(1))
+              total=int(re.search(r"TOTAL_RESIDUES (\d+)",s).group(1))
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              rows.append({
+                "q":q,
+                "first_contraction_certificates":first,
+                "retained_certificates":retained,
+                "killed":killed,
+                "total":total,
+                "kill_fraction":killed/total,
+                "live_fraction":1-killed/total,
+                "wall_seconds":float(tm[0]) if tm else None,
+                "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+              })
+
+          rows.sort(key=lambda r:r["q"])
+          assert [r["q"] for r in rows]==[14,16,18,20],rows
+          out={"kind":"sparse_reverse_predecessor_curve","rows":rows}
+          Path("sparse-reverse-predecessor-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("SPARSE_REVERSE_PREDECESSOR_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert rows[0]["killed"]==2233499
+          assert rows[0]["retained_certificates"]==3265
+          print("SPARSE_REVERSE_PREDECESSOR_REFERENCE_GATES_OK")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sparse-reverse-predecessor-field
+          path: sparse-reverse-predecessor-field.json
+          retention-days: 30
