@@ -85,6 +85,62 @@ theorem lift_stage
     rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
     simp [hi, hwi, hsi, j, hsub]
 
+def orStage (m s p : Nat) : Nat :=
+  (p ||| (p >>> s)) &&& m
+
+theorem orStage_le (m s p : Nat) :
+    orStage m s p ≤ m := by
+  unfold orStage
+  exact Nat.and_le_right
+
+theorem orStage_lt_pow (w m s p : Nat) (hm : m < 2 ^ w) :
+    orStage m s p < 2 ^ w :=
+  Nat.lt_of_le_of_lt (orStage_le m s p) hm
+
+theorem lift_or_stage
+    (w m s p q : Nat)
+    (hp : p < 2 ^ w)
+    (hm : m < 2 ^ (w - s))
+    (hs0 : 0 < s)
+    (hsw : s ≤ w) :
+    orStage (maskW w m) s (packW w p q) =
+      packW w (orStage m s p) (orStage m s q) := by
+  have hmw : m < 2 ^ w := by
+    have hpow : 2 ^ (w - s) ≤ 2 ^ w :=
+      Nat.pow_le_pow_right (by omega) (Nat.sub_le w s)
+    exact Nat.lt_of_lt_of_le hm hpow
+  apply Nat.eq_of_testBit_eq
+  intro i
+  rw [testBit_packW w (orStage m s p) (orStage m s q) i
+      (orStage_lt_pow w m s p hmw)]
+  unfold orStage
+  rw [Nat.testBit_and, testBit_maskW w m i hmw]
+  simp only [Nat.testBit_and, Nat.testBit_or, Nat.testBit_shiftRight]
+  by_cases hi : i < w
+  · rw [if_pos hi, if_pos hi]
+    by_cases hb : m.testBit i = true
+    · have hik : i < w - s := by
+        by_cases hsmall : i < w - s
+        · exact hsmall
+        · have hki : w - s ≤ i := by omega
+          have hf := bit_false_above_pow hm hki
+          rw [hf] at hb
+          simp at hb
+      have his : s + i < w := by omega
+      rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
+      simp [hi, his, hb]
+    · have hbf : m.testBit i = false := by
+        cases h : m.testBit i <;> simp_all
+      simp [hbf]
+  · have hwi : w ≤ i := by omega
+    let j := i - w
+    have hij : i = w + j := by dsimp [j]; omega
+    have hsi : ¬ s + i < w := by omega
+    have hsub : (s + i) - w = s + j := by rw [hij]; omega
+    rw [if_neg hi, if_neg hi]
+    rw [testBit_packW w p q i hp, testBit_packW w p q (s + i) hp]
+    simp [hi, hsi, j, hsub]
+
 theorem packW_mul (w p q k : Nat) :
     packW w p q * k = packW w (p * k) (q * k) := by
   unfold packW
