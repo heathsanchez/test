@@ -1,0 +1,104 @@
+name: Collatz episode cycle countdown
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-episode-cycle-countdown.yml"
+      - "experiments/collatz_episode_cycle_countdown.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-episode-cycle-countdown
+  cancel-in-progress: true
+
+jobs:
+  cycles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - { r: 6,  p: 12, l: 4 }
+          - { r: 8,  p: 14, l: 3 }
+          - { r: 10, p: 14, l: 3 }
+          - { r: 12, p: 16, l: 2 }
+    name: cycle-r${{ matrix.r }}-p${{ matrix.p }}-l${{ matrix.l }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact bounded cycle countdown
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_episode_cycle_countdown.py               --max-r ${{ matrix.r }}               --precision ${{ matrix.p }}               --max-cycle-len ${{ matrix.l }}               --out results/cycles.json             | tee results/census.txt
+          grep -q "VERIFIED_BOUNDED_EPISODE_CYCLE_COUNTDOWN" results/census.txt
+
+      - name: Freeze cycle-rank controls
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open("results/cycles.json"))
+          assert r["proof_status"]=="bounded_cycle_countdown_not_global_proof"
+          # Every non-neutral cycle has an odd fixed-point denominator,
+          # so D units of 2-adic precision are consumed per repeat.
+          # Candidate global theorem wants no positive integer fixed point
+          # except the base cycle at m=1.
+          assert not r["nonbase_positive_integer_fixed_points"],r["nonbase_positive_integer_fixed_points"][:5]
+          print("EPISODE_CYCLE_RANK_GATES_OK",
+                r["max_r"],r["precision"],r["max_cycle_len"],
+                r["r_cycle_count"],r["schema_cycle_count"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode-cycle-r${{ matrix.r }}-p${{ matrix.p }}-l${{ matrix.l }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: cycles
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: episode-cycle-r*
+          path: gathered
+      - name: Aggregate cycle-countdown curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("episode-cycle-r*"):
+              p=d/"cycles.json"; assert p.exists(),d
+              r=json.loads(p.read_text())
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              rows.append({
+                  "max_r":r["max_r"],"precision":r["precision"],
+                  "max_cycle_len":r["max_cycle_len"],
+                  "r_cycle_count":r["r_cycle_count"],
+                  "schema_cycle_count":r["schema_cycle_count"],
+                  "fixed_point_classes":r["fixed_point_classes"],
+                  "nonbase_positive":len(r["nonbase_positive_integer_fixed_points"]),
+                  "precision_boundary":r["precision_boundary_unresolved"],
+                  "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1]),
+              })
+          rows.sort(key=lambda z:(z["max_r"],z["precision"],z["max_cycle_len"]))
+          assert len(rows)==4,rows
+          assert all(z["nonbase_positive"]==0 for z in rows),rows
+          out={"kind":"bounded_episode_cycle_countdown_curve","rows":rows}
+          Path("episode-cycle-countdown-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("EPISODE_CYCLE_COUNTDOWN_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode-cycle-countdown-field
+          path: episode-cycle-countdown-field.json
+          retention-days: 30
