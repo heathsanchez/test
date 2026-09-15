@@ -1,0 +1,77 @@
+name: Collatz post-sieve scheduling control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-post-sieve-scheduling.yml"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-post-sieve-scheduling
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build schedule variants
+        run: |
+          cp experiments/collatz_vslice_fused_scan.cpp /tmp/dynamic.cpp
+          sed 's/schedule(dynamic,64)/schedule(static)/' experiments/collatz_vslice_fused_scan.cpp > /tmp/static.cpp
+          sed 's/schedule(dynamic,64)/schedule(static,64)/' experiments/collatz_vslice_fused_scan.cpp > /tmp/static64.cpp
+          sed 's/schedule(dynamic,64)/schedule(guided,64)/' experiments/collatz_vslice_fused_scan.cpp > /tmp/guided64.cpp
+          for X in dynamic static static64 guided64; do
+            g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16               /tmp/$X.cpp -o /tmp/$X
+          done
+      - name: Exact sealed schedule comparison
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          mkdir -p results
+          L=2392312122059207475200
+          K=28
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=28
+          GLOBAL_U=3143983941795894239301
+          target=1<<28
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          for X in dynamic static static64 guided64; do
+            /usr/bin/time -f '%e' -o results/$X.time               /tmp/$X $K 5000 1 0 "$L" "$U" > results/$X.txt
+          done
+          python - <<'PY'
+          import json,re
+          names=("dynamic","static","static64","guided64")
+          ref=None; rows=[]
+          pats=[
+              r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",
+              r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",
+              r"SCANNED (\d+).*overflows=(\d+)",
+              r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+              r"STATUS (\S+)",
+          ]
+          for x in names:
+              s=open(f"results/{x}.txt").read()
+              sig=[]
+              for p in pats:
+                  m=re.search(p,s); assert m,(x,p,s[-3000:])
+                  sig.append(m.groups())
+              if ref is None: ref=sig
+              else: assert sig==ref,(x,sig,ref)
+              rows.append({"schedule":x,"seconds":float(open(f"results/{x}.time").read())})
+          winner=min(rows,key=lambda r:r["seconds"])
+          print("POST_SIEVE_SCHEDULE_FIELD",json.dumps({"rows":rows,"winner":winner},separators=(",",":")))
+          print("POST_SIEVE_SCHEDULE_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-post-sieve-scheduling
+          path: results
+          if-no-files-found: error
+          retention-days: 30
