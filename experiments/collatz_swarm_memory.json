@@ -65,6 +65,22 @@
       "consequence": "generalizes m mod4 half-sieve by exact affine trajectory coalescence; c16 kills 17917/32768 odd m classes before overlap with transfer/mod9",
       "performance": "at k28 sealed 134217728-seed world, removes 6272480 additional prefix-live seeds and reduces explicit residual 1.10319x; end-to-end 1.0463x speedup",
       "status": "retained-production"
+    },
+    {
+      "id": "coalescence-c16",
+      "scope": "fixed valuation slice; cross-valuation affine merge into lower k-1 family",
+      "evidence_run": 34943039706,
+      "consequence": "at k28 removes 10.319% beyond p24+mod9 residual on sealed world",
+      "performance": "c16 runtime winner at k28; 2.16s sealed bitset control vs deeper c18/c20/c22 slower",
+      "status": "retained"
+    },
+    {
+      "id": "coalescence-c16-plus-q7",
+      "scope": "production composition for k27 and below",
+      "evidence_run": 34944221819,
+      "consequence": "q7 removes another 3.492% of c16+mod9 explicit residual",
+      "performance": "2.05s vs 2.08s on sealed k28 world; ~1.015x faster and smaller residual",
+      "status": "retained"
     }
   ],
   "rejected": [
@@ -104,6 +120,18 @@
       "evidence_run": 34942194843,
       "reason": "exact 1013/2187 residue coverage and 3.49% smaller mod9 residual, but end-to-end runtime neutral/slightly worse; mod9 remains production winner",
       "status": "dominated-for-runtime"
+    },
+    {
+      "id": "coalescence-deeper-bitset",
+      "evidence_run": 34943787707,
+      "reason": "bit-packing reduced table size to 32/128/512KB for c18/c20/c22 but c16 remained fastest; deeper residual reduction did not repay lookup/init cost",
+      "status": "dominated"
+    },
+    {
+      "id": "multi-gap-coalescence",
+      "evidence_run": 34944044383,
+      "reason": "gap2 adds zero beyond gap1; gap3 adds only 21/32768 classes at k28 c16; gaps4-5 add zero further",
+      "status": "dominated"
     }
   ],
   "pending": [
@@ -113,5 +141,5 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1) <= 28; full k28 exact production run active under swarm-selected representation"
+  "next_residual": "v2(n+1)=28 exact production scan active; k27 should use p24+c16+q7 if k28 closes"
 }
