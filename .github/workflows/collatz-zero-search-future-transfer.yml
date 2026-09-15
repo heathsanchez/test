@@ -1,0 +1,224 @@
+name: Collatz zero-search future constructor transfer
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-zero-search-future-transfer.yml"
+      - "experiments/collatz_deep_program_profile.cpp"
+      - "experiments/collatz_compiled_deep_future.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-zero-search-future-transfer
+  cancel-in-progress: true
+
+jobs:
+  discover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Discover H16 bank using B24 and earlier only
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_deep_program_profile.cpp -o /tmp/profile
+          /tmp/profile 24 results/q14-bank.txt 16 | tee results/discovery.txt
+          grep -q "DEEP_CONT_DONE K=24 H=16 final_live=173280" results/discovery.txt
+          grep -q "DEEP_PROGRAM_PROFILE unique_program_shapes=108 unique_exact_constructors=128" results/discovery.txt
+
+      - name: Freeze exact constructor bank
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          s=Path("results/discovery.txt").read_text()
+          rows=[]
+          seen=set()
+          for m in re.finditer(
+              r"DEEP_EXACT_CONSTRUCTOR rank=(\d+) count=(\d+) signature=(\S+)",s):
+              rank,count,sig=int(m.group(1)),int(m.group(2)),m.group(3)
+              parts=sig.split(":")
+              assert len(parts)==5,(rank,sig,parts)
+              o,steps,word,C,residue=parts
+              row=f"{o} {steps} {C} {residue} {word}"
+              if row not in seen:
+                  seen.add(row); rows.append(row)
+          assert len(rows)==128,len(rows)
+          Path("results/deep-bank.txt").write_text("\n".join(rows)+"\n")
+          print("FROZEN_DEEP_BANK exact_constructors=128 discovery_max_B=24 search_horizon=16")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frozen-b24-constructor-bank
+          path: results
+          retention-days: 30
+
+  future:
+    needs: discover
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [24,26,28,30,32]
+    name: future-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: frozen-b24-constructor-bank
+          path: frozen
+
+      - name: Replay frozen bank with zero new search
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          cp frozen/q14-bank.txt results/
+          cp frozen/deep-bank.txt results/
+          g++ -O3 -march=native -std=c++20             experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/future ${{ matrix.k }}               results/q14-bank.txt results/deep-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/census.txt
+          grep -q "new_search_calls=0" results/census.txt
+
+      - name: Score transfer against full H16 search
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          h16={
+              24:173280,
+              26:604877,
+              28:1984609,
+              30:6947941,
+              32:23935800,
+          }
+          deep_o={
+              24:238727,
+              26:837599,
+              28:2741655,
+              30:9590847,
+              32:33685571,
+          }
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"COMPILED_FUTURE_DONE K={K} final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_compiled=(\d+) "
+              r"controls=(\d+) new_search_calls=0",s)
+          assert m,s[-6000:]
+          live,des,bridge,do,compiled,controls=map(int,m.groups())
+
+          full_gain=deep_o[K]-h16[K]
+          transfer_gain=deep_o[K]-live
+          transfer_ratio=(transfer_gain/full_gain) if full_gain else 1.0
+
+          if K==24:
+              # Discovery world: frozen replay must exactly reproduce search.
+              assert live==h16[K],(live,h16[K])
+              assert abs(transfer_ratio-1.0)<1e-12
+          else:
+              # Untouched future bank cannot outperform exhaustive H16 search
+              # over the same word language, but should transfer real closure.
+              assert live>=h16[K],(K,live,h16[K])
+              assert transfer_gain>0,(K,live,deep_o[K])
+
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"zero_search_future_transfer",
+              "K":K,
+              "compiled_live":live,
+              "full_h16_search_live":h16[K],
+              "deep_o_baseline_live":deep_o[K],
+              "full_h16_gain":full_gain,
+              "compiled_transfer_gain":transfer_gain,
+              "gain_transfer_ratio":transfer_ratio,
+              "total_compiled_direct_closures":compiled,
+              "new_search_calls":0,
+              "controls":controls,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("ZERO_SEARCH_FUTURE_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: zero-search-future-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: future
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: zero-search-future-b*
+          path: gathered
+
+      - name: Aggregate untouched-future transfer curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("zero-search-future-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[24,26,28,30,32],rows
+          futures=[r for r in rows if r["K"]>24]
+          min_ratio=min(r["gain_transfer_ratio"] for r in futures)
+          mean_ratio=sum(r["gain_transfer_ratio"] for r in futures)/len(futures)
+          out={
+              "kind":"zero_search_untouched_future_transfer_curve",
+              "discovery_max_B":24,
+              "frozen_exact_constructors":128,
+              "new_search_calls":0,
+              "min_future_gain_transfer_ratio":min_ratio,
+              "mean_future_gain_transfer_ratio":mean_ratio,
+              "rows":rows,
+          }
+          Path("zero-search-future-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("ZERO_SEARCH_FUTURE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert min_ratio>0,out
+          print("ZERO_SEARCH_UNTOUCHED_FUTURE_TRANSFER_VERIFIED")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zero-search-future-field
+          path: zero-search-future-field.json
+          retention-days: 30
