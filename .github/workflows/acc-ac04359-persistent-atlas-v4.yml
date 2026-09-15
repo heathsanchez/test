@@ -1,0 +1,121 @@
+name: ACC ac-04359 Persistent Atlas V4
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths: [".github/workflows/acc-ac04359-persistent-atlas-v4.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  V3_RUN_ID: "34734591469"
+  SEED_RUN_ID: "34825953902"
+
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover persistent atlas, seed, and live frontier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v3 /tmp/seed attack/input attack/raw
+          gh run download "$V3_RUN_ID" -n acc-compounding-frontier-v3 -D /tmp/v3
+          atlas=$(find /tmp/v3 -name proof_atlas.sqlite -print -quit)
+          test -n "$atlas"
+          cp "$atlas" attack/input/prior.sqlite
+          gh run download "$SEED_RUN_ID" -n acc-mda-causal-strict-steal-publication -D /tmp/seed
+          seed=$(find /tmp/seed -path '*/mda_causal_fortified/fortified_ac.txt' -print -quit)
+          grep '^ac-04359:' "$seed" > attack/input/seed.txt
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); row=next(x for x in d['items'] if x['challengeId']=='ac-04359')
+          Path('attack/input/snapshot.json').write_text(json.dumps(o))
+          Path('attack/input/targets.json').write_text(json.dumps(['ac-04359']))
+          Path('attack/input/live_best.txt').write_text(str(row['currentBestLength']))
+          print('LIVE',row['currentBestLength'],row.get('kTeams'))
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          sudo fallocate -l 10G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+
+      - name: Augment persistent atlas with our latest route
+        run: |
+          set -euo pipefail
+          mkdir -p attack/seed
+          cp attack/input/seed.txt attack/seed/seed.txt
+          python3 acc_competitive/proof_atlas_fortify_v1.py             --acc-root /tmp/acc             --glob 'attack/seed/*.txt'             --out-dir attack/augmented             --prior-atlas attack/input/prior.sqlite             --reverse-depth 7 --reverse-cap 250000             | tee attack/augment.log
+
+      - name: Exact connector
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_connector_v1.py             --acc-root /tmp/acc             --atlas attack/augmented/proof_atlas.sqlite             --snapshot-ac attack/input/snapshot.json             --target-ids-file attack/input/targets.json             --out-dir attack/exact             --connector-depth 7 --node-cap 1500000             | tee attack/exact.log
+
+      - name: Orbit connector
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/orbit_atlas_connector_v1.py             --acc-root /tmp/acc             --atlas attack/augmented/proof_atlas.sqlite             --snapshot-ac attack/input/snapshot.json             --target-ids-file attack/input/targets.json             --out-dir attack/orbit             --connector-depth 7 --node-cap 1500000             | tee attack/orbit.log
+
+      - name: Assemble and verify strict candidates
+        run: |
+          set -euo pipefail
+          for f in attack/exact/pending_submission.txt attack/orbit/pending_submission.txt; do
+            if [ -s "$f" ]; then grep '^ac-04359:' "$f" >> attack/raw/candidates.txt || true; fi
+          done
+          if [ ! -s attack/raw/candidates.txt ]; then
+            echo "NO_STRICT_ATLAS_CANDIDATE"
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py             --acc-root /tmp/acc             --glob 'attack/raw/*.txt'             --out-dir attack/final             --prior-atlas attack/augmented/proof_atlas.sqlite             --reverse-depth 7 --reverse-cap 250000             | tee attack/final.log
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc');sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core,stable_core
+          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']};lim=man['limits']
+          line=next(x for x in Path('attack/final/fortified_ac.txt').read_text().splitlines() if x.startswith('ac-04359:'))
+          m=json.loads(line.split(':',1)[1].strip()); c=by['ac-04359']
+          v=core.verify(c,m,c['move_spec_version'],lim);assert v['ok'],v
+          sm=m+[16,15];sc=by['sac-04359'];sv=stable_core.verify(sc,sm,sc['move_spec_version'],lim);assert sv['ok'],sv
+          Path('attack/final_candidates.txt').write_text(
+            'ac-04359: '+json.dumps(m,separators=(',',':'))+'\n'+
+            'sac-04359: '+json.dumps(sm,separators=(',',':'))+'\n')
+          print('FINAL',len(m),len(sm),v['certificate_hash'])
+          PY
+
+      - name: Publish strict live record only
+        if: hashFiles('attack/final_candidates.txt') != ''
+        env:
+          ACC_SUBMISSION_FILE: attack/final_candidates.txt
+          ACC_SUBMIT_OUT: attack/publish
+        run: python3 acc_submit/submit_live_filtered.py | tee attack/publish.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac04359-persistent-atlas-v4
+          path: attack/
+          retention-days: 90
