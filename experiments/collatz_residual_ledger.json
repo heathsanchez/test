@@ -396,6 +396,24 @@
       "extremal_seed_decimal": "4140024969260439699455",
       "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 37",
+      "exact_seed_count": 2734566150,
+      "max_first_descent": 711,
+      "extremal_seed_decimal": "3048067165999973007359",
+      "certificate_method": "exact exhaustive 16-step affine block compiler across 16 shards; no survivor through H803",
+      "workflow_run": "34929564542",
+      "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 36",
+      "exact_seed_count": 5469132300,
+      "max_first_descent": 720,
+      "extremal_seed_decimal": "2658471220309718466559",
+      "certificate_method": "exact exhaustive 16-step affine block compiler across 16 shards; no survivor through H803",
+      "workflow_run": "34929694232",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -405,9 +423,9 @@
     "source": "exact exhaustive v2(n+1)=39 block-compiled region"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with 72 seed bits",
-    "reason": "transfer theorem reduces the finite extension to exact coefficient persistence; H1000 is the current separator",
-    "next_action": "if H1000 is UNSAT, recover the exact maximal horizon by assumption-based binary search, then regenerate UNSAT from emitted DIMACS using standalone pinned CaDiCaL and independently verify its DRAT proof"
+    "predicate": "tightened live interval, restricted after exact compilation of v2(n+1) >= 36 through H803",
+    "reason": "v2=39 remains the exact global record at first descent 802; tightened v2=37 and v2=36 are now exhausted through H803 with maxima 711 and 720. v2=35 exposed rare u128 overflow, so overflow seeds must be replayed with arbitrary precision before that slice can receive any verdict.",
+    "next_action": "recover every v2=35 overflow seed with exact arbitrary-precision replay; if none survives H803, finish the slice and descend to v2=34 using the same overflow-safe compiler"
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
