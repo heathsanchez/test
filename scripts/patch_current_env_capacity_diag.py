@@ -140,15 +140,13 @@ old="""    pub(crate) fn env_extend(&mut self, parent: E<'t>, v: V<'t>) -> E<'t>
 """
 new="""    pub(crate) fn env_extend(&mut self, parent: E<'t>, v: V<'t>) -> E<'t> {
         let key = (parent as *const value::Env<'t> as usize, v as *const Value<'t> as usize);
-        let before_len = self.tc_cache.env_hc.len();
-        let before_cap = self.tc_cache.env_hc.capacity();
-        let r = match self.tc_cache.env_hc.entry(key) {
-            Entry::Occupied(o) => o.get(),
-            Entry::Vacant(slot) => slot.insert(value::env_extend(self.arena, parent, v)),
-        };
-        if self.tc_cache.env_hc.len() > before_len {
-            crate::util::diag_env_hc_insert(before_cap, self.tc_cache.env_hc.capacity());
+        if let Some(r) = self.tc_cache.env_hc.get(&key).copied() {
+            return r;
         }
+        let before_cap = self.tc_cache.env_hc.capacity();
+        let r = value::env_extend(self.arena, parent, v);
+        self.tc_cache.env_hc.insert(key, r);
+        crate::util::diag_env_hc_insert(before_cap, self.tc_cache.env_hc.capacity());
         r
     }
 """
