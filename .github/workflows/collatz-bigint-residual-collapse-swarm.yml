@@ -1,0 +1,138 @@
+name: Collatz bigint residual collapse swarm
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-bigint-residual-collapse-swarm.yml"
+      - "experiments/collatz_shell_forward_reverse_bigint.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-bigint-residual-collapse-swarm
+  cancel-in-progress: true
+
+jobs:
+  swarm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        h: [144,160,192,256,384,512,768,1024]
+    name: bigint-h${{ matrix.h }}-r8
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run arbitrary-precision collapse cell
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_forward_reverse_bigint.cpp -o /tmp/big
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/big 24 results/q14-bank.txt 8 ${{ matrix.h }}             | tee results/census.txt
+          grep -q "VERIFIED_BIGINT_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+
+      - name: Record exact cell
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"BIG_SHELL_FORWARD_REVERSE_RESULT K=24 reverse_depth=8 forward_h=(\d+) "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-8000:]
+          h,u,fw,rv,hard,controls=map(int,m.groups())
+          assert h==H and u==173180 and fw+rv+hard==u
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"bigint_residual_collapse_cell",
+              "K":24,"forward_h":H,"reverse_depth":8,
+              "universal_residual":u,
+              "shell_forward":fw,"shell_reverse":rv,
+              "shell_closed":fw+rv,"shell_hard":hard,
+              "closed_fraction":(fw+rv)/u,
+              "controls":controls,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("BIGINT_COLLAPSE_CELL",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bigint-collapse-h${{ matrix.h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: swarm
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bigint-collapse-h*
+          path: gathered
+
+      - name: Aggregate exact collapse curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("bigint-collapse-h*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["forward_h"])
+          assert [r["forward_h"] for r in rows]==[144,160,192,256,384,512,768,1024],rows
+          prev=114
+          for r in rows:
+              assert r["shell_hard"]<=prev,(prev,r)
+              prev=r["shell_hard"]
+          best=min(rows,key=lambda r:(r["shell_hard"],r["forward_h"]))
+          out={
+              "kind":"bigint_residual_collapse_swarm",
+              "baseline_h128_hard":114,
+              "rows":rows,
+              "best":best,
+          }
+          Path("bigint-residual-collapse-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("BIGINT_RESIDUAL_COLLAPSE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          if best["shell_hard"]==0:
+              print("B24_SHELL_EXACTLY_CLOSED_BIGINT")
+          else:
+              print("B24_SHELL_RESIDUAL_REMAINS",best["shell_hard"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bigint-residual-collapse-field
+          path: bigint-residual-collapse-field.json
+          retention-days: 30
