@@ -1,0 +1,213 @@
+name: Collatz exact v2=27 survivor frontier
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-v27-survivor.yml"
+      - "experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp"
+      - "experiments/collatz_predecessor_merge.py"
+      - "experiments/collatz_transfer_farey.py"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+      - "experiments/collatz_predecessor_coalescence.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-v27-survivor
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all exact sieve prerequisites
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
+          python experiments/collatz_transfer_farey.py | tee /tmp/transfer.txt
+          python experiments/collatz_reverse_predecessor_tree.py | tee /tmp/mod9.txt
+          python experiments/collatz_predecessor_coalescence.py --k 28 --s 16 | tee /tmp/coal.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
+          grep -q "every first coefficient contraction with t < 114208327604 forces descent" /tmp/transfer.txt
+          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt\n          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
+          grep -q "killed=17917 odd_classes=32768" /tmp/coal.txt
+          grep -q "VERIFIED_CROSS_VALUATION_PREDECESSOR_COALESCENCE" /tmp/coal.txt
+      - name: Build production exact scanner
+        run: |
+          g++ -O3 -march=native -fopenmp \
+            -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp -o /tmp/vscan
+      - name: Protect exact 920 record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/vscan 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/record.txt
+          echo V27_PRODUCTION_CONTROL_OK
+
+  scan:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [5,0,1,2,3,4,6,7,8,9,10,11,12,13,14,15]
+    name: v27-h5000-${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build production exact scanner
+        run: |
+          g++ -O3 -march=native -fopenmp \
+            -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16 \
+            experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp -o /tmp/vscan
+      - name: Exact tightened v2=27 scan through H5000
+        run: |
+          set -o pipefail
+          mkdir -p results
+          /tmp/vscan 27 5000 16 ${{ matrix.shard }} \
+            2392312122059207475200 \
+            3143983941795894239301 \
+            | tee results/v27-${{ matrix.shard }}.txt
+      - name: Exact arbitrary-precision replay
+        run: |
+          python - <<'PY' | tee -a results/v27-${{ matrix.shard }}.txt
+          import re
+          p="results/v27-${{ matrix.shard }}.txt"
+          s=open(p).read()
+          candidates=[]
+          candidates += [("overflow",int(n)) for n in re.findall(r"OVERFLOW_SEED seed=(\d+)",s)]
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=5000",s)
+          if m:
+              candidates.append(("u128-survivor",int(m.group(1))))
+          seen=set(); survivors=[]
+          for kind,n in candidates:
+              if n in seen: continue
+              seen.add(n)
+              x=n; peak=n; first=None
+              for t in range(1,5001):
+                  x=(3*x+1)//2 if x&1 else x//2
+                  peak=max(peak,x)
+                  if x<n:
+                      first=t
+                      break
+              print(f"BIG_REPLAY kind={kind} seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              if first is None or first>5000:
+                  survivors.append((n,first,peak,t))
+          if survivors:
+              n,first,peak,t=survivors[0]
+              print(f"SURVIVOR_REPLAY seed={n} first_descent={first} peak={peak} stopped_at={t}")
+              print("STATUS SURVIVOR_FOUND")
+          elif "STATUS OVERFLOW_REPLAY_REQUIRED" in s:
+              print("STATUS EXHAUSTED_NO_SURVIVOR")
+          elif "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in s:
+              print("EXACT_SHARD_ALREADY_EXHAUSTED")
+          elif "STATUS SURVIVOR_FOUND" in s:
+              raise SystemExit("u128 survivor failed exact replay invariant")
+          else:
+              raise SystemExit("missing scanner terminal status")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v27-${{ matrix.shard }}
+          path: results/v27-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: scan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-v27-*
+          path: gathered
+          merge-multiple: true
+      - name: Aggregate exact slice consequence
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          fs=sorted(Path("gathered").glob("v27-*.txt"))
+          rows=[]; survivors=[]; headers=[]
+          for p in fs:
+              s=p.read_text()
+              sm=re.search(r"SCANNED (\d+)",s)
+              bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+              cm=re.search(r"COALESCENCE_EXTRA_KILLED (\\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\\d+) EXPLICIT (\d+)",s)
+              hm=re.search(r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",s)
+              if hm: headers.append(tuple(map(int,hm.groups())))
+              status=(
+                  "SURVIVOR" if "STATUS SURVIVOR_FOUND" in s else
+                  "EXHAUSTED" if ("STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in s or "STATUS EXHAUSTED_NO_SURVIVOR" in s) else
+                  "UNKNOWN"
+              )
+              row={
+                  "file":p.name,
+                  "scanned":int(sm.group(1)) if sm else None,
+                  "coalescence_extra":int(cm.group(1)) if cm else None,
+                  "predq7_after_coalescence":int(cm.group(2)) if cm else None,
+                  "explicit":int(cm.group(3)) if cm else None,
+                  "best":int(bm.group(1)) if bm else None,
+                  "best_seed":bm.group(2) if bm else None,
+                  "overflow_count":len(re.findall(r"OVERFLOW_SEED seed=(\d+)",s)),
+                  "status":status,
+              }
+              for rm in re.findall(r"SURVIVOR_REPLAY seed=(\d+) first_descent=(None|\d+) peak=(\d+)",s):
+                  survivors.append({
+                      "file":p.name,
+                      "survivor_seed":rm[0],
+                      "first_descent":None if rm[1]=="None" else int(rm[1]),
+                      "peak":rm[2],
+                  })
+              rows.append(row)
+
+          assert headers and all(x==headers[0] for x in headers),headers
+          full_count,merge_killed,transfer_killed,prefix_live=headers[0]
+          coal=sum(r["coalescence_extra"] or 0 for r in rows)
+          mod9=sum(r["predq7_after_coalescence"] or 0 for r in rows)
+          explicit=sum(r["explicit"] or 0 for r in rows)
+          scanned=sum(r["scanned"] or 0 for r in rows)
+
+          assert coal+mod9+explicit==prefix_live,(coal,mod9,explicit,prefix_live)
+          assert scanned==explicit,(scanned,explicit)
+          assert merge_killed+transfer_killed+prefix_live==full_count
+
+          best_row=max(rows,key=lambda r:r["best"] or 0) if rows else None
+          summary={
+              "kind":"exact_v2_28_h5000_p24_coalescence16_predq7",
+              "completed_shards":len(rows),
+              "expected_shards":16,
+              "full_slice_seed_count":full_count,
+              "predecessor_half_merge_killed_seed_count":merge_killed,
+              "transfer_contraction_killed_seed_count":transfer_killed,
+              "coalescence_extra_killed_seed_count":coal,
+              "predq7_predecessor_killed_seed_count":mod9,
+              "explicitly_scanned_seed_count":explicit,
+              "closed_without_explicit_scan":merge_killed+transfer_killed+coal+mod9,
+              "overflow_seed_count":sum(r["overflow_count"] for r in rows),
+              "survivors":survivors,
+              "all_exhausted_no_survivor":len(rows)==16 and all(r["status"]=="EXHAUSTED" for r in rows),
+              "best_observed_explicit_nonoverflow":best_row["best"] if best_row else 0,
+              "best_observed_explicit_seed":best_row["best_seed"] if best_row else None,
+          }
+          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("V27_COALESCENCE_AGGREGATE",json.dumps(summary,separators=(",",":")))
+
+          if len(rows)!=16:
+              raise SystemExit(f"incomplete exact coverage: {len(rows)}/16")
+          if any(r["status"]=="UNKNOWN" for r in rows):
+              raise SystemExit("one or more shards lack an exact terminal verdict")
+          if survivors:
+              raise SystemExit("exact H5000 survivor remains in v2=27 slice")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v27-aggregate
+          path: gathered/summary.json
+          retention-days: 30
