@@ -1,0 +1,115 @@
+name: Collatz future-consequence modulus quotient
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-future-mod-quotient.yml"
+      - "experiments/collatz_future_mod_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-future-mod-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - { k: 8,  target: 28 }
+          - { k: 10, target: 28 }
+          - { k: 15, target: 28 }
+          - { k: 8,  target: 40 }
+          - { k: 10, target: 40 }
+          - { k: 15, target: 40 }
+          - { k: 25, target: 40 }
+    name: future-k${{ matrix.k }}-p${{ matrix.target }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact future quotient
+        run: g++ -O3 -march=native experiments/collatz_future_mod_quotient.cpp -o /tmp/fq
+      - name: Run exact quotient
+        run: |
+          mkdir -p results
+          /usr/bin/time -f '%e' -o results/time.txt \
+            /tmp/fq ${{ matrix.k }} ${{ matrix.target }} 12000000 \
+            | tee results/census.txt
+          grep -q "VERIFIED_EXACT_FINITE_HORIZON_FUTURE_MOD_QUOTIENT" results/census.txt
+      - name: Cross-check retained p28 exact census
+        if: matrix.target == 28
+        run: |
+          case "${{ matrix.k }}" in
+            8)  grep -q "FUTURE_QUOTIENT_DONE K=8 target=28 final_live_classes=19085390" results/census.txt ;;
+            10) grep -q "FUTURE_QUOTIENT_DONE K=10 target=28 final_live_classes=28311176" results/census.txt ;;
+            15) grep -q "FUTURE_QUOTIENT_DONE K=15 target=28 final_live_classes=46777401" results/census.txt ;;
+          esac
+          echo FUTURE_QUOTIENT_P28_REFERENCE_CENSUS_OK
+      - uses: actions/upload-artifact@v4
+        with:
+          name: future-k${{ matrix.k }}-p${{ matrix.target }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: future-k*
+          path: gathered
+      - name: Aggregate exact consequence quotient field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("future-k*")):
+              p=d/"census.txt"
+              if not p.exists():
+                  continue
+              s=p.read_text()
+              m=re.search(
+                  r"FUTURE_QUOTIENT_DONE K=(\d+) target=(\d+) "
+                  r"final_live_classes=(\d+) final_nodes=(\d+) "
+                  r"peak_nodes=(\d+) peak_p=(\d+)", s)
+              assert m,s[-4000:]
+              k,target,live,final_nodes,peak,peak_p=map(int,m.groups())
+              t=float((d/"time.txt").read_text().strip())
+              levels=[]
+              for z in re.finditer(
+                  r"FUTURE_QUOTIENT_LEVEL K=(\d+) target=(\d+) p=(\d+) "
+                  r"nodes=(\d+) represented_live=(\d+) "
+                  r"compression=([0-9.eE+-]+) killed_here=(\d+)", s):
+                  levels.append({
+                      "p":int(z.group(3)),
+                      "nodes":int(z.group(4)),
+                      "represented_live":int(z.group(5)),
+                      "compression":float(z.group(6)),
+                      "killed_here":int(z.group(7)),
+                  })
+              rows.append({
+                  "k":k,"target":target,"final_live_classes":live,
+                  "final_nodes":final_nodes,"peak_nodes":peak,"peak_p":peak_p,
+                  "wall_seconds":t,"levels":levels,
+              })
+          out={"kind":"exact_finite_horizon_future_mod_quotient","rows":rows}
+          Path("future-quotient-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("FUTURE_QUOTIENT_FIELD",json.dumps(out,separators=(",",":")))
+          assert len(rows)==7,(len(rows),rows)
+          refs={(8,28):19085390,(10,28):28311176,(15,28):46777401}
+          for r in rows:
+              if (r["k"],r["target"]) in refs:
+                  assert r["final_live_classes"]==refs[(r["k"],r["target"])]
+          print("FUTURE_QUOTIENT_REFERENCE_GATES_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-future-quotient-field
+          path: future-quotient-field.json
+          retention-days: 30
