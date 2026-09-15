@@ -48,7 +48,7 @@ jobs:
       fail-fast: false
       max-parallel: 9
       matrix:
-        k: [15,10,8]
+        k: [28,24,20]
         c: [16,18,20]
     name: coal-k${{ matrix.k }}-c${{ matrix.c }}
     steps:
@@ -141,7 +141,7 @@ jobs:
           rows=[json.loads(p.read_text()) for p in sorted(Path("gathered").glob("scout-*.json"))]
           assert len(rows)==9,len(rows)
           winners={}
-          for k in (15,10,8):
+          for k in (28,24,20):
               g=[r for r in rows if r["k"]==k]
               winners[str(k)]=min(g,key=lambda r:(r["candidate_seconds"],r["candidate_explicit"],r["c"]))
           out={"kind":"cross_valuation_coalescence_field","rows":rows,"runtime_winners":winners}
