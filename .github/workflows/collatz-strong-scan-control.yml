@@ -1,0 +1,86 @@
+name: Collatz strong-sieve scanner control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-strong-scan-control.yml"
+      - "experiments/collatz_vslice_strong_scan.cpp"
+      - "experiments/collatz_vslice_prefix_sieve_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-strong-scan-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact candidates
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DSTRONG_BITS=22             experiments/collatz_vslice_strong_scan.cpp -o /tmp/strong
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_prefix_sieve_scan.cpp -o /tmp/p24
+      - name: Protect current record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/strong 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS STRONG_SIEVE_AND_SCAN_CLOSED" results/record.txt
+          echo STRONG_SCAN_RECORD_CONTROL_OK
+      - name: Compare exact sealed k10 and k8 worlds
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          for K in 10 8; do
+            U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<22
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+            )
+            /usr/bin/time -f '%e' -o results/strong-k$K.time               /tmp/strong $K 5000 1 0 "$L" "$U" > results/strong-k$K.txt
+            /usr/bin/time -f '%e' -o results/p24-k$K.time               /tmp/p24 $K 5000 1 0 "$L" "$U" > results/p24-k$K.txt
+          done
+          python - <<'PY'
+          import re,json
+          rows=[]
+          for k in (10,8):
+              s=open(f"results/strong-k{k}.txt").read()
+              p=open(f"results/p24-k{k}.txt").read()
+              assert "STATUS STRONG_SIEVE_AND_SCAN_CLOSED" in s,s[-3000:]
+              assert "STATUS PREFIX_SIEVE_AND_SCAN_CLOSED" in p,p[-3000:]
+              sh=re.search(r"full_count=(\d+)",s)
+              sk=re.search(r"SIEVE_KILLED (\d+) EXPLICIT (\d+)",s)
+              ph=re.search(r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",p)
+              assert sh and sk and ph
+              full=int(sh.group(1)); killed,explicit=map(int,sk.groups())
+              pfull,pm,pt,pex=map(int,ph.groups())
+              assert full==pfull
+              assert killed+explicit==full,(k,full,killed,explicit)
+              st=float(open(f"results/strong-k{k}.time").read())
+              ptm=float(open(f"results/p24-k{k}.time").read())
+              rows.append({
+                  "k":k,"full":full,
+                  "strong_killed":killed,"strong_explicit":explicit,"strong_seconds":st,
+                  "p24_killed":pm+pt,"p24_explicit":pex,"p24_seconds":ptm,
+                  "explicit_reduction":pex/explicit if explicit else float("inf"),
+                  "speedup":ptm/st if st else float("inf"),
+              })
+          print("STRONG_SCAN_COMPARISON",json.dumps(rows,separators=(",",":")))
+          assert all(r["strong_explicit"] < r["p24_explicit"] for r in rows),rows
+          print("STRONG_SCAN_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-strong-scan-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
