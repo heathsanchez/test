@@ -1,0 +1,106 @@
+name: Collatz odd-episode transition grammar
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-odd-episode-grammar.yml"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-odd-episode-grammar
+  cancel-in-progress: true
+
+jobs:
+  grammar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        include:
+          - { r: 8,  p: 14 }
+          - { r: 12, p: 16 }
+          - { r: 16, p: 18 }
+          - { r: 20, p: 18 }
+    name: grammar-r${{ matrix.r }}-p${{ matrix.p }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile exact bounded episode grammar
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_odd_episode_grammar.py               --max-r ${{ matrix.r }}               --precision ${{ matrix.p }}               --boundary-episodes 128               --out results/grammar.json             | tee results/census.txt
+          grep -q "VERIFIED_BOUNDED_ODD_EPISODE_TRANSITION_GRAMMAR" results/census.txt
+          grep -q "R2_SELF_DIVISIBILITY_COUNTDOWN" results/census.txt
+      - name: Freeze bounded exact controls
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open("results/grammar.json"))
+          assert r["proof_status"]=="exploratory_exact_bounded_grammar_not_global_proof"
+          assert r["r2_self_countdown_control"]
+          for row in r["r2_self_countdown_control"]:
+              assert row["self_repeats"]==row["k"],row
+              vals=row["valuations"]
+              assert all(a-b==3 for a,b in zip(vals,vals[1:])),row
+          assert len(r["rows"])==r["max_r"]
+          print("ODD_EPISODE_BOUNDED_GATES_OK",
+                r["max_r"],r["precision"],
+                r["total_precision_boundary_unresolved"])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: odd-episode-r${{ matrix.r }}-p${{ matrix.p }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: grammar
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: odd-episode-r*
+          path: gathered
+      - name: Aggregate exact grammar census
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("odd-episode-r*"):
+              p=d/"grammar.json"
+              assert p.exists(),d
+              r=json.loads(p.read_text())
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              rows.append({
+                  "max_r":r["max_r"],
+                  "precision":r["precision"],
+                  "precision_boundary_unresolved":r["total_precision_boundary_unresolved"],
+                  "scc_count":len(r["sccs"]),
+                  "cyclic_scc_count":len(r["cyclic_sccs"]),
+                  "cyclic_sccs":r["cyclic_sccs"],
+                  "self_map_count":len(r["self_maps"]),
+                  "boundary_unique_schemas":r["boundary"]["unique_schemas"],
+                  "wall_seconds":float(tm[0]) if tm else None,
+                  "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+              })
+          rows.sort(key=lambda x:(x["max_r"],x["precision"]))
+          assert [(x["max_r"],x["precision"]) for x in rows]==[
+              (8,14),(12,16),(16,18),(20,18)],rows
+          out={"kind":"bounded_odd_episode_grammar_curve","rows":rows}
+          Path("odd-episode-grammar-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("ODD_EPISODE_GRAMMAR_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: odd-episode-grammar-field
+          path: odd-episode-grammar-field.json
+          retention-days: 30
