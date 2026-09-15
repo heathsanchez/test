@@ -15,7 +15,7 @@
       },
       "predecessor_depth_q": 7,
       "shards": 16,
-      "schedule": "all shards concurrently",
+      "schedule": "OpenMP dynamic,64 inside each shard; 16 concurrent GitHub shards",
       "evidence": {
         "fused_speedup_run": 34944847542,
         "block_width_run": 34945210855,
@@ -23,9 +23,10 @@
         "exact_slice_runs": [
           34944491776,
           34946925694
-        ]
+        ],
+        "scheduling_run": 34945605475
       },
-      "rationale": "B10 fastest post-sieve; C16 runtime winner; q7 gives additional exact predecessor closure at near-zero marginal runtime."
+      "rationale": "B10 and dynamic scheduling are measured post-sieve winners; C16 is runtime winner at tested scale; q7 adds exact predecessor closure at negligible marginal runtime. Deeper/shifted/global coalescence retained only if new evidence crosses their cost."
     },
     {
       "name": "mid-k-sparse-transition",
@@ -51,5 +52,28 @@
   "deferred_slices": [
     28
   ],
-  "next_primary_slice": 25
+  "next_primary_slice": 25,
+  "rejected_or_deferred": [
+    {
+      "id": "shifted-coalescence",
+      "run": 34946175222,
+      "reason": "only 2 strict extra classes of 8192 across k10/k20/k27; high setup cost"
+    },
+    {
+      "id": "global-cross-valuation-coalescence",
+      "run": 34946679926,
+      "reason": "only 2 strict extra classes of 8192"
+    },
+    {
+      "id": "predecessor-depth-q12",
+      "run": 34946452438,
+      "reason": "q7 46.319% -> q12 46.645%; real but diminishing gain, not current runtime winner"
+    },
+    {
+      "id": "deeper-coalescence-c18-c22",
+      "run": 34945121358,
+      "reason": "kills more but C16 remains measured runtime winner over tested production-scale controls; revisit only if slice economics change"
+    }
+  ],
+  "active_experiment": "future-state quotient of sparse prefix states (d,q)"
 }
