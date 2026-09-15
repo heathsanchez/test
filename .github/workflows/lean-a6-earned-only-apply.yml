@@ -49,8 +49,7 @@ jobs:
             'perf/grind-ring-5.ndjson',
             'init-prelude.ndjson',
             'perf/app-lam.ndjson',
-            'perf/beta-ladder.ndjson',
-            'perf/let-ladder.ndjson',
+            'perf/shift-cascade.ndjson',
           ]
           dev=[]
           missing=[]
@@ -71,7 +70,7 @@ jobs:
           out={
             'development':list(map(str,dev)),
             'heldout':list(map(str,held)),
-            'heldout_rule':'remove five frozen development cases; descending bytes; path tie-break; first 24',
+            'heldout_rule':'remove four frozen development cases; descending bytes; path tie-break; first 24',
           }
           pathlib.Path('results/earned-apply/manifests.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
           print(json.dumps(out,indent=2,sort_keys=True))
