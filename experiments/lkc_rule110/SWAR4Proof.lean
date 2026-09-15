@@ -336,7 +336,7 @@ theorem lift_pair_stage (p q s : Nat)
         · have hi64 : 64 ≤ i := by omega
           have hj32 : i - 64 < 32 := by omega
           have his : s + i < 128 := by omega
-              rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
+          rw [testBit_pack128 p q i hp, testBit_pack128 p q (s+i) hp]
           simp [h128, his, h32, h64, hi64, hj32, testBit_mask2]
         · have hi64 : 64 ≤ i := by omega
           have hji : ¬i - 64 < 32 := by omega
