@@ -433,6 +433,15 @@
       "certificate_method": "exact exhaustive overflow-safe 16-step affine block compiler across 16 shards through H900; rare u128 overflow replayed with Python arbitrary-precision integers",
       "workflow_run": "34930530336",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 34",
+      "exact_seed_count": 21876529201,
+      "max_first_descent": 788,
+      "certificate_method": "exact exhaustive overflow-safe 16-step affine block compiler across 16 shards through H853",
+      "workflow_run": "34930853077",
+      "overflow_seed_count": 0,
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -442,9 +451,9 @@
     "source": "exact overflow-safe v2(n+1)=35 tightened-interval scan; run 34930171144"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 34",
-    "reason": "all valuation slices v2(n+1) >= 35 are now compiled for the tightened interval; v2=35 has exact maximum first descent 853, v2=36 max 720, v2=37 max 711, and the prior higher-valuation slices are below 853.",
-    "next_action": "scan v2(n+1)=34 exactly through H853 with the overflow-safe block compiler. Any survivor has first descent >853 and sets a new record; if none survives, the slice maximum is recovered exactly and the frontier descends to v2<=33."
+    "predicate": "tightened live interval with v2(n+1) <= 33",
+    "reason": "all valuation slices v2(n+1) >= 34 are now compiled on the tightened interval; v2=35 has the exact global record 853 while v2=34 maxes at 788.",
+    "next_action": "scan v2(n+1)=33 through H853 with the overflow-safe exact block compiler; any survivor sets a new record, otherwise compile the slice and descend."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
