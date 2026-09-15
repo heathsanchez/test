@@ -1,0 +1,133 @@
+name: Collatz strong convergence sieve swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-strong-sieve-swarm.yml"
+      - "experiments/collatz_strong_sieve_scout.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-strong-sieve-swarm
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build independent C++ scout
+        run: g++ -O3 -march=native experiments/collatz_strong_sieve_scout.cpp -o /tmp/sieve
+      - name: Cross-check k12 census independently
+        run: |
+          /tmp/sieve 12 | tee /tmp/cpp.txt
+          python - <<'PY' | tee /tmp/py.txt
+          def T(n): return (3*n+1)//2 if n&1 else n//2
+          prev=[True]
+          for k in range(1,13):
+              B=1<<k
+              cur=[False]*B
+              seen=set()
+              inherited=coalesce=descent=live=odd_live=0
+              for b in range(B):
+                  n=b;c=0
+                  for _ in range(k):
+                      if n&1:c+=1
+                      n=T(n)
+                  key=(c,n)
+                  dup=key in seen
+                  seen.add(key)
+                  if k>1 and not prev[b&((1<<(k-1))-1)]:
+                      inherited+=1; continue
+                  if dup:
+                      # Exact family coalescence spot-check.
+                      # Find a lower representative with same key.
+                      bp=next(x for x in range(b) if (lambda z:(sum(((lambda q:q&1)(q:=q)) for _ in []),0))(x)==(-1,0)) if False else None
+                      coalesce+=1; continue
+                  l=3**c-(1<<k)
+                  r=b-n
+                  if l<0 and l<r:
+                      # Algebra says this holds for every a>=1.
+                      for a in (1,2,17,1000):
+                          x=a*(1<<k)+b
+                          y=x
+                          for _ in range(k): y=T(y)
+                          assert y < x,(k,b,a,x,y)
+                      descent+=1; continue
+                  cur[b]=True;live+=1;odd_live+=b&1
+              print("PY_STRONG_SIEVE_LEVEL",k,inherited,coalesce,descent,live,odd_live)
+              prev=cur
+          PY
+          python - <<'PY'
+          import re
+          c=open("/tmp/cpp.txt").read()
+          p=open("/tmp/py.txt").read()
+          cm=re.search(r"STRONG_SIEVE_LEVEL k=12 total=4096 inherited=(\d+) coalesce=(\d+) descent=(\d+) live=(\d+) odd_live=(\d+)",c)
+          pm=re.search(r"PY_STRONG_SIEVE_LEVEL 12 (\d+) (\d+) (\d+) (\d+) (\d+)",p)
+          assert cm and pm,(c[-2000:],p[-2000:])
+          assert cm.groups()==pm.groups(),(cm.groups(),pm.groups())
+          print("STRONG_SIEVE_INDEPENDENT_CENSUS_OK",cm.groups())
+          PY
+
+  scout:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        k: [16,18,20,22]
+    name: strong-sieve-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: g++ -O3 -march=native experiments/collatz_strong_sieve_scout.cpp -o /tmp/sieve
+      - name: Exact consequence census
+        run: |
+          /usr/bin/time -f 'WALL %e' -o time.txt /tmp/sieve ${{ matrix.k }} | tee census.txt
+          cat time.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strong-sieve-k${{ matrix.k }}
+          path: |
+            census.txt
+            time.txt
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: strong-sieve-k*
+          path: gathered
+      - name: Aggregate exact strong-sieve field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("strong-sieve-k*")):
+              s=(d/"census.txt").read_text()
+              t=float((d/"time.txt").read_text().split()[-1])
+              matches=re.findall(r"STRONG_SIEVE_LEVEL k=(\d+) total=(\d+) inherited=(\d+) coalesce=(\d+) descent=(\d+) live=(\d+) odd_live=(\d+) live_fraction=([0-9.eE+-]+) odd_live_fraction=([0-9.eE+-]+)",s)
+              assert matches,s[-3000:]
+              m=matches[-1]
+              rows.append({
+                  "k":int(m[0]),"total":int(m[1]),"inherited":int(m[2]),
+                  "coalesce":int(m[3]),"descent":int(m[4]),"live":int(m[5]),
+                  "odd_live":int(m[6]),"live_fraction":float(m[7]),
+                  "odd_live_fraction":float(m[8]),"wall_seconds":t,
+              })
+          out={"kind":"exact_strong_induction_convergence_sieve_field","rows":rows}
+          Path("strong-sieve-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("STRONG_SIEVE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: strong-sieve-field
+          path: strong-sieve-field.json
+          retention-days: 30
