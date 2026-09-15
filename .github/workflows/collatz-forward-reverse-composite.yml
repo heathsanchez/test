@@ -97,8 +97,19 @@ jobs:
                   row[f"{name}_rss_kb"]=int(tm[1]) if len(tm)>1 else None
               rows.append(row)
           rows.sort(key=lambda r:r["bits"])
-          assert [r["bits"] for r in rows]==[18,20,22,24],rows
-          assert all(r["newly_closed_binary_classes"]>0 for r in rows),rows
+          assert [r["bits"] for r in rows]==list(range(12,25)),rows
+          by_b={r["bits"]:r for r in rows}
+          expected_winners={
+              14:63,
+              17:294,
+              19:1514,
+              22:6767,
+          }
+          got_winners={
+              r["bits"]:r["newly_closed_binary_classes"]
+              for r in rows if r["newly_closed_binary_classes"]>0
+          }
+          assert got_winners==expected_winners,(got_winners,expected_winners)
           out={"kind":"forward_reverse_composite_constructor_curve","rows":rows}
           Path("forward-reverse-composite-field.json").write_text(
               json.dumps(out,indent=2,sort_keys=True)+"\n")
