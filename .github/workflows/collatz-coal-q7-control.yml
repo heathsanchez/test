@@ -1,0 +1,90 @@
+name: Collatz coalescence plus q7 control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-coal-q7-control.yml"
+      - "experiments/collatz_vslice_prefix_coalescence_scan.cpp"
+      - "experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp"
+      - "experiments/collatz_reverse_predecessor_tree.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-coal-q7-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify q7 predecessor tree
+        run: |
+          python experiments/collatz_reverse_predecessor_tree.py --q 7 | tee /tmp/q7.txt
+          grep -q "KILLED_RESIDUES 1013" /tmp/q7.txt
+          grep -q "VERIFIED_SHORTCUT_COLLATZ_REVERSE_PREDECESSOR_TREE" /tmp/q7.txt
+      - name: Build current and q7-composed production kernels
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_prefix_coalescence_scan.cpp -o /tmp/mod9
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp -o /tmp/q7
+      - name: Protect exact known witness
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/q7 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/record.txt
+          echo COAL_Q7_RECORD_CONTROL_OK
+      - name: Compare sealed k28 world
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=28
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/mod9.time             /tmp/mod9 28 5000 1 0 "$L" "$U" > results/mod9.txt
+          /usr/bin/time -f '%e' -o results/q7.time             /tmp/q7 28 5000 1 0 "$L" "$U" > results/q7.txt
+          python - <<'PY'
+          import json,re
+          a=open("results/mod9.txt").read()
+          b=open("results/q7.txt").read()
+          assert "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" in a,a[-4000:]
+          assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in b,b[-4000:]
+          ah=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) MOD9_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+          bh=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",b)
+          assert ah and bh,(a[-3000:],b[-3000:])
+          ac,ap,ae=map(int,ah.groups())
+          bc,bp,be=map(int,bh.groups())
+          assert ac==bc,(ac,bc)
+          assert be<ae,(be,ae)
+          at=float(open("results/mod9.time").read())
+          bt=float(open("results/q7.time").read())
+          row={
+            "coalescence_killed":ac,
+            "mod9_after_coalescence":ap,
+            "q7_after_coalescence":bp,
+            "mod9_explicit":ae,
+            "q7_explicit":be,
+            "extra_residual_reduction":ae/be,
+            "mod9_seconds":at,
+            "q7_seconds":bt,
+            "speedup":at/bt if bt else float("inf"),
+          }
+          print("COAL_Q7_COMPARISON",json.dumps(row,separators=(",",":")))
+          print("COAL_Q7_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coal-q7-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
