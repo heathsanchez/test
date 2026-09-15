@@ -71,7 +71,7 @@ jobs:
                   m=re.search(r"Computation replay T: ([0-9.]+) s",pathlib.Path(p).read_text())
                   if m: vals.append(float(m.group(1)))
               out[who]={"runs":vals,"median":statistics.median(vals) if vals else None}
-          if out["v26"]["median"] and out["v26"]["median"]:
+          if out["v25"]["median"] and out["v26"]["median"]:
               out["improvement_pct"]=(1-out["v26"]["median"]/out["v25"]["median"])*100
               out["speedup_x"]=out["v25"]["median"]/out["v26"]["median"]
           pathlib.Path("artifacts-v25/summary.json").write_text(json.dumps(out,indent=2)+"\n")
