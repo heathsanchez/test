@@ -63,7 +63,14 @@ static std::vector<uint8_t>RTYPE;
 // n=2^K m-1 and p=(n-1)/2.  While the affine z-coefficient is even,
 // shortcut parity is deterministic.  A class is closed when
 // T^t(n(z)) == T^(t-1)(p(z)) as affine functions.
-static std::vector<uint8_t>COAL_KILLED;
+static std::vector<uint64_t>COAL_KILLED;
+
+static inline bool coal_get(uint32_t r){
+  return (COAL_KILLED[r>>6] >> (r&63)) & uint64_t(1);
+}
+static inline void coal_set(uint32_t r){
+  COAL_KILLED[r>>6] |= uint64_t(1) << (r&63);
+}
 
 static inline void affine_step(u128 &A,u128 &B){
   if(A&1){std::cerr<<"AFFINE_PARITY_NOT_FIXED\n";std::exit(8);}
