@@ -208,7 +208,7 @@ theorem packMix_eq_packFrom (seed start k : Nat) (hs : 2 ≤ start) :
         unfold stepConst
         omega
       rw [hx]
-      exact ih (start + 1) (by omega)
+      exact congrArg (fun z => 2 * z) (ih (start + 1) (by omega))
 
 theorem initPacked_decomp (seed : Nat) :
     initPacked seed = 1 + 4 * packFrom seed 2 254 := by
@@ -229,7 +229,10 @@ theorem initPackedFast_eq_initPacked (seed : Nat) :
   rw [initPacked_decomp]
   unfold initPackedFast
   have h := packMix_eq_packFrom seed 2 254 (by omega)
-  simpa using congrArg (fun z => 1 + 4 * z) h
+  change
+    1 + 4 * packMix (seed + (2 + 1) * stepConst) 254 =
+      1 + 4 * packFrom seed 2 254
+  exact congrArg (fun z => 1 + 4 * z) h
 
 theorem initPackedFast_eq (seed : Nat) :
     initPackedFast seed = encodeRow (initRowFor seed) := by
