@@ -11,7 +11,20 @@
     "expected_boundary": 183,
     "extremal_seed": 1027431,
     "status": "passed",
-    "evidence_commit": "8cdf6896a980dee94fa4b1afcc02126db039ed52"
+    "evidence_commit": "8cdf6896a980dee94fa4b1afcc02126db039ed52",
+    "compressed_cnf_v2": {
+      "status": "passed",
+      "workflow_run": "34921504101",
+      "boundary": "182 SAT / 183 UNSAT",
+      "extremal_seed": "1027431"
+    },
+    "frontier_binary_search": {
+      "status": "passed",
+      "workflow_run": "34922380866",
+      "recovered_last_sat_horizon": 182,
+      "recovered_first_unsat_horizon": 183,
+      "recovered_extremal_seed": "1027431"
+    }
   },
   "live_interval": [
     "2392312122059207475200",
@@ -69,7 +82,21 @@
     "pending_shards": [],
     "status": "SAT in all 16 shards by exact concrete witnesses"
   },
-  "active_residuals": [],
+  "active_residuals": [
+    {
+      "predicate": "tightened live interval [2392312122059207475200,3143983941795894239301]",
+      "question": "does any seed retain coefficient persistence through shortcut horizon 1000?",
+      "exact_runs": [
+        "34921504101",
+        "34922181244"
+      ],
+      "representations": [
+        "four numeric interval shards",
+        "low-4-bit exhaustive partition with learned-clause reuse"
+      ],
+      "status": "running"
+    }
+  ],
   "rejected_or_deprioritized": [
     {
       "representation": "integer Z3",
@@ -98,6 +125,10 @@
     {
       "representation": "fixed-k raw parity tree",
       "reason": "k=1 collapses universally, but k=2 and k=3 exceed 100M nodes; residue splitting alone is not the next abstraction"
+    },
+    {
+      "representation": "PySAT Cadical195 get_proof() as final UNSAT certificate",
+      "reason": "H183 solver returned UNSAT but extracted proof was rejected by pinned DRAT-trim; solver verdict retained only as search evidence, not proof evidence"
     }
   ],
   "witness_guided_leaps": [
@@ -371,8 +402,8 @@
   },
   "current_structural_residual": {
     "predicate": "tightened live interval with 72 seed bits",
-    "reason": "all first coefficient contractions before t=114208327604 are certified descending; any remaining seed must encode coefficient persistence to that frontier or survive the first live resonance",
-    "next_action": "exactly decide coefficient persistence for the 72-bit tightened interval at modest horizons; if UNSAT, the live interval closes immediately by the transfer theorem"
+    "reason": "transfer theorem reduces the finite extension to exact coefficient persistence; H1000 is the current separator",
+    "next_action": "if H1000 is UNSAT, recover the exact maximal horizon by assumption-based binary search, then regenerate UNSAT from emitted DIMACS using standalone pinned CaDiCaL and independently verify its DRAT proof"
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
@@ -396,6 +427,21 @@
       "statement": "if a live seed survives the first dangerous coefficient contraction then 0 <= T^t(n)-n <= 4142380787",
       "certificate": "experiments/collatz_transfer_farey.py",
       "status": "certified"
+    },
+    "second_rung": {
+      "q": "137528045312",
+      "t": "217976794617",
+      "prior_strict_lower_rescue_ceiling": "2276494896546098592457",
+      "conditional_next_rescue_ceiling": "36797780659016653495980",
+      "certificate": "experiments/collatz_transfer_ladder.py",
+      "status": "conditional on verification through the first-rung ceiling 3143983941795894239301"
     }
+  },
+  "proof_pipeline": {
+    "search_solver": "PySAT/CaDiCaL exact CNF for fast search",
+    "final_unsat_requirement": "standalone emitted DIMACS -> pinned CaDiCaL 1.9.5 -> pinned DRAT-trim verification",
+    "cadical_commit": "146207318796f094dcded87349a64f0c6927309e",
+    "drat_trim_commit": "2e5e29cb0019d5cfd547d4208dca1b3ec290349f",
+    "status": "control rerun pending"
   }
 }
