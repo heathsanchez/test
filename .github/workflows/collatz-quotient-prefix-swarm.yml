@@ -1,0 +1,83 @@
+name: Collatz quotient-prefix swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-quotient-prefix-swarm.yml"
+      - "experiments/collatz_sparse_prefix_quotient_scout.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-quotient-prefix-swarm
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        k: [25,20,15,10,8]
+    name: quotient-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: g++ -O3 -march=native experiments/collatz_sparse_prefix_quotient_scout.cpp -o /tmp/qprefix
+      - name: Deepen quotiented exact prefix
+        run: |
+          mkdir -p results
+          /usr/bin/time -f '%e' -o results/time.txt             /tmp/qprefix ${{ matrix.k }} 80 10000000 | tee results/census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quotient-prefix-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: quotient-prefix-k*
+          path: gathered
+      - name: Verify p24 census and aggregate quotient field
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          expected={20:4022530,15:3441842,10:2123067,8:1464103}
+          worlds=[]
+          for d in sorted(Path("gathered").glob("quotient-prefix-k*")):
+              s=(d/"results/census.txt").read_text()
+              t=float((d/"results/time.txt").read_text().strip())
+              levels=[]
+              for m in re.finditer(r"QUOTIENT_PREFIX_LEVEL K=(\d+) p=(\d+) W=(\d+) nodes=(\d+) represented_live_classes=(\d+) compression=([0-9.eE+-]+)",s):
+                  levels.append({
+                      "k":int(m.group(1)),"p":int(m.group(2)),"W":int(m.group(3)),
+                      "nodes":int(m.group(4)),"represented":int(m.group(5)),
+                      "compression":float(m.group(6)),
+                  })
+              assert levels,s[-4000:]
+              k=levels[-1]["k"]
+              p24=next((x for x in levels if x["p"]==24),None)
+              if k in expected:
+                  assert p24 and p24["represented"]==expected[k],(k,p24,expected[k])
+              abort=re.search(r"QUOTIENT_PREFIX_ABORT K=(\d+) p=(\d+) nodes_exceeded=(\d+)",s)
+              worlds.append({
+                  "k":k,"wall_seconds":t,"last":levels[-1],
+                  "aborted":bool(abort),"abort_p":int(abort.group(2)) if abort else None,
+                  "p24":p24,
+              })
+          out={"kind":"exact_future_state_quotient_prefix_field","worlds":worlds}
+          Path("quotient-prefix-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("QUOTIENT_PREFIX_FIELD",json.dumps(out,separators=(",",":")))
+          print("QUOTIENT_PREFIX_P24_EXACT_CENSUS_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: quotient-prefix-field
+          path: quotient-prefix-field.json
+          retention-days: 30
