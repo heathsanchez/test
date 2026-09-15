@@ -1,0 +1,27 @@
+name: Collatz exact bridge resonance schedule
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-bridge-resonance.yml"
+      - "experiments/collatz_bridge_resonance.py"
+  workflow_dispatch:
+
+jobs:
+  resonance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact bounded-gap resonance schedule
+        run: |
+          set -euo pipefail
+          python experiments/collatz_bridge_resonance.py --max-k 10000 | tee resonance.txt
+          grep -q "BRIDGE_RESONANCE_MAX_GAP 3" resonance.txt
+          grep -q "OBSERVED_BRIDGE_LEVELS_MATCH_EXACT_COEFFICIENT_RESONANCE" resonance.txt
+          grep -q "VERIFIED_EXACT_BRIDGE_RESONANCE_SCHEDULE" resonance.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bridge-resonance-certificate
+          path: resonance.txt
+          retention-days: 30
