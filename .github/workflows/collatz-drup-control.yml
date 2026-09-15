@@ -1,4 +1,4 @@
-name: Collatz DRUP proof control
+name: Collatz DRAT proof control
 
 on:
   push:
@@ -19,28 +19,45 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Install pinned solver
-        run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
-      - name: Build pinned independent DRAT checker
+      - name: Build pinned CaDiCaL 1.9.5
+        run: |
+          git clone https://github.com/arminbiere/cadical.git /tmp/cadical
+          git -C /tmp/cadical checkout 146207318796f094dcded87349a64f0c6927309e
+          cd /tmp/cadical
+          ./configure
+          make -j2
+      - name: Build pinned independent DRAT-trim
         run: |
           git clone https://github.com/marijnheule/drat-trim.git /tmp/drat-trim
           git -C /tmp/drat-trim checkout 2e5e29cb0019d5cfd547d4208dca1b3ec290349f
           make -C /tmp/drat-trim
-      - name: Generate exact H183 refutation
+      - name: Emit exact H183 CNF
         run: |
-          python experiments/collatz_coefficient_drup.py \
+          python experiments/collatz_coefficient_cnf_emit.py \
             --bits 20 --lower 524288 --upper 1048575 \
-            --horizon 183 --out-dir results/drup-control
-      - name: Independently replay DRUP proof
+            --horizon 183 --out-dir results/drat-control
+      - name: Solve and emit ASCII DRAT
+        run: |
+          set +e
+          /tmp/cadical/build/cadical --no-binary \
+            results/drat-control/problem.cnf \
+            results/drat-control/proof.drat \
+            | tee results/drat-control/cadical.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          test "$rc" -eq 20
+          grep -q "s UNSATISFIABLE" results/drat-control/cadical.log
+      - name: Independently verify DRAT
         run: |
           /tmp/drat-trim/drat-trim \
-            results/drup-control/problem.cnf \
-            results/drup-control/proof.drup | tee results/drup-control/check.log
-          grep -q "s VERIFIED" results/drup-control/check.log
-          echo INDEPENDENT_DRATTRIM_CONTROL_OK
+            results/drat-control/problem.cnf \
+            results/drat-control/proof.drat \
+            | tee results/drat-control/check.log
+          grep -q "s VERIFIED" results/drat-control/check.log
+          echo INDEPENDENT_STANDALONE_DRAT_CONTROL_OK
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: collatz-drup-control
-          path: results/drup-control
+          name: collatz-drat-control
+          path: results/drat-control
           if-no-files-found: error
