@@ -40,15 +40,26 @@ jobs:
           set -o pipefail
           mkdir -p results
           K="${{ matrix.k }}"
-          N=2874993894540242321407
-          /tmp/p28-compact 30 5000 1 0 "$N" "$N" | tee results/record.txt
-          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          RECORD=2874993894540242321407
+          /tmp/p28-compact 30 5000 1 0 "$RECORD" "$RECORD" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$RECORD" results/record.txt
           grep -q "STATUS COMPACT_P28_COAL_PREDQ7_SCAN_CLOSED" results/record.txt
+          N=$(python - <<PY
+          L=2392312122059207475200
+          K=$K
+          M=1<<K
+          m=(L+1+M-1)//M
+          if m%2==0: m+=1
+          print((m<<K)-1)
+          PY
+          )
+          /tmp/p28-compact "$K" 5000 1 0 "$N" "$N" | tee results/census.txt
           case "$K" in
-            15) grep -q "p28_live_classes=46777401" results/record.txt ;;
-            10) grep -q "p28_live_classes=28311176" results/record.txt ;;
-            8)  grep -q "p28_live_classes=19085390" results/record.txt ;;
+            15) grep -q "p28_live_classes=46777401" results/census.txt ;;
+            10) grep -q "p28_live_classes=28311176" results/census.txt ;;
+            8)  grep -q "p28_live_classes=19085390" results/census.txt ;;
           esac
+          grep -q "STATUS COMPACT_P28_COAL_PREDQ7_SCAN_CLOSED" results/census.txt
 
       - name: Benchmark sealed 2^30-seed world
         run: |
