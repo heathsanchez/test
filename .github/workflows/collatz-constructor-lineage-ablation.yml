@@ -1,0 +1,163 @@
+name: Collatz constructor lineage ablation
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-constructor-lineage-ablation.yml"
+      - "experiments/collatz_compiled_deep_future.cpp"
+      - "experiments/collatz_frozen_deep_bank_b24_h16.txt"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-constructor-lineage-ablation
+  cancel-in-progress: true
+
+jobs:
+  ablate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: q1,  o: 1  }
+          - { name: q4,  o: 4  }
+          - { name: q9,  o: 9  }
+          - { name: q11, o: 11 }
+    name: ablate-${{ matrix.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate exact banks
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          grep -v '^#' experiments/collatz_frozen_deep_bank_b24_h16.txt             | sed '/^[[:space:]]*$/d' > results/full-bank.txt
+          test "$(wc -l < results/full-bank.txt)" -eq 128
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          O=int("${{ matrix.o }}")
+          rows=[ln for ln in Path("results/full-bank.txt").read_text().splitlines() if ln.strip()]
+          keep=[ln for ln in rows if int(ln.split()[0])!=O]
+          removed=len(rows)-len(keep)
+          assert removed>0,(O,removed)
+          Path("results/ablated-bank.txt").write_text("\n".join(keep)+"\n")
+          print("LINEAGE_ABLATION_PREP",
+                f"o={O}",f"removed={removed}",f"kept={len(keep)}")
+          PY
+
+      - name: Build zero-search future checker
+        run: |
+          g++ -O3 -march=native -std=c++20             experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+
+      - name: Run ablated future
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/ablated-time-memory.txt             /tmp/future 28 results/q14-bank.txt results/ablated-bank.txt             | tee results/ablated.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/ablated.txt
+          grep -q "new_search_calls=0" results/ablated.txt
+
+      - name: Restore lineage and replay identical future
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/restored-time-memory.txt             /tmp/future 28 results/q14-bank.txt results/full-bank.txt             | tee results/restored.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/restored.txt
+          grep -q "new_search_calls=0" results/restored.txt
+
+      - name: Verify causal loss and restoration
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          name="${{ matrix.name }}"
+          O=int("${{ matrix.o }}")
+          def live(path):
+              s=Path(path).read_text()
+              m=re.search(r"COMPILED_FUTURE_DONE K=28 final_live=(\d+)",s)
+              assert m,s[-4000:]
+              return int(m.group(1))
+          ablated=live("results/ablated.txt")
+          restored=live("results/restored.txt")
+          assert restored==1986750,(restored,1986750)
+          delta=ablated-restored
+          out={
+              "kind":"constructor_lineage_ablation",
+              "future_B":28,
+              "lineage":name,
+              "donor_o":O,
+              "ablated_live":ablated,
+              "restored_live":restored,
+              "causal_loss":delta,
+              "restoration_exact":restored==1986750,
+              "new_search_calls":0,
+          }
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("CONSTRUCTOR_LINEAGE_ABLATION",
+                json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lineage-ablation-${{ matrix.name }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: ablate
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: lineage-ablation-*
+          path: gathered
+
+      - name: Aggregate causal lineages
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("lineage-ablation-*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["donor_o"])
+          assert len(rows)==4,rows
+          causal=[r for r in rows if r["causal_loss"]>0]
+          out={
+              "kind":"prospective_constructor_lineage_ablation",
+              "future_B":28,
+              "rows":rows,
+              "causal_lineages":len(causal),
+              "all_restorations_exact":all(r["restoration_exact"] for r in rows),
+              "new_search_calls":0,
+          }
+          Path("lineage-ablation-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("CONSTRUCTOR_LINEAGE_ABLATION_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert len(causal)>=1,rows
+          assert out["all_restorations_exact"]
+          print("CAUSAL_CONSTRUCTOR_LINEAGE_RESTORATION_VERIFIED")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: constructor-lineage-ablation-field
+          path: lineage-ablation-field.json
+          retention-days: 30
