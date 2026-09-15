@@ -1492,6 +1492,8 @@ namespace Vec16
 
 set_option linter.unusedVariables false
 set_option linter.unusedSimpArgs false
+set_option maxRecDepth 32768
+set_option exponentiation.threshold 1024
 
 def pack512 (p q : Nat) : Nat :=
   p + (q <<< 512)
@@ -1811,6 +1813,7 @@ theorem shift512_pack512 (p q : Nat) (hp : p < 2 ^ 512) :
   rw [Nat.shiftRight_eq_div_pow]
   unfold pack512
   rw [Nat.shiftLeft_eq]
+  rw [Nat.mul_comm q (2 ^ 512)]
   rw [Nat.add_mul_div_left p q (by decide : 0 < 2 ^ 512)]
   rw [Nat.div_eq_of_lt hp]
   simp
