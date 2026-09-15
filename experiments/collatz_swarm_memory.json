@@ -191,6 +191,24 @@
       "evidence_run": 34946679926,
       "reason": "hashing all lower-family deterministic affine states across gaps 1..3 adds only the same 2 gap3 classes at S14; no gain beyond known multi-gap result",
       "status": "dominated"
+    },
+    {
+      "id": "shifted-coalescence-v1",
+      "evidence_run": 34946175222,
+      "reason": "2 strict extra classes of 8192 only; dominated by retained C16 bank",
+      "status": "dominated"
+    },
+    {
+      "id": "global-cross-valuation-coalescence-v1",
+      "evidence_run": 34946679926,
+      "reason": "2 strict extra classes of 8192 at k10/k20/k27",
+      "status": "dominated"
+    },
+    {
+      "id": "predecessor-depth-beyond-q7",
+      "evidence_run": 34946452438,
+      "reason": "q12 improves global kill fraction only from 46.319% to 46.645%; defer until residual economics justify it",
+      "status": "deferred"
     }
   ],
   "pending": [
@@ -198,6 +216,11 @@
       "id": "full-k28-production",
       "run": 34943311712,
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
+    },
+    {
+      "id": "future-state-prefix-quotient",
+      "run": 34956619725,
+      "hypothesis": "merge sparse prefix residues with identical (d,q) into a consequence-equivalent DAG and push much deeper than p24"
     }
   ],
   "next_residual": "v2(n+1) <=25 plus deferred v2=28; high-k fused stack retained, low-k sparse transition monitored"
