@@ -55,11 +55,11 @@ theorem lift_stage
     exact Nat.lt_of_lt_of_le hm hpow
   apply Nat.eq_of_testBit_eq
   intro i
-  unfold stage
-  rw [Nat.testBit_and, testBit_maskW w m i hmw]
   rw [testBit_packW w (stage m s p) (stage m s q) i
       (stage_lt_pow w m s p hmw)]
-  simp only [stage, Nat.testBit_and, Nat.testBit_xor, Nat.testBit_shiftRight]
+  unfold stage
+  rw [Nat.testBit_and, testBit_maskW w m i hmw]
+  simp only [Nat.testBit_and, Nat.testBit_xor, Nat.testBit_shiftRight]
   by_cases hi : i < w
   · rw [if_pos hi, if_pos hi]
     by_cases hb : m.testBit i = true
