@@ -1,0 +1,100 @@
+name: Collatz deep reverse program profile
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-deep-program-profile.yml"
+      - "experiments/collatz_deep_program_profile.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-deep-program-profile
+  cancel-in-progress: true
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Profile exact H16 programs through B24
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_deep_program_profile.cpp -o /tmp/profile
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/profile 24 results/q14-bank.txt 16 | tee results/profile.txt
+          grep -q "VERIFIED_TARGETED_DEEP_REVERSE_CONTINUATIONS" results/profile.txt
+
+      - name: Summarize reusable constructor vocabulary
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          s=open("results/profile.txt").read()
+          done=re.search(
+              r"DEEP_CONT_DONE K=24 H=16 final_live=(\d+) .*?"
+              r"total_deep_cont=(\d+) controls=(\d+)",s)
+          assert done,s[-8000:]
+          live,total,controls=map(int,done.groups())
+          assert live==173280,(live,173280)
+
+          p=re.search(
+              r"DEEP_PROGRAM_PROFILE unique_program_shapes=(\d+) "
+              r"unique_exact_constructors=(\d+) total_deep_closures=(\d+)",s)
+          assert p,s[-8000:]
+          shapes,exact,deep=map(int,p.groups())
+          assert deep==total,(deep,total)
+
+          rows=[]
+          for m in re.finditer(
+              r"DEEP_PROGRAM_SHAPE rank=(\d+) count=(\d+) signature=(\S+)",s):
+              rows.append({
+                  "rank":int(m.group(1)),
+                  "count":int(m.group(2)),
+                  "signature":m.group(3),
+              })
+          assert rows
+          top10=sum(r["count"] for r in rows[:10])
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"deep_reverse_program_profile",
+              "K":24,"H":16,"final_live":live,
+              "total_deep_closures":total,
+              "unique_program_shapes":shapes,
+              "unique_exact_constructors":exact,
+              "top10_shape_closures":top10,
+              "top10_share":top10/total if total else 0,
+              "controls":controls,
+              "top_shapes":rows,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("DEEP_PROGRAM_PROFILE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-program-profile-b24-h16
+          path: results
+          retention-days: 30
