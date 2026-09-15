@@ -139,24 +139,13 @@ def first_branch_partition(r: int, precision: int):
         key = (b.s, b.rp, b.residue, b.modulus)
         cylinders.setdefault(key, b)
 
-    # Coverage by disjoint/nested cylinders.  For a fixed r, exact episode
-    # branches are disjoint at their required precision. Count union by
-    # testing the finite precision residues independently.
+    # Coverage is decided directly by the exact branch precision; avoid an
+    # O(residues × cylinders) rematch pass.
     covered = 0
     unresolved = 0
     for m in range(1, M, 2):
-        matches = [
-            b for b in cylinders.values()
-            if m % b.modulus == b.residue
-        ]
-        if matches:
-            # Exact branch should be unique among matching cylinders.
-            exact = branch_for_residue(r, m)
-            assert any(
-                b.s == exact.s and b.rp == exact.rp
-                and b.residue == exact.residue and b.modulus == exact.modulus
-                for b in matches
-            )
+        exact = branch_for_residue(r, m)
+        if exact.D <= precision:
             covered += 1
         else:
             unresolved += 1
@@ -340,23 +329,33 @@ def main():
             })
 
     # Concrete exact control for the canonical r=2 self-expanding branch.
-    # s=1,r'=2 gives m'=(9m+1)/8 and m'+1=9(m+1)/8.
+    #
+    # s=1,r'=2 gives
+    #     m'=(9m+1)/8,   m'+1=9(m+1)/8.
+    #
+    # Exact membership in the same branch requires m == 15 (mod 16), i.e.
+    # v2(m+1)>=4.  One traversal lowers v2(m+1) by exactly 3.  Thus k
+    # consecutive traversals require v2(m+1)>=3k+1 and consume precisely
+    # three 2-adic valuation units per repetition.
     countdown_control = []
     for k in range(1, 9):
-        m = (1 << (3*k)) - 1  # 8^k-1, odd for k>=1
-        x = 4*m - 1
+        m = (1 << (3*k + 1)) - 1
         repeats = 0
         mm = m
+        valuations = []
         while repeats < k:
+            valuations.append(v2(mm + 1))
             rr, m0, s, rp, mp, xp = episode((1 << 2)*mm - 1)
             if (rr, s, rp) != (2, 1, 2):
                 break
             assert mp + 1 == 9 * (mm + 1) // 8
+            assert v2(mp + 1) == v2(mm + 1) - 3
             repeats += 1
             mm = mp
         countdown_control.append({
             "k": k, "m": m, "v2_m_plus_1": v2(m + 1),
             "self_repeats": repeats,
+            "valuations": valuations,
         })
         assert repeats == k, (k, repeats)
 
