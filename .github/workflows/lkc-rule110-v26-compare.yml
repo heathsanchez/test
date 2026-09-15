@@ -2,7 +2,7 @@ name: LKC Rule110 persistent sixteen-lane v26
 
 on:
   push:
-    branches: [lkc-rule110-fused-v1]
+    branches: [lkc-rule110-v26-proof-fix]
     paths:
       - 'experiments/lkc_rule110/Submission_v26.lean'
       - '.github/workflows/lkc-rule110-v26-compare.yml'
@@ -23,6 +23,39 @@ jobs:
       LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
     steps:
       - uses: actions/checkout@v4
+      - name: Prepare proof-fixed V26
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path("experiments/lkc_rule110/Submission_v26.lean")
+          s=p.read_text()
+          s=s.replace(
+              "set_option maxRecDepth 32768 in\ntheorem pack16SWAR16_eq",
+              "set_option maxRecDepth 131072 in\ntheorem pack16SWAR16_eq",
+              1)
+          s=s.replace(
+              "      rw [hidx]\n      simp only [packByteTailSWAR8]\n      omega",
+              "      rw [hidx]\n      simp only [packByteTailSWAR8]\n      rw [hadv]\n      omega",
+              1)
+          start=s.index("theorem initPackedHexProgression_eq (n : Nat) :")
+          end=s.index("\ndef impl : Nat → Nat := fun n =>", start)
+          fixed='''theorem initPackedHexProgression_eq (n : Nat) :
+    initPackedHexProgression (caSeed n) = initPackedSWAR8 (caSeed n) := by
+  simp only [initPackedHexProgression, initPackedSWAR8]
+  have hs : caSeed n < 2 ^ 32 := by
+    unfold caSeed
+    exact Nat.and_lt_two_pow n (by decide)
+  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
+    unfold stepConst
+    decide
+  have hb :
+      caSeed n + 3 * stepConst + (16 * 15 + 13) * stepConst < 2 ^ 64 := by
+    unfold stepConst at *
+    omega
+  rw [packHexTail_eq (caSeed n + 3 * stepConst) 15 hb]
+'''
+          s=s[:start]+fixed+s[end:]
+          Path("experiments/lkc_rule110/Submission_v26.fixed.lean").write_text(s)
       - name: Install elan
         shell: bash
         run: |
@@ -39,7 +72,7 @@ jobs:
       - name: Build v26 universal proof
         working-directory: lkc/problems/ca-rule110
         run: |
-          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v26.lean" Submission.lean
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v26.fixed.lean" Submission.lean
           lake build
       - name: Compare v25 and v26 over five local replays
         working-directory: lkc
@@ -51,7 +84,7 @@ jobs:
             if [ "$who" = v25 ]; then
               sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v25.lean"
             else
-              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v26.lean"
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v26.fixed.lean"
             fi
             for rep in 1 2 3 4 5; do
               python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 2>&1 |
