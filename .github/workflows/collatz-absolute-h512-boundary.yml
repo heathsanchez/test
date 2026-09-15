@@ -1,0 +1,100 @@
+name: Collatz exact H512 boundary residual
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-absolute-h512-boundary.yml"
+      - "experiments/collatz_absolute_h512_boundary.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-absolute-h512-boundary
+  cancel-in-progress: true
+
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        k: [33,34]
+    name: boundary-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bigint headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Export exact H512 residual and late rescue
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_h512_boundary.cpp -o /tmp/boundary
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/boundary ${{ matrix.k }} | tee results/census.txt
+          grep -q "VERIFIED_ABSOLUTE_H512_BOUNDARY_EXPORT" results/census.txt
+      - name: Parse boundary
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+            rf"ABSOLUTE_H512_BOUNDARY_RESULT K={K} checked=(\d+) "
+            r"closed512=(\d+) hard512=(\d+) max_late_t=(-?\d+)",s)
+          assert m,s[-5000:]
+          checked,closed,hard,maxlate=map(int,m.groups())
+          seeds=[]
+          for z in re.finditer(
+            rf"ABSOLUTE_H512_HARD_SEED K={K} n=(\d+) "
+            r"first_late_t=(-?\d+) kind=(\w+)",s):
+            seeds.append({"n":int(z.group(1)),"first_late_t":int(z.group(2)),
+                          "kind":z.group(3)})
+          assert len(seeds)==hard,(len(seeds),hard)
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"K":K,"checked":checked,"closed512":closed,"hard512":hard,
+               "max_late_t":maxlate,"seeds":seeds,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("ABSOLUTE_H512_BOUNDARY_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h512-boundary-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: boundary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h512-boundary-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("h512-boundary-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==[33,34],rows
+          out={"kind":"absolute_h512_boundary","rows":rows,
+               "total_hard512":sum(x["hard512"] for x in rows),
+               "max_late_t":max(x["max_late_t"] for x in rows)}
+          Path("h512-boundary-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("ABSOLUTE_H512_BOUNDARY_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h512-boundary-field
+          path: h512-boundary-field.json
+          retention-days: 30
