@@ -655,8 +655,8 @@ theorem packByteTailPair_eq (x n : Nat)
       have heq :
           advance8 x + (8 * n + 5) * stepConst =
             x + (8 * (n + 1) + 5) * stepConst := by
-        rw [advance8_eq]
-        omega
+        rw [advance8_eq, Nat.add_assoc, ← Nat.add_mul]
+        congr 1 <;> omega
       have hr :
           advance8 x + (8 * n + 5) * stepConst < 2 ^ 40 := by
         rw [heq]
