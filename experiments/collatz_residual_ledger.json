@@ -212,6 +212,13 @@
       "exact_first_descent": 853,
       "next_exact_horizon": 854,
       "source": "exact overflow-safe 16-step affine block compiler; concrete Python big-int replay; workflow 34930171144"
+    },
+    {
+      "shard": "v2=31 merge-survivor shard 10/16",
+      "witness_decimal": "2890058857883145076735",
+      "exact_first_descent": 875,
+      "next_exact_horizon": 876,
+      "source": "exact cache-tuned predecessor-half-sieve scan; workflow 34934788520"
     }
   ],
   "best_known_by_shard": {
@@ -463,15 +470,15 @@
     }
   ],
   "global_best_known": {
-    "witness_decimal": "3079334581550404599807",
-    "exact_first_descent": 853,
-    "v2_n_plus_1": 35,
-    "source": "exact overflow-safe v2(n+1)=35 tightened-interval scan; run 34930171144"
+    "witness_decimal": "2890058857883145076735",
+    "exact_first_descent": 875,
+    "v2_n_plus_1": 31,
+    "source": "exact predecessor-merge survivor scan plus arbitrary-precision replay; workflow 34934788520"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 31",
-    "reason": "all valuation slices v2(n+1) >= 32 are now compiled; v2=35 remains the exact global record at 853, while v2=32 maxes at 782.",
-    "next_action": "scan v2(n+1)=31 through H853 on all 16 tuned full-scan shards while compiling the exact lower-predecessor merge sieve for recursive elimination below k31."
+    "predicate": "tightened live interval with v2(n+1) <= 31; v2=31 has a verified 875-step witness but is not yet fully closed",
+    "reason": "the H853 predecessor-half scan found seed 2890058857883145076735 with exact first descent 875, raising the global record. Half of v2=31 is inductively closed by the predecessor merge; the surviving half must be rescanned beyond 875.",
+    "next_action": "replace separator chasing with H5000 exact scans: ordinary seeds stop at first descent, while any genuinely harder survivor is replayed exactly. Apply the same H5000 policy to v2=31 and lower slices."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
