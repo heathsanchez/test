@@ -2,9 +2,6 @@ name: Exact Collatz Active 450
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-active450.yml"
 
 jobs:
   validate:
