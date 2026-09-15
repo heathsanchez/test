@@ -54,6 +54,4 @@ def main : IO Unit := do
 
 end Wide256Bench
 
-end Wide256Bench
-
 def main : IO Unit := Wide256Bench.main
