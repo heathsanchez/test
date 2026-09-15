@@ -40,6 +40,20 @@ jobs:
         working-directory: lkc/problems/ca-rule110
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/SWAR16Proof.lean" Submission.lean
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("Submission.lean")
+          s=p.read_text()
+          s=s.replace(
+            "set_option linter.unusedSimpArgs false",
+            "set_option linter.unusedSimpArgs false\nset_option maxRecDepth 65536\nset_option exponentiation.threshold 1024",
+            1)
+          s=s.replace(
+            "  rw [Nat.shiftLeft_eq]\n  rw [Nat.add_mul_div_left p q (by decide : 0 < 2 ^ 512)]",
+            "  rw [Nat.shiftLeft_eq]\n  rw [Nat.mul_comm q (2 ^ 512)]\n  rw [Nat.add_mul_div_left p q (by decide : 0 < 2 ^ 512)]",
+            1)
+          p.write_text(s)
+          PY
           lake build
       - name: Compare v24 and v25 over three local replays
         working-directory: lkc
