@@ -152,18 +152,40 @@ static bool deep_continue_closes(
   std::vector<Aff> cur,next;
   cur.push_back({A,D,0});
 
+  const i128 M=i128(1)<<k;
   for(int h=1;h<=H;++h){
     next.clear();
     next.reserve(cur.size()*2);
 
     for(const Aff&s:cur){
+      const int remaining_after_child=H-h;
+
+      auto can_ever_subcritical=[&](i128 A)->bool{
+        // Best possible coefficient reduction over the remaining steps is
+        // all reverse-O: A*(2/3)^r.  If even that is >= 2^k, no continuation
+        // beneath this child can ever beat the original coefficient.
+        i128 lhs=A;
+        i128 rhs=M;
+        for(int t=0;t<remaining_after_child;++t){
+          if(lhs > (i128(1)<<120)/2 || rhs > (i128(1)<<120)/3){
+            // For the horizons used here this guard should never fire.
+            // Conservatively retain the branch rather than risk false pruning.
+            return true;
+          }
+          lhs*=2;
+          rhs*=3;
+        }
+        return lhs<rhs;
+      };
+
       // Reverse E is always exact.
       {
         const i128 a2=2*s.A,d2=2*s.D;
         if(lower_family(a2,d2,k,b)){
           extra_steps=h;outA=a2;outD=d2;return true;
         }
-        next.push_back({a2,d2,h});
+        if(can_ever_subcritical(a2))
+          next.push_back({a2,d2,h});
       }
 
       // Reverse O must be uniformly integral and odd.
@@ -176,7 +198,8 @@ static bool deep_continue_closes(
             if(lower_family(a2,d2,k,b)){
               extra_steps=h;outA=a2;outD=d2;return true;
             }
-            next.push_back({a2,d2,h});
+            if(can_ever_subcritical(a2))
+              next.push_back({a2,d2,h});
           }
         }
       }
