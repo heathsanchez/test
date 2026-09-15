@@ -1,0 +1,111 @@
+name: Collatz exact bigint H512 K29 K30
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-bigint-h512-k29-k30.yml"
+      - "experiments/collatz_shell_forward_reverse_bigint.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-bigint-h512-k29-k30
+  cancel-in-progress: true
+
+jobs:
+  shell:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        k: [29,30]
+    name: bigint-k${{ matrix.k }}-f512-r8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+      - name: Run exact frozen F512 R8 grammar
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_forward_reverse_bigint.cpp -o /tmp/big
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/big ${{ matrix.k }} results/q14-bank.txt 8 512             | tee results/census.txt
+          grep -q "VERIFIED_BIGINT_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+      - name: Record result
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"BIG_SHELL_FORWARD_REVERSE_RESULT K={K} reverse_depth=8 forward_h=512 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-9000:]
+          u,fw,rv,hard,controls=map(int,m.groups())
+          assert fw+rv+hard==u
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"K":K,"universal_residual":u,"shell_forward":fw,"shell_reverse":rv,
+               "shell_hard":hard,"closed_fraction":(fw+rv)/u if u else 1.0,
+               "controls":controls,"wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1]),
+               "arithmetic":"boost_cpp_int"}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("BIGINT_K29_K30_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bigint-h512-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shell
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: bigint-h512-k*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("bigint-h512-k*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [x["K"] for x in rows]==[29,30],rows
+          out={"kind":"exact_bigint_h512_k29_k30","rows":rows,
+               "all_closed":all(x["shell_hard"]==0 for x in rows)}
+          Path("bigint-h512-k29-k30-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("BIGINT_H512_K29_K30_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bigint-h512-k29-k30-field
+          path: bigint-h512-k29-k30-field.json
+          retention-days: 30
