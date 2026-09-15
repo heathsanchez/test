@@ -384,6 +384,19 @@ int main(int argc,char**argv){
              <<" count="<<shapes[i].second
              <<" signature="<<shapes[i].first<<"\n";
 
+  std::vector<std::pair<std::string,uint64_t>> exacts(
+      exact_constructor_counts.begin(),exact_constructor_counts.end());
+  std::sort(exacts.begin(),exacts.end(),
+      [](const auto&a,const auto&b){
+        if(a.second!=b.second)return a.second>b.second;
+        return a.first<b.first;
+      });
+  for(size_t i=0;i<exacts.size();++i)
+    std::cout<<"DEEP_EXACT_CONSTRUCTOR"
+             <<" rank="<<(i+1)
+             <<" count="<<exacts[i].second
+             <<" signature="<<exacts[i].first<<"\n";
+
   std::cout<<"VERIFIED_TARGETED_DEEP_REVERSE_CONTINUATIONS\n";
   return 0;
 }
