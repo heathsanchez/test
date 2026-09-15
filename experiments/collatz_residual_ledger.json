@@ -500,6 +500,17 @@
       "certificate_method": "exact lower-predecessor merge closes one m mod 4 class; complementary class exhaustively scanned with cache-tuned exact block compiler through H5000; overflow replayed with Python big integers",
       "workflow_run": "34935254514",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 29",
+      "exact_seed_count": 700048934423,
+      "inductively_killed_seed_count": 350024467211,
+      "explicitly_scanned_seed_count": 350024467212,
+      "best_explicit_first_descent": 829,
+      "overflow_seed_count": 0,
+      "certificate_method": "exact lower-predecessor merge plus exhaustive cache-tuned H5000 scan of complementary class across 16 shards",
+      "workflow_run": "34935480770",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
@@ -509,9 +520,9 @@
     "source": "exact H5000 predecessor-merge scan; workflow 34935254514"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 29",
-    "reason": "v2=30 is fully closed through H5000 with exact explicit maximum first descent 920; half the slice was inductively closed by predecessor merge.",
-    "next_action": "run RealityGraph-style consequence-field swarm across candidate sieve depths and representative low-k residuals; quotient equivalent strategies, then fund only distinct high-payoff survivors while k29/k28 continue."
+    "predicate": "tightened live interval with v2(n+1) <= 28",
+    "reason": "v2=29 is fully closed through H5000 with explicit maximum 829; v2=30 remains global record at 920.",
+    "next_action": "let the verifier-gated representation swarm choose the next representation before funding v2<=28."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
