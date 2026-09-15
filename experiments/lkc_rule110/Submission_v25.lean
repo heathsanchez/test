@@ -1867,6 +1867,7 @@ def initPackedOctProgression (seed : Nat) : Nat :=
 theorem initPackedOctProgression_eq (seed : Nat) :
     initPackedOctProgression seed = initPackedSWAR8 seed := by
   unfold initPackedOctProgression initPackedSWAR8
+  dsimp
   rw [packOctTail_eq]
 
 def impl : Nat → Nat := fun n =>
