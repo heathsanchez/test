@@ -1,0 +1,89 @@
+name: Collatz bit-packed coalescence depth control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-coalescence-bitset-control.yml"
+      - "experiments/collatz_vslice_prefix_coalescence_bitset_scan.cpp"
+      - "experiments/collatz_vslice_prefix_coalescence_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-coalescence-bitset-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build byte baseline and bit-packed depths
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_prefix_coalescence_scan.cpp -o /tmp/base16
+          for C in 16 18 20 22; do
+            g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=$C               experiments/collatz_vslice_prefix_coalescence_bitset_scan.cpp -o /tmp/bit$C
+          done
+      - name: Protect exact known witness
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          for C in 16 18 20 22; do
+            /tmp/bit$C 30 5000 1 0 "$N" "$N" | tee results/record-$C.txt
+            grep -q "BEST first_descent_or_survival=920 seed=$N" results/record-$C.txt
+            grep -q "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" results/record-$C.txt
+          done
+          echo BITSET_RECORD_CONTROL_OK
+      - name: Compare sealed k28 world
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=28
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/base16.time             /tmp/base16 28 5000 1 0 "$L" "$U" > results/base16.txt
+          for C in 16 18 20 22; do
+            /usr/bin/time -f '%e' -o results/bit$C.time               /tmp/bit$C 28 5000 1 0 "$L" "$U" > results/bit$C.txt
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          base=open("results/base16.txt").read()
+          bcount=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) MOD9_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",base)
+          assert bcount and "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" in base
+          btime=float(open("results/base16.time").read())
+          for C in (16,18,20,22):
+              s=open(f"results/bit{C}.txt").read()
+              assert "STATUS PREFIX_COAL_MOD9_SIEVE_AND_SCAN_CLOSED" in s,s[-3000:]
+              cm=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) MOD9_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",s)
+              tm=re.search(r"COALESCENCE_BITSET_TABLE.*table_bytes=(\d+)",s)
+              assert cm and tm,s[-3000:]
+              t=float(open(f"results/bit{C}.time").read())
+              rows.append({
+                  "c":C,
+                  "coalescence_extra":int(cm.group(1)),
+                  "mod9_after":int(cm.group(2)),
+                  "explicit":int(cm.group(3)),
+                  "table_bytes":int(tm.group(1)),
+                  "seconds":t,
+                  "speedup_vs_byte_c16":btime/t if t else float("inf"),
+              })
+          assert rows[0]["coalescence_extra"]==int(bcount.group(1))
+          assert rows[0]["explicit"]==int(bcount.group(3))
+          print("BITSET_COALESCENCE_FIELD",json.dumps({"byte_c16_seconds":btime,"rows":rows},separators=(",",":")))
+          print("BITSET_COALESCENCE_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coalescence-bitset-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
