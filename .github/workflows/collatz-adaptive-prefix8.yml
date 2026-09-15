@@ -1,0 +1,139 @@
+name: Collatz adaptive lawful prefix8 frontier
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-adaptive-prefix8.yml"
+      - "experiments/collatz_exact_adaptive.py"
+      - "experiments/collatz_prefix_residues.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-adaptive-prefix8
+  cancel-in-progress: true
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      residues: ${{ steps.partition.outputs.residues }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: partition
+        run: |
+          mkdir -p results
+          python experiments/collatz_prefix_residues.py --bits 8 --out results/prefix8.json
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          d=json.load(open("results/prefix8.json"))
+          assert d["lawful_count"] == 19, d
+          print("residues="+json.dumps(d["residues"],separators=(",",":")))
+          PY
+
+  control:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
+      - name: Protected adaptive boundary
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_adaptive.py \
+            --bits 20 \
+            --lower 524288 \
+            --upper 1048575 \
+            --start-horizon 182 \
+            --max-horizon 183 \
+            --min-jump 1 \
+            --low-bits 8 \
+            --low-value 103 \
+            --out results/control.json
+          python - <<'PY'
+          import json
+          d=json.load(open("results/control.json"))
+          rs=d["results"]
+          assert [(r["horizon"],r["status"]) for r in rs] == [(182,"SAT"),(183,"UNSAT")], rs
+          assert rs[0]["witness"] == 1027431, rs[0]
+          print("ADAPTIVE_PREFIX8_CONTROL_OK")
+          PY
+
+  residue:
+    needs: [prepare, control]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    strategy:
+      fail-fast: false
+      max-parallel: 19
+      matrix:
+        residue: ${{ fromJSON(needs.prepare.outputs.residues) }}
+    name: adaptive8-${{ matrix.residue }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
+      - name: Exact witness-guided frontier from 803
+        run: |
+          mkdir -p results
+          python experiments/collatz_exact_adaptive.py \
+            --bits 72 \
+            --lower 2392312122059207475200 \
+            --upper 3143983941795894239301 \
+            --start-horizon 803 \
+            --max-horizon 1000 \
+            --min-jump 16 \
+            --low-bits 8 \
+            --low-value ${{ matrix.residue }} \
+            --replay-limit 5000 \
+            --out results/adaptive8-${{ matrix.residue }}.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-adaptive8-${{ matrix.residue }}
+          path: results/adaptive8-${{ matrix.residue }}.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  aggregate:
+    needs: [residue]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-adaptive8-*
+          path: gathered
+          merge-multiple: true
+      - name: Summarize exact frontier
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          files=sorted(Path("gathered").glob("adaptive8-*.json"))
+          rows=[json.loads(p.read_text()) for p in files]
+          summary={
+            "kind":"collatz_adaptive_prefix8_frontier",
+            "completed":len(rows),
+            "unsat_classes":[r["low_value"] for r in rows if r["status"]=="UNSAT"],
+            "sat_at_1000_classes":[r["low_value"] for r in rows if r["status"]=="SAT"],
+            "max_witness_descent":max(
+              [x.get("replay",{}).get("first_descent") or 0 for r in rows for x in r["results"]]
+              or [0]
+            ),
+          }
+          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("ADAPTIVE_PREFIX8_SUMMARY",json.dumps(summary,separators=(",",":")))
+          if len(rows)!=19:
+            raise SystemExit(f"incomplete adaptive coverage: {len(rows)}/19")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-adaptive8-summary
+          path: gathered/summary.json
+          retention-days: 30
