@@ -45,8 +45,8 @@ jobs:
           p=Path("Submission.lean")
           s=p.read_text()
           s=s.replace(
-            "set_option linter.unusedSimpArgs false",
-            "set_option linter.unusedSimpArgs false\nset_option maxRecDepth 65536\nset_option exponentiation.threshold 1024",
+            "namespace Vec16\n\nset_option linter.unusedVariables false\nset_option linter.unusedSimpArgs false",
+            "namespace Vec16\n\nset_option linter.unusedVariables false\nset_option linter.unusedSimpArgs false\nset_option maxRecDepth 65536\nset_option exponentiation.threshold 1024",
             1)
           s=s.replace(
             "  rw [Nat.shiftLeft_eq]\n  rw [Nat.add_mul_div_left p q (by decide : 0 < 2 ^ 512)]",
