@@ -1,0 +1,86 @@
+name: Collatz compiled-prefix swarm control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-compiled-prefix-control.yml"
+      - "experiments/collatz_vslice_compiled_prefix_scan.cpp"
+      - "experiments/collatz_vslice_prefix_sieve_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-compiled-prefix-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact p24 and compiled-p24 kernels
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_prefix_sieve_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24             experiments/collatz_vslice_compiled_prefix_scan.cpp -o /tmp/compiled
+      - name: Protect exact 920 record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/compiled 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS COMPILED_PREFIX_AND_SCAN_CLOSED" results/record.txt
+          echo COMPILED_PREFIX_RECORD_OK
+      - name: Compare exact large sealed worlds
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          for K in 15 10 8; do
+            U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<26
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+            )
+            /usr/bin/time -f '%e' -o results/p24-k$K.time               /tmp/p24 $K 5000 1 0 "$L" "$U" > results/p24-k$K.txt
+            /usr/bin/time -f '%e' -o results/compiled-k$K.time               /tmp/compiled $K 5000 1 0 "$L" "$U" > results/compiled-k$K.txt
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          for k in (15,10,8):
+              a=open(f"results/p24-k{k}.txt").read()
+              b=open(f"results/compiled-k{k}.txt").read()
+              assert "STATUS PREFIX_SIEVE_AND_SCAN_CLOSED" in a,a[-4000:]
+              assert "STATUS COMPILED_PREFIX_AND_SCAN_CLOSED" in b,b[-4000:]
+              ah=re.search(r"full_count=(\d+).*explicit_count=(\d+)",a)
+              ascan=re.search(r"SCANNED (\d+).*overflows=(\d+)",a)
+              bscan=re.search(r"SCANNED (\d+).*overflows=(\d+)",b)
+              abest=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",a)
+              bbest=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",b)
+              assert ah and ascan and bscan and abest and bbest
+              full,explicit=map(int,ah.groups())
+              assert int(ascan.group(1))==explicit,(k,ascan.group(1),explicit)
+              assert ascan.groups()==bscan.groups(),(k,ascan.groups(),bscan.groups())
+              assert abest.groups()==bbest.groups(),(k,abest.groups(),bbest.groups())
+              at=float(open(f"results/p24-k{k}.time").read())
+              bt=float(open(f"results/compiled-k{k}.time").read())
+              rows.append({
+                  "k":k,"full":full,"explicit":explicit,
+                  "p24_seconds":at,"compiled_seconds":bt,
+                  "speedup":at/bt if bt else float("inf"),
+                  "best":int(abest.group(1)),"best_seed":abest.group(2),
+              })
+          print("COMPILED_PREFIX_COMPARISON",json.dumps(rows,separators=(",",":")))
+          print("COMPILED_PREFIX_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-compiled-prefix-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
