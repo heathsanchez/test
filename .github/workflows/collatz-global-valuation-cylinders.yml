@@ -1,0 +1,42 @@
+name: Collatz global valuation cylinders
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-global-valuation-cylinders.yml"
+      - "experiments/collatz_global_valuation_cylinders.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-valuation-cylinders
+  cancel-in-progress: true
+
+jobs:
+  cylinder:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [8, 12, 16, 20]
+    name: global-cylinder-d${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact global cylinder compiler
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_valuation_cylinders.cpp             -o /tmp/global_cylinder
+      - name: Run exact global cylinder quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/global_cylinder ${{ matrix.depth }}             | tee results/census.txt
+          grep -q "NO_FINITE_OFFSET_MIXED_CLASSES_THROUGH_DEPTH_${{ matrix.depth }}" results/census.txt
+          grep -q "FINAL_GATE=GLOBAL_VALUATION_CYLINDER_QUOTIENT_DEPTH_${{ matrix.depth }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-cylinder-d${{ matrix.depth }}
+          path: results
+          retention-days: 30
