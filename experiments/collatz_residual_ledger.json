@@ -405,18 +405,34 @@
       "extremal_seed_decimal": "2867959830788802871295",
       "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
       "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 39",
+      "exact_seed_count": 2119172096,
+      "max_first_descent": 802,
+      "extremal_seed_decimal": "2760016646173626466303",
+      "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
+      "status": "compiled"
+    },
+    {
+      "predicate": "live interval and v2(n+1) = 38",
+      "exact_seed_count": 4238344192,
+      "max_first_descent": 788,
+      "extremal_seed_decimal": "4140024969260439699455",
+      "certificate_method": "exact exhaustive 16-step affine block compiler with overflow guard",
+      "status": "compiled"
     }
   ],
   "global_best_known": {
-    "witness_decimal": "3823946441051737161727",
-    "exact_first_descent": 747,
-    "v2_n_plus_1": 42,
-    "source": "exact exhaustive v2(n+1)=42 block-compiled region"
+    "witness_decimal": "2760016646173626466303",
+    "exact_first_descent": 802,
+    "v2_n_plus_1": 39,
+    "source": "exact exhaustive v2(n+1)=39 block-compiled region"
   },
   "current_structural_residual": {
-    "predicate": "live interval and v2(n+1) <= 39",
-    "reason": "all v2>=40 slices compiled exactly; current record is first descent 747 at v2=42",
-    "next_action": "continue exact block-compiled valuation slices downward until cost or residual shape forces another reframe"
+    "predicate": "live interval and v2(n+1) <= 37",
+    "reason": "all v2>=38 slices compiled exactly; per-slice enumeration now doubles geometrically while the verifier continues to close cleanly",
+    "next_action": "find exact covering/quotient rules over multiple low-valuation slices rather than continue seed enumeration"
   },
   "numeric_encoding": "large integers should be stored as decimal strings"
 }
