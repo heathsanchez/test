@@ -590,7 +590,7 @@ theorem pack8Pair_eq (x : Nat)
   have h7 :
       x + 2 * stepConst + stepConst + stepConst + stepConst + stepConst + stepConst <
         2 ^ 40 := by omega
-  unfold pack8Pair pack8Nat
+  dsimp [pack8Pair, pack8Nat]
   rw [mixPairNat_eq x (x + stepConst) h0 h1]
   rw [mixPairNat_eq (x + 2 * stepConst) (x + 2 * stepConst + stepConst) h2 h3]
   rw [mixPairNat_eq
@@ -612,7 +612,7 @@ theorem pack6Pair_eq (x : Nat)
   have h3 : x + 2 * stepConst + stepConst < 2 ^ 40 := by omega
   have h4 : x + 2 * stepConst + stepConst + stepConst < 2 ^ 40 := by omega
   have h5 : x + 2 * stepConst + stepConst + stepConst + stepConst < 2 ^ 40 := by omega
-  unfold pack6Pair pack6Nat
+  dsimp [pack6Pair, pack6Nat]
   rw [mixPairNat_eq x (x + stepConst) h0 h1]
   rw [mixPairNat_eq (x + 2 * stepConst) (x + 2 * stepConst + stepConst) h2 h3]
   rw [mixPairNat_eq
@@ -639,11 +639,14 @@ theorem packByteTailPair_eq (x n : Nat)
       exact pack6Pair_eq x h
   | succ n ih =>
       simp only [packByteTailPair, packByteTailNat]
-      have hb : x + 7 * stepConst < 2 ^ 40 := by omega
+      have hb : x + 7 * stepConst < 2 ^ 40 := by
+        unfold stepConst at h ⊢
+        omega
       rw [pack8Pair_eq x hb]
       have hr :
           advance8 x + (8 * n + 5) * stepConst < 2 ^ 40 := by
         rw [advance8_eq]
+        unfold stepConst at h ⊢
         omega
       rw [ih (advance8 x) hr]
 
