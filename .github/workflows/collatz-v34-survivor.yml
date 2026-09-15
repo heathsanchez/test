@@ -135,7 +135,7 @@ jobs:
                   survivors.append(hit)
               rows.append(row)
           summary={
-              "kind":"exact_v2_35_h853_tightened_interval",
+              "kind":"exact_v2_34_h853_tightened_interval",
               "completed_shards":len(rows),
               "expected_shards":16,
               "scanned_before_early_exit":sum(r["scanned"] or 0 for r in rows),
