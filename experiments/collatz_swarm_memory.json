@@ -49,6 +49,14 @@
       "evidence_run": 34939151043,
       "consequence": "measures/quotients competing exact representations before funding",
       "status": "retained"
+    },
+    {
+      "id": "mod9-predecessor",
+      "scope": "all positive shortcut-Collatz seeds under strong induction",
+      "evidence_run": 34940894480,
+      "consequence": "closes n mod 9 in {2,4,5,8}; removes ~44.44% globally and 1.8x of p24 residual",
+      "performance": "sealed p24 composition speedup 1.16x k15, 1.08x k10, 1.06x k8",
+      "status": "retained"
     }
   ],
   "rejected": [
@@ -76,13 +84,18 @@
       "evidence_run": 34940329659,
       "reason": "zero coalescences in all tested worlds; much weaker live fractions than transfer-prefix at comparable depth",
       "status": "dominated"
+    },
+    {
+      "id": "compiled-prefix-transform",
+      "evidence_run": 34940585589,
+      "reason": "exact-equivalent to p24 but 15-27% slower on sealed k15/k10/k8 worlds",
+      "status": "dominated"
     }
   ],
   "pending": [
     {
-      "id": "compiled-prefix-transform",
-      "run": 34940585589,
-      "hypothesis": "compile verified p24 affine prefix once and start each seed after W=k+24"
+      "id": "reverse-predecessor-tree-q7",
+      "hypothesis": "enumerate all first-contracting reverse paths through denominator 3^7 and compile their residue union into one tiny exact sieve"
     }
   ],
   "next_residual": "v2(n+1) <= 28; representation selection precedes further large scans"
