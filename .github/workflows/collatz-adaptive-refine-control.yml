@@ -1,0 +1,57 @@
+name: Collatz adaptive refinement control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-adaptive-refine-control.yml"
+      - "experiments/collatz_hybrid_adaptive_refine.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-adaptive-refine-control
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
+      - name: Recover exact protected boundary with adaptive grain
+        run: |
+          mkdir -p results
+          python experiments/collatz_hybrid_adaptive_refine.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 182 \
+            --parent-bits 8 --parent-value 103 \
+            --start-bits 12 --max-bits 20 --step-bits 4 \
+            --conflicts 5000 --protected-control \
+            --out results/h182.json
+          python experiments/collatz_hybrid_adaptive_refine.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 183 \
+            --parent-bits 8 --parent-value 103 \
+            --start-bits 12 --max-bits 20 --step-bits 4 \
+            --conflicts 5000 --protected-control \
+            --out results/h183.json
+          python - <<'PY'
+          import json
+          a=json.load(open("results/h182.json"))
+          b=json.load(open("results/h183.json"))
+          assert a["status"] == "SAT", a
+          assert any(x["witness"] == "1027431" for x in a["sat_leaves"]), a
+          assert b["status"] == "UNSAT", b
+          assert not b["unresolved_leaves"], b
+          print("ADAPTIVE_GRAIN_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-adaptive-refine-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
