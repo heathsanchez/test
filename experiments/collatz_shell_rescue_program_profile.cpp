@@ -636,6 +636,35 @@ int main(int argc,char**argv){
            <<" top50_coverage="<<top50
            <<" top100_coverage="<<top100<<"\n";
 
+  // A state is F128-hard exactly when its first successful H512 program has
+  // forward index f>128, because the search order is identical up to f=128.
+  // Emit this thin rescue language separately; this is the behavior quotient
+  // we want to compare across shells.
+  uint64_t rescue_total=0;
+  uint64_t rescue_unique=0;
+  for(const auto& kv:programs){
+    const std::string& key=kv.first;
+    const auto p1=key.find(':');
+    const auto p2=key.find(':',p1+1);
+    int f=-1;
+    if(p1!=std::string::npos){
+      const std::string fs=(p2==std::string::npos)
+          ? key.substr(p1+1)
+          : key.substr(p1+1,p2-p1-1);
+      f=std::stoi(fs);
+    }
+    if(f>128){
+      ++rescue_unique;
+      rescue_total+=kv.second;
+      std::cout<<"SHELL_RESCUE_PROGRAM"
+               <<" count="<<kv.second
+               <<" key="<<key<<"\n";
+    }
+  }
+  std::cout<<"SHELL_RESCUE_VOCAB"
+           <<" unique="<<rescue_unique
+           <<" total="<<rescue_total<<"\n";
+
   // Residual obstruction profile after the macro grammar is exhausted.
   int critical_c=0;
   while(p3[critical_c] <= (UINT64_C(1)<<K))++critical_c;
