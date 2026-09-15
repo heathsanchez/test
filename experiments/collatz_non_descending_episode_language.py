@@ -72,12 +72,23 @@ def main():
     prefix_hist = Counter()
     hardest = []
     unresolved = 0
+    base_cases = 0
+    unresolved_witnesses = []
 
     for r in range(1, a.max_r + 1):
         for m in range(1, M, 2):
+            x0 = (1 << r) * m - 1
+            if x0 == 1:
+                base_cases += 1
+                continue
             closed, word, vals = run_until_descent(r, m, a.max_episodes)
             if not closed:
                 unresolved += 1
+                if len(unresolved_witnesses) < 64:
+                    unresolved_witnesses.append({
+                        "r": r, "m": m, "x": x0,
+                        "word": [list(x) for x in word[:32]],
+                    })
             d = len(word)
             delay_hist[d] += 1
             if word:
@@ -135,7 +146,9 @@ def main():
         "precision": P,
         "residues_per_r": M // 2,
         "total_cases": a.max_r * (M // 2),
+        "base_cases": base_cases,
         "unresolved_at_episode_cap": unresolved,
+        "unresolved_witnesses": unresolved_witnesses,
         "max_delay": max(delay_hist) if delay_hist else 0,
         "delay_hist": {str(k): v for k, v in sorted(delay_hist.items())},
         "first_edge_top": [
@@ -157,6 +170,7 @@ def main():
           f"precision={P}",
           f"cases={out['total_cases']}",
           f"max_delay={out['max_delay']}",
+          f"base_cases={base_cases}",
           f"unresolved={unresolved}")
     print("NON_DESCENDING_R2_SELF_CONTROLS",
           json.dumps(self_controls, separators=(",", ":")))
