@@ -501,9 +501,8 @@ theorem pairMul_expand (a b c : Nat) :
 
 theorem pairMul_mod_lane_eq (a b c : Nat) (h : a * c < laneBase) :
     pairMul a b c % laneBase = a * c := by
-  have hmod : a * c % laneBase = a * c := Nat.mod_eq_of_lt h
-  rw [pairMul_expand, Nat.add_mod, hmod]
-  simp
+  rw [pairMul_expand, Nat.add_mul_mod_self_left]
+  exact Nat.mod_eq_of_lt h
 
 theorem pairMul_div_lane_eq (a b c : Nat) (h : a * c < laneBase) :
     pairMul a b c / laneBase = b * c := by
