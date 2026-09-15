@@ -890,12 +890,14 @@ def pack6PackedPair (p : Nat) : Nat :=
   4  * mixPairPacked p1 +
   16 * mixPairPacked p2
 
+set_option maxRecDepth 32768 in
 theorem pack8PackedPair_eq (x : Nat) :
     pack8PackedPair (pairState x) = pack8SWAR x := by
   dsimp [pack8PackedPair, pack8SWAR]
   simp only [advancePair_state, mixPairPacked_state]
   congr 1 <;> omega
 
+set_option maxRecDepth 32768 in
 theorem pack6PackedPair_eq (x : Nat) :
     pack6PackedPair (pairState x) = pack6SWAR x := by
   dsimp [pack6PackedPair, pack6SWAR]
@@ -905,7 +907,7 @@ theorem pack6PackedPair_eq (x : Nat) :
 def advance4Pairs (p : Nat) : Nat :=
   advancePair (advancePair (advancePair (advancePair p)))
 
-set_option maxRecDepth 4096 in
+set_option maxRecDepth 32768 in
 theorem advance4Pairs_state (x : Nat) :
     advance4Pairs (pairState x) = pairState (advance8 x) := by
   unfold advance4Pairs
