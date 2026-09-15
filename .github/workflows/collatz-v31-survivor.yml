@@ -4,7 +4,8 @@ on:
   push:
     paths:
       - ".github/workflows/collatz-v31-survivor.yml"
-      - "experiments/collatz_vslice_fullscan.cpp"
+      - "experiments/collatz_vslice_merge_scan.cpp"
+      - "experiments/collatz_predecessor_merge.py"
   workflow_dispatch:
 
 concurrency:
@@ -17,8 +18,12 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
+      - name: Verify predecessor merge theorem
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee /tmp/merge.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" /tmp/merge.txt
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_fullscan.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_merge_scan.cpp -o /tmp/vscan
       - name: Recover exact 802 boundary of known v2=39 extremal
         run: |
           set -o pipefail
@@ -28,7 +33,7 @@ jobs:
           /tmp/vscan 39 802 1 0 "$N" "$N" | tee results/control-802.txt
           grep -q "STATUS SURVIVOR_FOUND" results/control-801.txt
           grep -q "SURVIVOR seed=$N horizon=801" results/control-801.txt
-          grep -q "STATUS EXHAUSTED_NO_SURVIVOR" results/control-802.txt
+          grep -q "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" results/control-802.txt
           grep -q "BEST first_descent_or_survival=802 seed=$N" results/control-802.txt
           echo VSLICE_SURVIVOR_CONTROL_OK
 
@@ -45,7 +50,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_fullscan.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 experiments/collatz_vslice_merge_scan.cpp -o /tmp/vscan
       - name: Exact tightened v2=31 scan through H853
         run: |
           set -o pipefail
@@ -85,6 +90,8 @@ jobs:
               print("STATUS SURVIVOR_FOUND")
           elif "STATUS OVERFLOW_REPLAY_REQUIRED" in s:
               print("STATUS EXHAUSTED_NO_SURVIVOR")
+          elif "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" in s:
+              print("EXACT_SURVIVOR_CLASS_ALREADY_EXHAUSTED")
           elif "STATUS EXHAUSTED_NO_SURVIVOR" in s:
               print("EXACT_SHARD_ALREADY_EXHAUSTED")
           elif "STATUS SURVIVOR_FOUND" in s:
@@ -127,18 +134,28 @@ jobs:
                    "best":int(bm.group(1)) if bm else None,
                    "best_seed":bm.group(2) if bm else None,
                    "overflow_count":len(re.findall(r"OVERFLOW_SEED seed=(\d+)",s)),
-                   "status":"SURVIVOR" if "STATUS SURVIVOR_FOUND" in s else "EXHAUSTED" if "STATUS EXHAUSTED_NO_SURVIVOR" in s else "UNKNOWN"}
+                   "status":"SURVIVOR" if "STATUS SURVIVOR_FOUND" in s else "EXHAUSTED" if ("STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" in s or "STATUS EXHAUSTED_NO_SURVIVOR" in s) else "UNKNOWN"}
               for rm in rms:
                   hit={"file":p.name,"survivor_seed":rm[0],
                        "first_descent":None if rm[1]=="None" else int(rm[1]),
                        "peak":rm[2]}
                   survivors.append(hit)
               rows.append(row)
+          counts=[]
+          for p in fs:
+              s=p.read_text()
+              h=re.search(r"full_count=(\d+) survivor_count=(\d+) killed_count=(\d+)",s)
+              if h: counts.append(tuple(map(int,h.groups())))
+          assert counts and all(x==counts[0] for x in counts),counts
+          full_count,survivor_count,killed_count=counts[0]
           summary={
-              "kind":"exact_v2_31_h853_tightened_interval",
+              "kind":"exact_v2_31_h853_tightened_interval_with_predecessor_merge",
               "completed_shards":len(rows),
               "expected_shards":16,
-              "scanned_before_early_exit":sum(r["scanned"] or 0 for r in rows),
+              "full_slice_seed_count":full_count,
+              "inductively_killed_seed_count":killed_count,
+              "explicit_survivor_class_seed_count":survivor_count,
+              "explicitly_scanned_seed_count":sum(r["scanned"] or 0 for r in rows),
               "overflow_seed_count":sum(r["overflow_count"] for r in rows),
               "survivors":survivors,
               "all_exhausted_no_survivor":len(rows)==16 and all(r["status"]=="EXHAUSTED" for r in rows),
