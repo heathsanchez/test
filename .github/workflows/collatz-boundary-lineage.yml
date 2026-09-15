@@ -1,0 +1,26 @@
+name: Collatz H512 boundary lineage
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-boundary-lineage.yml"
+      - "experiments/collatz_boundary_residual_lineage.py"
+  workflow_dispatch:
+
+jobs:
+  lineage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact residual coalescence
+        run: |
+          set -euo pipefail
+          python experiments/collatz_boundary_residual_lineage.py | tee lineage.txt
+          grep -q "FOUR_H512_FAILURES_COLLAPSE_TO_ONE_EXACT_LINEAGE" lineage.txt
+          grep -q "VERIFIED_BOUNDARY_RESIDUAL_LINEAGE" lineage.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h512-boundary-lineage
+          path: lineage.txt
+          retention-days: 30
