@@ -108,12 +108,14 @@ static bool uniform_closed(
 static State child(
     const State& s,int t,int e,
     const std::vector<Big>& p3){
-  const uint64_t half = (t<64)?(UINT64_C(1)<<t):0;
-  if(t>=63){
-    std::cerr<<"B_RESIDUE_RANGE_EXCEEDED\n";
-    std::exit(4);
+  uint64_t b=s.b;
+  if(e){
+    if(t>=63){
+      std::cerr<<"B_RESIDUE_RANGE_EXCEEDED\n";
+      std::exit(4);
+    }
+    b += (UINT64_C(1)<<t);
   }
-  const uint64_t b=s.b+(e?half:0);
   Big y=s.d;
   if(e)y+=p3[s.c];
 
