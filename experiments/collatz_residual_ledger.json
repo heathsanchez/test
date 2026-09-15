@@ -388,6 +388,14 @@
       "certificate": "experiments/collatz_transfer_farey.py",
       "note": "experiments/COLLATZ_TRANSFER_FRONTIER.md",
       "status": "certified"
+    },
+    "live_near_return": {
+      "t": "114208327604",
+      "q": "72057431991",
+      "gap_ceiling": "4142380787",
+      "statement": "if a live seed survives the first dangerous coefficient contraction then 0 <= T^t(n)-n <= 4142380787",
+      "certificate": "experiments/collatz_transfer_farey.py",
+      "status": "certified"
     }
   }
 }
