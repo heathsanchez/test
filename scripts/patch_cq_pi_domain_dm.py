@@ -149,6 +149,7 @@ new="""            let te = self.key_env(env, e);
                         None => None,
                     };
                     if let Some(domain) = hit {
+                        let domain = std::hint::black_box(domain);
                         let ce = self.key_env(te, e);
                         let v = value::mk_pi(
                             self.arena,
