@@ -1,0 +1,163 @@
+name: Collatz shell hard-language projection
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-shell-hard-language.yml"
+      - "experiments/collatz_shell_hard_export.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-shell-hard-language
+  cancel-in-progress: true
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [20,22,24,26,28]
+    name: hard-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Export exact F128 R8 hard states
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_hard_export.cpp -o /tmp/export
+          /tmp/export ${{ matrix.k }} results/q14-bank.txt 8 128             | tee results/census.txt
+          grep -q "VERIFIED_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+          grep '^SHELL_HARD_STATE ' results/census.txt > results/hard.txt || true
+
+      - name: Check count
+        run: |
+          python - <<'PY'
+          import re
+          K=int("${{ matrix.k }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"SHELL_FORWARD_REVERSE_RESULT K={K} reverse_depth=8 forward_h=128 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-5000:]
+          hard=int(m.group(4))
+          lines=sum(1 for _ in open("results/hard.txt"))
+          assert lines==hard,(K,lines,hard)
+          print("HARD_EXPORT_OK",K,hard)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hard-language-k${{ matrix.k }}
+          path: results/hard.txt
+          retention-days: 30
+
+  aggregate:
+    needs: export
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: hard-language-k*
+          path: gathered
+
+      - name: Analyze exact cross-shell projection
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          Ks=[20,22,24,26,28]
+          data={}
+          for K in Ks:
+              p=Path("gathered")/f"hard-language-k{K}"/"hard.txt"
+              assert p.exists(),p
+              rows=[]
+              for line in p.read_text().splitlines():
+                  m=re.search(r"K=(\d+) b=(\d+) c=(\d+) d=(\d+)",line)
+                  assert m,line
+                  k,b,c,d=map(int,m.groups())
+                  assert k==K
+                  rows.append((b,c,d))
+              data[K]=rows
+
+          expected={20:6,22:29,24:114,26:382,28:1615}
+          assert {k:len(v) for k,v in data.items()}==expected
+
+          pairs=[]
+          for K in Ks[:-1]:
+              parent={b for b,_,_ in data[K]}
+              child=data[K+2]
+              counts={b:0 for b in parent}
+              projected=set()
+              orphan=0
+              for b,c,d in child:
+                  p=b & ((1<<K)-1)
+                  projected.add(p)
+                  if p in counts: counts[p]+=1
+                  else: orphan+=1
+              histogram={}
+              for n in counts.values():
+                  histogram[str(n)]=histogram.get(str(n),0)+1
+              pairs.append({
+                  "parent_K":K,
+                  "child_K":K+2,
+                  "parent_hard":len(parent),
+                  "child_hard":len(child),
+                  "child_projected_unique":len(projected),
+                  "projected_in_parent":sum(1 for x in projected if x in parent),
+                  "orphan_children":orphan,
+                  "parent_child_count_hist":histogram,
+              })
+
+          # Normalize trajectory-state features against the critical c.
+          features={}
+          for K,rows in data.items():
+              ccrit=0
+              while 3**ccrit <= 2**K: ccrit+=1
+              hist={}
+              for b,c,d in rows:
+                  key=(c-ccrit,d%81)
+                  hist[str(key)]=hist.get(str(key),0)+1
+              top=sorted(hist.items(),key=lambda kv:(-kv[1],kv[0]))[:30]
+              features[str(K)]={
+                  "critical_c":ccrit,
+                  "unique_c_excess_mod81":len(hist),
+                  "top":top,
+              }
+
+          out={"kind":"exact_shell_hard_language_projection",
+               "counts":expected,"pairs":pairs,"features":features}
+          Path("shell-hard-language-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("SHELL_HARD_LANGUAGE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: shell-hard-language-field
+          path: shell-hard-language-field.json
+          retention-days: 30
