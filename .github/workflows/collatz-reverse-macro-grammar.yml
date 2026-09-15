@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       max-parallel: 4
       matrix:
-        depth: [1,2,3,4]
+        depth: [1,2,3,4,5]
     name: macro-depth${{ matrix.depth }}-b24
     steps:
       - uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
               assert p.exists(),d
               rows.append(json.loads(p.read_text()))
           rows.sort(key=lambda r:r["macro_depth"])
-          assert [r["macro_depth"] for r in rows]==[1,2,3,4],rows
+          assert [r["macro_depth"] for r in rows]==[1,2,3,4,5],rows
           prev=238727
           for r in rows:
               assert r["live"]<=prev,(prev,r)
