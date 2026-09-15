@@ -2,10 +2,6 @@ name: Exact Collatz CNF Descent
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-cnf-descent.yml"
-      - "experiments/collatz_exact_cnf.py"
 
 jobs:
   validate:
