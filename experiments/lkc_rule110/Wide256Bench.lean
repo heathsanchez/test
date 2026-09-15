@@ -50,5 +50,6 @@ def main : IO Unit := do
   IO.println s!"checksum_v25={a}"
   IO.println s!"checksum_wide={b}"
   IO.println s!"equal_checksum={a == b}"
+  IO.println s!"equal_all={seeds.all (fun s => wideInit s == initPackedOctProgression s)}"
 
 end Wide256Bench
