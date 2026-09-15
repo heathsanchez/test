@@ -69,7 +69,7 @@ jobs:
         with:
           name: collatz-prefix8-kissat-tool
           path: tool
-      - run: chmod +x tool/results/tool/kissat
+      - run: chmod +x tool/tool/kissat
       - name: Protected exact boundary under fixed prefix residue
         run: |
           mkdir -p results/control-182 results/control-183
@@ -81,9 +81,9 @@ jobs:
             --low-bits 8 --low-value 103 --out-dir results/control-183
 
           set +e
-          tool/results/tool/kissat results/control-182/problem.cnf | tee results/control-182/kissat.log
+          tool/tool/kissat results/control-182/problem.cnf | tee results/control-182/kissat.log
           rc182=${PIPESTATUS[0]}
-          tool/results/tool/kissat results/control-183/problem.cnf | tee results/control-183/kissat.log
+          tool/tool/kissat results/control-183/problem.cnf | tee results/control-183/kissat.log
           rc183=${PIPESTATUS[0]}
           set -e
 
@@ -131,7 +131,7 @@ jobs:
         with:
           name: collatz-prefix8-kissat-tool
           path: tool
-      - run: chmod +x tool/results/tool/kissat
+      - run: chmod +x tool/tool/kissat
       - name: Emit exact fixed-prefix H1000 CNF
         run: |
           mkdir -p results/r-${{ matrix.residue }}
@@ -147,7 +147,7 @@ jobs:
         id: solve
         run: |
           set +e
-          tool/results/tool/kissat \
+          tool/tool/kissat \
             results/r-${{ matrix.residue }}/problem.cnf \
             | tee results/r-${{ matrix.residue }}/kissat.log
           rc=${PIPESTATUS[0]}
