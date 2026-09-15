@@ -1,0 +1,126 @@
+name: Collatz deeper reverse macro grammar
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-reverse-macro-deeper.yml"
+      - "experiments/collatz_reverse_macro_grammar_deep.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-reverse-macro-deeper
+  cancel-in-progress: true
+
+jobs:
+  macro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        depth: [6,7,8]
+    name: macro-depth${{ matrix.depth }}-b24
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run deeper exact macro grammar
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_reverse_macro_grammar_deep.cpp -o /tmp/macro
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/macro 24 results/q14-bank.txt ${{ matrix.depth }}             | tee results/census.txt
+          grep -q "VERIFIED_REVERSE_MACRO_GRAMMAR_SIEVE" results/census.txt
+
+      - name: Score depth
+        run: |
+          python - <<'PY'
+          import json,re
+          D=int("${{ matrix.depth }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"LIVE_RECURSIVE_DONE K=24 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_macro=(\d+) "
+              r"bridge_controls=(\d+) deep_o_controls=(\d+) "
+              r"macro_controls=(\d+)",s)
+          assert m,s[-10000:]
+          live,des,bridge,do,macro,bc,dc,mc=map(int,m.groups())
+          hist={str(int(x.group(1))):int(x.group(2))
+                for x in re.finditer(r"MACRO_DEPTH_HIST depth=(\d+) closed=(\d+)",s)}
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"deeper_reverse_macro_grammar",
+              "K":24,"macro_depth":D,
+              "live":live,
+              "depth5_reference_live":173220,
+              "improvement_vs_depth5":173220-live,
+              "macro_depth_hist":hist,
+              "direct_macro_closures":macro,
+              "controls":mc,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("DEEPER_MACRO_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deeper-macro-depth${{ matrix.depth }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: macro
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: deeper-macro-depth*
+          path: gathered
+      - name: Aggregate deeper macro curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("deeper-macro-depth*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["macro_depth"])
+          assert [r["macro_depth"] for r in rows]==[6,7,8],rows
+          prev=173220
+          for r in rows:
+              assert r["live"]<=prev,(prev,r)
+              prev=r["live"]
+          out={"kind":"deeper_reverse_macro_curve","rows":rows}
+          Path("deeper-macro-field.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("DEEPER_MACRO_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deeper-macro-field
+          path: deeper-macro-field.json
+          retention-days: 30
