@@ -656,8 +656,8 @@ theorem bits2_phys (x : Nat)
     bits2 x = phys1_2 x := by
   unfold phys1_2
   rw [bits2_eq x h]
-  rw [bits1_phys x (by omega)]
-  rw [bits1_phys (x + 1 * stepConst) (by omega)]
+  rw [bits1_phys x]
+  rw [bits1_phys (x + 1 * stepConst)]
 
 theorem bits4_phys (x : Nat)
     (h : x + 3 * stepConst < 2 ^ 64) :
