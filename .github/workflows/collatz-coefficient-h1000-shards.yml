@@ -1,9 +1,10 @@
-name: Collatz Coefficient H1000 Shards
+name: Collatz Coefficient H1000 Shards V2
 
 on:
   push:
     paths:
       - ".github/workflows/collatz-coefficient-h1000-shards.yml"
+      - "experiments/collatz_coefficient_cnf_v2.py"
   workflow_dispatch:
 
 concurrency:
@@ -11,7 +12,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --disable-pip-version-check python-sat
+      - name: Protected 20-bit control
+        run: |
+          mkdir -p results
+          python experiments/collatz_coefficient_cnf_v2.py \
+            --bits 20 --lower 524288 --upper 1048575 \
+            --horizon 183 --checkpoints 182,183 \
+            --out results/control-v2.json
+          python - <<'PY'
+          import json
+          r=json.load(open('results/control-v2.json'))['results']
+          assert [(x['horizon'],x['status']) for x in r] == [(182,'SAT'),(183,'UNSAT')], r
+          assert r[0]['witness']==1027431, r[0]
+          print('COEFFICIENT_V2_CONTROL_OK')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coeff-v2-control
+          path: results/control-v2.json
+          if-no-files-found: warn
+
   shard:
+    needs: control
     runs-on: ubuntu-latest
     timeout-minutes: 70
     strategy:
@@ -31,7 +63,7 @@ jobs:
           - shard: 3
             lo: "2956065986861722548276"
             hi: "3143983941795894239301"
-    name: coeff1000-${{ matrix.shard }}
+    name: coeff-v2-1000-${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -41,17 +73,17 @@ jobs:
       - name: Exact coefficient persistence to 1000
         run: |
           mkdir -p results
-          python experiments/collatz_coefficient_cnf.py \
+          python experiments/collatz_coefficient_cnf_v2.py \
             --bits 72 \
             --lower "${{ matrix.lo }}" \
             --upper "${{ matrix.hi }}" \
             --horizon 1000 \
-            --checkpoints 1000 \
+            --checkpoints 600,800,1000 \
             --replay-limit 10000 \
             --out results/shard-${{ matrix.shard }}.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: collatz-coeff1000-${{ matrix.shard }}
+          name: collatz-coeff-v2-1000-${{ matrix.shard }}
           path: results/shard-${{ matrix.shard }}.json
           if-no-files-found: warn
