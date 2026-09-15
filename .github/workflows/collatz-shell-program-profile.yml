@@ -1,0 +1,79 @@
+name: Collatz shell program vocabulary
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-shell-program-profile.yml"
+      - "experiments/collatz_shell_program_profile.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-shell-program-profile
+  cancel-in-progress: true
+
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+      - name: Profile exact B24 composite programs
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_shell_program_profile.cpp -o /tmp/profile
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/profile 24 results/q14-bank.txt 8 32 | tee results/census.txt
+          grep -q "VERIFIED_SHELL_PROGRAM_VOCABULARY" results/census.txt
+      - name: Parse vocabulary
+        run: |
+          python - <<'PY'
+          import json,re
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"SHELL_FORWARD_REVERSE_RESULT K=24 reverse_depth=8 forward_h=32 "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-7000:]
+          u,fw,rv,hard,controls=map(int,m.groups())
+          assert (u,fw,rv,hard)==(173180,47974,114190,11016)
+          v=re.search(
+              r"SHELL_PROGRAM_VOCAB unique=(\d+) top10_coverage=(\d+) "
+              r"top50_coverage=(\d+) top100_coverage=(\d+)",s)
+          assert v,s[-7000:]
+          unique,t10,t50,t100=map(int,v.groups())
+          programs=[]
+          for z in re.finditer(r"SHELL_PROGRAM rank=(\d+) count=(\d+) key=(.*)$",s,re.M):
+              programs.append({"rank":int(z.group(1)),"count":int(z.group(2)),"key":z.group(3)})
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"kind":"shell_program_vocabulary","K":24,"forward_h":32,"reverse_depth":8,
+               "closed":fw+rv,"hard":hard,"unique_programs":unique,
+               "top10_coverage":t10,"top50_coverage":t50,"top100_coverage":t100,
+               "top10_fraction":t10/(fw+rv),"top50_fraction":t50/(fw+rv),
+               "top100_fraction":t100/(fw+rv),"top_programs":programs,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("SHELL_PROGRAM_VOCAB_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: shell-program-vocabulary-b24
+          path: results
+          retention-days: 30
