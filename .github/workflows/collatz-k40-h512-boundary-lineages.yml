@@ -1,0 +1,198 @@
+name: Collatz K40 H512 symbolic boundary lineages
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-k40-h512-boundary-lineages.yml"
+      - "experiments/collatz_h512_boundary_dfs.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-k40-h512-boundary-lineages
+  cancel-in-progress: true
+
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 13
+      matrix:
+        shard: [4,9,10,22,23,24,32,37,39,51,53,57,59]
+    name: boundary-k40-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install bigint headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Export exact H512 boundary
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_h512_boundary_dfs.cpp -o /tmp/boundary
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/boundary 40 ${{ matrix.shard }} 64 800 results/boundary.txt             | tee results/census.txt
+          grep -q "VERIFIED_H512_SYMBOLIC_BOUNDARY_SHARD" results/census.txt
+      - name: Parse shard
+        run: |
+          python - <<'PY'
+          import json,re
+          S=int("${{ matrix.shard }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+            r"H512_BOUNDARY_DFS_RESULT K=40 H=512 rescueH=800 "
+            r"shard=(\d+) shards=64 represented=(\d+) early_closed=(\d+) "
+            r"boundary=(\d+) unresolved_after_rescue=(\d+) nodes=(\d+) "
+            r"max_depth=(\d+) max_late_t=(\d+) max_late_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["shard","represented","early_closed","boundary","unresolved_after_rescue",
+                "nodes","max_depth","max_late_t","max_late_seed"]
+          out=dict(zip(keys,vals))
+          assert out["shard"]==S
+          assert out["represented"]==8589934592
+          assert out["early_closed"]+out["boundary"]==out["represented"]
+          assert out["boundary"]>0, out
+          assert out["unresolved_after_rescue"]==0,out
+          lines=[x for x in open("results/boundary.txt").read().splitlines() if x.strip()]
+          assert len(lines)==out["boundary"],(len(lines),out)
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("H512_BOUNDARY_SHARD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: h512-boundary-k40-s${{ matrix.shard }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: boundary
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: h512-boundary-k40-s*
+          path: gathered
+
+      - name: Build exact pre-certificate lineage graph
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          expected_shards=[4,9,10,22,23,24,32,37,39,51,53,57,59]
+          rows=[]
+          seeds=[]
+          for d in Path("gathered").glob("h512-boundary-k40-s*"):
+              p=d/"summary.json"; assert p.exists(),d
+              r=json.loads(p.read_text()); rows.append(r)
+              for line in (d/"boundary.txt").read_text().splitlines():
+                  if not line.strip(): continue
+                  n,t,k=line.split()
+                  seeds.append({"K":40,"n":int(n),"close_t":int(t),"kind":k,
+                                "shard":r["shard"]})
+          rows.sort(key=lambda x:x["shard"])
+          assert [r["shard"] for r in rows]==expected_shards,rows
+          assert all(r["unresolved_after_rescue"]==0 for r in rows)
+          assert len(seeds)==sum(r["boundary"] for r in rows)
+
+          # Earlier exact H512 boundary members are included only for
+          # cross-generation lineage comparison.
+          historical=[
+            {"K":33,"n":12235060455,"close_t":542,"kind":"CONE","shard":None},
+            {"K":33,"n":14500812391,"close_t":547,"kind":"DIRECT","shard":None},
+            {"K":34,"n":20646664519,"close_t":538,"kind":"DIRECT","shard":None},
+            {"K":34,"n":26130934783,"close_t":531,"kind":"DIRECT","shard":None},
+          ]
+          allseeds=historical+seeds
+
+          def T(n):
+              return (3*n+1)//2 if n&1 else n//2
+
+          # Path only through first certificate time; sharing after closure
+          # would be mathematically uninformative.
+          paths=[]
+          arrival=[]
+          for z in allseeds:
+              x=z["n"]; p=[]; a={}
+              for t in range(z["close_t"]+1):
+                  if x not in a:
+                      a[x]=t;p.append(x)
+                  x=T(x)
+              paths.append(set(p));arrival.append(a)
+
+          parent=list(range(len(allseeds)))
+          def find(x):
+              while parent[x]!=x:
+                  parent[x]=parent[parent[x]];x=parent[x]
+              return x
+          def union(a,b):
+              a,b=find(a),find(b)
+              if a!=b: parent[b]=a
+
+          pair_edges=0
+          for i in range(len(allseeds)):
+              for j in range(i+1,len(allseeds)):
+                  common=paths[i]&paths[j]
+                  if common:
+                      union(i,j);pair_edges+=1
+
+          comps={}
+          for i in range(len(allseeds)):
+              comps.setdefault(find(i),[]).append(i)
+
+          comp_rows=[]
+          for ids in comps.values():
+              common=set.intersection(*(paths[i] for i in ids))
+              core=None; arrivals=None
+              if common:
+                  core=min(common,key=lambda v:(max(arrival[i][v] for i in ids),
+                                                sum(arrival[i][v] for i in ids),v))
+                  arrivals=[arrival[i][core] for i in ids]
+              comp_rows.append({
+                "size":len(ids),
+                "members":[{"K":allseeds[i]["K"],"n":allseeds[i]["n"],
+                            "close_t":allseeds[i]["close_t"]} for i in ids],
+                "common_core":core,
+                "core_arrivals":arrivals,
+                "max_core_arrival":max(arrivals) if arrivals else None,
+              })
+          comp_rows.sort(key=lambda x:(-x["size"],x["members"][0]["n"]))
+
+          k40_components={}
+          for idx,z in enumerate(allseeds):
+              if z["K"]!=40: continue
+              root=find(idx)
+              k40_components[root]=k40_components.get(root,0)+1
+
+          out={
+            "kind":"exact_h512_boundary_lineage_graph",
+            "source_full_symbolic_run":35007177379,
+            "source_historical_boundary_run":35006340208,
+            "late_shards":expected_shards,
+            "k40_boundary_count":len(seeds),
+            "k40_max_late_t":max(z["close_t"] for z in seeds),
+            "k40_lineage_components":len(k40_components),
+            "all_pair_edges":pair_edges,
+            "components":comp_rows,
+            "shards":rows,
+          }
+          Path("h512-boundary-lineage-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("H512_K40_BOUNDARY_LINEAGE_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("VERIFIED_K40_H512_BOUNDARY_LINEAGES")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h512-k40-boundary-lineage-field
+          path: h512-boundary-lineage-field.json
+          retention-days: 30
