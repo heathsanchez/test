@@ -1,0 +1,56 @@
+name: LKC Rule110 instruction probe V25
+
+on:
+  push:
+    branches: [lkc-rule110-fused-v1]
+    paths:
+      - '.github/workflows/lkc-rule110-perf-v25.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-rule110-perf-v25
+  cancel-in-progress: true
+
+jobs:
+  perf:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
+      - name: Prepare Rule 110 evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+      - name: Install V25 as harness example
+        run: cp experiments/lkc_rule110/Submission_v25.lean lkc/examples/ca-rule110/Submission.lean
+      - name: Probe hardware instruction counter
+        working-directory: lkc
+        run: |
+          set -o pipefail
+          python3 scripts/run_harness.py --only ca-rule110 --count 1 --timeout 120 2>&1 | tee "$GITHUB_WORKSPACE/perf-v25.log"
+      - name: Collect verdict
+        if: always()
+        shell: bash
+        run: |
+          mkdir -p perf-v25-evidence
+          cp perf-v25.log perf-v25-evidence/ || true
+          find lkc/results -type f -name '*.json' -maxdepth 4 -print -exec cp {} perf-v25-evidence/ \; || true
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-perf-v25-evidence
+          path: perf-v25-evidence/
+          if-no-files-found: warn
