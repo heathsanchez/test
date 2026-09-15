@@ -511,6 +511,23 @@
       "certificate_method": "exact lower-predecessor merge plus exhaustive cache-tuned H5000 scan of complementary class across 16 shards",
       "workflow_run": "34935480770",
       "status": "compiled"
+    },
+    {
+      "predicate": "tightened live interval and v2(n+1) = 28",
+      "exact_seed_count": 1400097868846,
+      "predecessor_half_merge_killed_seed_count": 700048934423,
+      "transfer_contraction_killed_seed_count": 528754025,
+      "coalescence_extra_killed_seed_count": 65431638668,
+      "mod9_predecessor_killed_seed_count": 281817129650,
+      "inductively_or_theorem_closed_seed_count": 1047826456766,
+      "explicitly_scanned_seed_count": 352271412080,
+      "best_explicit_first_descent": 826,
+      "best_explicit_seed_decimal": "3138261861600937902079",
+      "overflow_seed_count": 0,
+      "certificate_method": "p24 transfer sieve + exact c16 cross-valuation coalescence + exact mod9 predecessor induction; remaining 352,271,412,080 seeds explicitly scanned through H5000",
+      "workflow_run": "34943311712",
+      "status": "compiled",
+      "note": "best_explicit_first_descent is only over explicitly scanned survivors; induction-closed classes prove eventual descent but do not assert a <=5000 first-descent bound"
     }
   ],
   "global_best_known": {
@@ -520,9 +537,9 @@
     "source": "exact H5000 predecessor-merge scan; workflow 34935254514"
   },
   "current_structural_residual": {
-    "predicate": "tightened live interval with v2(n+1) <= 28",
-    "reason": "v2=29 is fully closed through H5000 with explicit maximum 829; v2=30 remains global record at 920.",
-    "next_action": "let the verifier-gated representation swarm choose the next representation before funding v2<=28."
+    "predicate": "tightened live interval with v2(n+1) <= 27",
+    "reason": "v2=28 is fully discharged: 1,047,826,456,766 seeds by exact theorem/induction certificates and 352,271,412,080 explicit H5000 scans, with no unresolved survivor.",
+    "next_action": "run v2=27 with swarm-selected p24 + c16 coalescence + q7 predecessor sieve; continue compiling verifier distinctions out of the per-seed loop."
   },
   "numeric_encoding": "large integers should be stored as decimal strings",
   "transfer_probe": {
