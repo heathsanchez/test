@@ -172,7 +172,7 @@ static bool deep_continue_closes(
         if(z%3==0){
           const i128 a2=2*(s.A/3);
           const i128 d2=z/3;
-          if((d2&1)!=0){
+          if(d2%2!=0){
             if(lower_family(a2,d2,k,b)){
               extra_steps=h;outA=a2;outD=d2;return true;
             }
