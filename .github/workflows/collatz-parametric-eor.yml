@@ -1,0 +1,130 @@
+name: Collatz parametric EOr constructor
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-parametric-eor.yml"
+      - "experiments/collatz_parametric_eor.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-parametric-eor
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [24,30,34]
+    name: param-eor-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run parametric constructor recursion
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_parametric_eor.cpp -o /tmp/eor
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/eor ${{ matrix.k }} results/q14-bank.txt             | tee results/census.txt
+          grep -q "VERIFIED_PARAMETRIC_EOR_CONSTRUCTOR_SIEVE" results/census.txt
+
+      - name: Score against deep-O and H16
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          deep_o={24:238727,30:9590847,34:120420841}
+          h16={24:173280,30:6947941,34:85313088}
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"LIVE_RECURSIVE_DONE K={K} final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_param_eor=(\d+) "
+              r"bridge_controls=(\d+) deep_o_controls=(\d+) "
+              r"param_controls=(\d+)",s)
+          assert m,s[-8000:]
+          live,des,bridge,do,param,bc,dc,pc=map(int,m.groups())
+          assert live<=deep_o[K],(K,live,deep_o[K])
+          gain=deep_o[K]-live
+          h16gain=deep_o[K]-h16[K]
+          recovery=gain/h16gain if h16gain else 1.0
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"parametric_eor_constructor",
+              "K":K,
+              "live":live,
+              "deep_o_baseline":deep_o[K],
+              "h16_reference":h16[K],
+              "parametric_gain":gain,
+              "h16_gain":h16gain,
+              "fraction_of_h16_gain_recovered":recovery,
+              "direct_parametric_closures":param,
+              "controls":pc,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("PARAMETRIC_EOR_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parametric-eor-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parametric-eor-b*
+          path: gathered
+      - name: Aggregate parametric recovery
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("parametric-eor-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[24,30,34],rows
+          out={"kind":"parametric_eor_curve","rows":rows}
+          Path("parametric-eor-field.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("PARAMETRIC_EOR_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert all(r["parametric_gain"]>0 for r in rows),rows
+          print("PARAMETRIC_EOR_ADDS_GLOBAL_COMPOSED_CLOSURE")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parametric-eor-field
+          path: parametric-eor-field.json
+          retention-days: 30
