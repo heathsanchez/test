@@ -242,7 +242,14 @@ static int v3_u128(u128 x,int cap=64){
 }
 
 static inline Big Tbig(const Big& n){
-  return ((n & 1) != 0) ? (3*n+1)/2 : n/2;
+  if((n & 1) != 0){
+    Big out=3*n+1;
+    out/=2;
+    return out;
+  }
+  Big out=n;
+  out/=2;
+  return out;
 }
 static Big iterate_big(Big n,int steps){
   for(int i=0;i<steps;++i)n=Tbig(n);
