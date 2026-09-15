@@ -45,7 +45,7 @@ fn spine_hc_hash(prev_addr: usize, elim_key: u64) -> u64 {
 fn stored_spine_hc_hash<'a>(s: S<'a>) -> u64 {
     match s {
         Spine::Snoc { prev, elim, .. } =>
-            spine_hc_hash(prev as *const Spine<'a> as usize, elim_key(elim)),
+            spine_hc_hash(*prev as *const Spine<'a> as usize, elim_key(elim)),
         Spine::Empty => 0,
     }
 }
