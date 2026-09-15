@@ -1,0 +1,75 @@
+name: Collatz fused-sieve execution control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-fused-sieve-control.yml"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+      - "experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-fused-sieve-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact reference and fused kernels
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_prefix_coalescence_predq7_scan.cpp -o /tmp/ref
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_fused_scan.cpp -o /tmp/fused
+      - name: Protect exact 920 witness
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2874993894540242321407
+          /tmp/fused 30 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=920 seed=$N" results/record.txt
+          grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/record.txt
+          echo FUSED_RECORD_CONTROL_OK
+      - name: Exact sealed k28 comparison
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=28
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/ref.time             /tmp/ref 28 5000 1 0 "$L" "$U" > results/ref.txt
+          /usr/bin/time -f '%e' -o results/fused.time             /tmp/fused 28 5000 1 0 "$L" "$U" > results/fused.txt
+          python - <<'PY'
+          import json,re
+          a=open("results/ref.txt").read()
+          b=open("results/fused.txt").read()
+          for p in [
+              r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",
+              r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",
+              r"SCANNED (\d+).*overflows=(\d+)",
+              r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+              r"STATUS (\S+)",
+          ]:
+              x=re.search(p,a); y=re.search(p,b)
+              assert x and y,(p,a[-4000:],b[-4000:])
+              assert x.groups()==y.groups(),(p,x.groups(),y.groups())
+          at=float(open("results/ref.time").read())
+          bt=float(open("results/fused.time").read())
+          row={"reference_seconds":at,"fused_seconds":bt,"speedup":at/bt if bt else float("inf")}
+          print("FUSED_SIEVE_COMPARISON",json.dumps(row,separators=(",",":")))
+          print("FUSED_SIEVE_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-fused-sieve-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
