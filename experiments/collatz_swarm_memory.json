@@ -89,6 +89,15 @@
       "consequence": "identical verifier consequence and explicit best witness to reference q7+c16 scanner",
       "performance": "2.00s vs 2.14s on sealed k28 world; 1.07x speedup by class-level coalescence and q7 next-live jumps",
       "status": "retained"
+    },
+    {
+      "id": "sparse-prefix-low-k",
+      "scope": "fixed valuation slices, lower-k regime",
+      "evidence_run": 34946026284,
+      "consequence": "exact recursive transfer-prefix automaton deepens without materializing all 2^p classes",
+      "performance": "k8 live fraction 0.174535 at p24 -> 0.131271 at p29; k10 0.253089 at p24 -> 0.210935 at p27",
+      "limitation": "high-k frontier does not benefit materially: k28 remains ~0.498 live at p27",
+      "status": "retained-specialist"
     }
   ],
   "rejected": [
@@ -140,6 +149,12 @@
       "evidence_run": 34944044383,
       "reason": "gap2 adds zero beyond gap1; gap3 adds only 21/32768 classes at k28 c16; gaps4-5 add zero further",
       "status": "dominated"
+    },
+    {
+      "id": "shifted-coalescence",
+      "evidence_run": 34946175222,
+      "reason": "systematic p=2^(K-g)(m+delta)-1 family search found zero nonzero-shift gains; only already-known gap3 delta0 adds 2/8192 classes at S14",
+      "status": "dominated"
     }
   ],
   "pending": [
@@ -149,5 +164,5 @@
       "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1)=27 active on q7+c16; fused zero-touch scanner retained for k26 onward"
+  "next_residual": "v2(n+1)=27 active on fused p24 + c16 coalescence + q7 + block10; sparse-prefix reserved for lower-k crossover"
 }
