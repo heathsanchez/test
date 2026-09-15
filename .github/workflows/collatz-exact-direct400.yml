@@ -2,9 +2,6 @@ name: Exact Collatz Direct 400
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/collatz-exact-direct400.yml"
 
 jobs:
   live:
