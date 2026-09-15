@@ -1,0 +1,251 @@
+name: ACC ac-04359 Record Reproduction V5
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-ac04359-record-reproduction-v5.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  SEED_RUN_ID: "34825953902"
+  CID: "ac-04359"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze public record length and our own seed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/seed reproduce_freeze
+          gh run download "$SEED_RUN_ID" -n acc-mda-causal-strict-steal-publication -D /tmp/seed
+          src=$(find /tmp/seed -path '*/mda_causal_fortified/fortified_ac.txt' -print -quit)
+          grep '^ac-04359:' "$src" > reproduce_freeze/seed.txt
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          seed=json.loads(Path('reproduce_freeze/seed.txt').read_text().split(':',1)[1].strip())
+          assert len(seed)==18,len(seed)
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o);row=next(x for x in d['items'] if x['challengeId']=='ac-04359')
+          best=row['currentBestLength'];assert isinstance(best,int)
+          Path('reproduce_freeze/live_best.txt').write_text(str(best)+'\n')
+          Path('reproduce_freeze/live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          print('REPRODUCE_FREEZE',json.dumps({'seed':len(seed),'public_record':best,'strict_target':best-1},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-ac04359-reproduction-freeze
+          path: reproduce_freeze/
+          retention-days: 90
+
+  shard:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 14
+      matrix:
+        first_move: [0,1,2,3,4,5,6,7,8,9,10,11,12,13]
+    runs-on: ubuntu-latest
+    timeout-minutes: 58
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-ac04359-reproduction-freeze
+          path: /tmp/freeze
+      - name: Fetch pinned verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          sudo fallocate -l 8G /swapfile-repro
+          sudo chmod 600 /swapfile-repro
+          sudo mkswap /swapfile-repro
+          sudo swapon /swapfile-repro
+      - name: Exact first-move shard search to public record length
+        run: |
+          set -o pipefail
+          bound=$(tr -d '[:space:]' < /tmp/freeze/live_best.txt)
+          out="record_shard/fm${{ matrix.first_move }}"
+          mkdir -p "$out"
+          python3 acc_competitive/record_reproduction_shard_v1.py \
+            --acc-root /tmp/acc \
+            --candidate-file /tmp/freeze/seed.txt \
+            --challenge-id "$CID" \
+            --bound "$bound" \
+            --first-move ${{ matrix.first_move }} \
+            --max-nodes 400000 \
+            --max-seconds 3000 \
+            --reverse-depth 8 \
+            --reverse-cap 500000 \
+            --out-dir "$out" \
+            | tee "$out.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac04359-record-shard-${{ matrix.first_move }}
+          path: record_shard/
+          retention-days: 90
+
+  synthesize:
+    needs: [freeze,shard]
+    if: always() && needs.freeze.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover all shard evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/freeze /tmp/shards reproduction_final/raw
+          gh run download "${{ github.run_id }}" -n acc-ac04359-reproduction-freeze -D /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-ac04359-record-shard-*' -D /tmp/shards || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rs=[];n=0
+          for p in Path('/tmp/shards').rglob('result.json'):
+              try:r=json.loads(p.read_text())
+              except Exception:continue
+              rs.append(r)
+              c=p.parent/'candidate.txt'
+              if c.exists() and c.stat().st_size:
+                  Path(f'reproduction_final/raw/candidate_{n}.txt').write_text(c.read_text());n+=1
+          Path('reproduction_final/shards.json').write_text(json.dumps(rs,indent=2,sort_keys=True)+'\n')
+          print('REPRO_RESULTS',json.dumps(sorted([{
+            'fm':r.get('first_move'),'status':r.get('status'),'length':r.get('length'),
+            'nodes':r.get('nodes_popped'),'seconds':r.get('search_seconds')
+          } for r in rs],key=lambda x:x['fm'] if x['fm'] is not None else 99),sort_keys=True))
+          print('REPRO_CANDIDATES',n)
+          PY
+
+      - name: Fetch pinned verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Fortify any record-length reproduction and try to steal one more move
+        id: improve
+        run: |
+          set -euo pipefail
+          if ! find reproduction_final/raw -name '*.txt' -type f -size +0c | grep -q .; then
+            echo "candidate=false" >> "$GITHUB_OUTPUT"
+            echo "NO_RECORD_REPRODUCED_WITHIN_BUDGET"
+            exit 0
+          fi
+          echo "candidate=true" >> "$GITHUB_OUTPUT"
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'reproduction_final/raw/*.txt' \
+            --out-dir reproduction_final/fortified \
+            --reverse-depth 8 --reverse-cap 750000 \
+            | tee reproduction_final/fortified.log
+          best=$(tr -d '[:space:]' < /tmp/freeze/live_best.txt)
+          python3 acc_competitive/peephole_superopt_v1.py \
+            --acc-root /tmp/acc \
+            --candidate-file reproduction_final/fortified/fortified_ac.txt \
+            --challenge-id "$CID" \
+            --frozen-best "$best" \
+            --out-dir reproduction_final/superopt \
+            --max-window 10 \
+            | tee reproduction_final/superopt.log
+
+      - name: Build verifier-clean AC/stable pair
+        if: steps.improve.outputs.candidate == 'true'
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc');sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core,stable_core
+          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']};lim=man['limits']
+          line=next(x for x in Path('reproduction_final/superopt/pending_submission.txt').read_text().splitlines() if x.startswith('ac-04359:'))
+          m=json.loads(line.split(':',1)[1].strip());c=by['ac-04359']
+          v=core.verify(c,m,c['move_spec_version'],lim);assert v['ok'],v
+          sm=m+[16,15];sc=by['sac-04359'];sv=stable_core.verify(sc,sm,sc['move_spec_version'],lim);assert sv['ok'],sv
+          Path('reproduction_final/final.txt').write_text(
+             'ac-04359: '+json.dumps(m,separators=(',',':'))+'\n'+
+             'sac-04359: '+json.dumps(sm,separators=(',',':'))+'\n')
+          Path('reproduction_final/final_meta.json').write_text(json.dumps({
+             'ac_length':len(m),'stable_length':len(sm),'hash':v['certificate_hash']
+          },indent=2)+'\n')
+          print('REPRO_FINAL',len(m),len(sm),v['certificate_hash'])
+          PY
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+             --submission reproduction_final/final.txt
+
+      - name: Publish only if now strictly shorter than live
+        if: steps.improve.outputs.candidate == 'true'
+        env:
+          ACC_SUBMISSION_FILE: reproduction_final/final.txt
+          ACC_SUBMIT_OUT: reproduction_final/publish
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY missing"; exit 1; }
+          python3 acc_submit/submit_live_filtered.py | tee reproduction_final/publish.log
+
+      - name: Typed terminal report
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def rd(p):
+              p=Path(p);return json.loads(p.read_text()) if p.exists() else None
+          rs=rd('reproduction_final/shards.json') or []
+          found=[r for r in rs if r.get('found')]
+          final=rd('reproduction_final/final_meta.json')
+          out={
+            'experiment':'ACC_AC04359_RECORD_REPRODUCTION_V5',
+            'public_record_frozen':int(Path('/tmp/freeze/live_best.txt').read_text()),
+            'record_reproduced':bool(found),
+            'best_reproduced':min([r['length'] for r in found],default=None),
+            'final_after_fortify_superopt':None if final is None else final.get('ac_length'),
+            'shards_completed':len(rs),
+            'shard_status_counts':{},
+            'comparison':rd('reproduction_final/publish/comparison.json'),
+            'post_submit':rd('reproduction_final/publish/post_submit_summary.json')
+          }
+          for r in rs:
+              s=r.get('status');out['shard_status_counts'][s]=out['shard_status_counts'].get(s,0)+1
+          Path('reproduction_final/report.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('REPRO_TERMINAL',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-ac04359-record-reproduction-v5
+          path: reproduction_final/
+          retention-days: 90
+
+# A 17-move public record is treated as an existential target, not as a path.
+# We first require our own independently found <=17 official certificate; only
+# then do we spend effort trying to compress it below the public record.
