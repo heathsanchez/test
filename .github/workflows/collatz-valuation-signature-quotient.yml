@@ -1,0 +1,59 @@
+name: Collatz valuation signature quotient
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-valuation-signature-quotient.yml"
+      - "experiments/collatz_valuation_signature_quotient.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-valuation-signature-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact valuation quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_valuation_signature_quotient.py             | tee results/census.txt
+          grep -q "VERIFIED_ODD_BLOCK_CONE_COLLAPSE" results/census.txt
+          grep -q "VERIFIED_FIRST_MACRO_PAIR_QUOTIENT" results/census.txt
+          grep -q "VERIFIED_SIGNATURE_PREFIX_OUTCOME_CONSISTENCY" results/census.txt
+          grep -q "VERIFIED_FIXED_H_IMPOSSIBILITY_FAMILY" results/census.txt
+          grep -q "PARAMETRIC_VALUATION_REQUIRED" results/census.txt
+          grep -q "FINAL_GATE=VALUATION_SIGNATURE_QUOTIENT_VERIFIED" results/census.txt
+      - name: Summarize
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          s=Path("results/census.txt").read_text()
+          def row(tag):
+              m=re.search(rf"^{tag} (.+)$",s,re.M)
+              assert m,tag
+              return json.loads(m.group(1))
+          out={
+              "odd_block":row("ODD_BLOCK_CONE_COLLAPSE"),
+              "first_macro":row("FIRST_MACRO_PAIR_QUOTIENT"),
+              "signature":row("SIGNATURE_PREFIX_QUOTIENT"),
+              "fixed_h":row("FIXED_H_COUNTERFAMILY"),
+              "grammar":row("VALUATION_GRAMMAR_DIAGNOSTIC"),
+          }
+          tm=Path("results/time-memory.txt").read_text().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("VALUATION_SIGNATURE_SUMMARY",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-valuation-signature-quotient
+          path: results
+          retention-days: 30
