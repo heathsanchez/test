@@ -1870,63 +1870,43 @@ theorem initPackedOctProgression_eq (seed : Nat) :
   dsimp
   rw [packOctTail_eq]
 
-/-! V27: contract redundant scalar progression state.
+/-! V27b: contract the changing scalar progression from the hot loop.
 
-V25 carries both the persistent 512-bit oct-state and the scalar lane-0 value x.
-But x is already encoded in the low 64-bit lane of octState.  The hot recursive
-loop now carries only the packed state; lane 0 is recovered once, at the final
-six-cell tail. -/
+V25 carries both the packed 8-lane state and a scalar x which is advanced on
+every byte.  The final six-cell tail needs only the scalar reached after all
+byte transitions, so compute that final scalar once and keep it constant while
+the recursive loop advances only the packed oct-state. -/
 
-def octLow (p : Nat) : Nat :=
-  p % (2 ^ 64)
-
-theorem octLow_octState (x : Nat) (hx : x < 2 ^ 64) :
-    octLow (octState x) = x := by
-  unfold octLow octState
-  unfold Vec8.pack8v Vec8.pack256 Vec8.pack4 Vec8.pack128 Vec8.pack2
-  simp only [Nat.shiftLeft_eq]
-  simp [Nat.add_mod, Nat.mul_mod, Nat.mod_eq_of_lt hx]
-
-def packOctTail1 : Nat → Nat → Nat
-  | p, 0 => pack6SWAR8 (octLow p)
-  | p, n + 1 =>
-      mix8Packed p + 256 * packOctTail1 (advanceOct p) n
+def packOctTailConst : Nat → Nat → Nat → Nat
+  | finalX, _, 0 => pack6SWAR8 finalX
+  | finalX, p, n + 1 =>
+      mix8Packed p + 256 * packOctTailConst finalX (advanceOct p) n
 
 set_option maxRecDepth 32768 in
-theorem packOctTail1_eq (x n : Nat)
-    (h : x + (8 * n + 5) * stepConst < 2 ^ 64) :
-    packOctTail1 (octState x) n = packByteTailSWAR8 x n := by
+theorem packOctTailConst_eq (x n : Nat) :
+    packOctTailConst (x + (8 * n) * stepConst) (octState x) n =
+      packByteTailSWAR8 x n := by
   induction n generalizing x with
   | zero =>
-      simp only [packOctTail1, packByteTailSWAR8, Nat.mul_zero, Nat.zero_add] at *
-      have hx : x < 2 ^ 64 := by omega
-      rw [octLow_octState x hx]
+      simp only [packOctTailConst, packByteTailSWAR8, Nat.mul_zero, Nat.zero_add]
   | succ n ih =>
-      simp only [packOctTail1, packByteTailSWAR8]
+      simp only [packOctTailConst, packByteTailSWAR8]
       rw [mix8Packed_state_eq, advanceOct_state]
-      have hr :
-          advance8 x + (8 * n + 5) * stepConst < 2 ^ 64 := by
+      have hfinal :
+          x + (8 * (n + 1)) * stepConst =
+            advance8 x + (8 * n) * stepConst := by
         rw [advance8_eq_swar]
-        unfold stepConst at h ⊢
         omega
-      rw [ih (advance8 x) hr]
+      rw [hfinal, ih]
 
 def initPackedOctContracted (seed : Nat) : Nat :=
   let x := seed + 3 * stepConst
-  1 + 4 * packOctTail1 (octState x) 31
+  1 + 4 * packOctTailConst (x + (8 * 31) * stepConst) (octState x) 31
 
-theorem initPackedOctContracted_eq (n : Nat) :
-    initPackedOctContracted (caSeed n) = initPackedSWAR8 (caSeed n) := by
+theorem initPackedOctContracted_eq (seed : Nat) :
+    initPackedOctContracted seed = initPackedSWAR8 seed := by
   simp only [initPackedOctContracted, initPackedSWAR8]
-  rw [packOctTail1_eq]
-  have hs : caSeed n < 2 ^ 32 := by
-    unfold caSeed
-    exact Nat.and_lt_two_pow n (by decide)
-  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
-    unfold stepConst
-    decide
-  unfold stepConst at *
-  omega
+  rw [packOctTailConst_eq]
 
 def impl : Nat → Nat := fun n =>
   biterFast (caSteps n) (initPackedOctContracted (caSeed n))
