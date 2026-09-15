@@ -1,0 +1,126 @@
+name: Lean conversion consequence value atlas
+
+on:
+  push:
+    paths:
+      - '.github/workflows/lean-conv-value-atlas.yml'
+      - 'scripts/patch_conv_value_atlas.py'
+      - 'scripts/patch_a6.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      SOKO_PIN: 9b4ea12f4cd437d00b6bcd0e34743065c58dea08
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf arena-tests artifact tests.zip a6 results/conv-atlas diagnostics/conv-atlas
+          mkdir -p arena-tests artifact results/conv-atlas diagnostics/conv-atlas
+          curl --fail --location --show-error             -H "Authorization: Bearer $GH_TOKEN"             -H "Accept: application/vnd.github+json"             -H "X-GitHub-Api-Version: 2022-11-28"             "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip"             -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct diagnostic A6
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout -q "$SOKO_PIN"
+          python3 scripts/patch_a6.py
+          python3 scripts/patch_conv_value_atlas.py
+          git -C a6 diff --check
+          git -C a6 diff > diagnostics/conv-atlas/diagnostic.patch
+          cat > a6/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+          test -x a6/target/release/sokonanoda
+
+      - name: Mine repeated dependency-complete conversion misses
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+          rx=re.compile(
+            r'CONV_VALUE_ATLAS cache_misses=(\d+) repeats=(\d+) repeat_unify_calls=(\d+) max_unify_calls=(\d+) repeat_ns=(\d+) max_ns=(\d+) true=(\d+) false=(\d+) contradictions=(\d+) b1=(\d+) b2_4=(\d+) b5_16=(\d+) b17_64=(\d+) b65_256=(\d+) b257p=(\d+)'
+          )
+          fields=['cache_misses','repeats','repeat_unify_calls','max_unify_calls','repeat_ns','max_ns','true','false','contradictions','b1','b2_4','b5_16','b17_64','b65_256','b257p']
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          if len(good)!=103: raise SystemExit(f'expected 103 good, got {len(good)}')
+          rows=[]
+          total={k:0 for k in fields}
+          total['max_unify_calls']=0
+          total['max_ns']=0
+          for p in good:
+              with p.open('rb') as f:
+                  r=subprocess.run(
+                    ['a6/target/release/sokonanoda','a6/config.json'],
+                    stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                    env={**os.environ,'SOKONANODA_CONV_VALUE_ATLAS':'1'},
+                  )
+              if r.returncode!=0:
+                  raise SystemExit(f'good case rejected: {p} rc={r.returncode} stderr={r.stderr.decode(errors="replace")[-1200:]}')
+              m=rx.search(r.stderr.decode(errors='replace'))
+              if not m: raise SystemExit(f'missing atlas telemetry {p}')
+              row=dict(zip(fields,map(int,m.groups())))
+              row['case']=str(p)
+              row['mean_unify_calls_per_repeat']=row['repeat_unify_calls']/row['repeats'] if row['repeats'] else 0
+              row['mean_ns_per_repeat']=row['repeat_ns']/row['repeats'] if row['repeats'] else 0
+              rows.append(row)
+              for k in fields:
+                  if k in ('max_unify_calls','max_ns'):
+                      total[k]=max(total[k],row[k])
+                  else:
+                      total[k]+=row[k]
+          total['mean_unify_calls_per_repeat']=total['repeat_unify_calls']/total['repeats'] if total['repeats'] else 0
+          total['mean_ns_per_repeat']=total['repeat_ns']/total['repeats'] if total['repeats'] else 0
+          top_calls=sorted(rows,key=lambda x:(-x['repeat_unify_calls'],-x['max_unify_calls'],x['case']))[:20]
+          top_time=sorted(rows,key=lambda x:(-x['repeat_ns'],-x['max_ns'],x['case']))[:20]
+          top_max=sorted(rows,key=lambda x:(-x['max_unify_calls'],-x['repeat_unify_calls'],x['case']))[:20]
+          out={'total':total,'top_by_total_unify_calls':top_calls,'top_by_total_ns':top_time,'top_by_max_unify_calls':top_max,'rows':rows}
+          pathlib.Path('results/conv-atlas/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'total':total,'top_by_total_unify_calls':top_calls[:10],'top_by_max_unify_calls':top_max[:10]},indent=2,sort_keys=True))
+          if total['contradictions'] != 0:
+              raise SystemExit(f"shadow consequence contradiction count={total['contradictions']}")
+          PY
+
+      - name: Verify frozen bad corpus still rejects
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib,subprocess
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if len(bad)!=58: raise SystemExit(f'expected 58 bad, got {len(bad)}')
+          accepted=[]
+          for p in bad:
+              with p.open('rb') as f:
+                  r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              if r.returncode==0: accepted.append(str(p))
+          if accepted: raise SystemExit(f'bad cases accepted: {accepted[:20]}')
+          print('bad_reject=58/58')
+          PY
+
+      - name: Upload atlas evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lean-conversion-consequence-value-atlas
+          path: |
+            results/conv-atlas/
+            diagnostics/conv-atlas/
