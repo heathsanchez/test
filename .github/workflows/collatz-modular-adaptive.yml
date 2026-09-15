@@ -137,7 +137,7 @@ jobs:
           rows=[json.loads(p.read_text()) for p in files]
           sat=[]; unresolved=[]; unsat=[]
           for r in rows:
-              if r["status"]=="UNSAT:": unsat.append(r["parent_value"])
+              if r["status"]=="UNSAT": unsat.append(r["parent_value"])
               for x in r["sat_leaves"]:
                   sat.append({"parent":r["parent_value"],**x})
               for x in r["unresolved_leaves"]:
