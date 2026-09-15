@@ -867,6 +867,13 @@ theorem advancePair_state (x : Nat) :
   simp only [Nat.shiftLeft_eq]
   omega
 
+
+theorem mixPairPacked_state (x : Nat) :
+    mixPairPacked (pairState x) =
+      Vec2.mixPairSWAR x (x + stepConst) := by
+  unfold pairState
+  exact mixPairPacked_eq x (x + stepConst)
+
 def pack8PackedPair (p : Nat) : Nat :=
   let p1 := advancePair p
   let p2 := advancePair p1
@@ -885,42 +892,26 @@ def pack6PackedPair (p : Nat) : Nat :=
 
 theorem pack8PackedPair_eq (x : Nat) :
     pack8PackedPair (pairState x) = pack8SWAR x := by
-  unfold pack8PackedPair pack8SWAR
-  rw [mixPairPacked_eq]
-  rw [advancePair_state]
-  rw [mixPairPacked_eq]
-  rw [advancePair_state]
-  rw [advancePair_state]
-  rw [mixPairPacked_eq]
-  rw [advancePair_state]
-  rw [advancePair_state]
-  rw [advancePair_state]
-  rw [mixPairPacked_eq]
-  unfold pairState
+  dsimp [pack8PackedPair, pack8SWAR]
+  simp only [advancePair_state, mixPairPacked_state]
   congr 1 <;> omega
 
 theorem pack6PackedPair_eq (x : Nat) :
     pack6PackedPair (pairState x) = pack6SWAR x := by
-  unfold pack6PackedPair pack6SWAR
-  rw [mixPairPacked_eq]
-  rw [advancePair_state]
-  rw [mixPairPacked_eq]
-  rw [advancePair_state]
-  rw [advancePair_state]
-  rw [mixPairPacked_eq]
-  unfold pairState
+  dsimp [pack6PackedPair, pack6SWAR]
+  simp only [advancePair_state, mixPairPacked_state]
   congr 1 <;> omega
 
 def advance4Pairs (p : Nat) : Nat :=
   advancePair (advancePair (advancePair (advancePair p)))
 
+set_option maxRecDepth 4096 in
 theorem advance4Pairs_state (x : Nat) :
     advance4Pairs (pairState x) = pairState (advance8 x) := by
   unfold advance4Pairs
   rw [advancePair_state, advancePair_state, advancePair_state, advancePair_state]
   rw [advance8_eq_swar]
-  congr 1
-  omega
+  congr 1 <;> omega
 
 def packPackedPairTail : Nat → Nat → Nat
   | p, 0 => pack6PackedPair p
