@@ -4,7 +4,7 @@ on:
   push:
     paths:
       - ".github/workflows/collatz-v35-survivor.yml"
-      - "experiments/collatz_vslice_survivor.cpp"
+      - "experiments/collatz_vslice_survivor_big.cpp"
   workflow_dispatch:
 
 concurrency:
@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_big.cpp -o /tmp/vscan
       - name: Recover exact 802 boundary of known v2=39 extremal
         run: |
           mkdir -p results
@@ -44,9 +44,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Build exact scanner
-        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor.cpp -o /tmp/vscan
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_big.cpp -o /tmp/vscan
       - name: Exact tightened v2=35 scan through H803
         run: |
+          set -o pipefail
           mkdir -p results
           /tmp/vscan 35 803 16 ${{ matrix.shard }} \
             2392312122059207475200 \
