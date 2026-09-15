@@ -1,0 +1,135 @@
+name: Collatz exact v2=36 survivor frontier
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-v36-survivor.yml"
+      - "experiments/collatz_vslice_survivor.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-v36-survivor
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact scanner
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor.cpp -o /tmp/vscan
+      - name: Recover exact 802 boundary of known v2=39 extremal
+        run: |
+          mkdir -p results
+          N=2760016646173626466303
+          /tmp/vscan 39 801 1 0 "$N" "$N" | tee results/control-801.txt
+          /tmp/vscan 39 802 1 0 "$N" "$N" | tee results/control-802.txt
+          grep -q "STATUS SURVIVOR_FOUND" results/control-801.txt
+          grep -q "SURVIVOR seed=$N horizon=801" results/control-801.txt
+          grep -q "STATUS EXHAUSTED_NO_SURVIVOR" results/control-802.txt
+          grep -q "BEST first_descent_or_survival=802 seed=$N" results/control-802.txt
+          echo VSLICE_SURVIVOR_CONTROL_OK
+
+  scan:
+    needs: control
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    name: v36-h803-${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact scanner
+        run: g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor.cpp -o /tmp/vscan
+      - name: Exact tightened v2=36 scan through H803
+        run: |
+          mkdir -p results
+          /tmp/vscan 36 803 16 ${{ matrix.shard }} \
+            2392312122059207475200 \
+            3143983941795894239301 \
+            | tee results/v36-${{ matrix.shard }}.txt
+      - name: Replay any survivor to exact first descent
+        run: |
+          python - <<'PY' | tee -a results/v36-${{ matrix.shard }}.txt
+          import re
+          p="results/v36-${{ matrix.shard }}.txt"
+          s=open(p).read()
+          m=re.search(r"SURVIVOR seed=(\d+) horizon=803",s)
+          if not m:
+              print("NO_SURVIVOR_TO_REPLAY")
+              raise SystemExit(0)
+          n=int(m.group(1)); x=n; peak=n
+          first=None
+          for t in range(1,5001):
+              x=(3*x+1)//2 if x&1 else x//2
+              peak=max(peak,x)
+              if x<n:
+                  first=t
+                  break
+          print(f"SURVIVOR_REPLAY seed={n} first_descent={first} peak={peak} stopped_at={t}")
+          assert first is None or first>803
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-v36-${{ matrix.shard }}
+          path: results/v36-${{ matrix.shard }}.txt
+          if-no-files-found: error
+          retention-days: 14
+
+  aggregate:
+    needs: scan
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: collatz-v36-*
+          path: gathered
+          merge-multiple: true
+      - name: Aggregate exact slice consequence
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          fs=sorted(Path("gathered").glob("v36-*.txt"))
+          rows=[]; survivors=[]
+          for p in fs:
+              s=p.read_text()
+              sm=re.search(r"SCANNED (\d+)",s)
+              bm=re.search(r"BEST first_descent_or_survival=(\d+) seed=(\d+)",s)
+              rm=re.search(r"SURVIVOR_REPLAY seed=(\d+) first_descent=(None|\d+) peak=(\d+)",s)
+              row={"file":p.name,
+                   "scanned":int(sm.group(1)) if sm else None,
+                   "best":int(bm.group(1)) if bm else None,
+                   "best_seed":bm.group(2) if bm else None,
+                   "status":"SURVIVOR" if "STATUS SURVIVOR_FOUND" in s else "EXHAUSTED" if "STATUS EXHAUSTED_NO_SURVIVOR" in s else "UNKNOWN"}
+              if rm:
+                  row["survivor_seed"]=rm.group(1)
+                  row["first_descent"]=None if rm.group(2)=="None" else int(rm.group(2))
+                  row["peak"]=rm.group(3)
+                  survivors.append(row)
+              rows.append(row)
+          summary={
+              "kind":"exact_v2_36_h803_tightened_interval",
+              "completed_shards":len(rows),
+              "expected_shards":16,
+              "scanned_before_early_exit":sum(r["scanned"] or 0 for r in rows),
+              "survivors":survivors,
+              "all_exhausted_no_survivor":len(rows)==16 and all(r["status"]=="EXHAUSTED" for r in rows),
+              "best_observed":max([r["best"] or 0 for r in rows] or [0]),
+          }
+          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
+          print("V36_AGGREGATE",json.dumps(summary,separators=(",",":")))
+          if len(rows)!=16:
+              raise SystemExit(f"incomplete exact coverage: {len(rows)}/16")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v36-aggregate
+          path: gathered/summary.json
+          retention-days: 30
