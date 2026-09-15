@@ -1,0 +1,134 @@
+name: Collatz deep-prefix production control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-deep-prefix-control.yml"
+      - "experiments/collatz_vslice_deep_fused_scan.cpp"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-deep-prefix-control
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        k: [15,10,8]
+    name: deep-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build p24 and sparse-p28 exact scanners
+        run: |
+          g++ -O3 -march=native -fopenmp             -DBLOCK_BITS=10 -DPREFIX_BITS=24 -DCOAL_BITS=16             experiments/collatz_vslice_fused_scan.cpp -o /tmp/p24
+          g++ -O3 -march=native -fopenmp             -DBLOCK_BITS=10 -DBASE_BITS=24 -DDEEP_BITS=28 -DCOAL_BITS=16             experiments/collatz_vslice_deep_fused_scan.cpp -o /tmp/p28
+      - name: Check independent p28 census
+        run: |
+          K="${{ matrix.k }}"
+          N=$(python - <<PY
+          L=2392312122059207475200
+          K=$K
+          M=1<<K
+          m=(L+1+M-1)//M
+          if m%2==0: m+=1
+          print((m<<K)-1)
+          PY
+          )
+          /tmp/p28 "$K" 5000 1 0 "$N" "$N" | tee census.txt
+          case "$K" in
+            15) grep -q "live_classes=46777401" census.txt;;
+            10) grep -q "live_classes=28311176" census.txt;;
+            8)  grep -q "live_classes=19085390" census.txt;;
+          esac
+          grep -q "STATUS DEEP_PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" census.txt
+      - name: Benchmark sealed 2^30-seed world
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          mkdir -p results
+          K="${{ matrix.k }}"
+          L=2392312122059207475200
+          U=$(python - <<PY
+          L=$L
+          K=$K
+          GLOBAL_U=3143983941795894239301
+          target=1<<30
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          /usr/bin/time -f '%e' -o results/p24.time             /tmp/p24 "$K" 5000 1 0 "$L" "$U" > results/p24.txt
+          /usr/bin/time -f '%e' -o results/p28.time             /tmp/p28 "$K" 5000 1 0 "$L" "$U" > results/p28.txt
+          python - <<'PY'
+          import json,re
+          k=int("${{ matrix.k }}")
+          a=open("results/p24.txt").read()
+          b=open("results/p28.txt").read()
+          assert "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in a,a[-3000:]
+          assert "STATUS DEEP_PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" in b,b[-3000:]
+          ac=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",a)
+          bc=re.search(r"DEEP_PREFIX_LIVE (\d+) COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) EXPLICIT (\d+)",b)
+          assert ac and bc,(a[-3000:],b[-3000:])
+          aexp=int(ac.group(3))
+          deep_live,coal,pred,bexp=map(int,bc.groups())
+          assert coal+pred+bexp==deep_live,(coal,pred,bexp,deep_live)
+          at=float(open("results/p24.time").read())
+          bt=float(open("results/p28.time").read())
+          row={
+              "k":k,"p24_explicit":aexp,"p28_explicit":bexp,
+              "explicit_reduction":aexp/bexp if bexp else float("inf"),
+              "p24_seconds":at,"p28_seconds":bt,
+              "speedup":at/bt if bt else float("inf"),
+          }
+          print("DEEP_PREFIX_PRODUCTION_COMPARISON",json.dumps(row,separators=(",",":")))
+          assert bexp<aexp,row
+          print("DEEP_PREFIX_EXACT_CONTROL_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: deep-prefix-k${{ matrix.k }}
+          path: |
+            census.txt
+            results
+          retention-days: 30
+
+  aggregate:
+    needs: benchmark
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: deep-prefix-k*
+          path: gathered
+      - name: Aggregate measured crossover
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          rows=[]
+          for d in sorted(Path("gathered").glob("deep-prefix-k*")):
+              s=(d/"results/p24.txt").read_text()
+              t=(d/"results/p28.txt").read_text()
+              k=int(re.search(r"k=(\d+)",t).group(1))
+              ac=re.search(r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",s)
+              bc=re.search(r"DEEP_PREFIX_LIVE (\d+) COALESCENCE_KILLED (\d+) PREDQ7_KILLED (\d+) EXPLICIT (\d+)",t)
+              at=float((d/"results/p24.time").read_text())
+              bt=float((d/"results/p28.time").read_text())
+              rows.append({"k":k,"p24_explicit":int(ac.group(3)),"p28_explicit":int(bc.group(4)),
+                           "p24_seconds":at,"p28_seconds":bt,"speedup":at/bt if bt else None})
+          out={"kind":"p28_sparse_production_crossover","rows":sorted(rows,key=lambda x:-x["k"])}
+          Path("deep-prefix-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("DEEP_PREFIX_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deep-prefix-field
+          path: deep-prefix-field.json
+          retention-days: 30
