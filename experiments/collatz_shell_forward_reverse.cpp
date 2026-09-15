@@ -316,7 +316,7 @@ int main(int argc,char**argv){
   const int shell_macro_depth=std::stoi(argv[3]);
   const int forward_h=std::stoi(argv[4]);
   const int macro_depth=6;
-  if(K<1||K>30||shell_macro_depth<0||shell_macro_depth>20||forward_h<0||forward_h>32){
+  if(K<1||K>30||shell_macro_depth<0||shell_macro_depth>20||forward_h<0||forward_h>128){
     std::cerr<<"K_OR_SHELL_DEPTH_OUT_OF_RANGE\n";return 2;
   }
 
