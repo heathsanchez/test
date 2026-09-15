@@ -1,18 +1,11 @@
-name: Exact Collatz Coefficient Feasibility (superseded)
+name: Exact Collatz Coefficient Feasibility (retired)
 
 on:
-  push:
-    paths:
-      - ".github/workflows/collatz-coefficient-feasibility.yml"
   workflow_dispatch:
 
-concurrency:
-  group: collatz-coefficient-feasibility
-  cancel-in-progress: true
-
 jobs:
-  superseded:
+  retired:
     runs-on: ubuntu-latest
     timeout-minutes: 2
     steps:
-      - run: echo "Superseded by compressed exact sharded frontier run 34921504101"
+      - run: echo "Retired; use compressed exact sharded frontier workflow."
