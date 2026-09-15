@@ -4,8 +4,6 @@ on:
   push:
     paths:
       - ".github/workflows/collatz-modular-adaptive.yml"
-      - "experiments/collatz_modular_adaptive_refine.py"
-      - "experiments/collatz_modular_coefficient.py"
   workflow_dispatch:
 
 concurrency:
@@ -13,148 +11,11 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  control:
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
-      - name: Protected modular adaptive boundary
-        run: |
-          mkdir -p results
-          python experiments/collatz_modular_adaptive_refine.py \
-            --bits 20 --lower 524288 --upper 1048575 \
-            --horizon 182 \
-            --parent-bits 8 --parent-value 103 \
-            --start-bits 12 --max-bits 16 --step-bits 4 \
-            --conflicts 5000 --propagations 5000000 --protected-control \
-            --out results/h182.json
-          python experiments/collatz_modular_adaptive_refine.py \
-            --bits 20 --lower 524288 --upper 1048575 \
-            --horizon 183 \
-            --parent-bits 8 --parent-value 103 \
-            --start-bits 12 --max-bits 16 --step-bits 4 \
-            --conflicts 5000 --protected-control \
-            --out results/h183.json
-          python - <<'PY'
-          import json
-          a=json.load(open("results/h182.json"))
-          b=json.load(open("results/h183.json"))
-          assert a["status"]=="SAT",a
-          assert any(x["witness"]=="1027431" for x in a["sat_leaves"]),a
-          assert b["status"]=="UNSAT",b
-          assert not b["unresolved_leaves"],b
-          print("MODULAR_ADAPTIVE_CONTROL_OK",
-                f"h182_vars={a['vars']} clauses={a['clauses']}",
-                f"h183_vars={b['vars']} clauses={b['clauses']}")
-          PY
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collatz-modular-adaptive-control
-          path: results
-          if-no-files-found: error
-          retention-days: 30
-
-  prepare:
-    needs: control
-    runs-on: ubuntu-latest
-    outputs:
-      parents: ${{ steps.partition.outputs.parents }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: partition
-        run: |
-          mkdir -p results
-          python experiments/collatz_prefix_residues.py --bits 8 --out results/prefix8.json
-          python experiments/collatz_transfer_farey.py | tee results/transfer.txt
-          python - <<'PY' >> "$GITHUB_OUTPUT"
-          import json
-          d=json.load(open("results/prefix8.json"))
-          assert d["lawful_count"]==19,d
-          print("parents="+json.dumps(d["residues"],separators=(",",":")))
-          PY
-
-  parent:
-    needs: [control, prepare]
-    runs-on: ubuntu-latest
-    timeout-minutes: 55
-    strategy:
-      fail-fast: false
-      max-parallel: 4
-      matrix:
-        parent: ${{ fromJSON(needs.prepare.outputs.parents) }}
-    name: modular-parent-${{ matrix.parent }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: python -m pip install --disable-pip-version-check python-sat==1.9.dev15
-      - name: Map H803 on shrinking modular state
-        run: |
-          mkdir -p results
-          python experiments/collatz_modular_adaptive_refine.py \
-            --bits 72 \
-            --lower 2392312122059207475200 \
-            --upper 3143983941795894239301 \
-            --horizon 803 \
-            --parent-bits 8 \
-            --parent-value ${{ matrix.parent }} \
-            --start-bits 12 \
-            --max-bits 16 \
-            --step-bits 4 \
-            --conflicts 100 \
-            --propagations 100000 \
-            --replay-limit 5000 \
-            --out results/modular-${{ matrix.parent }}.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: collatz-modular-${{ matrix.parent }}
-          path: results/modular-${{ matrix.parent }}.json
-          if-no-files-found: warn
-          retention-days: 7
-
-  aggregate:
-    needs: [parent]
-    if: always()
+  retired:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/download-artifact@v4
-        with:
-          pattern: collatz-modular-*
-          path: gathered
-          merge-multiple: true
-      - name: Aggregate modular H803 residual
-        run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          files=sorted(Path("gathered").glob("modular-*.json"))
-          rows=[json.loads(p.read_text()) for p in files]
-          sat=[]; unresolved=[]; unsat=[]
-          for r in rows:
-              if r["status"]=="UNSAT": unsat.append(r["parent_value"])
-              for x in r["sat_leaves"]:
-                  sat.append({"parent":r["parent_value"],**x})
-              for x in r["unresolved_leaves"]:
-                  unresolved.append({"parent":r["parent_value"],**x})
-          summary={
-              "kind":"collatz_h803_modular_residual",
-              "completed_parents":len(rows),
-              "sat_leaves":sat,
-              "unresolved_leaves":unresolved,
-              "unsat_parents":sorted(unsat),
-          }
-          Path("gathered/summary.json").write_text(json.dumps(summary,indent=2)+"\n")
-          print("MODULAR_AGGREGATE",json.dumps(summary,separators=(",",":")))
-          PY
-      - uses: actions/upload-artifact@v4
-        with:
-          name: collatz-modular-aggregate
-          path: gathered/summary.json
-          retention-days: 30
+      - run: |
+          echo "RETIRED"
+          echo "Shrinking-modular representation passed protected 182/183 control."
+          echo "Live H803 low16 probes produced no SAT/UNSAT separators across sampled parents."
+          echo "Superseded by exact valuation-slice compilation on the tightened live interval."
