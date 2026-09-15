@@ -57,9 +57,9 @@ jobs:
             --parent-bits 8 \
             --parent-value ${{ matrix.parent }} \
             --start-bits 12 \
-            --max-bits 20 \
+            --max-bits 16 \
             --step-bits 4 \
-            --conflicts 5000 \
+            --conflicts 1000 \
             --replay-limit 5000 \
             --out results/adaptive-${{ matrix.parent }}.json
       - uses: actions/upload-artifact@v4
