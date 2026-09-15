@@ -130,22 +130,24 @@ new="""        if repeat {
         self.tc_cache.quote_cache.insert(key, r);
         r
     }
-
-    pub fn print_earned_quote_atlas() {
-        eprintln!(
-            "EARNED_QUOTE_ATLAS misses={} earned_identity_misses={} repeats={} repeat_calls={} max_calls={} repeat_ns={} max_ns={}",
-            EIA_QUOTE_MISSES.load(Relaxed),
-            EIA_QUOTE_EARNED.load(Relaxed),
-            EIA_QUOTE_REPEATS.load(Relaxed),
-            EIA_QUOTE_REPEAT_CALLS.load(Relaxed),
-            EIA_QUOTE_MAX_CALLS.load(Relaxed),
-            EIA_QUOTE_REPEAT_NS.load(Relaxed),
-            EIA_QUOTE_MAX_NS.load(Relaxed),
-        );
-    }
 """
 assert old in s
 s=s.replace(old,new,1)
+s += """
+
+pub fn print_earned_quote_atlas() {
+    eprintln!(
+        "EARNED_QUOTE_ATLAS misses={} earned_identity_misses={} repeats={} repeat_calls={} max_calls={} repeat_ns={} max_ns={}",
+        EIA_QUOTE_MISSES.load(Relaxed),
+        EIA_QUOTE_EARNED.load(Relaxed),
+        EIA_QUOTE_REPEATS.load(Relaxed),
+        EIA_QUOTE_REPEAT_CALLS.load(Relaxed),
+        EIA_QUOTE_MAX_CALLS.load(Relaxed),
+        EIA_QUOTE_REPEAT_NS.load(Relaxed),
+        EIA_QUOTE_MAX_NS.load(Relaxed),
+    );
+}
+"""
 p.write_text(s)
 
 # ---- global key + struct eta atlases ----
@@ -276,34 +278,29 @@ new="""        let key = (major as *const Value<'t> as usize, rec_induct);
 assert old in s
 s=s.replace(old,new,1)
 
-# printer before end of impl: append near try_struct_eta_reduce? easiest before global helper? add a public fn before store_lookup.
-marker="""    #[inline]
-    fn store_lookup(&mut self, depth: u32, v: V<'t>) -> Option<V<'t>> {
-"""
-printer="""    pub fn print_earned_eval_atlas() {
-        eprintln!(
-            "EARNED_GLOBAL_ATLAS misses={} earned_identity_misses={} repeats={} repeat_calls={} max_calls={} repeat_ns={} max_ns={}",
-            EIA_GLOBAL_MISSES.load(Relaxed),
-            EIA_GLOBAL_EARNED.load(Relaxed),
-            EIA_GLOBAL_REPEATS.load(Relaxed),
-            EIA_GLOBAL_REPEAT_CALLS.load(Relaxed),
-            EIA_GLOBAL_MAX_CALLS.load(Relaxed),
-            EIA_GLOBAL_REPEAT_NS.load(Relaxed),
-            EIA_GLOBAL_MAX_NS.load(Relaxed),
-        );
-        eprintln!(
-            "EARNED_STRUCT_ETA_ATLAS misses={} earned_identity_misses={} repeats={} repeat_ns={} max_ns={}",
-            EIA_STRUCT_MISSES.load(Relaxed),
-            EIA_STRUCT_EARNED.load(Relaxed),
-            EIA_STRUCT_REPEATS.load(Relaxed),
-            EIA_STRUCT_REPEAT_NS.load(Relaxed),
-            EIA_STRUCT_MAX_NS.load(Relaxed),
-        );
-    }
+s += """
 
-"""+marker
-assert marker in s
-s=s.replace(marker,printer,1)
+pub fn print_earned_eval_atlas() {
+    eprintln!(
+        "EARNED_GLOBAL_ATLAS misses={} earned_identity_misses={} repeats={} repeat_calls={} max_calls={} repeat_ns={} max_ns={}",
+        EIA_GLOBAL_MISSES.load(Relaxed),
+        EIA_GLOBAL_EARNED.load(Relaxed),
+        EIA_GLOBAL_REPEATS.load(Relaxed),
+        EIA_GLOBAL_REPEAT_CALLS.load(Relaxed),
+        EIA_GLOBAL_MAX_CALLS.load(Relaxed),
+        EIA_GLOBAL_REPEAT_NS.load(Relaxed),
+        EIA_GLOBAL_MAX_NS.load(Relaxed),
+    );
+    eprintln!(
+        "EARNED_STRUCT_ETA_ATLAS misses={} earned_identity_misses={} repeats={} repeat_ns={} max_ns={}",
+        EIA_STRUCT_MISSES.load(Relaxed),
+        EIA_STRUCT_EARNED.load(Relaxed),
+        EIA_STRUCT_REPEATS.load(Relaxed),
+        EIA_STRUCT_REPEAT_NS.load(Relaxed),
+        EIA_STRUCT_MAX_NS.load(Relaxed),
+    );
+}
+"""
 p.write_text(s)
 
 # ---- main printer ----
@@ -315,7 +312,7 @@ old="""    match out {
 """
 new="""    if std::env::var_os("SOKONANODA_EARNED_IDENTITY_ATLAS").is_some() {
         sokonanoda::quote::print_earned_quote_atlas();
-        sokonanoda::eval::TypeChecker::print_earned_eval_atlas();
+        sokonanoda::eval::print_earned_eval_atlas();
     }
     match out {
         Ok(Some(msg)) => println!("{}", msg),
