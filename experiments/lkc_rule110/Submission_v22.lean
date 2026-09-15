@@ -822,6 +822,22 @@ theorem packByteTailSWAR_eq (x n : Nat)
         exact h
       rw [ih (advance8 x) hr]
 
+def initPackedSWAR (seed : Nat) : Nat :=
+  1 + 4 * packByteTailSWAR (seed + 3 * stepConst) 31
+
+theorem initPackedSWAR_eq (n : Nat) :
+    initPackedSWAR (caSeed n) = initPackedByteNat (caSeed n) := by
+  unfold initPackedSWAR initPackedByteNat
+  rw [packByteTailSWAR_eq]
+  have hs : caSeed n < 2 ^ 32 := by
+    unfold caSeed
+    exact Nat.and_lt_two_pow n (by decide)
+  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
+    unfold stepConst
+    decide
+  unfold stepConst at *
+  omega
+
 
 /-! V22: fuse SWAR byte production with progression advance. -/
 
@@ -845,8 +861,7 @@ def packByteTailSWARShared : Nat → Nat → Nat
 theorem packByteTailSWARShared_eq (x n : Nat) :
     packByteTailSWARShared x n = packByteTailSWAR x n := by
   induction n generalizing x with
-  | zero =>
-      rfl
+  | zero => rfl
   | succ n ih =>
       unfold packByteTailSWARShared packByteTailSWAR pack8SWAR advance8
       simp only [ih]
@@ -858,22 +873,6 @@ theorem initPackedSWARShared_eq (seed : Nat) :
     initPackedSWARShared seed = initPackedSWAR seed := by
   unfold initPackedSWARShared initPackedSWAR
   rw [packByteTailSWARShared_eq]
-
-def initPackedSWAR (seed : Nat) : Nat :=
-  1 + 4 * packByteTailSWAR (seed + 3 * stepConst) 31
-
-theorem initPackedSWAR_eq (n : Nat) :
-    initPackedSWAR (caSeed n) = initPackedByteNat (caSeed n) := by
-  unfold initPackedSWAR initPackedByteNat
-  rw [packByteTailSWAR_eq]
-  have hs : caSeed n < 2 ^ 32 := by
-    unfold caSeed
-    exact Nat.and_lt_two_pow n (by decide)
-  have hc : (2 ^ 32 - 1) + 256 * stepConst < 2 ^ 64 := by
-    unfold stepConst
-    decide
-  unfold stepConst at *
-  omega
 
 def impl : Nat → Nat := fun n =>
   biterFast (caSteps n) (initPackedSWARShared (caSeed n))
