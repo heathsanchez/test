@@ -1,0 +1,77 @@
+name: Collatz consequence-language DAG swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-language-dag-swarm.yml"
+      - "experiments/collatz_consequence_language_dag.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-language-dag-swarm
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        k: [25,15,10,8]
+    name: language-k${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: g++ -O3 -march=native experiments/collatz_consequence_language_dag.cpp -o /tmp/lang
+      - name: Build and minimize exact suffix language
+        run: |
+          mkdir -p results
+          /usr/bin/time -f '%e' -o results/time.txt             /tmp/lang ${{ matrix.k }} 28 55000000 | tee results/census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: language-k${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: language-k*
+          path: gathered
+      - name: Aggregate consequence-language compression
+        run: |
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          expected={15:46777401,10:28311176,8:19085390}
+          rows=[]
+          for d in sorted(Path("gathered").glob("language-k*")):
+              # upload-artifact stores files directly under each artifact dir.
+              s=(d/"census.txt").read_text()
+              t=float((d/"time.txt").read_text().strip())
+              m=re.search(r"LANG_BDD_DONE K=(\d+) target_p=(\d+) final_live_leaves=(\d+) bdd_nonterminal_nodes=(\d+) bdd_total_ids=(\d+) root_signature=(\d+) raw_transition_parents=(\d+)",s)
+              assert m,s[-4000:]
+              k,target,leaves,nodes,ids,root,raw=map(int,m.groups())
+              if k in expected:
+                  assert leaves==expected[k],(k,leaves,expected[k])
+              rows.append({
+                  "k":k,"target_p":target,"live_leaves":leaves,
+                  "bdd_nonterminal_nodes":nodes,"bdd_total_ids":ids,
+                  "root_signature":root,"raw_transition_parents":raw,
+                  "raw_to_bdd_compression":raw/nodes if nodes else float("inf"),
+                  "wall_seconds":t,
+              })
+          out={"kind":"exact_finite_consequence_language_dag","rows":rows}
+          Path("language-dag-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("LANGUAGE_DAG_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-language-dag-field
+          path: language-dag-field.json
+          retention-days: 30
