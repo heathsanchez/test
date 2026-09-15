@@ -501,8 +501,8 @@ theorem pairMul_expand (a b c : Nat) :
 
 theorem pairMul_mod_lane_eq (a b c : Nat) (h : a * c < laneBase) :
     pairMul a b c % laneBase = a * c := by
-  rw [pairMul_expand]
-  simp [Nat.add_mod, Nat.mod_eq_of_lt h, laneBase]
+  rw [pairMul_expand, Nat.add_mod, Nat.mod_eq_of_lt h]
+  simp
 
 theorem pairMul_div_lane_eq (a b c : Nat) (h : a * c < laneBase) :
     pairMul a b c / laneBase = b * c := by
@@ -596,7 +596,7 @@ theorem mixPairNat_eq (x0 x1 : Nat)
       (((preMix x1 * 0x7feb352d) % wordBase ^^^
         (((preMix x1 * 0x7feb352d) % wordBase) >>> 15)) * 0x846ca68b) < laneBase :=
     mul_c2_lt_lane hz1
-  unfold mixPairNat mixBit31NatModBase
+  simp only [mixPairNat, mixBit31NatModBase]
   rw [pairMul_mod_lane_eq _ _ _ hp10, pairMul_div_lane_eq _ _ _ hp10]
   rw [pairMul_mod_lane_eq _ _ _ hp20, pairMul_div_lane_eq _ _ _ hp20]
 
