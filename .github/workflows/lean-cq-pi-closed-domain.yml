@@ -57,7 +57,8 @@ jobs:
           {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
           JSON
           done
-          grep -Fq 'CQ_PI_DM_LEN' quotient/src/util.rs\n          grep -Fq 'domain.is_closed()' quotient/src/eval.rs
+          grep -Fq 'CQ_PI_DM_LEN' quotient/src/util.rs
+          grep -Fq 'domain.is_closed()' quotient/src/eval.rs
           grep -Fq 'cq_env_eq' quotient/src/eval.rs
           grep -Fq 'std::hint::black_box(domain)' quotient/src/eval.rs
           grep -Fq '_cached_domain = std::hint::black_box(domain)' ablation/src/eval.rs
