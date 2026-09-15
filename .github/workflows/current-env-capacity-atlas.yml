@@ -1,0 +1,155 @@
+name: Current Arena environment capacity retention atlas
+
+on:
+  push:
+    paths:
+      - '.github/workflows/current-env-capacity-atlas.yml'
+      - 'scripts/patch_current_env_capacity_diag.py'
+      - 'CURRENT_ENV_CAPACITY_RETENTION_PROTOCOL.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SOKO_PIN: 28c03d0103e004610e4d47a4828965efb2b70af9
+      ARENA_ARTIFACT: 8931227426
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/env-capacity diagnostics/env-capacity
+          curl --fail --location --show-error \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" \
+            -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+
+      - name: Reconstruct diagnostic current checker
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/intgrah/sokonanoda.git a6
+          git -C a6 checkout -q "$SOKO_PIN"
+          python3 scripts/patch_current_env_capacity_diag.py
+          git -C a6 diff --check
+          git -C a6 diff > diagnostics/env-capacity/diagnostic.patch
+          test -s diagnostics/env-capacity/diagnostic.patch
+          cat > a6/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":4}
+          JSON
+          (cd a6 && RUSTFLAGS="-C target-cpu=native" cargo build --release)
+
+      - name: Measure environment growth and discarded capacity
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess
+
+          root=pathlib.Path('arena-tests/good')
+          cases={
+            'grind-ring-5':root/'perf/grind-ring-5.ndjson',
+            'init-prelude':root/'init-prelude.ndjson',
+            'app-lam':root/'perf/app-lam.ndjson',
+            'shift-cascade':root/'perf/shift-cascade.ndjson',
+          }
+          for name,p in cases.items():
+              if not p.exists(): raise SystemExit(f'missing {name}: {p}')
+
+          rx=re.compile(
+            r'ENV_CAPACITY '
+            r'session_clears=(\d+) '
+            r'wide_inserts=(\d+) wide_growths=(\d+) wide_max_cap=(\d+) wide_discards=(\d+) wide_max_discard=(\d+) '
+            r'env_inserts=(\d+) env_growths=(\d+) env_max_cap=(\d+) env_discards=(\d+) env_max_discard=(\d+) '
+            r'frame_inserts=(\d+) frame_growths=(\d+) frame_max_cap=(\d+) frame_discards=(\d+) frame_max_discard=(\d+)'
+          )
+          fields=[
+            'session_clears',
+            'wide_inserts','wide_growths','wide_max_cap','wide_discards','wide_max_discard',
+            'env_inserts','env_growths','env_max_cap','env_discards','env_max_discard',
+            'frame_inserts','frame_growths','frame_max_cap','frame_discards','frame_max_discard',
+          ]
+          out={}
+          for name,p in cases.items():
+              with p.open('rb') as f:
+                  r=subprocess.run(
+                    ['a6/target/release/sokonanoda','a6/config.json'],
+                    stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                    env={**os.environ,'SOKONANODA_ENV_CAPACITY_DIAG':'1'},
+                  )
+              if r.returncode:
+                  raise SystemExit(f'{name} rc={r.returncode}: {r.stderr.decode(errors="replace")[-2000:]}')
+              err=r.stderr.decode(errors='replace')
+              m=rx.search(err)
+              if not m:
+                  raise SystemExit(f'missing telemetry {name}: {err[-3000:]}')
+              out[name]=dict(zip(fields,map(int,m.groups())))
+
+          grind=out['grind-ring-5']
+          rank=[
+            ('wide_prune','wide_discards',3.303),
+            ('env_hc','env_discards',3.139),
+            ('frames','frame_discards',1.401),
+          ]
+          qualifiers=[
+            {'table':table,'discard_count':grind[field],'callgrind_self_pct':cost}
+            for table,field,cost in rank if grind[field] >= 2
+          ]
+          selected=qualifiers[0]['table'] if qualifiers else None
+          result={
+            'current_pin':os.environ['SOKO_PIN'],
+            'keep_cap':32768,
+            'cases':out,
+            'frozen_rule':'grind-ring-5 discard_count >= 2; select highest prior Callgrind-cost qualifier',
+            'prior_cost_order':['wide_prune','env_hc','frames'],
+            'qualifiers':qualifiers,
+            'selected_table':selected,
+          }
+          pathlib.Path('results/env-capacity/result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('results/env-capacity/SELECTED.txt').write_text((selected or 'NONE')+'\n')
+          print(json.dumps(result,indent=2,sort_keys=True))
+          PY
+
+      - name: Frozen semantic replay
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,pathlib,subprocess
+          good=sorted(pathlib.Path('arena-tests/good').rglob('*.ndjson'))
+          bad=sorted(pathlib.Path('arena-tests/bad').rglob('*.ndjson'))
+          if len(good)!=103 or len(bad)!=58: raise SystemExit((len(good),len(bad)))
+          gp=br=0
+          for p in good:
+              with p.open('rb') as f:
+                  r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              gp += r.returncode == 0
+          for p in bad:
+              with p.open('rb') as f:
+                  r=subprocess.run(['a6/target/release/sokonanoda','a6/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+              br += r.returncode != 0
+          out={'good_pass':gp,'good_total':len(good),'bad_reject':br,'bad_total':len(bad)}
+          pathlib.Path('results/env-capacity/semantics.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          if gp!=103 or br!=58: raise SystemExit('semantic diagnostic regression')
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: current-env-capacity-retention-atlas
+          path: |
+            results/env-capacity/
+            diagnostics/env-capacity/
+            CURRENT_ENV_CAPACITY_RETENTION_PROTOCOL.md
