@@ -1,0 +1,41 @@
+name: LKC Rule110 gather pair proof v38
+
+on:
+  push:
+    branches: [lkc-rule110-generic-pack-v35]
+    paths:
+      - 'experiments/lkc_rule110/GatherPairProof.lean'
+      - '.github/workflows/lkc-rule110-gather-pair-v38.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
+      - name: Build V27 module
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
+          lake build
+      - name: Check pair compaction proof
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/GenericPackProof.lean" .
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/GatherPairProof.lean" .
+          lake env lean -o GenericPackProof.olean GenericPackProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean GatherPairProof.lean
