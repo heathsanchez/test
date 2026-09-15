@@ -1,0 +1,136 @@
+name: Collatz all-donor macro refinement
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-all-donor-macro.yml"
+      - "experiments/collatz_all_donor_macro_grammar.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-all-donor-macro
+  cancel-in-progress: true
+
+jobs:
+  all-donor:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [1,2,3,4]
+    name: all-donor-depth${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate compact and all exact q14 donors
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert len(certs)==14764,len(certs)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-compact.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          with open("results/q14-all.txt","w") as f:
+              for c in certs:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          print("ALL_DONOR_INPUT_READY",
+                f"raw={len(certs)} compact={len(selected)}")
+          PY
+
+      - name: Run exact all-donor macro refinement at B24
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_all_donor_macro_grammar.cpp             -o /tmp/all-donor
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/all-donor 24 results/q14-compact.txt results/q14-all.txt ${{ matrix.depth }}             | tee results/census.txt
+          grep -q "VERIFIED_ALL_DONOR_REVERSE_MACRO_GRAMMAR" results/census.txt
+
+      - name: Record exact gain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          D=int("${{ matrix.depth }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"LIVE_RECURSIVE_DONE K=24 final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) "
+              r"total_deep_o=(\d+) total_macro=(\d+)",s)
+          assert m,s[-6000:]
+          live,des,bridge,deep_o,macro=map(int,m.groups())
+          retained_depth6=173180
+          deep_o_baseline=238727
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"all_donor_macro_refinement",
+              "K":24,"macro_depth":D,
+              "live":live,
+              "retained_donor_depth6_reference":retained_depth6,
+              "improvement_vs_retained_depth6":retained_depth6-live,
+              "deep_o_baseline":deep_o_baseline,
+              "gain":deep_o_baseline-live,
+              "total_macro":macro,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("ALL_DONOR_MACRO_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-donor-macro-depth${{ matrix.depth }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: all-donor
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: all-donor-macro-depth*
+          path: gathered
+
+      - name: Aggregate refined donor curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("all-donor-macro-depth*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["macro_depth"])
+          assert [r["macro_depth"] for r in rows]==[1,2,3,4],rows
+          for a,b in zip(rows,rows[1:]):
+              assert b["live"]<=a["live"],(a,b)
+          best=min(rows,key=lambda r:r["live"])
+          out={"kind":"all_donor_macro_curve","rows":rows,"best":best}
+          Path("all-donor-macro-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("ALL_DONOR_MACRO_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert best["improvement_vs_retained_depth6"]>0,best
+          print("GOAL_RELATIVE_DONOR_REFINEMENT_ADDS_CLOSURE")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: all-donor-macro-field
+          path: all-donor-macro-field.json
+          retention-days: 30
