@@ -133,7 +133,32 @@ Freeze a disjoint held-out workload before inspecting its timing:
 - order remaining frozen good cases by descending bytes, path tie-break;
 - take the first 24.
 
+Held-out protocol:
+
+- warm A0 and `earned` once;
+- 30 paired, deterministically randomized repetitions;
+- primary metric: CPU seconds over the complete 24-case workload.
+
+The held-out gate passes only if `earned` versus A0 has:
+
+- median paired CPU delta < 0;
+- at least 18 / 30 CPU wins.
+
+If raw is semantic-green it is measured on held-out as a diagnostic, but the
+held-out escalation decision remains candidate versus A0; the causal
+candidate-versus-raw requirement was already frozen in the development gate.
+
 Only after that held-out gate passes may full Arena Mathlib be built and run.
+
+For Mathlib, use the Arena definition frozen at the time of this protocol:
+
+- Arena repository commit: `4543f486677a6cb56c7656767712cd017f8058ea`;
+- mathlib4 ref: `v4.29.1`;
+- mathlib4 rev: `5e932f97dd25535344f80f9dd8da3aab83df0fe6`;
+- module: `Mathlib`.
+
+A Mathlib performance claim requires candidate acceptance plus a lower median
+wall/CPU time than A0 under identical Arena-style PGO builds.
 
 ## Claim boundary
 
