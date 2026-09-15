@@ -41,3 +41,5 @@ jobs:
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideHierarchyProof.olean WideHierarchyProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseProof.lean
+
+# retrigger after dense proof repair
