@@ -1,0 +1,78 @@
+name: Collatz transfer-prefix sieve control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-prefix-sieve-control.yml"
+      - "experiments/collatz_vslice_prefix_sieve_scan.cpp"
+      - "experiments/collatz_transfer_farey.py"
+      - "experiments/collatz_predecessor_merge.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-prefix-sieve-control
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify prerequisite exact theorems
+        run: |
+          python experiments/collatz_predecessor_merge.py | tee merge.txt
+          python experiments/collatz_transfer_farey.py | tee transfer.txt
+          grep -q "VERIFIED_LOWER_PREDECESSOR_HALF_SIEVE" merge.txt
+          grep -q "every first coefficient contraction with t < 114208327604 forces descent" transfer.txt
+      - name: Build prefix and merge scanners
+        run: |
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10 -DPREFIX_BITS=20             experiments/collatz_vslice_prefix_sieve_scan.cpp -o /tmp/prefix
+          g++ -O3 -march=native -fopenmp -DBLOCK_BITS=10             experiments/collatz_vslice_merge_scan.cpp -o /tmp/merge
+      - name: Preserve the exact 875 record
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=2890058857883145076735
+          /tmp/prefix 31 5000 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=875 seed=$N" results/record.txt
+          grep -q "STATUS PREFIX_SIEVE_AND_SCAN_CLOSED" results/record.txt
+      - name: Check exact residue census
+        run: |
+          L=2392312122059207475200
+          U=2392312122060281217024
+          /tmp/prefix 15 5000 1 0 "$L" "$U" | tee results/k15-census.txt
+          /tmp/prefix 10 5000 1 0 "$L" "$U" | tee results/k10-census.txt
+          grep -q "residue_merge_classes=262144 residue_transfer_classes=32999 residue_live_classes=229145" results/k15-census.txt
+          grep -q "residue_merge_classes=262144 residue_transfer_classes=96496 residue_live_classes=165648" results/k10-census.txt
+      - name: Compare prefix sieve against merge-only finite control
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          L=2392312122059207475200
+          U=2392312123158719102976
+          /usr/bin/time -f 'MERGE_SECONDS %e' -o results/merge.time             /tmp/merge 15 5000 1 0 "$L" "$U" > results/merge-k15.txt
+          /usr/bin/time -f 'PREFIX_SECONDS %e' -o results/prefix.time             /tmp/prefix 15 5000 1 0 "$L" "$U" > results/prefix-k15.txt
+          python - <<'PY'
+          import re
+          m=open("results/merge-k15.txt").read()
+          p=open("results/prefix-k15.txt").read()
+          assert "STATUS INDUCTIVE_HALF_CLOSED_AND_SURVIVORS_EXHAUSTED" in m,m[-2000:]
+          assert "STATUS PREFIX_SIEVE_AND_SCAN_CLOSED" in p,p[-2000:]
+          ms=int(re.search(r"SCANNED (\d+)",m).group(1))
+          ps=int(re.search(r"SCANNED (\d+)",p).group(1))
+          assert ps < ms,(ps,ms)
+          print("PREFIX_SIEVE_EXACT_CONTROL_OK",f"merge_scanned={ms}",f"prefix_scanned={ps}")
+          print(open("results/merge.time").read().strip())
+          print(open("results/prefix.time").read().strip())
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-prefix-sieve-control
+          path: |
+            merge.txt
+            transfer.txt
+            results
+          if-no-files-found: error
+          retention-days: 30
