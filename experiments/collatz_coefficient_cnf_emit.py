@@ -24,9 +24,13 @@ def main():
     ap.add_argument("--upper",type=int,required=True)
     ap.add_argument("--horizon",type=int,required=True)
     ap.add_argument("--out-dir",required=True)
+    ap.add_argument("--low-bits",type=int,default=0)
+    ap.add_argument("--low-value",type=int,default=0)
     A=ap.parse_args()
     K,H=A.bits,A.horizon
     assert 0<=A.lower<=A.upper<(1<<K)
+    assert 0<=A.low_bits<=K
+    assert 0<=A.low_value<(1<<A.low_bits) if A.low_bits else A.low_value==0
     out=Path(A.out_dir); out.mkdir(parents=True,exist_ok=True)
     start=time.time()
     sink=ClauseSink()
@@ -34,6 +38,8 @@ def main():
     seed=[c.var() for _ in range(K)]
     c.add([c.uge_const(seed,A.lower)])
     c.add([c.ule_const(seed,A.upper)])
+    for i in range(A.low_bits):
+        c.add([seed[i] if ((A.low_value>>i)&1) else -seed[i]])
     widths=worst_widths(A.upper,H)
     x=seed+[c.F]*max(0,widths[0]-K)
     qbits=[c.F]*((H+1).bit_length()+1)
@@ -46,7 +52,8 @@ def main():
     write_dimacs(cnf,c.nv,sink.clauses)
     meta={"kind":"exact_coefficient_persistence_cnf",
           "bits":K,"lower":str(A.lower),"upper":str(A.upper),
-          "horizon":H,"vars":c.nv,"clauses":len(sink.clauses),
+          "horizon":H,"low_bits":A.low_bits,"low_value":A.low_value,
+          "vars":c.nv,"clauses":len(sink.clauses),
           "build_seconds":time.time()-start,"cnf":cnf.name}
     (out/"metadata.json").write_text(json.dumps(meta,indent=2)+"\n")
     print("CNF_JSON",json.dumps(meta,separators=(",",":")),flush=True)
