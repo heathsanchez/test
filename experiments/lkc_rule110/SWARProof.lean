@@ -81,8 +81,8 @@ def bit31Nat (x : Nat) : Nat :=
 
 theorem masked32_lt32 (x : Nat) : (x &&& mask32) < 2 ^ 32 := by
   have hle : (x &&& mask32) ≤ mask32 := Nat.and_le_right
-  rw [mask32_eq] at hle
-  omega
+  have hm : mask32 < 2 ^ 32 := by decide
+  exact Nat.lt_of_le_of_lt hle hm
 
 theorem masked32_lt64 (x : Nat) : (x &&& mask32) < 2 ^ 64 :=
   Nat.lt_trans (masked32_lt32 x) (by decide)
@@ -114,7 +114,12 @@ theorem mask_pack2 (x y : Nat) (hx : x < 2 ^ 64) :
 theorem pack2_mul (a b k : Nat) :
     pack2 a b * k = pack2 (a * k) (b * k) := by
   unfold pack2
-  simp [Nat.add_mul, Nat.shiftLeft_eq, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+  rw [Nat.add_mul, Nat.shiftLeft_eq, Nat.shiftLeft_eq]
+  congr 1
+  calc
+    (b * 2 ^ 64) * k = b * (2 ^ 64 * k) := Nat.mul_assoc _ _ _
+    _ = b * (k * 2 ^ 64) := by rw [Nat.mul_comm (2 ^ 64) k]
+    _ = (b * k) * 2 ^ 64 := (Nat.mul_assoc _ _ _).symm
 
 theorem mul_mask_pack2 (a b k : Nat) (hprod : a * k < 2 ^ 64) :
     (pack2 a b * k) &&& mask2 =
@@ -205,7 +210,7 @@ theorem bit31_pack2_low (a b : Nat) (ha : a < 2 ^ 64) :
 theorem bit31_pack2_high (a b : Nat) (ha : a < 2 ^ 64) :
     ((pack2 a b >>> 95) % 2) = bit31Nat b := by
   have h := congrArg Bool.toNat (testBit_pack2 a b 95 ha)
-  simp only [show ¬95 < 64 by decide, if_neg] at h
+  simp only [show ¬95 < 64 by decide] at h
   have hsub : 95 - 64 = 31 := by decide
   rw [hsub] at h
   unfold bit31Nat
@@ -224,7 +229,7 @@ def mixScalarNat (x : Nat) : Nat :=
 
 theorem mixPairSWAR_eq (x y : Nat) (hx : x < 2 ^ 64) :
     mixPairSWAR x y = mixScalarNat x + 2 * mixScalarNat y := by
-  unfold mixPairSWAR
+  simp only [mixPairSWAR]
   rw [packed_y32 x y hx]
   rw [packed_v32 (y32 x) (y32 y) (y32_lt64 x)]
   rw [packed_p2]
