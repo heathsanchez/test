@@ -1,0 +1,104 @@
+name: Collatz high-precision episode delay census
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-episode-delay-census.yml"
+      - "experiments/collatz_episode_delay_census.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-episode-delay-census
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        p: [18,20,22,24]
+    name: delay-p${{ matrix.p }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact episode census
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_episode_delay_census.cpp -o /tmp/census
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/census 20 ${{ matrix.p }} 2048 32             | tee results/census.txt
+          grep -q "VERIFIED_EXACT_EPISODE_DELAY_CENSUS" results/census.txt
+          grep -q "ALL_NONBASE_CASES_DESCEND_WITHIN_EPISODE_CAP" results/census.txt
+
+      - name: Parse result
+        run: |
+          python - <<'PY'
+          import json,re
+          P=int("${{ matrix.p }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"EPISODE_DELAY_CENSUS max_r=(\d+) precision=(\d+) "
+              r"cases=(\d+) base_cases=(\d+) closed=(\d+) unresolved=(\d+) "
+              r"max_delay=(\d+) max_delay_r=(\d+) max_delay_m=(\d+) "
+              r"max_delay_x=(\d+) delay_per_precision=([0-9.eE+-]+)",s)
+          assert m,s[-6000:]
+          vals=m.groups()
+          out={
+            "max_r":int(vals[0]),"precision":int(vals[1]),
+            "cases":int(vals[2]),"base_cases":int(vals[3]),
+            "closed":int(vals[4]),"unresolved":int(vals[5]),
+            "max_delay":int(vals[6]),"max_delay_r":int(vals[7]),
+            "max_delay_m":int(vals[8]),"max_delay_x":int(vals[9]),
+            "delay_per_precision":float(vals[10]),
+          }
+          assert out["precision"]==P and out["max_r"]==20
+          assert out["base_cases"]==1 and out["unresolved"]==0,out
+          if P==18:
+              assert out["max_delay"]==97,out
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0])
+          out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("EPISODE_DELAY_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode-delay-p${{ matrix.p }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: census
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: episode-delay-p*
+          path: gathered
+      - name: Aggregate precision curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("episode-delay-p*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda z:z["precision"])
+          assert [z["precision"] for z in rows]==[18,20,22,24],rows
+          assert all(z["unresolved"]==0 for z in rows)
+          out={"kind":"exact_episode_delay_precision_curve","rows":rows}
+          Path("episode-delay-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("EPISODE_DELAY_PRECISION_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode-delay-field
+          path: episode-delay-field.json
+          retention-days: 30
