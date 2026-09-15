@@ -141,7 +141,7 @@ theorem testBit_packFrom (seed start k i : Nat) :
       cases i with
       | zero =>
           unfold packFrom
-          cases h : initCell seed start <;> simp [h, Nat.testBit_zero]
+          cases h : initCell seed start <;> simp [Nat.testBit_zero]
       | succ i =>
           unfold packFrom
           rw [Nat.testBit_succ]
@@ -149,7 +149,7 @@ theorem testBit_packFrom (seed start k i : Nat) :
               ((if initCell seed start then 1 else 0) +
                 2 * packFrom seed (start + 1) k) / 2 =
                 packFrom seed (start + 1) k := by
-            cases h : initCell seed start <;> simp [h] <;> omega
+            cases h : initCell seed start <;> simp <;> omega
           rw [hdiv, ih]
           simp only [Nat.succ_lt_succ_iff]
           congr 2 <;> omega
