@@ -1,0 +1,75 @@
+name: Collatz post-sieve block-width swarm
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-post-sieve-block-width.yml"
+      - "experiments/collatz_vslice_fused_scan.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-post-sieve-block-width
+  cancel-in-progress: true
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build fused block widths
+        run: |
+          for B in 8 10 12 14 16; do
+            g++ -O3 -march=native -fopenmp -DBLOCK_BITS=$B -DPREFIX_BITS=24 -DCOAL_BITS=16               experiments/collatz_vslice_fused_scan.cpp -o /tmp/fused$B
+          done
+      - name: Exact sealed residual comparison
+        run: |
+          set -o pipefail
+          export OMP_NUM_THREADS=4
+          mkdir -p results
+          L=2392312122059207475200
+          K=28
+          U=$(python - <<'PY'
+          L=2392312122059207475200
+          K=28
+          GLOBAL_U=3143983941795894239301
+          target=1<<27
+          print(min(GLOBAL_U,L+target*(1<<(K+1))))
+          PY
+          )
+          for B in 8 10 12 14 16; do
+            /usr/bin/time -f '%e' -o results/b$B.time               /tmp/fused$B $K 5000 1 0 "$L" "$U" > results/b$B.txt
+            grep -q "STATUS PREFIX_COAL_PREDQ7_SIEVE_AND_SCAN_CLOSED" results/b$B.txt
+          done
+          python - <<'PY'
+          import json,re
+          rows=[]
+          ref=None
+          for B in (8,10,12,14,16):
+              s=open(f"results/b{B}.txt").read()
+              pats=[
+                  r"full_count=(\d+) merge_killed=(\d+) transfer_killed=(\d+) explicit_count=(\d+)",
+                  r"COALESCENCE_EXTRA_KILLED (\d+) PREDQ7_KILLED_AFTER_COALESCENCE (\d+) EXPLICIT (\d+)",
+                  r"SCANNED (\d+).*overflows=(\d+)",
+                  r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+                  r"STATUS (\S+)",
+              ]
+              sig=[]
+              for p in pats:
+                  m=re.search(p,s); assert m,(B,p,s[-3000:])
+                  sig.append(m.groups())
+              if ref is None: ref=sig
+              else: assert sig==ref,(B,sig,ref)
+              t=float(open(f"results/b{B}.time").read())
+              rows.append({"block_bits":B,"seconds":t})
+          winner=min(rows,key=lambda r:r["seconds"])
+          print("POST_SIEVE_BLOCK_FIELD",json.dumps({"rows":rows,"winner":winner},separators=(",",":")))
+          print("POST_SIEVE_BLOCK_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-post-sieve-block-width
+          path: results
+          if-no-files-found: error
+          retention-days: 30
