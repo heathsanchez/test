@@ -69,104 +69,7 @@
     "pending_shards": [],
     "status": "SAT in all 16 shards by exact concrete witnesses"
   },
-  "active_residuals": [
-    {
-      "kind": "interval_survival",
-      "shard": 12,
-      "next_horizon": 555,
-      "priority": 555
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 4,
-      "next_horizon": 559,
-      "priority": 559
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 15,
-      "next_horizon": 561,
-      "priority": 561
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 0,
-      "next_horizon": 564,
-      "priority": 564
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 13,
-      "next_horizon": 564,
-      "priority": 564
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 7,
-      "next_horizon": 567,
-      "priority": 567
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 8,
-      "next_horizon": 575,
-      "priority": 575
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 10,
-      "next_horizon": 577,
-      "priority": 577
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 14,
-      "next_horizon": 585,
-      "priority": 585
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 5,
-      "next_horizon": 594,
-      "priority": 594
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 3,
-      "next_horizon": 597,
-      "priority": 597
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 6,
-      "next_horizon": 602,
-      "priority": 602
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 9,
-      "next_horizon": 624,
-      "priority": 624
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 11,
-      "next_horizon": 632,
-      "priority": 632
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 2,
-      "next_horizon": 635,
-      "priority": 635
-    },
-    {
-      "kind": "interval_survival",
-      "shard": 1,
-      "next_horizon": 707,
-      "priority": 707
-    }
-  ],
+  "active_residuals": [],
   "rejected_or_deprioritized": [
     {
       "representation": "integer Z3",
@@ -183,6 +86,18 @@
     {
       "representation": "coefficient persistence proxy",
       "reason": "stronger than required consequence and much costlier"
+    },
+    {
+      "representation": "whole-interval one-bit residue BFS",
+      "reason": "exact but reaches 41,347,483 live nodes by depth 32 and exhausts ~3.9 GB; wrong grain"
+    },
+    {
+      "representation": "whole-interval accelerated valuation DFS",
+      "reason": "constant-memory improvement but still traverses hundreds of millions of raw nodes; needs quotient before promotion"
+    },
+    {
+      "representation": "fixed-k raw parity tree",
+      "reason": "k=1 collapses universally, but k=2 and k=3 exceed 100M nodes; residue splitting alone is not the next abstraction"
     }
   ],
   "witness_guided_leaps": [
@@ -344,6 +259,16 @@
       "rule": "n = 2^k m - 1 => after k shortcut odd steps, T^k(n) = 3^k m - 1",
       "use": "compile long trailing-one prefixes into m-space",
       "status": "exact"
+    },
+    {
+      "rule": "v2(n+1)=1 (equivalently n≡1 mod4) => shortcut descent within 2 steps for n>1",
+      "use": "compile half of odd seeds universally",
+      "status": "exact"
+    },
+    {
+      "rule": "For 0≤r<2^K and t≤K: T^t(2^K+r)=T^t(r)+3^{q_t(r)}2^{K-t}",
+      "use": "exact bit-width lift coupling; transfer residual is additive rescue / coefficient-surviving prefixes",
+      "status": "exact"
     }
   ],
   "compiled_regions": [
@@ -430,9 +355,14 @@
     "source": "exact exhaustive v2(n+1)=39 block-compiled region"
   },
   "current_structural_residual": {
-    "predicate": "live interval and v2(n+1) <= 37",
-    "reason": "all v2>=38 slices compiled exactly; per-slice enumeration now doubles geometrically while the verifier continues to close cleanly",
-    "next_action": "find exact covering/quotient rules over multiple low-valuation slices rather than continue seed enumeration"
+    "predicate": "live interval, after exact compilation of v2(n+1)>=38 and universal n≡1 mod4 class",
+    "reason": "enumeration doubles per valuation slice; raw residue/accelerated trees still preserve too many future-distinct phases",
+    "next_action": "quotient the positive-drift coefficient-survivor language while preserving the additive-rescue/2-adic phase needed by the exact evaluator"
   },
-  "numeric_encoding": "large integers should be stored as decimal strings"
+  "numeric_encoding": "large integers should be stored as decimal strings",
+  "transfer_probe": {
+    "identity": "T^t(2^K+r)=T^t(r)+3^{q_t(r)}2^{K-t} for t≤K",
+    "exhaustive_small_K": "for K=8..22, lifted no-descent-through-K set exactly matched coefficient-surviving prefixes",
+    "status": "experimental equivalence only; NOT promoted to general theorem because that would assume the unresolved first-contraction/additive-rescue claim"
+  }
 }
