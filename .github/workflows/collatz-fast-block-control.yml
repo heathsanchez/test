@@ -1,0 +1,66 @@
+name: Collatz fast block compiler control
+
+on:
+  push:
+    paths:
+      - ".github/workflows/collatz-fast-block-control.yml"
+      - "experiments/collatz_vslice_survivor_fast.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-fast-block-control
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build baseline and division-free scanners
+        run: |
+          g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fallback.cpp -o /tmp/base
+          g++ -O3 -march=native -fopenmp experiments/collatz_vslice_survivor_fast.cpp -o /tmp/fast
+      - name: Exact single-seed controls
+        run: |
+          set -o pipefail
+          mkdir -p results
+          N=3079334581550404599807
+          /tmp/fast 35 853 1 0 "$N" "$N" | tee results/record.txt
+          grep -q "BEST first_descent_or_survival=853 seed=$N" results/record.txt
+          grep -q "STATUS EXHAUSTED_NO_SURVIVOR" results/record.txt
+          O=2662382980693604958207
+          /tmp/fast 35 853 1 0 "$O" "$O" | tee results/overflow.txt
+          grep -q "OVERFLOW_SEED seed=$O" results/overflow.txt
+          grep -q "STATUS OVERFLOW_REPLAY_REQUIRED" results/overflow.txt
+      - name: Compare exact finite subshard
+        run: |
+          set -o pipefail
+          mkdir -p results
+          export OMP_NUM_THREADS=4
+          /usr/bin/time -f 'BASE_SECONDS %e' -o results/base.time             /tmp/base 34 853 256 0 2392312122059207475200 3143983941795894239301             > results/base.txt
+          /usr/bin/time -f 'FAST_SECONDS %e' -o results/fast.time             /tmp/fast 34 853 256 0 2392312122059207475200 3143983941795894239301             > results/fast.txt
+          python - <<'PY'
+          import re
+          b=open("results/base.txt").read()
+          f=open("results/fast.txt").read()
+          pats=[
+              r"SCANNED (\d+) fast_blocks=(\d+) slow_blocks=(\d+) overflows=(\d+)",
+              r"BEST first_descent_or_survival=(\d+) seed=(\d+)",
+              r"STATUS (\S+)",
+          ]
+          for p in pats:
+              mb=re.search(p,b); mf=re.search(p,f)
+              assert mb and mf,(p,b[-1000:],f[-1000:])
+              assert mb.groups()==mf.groups(),(p,mb.groups(),mf.groups())
+          print(open("results/base.time").read().strip())
+          print(open("results/fast.time").read().strip())
+          print("DIVISION_FREE_EXACT_EQUIVALENCE_OK")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-fast-block-control
+          path: results
+          if-no-files-found: error
+          retention-days: 30
