@@ -55,6 +55,7 @@ def main():
     ap.add_argument("--max-bits", type=int, default=16)
     ap.add_argument("--step-bits", type=int, default=4)
     ap.add_argument("--conflicts", type=int, default=100)
+    ap.add_argument("--propagations", type=int, default=100000)
     ap.add_argument("--replay-limit", type=int, default=5000)
     ap.add_argument("--protected-control", action="store_true")
     ap.add_argument("--out", default="modular-adaptive.json")
@@ -69,6 +70,7 @@ def main():
     assert 0 <= A.parent_value < (1 << A.parent_bits)
     assert survives_prefix(A.parent_value, A.parent_bits)
     assert A.conflicts > 0
+    assert A.propagations > 0
 
     if A.protected_control:
         assert (K, A.lower, A.upper) == (20, 524288, 1048575)
@@ -100,7 +102,7 @@ def main():
         print(
             f"MODULAR_ADAPTIVE_EXACT parent={A.parent_value}/2^{A.parent_bits} "
             f"H={H} start_bits={A.start_bits} max_bits={A.max_bits} "
-            f"budget={A.conflicts} vars={C.nv} clauses={C.nc} "
+            f"conf_budget={A.conflicts} prop_budget={A.propagations} vars={C.nv} clauses={C.nc} "
             f"width_sum={widths['width_sum']} width_max={widths['width_max']} "
             f"build_seconds={build_seconds:.6f}",
             flush=True,
@@ -116,11 +118,13 @@ def main():
             asm = assumptions_for(seed, A.parent_bits, value, bits)
             before = solver.accum_stats()
             solver.conf_budget(A.conflicts)
+            solver.prop_budget(A.propagations)
             s0 = time.time()
             ok = solver.solve_limited(assumptions=asm)
             sec = time.time() - s0
             after = solver.accum_stats()
             used = max(0, after.get("conflicts", 0) - before.get("conflicts", 0))
+            props = max(0, after.get("propagations", 0) - before.get("propagations", 0))
 
             row = {
                 "value": value,
@@ -128,6 +132,7 @@ def main():
                 "status": "SAT" if ok is True else "UNSAT" if ok is False else "UNKNOWN",
                 "solve_seconds": sec,
                 "conflicts": used,
+                "propagations": props,
             }
 
             if ok is True:
@@ -176,6 +181,7 @@ def main():
         "max_bits": A.max_bits,
         "step_bits": A.step_bits,
         "conflict_budget": A.conflicts,
+        "propagation_budget": A.propagations,
         "status": "SAT" if exact_sat else "UNRESOLVED" if unresolved else "UNSAT",
         "sat_leaves": exact_sat,
         "unsat_leaf_count": len(exact_unsat),
