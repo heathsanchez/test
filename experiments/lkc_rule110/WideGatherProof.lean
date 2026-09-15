@@ -654,10 +654,9 @@ theorem bits1_phys (x : Nat) : bits1 x = phys1_1 x := by rfl
 theorem bits2_phys (x : Nat)
     (h : x + 1 * stepConst < 2 ^ 64) :
     bits2 x = phys1_2 x := by
-  unfold phys1_2
   rw [bits2_eq x h]
-  rw [bits1_phys x]
-  rw [bits1_phys (x + 1 * stepConst)]
+  unfold phys1_2 phys1_1 dense1
+  simp
 
 theorem bits4_phys (x : Nat)
     (h : x + 3 * stepConst < 2 ^ 64) :
@@ -1182,7 +1181,7 @@ theorem compactTree_bits256 (x : Nat)
     (h : x + 255 * stepConst < 2 ^ 64) :
     compactTree (bits256 x) = dense256 x := by
   rw [bits256_phys x h]
-  unfold compactTree
+  simp only [compactTree]
   rw [stage1_256 x]
   rw [stage2_128 x]
   rw [stage4_64 x]
