@@ -1,0 +1,56 @@
+name: LKC Rule110 PMU instruction probe v32
+
+on:
+  push:
+    branches: [lkc-rule110-pmu-v32]
+    paths:
+      - '.github/workflows/lkc-rule110-pmu-v32.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pmu-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Host PMU policy
+        shell: bash
+        run: |
+          uname -a
+          echo -n "perf_event_paranoid="
+          cat /proc/sys/kernel/perf_event_paranoid || true
+          command -v perf || true
+          perf stat -e instructions true || true
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+      - name: Probe official instruction metric on V25
+        working-directory: lkc
+        env:
+          TIMING_METRIC: perf_instructions
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 evaluation/run.py             --problem ca-rule110             --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v25.lean"             --timeout 120 2>&1 | tee "$GITHUB_WORKSPACE/pmu-v25.log"
+      - name: Upload probe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-pmu-v25
+          path: pmu-v25.log
+          if-no-files-found: warn
