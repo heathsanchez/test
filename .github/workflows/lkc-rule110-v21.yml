@@ -63,6 +63,7 @@ jobs:
         shell: python
         run: |
           import glob,re,statistics,pathlib,json
+          pathlib.Path("artifacts-v21").mkdir(exist_ok=True)
           out={}
           for who in ("v20","v21"):
               vals=[]
