@@ -1,0 +1,156 @@
+name: Collatz nonlinear forward-reverse swarm
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-nonlinear-forward-reverse-swarm.yml"
+      - "experiments/collatz_shell_forward_reverse.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-nonlinear-forward-reverse-swarm
+  cancel-in-progress: true
+
+jobs:
+  swarm:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        include:
+          - { f: 40,  r: 8  }
+          - { f: 48,  r: 8  }
+          - { f: 64,  r: 8  }
+          - { f: 96,  r: 8  }
+          - { f: 128, r: 8  }
+          - { f: 32,  r: 10 }
+          - { f: 32,  r: 12 }
+          - { f: 48,  r: 10 }
+          - { f: 64,  r: 10 }
+          - { f: 64,  r: 12 }
+          - { f: 96,  r: 10 }
+          - { f: 96,  r: 12 }
+    name: f${{ matrix.f }}-r${{ matrix.r }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 universal bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run exact nonlinear cell
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_shell_forward_reverse.cpp -o /tmp/swarm
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/swarm 24 results/q14-bank.txt ${{ matrix.r }} ${{ matrix.f }}             | tee results/census.txt
+          grep -q "VERIFIED_SHELL_FORWARD_REVERSE_COALESCENCE" results/census.txt
+
+      - name: Record exact cell
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          F=int("${{ matrix.f }}")
+          R=int("${{ matrix.r }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"SHELL_FORWARD_REVERSE_RESULT K=24 reverse_depth=(\d+) forward_h=(\d+) "
+              r"universal_residual=(\d+) shell_forward=(\d+) "
+              r"shell_reverse=(\d+) shell_hard=(\d+) controls=(\d+)",s)
+          assert m,s[-8000:]
+          r,f,u,fw,rv,hard,controls=map(int,m.groups())
+          assert (f,r,u)==(F,R,173180),(f,r,u,F,R)
+          assert fw+rv+hard==u
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"nonlinear_forward_reverse_cell",
+              "K":24,"forward_h":F,"reverse_depth":R,
+              "universal_residual":u,
+              "shell_forward":fw,"shell_reverse":rv,
+              "shell_closed":fw+rv,"shell_hard":hard,
+              "closed_fraction":(fw+rv)/u,
+              "controls":controls,
+              "wall_seconds":float(tm[0]) if tm else None,
+              "max_rss_kb":int(tm[1]) if len(tm)>1 else None,
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("NONLINEAR_SWARM_CELL",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nonlinear-swarm-f${{ matrix.f }}-r${{ matrix.r }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: swarm
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nonlinear-swarm-f*
+          path: gathered
+
+      - name: Select verified Pareto frontier
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("nonlinear-swarm-f*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          assert len(rows)==12,len(rows)
+          rows.sort(key=lambda r:(r["shell_hard"],r["wall_seconds"],r["forward_h"],r["reverse_depth"]))
+          best=rows[0]
+
+          pareto=[]
+          for r in sorted(rows,key=lambda x:(x["wall_seconds"],x["shell_hard"])):
+              if not pareto or r["shell_hard"]<min(x["shell_hard"] for x in pareto):
+                  pareto.append(r)
+
+          out={
+              "kind":"nonlinear_forward_reverse_swarm",
+              "baseline_f32_r8_hard":11016,
+              "rows":rows,
+              "best":best,
+              "pareto":pareto,
+          }
+          Path("nonlinear-forward-reverse-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("NONLINEAR_FORWARD_REVERSE_SWARM_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          assert best["shell_hard"]<=11016,best
+          print("NONLINEAR_SWARM_VERIFIED")
+          if best["shell_hard"]==0:
+              print("B24_SHELL_CLOSED_BY_NONLINEAR_SWARM")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nonlinear-forward-reverse-field
+          path: nonlinear-forward-reverse-field.json
+          retention-days: 30
