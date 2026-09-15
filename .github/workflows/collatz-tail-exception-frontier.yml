@@ -63,7 +63,12 @@ jobs:
           assert live==120420841,(live,120420841)
           assert td+tb+to==finite
           assert finite+hard==live
-          assert finite>0,(finite,hard)
+          # Exact negative result: under the retained direct/reverse/deep-O
+          # constructor language, no B34 survivor is merely a finite-exception
+          # tail.  Every survivor is coefficient-hard.
+          assert finite==0,(finite,hard)
+          assert hard==live,(finite,hard,live)
+          assert total_exc==0 and max_a==0,(total_exc,max_a)
 
           tm=open("results/time-memory.txt").read().strip().split()
           out={
@@ -84,7 +89,7 @@ jobs:
           open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
           print("TAIL_EXCEPTION_FRONTIER_FIELD",
                 json.dumps(out,separators=(",",":")))
-          print("FINITE_TAILS_SEPARATED_FROM_HARD_FRONTIER")
+          print("FINITE_TAIL_HYPOTHESIS_REJECTED_EXACTLY")
           PY
 
       - uses: actions/upload-artifact@v4
