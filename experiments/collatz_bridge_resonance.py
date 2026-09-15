@@ -78,7 +78,11 @@ def main() -> None:
         if delta == 0:
             c = cs[k]
             assert 3**c > 2**k
-            assert 2 * 3 ** (c - 1) < 2**k
+            # k=1 is the sole degenerate equality 2*3^0 = 2^1.
+            # From k>=2 the exponents are positive and equality between
+            # powers of 2 and 3 is impossible, giving the strict bridge flip.
+            if k >= 2:
+                assert 2 * 3 ** (c - 1) < 2**k
             resonances.append(k)
 
     # Integer form of the global <=3-gap proof.
