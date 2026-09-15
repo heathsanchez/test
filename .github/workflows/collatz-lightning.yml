@@ -67,7 +67,13 @@ jobs:
                   best[s]={'shard':s,'start':h,'priority':p}
           include=sorted(best.values(),key=lambda x:(x['priority'],x['shard']))
           print('matrix='+json.dumps({'include':include},separators=(',',':')))
-          print('Active frontier:',include)
+          PY
+          python - <<'PY'
+          import json
+          d=json.load(open('experiments/collatz_residual_ledger.json'))
+          print('Active frontier:', sorted(
+              [(int(r['priority']), int(r['shard']), int(r['next_horizon'])) for r in d['active_residuals']]
+          ))
           PY
 
   adaptive:
