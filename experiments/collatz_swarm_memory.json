@@ -57,6 +57,14 @@
       "consequence": "closes n mod 9 in {2,4,5,8}; removes ~44.44% globally and 1.8x of p24 residual",
       "performance": "sealed p24 composition speedup 1.16x k15, 1.08x k10, 1.06x k8",
       "status": "retained"
+    },
+    {
+      "id": "cross-valuation-coalescence-c16",
+      "scope": "valuation slices n=2^K m-1 on tightened interval; p=(n-1)/2 below L",
+      "evidence_run": 34943039706,
+      "consequence": "generalizes m mod4 half-sieve by exact affine trajectory coalescence; c16 kills 17917/32768 odd m classes before overlap with transfer/mod9",
+      "performance": "at k28 sealed 134217728-seed world, removes 6272480 additional prefix-live seeds and reduces explicit residual 1.10319x; end-to-end 1.0463x speedup",
+      "status": "retained-production"
     }
   ],
   "rejected": [
@@ -90,13 +98,20 @@
       "evidence_run": 34940585589,
       "reason": "exact-equivalent to p24 but 15-27% slower on sealed k15/k10/k8 worlds",
       "status": "dominated"
+    },
+    {
+      "id": "reverse-predecessor-tree-q7",
+      "evidence_run": 34942194843,
+      "reason": "exact 1013/2187 residue coverage and 3.49% smaller mod9 residual, but end-to-end runtime neutral/slightly worse; mod9 remains production winner",
+      "status": "dominated-for-runtime"
     }
   ],
   "pending": [
     {
-      "id": "reverse-predecessor-tree-q7",
-      "hypothesis": "enumerate all first-contracting reverse paths through denominator 3^7 and compile their residue union into one tiny exact sieve"
+      "id": "full-k28-production",
+      "run": 34943311712,
+      "hypothesis": "p24 + c16 cross-valuation coalescence + mod9 + exact block scan closes full v2(n+1)=28 slice through H5000"
     }
   ],
-  "next_residual": "v2(n+1) <= 28; representation selection precedes further large scans"
+  "next_residual": "v2(n+1) <= 28; full k28 exact production run active under swarm-selected representation"
 }
