@@ -123,6 +123,39 @@ def injection(w,v):
     return (v['A']-(1<<v['D']))*w['B']+((1<<w['D'])-w['A'])*v['B']
 
 
+def cylinder_separation(w,v):
+    """Exact 2-adic separation of two same-anchor return cylinders.
+
+    Each return certificate has exact domain m == q (mod 2^(D+1)), because
+    the reduced fixed-point denominator is odd.  Since C=2^D-A is odd,
+
+        J = C_w B_v - C_v B_w = C_w C_v (q_v-q_w),
+
+    so v2(J) is exactly the 2-adic distance between the two fixed points.
+    Distinct cylinders are disjoint iff their residues differ before the end
+    of the shorter exact domain, equivalently v2(J)<min(D_w+1,D_v+1).
+    """
+    if w['r']!=v['r']: raise ValueError('same return anchor required')
+    J=injection(w,v)
+    same=(J==0)
+    assert same==(w['q']==v['q'])
+    bits=min(w['D']+1,v['D']+1)
+    mask=(1<<bits)-1
+    disjoint=((w['rho']-v['rho'])&mask)!=0
+    h=valuation(J)
+    if same:
+        assert not disjoint and h is None
+    elif disjoint:
+        assert h is not None and h<bits
+    else:
+        assert h is not None and h>=bits
+    return {'same_fixed_point':same,'disjoint':disjoint,
+            'separation_valuation':h,'injection_valuation':h,
+            'shorter_domain_bits':bits,
+            'old_domain_bits':w['D']+1,'new_domain_bits':v['D']+1,
+            'J':J}
+
+
 def switch_resonance(w,v,m_start,m_end=None):
     """Classify one exact same-anchor pattern switch by its 2-adic resonance.
 
@@ -249,7 +282,6 @@ def collect(rows,known_words,known_classes,cache):
                 word=tuple(branches[start:end])
                 if word not in cache:
                     c=certificate(word)
-                    # Replay canonical positive member before reusing a certificate.
                     assert replay(word,c['rho'])==(c['A']*c['rho']+c['B'])//(1<<c['D'])
                     cache[word]=c
                 c=cache[word]
