@@ -38,7 +38,11 @@ theorem packMixBit_add (x a b : Nat) :
         unfold stepConst
         omega
       rw [hx, Nat.mul_add]
-      simp only [Nat.add_assoc]
+      have hmul :
+          2 * (2 ^ a * packMixBit (x + (a + 1) * stepConst) b) =
+            2 ^ a * 2 * packMixBit (x + (a + 1) * stepConst) b := by
+        rw [← Nat.mul_assoc, Nat.mul_comm 2 (2 ^ a), Nat.mul_assoc]
+      rw [hmul]
 
 theorem packMixBit_mod_pow (x a b : Nat) :
     packMixBit x (a + b) % 2 ^ a = packMixBit x a := by
@@ -46,19 +50,17 @@ theorem packMixBit_mod_pow (x a b : Nat) :
   have hp := packMixBit_lt x a
   simp [Nat.add_mod, Nat.mod_eq_of_lt hp]
 
-theorem dense1_eq (x : Nat) :
-    dense1 x = packMixBit x 1 := by
+theorem dense1_eq_if (x : Nat) :
+    dense1 x = (if mixBit31 x then 1 else 0) := by
   unfold dense1
-  change bits1 x = (if mixBit31 x then 1 else 0)
   exact (bits1_eq_mix x).trans
     ((mixBit31Nat_eq x).trans (boolToNat_eq_if (mixBit31 x)))
 
 theorem dense2_eq (x : Nat) :
     dense2 x = packMixBit x 2 := by
   unfold dense2 packW
-  rw [dense1_eq, dense1_eq]
-  rw [show 2 = 1 + 1 by decide, packMixBit_add]
-  simp [Nat.shiftLeft_eq, Nat.mul_comm]
+  rw [dense1_eq_if, dense1_eq_if]
+  simp [packMixBit, Nat.shiftLeft_eq, Nat.mul_comm]
 
 theorem dense4_eq (x : Nat) :
     dense4 x = packMixBit x 4 := by
