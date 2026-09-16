@@ -1,0 +1,78 @@
+name: Collatz exact episode cylinders
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-episode-exact-cylinders.yml"
+      - "experiments/collatz_episode_exact_cylinders.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-episode-exact-cylinders
+  cancel-in-progress: true
+
+jobs:
+  exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { r: 8,  p: 12 }
+          - { r: 12, p: 14 }
+          - { r: 16, p: 16 }
+    name: exact-r${{ matrix.r }}-p${{ matrix.p }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact branch and prefix cylinders
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_episode_exact_cylinders.py               --max-r ${{ matrix.r }}               --precision ${{ matrix.p }}               --prefix-cap 192               --out results/summary.json             | tee results/census.txt
+          grep -q "EXACT_BRANCH_REQUIRES_ONE_VALUATION_BIT_BEYOND_DENOMINATOR" results/census.txt
+          grep -q "VERIFIED_EXACT_COMPLETE_ODD_EPISODE_CYLINDERS" results/census.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: exact-episode-cylinder-r${{ matrix.r }}-p${{ matrix.p }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: exact
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: exact-episode-cylinder-r*
+          path: gathered
+      - name: Aggregate exactness audit
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("exact-episode-cylinder-r*"):
+              p=d/"summary.json"; assert p.exists(),d
+              row=json.loads(p.read_text())
+              assert row["exact_branch_modulus_rule"]=="2^(s+r_prime+1)"
+              assert row["exact_prefix_modulus_rule"]=="2^(D_total+1)"
+              assert row["sibling_separations"]==row["branch_controls"],row
+              rows.append(row)
+          rows.sort(key=lambda x:x["precision"])
+          assert [x["precision"] for x in rows]==[12,14,16],rows
+          out={"kind":"exact_episode_cylinder_audit","rows":rows}
+          Path("exact-episode-cylinder-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("EXACT_EPISODE_CYLINDER_FIELD",json.dumps(out,separators=(",",":")))
+          print("EXACT_EPISODE_CYLINDER_AUDIT_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exact-episode-cylinder-field
+          path: exact-episode-cylinder-field.json
+          retention-days: 30
