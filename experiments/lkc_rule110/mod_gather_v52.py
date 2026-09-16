@@ -46,7 +46,8 @@ theorem packW_mod_gather16
   unfold packW
   simp only [Nat.shiftLeft_eq]
   rw [Nat.add_mod, Nat.mul_mod, ha, hb, hp]
-  rw [Nat.mod_eq_of_lt (by omega)]
+  have hprod : db * 2 ^ k < gatherMod16 := by omega
+  rw [Nat.mod_eq_of_lt hprod]
   exact Nat.mod_eq_of_lt hsum
 
 theorem phys16_1_mod_gather16 (x : Nat) :
