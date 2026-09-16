@@ -54,7 +54,7 @@ theorem rotR2_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
   by_cases hlo : i < 254
   · have hmod : (i + 2) % 256 = i + 2 := by omega
     have hnot : ¬ 254 ≤ i := by omega
-    simp [hmod, hnot]
+    simpa [hmod, hnot, Nat.add_comm]
   · by_cases h254 : i = 254
     · subst i
       have hh : m.testBit 256 = false := testBit_high hm (by decide)
@@ -62,7 +62,8 @@ theorem rotR2_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
     · have h255 : i = 255 := by omega
       subst i
       have hh : m.testBit 257 = false := testBit_high hm (by decide)
-      simp [hh]
+      have h3 : (3 : Nat).testBit 1 = true := by decide
+      simp [hh, h3]
 
 theorem bstep_lt (m : Nat) : bstep m < 2 ^ 256 := by
   have hM : M < 2 ^ 256 := by
