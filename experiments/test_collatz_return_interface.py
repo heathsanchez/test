@@ -136,6 +136,22 @@ class ReturnInterfaceTests(unittest.TestCase):
             self.assertEqual(z['valuation_before'],s['separation_valuation'])
             self.assertTrue(z['resonant'])
 
+    def test_recharge_is_exactly_second_order_resonance(self):
+        spec=importlib.util.spec_from_file_location('interface',P)
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        self.assertTrue(hasattr(m,'switch_recharge_law'),'Second-order recharge law is missing')
+        old=m.certificate(((2,1,2),))
+        new=m.certificate(((2,1,1),(1,1,2)))
+        cases=[(91,77,0,'drop',1),(27,23,1,'recharge',3),(155,131,2,'flat',2)]
+        for start,end,excess,outcome,vafter in cases:
+            z=m.switch_recharge_law(old,new,start,end)
+            self.assertEqual(z['separation_valuation'],2)
+            self.assertEqual(z['new_domain_excess'],excess)
+            self.assertEqual(z['threshold_excess'],1)
+            self.assertEqual(z['outcome'],outcome)
+            self.assertEqual(z['valuation_after'],vafter)
+            self.assertEqual(z['recharge'],outcome=='recharge')
+
     def test_resonant_transition_graph_extracts_only_recursive_sccs(self):
         self.assertTrue(R.exists(),'Resonant transition graph experiment is missing')
         spec=importlib.util.spec_from_file_location('resonance',R)
