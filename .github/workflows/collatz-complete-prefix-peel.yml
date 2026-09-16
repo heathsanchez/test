@@ -1,0 +1,93 @@
+name: Collatz complete affine prefix peel
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-complete-prefix-peel.yml"
+      - "experiments/collatz_complete_prefix_peel.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-complete-prefix-peel
+  cancel-in-progress: true
+
+jobs:
+  peel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [12,16,20,24]
+    name: prefix-peel-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_complete_prefix_peel.cpp -o /tmp/peel
+      - name: Run exact complete uniform-affine prefix peeling
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/peel ${{ matrix.k }} | tee results/census.txt
+          grep -q "VERIFIED_COMPLETE_UNIFORM_AFFINE_PREFIX_PEEL" results/census.txt
+      - name: Record
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          s=Path("results/census.txt").read_text()
+          rows=[]
+          for m in re.finditer(
+            r"PREFIX_PEEL_LEVEL k=(\d+) parents=(\d+) all_closed=(\d+) "
+            r"prefix_peeled=(\d+) unchanged=(\d+) live=(\d+) "
+            r"min_L=(\d+) max_L=(\d+) min_represented=(\d+)",s):
+            rows.append(dict(zip(
+              ["k","parents","all_closed","prefix_peeled","unchanged","live",
+               "min_L","max_L","min_represented"],map(int,m.groups()))))
+          assert rows
+          out={"kind":"complete_uniform_affine_prefix_peel","K":K,
+               "closed":("ALL_N_GT_1_PREFIX_PEEL_CLOSED" in s),
+               "rows":rows,"final":rows[-1]}
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("PREFIX_PEEL_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: prefix-peel-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: peel
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: prefix-peel-b*
+          path: gathered
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("prefix-peel-b*"):
+            p=d/"summary.json"; assert p.exists(),d
+            rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[12,16,20,24],rows
+          print("PREFIX_PEEL_CURVE",json.dumps(rows,separators=(",",":")))
+          if any(r["closed"] for r in rows):
+            print("FINITE_PREFIX_PEEL_GLOBAL_CLOSURE_FOUND")
+          else:
+            print("PREFIX_PEEL_HEREDITARY_RESIDUAL_PERSISTS")
+          print("VERIFIED_PREFIX_PEEL_CURVE")
+          PY
