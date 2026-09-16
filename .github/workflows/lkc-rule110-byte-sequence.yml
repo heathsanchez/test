@@ -4,6 +4,10 @@ on:
   push:
     branches: [lkc-rule110-wide-hierarchy-v39]
     paths:
+      - 'experiments/lkc_rule110/DenseByteDefsProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSixProof.lean'
+      - 'experiments/lkc_rule110/DenseByteModProof.lean'
+      - 'experiments/lkc_rule110/DenseByteBoundProof.lean'
       - 'experiments/lkc_rule110/DenseByteBaseProof.lean'
       - 'experiments/lkc_rule110/DenseByteConcatProof.lean'
       - 'experiments/lkc_rule110/DenseByteSequenceProof.lean'
@@ -16,7 +20,7 @@ permissions:
 jobs:
   prove:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - name: Install elan
@@ -34,7 +38,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -55,7 +59,19 @@ jobs:
       - name: Dense byte
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseByteProof.olean WideDenseByteProof.lean
-      - name: Byte base
+      - name: Byte defs
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteDefsProof.olean DenseByteDefsProof.lean
+      - name: Six-bit bound
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSixProof.olean DenseByteSixProof.lean
+      - name: Byte modulo
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteModProof.olean DenseByteModProof.lean
+      - name: Byte bound
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteBoundProof.olean DenseByteBoundProof.lean
+      - name: Byte base export
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteBaseProof.olean DenseByteBaseProof.lean
       - name: Byte concat
