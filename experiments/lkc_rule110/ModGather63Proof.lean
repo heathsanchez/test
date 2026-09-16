@@ -40,7 +40,8 @@ theorem sparse_modeq_dense
   | zero => rfl
   | succ n ih =>
       simp only [sparse, dense, Nat.shiftLeft_eq]
-      exact (Nat.ModEq.refl (b i)).add ((ih (i + 1)).mul pow64_modeq_two)
+      simpa [Nat.mul_comm] using
+        (Nat.ModEq.refl (b i)).add ((ih (i + 1)).mul pow64_modeq_two)
 
 /-- For at most 63 lanes the dense value is strictly below `2^64 - 2`,
 so the modular residue is the dense integer itself, not merely congruent to it. -/
@@ -48,10 +49,12 @@ theorem sparse_mod_eq_dense
     (b : Nat → Nat) (hb : ∀ i, b i < 2) (i n : Nat) (hn : n ≤ 63) :
     sparse b i n % modulus = dense b i n := by
   have hcong := sparse_modeq_dense b i n
+  change sparse b i n % modulus = dense b i n % modulus at hcong
   have hd := dense_lt_pow b hb i n
   have hp : 2 ^ n ≤ 2 ^ 63 := Nat.pow_le_pow_right (by omega) hn
   have h63 : 2 ^ 63 < modulus := by decide
   have hlt : dense b i n < modulus := by omega
-  simpa [Nat.ModEq, Nat.mod_eq_of_lt hlt] using hcong
+  rw [Nat.mod_eq_of_lt hlt] at hcong
+  exact hcong
 
 end ModGather63
