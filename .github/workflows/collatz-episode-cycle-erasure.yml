@@ -44,12 +44,12 @@ jobs:
           assert r["base_cases"]==1
           assert r["unresolved"]==0,r
           assert r["max_spine"]>=1
-          assert 0 <= r["cycle_episode_fraction"] <= 1
+          assert 0 <= r["erased_episode_fraction"] <= 1
           print("EPISODE_CYCLE_ERASURE_GATES_OK",
                 r["max_r"],r["precision"],r["max_delay"],
-                r["max_spine"],r["max_cycles"],
-                r["cycle_episode_fraction"],
-                r["nonbase_positive_integer_cycles"])
+                r["max_spine"],r["max_return_cycles"],
+                r["erased_episode_fraction"],
+                r["nonbase_positive_integer_return_cycles"])
           PY
 
       - uses: actions/upload-artifact@v4
@@ -81,10 +81,10 @@ jobs:
               rows.append({
                 "max_r":r["max_r"],"precision":r["precision"],
                 "max_delay":r["max_delay"],"max_spine":r["max_spine"],
-                "max_cycles":r["max_cycles"],
-                "cycle_episode_fraction":r["cycle_episode_fraction"],
-                "mean_cycle_count":r["mean_cycle_count"],
-                "nonbase_positive_integer_cycles":r["nonbase_positive_integer_cycles"],
+                "max_return_cycles":r["max_return_cycles"],
+                "erased_episode_fraction":r["erased_episode_fraction"],
+                "mean_return_cycle_count":r["mean_return_cycle_count"],
+                "nonbase_positive_integer_return_cycles":r["nonbase_positive_integer_return_cycles"],
                 "unresolved":r["unresolved"],
                 "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1]),
               })
