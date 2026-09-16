@@ -17,7 +17,6 @@
 // structural law, not yet a universal proof.
 
 #include <algorithm>
-#include <boost/multiprecision/cpp_int.hpp>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -28,7 +27,6 @@
 
 using u128=unsigned __int128;
 using i128=__int128;
-using boost::multiprecision::cpp_int;
 
 struct State {
   u128 r,x;
@@ -169,49 +167,62 @@ static void consequence_r2(const State&s,int budget,std::vector<State>&out){
   out.push_back(s);
 }
 
-struct Mass { cpp_int num; int K=0; };
+struct Mass { u128 num; int K=0; };
+
+static long double ld128(u128 z){
+  return (long double)(uint64_t)z
+       + std::ldexp((long double)(uint64_t)(z>>64),64);
+}
+static u128 checked_mul(u128 a,u128 b){
+  const u128 M=~u128(0);
+  if(b && a>M/b){std::cerr<<"EXACT_MASS_OVERFLOW\n";std::exit(24);}
+  return a*b;
+}
+static u128 checked_add(u128 a,u128 b){
+  const u128 M=~u128(0);
+  if(a>M-b){std::cerr<<"EXACT_MASS_OVERFLOW\n";std::exit(24);}
+  return a+b;
+}
 
 static Mass ternary_mass(const std::vector<State>&v){
   int K=0;for(const auto&s:v)K=std::max(K,s.k);
-  cpp_int n=0;
-  for(const auto&s:v){
-    cpp_int term=1;
-    for(int i=0;i<K-s.k;++i)term*=3;
-    n+=term;
-  }
+  u128 n=0;
+  for(const auto&s:v)n=checked_add(n,P3.at(K-s.k));
   return {n,K};
 }
 static long double mass_ld(const Mass&m){
-  long double n=m.num.convert_to<long double>();
+  long double n=ld128(m.num);
   for(int i=0;i<m.K;++i)n/=3.0L;
   return n;
 }
 
-static cpp_int scaled_brute(const std::vector<State>&v,int Amax,int Kmax){
-  cpp_int n=0;
+static u128 scaled_brute(const std::vector<State>&v,int Amax,int Kmax){
+  u128 n=0;
   for(const auto&s:v){
-    cpp_int term=1;
-    term <<= (Amax-s.A);
-    for(int i=0;i<Kmax-s.k;++i)term*=3;
-    n+=term;
+    const int da=Amax-s.A;
+    if(da<0||da>=128){std::cerr<<"SCALE_A_RANGE\n";std::exit(25);}
+    u128 term=u128(1)<<da;
+    term=checked_mul(term,P3.at(Kmax-s.k));
+    n=checked_add(n,term);
   }
   return n;
 }
-static cpp_int scaled_compressed(const std::vector<State>&v,
-                                 const std::vector<Mass>&m,
-                                 int Amax,int Kmax){
-  cpp_int n=0;
+static u128 scaled_compressed(const std::vector<State>&v,
+                              const std::vector<Mass>&m,
+                              int Amax,int Kmax){
+  u128 n=0;
   for(const auto&s:v){
     const Mass& q=m.at(s.lowPrefix);
-    cpp_int term=q.num;
-    term <<= (Amax-s.A);
-    for(int i=0;i<Kmax-q.K;++i)term*=3;
-    n+=term;
+    const int da=Amax-s.A;
+    if(da<0||da>=128){std::cerr<<"SCALE_A_RANGE\n";std::exit(25);}
+    u128 term=checked_mul(q.num,u128(1)<<da);
+    term=checked_mul(term,P3.at(Kmax-q.K));
+    n=checked_add(n,term);
   }
   return n;
 }
-static long double scaled_ld(const cpp_int&n,int Amax,int Kmax){
-  long double x=n.convert_to<long double>();
+static long double scaled_ld(u128 n,int Amax,int Kmax){
+  long double x=ld128(n);
   x=std::ldexp(x,-Amax);
   for(int i=0;i<Kmax;++i)x/=3.0L;
   return x;
@@ -227,7 +238,7 @@ int main(int argc,char**argv){
   for(int i=1;i<(int)P3.size();++i)P3[i]=P3[i-1]*3;
 
   std::vector<Mass> openMass(DEPTH+1);
-  openMass[0]={cpp_int(1),0};
+  openMass[0]={u128(1),0};
   std::vector<State> universal{{3,3,0,0,0,0,true}};
 
   std::vector<State> base{{3,3,0,0,0,0,true}};
@@ -271,7 +282,7 @@ int main(int argc,char**argv){
     int Amax=0;
     for(const auto&s:base)Amax=std::max(Amax,s.A);
     const int Kmax=openMass[depth].K;
-    const cpp_int comp=scaled_compressed(base,openMass,Amax,Kmax);
+    const u128 comp=scaled_compressed(base,openMass,Amax,Kmax);
 
     bool exactMatch=true;
     uint64_t bruteLeaves=0;
@@ -287,10 +298,12 @@ int main(int argc,char**argv){
       int bA=0,bK=0;
       for(const auto&s:brute){bA=std::max(bA,s.A);bK=std::max(bK,s.k);}
       const int CA=std::max(Amax,bA),CK=std::max(Kmax,bK);
-      cpp_int cn=comp;
-      cn <<= (CA-Amax);
-      for(int i=0;i<CK-Kmax;++i)cn*=3;
-      const cpp_int bnExact=scaled_brute(brute,CA,CK);
+      u128 cn=comp;
+      const int da=CA-Amax;
+      if(da<0||da>=128){std::cerr<<"COMPARE_A_RANGE\n";return 62;}
+      cn=checked_mul(cn,u128(1)<<da);
+      cn=checked_mul(cn,P3.at(CK-Kmax));
+      const u128 bnExact=scaled_brute(brute,CA,CK);
       exactMatch=(cn==bnExact);
       if(!exactMatch){
         std::cerr<<"COMPRESSED_EXACT_MISMATCH depth="<<depth<<"\n";
@@ -304,7 +317,7 @@ int main(int argc,char**argv){
              <<" base_states="<<base.size()
              <<" full_reverse="<<full
              <<" stopped="<<stopped
-             <<" open_mass_num="<<openMass[depth].num
+             <<" open_mass_num="<<s128(openMass[depth].num)
              <<" open_mass_k="<<openMass[depth].K
              <<" open_mass="<<(double)mass_ld(openMass[depth])
              <<" compressed_density="<<(double)scaled_ld(comp,Amax,Kmax)
