@@ -1,0 +1,27 @@
+name: Collatz boundary core episode decomposition
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-boundary-core-episodes.yml"
+      - "experiments/collatz_boundary_core_episodes.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+jobs:
+  boundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decompose exact H512 boundary core
+        run: |
+          set -euo pipefail
+          python experiments/collatz_boundary_core_episodes.py | tee boundary.txt
+          grep -q "VERIFIED_BOUNDARY_CORE_EPISODE_DECOMPOSITION" boundary.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: boundary-core-episodes
+          path: boundary.txt
+          retention-days: 30
