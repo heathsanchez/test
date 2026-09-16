@@ -1,0 +1,36 @@
+name: Collatz global maximal-O cylinders
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-global-maximal-o-cylinders.yml"
+      - "experiments/collatz_global_maximal_o_cylinders.cpp"
+  workflow_dispatch:
+
+jobs:
+  maxo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [8, 12, 16, 20]
+    name: global-maxo-d${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_maximal_o_cylinders.cpp -o /tmp/maxo
+      - name: Run exact maximal-O cylinder quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/maxo ${{ matrix.depth }} | tee results/census.txt
+          grep -q "FINAL_GATE=GLOBAL_MAXIMAL_O_CYLINDER_DEPTH_${{ matrix.depth }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-maxo-d${{ matrix.depth }}
+          path: results
+          retention-days: 30
