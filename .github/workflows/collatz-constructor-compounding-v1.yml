@@ -1,0 +1,208 @@
+name: Collatz constructor compounding V1
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-constructor-compounding-v1.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-constructor-compounding-v1
+  cancel-in-progress: true
+
+jobs:
+  acquire:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 donor bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Discover generation 0 at B24 and residual generation 1 at B26
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_deep_program_profile.cpp -o /tmp/profile
+          /usr/bin/time -f '%e %M' -o results/time24.txt             /tmp/profile 24 results/q14-bank.txt 16 | tee results/discovery24.txt
+          /usr/bin/time -f '%e %M' -o results/time26.txt             /tmp/profile 26 results/q14-bank.txt 16 | tee results/discovery26.txt
+          grep -q "DEEP_CONT_DONE K=24 H=16 final_live=173280" results/discovery24.txt
+          grep -q "DEEP_CONT_DONE K=26 H=16 final_live=604877" results/discovery26.txt
+
+      - name: Distill exact constructor generations
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          def rows(path):
+              s=Path(path).read_text()
+              out=set()
+              for m in re.finditer(
+                  r"DEEP_EXACT_CONSTRUCTOR rank=(\d+) count=(\d+) signature=(\S+)",s):
+                  sig=m.group(3)
+                  p=sig.split(":")
+                  assert len(p)==5,(sig,p)
+                  o,steps,word,C,residue=p
+                  out.add(f"{o} {steps} {C} {residue} {word}")
+              return out
+
+          b24=rows("results/discovery24.txt")
+          b26=rows("results/discovery26.txt")
+          assert len(b24)==128,len(b24)
+          new26=b26-b24
+          lost26=b24-b26
+          union=b24|b26
+
+          for name,data in [("bank24.txt",b24),("bank26.txt",b26),
+                            ("new26.txt",new26),("union26.txt",union)]:
+              Path("results",name).write_text("\n".join(sorted(data))+"\n")
+
+          out={
+              "kind":"constructor_compounding_acquisition_v1",
+              "generation0_B":24,
+              "generation1_B":26,
+              "bank24":len(b24),
+              "bank26":len(b26),
+              "new26":len(new26),
+              "lost26":len(lost26),
+              "union26":len(union),
+          }
+          Path("results/acquisition.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("CONSTRUCTOR_COMPOUNDING_ACQUISITION",json.dumps(out,separators=(",",":")))
+          assert new26, "no residual capability acquired at B26"
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: constructor-compounding-bank-v1
+          path: results
+          retention-days: 30
+
+  transfer:
+    needs: acquire
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [28,30,32]
+    name: transfer-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: constructor-compounding-bank-v1
+          path: frozen
+
+      - name: Replay old and compounded banks with zero search
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20 experiments/collatz_compiled_deep_future.cpp -o /tmp/future
+          /usr/bin/time -f '%e %M' -o results/time-base.txt             /tmp/future ${{ matrix.k }} frozen/q14-bank.txt frozen/bank24.txt             | tee results/base.txt
+          /usr/bin/time -f '%e %M' -o results/time-union.txt             /tmp/future ${{ matrix.k }} frozen/q14-bank.txt frozen/union26.txt             | tee results/union.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/base.txt
+          grep -q "VERIFIED_ZERO_SEARCH_COMPILED_FUTURE_TRANSFER" results/union.txt
+
+      - name: Score nonlinear transfer gain
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          full={28:1984609,30:6947941,32:23935800}
+          baseline={28:2741655,30:9590847,32:33685571}
+          def live(path):
+              s=Path(path).read_text()
+              m=re.search(rf"COMPILED_FUTURE_DONE K={K} final_live=(\d+).*?new_search_calls=0",s,re.S)
+              assert m,s[-5000:]
+              return int(m.group(1))
+          old=live("results/base.txt")
+          new=live("results/union.txt")
+          assert new<=old,(K,old,new)
+          assert new>=full[K],(K,new,full[K])
+          total_gain=baseline[K]-full[K]
+          old_gain=baseline[K]-old
+          new_gain=baseline[K]-new
+          out={
+              "kind":"constructor_compounding_transfer_v1",
+              "K":K,
+              "old_bank_live":old,
+              "compounded_bank_live":new,
+              "full_H16_live":full[K],
+              "deep_o_baseline_live":baseline[K],
+              "old_gain_transfer_ratio":old_gain/total_gain,
+              "compounded_gain_transfer_ratio":new_gain/total_gain,
+              "incremental_future_closures":old-new,
+              "remaining_gap_to_full_search":new-full[K],
+              "new_search_calls":0,
+          }
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("CONSTRUCTOR_COMPOUNDING_TRANSFER",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: constructor-compounding-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: transfer
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: constructor-compounding-b*
+          path: gathered
+      - name: Aggregate generational compounding
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("constructor-compounding-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[28,30,32],rows
+          strict=sum(r["incremental_future_closures"]>0 for r in rows)
+          assert strict>0,rows
+          assert all(r["compounded_gain_transfer_ratio"]>=r["old_gain_transfer_ratio"] for r in rows)
+          out={
+              "kind":"constructor_compounding_field_v1",
+              "strictly_improved_future_worlds":strict,
+              "rows":rows,
+          }
+          Path("constructor-compounding-field-v1.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("CONSTRUCTOR_COMPOUNDING_FIELD",json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("VERIFIED_NONLINEAR_CONSTRUCTOR_COMPOUNDING_V1")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: constructor-compounding-field-v1
+          path: constructor-compounding-field-v1.json
+          retention-days: 30
