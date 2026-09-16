@@ -182,7 +182,7 @@ jobs:
           import json
           from pathlib import Path
           rows=[]
-          for d in Path("gathered").glob("constructor-compounding-b*"):
+          for d in Path("gathered").glob("constructor-compounding-b[0-9]*"):
               p=d/"summary.json"
               assert p.exists(),d
               rows.append(json.loads(p.read_text()))
