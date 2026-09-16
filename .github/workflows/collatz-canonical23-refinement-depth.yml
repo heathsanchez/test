@@ -1,0 +1,50 @@
+name: Collatz canonical23 refinement depth
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-canonical23-refinement-depth.yml"
+      - "experiments/collatz_canonical23_consequence.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-canonical23-refinement-depth
+  cancel-in-progress: true
+
+jobs:
+  refine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 8, refine: 2 }
+          - { depth: 8, refine: 3 }
+          - { depth: 8, refine: 4 }
+          - { depth: 10, refine: 2 }
+          - { depth: 10, refine: 3 }
+          - { depth: 10, refine: 4 }
+          - { depth: 12, refine: 3 }
+          - { depth: 12, refine: 4 }
+    name: canonical23-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build canonical compiler
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_canonical23_consequence.cpp             -o /tmp/canonical23
+      - name: Run refinement-depth falsifier
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/canonical23 ${{ matrix.depth }} ${{ matrix.refine }}             | tee results/census.txt
+          grep -q "EXACT_ALL_ODD_N_GT_1_PARTITION" results/census.txt
+          grep -q "FINAL_GATE=CANONICAL23_D${{ matrix.depth }}_R${{ matrix.refine }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical23-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
