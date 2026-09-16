@@ -138,7 +138,7 @@ static std::vector<State> build_residual(int K,const std::vector<i128>&p3,Search
 int main(int argc,char**argv){
   if(argc!=3){std::cerr<<"usage: zero_ternary K R\n";return 2;}
   const int K=std::stoi(argv[1]),R=std::stoi(argv[2]);
-  if(K<1||K>24||R<0||R>24)return 2;
+  if(K<1||K>24||R<0||R>60)return 2;
 
   std::vector<i128>p3(K+R+3,1);
   for(size_t i=1;i<p3.size();++i)p3[i]=mulc(p3[i-1],3);
