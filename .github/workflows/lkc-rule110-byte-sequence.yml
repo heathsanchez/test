@@ -1,0 +1,58 @@
+name: LKC Rule110 byte sequence proof
+
+on:
+  push:
+    branches: [lkc-rule110-wide-hierarchy-v39]
+    paths:
+      - 'experiments/lkc_rule110/DenseByteSequenceProof.lean'
+      - '.github/workflows/lkc-rule110-byte-sequence.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  prove:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
+      - name: Prepare
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
+          lake build
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteSequenceProof; do
+            cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
+          done
+      - name: Generic pack
+        working-directory: lkc/problems/ca-rule110
+        run: lake env lean -o GenericPackProof.olean GenericPackProof.lean
+      - name: Generic mix
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o GenericMixProof.olean GenericMixProof.lean
+      - name: Pair gather
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o GatherPairProof.olean GatherPairProof.lean
+      - name: Wide hierarchy
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideHierarchyProof.olean WideHierarchyProof.lean
+      - name: Wide gather
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
+      - name: Dense byte
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseByteProof.olean WideDenseByteProof.lean
+      - name: Byte sequence
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean DenseByteSequenceProof.lean
