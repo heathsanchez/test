@@ -148,13 +148,13 @@ static bool closed_infinite(
     if(it==bank[o].end())continue;
     const RevCert&rc=it->second;
     const u128 pow2=u128(1)<<rc.steps;
-    const u128 num=pow2*s.d-rc.C;
-    if(num%mod!=0){
+    const i128 num=i128(pow2)*i128(s.d)-i128(rc.C);
+    if(num%i128(mod)!=0){
       std::cerr<<"GLOBAL_BRIDGE_DIV_FAIL\n";
       std::exit(10);
     }
     const i128 pcoef=i128(pow2)*i128(p3[s.c-o]);
-    const i128 pconst=i128(num/mod);
+    const i128 pconst=num/i128(mod);
     const i128 coef3=pcoef-M;
     const i128 cons3=pconst-i128(s.b);
     if(coef3<0 && coef3+cons3<0)return true;
