@@ -1,0 +1,118 @@
+name: Collatz complete grammar bridge growth
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-complete-grammar-bridge-growth.yml"
+      - "experiments/collatz_complete_reverse_grammar.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-complete-grammar-bridge-growth
+  cancel-in-progress: true
+
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [24,26]
+    name: bridge-growth-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate q14 and q16 exact bridge banks
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          for Q,expected in [(14,3265),(16,15584)]:
+              certs=enumerate_first_contractions(Q)
+              killed,total,selected,redundant=sparse_quotient(certs,Q)
+              assert len(selected)==expected,(Q,len(selected),expected)
+              with open(f"results/q{Q}-bank.txt","w") as f:
+                  for c in selected:
+                      f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+              print("BRIDGE_BANK",Q,len(selected),killed,total)
+          PY
+
+      - name: Run complete grammar with q14 and q16
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_complete_reverse_grammar.cpp -o /tmp/complete
+          /usr/bin/time -f '%e %M' -o results/time-q14.txt             /tmp/complete ${{ matrix.k }} results/q14-bank.txt | tee results/q14.txt
+          /usr/bin/time -f '%e %M' -o results/time-q16.txt             /tmp/complete ${{ matrix.k }} results/q16-bank.txt | tee results/q16.txt
+          grep -q "VERIFIED_COMPLETE_FINITE_REVERSE_EO_GRAMMAR" results/q14.txt
+          grep -q "VERIFIED_COMPLETE_FINITE_REVERSE_EO_GRAMMAR" results/q16.txt
+
+      - name: Score deeper bridge contribution
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          def parse(path):
+              s=Path(path).read_text()
+              m=re.search(rf"COMPLETE_REVERSE_GRAMMAR_DONE K={K} final_live=(\d+).*?total_grammar=(\d+).*?max_nodes_one_family=(\d+).*?max_blocks=(\d+).*?max_word_steps=(\d+)",s,re.S)
+              assert m,s[-8000:]
+              return tuple(map(int,m.groups()))
+          q14=parse("results/q14.txt")
+          q16=parse("results/q16.txt")
+          assert q16[0]<=q14[0],(K,q14,q16)
+          out={
+              "kind":"complete_grammar_bridge_growth",
+              "K":K,
+              "q14_live":q14[0],
+              "q16_live":q16[0],
+              "new_exact_closures":q14[0]-q16[0],
+              "q14_grammar_closures":q14[1],
+              "q16_grammar_closures":q16[1],
+              "q14_max_nodes_family":q14[2],
+              "q16_max_nodes_family":q16[2],
+              "q16_max_blocks":q16[3],
+              "q16_max_word_steps":q16[4],
+          }
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("COMPLETE_GRAMMAR_BRIDGE_GROWTH",json.dumps(out,separators=(",",":")))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-grammar-bridge-growth-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: compare
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: complete-grammar-bridge-growth-b*
+          path: gathered
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("complete-grammar-bridge-growth-b*"):
+              p=d/"summary.json";assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [r["K"] for r in rows]==[24,26]
+          print("COMPLETE_GRAMMAR_BRIDGE_GROWTH_FIELD",json.dumps(rows,separators=(",",":")))
+          assert sum(r["new_exact_closures"] for r in rows)>0,rows
+          print("VERIFIED_DEEPER_BRIDGE_ADDS_COMPLETE_GRAMMAR_CAPABILITY")
+          PY
