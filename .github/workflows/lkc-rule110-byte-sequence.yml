@@ -14,9 +14,11 @@ on:
       - 'experiments/lkc_rule110/DenseByteSeqAddProof.lean'
       - 'experiments/lkc_rule110/DenseByteSeqTailProof.lean'
       - 'experiments/lkc_rule110/DenseByteSeqPowProof.lean'
-      - 'experiments/lkc_rule110/DenseByteSeqDoubleProof.lean'
-      - 'experiments/lkc_rule110/DenseByteConcatProof.lean'
-      - 'experiments/lkc_rule110/DenseByteSequenceProof.lean'
+      - 'experiments/lkc_rule110/DenseByteFixed16Proof.lean'
+      - 'experiments/lkc_rule110/DenseByteFixed32Proof.lean'
+      - 'experiments/lkc_rule110/DenseByteFixed64Proof.lean'
+      - 'experiments/lkc_rule110/DenseByteFixed128Proof.lean'
+      - 'experiments/lkc_rule110/DenseByteFixed256Proof.lean'
       - '.github/workflows/lkc-rule110-byte-sequence.yml'
   workflow_dispatch:
 
@@ -44,7 +46,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteDecompProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteSeqBoundProof DenseByteSeqAddProof DenseByteSeqTailProof DenseByteSeqPowProof DenseByteSeqDoubleProof DenseByteConcatProof DenseByteSequenceProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteDecompProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteSeqBoundProof DenseByteSeqAddProof DenseByteSeqTailProof DenseByteSeqPowProof DenseByteFixed16Proof DenseByteFixed32Proof DenseByteFixed64Proof DenseByteFixed128Proof DenseByteFixed256Proof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -95,12 +97,18 @@ jobs:
       - name: Power bridge
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqPowProof.olean DenseByteSeqPowProof.lean
-      - name: Sequence double
+      - name: Fixed 16-bit bridge
         working-directory: lkc/problems/ca-rule110
-        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqDoubleProof.olean DenseByteSeqDoubleProof.lean
-      - name: Byte concat export
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteFixed16Proof.olean DenseByteFixed16Proof.lean
+      - name: Fixed 32-bit bridge
         working-directory: lkc/problems/ca-rule110
-        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteConcatProof.olean DenseByteConcatProof.lean
-      - name: Byte export
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteFixed32Proof.olean DenseByteFixed32Proof.lean
+      - name: Fixed 64-bit bridge
         working-directory: lkc/problems/ca-rule110
-        run: LEAN_PATH=".:$LEAN_PATH" lake env lean DenseByteSequenceProof.lean
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteFixed64Proof.olean DenseByteFixed64Proof.lean
+      - name: Fixed 128-bit bridge
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteFixed128Proof.olean DenseByteFixed128Proof.lean
+      - name: Fixed 256-bit bridge
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteFixed256Proof.olean DenseByteFixed256Proof.lean
