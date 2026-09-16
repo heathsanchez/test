@@ -1,0 +1,92 @@
+name: Collatz normalized zero-ternary closure
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-zero-ternary-normalized.yml"
+      - "experiments/collatz_zero_ternary_normalized.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-zero-ternary-normalized
+  cancel-in-progress: true
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { k: 12, r: 64 }
+          - { k: 16, r: 56 }
+          - { k: 20, r: 44 }
+          - { k: 24, r: 36 }
+    name: nzt-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run normalized exact grammar
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20 experiments/collatz_zero_ternary_normalized.cpp -o /tmp/nzt
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/nzt ${{ matrix.k }} ${{ matrix.r }} | tee results/census.txt
+          grep -q "VERIFIED_NORMALIZED_ZERO_TERNARY_SCOUT" results/census.txt
+      - name: Record
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}");R=int("${{ matrix.r }}")
+          s=Path("results/census.txt").read_text()
+          m=re.search(
+            rf"NZT_RESULT K={K} R={R} residual=(\d+) closed=(\d+) "
+            r"unresolved=(\d+) max_required_r=(-?\d+) max_witness_b=(\d+) "
+            r"search_nodes=(\d+) memo_hits=(\d+) e_cases=(\d+) o_run_cases=(\d+) "
+            r"prunes=(\d+) max_nodes_family=(\d+) max_u=(\d+) max_v=(\d+)",s)
+          assert m,s[-8000:]
+          vals=list(map(int,m.groups()))
+          keys=["residual","closed","unresolved","max_required_r","max_witness_b",
+                "nodes","memo","e_cases","o_runs","prunes","max_nodes_family","max_u","max_v"]
+          out={"kind":"normalized_zero_ternary","K":K,"R":R,**dict(zip(keys,vals))}
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("NZT_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nzt-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: scout
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nzt-b*
+          path: gathered
+      - name: Aggregate
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("nzt-b*"):
+            p=d/"summary.json";assert p.exists(),d
+            rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda x:x["K"])
+          assert [r["K"] for r in rows]==[12,16,20,24]
+          print("NZT_CURVE",json.dumps(rows,separators=(",",":")))
+          if all(r["unresolved"]==0 for r in rows):
+            print("NORMALIZED_ZERO_TERNARY_CLOSED_THROUGH_B24")
+          else:
+            print("NORMALIZED_ZERO_TERNARY_RESIDUAL_PERSISTS")
+          print("VERIFIED_NORMALIZED_ZERO_TERNARY_CURVE")
+          PY
