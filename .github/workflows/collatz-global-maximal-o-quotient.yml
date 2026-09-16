@@ -1,0 +1,92 @@
+name: Collatz global maximal-O quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-global-maximal-o-quotient.yml"
+      - "experiments/collatz_global_maximal_cone_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-maximal-o-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        h: [20,24,28,30]
+    name: maximal-o-h${{ matrix.h }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact all-scale maximal-O quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_maximal_cone_quotient.cpp -o /tmp/gq
+      - name: Run exact quotient
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/gq ${{ matrix.h }} | tee results/census.txt
+          grep -q "VERIFIED_GLOBAL_COALESCED_CONSEQUENCE_QUOTIENT" results/census.txt
+          ! grep -q "OVERFLOW" results/census.txt
+      - name: Parse cell
+        run: |
+          python - <<'PY'
+          import json,re
+          H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"GLOBAL_QUOTIENT_DONE H={H} final_t=(\d+) live=(\d+) "
+              r"peak=(\d+) peak_t=(\d+) total_merged=(\d+) total_closed=(\d+)",s)
+          assert m,s[-6000:]
+          final_t,live,peak,peak_t,merged,closed=map(int,m.groups())
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"H":H,"final_t":final_t,"live":live,"peak":peak,"peak_t":peak_t,
+               "merged":merged,"closed":closed,"global_closure":live==0,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_MAXIMAL_O_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-maximal-o-h${{ matrix.h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-maximal-o-h*
+          path: gathered
+      - name: Aggregate
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("global-maximal-o-h*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["H"])
+          assert [r["H"] for r in rows]==[20,24,28,30],rows
+          out={"kind":"global_maximal_o_quotient_curve","rows":rows,
+               "global_closure_found":any(r["global_closure"] for r in rows)}
+          Path("global-maximal-o-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_MAXIMAL_O_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-maximal-o-field
+          path: global-maximal-o-field.json
+          retention-days: 30
