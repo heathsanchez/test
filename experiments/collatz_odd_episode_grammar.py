@@ -111,7 +111,10 @@ def branch_for_residue(r: int, m: int) -> Branch:
     assert rr == r and mm == m
 
     D = s + rp
-    mod = 1 << D
+    # Exact valuation r' needs one bit beyond denominator integrality:
+    #   3^r m + 2^s - 1 == 2^D (mod 2^(D+1)).
+    # Thus the exact branch cylinder is modulo 2^(D+1), not 2^D.
+    mod = 1 << (D + 1)
     residue = m % mod
     b = Branch(
         r=r, s=s, rp=rp,
@@ -125,16 +128,19 @@ def branch_for_residue(r: int, m: int) -> Branch:
 def first_branch_partition(r: int, precision: int):
     """Exact distinct branch cylinders seen modulo 2^precision.
 
-    m is odd.  A branch (r,s,r') only needs m modulo 2^(s+r'), so once a
-    cylinder is identified it represents every extension of that residue.
+    m is odd.  An exact branch (r,s,r') needs m modulo 2^(s+r'+1):
+    denominator integrality consumes s+r' bits and exact oddness of the next
+    cofactor consumes one additional valuation bit.  Once this exact cylinder
+    is identified, every extension of that residue has the same schema.
     """
     M = 1 << precision
     cylinders: dict[tuple[int, int, int, int], Branch] = {}
     for m in range(1, M, 2):
         b = branch_for_residue(r, m)
-        if b.D > precision:
-            # This residue is too singular for current precision. Keep it as
-            # an unresolved precision-boundary witness rather than guessing.
+        if b.D + 1 > precision:
+            # Exact branch identity needs D+1 bits.  Keep more singular
+            # residues as precision-boundary witnesses rather than merging
+            # the two incompatible top-bit extensions.
             continue
         key = (b.s, b.rp, b.residue, b.modulus)
         cylinders.setdefault(key, b)
@@ -145,7 +151,7 @@ def first_branch_partition(r: int, precision: int):
     unresolved = 0
     for m in range(1, M, 2):
         exact = branch_for_residue(r, m)
-        if exact.D <= precision:
+        if exact.D + 1 <= precision:
             covered += 1
         else:
             unresolved += 1
