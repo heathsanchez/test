@@ -18,8 +18,9 @@ theorem pack8Nat_eq_packMixBit8 (x : Nat) :
   rw [pack8Nat_eq]
   symm
   have h := packMixBit_eight x 0
-  change packMixBit x 8 = pack8 x + 256 * 0 at h
-  simpa only [Nat.mul_zero, Nat.add_zero] using h
+  have hz : packMixBit (advance8 x) 0 = 0 := rfl
+  rw [hz] at h
+  simpa only [Nat.zero_add, Nat.mul_zero, Nat.add_zero] using h
 
 theorem dense8_eq (x : Nat) :
     dense8 x = packMixBit x 8 := by
