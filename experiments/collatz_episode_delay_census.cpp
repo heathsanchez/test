@@ -77,7 +77,7 @@ int main(int argc,char**argv){
   const int P=std::stoi(argv[2]);
   const int max_eps=std::stoi(argv[3]);
   const int top_n=std::stoi(argv[4]);
-  if(max_r<1||max_r>28||P<8||P>26||max_eps<1||max_eps>10000||
+  if(max_r<1||max_r>28||P<8||P>28||max_eps<1||max_eps>10000||
      top_n<1||top_n>1000) return 2;
 
   // 3^80 fits in unsigned 128-bit; 3^81 does not.  The bounded census
