@@ -1,0 +1,46 @@
+name: Collatz joint 23 reverse EO
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-joint23-reverse-eo.yml"
+      - "experiments/collatz_joint23_reverse_eo.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-joint23-reverse-eo
+  cancel-in-progress: true
+
+jobs:
+  joint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, refine: 0, macro: 6, emax: 5 }
+          - { depth: 12, refine: 1, macro: 6, emax: 5 }
+          - { depth: 16, refine: 0, macro: 6, emax: 5 }
+          - { depth: 16, refine: 1, macro: 6, emax: 5 }
+    name: joint-reverse-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_joint23_reverse_eo.cpp -o /tmp/jointrev
+      - name: Run exact combined quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/jointrev ${{ matrix.depth }} ${{ matrix.refine }} ${{ matrix.macro }} ${{ matrix.emax }}             | tee results/census.txt
+          grep -q "EXACT_ALL_ODD_N_GT_1_PARTITION" results/census.txt
+          grep -q "FINAL_GATE=JOINT23_REVERSE_D${{ matrix.depth }}_R${{ matrix.refine }}_M${{ matrix.macro }}_E${{ matrix.emax }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: joint-reverse-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
