@@ -1,0 +1,114 @@
+name: LKC Rule110 Callgrind v56
+
+on:
+  push:
+    branches: [lkc-rule110-callgrind-v56]
+    paths:
+      - '.github/workflows/lkc-rule110-callgrind-v56.yml'
+      - 'experiments/lkc_rule110/payload_mask_v51.py'
+      - 'experiments/lkc_rule110/init_bias_v52.py'
+      - 'experiments/lkc_rule110/mod_gather_v54.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  instruction-tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install measurement dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Generate protected candidates
+        shell: bash
+        run: |
+          python3 experiments/lkc_rule110/payload_mask_v51.py
+          python3 experiments/lkc_rule110/init_bias_v52.py
+          python3 experiments/lkc_rule110/mod_gather_v54.py
+          sha256sum experiments/lkc_rule110/generated/Submission_v52.lean \
+                    experiments/lkc_rule110/generated/Submission_v54.lean
+
+      - name: Checkout pinned Stage1 benchmark
+        shell: bash
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          cd bench
+          git checkout "$BENCH_COMMIT"
+          python3 - <<'PY'
+          import json
+          p=json.load(open('upstream.lock.json'))
+          assert p['revision'] == 'eb5e8850cdec9acf52d615529f9d1d64894e44b9', p
+          assert p['lean'] == 'leanprover/lean4:v4.33.1', p
+          print(json.dumps(p, indent=2))
+          PY
+
+      - name: Setup frozen Rule110 benchmark
+        working-directory: bench
+        shell: bash
+        run: |
+          python3 benchmark.py setup --problem ca-rule110
+          python3 benchmark.py doctor --problem ca-rule110 --metric callgrind
+          python3 -m lkc_bench.pmu | tee ../pmu-probe.json || true
+
+      - name: V52 Callgrind instruction diagnostic
+        working-directory: bench
+        shell: bash
+        run: |
+          python3 benchmark.py diagnostic --problem ca-rule110 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v52.lean" \
+            --metric callgrind --repetitions 3 --timeout 600 --memory-mb 4096 \
+            --output "$GITHUB_WORKSPACE/callgrind-v52"
+
+      - name: V54 Callgrind instruction diagnostic
+        working-directory: bench
+        shell: bash
+        run: |
+          python3 benchmark.py diagnostic --problem ca-rule110 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v54.lean" \
+            --metric callgrind --repetitions 3 --timeout 600 --memory-mb 4096 \
+            --output "$GITHUB_WORKSPACE/callgrind-v54"
+
+      - name: Compare instruction totals
+        if: always()
+        shell: python
+        run: |
+          import json, pathlib
+          out={}
+          for who in ('v52','v54'):
+              p=pathlib.Path(f'callgrind-{who}/diagnostic.json')
+              if not p.exists():
+                  out[who]={'error':'missing diagnostic.json'}
+                  continue
+              d=json.loads(p.read_text())
+              out[who]={'path':str(p),'metric':d.get('metric')}
+              # Keep a compact view while preserving the original reports as artifacts.
+              for key in ('comparison','summary','totals','baseline','candidate'):
+                  if key in d:
+                      out[who][key]=d[key]
+          pathlib.Path('callgrind-summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+
+      - name: Upload instruction evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-callgrind-v56
+          path: |
+            experiments/lkc_rule110/generated/Submission_v52.lean
+            experiments/lkc_rule110/generated/Submission_v54.lean
+            callgrind-v52/
+            callgrind-v54/
+            callgrind-summary.json
+            pmu-probe.json
+          if-no-files-found: warn
