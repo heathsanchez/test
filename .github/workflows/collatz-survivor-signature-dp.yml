@@ -1,0 +1,28 @@
+name: Collatz survivor signature DP
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-survivor-signature-dp.yml"
+      - "experiments/collatz_survivor_signature_dp.py"
+  workflow_dispatch:
+
+jobs:
+  signature:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact signature dynamic program
+        run: |
+          set -euo pipefail
+          python experiments/collatz_survivor_signature_dp.py | tee signature.txt
+          grep -q "VERIFIED_SIGNATURE_DP_MATCHES_GLOBAL_CYLINDERS" signature.txt
+          grep -q "SURVIVOR_MEASURE_DECAYS_EXPONENTIALLY" signature.txt
+          grep -q "FINAL_GATE=COLLATZ_SURVIVOR_SIGNATURE_DP_V1" signature.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-survivor-signature-dp
+          path: signature.txt
+          retention-days: 30
