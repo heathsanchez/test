@@ -1,7 +1,7 @@
 import WideProgressionProof
 import WideHierarchyProof
 import WideGatherProof
-import WideDenseProof
+import WideLow254BridgeProof
 import Submission
 
 namespace WideFast
@@ -10,7 +10,7 @@ open GenericPack
 open GenericMix
 open WideHierarchy
 open WideGather
-open WideDense
+open WideLow254
 open Submission
 
 set_option maxRecDepth 1048576
@@ -119,17 +119,17 @@ def fastPayload (x : Nat) : Nat :=
 
 theorem fastPayload_eq (x : Nat)
     (h : x + 255 * stepConst < 2 ^ 64) :
-    fastPayload x = packMixBit x 254 := by
+    fastPayload x = packByteTailNat x 31 := by
   unfold fastPayload
   rw [fastSparse_eq, compactFast_eq, compactTree_bits256 x h]
-  exact dense256_low254 x
+  exact dense256_low254_eq_tail x
 
 def fastInit (seed : Nat) : Nat :=
   let x := seed + 3 * stepConst
   1 + 4 * fastPayload x
 
 theorem fastInit_ca_eq (n : Nat) :
-    fastInit (caSeed n) = initPackedFastBit (caSeed n) := by
+    fastInit (caSeed n) = initPackedByteNat (caSeed n) := by
   have hs : caSeed n < 2 ^ 32 := by
     unfold caSeed
     exact Nat.and_lt_two_pow n (by decide)
@@ -139,7 +139,14 @@ theorem fastInit_ca_eq (n : Nat) :
       unfold stepConst
       decide
     omega
-  unfold fastInit initPackedFastBit
+  unfold fastInit initPackedByteNat
   rw [fastPayload_eq (caSeed n + 3 * stepConst) hb]
+
+theorem fastInit_v27_eq (n : Nat) :
+    fastInit (caSeed n) = initPackedOctContracted (caSeed n) := by
+  calc
+    fastInit (caSeed n) = initPackedByteNat (caSeed n) := fastInit_ca_eq n
+    _ = initPackedSWAR8 (caSeed n) := (initPackedSWAR8_eq n).symm
+    _ = initPackedOctContracted (caSeed n) := (initPackedOctContracted_eq (caSeed n)).symm
 
 end WideFast
