@@ -1,0 +1,63 @@
+name: Collatz refinement frontier
+
+on:
+  push:
+    branches: [collatz-refinement-frontier-v1]
+    paths:
+      - ".github/workflows/collatz-refinement-frontier.yml"
+      - "experiments/collatz_zero_ternary_refinement_frontier.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-refinement-frontier
+  cancel-in-progress: true
+
+jobs:
+  equivalence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontier solver with warnings fatal
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -std=c++20 -Wall -Wextra -Werror \
+            experiments/collatz_zero_ternary_refinement_frontier.cpp -o /tmp/frontier
+      - name: Differentially verify quotient across r
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/equivalence-time-memory.txt \
+            /tmp/frontier --verify 8 4 | tee results/equivalence.txt
+          grep -q "VERIFIED_REFINEMENT_FRONTIER_EQUIVALENCE" results/equivalence.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: refinement-frontier-equivalence
+          path: results
+          retention-days: 30
+
+  scout-b12-r16:
+    needs: equivalence
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontier solver with warnings fatal
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -std=c++20 -Wall -Wextra -Werror \
+            experiments/collatz_zero_ternary_refinement_frontier.cpp -o /tmp/frontier
+      - name: Run B12 R16 frontier scout
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/scout-time-memory.txt \
+            /tmp/frontier 12 16 | tee results/scout.txt
+          grep -q "VERIFIED_REFINEMENT_FRONTIER_SCOUT" results/scout.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: refinement-frontier-b12-r16
+          path: results
+          retention-days: 30
