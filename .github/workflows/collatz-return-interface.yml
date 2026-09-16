@@ -5,6 +5,7 @@ on:
     paths:
       - experiments/collatz_return_interface.py
       - experiments/collatz_return_interface_verify.py
+      - experiments/collatz_return_resonance.py
       - experiments/collatz_frozen_return_generator.py
       - experiments/test_collatz_return_interface.py
       - .github/workflows/collatz-return-interface.yml
@@ -32,6 +33,7 @@ jobs:
           python3 experiments/test_collatz_return_interface.py
           python3 experiments/collatz_return_interface_verify.py --out results/verification.json
           python3 experiments/collatz_return_interface.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --out results/census.json
+          python3 experiments/collatz_return_resonance.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --out results/resonance.json
           python3 experiments/collatz_frozen_return_generator.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --out results/frozen.json
           python3 experiments/collatz_frozen_return_generator.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --lineage-holdout --out results/holdout.json
           python3 - <<'PY'
@@ -42,6 +44,14 @@ jobs:
               actual=json.loads(Path('results/'+generated+'.json').read_text())
               expected=json.loads(Path('experiments/results/'+committed+'.json').read_text())
               assert actual==expected, generated
+          r=json.load(open('results/resonance.json'))
+          assert r['status']=='EXACT FINITE RESONANCE DECOMPOSITION; NOT GLOBAL CLOSURE'
+          assert len(r['results'])==4
+          for row in r['results']:
+              c=row['counts']
+              assert row['recharge_requires_resonance']
+              assert c['cross_pattern']==c['resonant']+c['nonresonant']
+              assert c.get('recharge',0)<=c['resonant']
           a=json.load(open('results/frozen.json'))
           assert a['frozen_operator_count']==134
           assert [r['counts']['novel_closed_without_fallback'] for r in a['results']]==[2,7,48]
@@ -49,7 +59,7 @@ jobs:
           b=json.load(open('results/holdout.json'))
           assert b['training_roots']==100 and b['held_out_root_count']==44
           assert [r['counts']['novel_closed_without_fallback'] for r in b['results']]==[1,0,9]
-          print('VERIFIED_EXACT_RETURN_INTERFACE_AND_FROZEN_TRANSFER_NOT_GLOBAL_CLOSURE')
+          print('VERIFIED_EXACT_RETURN_INTERFACE_RESONANCE_GRAPH_AND_FROZEN_TRANSFER_NOT_GLOBAL_CLOSURE')
           PY
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         if: always()
