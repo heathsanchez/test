@@ -302,6 +302,8 @@ int main(int argc,char**argv){
   std::vector<State>live{{3,3,0,0,0,0,0,0}};
   verify_B(live[0]);
 
+  uint64_t totalResonanceCandidates=0,totalUsefulCoalesced=0;
+  uint64_t totalMissingDonor=0,totalNonLower=0;
   for(int depth=1;depth<=DEPTH;++depth){
     std::vector<State>next;Stats st;
     for(const auto&p:live){
@@ -367,6 +369,10 @@ int main(int argc,char**argv){
       if(!killed[i])pruned.push_back(next[i]);
     const uint64_t baselineNext=next.size();
     next.swap(pruned);
+    totalResonanceCandidates+=resonanceCandidates;
+    totalUsefulCoalesced+=coalesced;
+    totalMissingDonor+=missingDonor;
+    totalNonLower+=nonLower;
     std::cout<<"RESONANT_COALESCENCE_LEVEL depth="<<depth
              <<" baseline_survivors="<<baselineNext
              <<" resonance_candidates="<<resonanceCandidates
@@ -452,7 +458,27 @@ int main(int argc,char**argv){
 
     live.swap(next);
   }
-  std::cout<<"VERIFIED_RESONANT_CROSS_HISTORY_COALESCENCE_D"<<DEPTH<<"\n";
-  std::cout<<"FINAL_GATE=RESONANT_COALESCENCE_D"<<DEPTH<<"\n";
+  std::cout<<"RESONANCE_CAPABILITY_LIFECYCLE depth="<<DEPTH
+           <<" candidates="<<totalResonanceCandidates
+           <<" useful_coalesced="<<totalUsefulCoalesced
+           <<" missing_already_closed_donor="<<totalMissingDonor
+           <<" nonlower="<<totalNonLower
+           <<" status="<<((totalResonanceCandidates>0 &&
+                            totalUsefulCoalesced==0 &&
+                            totalMissingDonor==totalResonanceCandidates &&
+                            totalNonLower==0)
+                           ?"REVOKED_REDUNDANT":"REQUIRES_REVIEW")
+           <<"\n";
+  if(DEPTH>=17){
+    if(totalResonanceCandidates==0 ||
+       totalUsefulCoalesced!=0 ||
+       totalMissingDonor!=totalResonanceCandidates ||
+       totalNonLower!=0){
+      std::cerr<<"RESONANCE_REVOCATION_GATE_FAIL\n";
+      return 84;
+    }
+  }
+  std::cout<<"VERIFIED_RESONANCE_CAPABILITY_REVOKED_REDUNDANT_D"<<DEPTH<<"\n";
+  std::cout<<"FINAL_GATE=RESONANCE_REVOKED_D"<<DEPTH<<"\n";
   return 0;
 }
