@@ -15,7 +15,7 @@
 
 #include <algorithm>
 #include <cstdint>
-#include <cstdlib>
+#include <cstdlib>\n#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
