@@ -15,7 +15,7 @@ from collatz_witness_compiler import read_rows
 
 
 def valuation(n):
-    if n==0: return None  # Infinite valuation is an explicit fixed-point case.
+    if n==0: return None
     n=abs(n)
     return (n & -n).bit_length()-1
 
@@ -52,11 +52,6 @@ def admissible(c,m):
 
 
 def repeat_budget(c,m):
-    """Minimal state for repetitions of this primitive word only.
-
-    None means the exact fixed point, with unlimited repeats, not UNKNOWN.
-    The budget intentionally makes no prediction about post-exit behavior.
-    """
     if m<=0 or m%2==0: raise ValueError('positive odd cofactor required')
     p,s=c['q'];v=valuation(s*m-p)
     charge=sum(z[1]+z[2] for z in c['primitive'])
@@ -74,7 +69,6 @@ def power_value(c,m,k):
 
 @lru_cache(maxsize=None)
 def prefix_lines(word):
-    """Exact affine value of every shortcut prefix as a function of cofactor."""
     A,B,t=1<<word[0][0],-1,0
     result=[(A,B,t)]
     for r,s,_ in word:
@@ -87,12 +81,6 @@ def prefix_lines(word):
 
 
 def jump_repetitions(c,m):
-    """Jump all legal primitive repetitions, preserving the exact block minimum.
-
-    The exact exit cofactor is retained. A budget alone is not a global state.
-    Prefix lines are monotone in m; the return iterates are monotone, so the
-    minimum over all repetitions occurs in the first or last repetition.
-    """
     if c['word']!=c['primitive']: c=certificate(c['primitive'])
     k=repeat_budget(c,m)
     if k is None: raise ValueError('fixed point requires separate handling')
@@ -109,7 +97,6 @@ def jump_repetitions(c,m):
 
 
 def replay(word,m):
-    """Independent ordinary-integer episode replay, with exact schema checks."""
     if m<=0 or not m&1: raise ValueError('positive odd cofactor required')
     x=(1<<word[0][0])*m-1
     for expected in word:
@@ -124,17 +111,7 @@ def injection(w,v):
 
 
 def cylinder_separation(w,v):
-    """Exact 2-adic separation of two same-anchor return cylinders.
-
-    Each return certificate has exact domain m == q (mod 2^(D+1)), because
-    the reduced fixed-point denominator is odd.  Since C=2^D-A is odd,
-
-        J = C_w B_v - C_v B_w = C_w C_v (q_v-q_w),
-
-    so v2(J) is exactly the 2-adic distance between the two fixed points.
-    Distinct cylinders are disjoint iff their residues differ before the end
-    of the shorter exact domain, equivalently v2(J)<min(D_w+1,D_v+1).
-    """
+    """Exact 2-adic separation of two same-anchor return cylinders."""
     if w['r']!=v['r']: raise ValueError('same return anchor required')
     J=injection(w,v)
     same=(J==0)
@@ -157,20 +134,6 @@ def cylinder_separation(w,v):
 
 
 def switch_resonance(w,v,m_start,m_end=None):
-    """Classify one exact same-anchor pattern switch by its 2-adic resonance.
-
-    For the old-pattern defect Delta=C*m-B and the new return V=(a,b,d),
-
-        2^d Delta' = a Delta + J.
-
-    If v2(Delta) != v2(J), oddness of a forces
-
-        v2(Delta') = min(v2(Delta),v2(J)) - d,
-
-    so recharge is impossible.  Positive valuation gain can therefore occur
-    only at exact resonance v2(Delta)=v2(J), where additional cancellation in
-    a*(Delta/2^j)+J/2^j controls the gain.
-    """
     if w['r']!=v['r']: raise ValueError('same return anchor required')
     if not admissible(v,m_start): raise ValueError('new return not admissible at start')
     numerator=v['A']*m_start+v['B']
@@ -193,8 +156,7 @@ def switch_resonance(w,v,m_start,m_end=None):
     recharge=(vb is not None and va is not None and va>vb)
     if not same and vb is not None and vj is not None and vb!=vj:
         assert va==min(vb,vj)-v['D']
-    if recharge:
-        assert resonant
+    if recharge: assert resonant
 
     if resonant:
         vc=valuation(combined)
@@ -208,8 +170,45 @@ def switch_resonance(w,v,m_start,m_end=None):
             'cancellation_depth':cancellation_depth,'exit':m_end}
 
 
+def switch_recharge_law(w,v,m_start,m_end=None):
+    """Exact three-way law for a switch between disjoint return cylinders.
+
+    Let h=v2(q_v-q_w).  The new exact return domain contributes D_v+1
+    mandatory bits.  Write
+
+        e = v2(u_v*m-p_v) - (D_v+1) >= 0.
+
+    Then the old-pattern defect after executing V satisfies:
+      e < h-1  -> valuation e+1 (strict drop),
+      e > h-1  -> valuation h   (flat),
+      e = h-1  -> valuation > h (strict recharge).
+
+    Thus positive recharge is exactly a second-order 2-adic resonance between
+    cylinder separation and the excess depth inside the new return cylinder.
+    """
+    sep=cylinder_separation(w,v)
+    if sep['same_fixed_point'] or not sep['disjoint']:
+        raise ValueError('distinct disjoint return cylinders required')
+    z=switch_resonance(w,v,m_start,m_end)
+    h=sep['separation_valuation']
+    assert z['resonant'] and z['valuation_before']==h
+    p,u=v['q'];vv=valuation(u*m_start-p)
+    if vv is None: raise ValueError('new-pattern fixed point requires separate handling')
+    base=v['D']+1
+    assert vv>=base
+    excess=vv-base;threshold=h-1
+    if excess<threshold:
+        outcome='drop';assert z['valuation_after']==excess+1<h and not z['recharge']
+    elif excess>threshold:
+        outcome='flat';assert z['valuation_after']==h and not z['recharge']
+    else:
+        outcome='recharge';assert z['valuation_after']>h and z['recharge']
+    return {**z,'separation_valuation':h,'new_domain_valuation':vv,
+            'new_domain_excess':excess,'threshold_excess':threshold,
+            'outcome':outcome}
+
+
 def reset_witness(L):
-    """V=(2,1,1)(1,1,2) raises v2(m+1) from 2 to any L>=3."""
     if L<3: raise ValueError('L>=3 required')
     z=(39*pow(pow(2,L+5,27),-1,27))%27
     if z%2==0: z+=27
@@ -220,11 +219,6 @@ def reset_witness(L):
 
 
 def reset_block(k,L):
-    """Construct an exact W^k V block, k>=2,L>=3k+3.
-
-    It increases ordinary size and the W-defect valuation, with no prior
-    descent during the block. This is not a claim about subsequent behavior.
-    """
     if k<2 or L<3*k+3: raise ValueError('require k>=2 and L>=3k+3')
     mod=3**(2*k+3)
     z=12*pow(pow(2,L+5,mod),-1,mod)%mod
