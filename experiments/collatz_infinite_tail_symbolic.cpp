@@ -31,7 +31,6 @@
 // No finite upper bound, sampling, floating point, or overflow-prone concrete
 // trajectory arithmetic is used in the symbolic tree.
 
-#include <boost/multiprecision/cpp_int.hpp>
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
@@ -42,7 +41,6 @@
 
 using u128=unsigned __int128;
 using i128=__int128;
-using Big=boost::multiprecision::cpp_int;
 
 static constexpr u128 UMAX=~u128(0);
 static constexpr u128 I128MAX=(u128(1)<<127)-1;
