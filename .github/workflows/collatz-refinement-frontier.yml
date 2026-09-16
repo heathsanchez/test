@@ -61,3 +61,28 @@ jobs:
           name: refinement-frontier-b12-r16
           path: results
           retention-days: 30
+
+  scout-b12-r64:
+    needs: scout-b12-r16
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build frontier solver with warnings fatal
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -std=c++20 -Wall -Wextra -Werror \
+            experiments/collatz_zero_ternary_refinement_frontier.cpp -o /tmp/frontier
+      - name: Run B12 R64 global frontier
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/scout-time-memory.txt \
+            /tmp/frontier 12 64 | tee results/scout.txt
+          grep -q "VERIFIED_REFINEMENT_FRONTIER_SCOUT" results/scout.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: refinement-frontier-b12-r64
+          path: results
+          retention-days: 30
