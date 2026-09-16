@@ -6,6 +6,7 @@ on:
     paths:
       - 'experiments/lkc_rule110/DenseByteDefsProof.lean'
       - 'experiments/lkc_rule110/DenseByteSixProof.lean'
+      - 'experiments/lkc_rule110/DenseByteDecompProof.lean'
       - 'experiments/lkc_rule110/DenseByteModProof.lean'
       - 'experiments/lkc_rule110/DenseByteBoundProof.lean'
       - 'experiments/lkc_rule110/DenseByteBaseProof.lean'
@@ -38,7 +39,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteDecompProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -65,6 +66,9 @@ jobs:
       - name: Six-bit bound
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSixProof.olean DenseByteSixProof.lean
+      - name: Byte decomposition
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteDecompProof.olean DenseByteDecompProof.lean
       - name: Byte modulo
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteModProof.olean DenseByteModProof.lean
