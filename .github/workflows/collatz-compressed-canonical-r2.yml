@@ -24,6 +24,7 @@ jobs:
           - { depth: 16, validate: 12 }
           - { depth: 18, validate: 12 }
           - { depth: 20, validate: 12 }
+          - { depth: 22, validate: 12 }
     name: compressed-d${{ matrix.depth }}
     steps:
       - uses: actions/checkout@v4
