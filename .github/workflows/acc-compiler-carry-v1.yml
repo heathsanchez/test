@@ -24,7 +24,7 @@ jobs:
           - ac-04501
           - ac-01910
     runs-on: ubuntu-latest
-    timeout-minutes: 90
+    timeout-minutes: 240
     steps:
       - uses: actions/checkout@v4
         with:
@@ -64,7 +64,7 @@ jobs:
             --max-quotient-total 100 \
             --reverse-depth 7 \
             --reverse-cap 250000 \
-            --compiler-beam 32 \
+            --compiler-beam 256 \
             --depth-weight 0 \
             --search-seconds 3000 \
             | tee "$out.log"
