@@ -1,0 +1,45 @@
+name: Collatz reverse partial coverage
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-reverse-partial-coverage.yml"
+      - "experiments/collatz_reverse_partial_coverage.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-reverse-partial-coverage
+  cancel-in-progress: true
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 8, macro: 8, emax: 1 }
+          - { depth: 12, macro: 8, emax: 1 }
+          - { depth: 12, macro: 8, emax: 5 }
+          - { depth: 16, macro: 8, emax: 1 }
+    name: partial-d${{ matrix.depth }}-m${{ matrix.macro }}-e${{ matrix.emax }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build diagnostic
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_reverse_partial_coverage.cpp             -o /tmp/partial
+      - name: Measure partial coverage
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/partial ${{ matrix.depth }} ${{ matrix.macro }} ${{ matrix.emax }}             | tee results/census.txt
+          grep -q "FINAL_GATE=PARTIAL_COVERAGE_D${{ matrix.depth }}_M${{ matrix.macro }}_E${{ matrix.emax }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: partial-d${{ matrix.depth }}-m${{ matrix.macro }}-e${{ matrix.emax }}
+          path: results
+          retention-days: 30
