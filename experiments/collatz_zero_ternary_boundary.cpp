@@ -126,6 +126,10 @@ static std::vector<State> build_residual(int K,const std::vector<i128>&p3,Search
         next.push_back({b,uint64_t(d),c,L});
       }
     }
+    uint64_t l0=0,l1=0,lo=0;
+    for(const auto&z:next){if(z.L==0)++l0;else if(z.L==1)++l1;else ++lo;}
+    std::cout<<"ZERO_TERNARY_BUILD_LEVEL k="<<k<<" live="<<next.size()
+             <<" L0="<<l0<<" L1="<<l1<<" otherL="<<lo<<"\n";
     cur.swap(next);
   }
   return cur;
@@ -151,7 +155,10 @@ int main(int argc,char**argv){
 
   const i128 M0=i128(1)<<K;
   for(const State&s:residual){
-    if(s.L!=0){std::cerr<<"EXPECTED_L0\n";return 12;}
+    if(s.L!=0){
+      std::cout<<"ZERO_TERNARY_NONZERO_L b="<<s.b<<" d="<<s.d
+               <<" c="<<s.c<<" L="<<s.L<<"\n";
+    }
     bool done=false;
     i128 scale=1;
     for(int r=0;r<=R;++r){
