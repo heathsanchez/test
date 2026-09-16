@@ -1,0 +1,88 @@
+name: Collatz all-integer symbolic closure
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-all-integer-symbolic.yml"
+      - "experiments/collatz_all_integer_symbolic.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-all-integer-symbolic
+  cancel-in-progress: true
+
+jobs:
+  exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        k: [12,16,20,24]
+    name: all-integers-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_all_integer_symbolic.cpp -o /tmp/allints
+      - name: Run exact all-integer partition
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/allints ${{ matrix.k }} | tee results/census.txt
+          grep -q "VERIFIED_ALL_INTEGER_SYMBOLIC_PARTITION" results/census.txt
+      - name: Record result
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          s=Path("results/census.txt").read_text()
+          levels=[]
+          for m in re.finditer(r"ALL_INTEGER_SYMBOLIC_LEVEL k=(\d+) parents=(\d+) direct=(\d+) reverse=(\d+) live=(\d+) L0=(\d+) L1=(\d+) otherL=(\d+)",s):
+              levels.append(dict(zip(["k","parents","direct","reverse","live","L0","L1","otherL"],map(int,m.groups()))))
+          assert levels
+          out={"kind":"all_integer_symbolic_partition","requested_K":K,
+               "closed":("ALL_N_GT_1_LOWER_CONSEQUENCE_PARTITION_CLOSED" in s),
+               "levels":levels,"final_live":levels[-1]["live"]}
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("ALL_INTEGER_SYMBOLIC_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: all-integer-symbolic-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: exact
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: all-integer-symbolic-b*
+          path: gathered
+      - name: Aggregate ordinary-integer closure curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("all-integer-symbolic-b*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["requested_K"])
+          assert [r["requested_K"] for r in rows]==[12,16,20,24],rows
+          print("ALL_INTEGER_SYMBOLIC_CURVE",json.dumps(rows,separators=(",",":")))
+          if any(r["closed"] for r in rows):
+              print("FINITE_ALL_INTEGER_SYMBOLIC_CLOSURE_FOUND")
+          else:
+              print("ALL_INTEGER_SYMBOLIC_RESIDUAL_PERSISTS")
+          print("VERIFIED_ALL_INTEGER_SYMBOLIC_CURVE")
+          PY
