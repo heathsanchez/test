@@ -18,7 +18,7 @@ env:
   ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
   ATTACK_COUNT: "32"
   SHARDS: "8"
-  DEFEND_FRACTION: "0.30"
+  DEFEND_FRACTION: "0.00"
   MECHANISM_ID: "gssub-v2-current+atlas+peephole"
 
 jobs:
@@ -308,7 +308,7 @@ jobs:
           publish=J('acc_competitive/points_publish/report.json')
           rep={
             'controller':'ACC_POINTS_CONTROLLER_V2',
-            'strategy':'point acquisition + scoring ties + bounded defense + exact margin evidence + verifier-gated publication',
+            'strategy':'strict-first record acquisition + exact margin evidence + verifier-gated publication',
             'selected_targets':scout.get('selected_targets'),
             'new_solves_frozen':outcome.get('new_solves'),
             'strict_improvements_frozen':outcome.get('strict_improvements'),
@@ -351,8 +351,8 @@ jobs:
             /tmp/scout/
           retention-days: 90
 
-# Portfolio lane: acquire and preserve score, not merely strict records.
+# Strict-first lane: attack live exposed records now with the retained verified machinery.
 # Every candidate is independently verified, compiled into the proof atlas, shortened,
-# fresh-rechecked against both AC and Stable AC; scoring ties and strict improvements are submitted.
+# fresh-rechecked against both AC and Stable AC; only live scoring consequences can be submitted.
 # Attempt memory remains valid only for this frozen mechanism; changed mechanisms must replay old residuals.
 # Recovery rerun: competitive_outcome_v1 now accepts absolute recursive artifact globs.
