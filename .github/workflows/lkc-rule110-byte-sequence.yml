@@ -4,6 +4,8 @@ on:
   push:
     branches: [lkc-rule110-wide-hierarchy-v39]
     paths:
+      - 'experiments/lkc_rule110/DenseByteBaseProof.lean'
+      - 'experiments/lkc_rule110/DenseByteConcatProof.lean'
       - 'experiments/lkc_rule110/DenseByteSequenceProof.lean'
       - '.github/workflows/lkc-rule110-byte-sequence.yml'
   workflow_dispatch:
@@ -32,7 +34,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteSequenceProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -53,6 +55,12 @@ jobs:
       - name: Dense byte
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseByteProof.olean WideDenseByteProof.lean
-      - name: Byte sequence
+      - name: Byte base
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteBaseProof.olean DenseByteBaseProof.lean
+      - name: Byte concat
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteConcatProof.olean DenseByteConcatProof.lean
+      - name: Byte export
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean DenseByteSequenceProof.lean
