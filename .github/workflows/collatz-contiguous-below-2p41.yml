@@ -1,0 +1,206 @@
+name: Collatz contiguous exact closure below 2^41
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-contiguous-below-2p41.yml"
+      - "experiments/collatz_absolute_cone_dfs.cpp"
+      - "experiments/collatz_strong_induction_base_b20.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-contiguous-below-2p41
+  cancel-in-progress: true
+
+jobs:
+  base:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact strong-induction base below 2^20
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_strong_induction_base_b20.cpp -o /tmp/base
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/base | tee results/census.txt
+          grep -q "VERIFIED_COLLATZ_STRONG_INDUCTION_BASE_BELOW_2_20" results/census.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: contiguous-base-b20
+          path: results
+          retention-days: 30
+
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+    steps:
+      - id: mk
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          include=[]
+          for K in range(20,41):
+              if K <= 29:
+                  shards=1
+              elif K <= 34:
+                  shards=8
+              elif K <= 36:
+                  shards=32
+              elif K <= 38:
+                  shards=48
+              else:
+                  shards=64
+              for s in range(shards):
+                  include.append({"k":K,"shard":s,"shards":shards})
+          print("matrix="+json.dumps({"include":include},separators=(",",":")))
+          PY
+
+  shell:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 24
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    name: exact-k${{ matrix.k }}-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Run exact symbolic shell shard
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_cone_dfs.cpp -o /tmp/dfs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/dfs ${{ matrix.k }} 800 ${{ matrix.shard }} ${{ matrix.shards }}             | tee results/census.txt
+          grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" results/census.txt
+      - name: Parse exact shard
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          sid=int("${{ matrix.shard }}")
+          nsh=int("${{ matrix.shards }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"DFS_SYMBOLIC_RESULT K={K} H=800 shard={sid} shards={nsh} "
+              r"represented=(\d+) closed=(\d+) hard=(\d+) nodes=(\d+) "
+              r"uniform_nodes=(\d+) singleton_nodes=(\d+) max_depth=(\d+) "
+              r"max_close_t=(\d+) max_close_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["represented","closed","hard","nodes","uniform_nodes",
+                "singleton_nodes","max_depth","max_close_t","max_close_seed"]
+          out={"K":K,"H":800,"shard":sid,"shards":nsh,**dict(zip(keys,vals))}
+          assert out["closed"]+out["hard"]==out["represented"]
+          assert out["hard"]==0,out
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("CONTIGUOUS_EXACT_SHARD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contiguous-k${{ matrix.k }}-s${{ matrix.shard }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: [base, shell]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: contiguous-*
+          path: gathered
+      - name: Assemble self-contained finite theorem
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+
+          bp=Path("gathered/contiguous-base-b20/census.txt")
+          assert bp.exists()
+          bs=bp.read_text()
+          bm=re.search(
+              r"COLLATZ_STRONG_INDUCTION_BASE limit=(\d+) checked=(\d+) "
+              r"max_steps_to_lower=(\d+) max_steps_seed=(\d+) "
+              r"max_intermediate=(\d+)",bs)
+          assert bm,bs[-3000:]
+          limit,checked,maxsteps,maxseed,maxinter=map(int,bm.groups())
+          assert limit==1<<20
+          assert checked==limit-2
+
+          groups={}
+          for d in Path("gathered").glob("contiguous-k*-s*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              r=json.loads(p.read_text())
+              groups.setdefault(r["K"],[]).append(r)
+
+          rows=[]
+          for K in range(20,41):
+              rs=sorted(groups.get(K,[]),key=lambda x:x["shard"])
+              assert rs,(K,"missing")
+              nsh=rs[0]["shards"]
+              assert len(rs)==nsh,(K,len(rs),nsh)
+              assert [x["shard"] for x in rs]==list(range(nsh))
+              represented=sum(x["represented"] for x in rs)
+              closed=sum(x["closed"] for x in rs)
+              hard=sum(x["hard"] for x in rs)
+              expected=1<<(K-1)
+              assert represented==expected,(K,represented,expected)
+              assert closed==expected and hard==0,(K,closed,hard)
+              rows.append({
+                  "K":K,"H":800,"shards":nsh,
+                  "represented_odd_shell":represented,
+                  "closed":closed,"hard":hard,
+                  "total_nodes":sum(x["nodes"] for x in rs),
+                  "total_singletons":sum(x["singleton_nodes"] for x in rs),
+                  "max_depth":max(x["max_depth"] for x in rs),
+                  "max_close_t":max(x["max_close_t"] for x in rs),
+                  "max_close_seed":max(rs,key=lambda x:x["max_close_t"])["max_close_seed"],
+                  "max_shard_seconds":max(x["wall_seconds"] for x in rs),
+                  "max_shard_rss_kb":max(x["max_rss_kb"] for x in rs),
+              })
+
+          theorem={
+              "kind":"self_contained_collatz_strong_induction_below_2p41",
+              "shortcut_map":"T(n)=n/2 if even, (3n+1)/2 if odd",
+              "base":{
+                  "limit":limit,"checked":checked,
+                  "max_steps_to_lower":maxsteps,
+                  "max_steps_seed":maxseed,
+                  "max_intermediate":maxinter,
+              },
+              "shells":rows,
+              "range":"1 <= n < 2^41",
+              "logic":[
+                  "base verifies every 2<=n<2^20 has a positive forward iterate below n",
+                  "even n>=2^20 has T(n)=n/2<n",
+                  "for every odd n in each bit shell K=20..40, exact DFS certifies either a forward iterate y<n or y=2 mod 3 with p=(2y-1)/3 positive and p<n and T(p)=y",
+                  "strong induction therefore proves every n<2^41 reaches 1"
+              ],
+              "all_shells_closed":all(r["hard"]==0 for r in rows),
+          }
+          Path("collatz-contiguous-below-2p41.json").write_text(
+              json.dumps(theorem,indent=2,sort_keys=True)+"\n")
+          print("COLLATZ_CONTIGUOUS_BELOW_2P41_FIELD",
+                json.dumps(theorem,separators=(",",":"),sort_keys=True))
+          print("VERIFIED_SELF_CONTAINED_COLLATZ_BELOW_2P41")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-contiguous-below-2p41
+          path: collatz-contiguous-below-2p41.json
+          retention-days: 30
