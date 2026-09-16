@@ -1,0 +1,42 @@
+name: Collatz first duality residual
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-first-duality-residual.yml"
+      - "experiments/collatz_forward_reverse_duality_counterexample.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-first-duality-residual
+  cancel-in-progress: true
+
+jobs:
+  residual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_forward_reverse_duality_counterexample.cpp -o /tmp/dual-residual
+      - name: Isolate first exact residual
+        run: |
+          set -uo pipefail
+          mkdir -p results
+          /tmp/dual-residual 17 0 > results/census.txt 2>&1
+          code=$?
+          cat results/census.txt
+          test "$code" -eq 70
+          test "$(grep -c '^DUALITY_COUNTEREXAMPLE kind=full_low' results/census.txt)" -eq 1
+          test "$(grep -c '^DUALITY_COUNTEREXAMPLE kind=balance' results/census.txt)" -eq 1
+          grep -q 'DUALITY_INVARIANT_FAIL depth=17 bad_full_low=1 bad_balance=1' results/census.txt
+          echo "VERIFIED_SINGLE_FIRST_DUALITY_RESIDUAL_D17" | tee -a results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: first-duality-residual-d17
+          path: results
+          retention-days: 30
