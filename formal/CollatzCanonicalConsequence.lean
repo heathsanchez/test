@@ -83,8 +83,11 @@ theorem canonicalPred1_first
     collatzShortcut (canonicalPred1 y) = 2 * y := by
   have hy : y = 3 * (y / 3) + 1 := mod3_eq1_decomp h3
   have hpodd : canonicalPred1 y % 2 = 1 := by
-    simp [canonicalPred1]
-  simp [collatzShortcut, canonicalPred1, hpodd]
+    unfold canonicalPred1
+    omega
+  have hpnot : canonicalPred1 y % 2 ≠ 0 := by omega
+  simp only [collatzShortcut, hpnot, if_false]
+  unfold canonicalPred1
   omega
 
 theorem double_shortcut (y : Nat) :
