@@ -100,6 +100,7 @@ static bool ndfs(int u,int v,u128 D,int k,int r,uint64_t b,
     if(De>MAX/2){std::cerr<<"D_E_RANGE\n";std::exit(9);}
     De*=2;++ue;
   }
+  return false;
 }
 static bool normalized_closes(int c,uint64_t d,int k,int r,uint64_t b,NStats&st){
   std::set<NKey>seen;uint64_t local=0;
