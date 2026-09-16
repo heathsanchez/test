@@ -5,6 +5,7 @@ on:
     branches: [lkc-rule110-modgather-v55]
     paths:
       - 'experiments/lkc_rule110/mod_gather_v55.py'
+      - 'experiments/lkc_rule110/fix_v55_proof.py'
       - '.github/workflows/lkc-rule110-modgather-v55.yml'
   workflow_dispatch:
 
@@ -35,8 +36,10 @@ jobs:
         run: python3 experiments/lkc_rule110/init_bias_v52.py
       - name: Generate v54 reference
         run: python3 experiments/lkc_rule110/mod_gather_v54.py
-      - name: RED generate v55 candidate
-        run: python3 experiments/lkc_rule110/mod_gather_v55.py
+      - name: Generate v55 candidate
+        run: |
+          python3 experiments/lkc_rule110/mod_gather_v55.py
+          python3 experiments/lkc_rule110/fix_v55_proof.py
       - name: Prepare evaluator
         working-directory: lkc
         run: bash evaluation/setup.sh --problem ca-rule110
