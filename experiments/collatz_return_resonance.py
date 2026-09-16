@@ -142,6 +142,10 @@ def analyze_rows(rows,cache=None):
                 last_return[r]=c
             last[r]=end
 
+    for key in ('same_fixed_point','cross_pattern','stable_cross_pattern','resonant',
+                'stable_resonant','nonresonant','stable_nonresonant','recharge',
+                'stable_recharge'):
+        counts.setdefault(key,0)
     assert counts['cross_pattern']==counts['resonant']+counts['nonresonant']
     assert counts['stable_cross_pattern']==counts['stable_resonant']+counts['stable_nonresonant']
     assert counts['recharge']<=counts['resonant']
