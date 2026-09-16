@@ -86,4 +86,36 @@ class ReturnInterfaceTests(unittest.TestCase):
         self.assertGreater(result['out'],source)
         self.assertLess(result['minimum_n'],4*source-1)
 
+    def test_nonresonant_switch_has_forced_valuation_drop(self):
+        spec=importlib.util.spec_from_file_location('interface',P)
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        self.assertTrue(hasattr(m,'switch_resonance'),'Exact resonance classifier is missing')
+        old=m.certificate(((2,1,2),(2,2,2)))
+        new=m.certificate(((2,1,2),))
+        start=15; end=m.replay(new['word'],start)
+        z=m.switch_resonance(old,new,start,end)
+        self.assertFalse(z['same_fixed_point'])
+        self.assertFalse(z['resonant'])
+        self.assertFalse(z['recharge'])
+        self.assertEqual((z['valuation_before'],z['injection_valuation'],new['D']), (5,4,3))
+        self.assertEqual(z['valuation_after'],1)
+        self.assertEqual(z['valuation_after'],min(z['valuation_before'],z['injection_valuation'])-new['D'])
+        self.assertEqual(z['cancellation_depth'],0)
+
+    def test_recharge_requires_exact_resonance(self):
+        spec=importlib.util.spec_from_file_location('interface',P)
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        self.assertTrue(hasattr(m,'switch_resonance'),'Exact resonance classifier is missing')
+        old=m.certificate(((2,1,2),))
+        new=m.certificate(((2,1,1),(1,1,2)))
+        for L in (3,4,10,100):
+            start,end=m.reset_witness(L)
+            z=m.switch_resonance(old,new,start,end)
+            self.assertTrue(z['resonant'])
+            self.assertTrue(z['recharge'])
+            self.assertEqual(z['valuation_before'],2)
+            self.assertEqual(z['injection_valuation'],2)
+            self.assertEqual(z['valuation_after'],L)
+            self.assertEqual(z['cancellation_depth'],L+new['D']-2)
+
 if __name__=='__main__': unittest.main()
