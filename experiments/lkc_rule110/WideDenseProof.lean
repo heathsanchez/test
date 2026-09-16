@@ -43,6 +43,7 @@ theorem packMixBit_add (x a b : Nat) :
             2 ^ a * 2 * packMixBit (x + (a + 1) * stepConst) b := by
         rw [← Nat.mul_assoc, Nat.mul_comm 2 (2 ^ a), Nat.mul_assoc]
       rw [hmul]
+      exact (Nat.add_assoc _ _ _).symm
 
 theorem packMixBit_mod_pow (x a b : Nat) :
     packMixBit x (a + b) % 2 ^ a = packMixBit x a := by
