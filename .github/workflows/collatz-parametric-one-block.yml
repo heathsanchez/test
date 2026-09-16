@@ -1,0 +1,136 @@
+name: Collatz complete parametric one-block grammar
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-parametric-one-block.yml"
+      - "experiments/collatz_parametric_one_block.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-parametric-one-block
+  cancel-in-progress: true
+
+jobs:
+  parametric:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    strategy:
+      fail-fast: false
+      max-parallel: 5
+      matrix:
+        k: [24,26,28,30,32]
+    name: parametric-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate frozen q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          PY
+
+      - name: Run complete infinite one-block grammar
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_parametric_one_block.cpp -o /tmp/param
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/param ${{ matrix.k }} results/q14-bank.txt | tee results/census.txt
+          grep -q "VERIFIED_COMPLETE_PARAMETRIC_ESTAR_OPLUS_GRAMMAR" results/census.txt
+
+      - name: Score against finite H16 discovery and frozen bank
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          deep_o={24:238727,26:837599,28:2741655,30:9590847,32:33685571}
+          h16={24:173280,26:604877,28:1984609,30:6947941,32:23935800}
+          frozen={24:173280,26:605265,28:1986750,30:6957950,32:23976605}
+          s=Path("results/census.txt").read_text()
+          m=re.search(
+              rf"PARAMETRIC_ONE_BLOCK_DONE K={K} final_live=(\d+) "
+              r"total_descent=(\d+) total_bridge=(\d+) total_deep_o=(\d+) "
+              r"total_parametric=(\d+) e_cases=(\d+) max_valid_o_run=(\d+) "
+              r"controls=(\d+)",s)
+          assert m,s[-6000:]
+          live,des,bridge,do,param,ecases,maxorun,controls=map(int,m.groups())
+          denom=deep_o[K]-h16[K]
+          gain=deep_o[K]-live
+          out={
+              "kind":"complete_parametric_one_block",
+              "K":K,
+              "parametric_live":live,
+              "deep_o_baseline_live":deep_o[K],
+              "full_H16_live":h16[K],
+              "frozen_B24_bank_live":frozen[K],
+              "parametric_gain":gain,
+              "fraction_of_H16_gain":gain/denom,
+              "delta_vs_frozen_bank_live":live-frozen[K],
+              "total_parametric_closures":param,
+              "complete_e_cases_tested":ecases,
+              "max_valid_o_run":maxorun,
+              "controls":controls,
+          }
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("PARAMETRIC_ONE_BLOCK_FIELD",json.dumps(out,separators=(",",":")))
+          assert live<=deep_o[K]
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: parametric-one-block-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: parametric
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: parametric-one-block-b*
+          path: gathered
+      - name: Aggregate complete grammar curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("parametric-one-block-b*"):
+              p=d/"summary.json"
+              assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[24,26,28,30,32],rows
+          out={
+              "kind":"complete_parametric_one_block_curve",
+              "min_fraction_H16_gain":min(r["fraction_of_H16_gain"] for r in rows),
+              "mean_fraction_H16_gain":sum(r["fraction_of_H16_gain"] for r in rows)/len(rows),
+              "rows":rows,
+          }
+          Path("parametric-one-block-field.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("PARAMETRIC_ONE_BLOCK_CURVE",json.dumps(out,separators=(",",":"),sort_keys=True))
+          print("VERIFIED_COMPLETE_PARAMETRIC_ONE_BLOCK_CURVE")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: parametric-one-block-field
+          path: parametric-one-block-field.json
+          retention-days: 30
