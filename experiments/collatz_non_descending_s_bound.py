@@ -20,17 +20,19 @@ and hence
 
     s <= S(r) = floor(log2((3^r-1)/(2^r-1))).
 
-Thus, if r is bounded by R along a non-descending path, s is bounded by
-max_{r<=R} S(r).  If r' is also bounded by R (as it is when all episode
-states stay in r<=R), the branch schema (r,s,r') ranges over a finite set.
+Thus, if r and r' are bounded, the branch schemas of LOCALLY
+NONDECREASING episodes range over a finite set.
 
-Consequently any hypothetical infinite non-descending orbit must either:
-  A) remain in a finite bounded-r schema grammar forever; or
-  B) have unbounded r=v2(x+1).
+Important limitation: a trajectory that never falls below its ORIGINAL
+starting value may still contain locally decreasing episodes x'<x that remain
+above that original value.  Those edges are not covered by this s-bound and
+can have larger s.  Therefore this lemma alone does NOT reduce an arbitrary
+globally non-descending trajectory to a finite schema grammar.
 
 This script verifies the integer inequality exhaustively on bounded residues
-and emits the exact S(r) table.  The algebraic derivation above is general;
-the enumeration is only an implementation control.
+and emits the exact S(r) table.  The algebraic derivation above is general
+for each locally nondecreasing episode; the enumeration is only an
+implementation control.
 """
 
 from __future__ import annotations
@@ -102,9 +104,9 @@ def main():
         "max_s_bound_slack":max_slack,
         "global_statement":
             "x_prime>=x implies s<=floor(log2((3^r-1)/(2^r-1)))",
-        "obstruction_split":[
-            "bounded_r_implies_finite_branch_schema_grammar",
-            "otherwise_r_is_unbounded",
+        "scope":[
+            "locally_nondecreasing_episode_only",
+            "does_not_bound_locally_decreasing_edges_above_original_baseline",
         ],
     }
 
