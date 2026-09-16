@@ -1,0 +1,47 @@
+name: Collatz canonical sign consistency
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-canonical-sign-consistency.yml"
+      - "experiments/collatz_canonical_sign_consistency.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-canonical-sign-consistency
+  cancel-in-progress: true
+
+jobs:
+  sign:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, refine: 0 }
+          - { depth: 12, refine: 1 }
+          - { depth: 16, refine: 0 }
+          - { depth: 16, refine: 1 }
+          - { depth: 20, refine: 1 }
+    name: sign-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_canonical_sign_consistency.cpp             -o /tmp/canonical_sign
+      - name: Verify sign consistency
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/canonical_sign ${{ matrix.depth }} ${{ matrix.refine }}             | tee results/census.txt
+          grep -q "VERIFIED_CANONICAL_SIGN_CONSISTENCY" results/census.txt
+          grep -q "FINAL_GATE=CANONICAL_SIGN_D${{ matrix.depth }}_R${{ matrix.refine }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sign-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
