@@ -1,0 +1,42 @@
+name: Collatz R2 prefix freeze law
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-r2-prefix-freeze.yml"
+      - "experiments/collatz_r2_prefix_freeze_law.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-r2-prefix-freeze
+  cancel-in-progress: true
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [10, 12, 14, 16]
+    name: freeze-d${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_r2_prefix_freeze_law.cpp -o /tmp/freeze
+      - name: Run exact structural law check
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/freeze ${{ matrix.depth }} 2 | tee results/census.txt
+          grep -q "VERIFIED_R2_PREFIX_FREEZE_LAW_THROUGH_D${{ matrix.depth }}" results/census.txt
+          grep -q "FINAL_GATE=R2_PREFIX_FREEZE_D${{ matrix.depth }}_R2" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: freeze-d${{ matrix.depth }}
+          path: results
+          retention-days: 30
