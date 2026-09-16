@@ -1,0 +1,86 @@
+name: Collatz same-r return monotonicity
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-same-r-return-monotonicity.yml"
+      - "experiments/collatz_same_r_return_monotonicity.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-same-r-return-monotonicity
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - { max_r: 8,  precision: 12, cap: 256 }
+          - { max_r: 12, precision: 14, cap: 384 }
+          - { max_r: 16, precision: 16, cap: 512 }
+    name: same-r-r${{ matrix.max_r }}-p${{ matrix.precision }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test exact same-r return rank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python experiments/collatz_same_r_return_monotonicity.py             --max-r ${{ matrix.max_r }}             --precision ${{ matrix.precision }}             --cap ${{ matrix.cap }}             --out results/summary.json | tee results/census.txt
+          grep -q "VERIFIED_SAME_R_RETURN_MONOTONICITY_CENSUS" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: same-r-r${{ matrix.max_r }}-p${{ matrix.precision }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: census
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: same-r-r*
+          path: gathered
+      - name: Aggregate candidate-rank verdict
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("same-r-r*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:(r["max_r"],r["precision"]))
+          out={
+              "kind":"same_r_return_monotonicity_field",
+              "rows":rows,
+              "candidate_holds_all":all(r["candidate_strict_decrease_holds_bounded"] for r in rows),
+              "first_counterexamples":[
+                  {"max_r":r["max_r"],"precision":r["precision"],
+                   "seed":r["first_bad_seed"],"return":r["first_bad_return"]}
+                  for r in rows if r["first_bad_return"] is not None
+              ],
+          }
+          Path("same-r-return-monotonicity-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("SAME_R_RETURN_MONOTONICITY_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          if out["candidate_holds_all"]:
+              print("SAME_R_STRICT_DESCENT_SURVIVES_BOUNDED_FALSIFICATION")
+          else:
+              print("SAME_R_STRICT_DESCENT_REJECTED_BY_EXACT_COUNTEREXAMPLE")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: same-r-return-monotonicity-field
+          path: same-r-return-monotonicity-field.json
+          retention-days: 30
