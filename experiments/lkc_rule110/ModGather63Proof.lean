@@ -11,6 +11,9 @@ def modulus : Nat := 0xfffffffffffffffe
 theorem pow64_mod_eq_two : (2 ^ 64) % modulus = 2 := by
   decide
 
+theorem two_mod_eq_two : 2 % modulus = 2 := by
+  decide
+
 /-- A generic sparse bit sequence, one bit every 64 positions. -/
 def sparse (b : Nat → Nat) : Nat → Nat → Nat
   | _, 0 => 0
@@ -33,21 +36,29 @@ theorem dense_lt_pow
       rw [Nat.pow_succ]
       omega
 
-/-- Sparse and dense encodings have the same remainder modulo `2^64 - 2`.
-This formulation uses only the Nat remainder API available in the frozen
-challenge toolchain. -/
-theorem sparse_mod_eq_dense_mod
+/-- Generic modular collapse. Keeping `m` abstract is important: it prevents
+Lean from reducing a giant closed modulus while elaborating the induction
+motive. -/
+theorem sparse_mod_eq_dense_mod_generic
+    (m : Nat)
+    (h64 : (2 ^ 64) % m = 2)
+    (h2 : 2 % m = 2)
     (b : Nat → Nat) (i n : Nat) :
-    sparse b i n % modulus = dense b i n % modulus := by
+    sparse b i n % m = dense b i n % m := by
   induction n generalizing i with
   | zero => rfl
   | succ n ih =>
       simp only [sparse, dense, Nat.shiftLeft_eq]
-      rw [Nat.add_mod, Nat.add_mod, Nat.mul_mod, Nat.mul_mod,
-          pow64_mod_eq_two, ih]
-      have htwo : 2 % modulus = 2 := by decide
-      rw [htwo]
-      simp [Nat.mul_comm]
+      rw [Nat.add_mod, Nat.add_mod]
+      congr 1
+      rw [Nat.mul_mod, h64, ih, Nat.mul_mod, h2]
+      rw [Nat.mul_comm]
+
+/-- Sparse and dense encodings have the same remainder modulo `2^64 - 2`. -/
+theorem sparse_mod_eq_dense_mod
+    (b : Nat → Nat) (i n : Nat) :
+    sparse b i n % modulus = dense b i n % modulus :=
+  sparse_mod_eq_dense_mod_generic modulus pow64_mod_eq_two two_mod_eq_two b i n
 
 /-- For at most 63 lanes the dense value is strictly below `2^64 - 2`,
 so the modular residue is the dense integer itself. -/
