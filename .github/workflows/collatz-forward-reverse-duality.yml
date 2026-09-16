@@ -1,0 +1,42 @@
+name: Collatz forward reverse duality
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-forward-reverse-duality.yml"
+      - "experiments/collatz_forward_reverse_duality.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-forward-reverse-duality
+  cancel-in-progress: true
+
+jobs:
+  dual:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [12, 16, 18]
+    name: dual-d${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_forward_reverse_duality.cpp -o /tmp/dual
+      - name: Run exact duality check
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/dual ${{ matrix.depth }} 0             | tee results/census.txt
+          grep -q "VERIFIED_LOW12_FULL_REVERSE_DUALITY" results/census.txt
+          grep -q "FINAL_GATE=FORWARD_REVERSE_DUALITY_D${{ matrix.depth }}_R0" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: dual-d${{ matrix.depth }}
+          path: results
+          retention-days: 30
