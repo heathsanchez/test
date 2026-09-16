@@ -1,0 +1,108 @@
+name: Collatz global bridge quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-global-bridge-quotient.yml"
+      - "experiments/collatz_global_bridge_quotient.cpp"
+      - "experiments/collatz_reverse_predecessor_sparse.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-bridge-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        h: [20,24,28,30]
+    name: global-bridge-h${{ matrix.h }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate frozen exact q14 bank
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python - <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0,str(Path("experiments").resolve()))
+          from collatz_reverse_predecessor_sparse import enumerate_first_contractions,sparse_quotient
+          certs=enumerate_first_contractions(14)
+          killed,total,selected,redundant=sparse_quotient(certs,14)
+          assert (killed,total,len(selected))==(2233499,4782969,3265)
+          with open("results/q14-bank.txt","w") as f:
+              for c in selected:
+                  f.write(f"{c.o} {c.steps} {c.c} {c.residue}\n")
+          print("GLOBAL_Q14_BANK_READY",len(selected))
+          PY
+      - name: Build and run exact all-scale bridge quotient
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_bridge_quotient.cpp -o /tmp/gq
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/gq ${{ matrix.h }} results/q14-bank.txt | tee results/census.txt
+          grep -q "VERIFIED_GLOBAL_COALESCED_CONSEQUENCE_QUOTIENT" results/census.txt
+          ! grep -q "FAIL" results/census.txt
+          ! grep -q "OVERFLOW" results/census.txt
+      - name: Parse cell
+        run: |
+          python - <<'PY'
+          import json,re
+          H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"GLOBAL_QUOTIENT_DONE H={H} final_t=(\d+) live=(\d+) "
+              r"peak=(\d+) peak_t=(\d+) total_merged=(\d+) total_closed=(\d+)",s)
+          assert m,s[-7000:]
+          final_t,live,peak,peak_t,merged,closed=map(int,m.groups())
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"H":H,"final_t":final_t,"live":live,"peak":peak,
+               "peak_t":peak_t,"merged":merged,"closed":closed,
+               "global_closure":live==0,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_BRIDGE_QUOTIENT_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-bridge-h${{ matrix.h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-bridge-h*
+          path: gathered
+      - name: Aggregate all-scale bridge curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("global-bridge-h*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["H"])
+          assert [r["H"] for r in rows]==[20,24,28,30],rows
+          out={"kind":"global_bridge_quotient_curve","rows":rows,
+               "global_closure_found":any(r["global_closure"] for r in rows)}
+          Path("global-bridge-quotient-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_BRIDGE_QUOTIENT_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-bridge-quotient-field
+          path: global-bridge-quotient-field.json
+          retention-days: 30
