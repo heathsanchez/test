@@ -10,6 +10,11 @@ on:
       - 'experiments/lkc_rule110/DenseByteModProof.lean'
       - 'experiments/lkc_rule110/DenseByteBoundProof.lean'
       - 'experiments/lkc_rule110/DenseByteBaseProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSeqBoundProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSeqAddProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSeqTailProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSeqPowProof.lean'
+      - 'experiments/lkc_rule110/DenseByteSeqDoubleProof.lean'
       - 'experiments/lkc_rule110/DenseByteConcatProof.lean'
       - 'experiments/lkc_rule110/DenseByteSequenceProof.lean'
       - '.github/workflows/lkc-rule110-byte-sequence.yml'
@@ -39,7 +44,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteDecompProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteConcatProof DenseByteSequenceProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof DenseByteSixProof DenseByteDecompProof DenseByteModProof DenseByteBoundProof DenseByteBaseProof DenseByteSeqBoundProof DenseByteSeqAddProof DenseByteSeqTailProof DenseByteSeqPowProof DenseByteSeqDoubleProof DenseByteConcatProof DenseByteSequenceProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -78,7 +83,22 @@ jobs:
       - name: Byte base export
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteBaseProof.olean DenseByteBaseProof.lean
-      - name: Byte concat
+      - name: Sequence bound
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqBoundProof.olean DenseByteSeqBoundProof.lean
+      - name: Sequence add
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqAddProof.olean DenseByteSeqAddProof.lean
+      - name: Sequence tail
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqTailProof.olean DenseByteSeqTailProof.lean
+      - name: Power bridge
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqPowProof.olean DenseByteSeqPowProof.lean
+      - name: Sequence double
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteSeqDoubleProof.olean DenseByteSeqDoubleProof.lean
+      - name: Byte concat export
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteConcatProof.olean DenseByteConcatProof.lean
       - name: Byte export
