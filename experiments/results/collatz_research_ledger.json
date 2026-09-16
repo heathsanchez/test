@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "scope": "research checkpoint, not completion condition A or B",
+  "entries": [
+    {
+      "experiment": "normalized_reverse_frontier",
+      "branch": "collatz-refinement-frontier-v1",
+      "commit": "dde95463d20f433b28898c129b18729926f152b8",
+      "hypothesis": "w=v-r and Pareto (rho,D) preserve reverse-affine acceptance",
+      "result": "algebraic derivation independently reviewed",
+      "verification_level": "PROVED",
+      "formal_verification": false,
+      "residual": "coverage of arbitrary q and all hereditary constructors",
+      "reusable_capability": "exact refinement normalization",
+      "independently_verified": true
+    },
+    {
+      "experiment": "frontier_B12_R16",
+      "branch": "collatz-refinement-frontier-v1",
+      "commit": "a3f2d96bb123acbb672fea274ecbc1777ff00b7a",
+      "workflow_run": 35064390768,
+      "hypothesis": "bounded refinement closes all B12 representatives",
+      "result": "77 closed, 67 unresolved at R16",
+      "verification_level": "FALSIFIED",
+      "residual": "67 bounded-search residuals; not mathematical counterexamples",
+      "reusable_capability": "memoized exact frontiers",
+      "independently_verified": false
+    },
+    {
+      "experiment": "forward_witness_DAG",
+      "branch": "collatz-forward-witness-audit-v1",
+      "source_commit": "cc5d71145235ea7ca061bc472061df36569639df",
+      "hypothesis": "successful witnesses collapse to a stable small exact graph",
+      "result": "B24 3073305 tail edges -> 1435287 distinct edges; all172868 representatives descend",
+      "verification_level": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+      "residual": "no stable small grammar; no global constructor closure",
+      "reusable_capability": "threshold-preserving shared witness graph and affine cylinder compiler",
+      "independently_verified": true
+    },
+    {
+      "experiment": "frozen_novel_transfer",
+      "branch": "collatz-forward-witness-audit-v1",
+      "source_commit": "cc5d71145235ea7ca061bc472061df36569639df",
+      "hypothesis": "endpoint suffixes transfer to unseen source integers",
+      "result": "0 novel source coverage at B16,B20,B24",
+      "verification_level": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+      "residual": "156266 novel B24 sources",
+      "reusable_capability": "source-level leakage control",
+      "independently_verified": true
+    },
+    {
+      "experiment": "minimal_witness_transfer",
+      "branch": "collatz-forward-witness-audit-v1",
+      "source_commit": "cc5d71145235ea7ca061bc472061df36569639df",
+      "hypothesis": "shorter certified cylinders improve reuse",
+      "result": "35383 rules vs250743; one novel B24 source covered",
+      "verification_level": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+      "counterexample": null,
+      "residual": "156265 novel B24 sources unclosed by frozen library",
+      "reusable_capability": "minimal first-descent rule extraction",
+      "independently_verified": true
+    },
+    {
+      "experiment": "bounded_word_obstruction",
+      "branch": "collatz-forward-witness-audit-v1",
+      "hypothesis": "a finite fixed-length direct-descent word library can cover all positive integers",
+      "result": "false: 2^m-1 has no descent within first m steps",
+      "verification_level": "PROVED",
+      "formal_verification": false,
+      "counterexample": "for library max horizon H, choose m>H and n=2^m-1",
+      "residual": "parameterized or recursive unbounded-return rules remain possible",
+      "reusable_capability": "reject bounded-horizon proof architectures",
+      "independently_verified": true
+    },
+    {
+      "experiment": "global_hereditary_closure",
+      "hypothesis": "a finite parameterized capability system closes every residual constructor with well-founded progress",
+      "result": "not established",
+      "verification_level": "UNKNOWN",
+      "residual": "constructor coverage plus variable-return rank",
+      "reusable_capability": null,
+      "independently_verified": false
+    }
+  ]
+}

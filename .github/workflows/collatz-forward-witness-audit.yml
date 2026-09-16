@@ -1,0 +1,54 @@
+name: Collatz forward witness audit
+on:
+  push:
+    branches: [collatz-forward-witness-audit-v1]
+    paths:
+      - experiments/collatz_witness_compiler.py
+      - experiments/collatz_minimal_witness_transfer.py
+      - experiments/collatz_export_boundaries.cpp
+      - experiments/collatz_structural_audit.py
+      - experiments/test_collatz_witness_compiler.py
+      - .github/workflows/collatz-forward-witness-audit.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+      - name: Reproduce exact witnesses and frozen transfer
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python3 --version | tee results/runtime.txt
+          g++ --version >> results/runtime.txt
+          g++ -O2 -std=c++20 -Wall -Wextra -Werror experiments/collatz_export_boundaries.cpp -o /tmp/export-boundaries
+          for k in 12 16 20 24; do
+            /tmp/export-boundaries "$k" > "results/b${k}.csv"
+          done
+          python3 experiments/test_collatz_witness_compiler.py
+          python3 experiments/collatz_witness_compiler.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --out results/witness.json
+          python3 experiments/collatz_minimal_witness_transfer.py results/b12.csv results/b16.csv results/b20.csv results/b24.csv --out results/minimal.json
+          python3 experiments/collatz_structural_audit.py > results/structural.json
+          python3 - <<'PY'
+          import json
+          a=json.load(open('results/witness.json'))['results']
+          assert [r['closed'] for r in a]==[144,1363,15870,172868]
+          assert not any(r['unresolved'] for r in a)
+          assert a[-1]['max_extra_steps']==263
+          assert a[-1]['unique_edges']==1435287
+          assert a[-1]['frozen_novel_source_covered']==0
+          b=json.load(open('results/minimal.json'))['results'][-1]
+          assert b['novel_covered']==1 and b['frozen_rules']==35383
+          assert b['first_novel_successes']==[13822111]
+          print('VERIFIED_FINITE_WITNESS_AUDIT_NOT_GLOBAL_CLOSURE')
+          PY
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: collatz-forward-witness-audit
+          path: results
+          retention-days: 30

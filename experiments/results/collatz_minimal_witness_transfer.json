@@ -1,0 +1,103 @@
+{
+  "status": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+  "results": [
+    {
+      "K": 12,
+      "families": 144,
+      "frozen_rules": 0,
+      "novel_sources": 144,
+      "novel_covered": 0,
+      "all_covered": 0,
+      "serialized_restart_exact": true,
+      "ablated_coverage": 0,
+      "first_novel_successes": [],
+      "first_novel_residuals": [
+        27,
+        2075,
+        1051,
+        3099,
+        1307,
+        3355,
+        2843,
+        1819,
+        3867,
+        1179
+      ],
+      "rules_after_training": 317
+    },
+    {
+      "K": 16,
+      "families": 1363,
+      "frozen_rules": 317,
+      "novel_sources": 1234,
+      "novel_covered": 0,
+      "all_covered": 129,
+      "serialized_restart_exact": true,
+      "ablated_coverage": 0,
+      "first_novel_successes": [],
+      "first_novel_residuals": [
+        32795,
+        49179,
+        8219,
+        40987,
+        24603,
+        57371,
+        12315,
+        28699,
+        61467,
+        6171
+      ],
+      "rules_after_training": 3156
+    },
+    {
+      "K": 20,
+      "families": 15870,
+      "frozen_rules": 3156,
+      "novel_sources": 14369,
+      "novel_covered": 0,
+      "all_covered": 1501,
+      "serialized_restart_exact": true,
+      "ablated_coverage": 0,
+      "first_novel_successes": [],
+      "first_novel_residuals": [
+        524315,
+        262171,
+        786459,
+        131099,
+        655387,
+        393243,
+        917531,
+        65563,
+        589851,
+        327707
+      ],
+      "rules_after_training": 35383
+    },
+    {
+      "K": 24,
+      "families": 172868,
+      "frozen_rules": 35383,
+      "novel_sources": 156266,
+      "novel_covered": 1,
+      "all_covered": 16603,
+      "serialized_restart_exact": true,
+      "ablated_coverage": 0,
+      "first_novel_successes": [
+        13822111
+      ],
+      "first_novel_residuals": [
+        8388635,
+        4194331,
+        12582939,
+        10485787,
+        6291483,
+        14680091,
+        9437211,
+        13631515,
+        3145755,
+        11534363
+      ]
+    }
+  ],
+  "scope": "novel source integers, not disjoint hereditary families"
+}

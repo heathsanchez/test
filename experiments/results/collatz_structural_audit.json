@@ -1,0 +1,32 @@
+{
+  "status": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+  "all_odd_identity_checks": 8255,
+  "transfer_replays": [
+    {
+      "q": "0",
+      "n": "13822111",
+      "endpoint": "13299211"
+    },
+    {
+      "q": "1",
+      "n": "148039839",
+      "endpoint": "142439374"
+    },
+    {
+      "q": "2",
+      "n": "282257567",
+      "endpoint": "271579537"
+    },
+    {
+      "q": "100",
+      "n": "13435594911",
+      "endpoint": "12927315511"
+    },
+    {
+      "q": "100000000000000000000000000000000000000000000000000",
+      "n": "13421772800000000000000000000000000000000000000000013822111",
+      "endpoint": "12914016300000000000000000000000000000000000000000013299211"
+    }
+  ],
+  "universal_proofs": "See COLLATZ_FORWARD_WITNESS_AUDIT.md; not formalized in Lean"
+}
