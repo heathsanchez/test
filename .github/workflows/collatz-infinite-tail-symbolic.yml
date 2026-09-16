@@ -1,0 +1,115 @@
+name: Collatz unbounded symbolic tail
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-infinite-tail-symbolic.yml"
+      - "experiments/collatz_infinite_tail_symbolic.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-infinite-tail-symbolic
+  cancel-in-progress: true
+
+jobs:
+  tail:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix:
+        include:
+          - { min_n: 1048576,       h: 12 }
+          - { min_n: 1048576,       h: 16 }
+          - { min_n: 1048576,       h: 20 }
+          - { min_n: 1048576,       h: 24 }
+          - { min_n: 1099511627776, h: 12 }
+          - { min_n: 1099511627776, h: 16 }
+          - { min_n: 1099511627776, h: 20 }
+          - { min_n: 1099511627776, h: 24 }
+    name: tail-n${{ matrix.min_n }}-h${{ matrix.h }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact unbounded verifier
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_infinite_tail_symbolic.cpp -o /tmp/tail
+      - name: Explore exact infinite tail
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/tail ${{ matrix.min_n }} ${{ matrix.h }} results/frontier.txt             | tee results/census.txt
+          grep -q "VERIFIED_INFINITE_TAIL_SYMBOLIC_QUOTIENT" results/census.txt
+          ! grep -q "INFINITE_TAIL_RANGE_FAIL" results/census.txt
+      - name: Parse quotient cell
+        run: |
+          python - <<'PY'
+          import json,re
+          N=int("${{ matrix.min_n }}"); H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"INFINITE_TAIL_RESULT min_n={N} H={H} "
+              r"nodes=(\d+) closed_leaves=(\d+) direct_closed=(\d+) "
+              r"cone_closed=(\d+) open_leaves=(\d+) max_depth=(\d+)",s)
+          assert m,s[-4000:]
+          nodes,closed,direct,cone,open_,depth=map(int,m.groups())
+          lines=sum(1 for x in open("results/frontier.txt") if x.strip())
+          assert lines==open_,(lines,open_)
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={"min_n":N,"H":H,"nodes":nodes,"closed_leaves":closed,
+               "direct_closed":direct,"cone_closed":cone,
+               "open_leaves":open_,"max_depth":depth,
+               "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1])}
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("INFINITE_TAIL_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: infinite-tail-n${{ matrix.min_n }}-h${{ matrix.h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: tail
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: infinite-tail-n*
+          path: gathered
+      - name: Aggregate unbounded quotient curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("infinite-tail-n*-h*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:(r["min_n"],r["H"]))
+          assert len(rows)==8,rows
+          groups={}
+          for r in rows: groups.setdefault(r["min_n"],[]).append(r)
+          for N,rs in groups.items():
+              rs.sort(key=lambda x:x["H"])
+              # Every open depth-H leaf has at most two children at H+1;
+              # no monotonic count assumption is imposed.
+              assert [x["H"] for x in rs]==[12,16,20,24]
+          out={"kind":"exact_unbounded_symbolic_tail_curve","rows":rows,
+               "any_closed_tail":any(r["open_leaves"]==0 for r in rows)}
+          Path("infinite-tail-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("INFINITE_TAIL_FIELD",json.dumps(out,separators=(",",":")))
+          if out["any_closed_tail"]:
+              print("UNBOUNDED_SYMBOLIC_TAIL_FULL_CLOSURE_FOUND")
+          else:
+              print("UNBOUNDED_SYMBOLIC_TAIL_OBSTRUCTION_PERSISTS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: infinite-tail-field
+          path: infinite-tail-field.json
+          retention-days: 30
