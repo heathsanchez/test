@@ -1,0 +1,48 @@
+name: Collatz global minimal reverse chain
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-global-minimal-reverse-chain.yml"
+      - "experiments/collatz_global_minimal_reverse_chain.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-minimal-reverse-chain
+  cancel-in-progress: true
+
+jobs:
+  chain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, chain: 8 }
+          - { depth: 12, chain: 12 }
+          - { depth: 16, chain: 8 }
+          - { depth: 16, chain: 16 }
+          - { depth: 20, chain: 8 }
+          - { depth: 20, chain: 20 }
+    name: minreverse-d${{ matrix.depth }}-c${{ matrix.chain }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_minimal_reverse_chain.cpp -o /tmp/minrev
+      - name: Run full deterministic reverse chain
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/minrev ${{ matrix.depth }} ${{ matrix.chain }} 1             | tee results/census.txt
+          grep -q "REVERSE_EO_NO_PARTIAL_BASELINE" results/census.txt
+          grep -q "FINAL_GATE=GLOBAL_MINREVERSE_D${{ matrix.depth }}_M${{ matrix.chain }}_E1" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: minreverse-d${{ matrix.depth }}-c${{ matrix.chain }}
+          path: results
+          retention-days: 30
