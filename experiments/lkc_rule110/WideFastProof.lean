@@ -139,7 +139,7 @@ theorem fastInit_ca_eq (n : Nat) :
       unfold stepConst
       decide
     omega
-  unfold fastInit initPackedByteNat
+  dsimp [fastInit, initPackedByteNat]
   rw [fastPayload_eq (caSeed n + 3 * stepConst) hb]
 
 theorem fastInit_v27_eq (n : Nat) :
