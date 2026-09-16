@@ -6,7 +6,8 @@ on:
     paths:
       - ".github/workflows/collatz-cone-reduction-lean.yml"
       - "formal/CollatzConeReduction.lean"
-      - "formal/CollatzShortcutCone.lean"\n      - "formal/CollatzDeterministicCone.lean"
+      - "formal/CollatzShortcutCone.lean"
+      - "formal/CollatzDeterministicCone.lean"
   workflow_dispatch:
 
 jobs:
@@ -21,11 +22,13 @@ jobs:
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
             | sh -s -- -y --default-toolchain leanprover/lean4:v4.19.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Check reduction theorems
+      - name: Check exact reduction theorems
         run: |
           set -euo pipefail
           lean --version
           LEAN_PATH=formal lean -o formal/CollatzConeReduction.olean formal/CollatzConeReduction.lean
-          LEAN_PATH=formal lean formal/CollatzShortcutCone.lean
+          LEAN_PATH=formal lean -o formal/CollatzShortcutCone.olean formal/CollatzShortcutCone.lean
+          LEAN_PATH=formal lean formal/CollatzDeterministicCone.lean
           echo VERIFIED_LEAN_LOWER_CONE_STRONG_INDUCTION
-          echo VERIFIED_LEAN_ODD_ONLY_COLLATZ_REDUCTION\n          echo VERIFIED_LEAN_DETERMINISTIC_CONE_EQUIVALENCE
+          echo VERIFIED_LEAN_ODD_ONLY_COLLATZ_REDUCTION
+          echo VERIFIED_LEAN_DETERMINISTIC_CONE_EQUIVALENCE
