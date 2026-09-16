@@ -20,11 +20,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { depth: 12, macro: 6, emax: 5 }
+          - { depth: 12, macro: 8, emax: 1 }
           - { depth: 12, macro: 8, emax: 5 }
-          - { depth: 16, macro: 6, emax: 5 }
+          - { depth: 16, macro: 8, emax: 1 }
           - { depth: 16, macro: 8, emax: 5 }
-    name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}
+    name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}-e${{ matrix.emax }}
     steps:
       - uses: actions/checkout@v4
       - name: Build
@@ -41,6 +41,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}
+          name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}-e${{ matrix.emax }}
           path: results
           retention-days: 30
