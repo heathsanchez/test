@@ -1,10 +1,10 @@
-name: LKC Rule110 dense base probe
+name: LKC Rule110 dense byte probe
 
 on:
   push:
     branches: [lkc-rule110-wide-hierarchy-v39]
     paths:
-      - 'experiments/lkc_rule110/DenseBaseProof.lean'
+      - 'experiments/lkc_rule110/WideDenseByteProof.lean'
       - '.github/workflows/lkc-rule110-dense-base.yml'
   workflow_dispatch:
 
@@ -32,7 +32,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof DenseBaseProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseByteProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -50,6 +50,6 @@ jobs:
       - name: Wide gather
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
-      - name: Dense base
+      - name: Dense byte
         working-directory: lkc/problems/ca-rule110
-        run: LEAN_PATH=".:$LEAN_PATH" lake env lean DenseBaseProof.lean
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseByteProof.lean
