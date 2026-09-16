@@ -1,0 +1,46 @@
+name: Collatz ternary trie quotient
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-ternary-trie-quotient.yml"
+      - "experiments/collatz_ternary_trie_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-ternary-trie-quotient
+  cancel-in-progress: true
+
+jobs:
+  trie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 8, refine: 0 }
+          - { depth: 8, refine: 2 }
+          - { depth: 10, refine: 2 }
+          - { depth: 12, refine: 2 }
+    name: trie-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_ternary_trie_quotient.cpp -o /tmp/trieq
+      - name: Run exact ternary trie quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/trieq ${{ matrix.depth }} ${{ matrix.refine }}             | tee results/census.txt
+          grep -q "VERIFIED_TERNARY_TRIE_FORWARD_PRODUCT_QUOTIENT" results/census.txt
+          grep -q "FINAL_GATE=TERNARY_TRIE_QUOTIENT_D${{ matrix.depth }}_R${{ matrix.refine }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: trie-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
