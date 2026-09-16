@@ -4,6 +4,10 @@ on:
   push:
     branches: [lkc-rule110-wide-hierarchy-v39]
     paths:
+      - 'experiments/lkc_rule110/DenseAlgebraProof.lean'
+      - 'experiments/lkc_rule110/WideDenseBaseProof.lean'
+      - 'experiments/lkc_rule110/WideDenseSmallProof.lean'
+      - 'experiments/lkc_rule110/WideDenseLargeProof.lean'
       - 'experiments/lkc_rule110/WideDenseProof.lean'
       - '.github/workflows/lkc-rule110-wide-dense-v41.yml'
   workflow_dispatch:
@@ -32,7 +36,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof DenseAlgebraProof WideDenseBaseProof WideDenseSmallProof WideDenseLargeProof WideDenseProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -50,6 +54,18 @@ jobs:
       - name: Wide gather
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
-      - name: Dense payload
+      - name: Dense algebra
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseAlgebraProof.olean DenseAlgebraProof.lean
+      - name: Dense base
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseBaseProof.olean WideDenseBaseProof.lean
+      - name: Dense small
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseSmallProof.olean WideDenseSmallProof.lean
+      - name: Dense large
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseLargeProof.olean WideDenseLargeProof.lean
+      - name: Dense export
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseProof.lean
