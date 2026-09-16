@@ -38,7 +38,7 @@ theorem packMixBit_add (x a b : Nat) :
         unfold stepConst
         omega
       rw [hx, Nat.mul_add]
-      omega
+      simp only [Nat.add_assoc]
 
 theorem packMixBit_mod_pow (x a b : Nat) :
     packMixBit x (a + b) % 2 ^ a = packMixBit x a := by
@@ -49,8 +49,9 @@ theorem packMixBit_mod_pow (x a b : Nat) :
 theorem dense1_eq (x : Nat) :
     dense1 x = packMixBit x 1 := by
   unfold dense1
-  rw [bits1_eq_mix, mixBit31Nat_eq, boolToNat_eq_if]
-  simp [packMixBit]
+  change bits1 x = (if mixBit31 x then 1 else 0)
+  exact (bits1_eq_mix x).trans
+    ((mixBit31Nat_eq x).trans (boolToNat_eq_if (mixBit31 x)))
 
 theorem dense2_eq (x : Nat) :
     dense2 x = packMixBit x 2 := by
