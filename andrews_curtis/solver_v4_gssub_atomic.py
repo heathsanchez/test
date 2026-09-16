@@ -71,6 +71,75 @@ def quotient_neighbor_keys(ns, state, max_len):
     return out
 
 
+def compiled_superneighbors_grouped(core, ns, state, desired_keys, total_cap):
+    """Compile all requested quotient neighbors in one exact orientation pass.
+
+    V4 originally called V2's single-target compiler once for every quotient
+    neighbor.  That repeated the same target/source orientation enumeration many
+    times for one physical state.  Here the exact signed compiler is enumerated
+    once, candidates are grouped by the resulting GS-Sub key, and exact physical
+    representatives are deduplicated by their shortest official atomic edge.
+    The legacy compiler remains a once-per-state coverage fallback for any key
+    missed by the signed compiler.
+    """
+    desired_keys = set(desired_keys)
+    if not desired_keys:
+        return {}
+
+    grouped = {key: {} for key in desired_keys}
+    for i in (0, 1):
+        j = 1 - i
+        target_opts = v2.orientation_options(core, state[i], i)
+        source_opts = v2.orientation_options_no_invert(core, state[j], j)
+        mul_pos = 2 if i == 0 else 4
+        mul_neg = 3 if i == 0 else 5
+
+        for tw, tseq in target_opts:
+            if not tw:
+                continue
+            for sw, sseq in source_opts:
+                if not sw:
+                    continue
+                undo_source = tuple(core.INVERSE_MOVE[m] for m in reversed(sseq))
+                for source_word, mul in ((sw, mul_pos), (core.invert(sw), mul_neg)):
+                    if tw[-1] != -source_word[0]:
+                        continue
+                    new_word = core.free_reduce(tw + source_word)
+                    nxt = (new_word, state[1]) if i == 0 else (state[0], new_word)
+                    if v2.total_len(nxt) > total_cap:
+                        continue
+                    key = v2.gssub_key(ns, nxt)
+                    if key not in desired_keys:
+                        continue
+
+                    edge = tuple(tseq) + tuple(sseq) + (mul,) + undo_source
+                    chk = state
+                    for move in edge:
+                        chk = core.apply_move(chk, move)
+                    if chk != nxt:
+                        raise RuntimeError("grouped optimized compiled supermove mismatch")
+
+                    prev = grouped[key].get(nxt)
+                    if prev is None or len(edge) < len(prev):
+                        grouped[key][nxt] = edge
+
+    missing = {key for key, by_exact in grouped.items() if not by_exact}
+    if missing:
+        legacy = v2.compiled_superneighbors(core, ns, state, total_cap)
+        for key in missing:
+            hit = legacy.get(key)
+            if hit is None:
+                continue
+            nxt, edge = hit
+            grouped[key][nxt] = tuple(edge)
+
+    return {
+        key: list(by_exact.items())
+        for key, by_exact in grouped.items()
+        if by_exact
+    }
+
+
 def reconstruct(parent, parent_edge, state):
     chunks = []
     cur = state
@@ -158,12 +227,11 @@ def representative_atomic_search(
 
         desired_keys = quotient_neighbor_keys(ns, state, quotient_total_cap)
         transitions += len(desired_keys)
-        for desired in desired_keys:
-            cands = v2.compiled_superneighbor_candidates(core, ns, state, desired, total_cap)
-            if not cands:
-                hit = v2.compiled_superneighbors(core, ns, state, total_cap).get(desired)
-                if hit is not None:
-                    cands = [hit]
+        grouped = compiled_superneighbors_grouped(
+            core, ns, state, desired_keys, total_cap
+        )
+        for desired in sorted(desired_keys):
+            cands = grouped.get(desired, ())
             compiled_edges += len(cands)
 
             for nxt, edge in cands:
