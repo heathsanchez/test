@@ -20,12 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { depth: 12, macro: 0, emax: 5 }
-          - { depth: 12, macro: 4, emax: 5 }
           - { depth: 12, macro: 6, emax: 5 }
-          - { depth: 16, macro: 4, emax: 5 }
+          - { depth: 12, macro: 8, emax: 5 }
           - { depth: 16, macro: 6, emax: 5 }
-          - { depth: 20, macro: 6, emax: 5 }
+          - { depth: 16, macro: 8, emax: 5 }
     name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}
     steps:
       - uses: actions/checkout@v4
