@@ -80,7 +80,6 @@ class ReturnInterfaceTests(unittest.TestCase):
         self.assertEqual(result['repeats'],3)
         self.assertEqual(result['out'],m.replay(W*3,1023))
         self.assertEqual(result['minimum_n'],4*1023-1)
-        # Expanding complete return with an earlier decreasing prefix.
         source,_=m.reset_witness(10)
         c=m.certificate(V+W+W)
         result=m.jump_repetitions(c,source)
@@ -118,6 +117,24 @@ class ReturnInterfaceTests(unittest.TestCase):
             self.assertEqual(z['injection_valuation'],2)
             self.assertEqual(z['valuation_after'],L)
             self.assertEqual(z['cancellation_depth'],L+new['D']-2)
+
+    def test_disjoint_return_cylinders_force_switch_resonance(self):
+        spec=importlib.util.spec_from_file_location('interface',P)
+        m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
+        self.assertTrue(hasattr(m,'cylinder_separation'),'Return-cylinder separation theorem is missing')
+        old=m.certificate(((2,1,2),))
+        new=m.certificate(((2,1,1),(1,1,2)))
+        s=m.cylinder_separation(old,new)
+        self.assertTrue(s['disjoint'])
+        self.assertEqual(s['separation_valuation'],2)
+        self.assertEqual(s['injection_valuation'],2)
+        self.assertEqual(s['shorter_domain_bits'],4)
+        self.assertLess(s['separation_valuation'],s['shorter_domain_bits'])
+        for L in (3,10,100):
+            start,end=m.reset_witness(L)
+            z=m.switch_resonance(old,new,start,end)
+            self.assertEqual(z['valuation_before'],s['separation_valuation'])
+            self.assertTrue(z['resonant'])
 
     def test_resonant_transition_graph_extracts_only_recursive_sccs(self):
         self.assertTrue(R.exists(),'Resonant transition graph experiment is missing')
