@@ -70,7 +70,7 @@ jobs:
       fail-fast: false
       matrix:
         cid: [ac-01910, ac-04501]
-        depth_weight: [0.25, 0.75, 2.0, 6.0]
+        depth_weight: [0.0, 0.001, 0.005, 0.02]
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
