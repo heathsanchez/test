@@ -3,6 +3,11 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
 base = (ROOT / "Submission_v47.lean").read_text()
+base = base.replace(
+    "set_option linter.unusedVariables false\n",
+    "set_option linter.unusedVariables false\nset_option linter.unnecessarySimpa false\n",
+    1,
+)
 proof = (ROOT / "TwoStepCircuitProof.lean").read_text()
 proof = "\n".join(line for line in proof.splitlines() if not line.startswith("import "))
 
