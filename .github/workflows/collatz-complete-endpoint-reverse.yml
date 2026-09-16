@@ -1,0 +1,96 @@
+name: Collatz complete endpoint reverse language
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-complete-endpoint-reverse.yml"
+      - "experiments/collatz_complete_endpoint_reverse.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-complete-endpoint-reverse
+  cancel-in-progress: true
+
+jobs:
+  complete:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        k: [18,20,22,24]
+    name: endpoint-b${{ matrix.k }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20 experiments/collatz_complete_endpoint_reverse.cpp -o /tmp/endpoint
+      - name: Decide all reverse E O words directly from endpoint
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/endpoint ${{ matrix.k }} | tee results/census.txt
+          grep -q "VERIFIED_COMPLETE_ENDPOINT_REVERSE_LANGUAGE" results/census.txt
+      - name: Record exact residual
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          K=int("${{ matrix.k }}")
+          s=Path("results/census.txt").read_text()
+          m=re.search(
+              rf"COMPLETE_ENDPOINT_REVERSE_DONE K={K} final_live=(\d+) "
+              r"total_direct=(\d+) total_reverse=(\d+) families_searched=(\d+) "
+              r"search_nodes=(\d+) memo_hits=(\d+) e_cases=(\d+) "
+              r"o_run_cases=(\d+) coefficient_prunes=(\d+) "
+              r"max_nodes_one_family=(\d+) max_nodes_family_b=(\d+) "
+              r"max_blocks=(\d+) max_word_steps=(\d+) max_root_v3=(\d+) "
+              r"controls=(\d+)",s)
+          assert m,s[-8000:]
+          vals=list(map(int,m.groups()))
+          keys=["live","direct","reverse","families","nodes","memo","e_cases",
+                "o_runs","prunes","max_nodes_family","max_family_b","max_blocks",
+                "max_word_steps","max_root_v3","controls"]
+          out={"kind":"complete_endpoint_reverse","K":K,**dict(zip(keys,vals))}
+          Path("results/summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("COMPLETE_ENDPOINT_REVERSE_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: complete-endpoint-reverse-b${{ matrix.k }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: complete
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: complete-endpoint-reverse-b*
+          path: gathered
+      - name: Aggregate exact endpoint curve
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("complete-endpoint-reverse-b*"):
+              p=d/"summary.json";assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["K"])
+          assert [r["K"] for r in rows]==[18,20,22,24],rows
+          print("COMPLETE_ENDPOINT_REVERSE_CURVE",json.dumps(rows,separators=(",",":")))
+          if any(r["live"]==0 for r in rows):
+              print("FINITE_COMPLETE_ENDPOINT_CLOSURE_FOUND")
+          else:
+              print("COMPLETE_ENDPOINT_AFFINE_REVERSE_RESIDUAL_PERSISTS")
+          print("VERIFIED_COMPLETE_ENDPOINT_REVERSE_CURVE")
+          PY
