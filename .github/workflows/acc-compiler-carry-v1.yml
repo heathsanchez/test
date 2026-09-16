@@ -1,0 +1,214 @@
+name: ACC Compiler Carry V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-compiler-carry-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  compile_residual:
+    strategy:
+      fail-fast: false
+      matrix:
+        cid:
+          - ac-04501
+          - ac-01910
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          SWAP=/swapfile-extra-acc-carry
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Re-run fixed search with carry-symmetry exact compiler
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          printf '["%s"]\n' '${{ matrix.cid }}' > /tmp/targets.json
+          out="acc_competitive/compiler_carry/${{ matrix.cid }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v3_gssub_carry.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/targets.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes 250000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 32 \
+            --depth-weight 0 \
+            --search-seconds 3000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-compiler-carry-${{ matrix.cid }}
+          path: |
+            acc_competitive/compiler_carry/
+          retention-days: 90
+
+  consolidate_publish:
+    needs: compile_residual
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover compiler evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/carry
+          gh run download "${{ github.run_id }}" --pattern 'acc-compiler-carry-*' -D /tmp/carry || true
+          find /tmp/carry -name search_results.json -print | sort
+          find /tmp/carry -name submission_v2.txt -print | sort
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Merge only pinned-verifier-clean AC candidates
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/carry').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=Path('acc_competitive/compiler_carry_raw_ac.txt')
+          out.write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('CARRY_VERIFIED_AC_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+
+      - name: Proof-atlas salvage after mechanism change
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/compiler_carry_atlas
+          if [ ! -s acc_competitive/compiler_carry_raw_ac.txt ]; then
+            echo "NO_CARRY_VERIFIED_CANDIDATES"
+            : > acc_competitive/compiler_carry_atlas/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/compiler_carry_raw_ac.txt' \
+            --out-dir acc_competitive/compiler_carry_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/compiler_carry_atlas.log
+
+      - name: Peephole salvage near-misses created by carry compiler
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/compiler_carry_peephole
+          if [ ! -s acc_competitive/compiler_carry_atlas/fortified_ac.txt ]; then
+            echo "NO_CARRY_ATLAS_CANDIDATES"
+            : > acc_competitive/compiler_carry_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/compiler_carry_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/compiler_carry_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.25 --max-window 6 --max-path 6000 \
+            | tee acc_competitive/compiler_carry_peephole.log
+
+      - name: Fresh-recheck, quota-gate, publish scoring rows only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/compiler_carry_publish
+          if [ ! -s acc_competitive/compiler_carry_peephole/fortified_ac.txt ]; then
+            echo "NO_CARRY_VERIFIED_CANDIDATES_TO_PUBLISH"
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_v5.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/compiler_carry_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/compiler_carry_publish \
+            --cycle 1 \
+            | tee acc_competitive/compiler_carry_publish.log
+
+      - name: Compiler-residual summary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for p in Path('/tmp/carry').rglob('search_results.json'):
+              try: rows.extend(json.loads(p.read_text()))
+              except Exception: pass
+          compact=[]
+          for r in rows:
+              comp=r.get('compile') or {}
+              compact.append({
+                'challenge_id':r.get('challenge_id'),
+                'live_best':r.get('live_best'),
+                'quotient_steps':comp.get('quotient_steps'),
+                'atomic_length':r.get('atomic_length'),
+                'compiler':comp.get('compiler'),
+                'atomic_per_quotient_step':comp.get('atomic_per_quotient_step'),
+                'verified':bool((r.get('ac_verdict') or {}).get('ok')),
+              })
+          p=Path('acc_competitive/compiler_carry_publish/report.json')
+          pub=json.loads(p.read_text()) if p.exists() else {'selected_rows':0,'submission_id':None,'terminal_status':None}
+          print('CARRY_COMPILER_RESULT',json.dumps({'candidates':compact,'publisher':pub},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-compiler-carry-v1
+          path: |
+            acc_competitive/compiler_carry_raw_ac.txt
+            acc_competitive/compiler_carry_atlas/
+            acc_competitive/compiler_carry_atlas.log
+            acc_competitive/compiler_carry_peephole/
+            acc_competitive/compiler_carry_peephole.log
+            acc_competitive/compiler_carry_publish/
+            acc_competitive/compiler_carry_publish.log
+            /tmp/carry/
+          retention-days: 90
