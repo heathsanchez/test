@@ -1,0 +1,164 @@
+name: Collatz checked symbolic frontier K41 K42
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-checked-k41-k42.yml"
+      - "experiments/collatz_absolute_cone_dfs_checked.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-checked-k41-k42
+  cancel-in-progress: true
+
+jobs:
+  control:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Reproduce a known exact K32 shard
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_cone_dfs_checked.cpp -o /tmp/dfs
+          /tmp/dfs 32 800 0 8 | tee control.txt
+          grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" control.txt
+          python - <<'PY'
+          import re
+          s=open("control.txt").read()
+          m=re.search(r"DFS_SYMBOLIC_RESULT K=32 H=800 shard=0 shards=8 represented=(\d+) closed=(\d+) hard=(\d+)",s)
+          assert m,s
+          represented,closed,hard=map(int,m.groups())
+          assert represented==268435456
+          assert closed==represented and hard==0
+          print("CHECKED_DFS_K32_CONTROL_OK")
+          PY
+
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.mk.outputs.matrix }}
+    steps:
+      - id: mk
+        shell: bash
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          include=[]
+          for K,shards,H in [(41,64,850),(42,96,900)]:
+              for s in range(shards):
+                  include.append({"k":K,"shard":s,"shards":shards,"h":H})
+          print("matrix="+json.dumps({"include":include},separators=(",",":")))
+          PY
+
+  shard:
+    needs: [control, prepare]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 32
+      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
+    name: checked-k${{ matrix.k }}-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Run overflow-guarded symbolic shard
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_cone_dfs_checked.cpp -o /tmp/dfs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/dfs ${{ matrix.k }} ${{ matrix.h }}             ${{ matrix.shard }} ${{ matrix.shards }}             | tee results/census.txt
+          grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" results/census.txt
+          ! grep -q "SYMBOLIC_RANGE_FAIL" results/census.txt
+      - name: Parse exact shard
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}"); H=int("${{ matrix.h }}")
+          sid=int("${{ matrix.shard }}"); nsh=int("${{ matrix.shards }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"DFS_SYMBOLIC_RESULT K={K} H={H} shard={sid} shards={nsh} "
+              r"represented=(\d+) closed=(\d+) hard=(\d+) nodes=(\d+) "
+              r"uniform_nodes=(\d+) singleton_nodes=(\d+) max_depth=(\d+) "
+              r"max_close_t=(\d+) max_close_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["represented","closed","hard","nodes","uniform_nodes",
+                "singleton_nodes","max_depth","max_close_t","max_close_seed"]
+          out={"K":K,"H":H,"shard":sid,"shards":nsh,**dict(zip(keys,vals))}
+          assert out["closed"]+out["hard"]==out["represented"]
+          assert out["hard"]==0,out
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("CHECKED_FRONTIER_SHARD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: checked-frontier-k${{ matrix.k }}-s${{ matrix.shard }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: checked-frontier-k*
+          path: gathered
+      - name: Aggregate exact frontier extension
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          groups={}
+          for d in Path("gathered").glob("checked-frontier-k*-s*"):
+              p=d/"summary.json"; assert p.exists(),d
+              r=json.loads(p.read_text()); groups.setdefault(r["K"],[]).append(r)
+          rows=[]
+          expected={41:64,42:96}
+          for K,nsh in expected.items():
+              rs=sorted(groups.get(K,[]),key=lambda x:x["shard"])
+              assert len(rs)==nsh,(K,len(rs),nsh)
+              assert [x["shard"] for x in rs]==list(range(nsh))
+              represented=sum(x["represented"] for x in rs)
+              closed=sum(x["closed"] for x in rs)
+              hard=sum(x["hard"] for x in rs)
+              assert represented==1<<(K-1),(K,represented)
+              assert closed==represented and hard==0,(K,closed,hard)
+              rows.append({
+                  "K":K,"H":rs[0]["H"],"shards":nsh,
+                  "represented":represented,"closed":closed,"hard":hard,
+                  "total_nodes":sum(x["nodes"] for x in rs),
+                  "total_singletons":sum(x["singleton_nodes"] for x in rs),
+                  "max_depth":max(x["max_depth"] for x in rs),
+                  "max_close_t":max(x["max_close_t"] for x in rs),
+                  "max_close_seed":max(rs,key=lambda x:x["max_close_t"])["max_close_seed"],
+                  "max_shard_seconds":max(x["wall_seconds"] for x in rs),
+                  "max_shard_rss_kb":max(x["max_rss_kb"] for x in rs),
+              })
+          out={"kind":"overflow_guarded_symbolic_frontier_extension","rows":rows,
+               "all_closed":all(r["hard"]==0 for r in rows)}
+          Path("checked-k41-k42-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("CHECKED_K41_K42_FIELD",json.dumps(out,separators=(",",":")))
+          print("VERIFIED_CHECKED_SYMBOLIC_FRONTIER_THROUGH_K42")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: checked-k41-k42-field
+          path: checked-k41-k42-field.json
+          retention-days: 30
