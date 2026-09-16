@@ -11,7 +11,7 @@ theorem pack8Nat_decomp6 (x : Nat) :
           (x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst) +
         2 * mixBit31Nat
           (x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst)) := by
-  unfold pack8Nat pack6Nat
+  dsimp [pack8Nat, pack6Nat]
   omega
 
 theorem pack8Nat_mod64_eq_pack6Nat (x : Nat) :
