@@ -1,0 +1,31 @@
+name: Collatz canonical consequence Lean check
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-canonical-consequence-lean.yml"
+      - "formal/CollatzCanonicalConsequence.lean"
+      - "formal/CollatzConeReduction.lean"
+      - "formal/CollatzShortcutCone.lean"
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh             | sh -s -- -y --default-toolchain leanprover/lean4:v4.19.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check canonical consequence theorem
+        run: |
+          set -euo pipefail
+          lean --version
+          LEAN_PATH=formal lean -o formal/CollatzConeReduction.olean formal/CollatzConeReduction.lean
+          LEAN_PATH=formal lean -o formal/CollatzShortcutCone.olean formal/CollatzShortcutCone.lean
+          LEAN_PATH=formal lean formal/CollatzCanonicalConsequence.lean
+          echo VERIFIED_LEAN_CANONICAL_CONSEQUENCE_INTERFACE
