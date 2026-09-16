@@ -20,10 +20,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - { k: 12, r: 12 }
-          - { k: 16, r: 16 }
-          - { k: 20, r: 20 }
-          - { k: 24, r: 24 }
+          - { k: 12, r: 48 }
+          - { k: 16, r: 40 }
+          - { k: 20, r: 32 }
+          - { k: 24, r: 28 }
     name: zero-ternary-b${{ matrix.k }}
     steps:
       - uses: actions/checkout@v4
