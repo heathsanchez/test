@@ -102,3 +102,36 @@ theorem convergenceFromConeCompiler
     (coneCompiler : ∀ n : Nat, 1 < n → LowerWitness f n) :
     ∀ n : Nat, 0 < n → Reach f n 1 :=
   allConvergeOfLowerWitness f coneCompiler
+
+
+/--
+Global convergence itself constructs the lower-witness interface: for n > 1,
+take the reached value y = 1.  Thus the lower-witness condition is not merely
+sufficient; at the abstract level it is equivalent to global convergence.
+-/
+theorem lowerWitnessOfConvergence
+    (f : Nat → Nat)
+    (allConv : ∀ n : Nat, 0 < n → Converges f n) :
+    ∀ n : Nat, 1 < n → LowerWitness f n := by
+  intro n hn
+  have hnPos : 0 < n :=
+    Nat.lt_trans (Nat.zero_lt_succ 0) hn
+  exact {
+    y := 1
+    reach := allConv n hnPos
+    kind := Or.inl ⟨Nat.zero_lt_succ 0, hn⟩
+  }
+
+/--
+Exact logical boundary: global convergence on positive naturals is equivalent
+to existence of a strict lower witness for every n > 1.
+-/
+theorem allConvergeIffLowerWitness
+    (f : Nat → Nat) :
+    (∀ n : Nat, 0 < n → Converges f n) ↔
+    (∀ n : Nat, 1 < n → LowerWitness f n) := by
+  constructor
+  · intro h
+    exact lowerWitnessOfConvergence f h
+  · intro h
+    exact allConvergeOfLowerWitness f h
