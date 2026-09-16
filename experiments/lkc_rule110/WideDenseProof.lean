@@ -3,7 +3,7 @@ import Submission
 
 namespace WideDense
 
-set_option maxRecDepth 4194304
+set_option maxRecDepth 1048576
 set_option exponentiation.threshold 20000
 set_option maxHeartbeats 2000000
 
