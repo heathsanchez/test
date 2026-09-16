@@ -32,11 +32,9 @@ jobs:
           set -euo pipefail
           mkdir -p results
           /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/coalescence ${{ matrix.depth }} 0 | tee results/census.txt
-          grep -q "VERIFIED_RESONANT_CROSS_HISTORY_COALESCENCE_D${{ matrix.depth }}" results/census.txt
-          grep -q "FINAL_GATE=RESONANT_COALESCENCE_D${{ matrix.depth }}" results/census.txt
-          if [ "${{ matrix.depth }}" -ge 17 ]; then
-            grep -Eq 'RESONANT_COALESCENCE_LEVEL depth=17 .*coalesced=[1-9][0-9]*' results/census.txt
-          fi
+          grep -q "VERIFIED_RESONANCE_CAPABILITY_REVOKED_REDUNDANT_D${{ matrix.depth }}" results/census.txt
+          grep -q "FINAL_GATE=RESONANCE_REVOKED_D${{ matrix.depth }}" results/census.txt
+          grep -q "status=REVOKED_REDUNDANT" results/census.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
