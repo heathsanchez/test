@@ -1,0 +1,120 @@
+name: Collatz global coalesced consequence quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-global-coalesced-quotient.yml"
+      - "experiments/collatz_global_coalesced_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-coalesced-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        h: [20,24,28,30]
+    name: global-quotient-h${{ matrix.h }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact all-scale quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_coalesced_quotient.cpp -o /tmp/gq
+      - name: Run exact quotient
+        run: |
+          set -euo pipefail
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/gq ${{ matrix.h }} | tee results/census.txt
+          grep -q "VERIFIED_GLOBAL_COALESCED_CONSEQUENCE_QUOTIENT" results/census.txt
+          ! grep -q "OVERFLOW" results/census.txt
+      - name: Parse curve cell
+        run: |
+          python - <<'PY'
+          import json,re
+          H=int("${{ matrix.h }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"GLOBAL_QUOTIENT_DONE H={H} final_t=(\d+) live=(\d+) "
+              r"peak=(\d+) peak_t=(\d+) total_merged=(\d+) total_closed=(\d+)",s)
+          assert m,s[-6000:]
+          final_t,live,peak,peak_t,merged,closed=map(int,m.groups())
+          levels=[]
+          for z in re.finditer(
+              r"GLOBAL_QUOTIENT_LEVEL t=(\d+) live=(\d+) merged=(\d+) "
+              r"closed=(\d+) total_merged=(\d+) min_c=(\d+) max_c=(\d+) "
+              r"min_d=(\d+) max_d=(\d+)",s):
+              levels.append({
+                  "t":int(z.group(1)),"live":int(z.group(2)),
+                  "merged":int(z.group(3)),"closed":int(z.group(4)),
+                  "total_merged":int(z.group(5)),
+                  "min_c":int(z.group(6)),"max_c":int(z.group(7)),
+                  "min_d":int(z.group(8)),"max_d":int(z.group(9)),
+              })
+          assert levels and levels[-1]["t"]==final_t
+          tm=open("results/time-memory.txt").read().strip().split()
+          out={
+              "kind":"global_coalesced_consequence_quotient",
+              "H":H,"final_t":final_t,"live":live,
+              "peak":peak,"peak_t":peak_t,
+              "total_merged":merged,"total_closed":closed,
+              "closed_globally":live==0,
+              "levels":levels,
+              "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1]),
+          }
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("GLOBAL_QUOTIENT_CELL",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: global-coalesced-h${{ matrix.h }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: global-coalesced-h*
+          path: gathered
+      - name: Aggregate all-scale quotient curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("global-coalesced-h*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda r:r["H"])
+          assert [r["H"] for r in rows]==[20,24,28,30],rows
+          out={
+              "kind":"global_coalesced_quotient_curve",
+              "rows":rows,
+              "global_closure_found":any(r["closed_globally"] for r in rows),
+          }
+          Path("global-coalesced-quotient-field.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print("GLOBAL_COALESCED_QUOTIENT_FIELD",
+                json.dumps(out,separators=(",",":"),sort_keys=True))
+          if out["global_closure_found"]:
+              print("FINITE_GLOBAL_CONSEQUENCE_QUOTIENT_FOUND")
+          else:
+              print("GLOBAL_CONSEQUENCE_QUOTIENT_RESIDUAL_PERSISTS")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: global-coalesced-quotient-field
+          path: global-coalesced-quotient-field.json
+          retention-days: 30
