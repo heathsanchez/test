@@ -18,13 +18,14 @@ UNIQUE residue of the current odd cofactor m:
 Exact valuation r' (not merely >=r') adds the next-bit condition excluding
 divisibility by 2^(s+r'+1).
 
-Together with the global non-descent bound on s, this means:
-- if r stays bounded, the non-descending schema grammar is finite;
-- if r is unbounded, every record r' requires correspondingly unbounded
-  exact 2-adic precision in m.
+For LOCALLY NONDECREASING episodes, combining this with the exact s-bound
+means a jump to large r' requires correspondingly deep, unique 2-adic
+precision in the current m.
 
-This does not rule out an infinite 2-adic escape path.  It identifies that
-path precisely as the remaining alternative to bounded-r recurrence.
+Important limitation: an orbit that stays above its ORIGINAL starting value
+can contain locally decreasing episodes.  Therefore this congruence is a
+precise local escape certificate, not a global dichotomy for all possible
+counterexample trajectories.
 
 The script verifies the congruence and exact-next-bit condition exhaustively
 on bounded concrete states.
@@ -106,9 +107,10 @@ def main():
         "max_required_bits":max_required_D,
         "max_observed_rp":max_rp,
         "examples":examples,
-        "remaining_global_alternatives":[
-            "bounded_r_infinite_recurrence",
-            "unbounded_r_with_unbounded_unique_2adic_congruences",
+        "scope":[
+            "exact_for_each_episode",
+            "escape_interpretation_applies_to_locally_nondecreasing_r_increases",
+            "not_a_global_counterexample_dichotomy",
         ],
         "proof_status":"general_congruence_with_bounded_exhaustive_controls_not_global_proof",
     }
