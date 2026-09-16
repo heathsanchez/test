@@ -1,5 +1,8 @@
 import Spec
 
+set_option linter.unusedSimpArgs false
+set_option linter.unusedVariables false
+
 /-!
 Rule 110 Stage-1 experiment.
 
