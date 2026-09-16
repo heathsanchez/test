@@ -1,0 +1,105 @@
+name: LKC Rule110 integrated wide v47
+
+on:
+  push:
+    branches: [lkc-rule110-wide-hierarchy-v39]
+    paths:
+      - 'experiments/lkc_rule110/Submission_v47.lean'
+      - '.github/workflows/lkc-rule110-v47-integrated.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lkc-rule110-v47-integrated
+  cancel-in-progress: true
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+
+      - name: Build exact one-file v47 submission
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v47.lean" Submission.lean
+          lake build
+
+      - name: Canonical single-file correctness evaluation
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py --problem ca-rule110             --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v47.lean"             --timeout 120
+
+      - name: Seven-replay three-way comparison
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/artifacts-v47"
+          mkdir -p "$out"
+          for rep in 1 2 3 4 5 6 7; do
+            if (( rep % 2 == 1 )); then
+              order="v27 v46 v47"
+            else
+              order="v47 v46 v27"
+            fi
+            for who in $order; do
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_${who}.lean"
+              python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 2>&1 |
+                tee "$out/${who}-rep${rep}.log"
+            done
+          done
+
+      - name: Summarize
+        if: always()
+        shell: python
+        run: |
+          import pathlib,re,statistics,json
+          root=pathlib.Path("artifacts-v47"); root.mkdir(exist_ok=True)
+          out={}
+          for who in ("v27","v46","v47"):
+              vals=[]
+              for p in sorted(root.glob(f"{who}-rep*.log")):
+                  m=re.search(r"Computation replay T: ([0-9.]+) s",p.read_text())
+                  if m: vals.append(float(m.group(1)))
+              out[who]={"runs":vals,"median":statistics.median(vals) if vals else None}
+          a=out["v27"]["median"]; b=out["v46"]["median"]; c=out["v47"]["median"]
+          if a and b:
+              out["v46_vs_v27_improvement_pct"]=(1-b/a)*100
+              out["v46_vs_v27_speedup_x"]=a/b
+          if b and c:
+              out["wide_initializer_marginal_pct"]=(1-c/b)*100
+              out["wide_initializer_marginal_speedup_x"]=b/c
+          if a and c:
+              out["v47_vs_v27_improvement_pct"]=(1-c/a)*100
+              out["v47_vs_v27_speedup_x"]=a/c
+          (root/"summary.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v47-integrated-evidence
+          path: artifacts-v47/
+          if-no-files-found: warn
