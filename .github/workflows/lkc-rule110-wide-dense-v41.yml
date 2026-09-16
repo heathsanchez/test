@@ -5,6 +5,7 @@ on:
     branches: [lkc-rule110-wide-hierarchy-v39]
     paths:
       - 'experiments/lkc_rule110/DenseAlgebraProof.lean'
+      - 'experiments/lkc_rule110/WideDenseByteProof.lean'
       - 'experiments/lkc_rule110/WideDenseBaseProof.lean'
       - 'experiments/lkc_rule110/WideDenseSmallProof.lean'
       - 'experiments/lkc_rule110/WideDenseLargeProof.lean'
@@ -36,7 +37,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof DenseAlgebraProof WideDenseBaseProof WideDenseSmallProof WideDenseLargeProof WideDenseProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof DenseAlgebraProof WideDenseByteProof WideDenseBaseProof WideDenseSmallProof WideDenseLargeProof WideDenseProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
       - name: Generic pack
@@ -57,6 +58,9 @@ jobs:
       - name: Dense algebra
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseAlgebraProof.olean DenseAlgebraProof.lean
+      - name: Dense byte
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseByteProof.olean WideDenseByteProof.lean
       - name: Dense base
         working-directory: lkc/problems/ca-rule110
         run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseBaseProof.olean WideDenseBaseProof.lean
