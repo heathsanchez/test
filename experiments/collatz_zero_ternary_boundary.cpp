@@ -145,6 +145,13 @@ int main(int argc,char**argv){
 
   SearchStats buildStats;
   const auto residual=build_residual(K,p3,buildStats);
+  const std::map<int,uint64_t> frozen{{12,144},{16,1363},{20,15870},{24,172868}};
+  auto fi=frozen.find(K);
+  if(fi!=frozen.end() && residual.size()!=fi->second){
+    std::cerr<<"ZERO_TERNARY_BASELINE_DRIFT K="<<K
+             <<" got="<<residual.size()<<" expected="<<fi->second<<"\n";
+    return 13;
+  }
   std::cout<<"ZERO_TERNARY_BASE K="<<K<<" residual="<<residual.size()<<" R="<<R<<"\n";
 
   SearchStats scout;
