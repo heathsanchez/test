@@ -92,10 +92,10 @@ static bool dfs(i128 A,i128 D,i128 M,i128 b,uint64_t L,
   return false;
 }
 
-static bool complete_reverse(i128 A,i128 D,i128 M,i128 b,SearchStats&st){
-  if(lower_family(A,D,M,b,0))return true;
+static bool complete_reverse(i128 A,i128 D,i128 M,i128 b,uint64_t L,SearchStats&st){
+  if(lower_family(A,D,M,b,L))return true;
   std::set<Key>seen;uint64_t local=0;
-  const bool ok=dfs(A,D,M,b,0,seen,local,st);
+  const bool ok=dfs(A,D,M,b,L,seen,local,st);
   st.maxNodes=std::max(st.maxNodes,local);
   return ok;
 }
@@ -122,7 +122,7 @@ static std::vector<State> build_residual(int K,const std::vector<i128>&p3,Search
         if(raw&1){++c;d=(3*raw+1)/2;}else d=raw/2;
         if(d<0||d>i128(UINT64_MAX)){std::cerr<<"D_BUILD_RANGE\n";std::exit(10);}
         if(u128(uint64_t(1)<<k)*L+b<=1){std::cerr<<"DOMAIN_FAIL\n";std::exit(11);}
-        if(complete_reverse(p3[c],d,M,i128(b),buildStats))continue;
+        if(complete_reverse(p3[c],d,M,i128(b),L,buildStats))continue;
         next.push_back({b,uint64_t(d),c,L});
       }
     }
@@ -164,7 +164,7 @@ int main(int argc,char**argv){
     for(int r=0;r<=R;++r){
       const i128 M=mulc(M0,scale);
       const i128 A=mulc(p3[s.c],scale);
-      if(complete_reverse(A,i128(s.d),M,i128(s.b),scout)){
+      if(complete_reverse(A,i128(s.d),M,i128(s.b),0,scout)){
         ++hist[r];maxR=std::max(maxR,r);done=true;break;
       }
       scale=mulc(scale,3);
