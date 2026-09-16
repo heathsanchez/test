@@ -123,6 +123,58 @@ def injection(w,v):
     return (v['A']-(1<<v['D']))*w['B']+((1<<w['D'])-w['A'])*v['B']
 
 
+def switch_resonance(w,v,m_start,m_end=None):
+    """Classify one exact same-anchor pattern switch by its 2-adic resonance.
+
+    For the old-pattern defect Delta=C*m-B and the new return V=(a,b,d),
+
+        2^d Delta' = a Delta + J.
+
+    If v2(Delta) != v2(J), oddness of a forces
+
+        v2(Delta') = min(v2(Delta),v2(J)) - d,
+
+    so recharge is impossible.  Positive valuation gain can therefore occur
+    only at exact resonance v2(Delta)=v2(J), where additional cancellation in
+    a*(Delta/2^j)+J/2^j controls the gain.
+    """
+    if w['r']!=v['r']: raise ValueError('same return anchor required')
+    if not admissible(v,m_start): raise ValueError('new return not admissible at start')
+    numerator=v['A']*m_start+v['B']
+    denominator=1<<v['D']
+    if numerator%denominator: raise ValueError('nonintegral new return')
+    exact_end=numerator//denominator
+    if m_end is None: m_end=exact_end
+    if m_end!=exact_end: raise ValueError('supplied exit does not match exact return')
+
+    J=injection(w,v)
+    C=(1<<w['D'])-w['A']
+    before=C*m_start-w['B'];after=C*m_end-w['B']
+    combined=v['A']*before+J
+    assert (1<<v['D'])*after==combined
+
+    vb=valuation(before);vj=valuation(J);va=valuation(after)
+    same=(J==0)
+    assert same==(w['q']==v['q'])
+    resonant=(not same and vb is not None and vj is not None and vb==vj)
+    recharge=(vb is not None and va is not None and va>vb)
+    if not same and vb is not None and vj is not None and vb!=vj:
+        assert va==min(vb,vj)-v['D']
+    if recharge:
+        assert resonant
+
+    if resonant:
+        vc=valuation(combined)
+        cancellation_depth=None if vc is None else vc-vb
+    else:
+        cancellation_depth=0
+
+    return {'J':J,'defect_before':before,'defect_after':after,
+            'valuation_before':vb,'injection_valuation':vj,'valuation_after':va,
+            'same_fixed_point':same,'resonant':resonant,'recharge':recharge,
+            'cancellation_depth':cancellation_depth,'exit':m_end}
+
+
 def reset_witness(L):
     """V=(2,1,1)(1,1,2) raises v2(m+1) from 2 to any L>=3."""
     if L<3: raise ValueError('L>=3 required')
