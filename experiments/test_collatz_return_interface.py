@@ -3,6 +3,7 @@ import pathlib
 import unittest
 
 P=pathlib.Path(__file__).with_name('collatz_return_interface.py')
+R=pathlib.Path(__file__).with_name('collatz_return_resonance.py')
 
 class ReturnInterfaceTests(unittest.TestCase):
     def test_interface_exists(self):
@@ -117,5 +118,13 @@ class ReturnInterfaceTests(unittest.TestCase):
             self.assertEqual(z['injection_valuation'],2)
             self.assertEqual(z['valuation_after'],L)
             self.assertEqual(z['cancellation_depth'],L+new['D']-2)
+
+    def test_resonant_transition_graph_extracts_only_recursive_sccs(self):
+        self.assertTrue(R.exists(),'Resonant transition graph experiment is missing')
+        spec=importlib.util.spec_from_file_location('resonance',R)
+        g=importlib.util.module_from_spec(spec);spec.loader.exec_module(g)
+        nodes={'a','b','c','d'}
+        edges={('a','b'),('b','a'),('b','c'),('d','d')}
+        self.assertEqual(g.cyclic_sccs(nodes,edges),[['a','b'],['d']])
 
 if __name__=='__main__': unittest.main()
