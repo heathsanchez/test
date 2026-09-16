@@ -1,0 +1,104 @@
+name: LKC Rule110 compiled progression v48
+
+on:
+  push:
+    branches: [lkc-rule110-wide-hierarchy-v39]
+    paths:
+      - 'experiments/lkc_rule110/progression_compile_v48.py'
+      - '.github/workflows/lkc-rule110-progression-v48.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lane:
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [bias, replicate]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+      - name: Generate exact one-file candidate
+        run: |
+          mkdir -p generated-v48
+          python3 experiments/lkc_rule110/progression_compile_v48.py \
+            "${{ matrix.variant }}" "generated-v48/Submission_${{ matrix.variant }}.lean"
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+      - name: Universal single-file proof gate
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/generated-v48/Submission_${{ matrix.variant }}.lean" Submission.lean
+          lake build
+      - name: Canonical acceptance gate
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py --problem ca-rule110 \
+            --submission "$GITHUB_WORKSPACE/generated-v48/Submission_${{ matrix.variant }}.lean" \
+            --timeout 120
+      - name: Seven paired replays versus v47
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/artifacts-v48-${{ matrix.variant }}"
+          mkdir -p "$out"
+          for rep in 1 2 3 4 5 6 7; do
+            if (( rep % 2 == 1 )); then order="v47 candidate"; else order="candidate v47"; fi
+            for who in $order; do
+              if [ "$who" = v47 ]; then
+                sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v47.lean"
+              else
+                sub="$GITHUB_WORKSPACE/generated-v48/Submission_${{ matrix.variant }}.lean"
+              fi
+              python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 2>&1 |
+                tee "$out/${who}-rep${rep}.log"
+            done
+          done
+      - name: Summarize
+        if: always()
+        shell: python
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          import json, os, pathlib, re, statistics
+          v=os.environ['VARIANT']; root=pathlib.Path(f'artifacts-v48-{v}'); root.mkdir(exist_ok=True)
+          out={'variant':v}
+          for who in ('v47','candidate'):
+              vals=[]
+              for p in sorted(root.glob(f'{who}-rep*.log')):
+                  m=re.search(r'Computation replay T: ([0-9.]+) s',p.read_text())
+                  if m: vals.append(float(m.group(1)))
+              out[who]={'runs':vals,'median':statistics.median(vals) if vals else None}
+          a=out['v47']['median']; b=out['candidate']['median']
+          if a and b:
+              out['improvement_pct']=(1-b/a)*100
+              out['speedup_x']=a/b
+              out['promote_proxy']=b<a
+          (root/'summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+      - name: Upload exact candidate and evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v48-${{ matrix.variant }}
+          path: |
+            generated-v48/Submission_${{ matrix.variant }}.lean
+            artifacts-v48-${{ matrix.variant }}/
+          if-no-files-found: warn
