@@ -1,0 +1,48 @@
+{
+  "classification": "FINITE_SIGNAL",
+  "coavailability_residual": {
+    "function": "xor(x0,x1)",
+    "meaning": "singleton costs predict 3; exact joint availability requires 4",
+    "truth_table_hex": "0x66",
+    "xor_costs": [3, 4]
+  },
+  "global_consistency": {
+    "budget": 3,
+    "minimum_core_rows": [1, 2, 3, 4, 5, 6],
+    "reachable_functions": 48,
+    "target": "majority3"
+  },
+  "metric_collision": {
+    "functions_hex": ["0x8f", "0xea"],
+    "shared_12_metric_signature": [5, 3, 3, 2, 10, 3, 20, 2, 2, 2, 2, 3],
+    "sizes": [2, 3]
+  },
+  "model": {
+    "basis": "fan-in-2 NAND",
+    "constants": "none",
+    "cost": "DAG gate count",
+    "fan_out": "free",
+    "inputs": "free",
+    "truth_table": "bit r uses x_i=(r>>i)&1"
+  },
+  "n3_exact": {
+    "cumulative_functions": 139,
+    "new_functions": [3, 6, 13, 26, 43, 48],
+    "state_counts": [1, 6, 36, 206, 1252, 8188]
+  },
+  "n4_transfer": {
+    "cumulative_functions": 436,
+    "new_functions": [4, 10, 31, 98, 293],
+    "state_counts": [1, 10, 91, 811, 7700]
+  },
+  "imported_theorem_transfer": {
+    "budget": 8,
+    "causal_scope": "module-toggle sanity check; not acquired-capability ablation",
+    "certificate_free_variables": [0, 1, 2, 3],
+    "target": "parity4",
+    "theorem": "Schnorr U2 parity bound composed with restriction closure",
+    "with_theorem_lower_bound": 9,
+    "without_theorem": null
+  },
+  "scope": "finite exact evidence plus one classical linear lower-bound theorem; no P!=NP claim"
+}
