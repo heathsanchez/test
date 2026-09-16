@@ -106,10 +106,9 @@ theorem convergenceFromConeCompiler
 
 /--
 Global convergence itself constructs the lower-witness interface: for n > 1,
-take the reached value y = 1.  Thus the lower-witness condition is not merely
-sufficient; at the abstract level it is equivalent to global convergence.
+take the reached value y = 1.
 -/
-theorem lowerWitnessOfConvergence
+def lowerWitnessOfConvergence
     (f : Nat → Nat)
     (allConv : ∀ n : Nat, 0 < n → Converges f n) :
     ∀ n : Nat, 1 < n → LowerWitness f n := by
@@ -122,16 +121,22 @@ theorem lowerWitnessOfConvergence
     kind := Or.inl ⟨Nat.zero_lt_succ 0, hn⟩
   }
 
+/-- Proposition-level existence of a lower witness. -/
+def HasLowerWitness (f : Nat → Nat) (n : Nat) : Prop :=
+  Nonempty (LowerWitness f n)
+
 /--
 Exact logical boundary: global convergence on positive naturals is equivalent
 to existence of a strict lower witness for every n > 1.
 -/
-theorem allConvergeIffLowerWitness
+theorem allConvergeIffHasLowerWitness
     (f : Nat → Nat) :
     (∀ n : Nat, 0 < n → Converges f n) ↔
-    (∀ n : Nat, 1 < n → LowerWitness f n) := by
+    (∀ n : Nat, 1 < n → HasLowerWitness f n) := by
   constructor
+  · intro h n hn
+    exact ⟨lowerWitnessOfConvergence f h n hn⟩
   · intro h
-    exact lowerWitnessOfConvergence f h
-  · intro h
-    exact allConvergeOfLowerWitness f h
+    apply allConvergeOfLowerWitness f
+    intro n hn
+    exact Classical.choice (h n hn)
