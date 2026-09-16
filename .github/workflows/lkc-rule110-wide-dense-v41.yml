@@ -42,4 +42,5 @@ jobs:
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseProof.lean
 
-# retrigger after dense proof repair
+
+# rerun after explicit algebra bridge
