@@ -1,0 +1,42 @@
+name: Collatz R0 exact future quotient
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-r0-future-quotient.yml"
+      - "experiments/collatz_r0_future_quotient.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-r0-future-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        depth: [16, 18, 20]
+    name: future-d${{ matrix.depth }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_r0_future_quotient.cpp -o /tmp/r0future
+      - name: Run exact bounded-future quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/r0future ${{ matrix.depth }} | tee results/census.txt
+          grep -q "VERIFIED_R0_EXACT_FUTURE_QUOTIENT_D${{ matrix.depth }}" results/census.txt
+          grep -q "FINAL_GATE=R0_FUTURE_QUOTIENT_D${{ matrix.depth }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r0-future-d${{ matrix.depth }}
+          path: results
+          retention-days: 30
