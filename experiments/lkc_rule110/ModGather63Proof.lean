@@ -8,7 +8,7 @@ set_option maxHeartbeats 4000000
 /-- The modulus that turns one 64-bit lane step into one dense-bit step. -/
 def modulus : Nat := 0xfffffffffffffffe
 
-theorem pow64_modeq_two : Nat.ModEq modulus (2 ^ 64) 2 := by
+theorem pow64_mod_eq_two : (2 ^ 64) % modulus = 2 := by
   decide
 
 /-- A generic sparse bit sequence, one bit every 64 positions. -/
@@ -33,23 +33,28 @@ theorem dense_lt_pow
       rw [Nat.pow_succ]
       omega
 
-theorem sparse_modeq_dense
+/-- Sparse and dense encodings have the same remainder modulo `2^64 - 2`.
+This formulation uses only the Nat remainder API available in the frozen
+challenge toolchain. -/
+theorem sparse_mod_eq_dense_mod
     (b : Nat → Nat) (i n : Nat) :
-    Nat.ModEq modulus (sparse b i n) (dense b i n) := by
+    sparse b i n % modulus = dense b i n % modulus := by
   induction n generalizing i with
   | zero => rfl
   | succ n ih =>
       simp only [sparse, dense, Nat.shiftLeft_eq]
-      simpa [Nat.mul_comm] using
-        (Nat.ModEq.refl (b i)).add ((ih (i + 1)).mul pow64_modeq_two)
+      rw [Nat.add_mod, Nat.add_mod, Nat.mul_mod, Nat.mul_mod,
+          pow64_mod_eq_two, ih]
+      have htwo : 2 % modulus = 2 := by decide
+      rw [htwo]
+      simp [Nat.mul_comm]
 
 /-- For at most 63 lanes the dense value is strictly below `2^64 - 2`,
-so the modular residue is the dense integer itself, not merely congruent to it. -/
+so the modular residue is the dense integer itself. -/
 theorem sparse_mod_eq_dense
     (b : Nat → Nat) (hb : ∀ i, b i < 2) (i n : Nat) (hn : n ≤ 63) :
     sparse b i n % modulus = dense b i n := by
-  have hcong := sparse_modeq_dense b i n
-  change sparse b i n % modulus = dense b i n % modulus at hcong
+  have hcong := sparse_mod_eq_dense_mod b i n
   have hd := dense_lt_pow b hb i n
   have hp : 2 ^ n ≤ 2 ^ 63 := Nat.pow_le_pow_right (by omega) hn
   have h63 : 2 ^ 63 < modulus := by decide
