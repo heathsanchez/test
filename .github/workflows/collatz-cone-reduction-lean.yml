@@ -5,7 +5,7 @@ on:
     branches: [collatz-valuation-quotient-v1]
     paths:
       - ".github/workflows/collatz-cone-reduction-lean.yml"
-      - "formal/CollatzConeReduction.lean"
+      - "formal/CollatzConeReduction.lean"\n      - "formal/CollatzShortcutCone.lean"
   workflow_dispatch:
 
 jobs:
