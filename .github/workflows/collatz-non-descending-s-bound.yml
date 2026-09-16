@@ -21,14 +21,14 @@ jobs:
           mkdir -p results
           python experiments/collatz_non_descending_s_bound.py             --max-r 128 --control-r 16 --precision 16             --out results/bound.json | tee results/census.txt
           grep -q "VERIFIED_GLOBAL_NON_DESCENDING_EPISODE_S_BOUND" results/census.txt
-      - name: Freeze structural split
+      - name: Freeze exact local scope
         run: |
           python - <<'PY'
           import json
           r=json.load(open("results/bound.json"))
-          assert r["obstruction_split"]==[
-            "bounded_r_implies_finite_branch_schema_grammar",
-            "otherwise_r_is_unbounded",
+          assert r["scope"]==[
+            "locally_nondecreasing_episode_only",
+            "does_not_bound_locally_decreasing_edges_above_original_baseline",
           ]
           assert r["controls"]>0 and r["non_descending_controls"]>0
           print("NON_DESCENDING_EPISODE_BOUND_GATES_OK",
