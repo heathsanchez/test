@@ -1,0 +1,99 @@
+name: LKC Rule110 modular gather v55
+
+on:
+  push:
+    branches: [lkc-rule110-modgather-v55]
+    paths:
+      - 'experiments/lkc_rule110/mod_gather_v55.py'
+      - '.github/workflows/lkc-rule110-modgather-v55.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+      - name: Generate v51
+        run: python3 experiments/lkc_rule110/payload_mask_v51.py
+      - name: Generate protected v52
+        run: python3 experiments/lkc_rule110/init_bias_v52.py
+      - name: Generate v54 reference
+        run: python3 experiments/lkc_rule110/mod_gather_v54.py
+      - name: RED generate v55 candidate
+        run: python3 experiments/lkc_rule110/mod_gather_v55.py
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem ca-rule110
+      - name: Universal single-file proof gate
+        working-directory: lkc/problems/ca-rule110
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v55.lean" Submission.lean
+          lake build
+      - name: Canonical acceptance gate
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py --problem ca-rule110 --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v55.lean" --timeout 120
+      - name: Seven balanced triple replays
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/artifacts-v55"; mkdir -p "$out"
+          for rep in 1 2 3 4 5 6 7; do
+            case $((rep % 3)) in
+              1) order="v52 v54 v55" ;;
+              2) order="v54 v55 v52" ;;
+              0) order="v55 v52 v54" ;;
+            esac
+            for who in $order; do
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_${who}.lean"
+              python3 evaluation/run.py --problem ca-rule110 --submission "$sub" --timeout 120 2>&1 | tee "$out/${who}-rep${rep}.log"
+            done
+          done
+      - name: Summarize
+        if: always()
+        shell: python
+        run: |
+          import json,pathlib,re,statistics
+          root=pathlib.Path('artifacts-v55'); root.mkdir(exist_ok=True); out={}
+          for who in ('v52','v54','v55'):
+              vals=[]
+              for p in sorted(root.glob(f'{who}-rep*.log')):
+                  m=re.search(r'Computation replay T: ([0-9.]+) s',p.read_text())
+                  if m: vals.append(float(m.group(1)))
+              out[who]={'runs':vals,'median':statistics.median(vals) if vals else None}
+          med={k:v['median'] for k,v in out.items() if v['median'] is not None}
+          if med:
+              best=min(med,key=med.get); out['best_proxy']=best
+              a=med.get('v52'); b=med.get('v55')
+              if a and b:
+                  out['v55_vs_v52_improvement_pct']=(1-b/a)*100
+                  out['v55_vs_v52_speedup_x']=a/b
+          (root/'summary.json').write_text(json.dumps(out,indent=2)+'\n'); print(json.dumps(out,indent=2))
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-v55
+          path: |
+            experiments/lkc_rule110/generated/Submission_v52.lean
+            experiments/lkc_rule110/generated/Submission_v54.lean
+            experiments/lkc_rule110/generated/Submission_v55.lean
+            artifacts-v55/
+          if-no-files-found: warn
