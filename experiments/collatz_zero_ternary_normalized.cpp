@@ -84,7 +84,9 @@ static bool ndfs(int u,int v,u128 D,int k,int r,uint64_t b,
     if(!future_coef_possible(ue,v,k,r)){++st.prunes;break;}
     ++st.e;
 
-    const int mmax=std::min(v,v3u(De+1));
+    // Avoid unsigned wrap at D=2^128-1.  Mathematically D+1=2^128,
+    // which is 1 mod 3, so no O step is valid.
+    const int mmax=(De==MAX)?0:std::min(v,v3u(De+1));
     u128 den=1,tw=1;
     for(int m=1;m<=mmax;++m){
       den*=3;tw*=2;++st.o;
