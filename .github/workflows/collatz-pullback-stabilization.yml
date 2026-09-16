@@ -1,0 +1,84 @@
+name: Collatz pullback stabilization equivalence
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-pullback-stabilization.yml"
+      - "experiments/collatz_pullback_stabilization_equivalence.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-pullback-stabilization
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { r: 8,  p: 12 }
+          - { r: 12, p: 14 }
+          - { r: 16, p: 16 }
+    name: stable-r${{ matrix.r }}-p${{ matrix.p }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify equivalence and exact bounded census
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_pullback_stabilization_equivalence.py               --max-r ${{ matrix.r }}               --precision ${{ matrix.p }}               --episode-cap 256               --out results/summary.json             | tee results/census.txt
+          grep -q "COUNTEREXAMPLE_REQUIRES_EVENTUALLY_CONSTANT_POSITIVE_PULLBACK_TAIL" results/census.txt
+          grep -q "VERIFIED_PULLBACK_STABILIZATION_EQUIVALENCE" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: pullback-stable-r${{ matrix.r }}-p${{ matrix.p }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: census
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: pullback-stable-r*
+          path: gathered
+      - name: Aggregate stable-tail frontier
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("pullback-stable-r*"):
+              p=d/"summary.json"; assert p.exists(),d
+              r=json.loads(p.read_text())
+              assert r["unresolved"]==0,r
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              rows.append({
+                  "max_r":r["max_r"],"precision":r["precision"],
+                  "cases":r["cases"],
+                  "stabilized_cases":r["stabilized_cases"],
+                  "max_stable_episodes_before_descent":r["max_stable_episodes_before_descent"],
+                  "max_episode_delay":r["max_episode_delay"],
+                  "max_stable_case":r["max_stable_case"],
+                  "wall_seconds":float(tm[0]),"max_rss_kb":int(tm[1]),
+              })
+          rows.sort(key=lambda z:z["precision"])
+          assert [z["precision"] for z in rows]==[12,14,16],rows
+          out={"kind":"pullback_stabilization_frontier","rows":rows}
+          Path("pullback-stabilization-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("PULLBACK_STABILIZATION_FIELD",json.dumps(out,separators=(",",":")))
+          print("PULLBACK_STABILIZATION_FRONTIER_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: pullback-stabilization-field
+          path: pullback-stabilization-field.json
+          retention-days: 30
