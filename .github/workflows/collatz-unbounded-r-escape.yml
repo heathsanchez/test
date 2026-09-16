@@ -1,0 +1,46 @@
+name: Collatz unbounded-r escape congruence
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-unbounded-r-escape.yml"
+      - "experiments/collatz_unbounded_r_escape.py"
+      - "experiments/collatz_non_descending_s_bound.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+jobs:
+  escape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact unbounded-r escape congruence
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python experiments/collatz_unbounded_r_escape.py             --max-r 16 --precision 16             --out results/escape.json | tee results/census.txt
+          grep -q "VERIFIED_EXACT_UNBOUNDED_R_ESCAPE_CONGRUENCE" results/census.txt
+      - name: Freeze obstruction split
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open("results/escape.json"))
+          assert r["controls"]>0 and r["non_descending_controls"]>0
+          assert r["r_increase_controls"]>0
+          assert r["remaining_global_alternatives"]==[
+            "bounded_r_infinite_recurrence",
+            "unbounded_r_with_unbounded_unique_2adic_congruences",
+          ]
+          print("UNBOUNDED_R_ESCAPE_GATES_OK",
+                r["non_descending_controls"],
+                r["r_increase_controls"],
+                r["max_required_bits"],
+                r["max_observed_rp"])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: unbounded-r-escape-congruence
+          path: results
+          retention-days: 30
