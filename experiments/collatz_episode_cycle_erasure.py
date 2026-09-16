@@ -43,6 +43,12 @@ def compose(bs):
     return A,B,D
 
 
+def v2_abs(n:int)->int:
+    n=abs(n)
+    assert n>0
+    return (n & -n).bit_length()-1
+
+
 def classify_cycle(bs,entry_m,exit_m):
     A,B,D=compose(bs)
     mod=1<<D
@@ -57,11 +63,31 @@ def classify_cycle(bs,entry_m,exit_m):
         "zero" if q==0 else
         "negative"
     )
+
+    # For the cycle fixed-point numerator N=(2^D-A)m-B:
+    # N_exit = A*N_entry/2^D.  Thus every exact cycle traversal
+    # has v2(N_entry)>=D unless N=0 (an exact integer fixed point).
+    N=den*entry_m-B
+    if N==0:
+        countdown_bits=None
+        repeat_budget=None
+    else:
+        countdown_bits=v2_abs(N)
+        assert countdown_bits>=D,(A,B,D,entry_m,exit_m,N,countdown_bits)
+        repeat_budget=countdown_bits//D
+
+    direction=(
+        "down" if exit_m<entry_m else
+        "up" if exit_m>entry_m else
+        "fixed"
+    )
     return {
         "length":len(bs),"A":A,"B":B,"D":D,
         "entry_m":entry_m,"exit_m":exit_m,
         "fixed_point":str(q) if q is not None else None,
-        "kind":kind,
+        "kind":kind,"direction":direction,
+        "countdown_bits":countdown_bits,
+        "immediate_repeat_budget":repeat_budget,
         "schemas":[[z.r,z.s,z.rp] for z in bs],
     }
 
@@ -173,6 +199,10 @@ def main():
     max_spine=0;max_returns=0;max_r_seen=0
     total_delay=0;total_erased=0;total_returns=0
     nonbase_positive=0
+    cycle_kind_counts={}
+    cycle_direction_counts={}
+    min_repeat_budget=None
+    max_repeat_budget=0
     hardest=[]
 
     for r in range(1,a.max_r+1):
@@ -191,6 +221,13 @@ def main():
             total_erased+=z["erased_edges"]
             total_returns+=z["return_cycle_count"]
             nonbase_positive+=len(z["nonbase_positive_cycles"])
+            for cyc in z["return_cycles"]:
+                cycle_kind_counts[cyc["kind"]]=cycle_kind_counts.get(cyc["kind"],0)+1
+                cycle_direction_counts[cyc["direction"]]=cycle_direction_counts.get(cyc["direction"],0)+1
+                rb=cyc["immediate_repeat_budget"]
+                if rb is not None:
+                    min_repeat_budget=rb if min_repeat_budget is None else min(min_repeat_budget,rb)
+                    max_repeat_budget=max(max_repeat_budget,rb)
 
             row={
                 "r":r,"m":m,"x":(1<<r)*m-1,
@@ -222,6 +259,10 @@ def main():
         "mean_return_cycle_count":total_returns/nonbase,
         "erased_episode_fraction":total_erased/total_delay if total_delay else 0,
         "nonbase_positive_integer_return_cycles":nonbase_positive,
+        "cycle_kind_counts":cycle_kind_counts,
+        "cycle_direction_counts":cycle_direction_counts,
+        "min_immediate_repeat_budget":min_repeat_budget,
+        "max_immediate_repeat_budget":max_repeat_budget,
         "hardest":hardest,
         "proof_status":"exact_bounded_cycle_erasure_not_global_proof",
     }
@@ -236,7 +277,10 @@ def main():
           f"max_delay={max_delay}",f"max_spine={max_spine}",
           f"max_return_cycles={max_returns}",f"max_r_seen={max_r_seen}",
           f"erased_episode_fraction={out['erased_episode_fraction']:.12f}",
-          f"nonbase_positive_return_cycles={nonbase_positive}")
+          f"nonbase_positive_return_cycles={nonbase_positive}",
+          f"cycle_kinds={cycle_kind_counts}",
+          f"cycle_directions={cycle_direction_counts}",
+          f"repeat_budget_range={min_repeat_budget}:{max_repeat_budget}")
     print("VERIFIED_BOUNDED_EPISODE_CYCLE_ERASURE")
 
 
