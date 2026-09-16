@@ -1,0 +1,42 @@
+name: Collatz global non-descending episode bound
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-non-descending-s-bound.yml"
+      - "experiments/collatz_non_descending_s_bound.py"
+      - "experiments/collatz_odd_episode_grammar.py"
+  workflow_dispatch:
+
+jobs:
+  bound:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact global branch bound and controls
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python experiments/collatz_non_descending_s_bound.py             --max-r 128 --control-r 16 --precision 16             --out results/bound.json | tee results/census.txt
+          grep -q "VERIFIED_GLOBAL_NON_DESCENDING_EPISODE_S_BOUND" results/census.txt
+      - name: Freeze structural split
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open("results/bound.json"))
+          assert r["obstruction_split"]==[
+            "bounded_r_implies_finite_branch_schema_grammar",
+            "otherwise_r_is_unbounded",
+          ]
+          assert r["controls"]>0 and r["non_descending_controls"]>0
+          print("NON_DESCENDING_EPISODE_BOUND_GATES_OK",
+                r["controls"],r["non_descending_controls"],
+                r["table"][-1])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: non-descending-episode-s-bound
+          path: results
+          retention-days: 30
