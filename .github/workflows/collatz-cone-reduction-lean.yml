@@ -1,0 +1,27 @@
+name: Collatz cone reduction Lean check
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-cone-reduction-lean.yml"
+      - "formal/CollatzConeReduction.lean"
+  workflow_dispatch:
+
+jobs:
+  lean:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean 4
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh             | sh -s -- -y --default-toolchain leanprover/lean4:v4.19.0
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check reduction theorem
+        run: |
+          set -euo pipefail
+          lean --version
+          lean formal/CollatzConeReduction.lean
+          echo VERIFIED_LEAN_LOWER_CONE_STRONG_INDUCTION
