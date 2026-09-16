@@ -80,10 +80,12 @@ static inline int state_c(const State&s){return int(s.dc&CMASK);}
 static inline uint64_t state_d(const State&s){return s.dc>>6;}
 
 static bool lower_family(i128 A,i128 D,int k,uint64_t b){
+  // Parameter a>=1.  p(a)=A*a+D < n(a)=2^k*a+b uniformly iff
+  // the difference slope is nonpositive and the inequality holds at a=1.
   const i128 M=i128(1)<<k;
-  const i128 L=A-M;
-  const i128 R=i128(b)-D;
-  return A>0 && A+D>0 && L<0 && L<R;
+  const i128 slope=A-M;
+  const i128 rhs=i128(b)-D;
+  return A>0 && A+D>0 && slope<=0 && slope<rhs;
 }
 
 static bool first_reverse_match(
@@ -191,7 +193,7 @@ static bool exhaustive_reverse_dfs(
     // use all q remaining O factors. Larger e only doubles this bound.
     if(Ae%p3q!=0){std::cerr<<"COEF_V3_INVARIANT_FAIL\n";std::exit(11);}
     const i128 amin=mul_checked(Ae/p3q,p2q);
-    if(amin>=M){++st.coefficient_prunes;break;}
+    if(amin>M){++st.coefficient_prunes;break;}
     ++st.e_cases;
 
     const int mmax=std::min(q,v3i(De+1));
