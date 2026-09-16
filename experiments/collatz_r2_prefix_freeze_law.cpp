@@ -489,6 +489,10 @@ int main(int argc,char**argv){
              <<" full_reverse_balanced="<<fullBalanced
              <<" full_reverse_unbalanced="<<fullUnbalanced
              <<" distinct_reverse_profiles="<<profileFreq.size()
+             <<" prefix_classes="<<levelPrefixShape.size()
+             <<" prediction_errors="<<predictionErrors
+             <<" prefix_conflicts="<<prefixConflicts
+             <<" shape_conflicts="<<shapeConflicts
              <<"\n";
     if(depth==DEPTH){
       for(const auto&kv:rootFreq){
@@ -506,7 +510,20 @@ int main(int argc,char**argv){
 
     live.swap(next);
   }
-  std::cout<<"VERIFIED_TRIE_REVERSE_PROFILE_CORRELATION\n";
-  std::cout<<"FINAL_GATE=TRIE_REVERSE_PROFILE_D"<<DEPTH<<"_R"<<R<<"\n";
+  if(totalPredictionErrors||totalPrefixConflicts||totalShapeConflicts){
+    std::cerr<<"R2_FREEZE_LAW_FAIL prediction_errors="<<totalPredictionErrors
+             <<" prefix_conflicts="<<totalPrefixConflicts
+             <<" shape_conflicts="<<totalShapeConflicts<<"\n";
+    return 72;
+  }
+  std::cout<<"R2_FREEZE_LAW_RESULT depth="<<DEPTH
+           <<" frozen_prefix_shapes="<<frozenPrefixShape.size()
+           <<" prediction_errors="<<totalPredictionErrors
+           <<" prefix_conflicts="<<totalPrefixConflicts
+           <<" shape_conflicts="<<totalShapeConflicts
+           <<" ablation_remove_prefix_nonexact="<<(frozenPrefixShape.size()>1?1:0)
+           <<"\n";
+  std::cout<<"VERIFIED_R2_PREFIX_FREEZE_LAW_THROUGH_D"<<DEPTH<<"\n";
+  std::cout<<"FINAL_GATE=R2_PREFIX_FREEZE_D"<<DEPTH<<"_R"<<R<<"\n";
   return 0;
 }
