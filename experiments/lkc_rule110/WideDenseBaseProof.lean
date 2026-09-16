@@ -14,14 +14,20 @@ set_option maxHeartbeats 1000000
 
 theorem dense1_eq_if (x : Nat) :
     dense1 x = (if mixBit31 x then 1 else 0) := by
-  unfold dense1
-  exact (bits1_eq_mix x).trans
-    ((mixBit31Nat_eq x).trans (boolToNat_eq_if (mixBit31 x)))
+  calc
+    dense1 x = bits1 x := rfl
+    _ = mixBit31Nat x := bits1_eq_mix x
+    _ = (mixBit31 x).toNat := mixBit31Nat_eq x
+    _ = (if mixBit31 x then 1 else 0) := boolToNat_eq_if (mixBit31 x)
 
 theorem dense2_eq (x : Nat) :
     dense2 x = packMixBit x 2 := by
   unfold dense2 packW
   rw [dense1_eq_if, dense1_eq_if]
-  simp [packMixBit, Nat.shiftLeft_eq, Nat.mul_comm]
+  unfold packMixBit
+  rw [Nat.shiftLeft_eq]
+  rw [show 2 ^ 1 = 2 by decide]
+  rw [Nat.mul_comm (if mixBit31 (x + 1 * stepConst) then 1 else 0) 2]
+  rfl
 
 end WideDense
