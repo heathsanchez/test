@@ -6,6 +6,11 @@ ROOT = Path(__file__).resolve().parent
 BASE = (ROOT / "Submission_v27.lean").read_text()
 
 VARIANTS = {
+    "minxor": r"""def bstep (m : Nat) : Nat :=
+  let l := (((m <<< 1) ||| (m >>> 255)) &&& M)
+  let r := (((m >>> 1) ||| ((m &&& 1) <<< 255)) &&& M)
+  (m ^^^ (r &&& (l ||| (M ^^^ m)))) &&& M
+""",
     "share_r": r"""def bstep (m : Nat) : Nat :=
   let r := (((m >>> 1) ||| ((m &&& 1) <<< 255)) &&& M)
   (M ^^^ (((M ^^^ m) &&& (M ^^^ r))
