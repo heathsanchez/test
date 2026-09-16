@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           lean --version
-          (cd formal && lean -o CollatzConeReduction.olean CollatzConeReduction.lean)
-          (cd formal && lean CollatzShortcutCone.lean)
+          LEAN_PATH=formal lean -o formal/CollatzConeReduction.olean formal/CollatzConeReduction.lean
+          LEAN_PATH=formal lean formal/CollatzShortcutCone.lean
           echo VERIFIED_LEAN_LOWER_CONE_STRONG_INDUCTION
           echo VERIFIED_LEAN_ODD_ONLY_COLLATZ_REDUCTION
