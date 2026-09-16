@@ -5,7 +5,8 @@ on:
     branches: [collatz-valuation-quotient-v1]
     paths:
       - ".github/workflows/collatz-cone-reduction-lean.yml"
-      - "formal/CollatzConeReduction.lean"\n      - "formal/CollatzShortcutCone.lean"
+      - "formal/CollatzConeReduction.lean"
+      - "formal/CollatzShortcutCone.lean"
   workflow_dispatch:
 
 jobs:
@@ -17,11 +18,14 @@ jobs:
       - name: Install Lean 4
         run: |
           set -euo pipefail
-          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh             | sh -s -- -y --default-toolchain leanprover/lean4:v4.19.0
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain leanprover/lean4:v4.19.0
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Check reduction theorem
+      - name: Check reduction theorems
         run: |
           set -euo pipefail
           lean --version
           lean formal/CollatzConeReduction.lean
+          (cd formal && lean CollatzShortcutCone.lean)
           echo VERIFIED_LEAN_LOWER_CONE_STRONG_INDUCTION
+          echo VERIFIED_LEAN_ODD_ONLY_COLLATZ_REDUCTION
