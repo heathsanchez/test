@@ -1,0 +1,48 @@
+name: Collatz joint 2-adic 3-adic cylinders
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-joint-2-3-cylinders.yml"
+      - "experiments/collatz_joint_2_3_cylinders.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-joint-2-3-cylinders
+  cancel-in-progress: true
+
+jobs:
+  joint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, refine: 0 }
+          - { depth: 12, refine: 1 }
+          - { depth: 16, refine: 0 }
+          - { depth: 16, refine: 1 }
+          - { depth: 20, refine: 0 }
+          - { depth: 20, refine: 1 }
+    name: joint-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_joint_2_3_cylinders.cpp             -o /tmp/joint23
+      - name: Run exact joint cylinder quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/joint23 ${{ matrix.depth }} ${{ matrix.refine }}             | tee results/census.txt
+          grep -q "EXACT_ALL_ODD_N_GT_1_PARTITION" results/census.txt
+          grep -q "FINAL_GATE=JOINT_2_3_ADIC_CYLINDER_D${{ matrix.depth }}_R${{ matrix.refine }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: joint-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
