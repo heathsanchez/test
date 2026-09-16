@@ -126,6 +126,15 @@ struct Classify{
 static Classify classify(const State&s){
   const u128 Ncoef=u128(1)<<(s.A+1);
   const u128 Xcoef=2*p3(s.j);
+
+  // The q=0 member r=x=1 is the already-solved fixed point.  When the
+  // direct slope is negative, every q>=1 member descends uniformly, so the
+  // whole cylinder is discharged by base case + affine descent.
+  if(s.r==1 && s.x==1 && Xcoef<Ncoef){
+    Classify base;base.closed=true;base.partial=false;
+    base.guaranteed_o=std::min(v3(s.x+1),s.j);
+    return base;
+  }
   const i128 dSlope=i128(Xcoef)-i128(Ncoef);
   const i128 dBase=i128(s.x)-i128(s.r);
   const Interval direct=lt_interval(dSlope,dBase);
