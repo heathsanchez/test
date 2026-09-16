@@ -188,7 +188,7 @@ int main(int argc,char**argv){
   const int DEPTH=std::stoi(argv[1]);
   const int MD=std::stoi(argv[2]);
   const int EM=std::stoi(argv[3]);
-  if(DEPTH<1||DEPTH>22||MD<0||MD>8||EM<0||EM>9)return 2;
+  if(DEPTH<1||DEPTH>22||MD<0||MD>40||EM<0||EM>1)return 2;
 
   P3.resize(80);P3[0]=1;
   for(int i=1;i<(int)P3.size();++i)P3[i]=P3[i-1]*3;
