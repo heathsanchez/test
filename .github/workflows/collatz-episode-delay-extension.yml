@@ -1,0 +1,96 @@
+name: Collatz episode delay precision extension
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-episode-delay-extension.yml"
+      - "experiments/collatz_episode_delay_census.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-episode-delay-extension
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        p: [26,28]
+    name: delay-p${{ matrix.p }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact high-precision census
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20             experiments/collatz_episode_delay_census.cpp -o /tmp/census
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/census 20 ${{ matrix.p }} 4096 32             | tee results/census.txt
+          grep -q "VERIFIED_EXACT_EPISODE_DELAY_CENSUS" results/census.txt
+          grep -q "ALL_NONBASE_CASES_DESCEND_WITHIN_EPISODE_CAP" results/census.txt
+      - name: Record extension result
+        run: |
+          python - <<'PY'
+          import json,re
+          P=int("${{ matrix.p }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              r"EPISODE_DELAY_CENSUS max_r=(\d+) precision=(\d+) "
+              r"cases=(\d+) base_cases=(\d+) closed=(\d+) unresolved=(\d+) "
+              r"max_delay=(\d+) max_delay_r=(\d+) max_delay_m=(\d+) "
+              r"max_delay_x=(\d+) delay_per_precision=([0-9.eE+-]+)",s)
+          assert m,s[-6000:]
+          v=m.groups()
+          out={
+            "max_r":int(v[0]),"precision":int(v[1]),"cases":int(v[2]),
+            "base_cases":int(v[3]),"closed":int(v[4]),"unresolved":int(v[5]),
+            "max_delay":int(v[6]),"max_delay_r":int(v[7]),
+            "max_delay_m":int(v[8]),"max_delay_x":int(v[9]),
+            "delay_per_precision":float(v[10]),
+          }
+          assert out["precision"]==P and out["unresolved"]==0 and out["base_cases"]==1,out
+          tm=open("results/time-memory.txt").read().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("EPISODE_DELAY_EXTENSION_RESULT",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: episode-delay-extension-p${{ matrix.p }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: census
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: episode-delay-extension-p*
+          path: gathered
+      - name: Aggregate extension
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("episode-delay-extension-p*"):
+              p=d/"summary.json"; assert p.exists(),d
+              rows.append(json.loads(p.read_text()))
+          rows.sort(key=lambda z:z["precision"])
+          assert [z["precision"] for z in rows]==[26,28],rows
+          out={"kind":"episode_delay_precision_extension","rows":rows}
+          Path("episode-delay-extension-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("EPISODE_DELAY_EXTENSION_FIELD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: episode-delay-extension-field
+          path: episode-delay-extension-field.json
+          retention-days: 30
