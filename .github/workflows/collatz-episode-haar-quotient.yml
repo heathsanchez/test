@@ -1,0 +1,84 @@
+name: Collatz exact Haar episode quotient
+
+on:
+  push:
+    branches: [collatz-global-residual-closure-v1]
+    paths:
+      - ".github/workflows/collatz-episode-haar-quotient.yml"
+      - "experiments/collatz_episode_haar_quotient.py"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-episode-haar-quotient
+  cancel-in-progress: true
+
+jobs:
+  quotient:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { episodes: 12, rcap: 24, initcap: 24 }
+          - { episodes: 16, rcap: 32, initcap: 32 }
+          - { episodes: 20, rcap: 40, initcap: 40 }
+    name: haar-e${{ matrix.episodes }}-r${{ matrix.rcap }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run exact rational quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             python experiments/collatz_episode_haar_quotient.py               --episodes ${{ matrix.episodes }}               --r-cap ${{ matrix.rcap }}               --max-initial-r ${{ matrix.initcap }}               --out results/summary.json             | tee results/census.txt
+          grep -q "EXACT_EPISODE_BRANCH_WEIGHTS_FACTOR_AS_GEOMETRIC_COORDINATES" results/census.txt
+          grep -q "VERIFIED_EXACT_HAAR_EPISODE_COEFFICIENT_QUOTIENT" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: haar-episode-e${{ matrix.episodes }}-r${{ matrix.rcap }}
+          path: results
+          retention-days: 30
+
+  aggregate:
+    needs: quotient
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: haar-episode-e*
+          path: gathered
+      - name: Aggregate quotient curve
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          rows=[]
+          for d in Path("gathered").glob("haar-episode-e*"):
+              p=d/"summary.json"; assert p.exists(),d
+              r=json.loads(p.read_text())
+              last=r["mixture_rows"][-1]
+              tm=(d/"time-memory.txt").read_text().strip().split()
+              rows.append({
+                  "episodes":r["episodes"],
+                  "r_cap":r["r_cap"],
+                  "max_initial_r":r["max_initial_r"],
+                  "represented_mass":last["represented_mass"],
+                  "upper_mass":last["rigorous_unresolved_upper_mass"],
+                  "tail_error":last["explicit_tail_error"],
+                  "wall_seconds":float(tm[0]),
+                  "max_rss_kb":int(tm[1]),
+              })
+          rows.sort(key=lambda z:z["episodes"])
+          assert [z["episodes"] for z in rows]==[12,16,20],rows
+          out={"kind":"exact_haar_episode_quotient_curve","rows":rows}
+          Path("haar-episode-quotient-field.json").write_text(json.dumps(out,indent=2)+"\n")
+          print("HAAR_EPISODE_QUOTIENT_FIELD",json.dumps(out,separators=(",",":")))
+          print("HAAR_EPISODE_QUOTIENT_CURVE_GREEN")
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: haar-episode-quotient-field
+          path: haar-episode-quotient-field.json
+          retention-days: 30
