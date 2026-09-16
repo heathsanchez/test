@@ -35,14 +35,15 @@ jobs:
   prepare:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.mk.outputs.matrix }}
+      low_matrix: ${{ steps.mk.outputs.low_matrix }}
+      high_matrix: ${{ steps.mk.outputs.high_matrix }}
     steps:
       - id: mk
         shell: bash
         run: |
           python - <<'PY' >> "$GITHUB_OUTPUT"
           import json
-          include=[]
+          low=[]; high=[]
           for K in range(20,41):
               if K <= 29:
                   shards=1
@@ -54,20 +55,23 @@ jobs:
                   shards=48
               else:
                   shards=64
+              target=low if K<=36 else high
               for s in range(shards):
-                  include.append({"k":K,"shard":s,"shards":shards})
-          print("matrix="+json.dumps({"include":include},separators=(",",":")))
+                  target.append({"k":K,"shard":s,"shards":shards})
+          assert len(low)<=256 and len(high)<=256,(len(low),len(high))
+          print("low_matrix="+json.dumps({"include":low},separators=(",",":")))
+          print("high_matrix="+json.dumps({"include":high},separators=(",",":")))
           PY
 
-  shell:
+  shell_low:
     needs: prepare
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       max-parallel: 24
-      matrix: ${{ fromJSON(needs.prepare.outputs.matrix) }}
-    name: exact-k${{ matrix.k }}-s${{ matrix.shard }}
+      matrix: ${{ fromJSON(needs.prepare.outputs.low_matrix) }}
+    name: exact-low-k${{ matrix.k }}-s${{ matrix.shard }}
     steps:
       - uses: actions/checkout@v4
       - name: Install arbitrary precision headers
@@ -78,8 +82,11 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p results
-          g++ -O3 -march=native -std=c++20             experiments/collatz_absolute_cone_dfs.cpp -o /tmp/dfs
-          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/dfs ${{ matrix.k }} 800 ${{ matrix.shard }} ${{ matrix.shards }}             | tee results/census.txt
+          g++ -O3 -march=native -std=c++20 \
+            experiments/collatz_absolute_cone_dfs.cpp -o /tmp/dfs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt \
+            /tmp/dfs ${{ matrix.k }} 800 ${{ matrix.shard }} ${{ matrix.shards }} \
+            | tee results/census.txt
           grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" results/census.txt
       - name: Parse exact shard
         run: |
@@ -101,7 +108,64 @@ jobs:
           out={"K":K,"H":800,"shard":sid,"shards":nsh,**dict(zip(keys,vals))}
           assert out["closed"]+out["hard"]==out["represented"]
           assert out["hard"]==0,out
-          tm=open("results/time-memory.txt").read().strip().split()
+          tm=open("results/time-memory.txt").read_text().strip().split()
+          out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
+          open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
+          print("CONTIGUOUS_EXACT_SHARD",json.dumps(out,separators=(",",":")))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: contiguous-k${{ matrix.k }}-s${{ matrix.shard }}
+          path: results
+          retention-days: 30
+
+  shell_high:
+    needs: prepare
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      max-parallel: 24
+      matrix: ${{ fromJSON(needs.prepare.outputs.high_matrix) }}
+    name: exact-high-k${{ matrix.k }}-s${{ matrix.shard }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install arbitrary precision headers
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq libboost-dev
+      - name: Run exact symbolic shell shard
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          g++ -O3 -march=native -std=c++20 \
+            experiments/collatz_absolute_cone_dfs.cpp -o /tmp/dfs
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt \
+            /tmp/dfs ${{ matrix.k }} 800 ${{ matrix.shard }} ${{ matrix.shards }} \
+            | tee results/census.txt
+          grep -q "VERIFIED_DFS_SYMBOLIC_SHARD" results/census.txt
+      - name: Parse exact shard
+        run: |
+          python - <<'PY'
+          import json,re
+          K=int("${{ matrix.k }}")
+          sid=int("${{ matrix.shard }}")
+          nsh=int("${{ matrix.shards }}")
+          s=open("results/census.txt").read()
+          m=re.search(
+              rf"DFS_SYMBOLIC_RESULT K={K} H=800 shard={sid} shards={nsh} "
+              r"represented=(\d+) closed=(\d+) hard=(\d+) nodes=(\d+) "
+              r"uniform_nodes=(\d+) singleton_nodes=(\d+) max_depth=(\d+) "
+              r"max_close_t=(\d+) max_close_seed=(\d+)",s)
+          assert m,s[-5000:]
+          vals=list(map(int,m.groups()))
+          keys=["represented","closed","hard","nodes","uniform_nodes",
+                "singleton_nodes","max_depth","max_close_t","max_close_seed"]
+          out={"K":K,"H":800,"shard":sid,"shards":nsh,**dict(zip(keys,vals))}
+          assert out["closed"]+out["hard"]==out["represented"]
+          assert out["hard"]==0,out
+          tm=open("results/time-memory.txt").read_text().strip().split()
           out["wall_seconds"]=float(tm[0]);out["max_rss_kb"]=int(tm[1])
           open("results/summary.json","w").write(json.dumps(out,indent=2)+"\n")
           print("CONTIGUOUS_EXACT_SHARD",json.dumps(out,separators=(",",":")))
@@ -114,7 +178,7 @@ jobs:
           retention-days: 30
 
   aggregate:
-    needs: [base, shell]
+    needs: [base, shell_low, shell_high]
     if: always()
     runs-on: ubuntu-latest
     steps:
