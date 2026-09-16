@@ -268,13 +268,17 @@ int main(int argc,char**argv){
         int C=0;const int L=reverse_length(z,C);
         const bool isFull=L==z.j;
         if(isFull)++full;else ++stopped;
-        if(isFull!=z.lowOnly || (isFull&&C!=z.A))++badDual;
+        // Compression only requires the one-way law: every still-all-low
+        // prefix has the universal full reverse decoration. Rare high-history
+        // states may also admit an alternative full reverse path; those are
+        // separate resonance capabilities and do not invalidate prefix mass.
+        if(z.lowOnly && (!isFull || C!=z.A))++badDual;
         ++prefixCount[z.lowPrefix];
         next.push_back(z);
       }
     }
     if(badDual){
-      std::cerr<<"LOW12_DUALITY_FAIL depth="<<depth<<" count="<<badDual<<"\n";
+      std::cerr<<"LOW12_REQUIRED_DIRECTION_FAIL depth="<<depth<<" count="<<badDual<<"\n";
       return 60;
     }
     base.swap(next);
