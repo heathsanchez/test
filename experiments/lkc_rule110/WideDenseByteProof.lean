@@ -34,7 +34,7 @@ theorem dense8_eq_pack8Nat (x : Nat) :
   have h7 : x + 4 * stepConst + 2 * stepConst + 1 * stepConst =
       x + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst + stepConst := by omega
   rw [h2, h3, h4, h5, h6, h7]
-  norm_num
-  ring
+  simp only [Nat.pow_succ, Nat.pow_zero, Nat.mul_one]
+  omega
 
 end WideDenseByte
