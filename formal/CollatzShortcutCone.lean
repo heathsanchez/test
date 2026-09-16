@@ -32,24 +32,30 @@ theorem collatzConvergesOfOddLowerWitness
     (oddLower :
       ∀ n : Nat, 1 < n → n % 2 = 1 → LowerWitness collatzShortcut n) :
     ∀ n : Nat, 0 < n → Reach collatzShortcut n 1 := by
-  apply allConvergeOfLowerWitness collatzShortcut
-  intro n hn
-  cases Nat.mod_two_eq_zero_or_one n with
-  | inl heven =>
-      exact evenLowerWitness n hn heven
-  | inr hodd =>
-      exact oddLower n hn hodd
+  have lowerAll :
+      ∀ n : Nat, 1 < n → LowerWitness collatzShortcut n := by
+    intro n hn
+    cases Nat.mod_two_eq_zero_or_one n with
+    | inl heven =>
+        exact evenLowerWitness n hn heven
+    | inr hodd =>
+        exact oddLower n hn hodd
+  have h := allConvergeOfLowerWitness collatzShortcut lowerAll
+  simpa [Converges] using h
 
 /--
 Conversely, global Collatz convergence trivially gives an odd lower witness:
 choose the reached value y = 1. Thus the odd-lower-witness formulation is
 equivalent in logical strength to global convergence.
 -/
-theorem oddLowerWitnessOfCollatzConvergence
+def oddLowerWitnessOfCollatzConvergence
     (allConv : ∀ n : Nat, 0 < n → Reach collatzShortcut n 1) :
     ∀ n : Nat, 1 < n → n % 2 = 1 → LowerWitness collatzShortcut n := by
   intro n hn _hodd
-  exact lowerWitnessOfConvergence collatzShortcut allConv n hn
+  apply lowerWitnessOfConvergence collatzShortcut
+  · intro m hm
+    exact allConv m hm
+  · exact hn
 
 theorem collatzConvergenceIffOddLowerWitness :
     (∀ n : Nat, 0 < n → Reach collatzShortcut n 1) ↔
