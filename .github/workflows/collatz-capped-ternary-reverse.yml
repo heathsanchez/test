@@ -1,0 +1,47 @@
+name: Collatz capped ternary reverse
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-capped-ternary-reverse.yml"
+      - "experiments/collatz_capped_ternary_reverse.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-capped-ternary-reverse
+  cancel-in-progress: true
+
+jobs:
+  capped:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 8, rb: 1, kcap: 1, macro: 4, emax: 5 }
+          - { depth: 8, rb: 1, kcap: 2, macro: 4, emax: 5 }
+          - { depth: 8, rb: 1, kcap: 3, macro: 4, emax: 5 }
+          - { depth: 12, rb: 1, kcap: 2, macro: 6, emax: 5 }
+          - { depth: 16, rb: 1, kcap: 2, macro: 6, emax: 5 }
+          - { depth: 20, rb: 1, kcap: 2, macro: 6, emax: 5 }
+    name: capped-d${{ matrix.depth }}-k${{ matrix.kcap }}-m${{ matrix.macro }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_capped_ternary_reverse.cpp             -o /tmp/capped_reverse
+      - name: Run capped exact quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/capped_reverse ${{ matrix.depth }} ${{ matrix.rb }} ${{ matrix.kcap }} ${{ matrix.macro }} ${{ matrix.emax }}             | tee results/census.txt
+          grep -q "FINAL_GATE=CAPPED_REVERSE_D${{ matrix.depth }}_R${{ matrix.rb }}_K${{ matrix.kcap }}_M${{ matrix.macro }}_E${{ matrix.emax }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: capped-d${{ matrix.depth }}-k${{ matrix.kcap }}-m${{ matrix.macro }}
+          path: results
+          retention-days: 30
