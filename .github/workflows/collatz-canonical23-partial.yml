@@ -1,0 +1,46 @@
+name: Collatz canonical23 partial coverage
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-canonical23-partial.yml"
+      - "experiments/collatz_canonical23_partial.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-canonical23-partial
+  cancel-in-progress: true
+
+jobs:
+  partial:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 8, refine: 0 }
+          - { depth: 8, refine: 1 }
+          - { depth: 12, refine: 0 }
+          - { depth: 12, refine: 1 }
+          - { depth: 12, refine: 2 }
+    name: canonical-partial-d${{ matrix.depth }}-r${{ matrix.refine }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_canonical23_partial.cpp             -o /tmp/canonical_partial
+      - name: Diagnose exact partial coverage
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/canonical_partial ${{ matrix.depth }} ${{ matrix.refine }}             | tee results/census.txt
+          grep -q "FINAL_GATE=CANONICAL23_PARTIAL_D${{ matrix.depth }}_R${{ matrix.refine }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: canonical-partial-d${{ matrix.depth }}-r${{ matrix.refine }}
+          path: results
+          retention-days: 30
