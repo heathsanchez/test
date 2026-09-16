@@ -1,0 +1,48 @@
+name: Collatz global reverse EO cylinders
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-global-reverse-eo-cylinders.yml"
+      - "experiments/collatz_global_reverse_eo_cylinders.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-global-reverse-eo-cylinders
+  cancel-in-progress: true
+
+jobs:
+  eo:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, macro: 0, emax: 5 }
+          - { depth: 12, macro: 4, emax: 5 }
+          - { depth: 12, macro: 6, emax: 5 }
+          - { depth: 16, macro: 4, emax: 5 }
+          - { depth: 16, macro: 6, emax: 5 }
+          - { depth: 20, macro: 6, emax: 5 }
+    name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_global_reverse_eo_cylinders.cpp             -o /tmp/reverse_eo
+      - name: Run exact reverse EO quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/reverse_eo ${{ matrix.depth }} ${{ matrix.macro }} ${{ matrix.emax }}             | tee results/census.txt
+          grep -q "REVERSE_EO_NO_PARTIAL_BASELINE" results/census.txt
+          grep -q "FINAL_GATE=GLOBAL_REVERSE_EO_D${{ matrix.depth }}_M${{ matrix.macro }}_E${{ matrix.emax }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reverse-eo-d${{ matrix.depth }}-m${{ matrix.macro }}
+          path: results
+          retention-days: 30
