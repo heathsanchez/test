@@ -22,16 +22,17 @@ jobs:
           mkdir -p results
           python experiments/collatz_unbounded_r_escape.py             --max-r 16 --precision 16             --out results/escape.json | tee results/census.txt
           grep -q "VERIFIED_EXACT_UNBOUNDED_R_ESCAPE_CONGRUENCE" results/census.txt
-      - name: Freeze obstruction split
+      - name: Freeze exact scope
         run: |
           python - <<'PY'
           import json
           r=json.load(open("results/escape.json"))
           assert r["controls"]>0 and r["non_descending_controls"]>0
           assert r["r_increase_controls"]>0
-          assert r["remaining_global_alternatives"]==[
-            "bounded_r_infinite_recurrence",
-            "unbounded_r_with_unbounded_unique_2adic_congruences",
+          assert r["scope"]==[
+            "exact_for_each_episode",
+            "escape_interpretation_applies_to_locally_nondecreasing_r_increases",
+            "not_a_global_counterexample_dichotomy",
           ]
           print("UNBOUNDED_R_ESCAPE_GATES_OK",
                 r["non_descending_controls"],
