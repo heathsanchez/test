@@ -4,11 +4,7 @@ namespace DenseByteSequence
 
 theorem pow256_eq_pow2 (n : Nat) :
     256 ^ n = 2 ^ (8 * n) := by
-  induction n with
-  | zero =>
-      simp
-  | succ n ih =>
-      rw [Nat.pow_succ, Nat.mul_succ, Nat.pow_add, ← ih]
-      rw [show 2 ^ 8 = 256 by decide]
+  rw [show 256 = 2 ^ 8 by decide]
+  exact (Nat.pow_mul 2 8 n).symm
 
 end DenseByteSequence
