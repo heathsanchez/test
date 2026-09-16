@@ -1,0 +1,755 @@
+{
+  "status": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+  "results": [
+    {
+      "K": 12,
+      "families": 144,
+      "unique_words": 134,
+      "fixed_point_classes": 134,
+      "primitive_words": 134,
+      "known_classes_before": 0,
+      "new_words_in_known_class": 0,
+      "new_primitive_patterns_in_known_class": 0,
+      "counts": {
+        "returns": 538,
+        "different_fixed_point": 227,
+        "reset": 83,
+        "stable_reset": 80,
+        "equal": 79,
+        "same_fixed_point": 33,
+        "decrease": 98
+      },
+      "first_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "first_stable_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "largest_reset": {
+        "gain": 5,
+        "seed": 2651,
+        "r": 1,
+        "m_start": 2125,
+        "m_end": 897,
+        "old_word": [
+          [
+            1,
+            1,
+            1
+          ]
+        ],
+        "new_word": [
+          [
+            1,
+            1,
+            2
+          ],
+          [
+            2,
+            2,
+            1
+          ]
+        ],
+        "old_q": [
+          1,
+          1
+        ],
+        "new_q": [
+          33,
+          37
+        ],
+        "J": -4,
+        "valuation_before": 2,
+        "valuation_after": 7,
+        "pullback_already_stable": true
+      }
+    },
+    {
+      "K": 16,
+      "families": 1363,
+      "unique_words": 1114,
+      "fixed_point_classes": 1114,
+      "primitive_words": 1114,
+      "known_classes_before": 134,
+      "new_words_in_known_class": 0,
+      "new_primitive_patterns_in_known_class": 0,
+      "counts": {
+        "returns": 6249,
+        "different_fixed_point": 2934,
+        "reset": 952,
+        "stable_reset": 860,
+        "equal": 1003,
+        "same_fixed_point": 386,
+        "decrease": 1365
+      },
+      "first_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "first_stable_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "largest_reset": {
+        "gain": 9,
+        "seed": 57115,
+        "r": 2,
+        "m_start": 891293,
+        "m_end": 282011,
+        "old_word": [
+          [
+            2,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            2,
+            1
+          ],
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          7,
+          5
+        ],
+        "new_q": [
+          83,
+          175
+        ],
+        "J": -810,
+        "valuation_before": 1,
+        "valuation_after": 10,
+        "pullback_already_stable": true
+      }
+    },
+    {
+      "K": 20,
+      "families": 15870,
+      "unique_words": 10456,
+      "fixed_point_classes": 10456,
+      "primitive_words": 10456,
+      "known_classes_before": 1121,
+      "new_words_in_known_class": 0,
+      "new_primitive_patterns_in_known_class": 0,
+      "counts": {
+        "returns": 84075,
+        "different_fixed_point": 42099,
+        "reset": 14338,
+        "stable_reset": 11704,
+        "equal": 14084,
+        "same_fixed_point": 5183,
+        "decrease": 18860
+      },
+      "first_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "first_stable_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "largest_reset": {
+        "gain": 14,
+        "seed": 241199,
+        "r": 1,
+        "m_start": 579535,
+        "m_end": 51573,
+        "old_word": [
+          [
+            1,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ]
+        ],
+        "new_word": [
+          [
+            1,
+            2,
+            2
+          ],
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            4,
+            1
+          ]
+        ],
+        "old_q": [
+          -113,
+          115
+        ],
+        "new_q": [
+          5001,
+          7463
+        ],
+        "J": -1418434,
+        "valuation_before": 1,
+        "valuation_after": 15,
+        "pullback_already_stable": false
+      }
+    },
+    {
+      "K": 24,
+      "families": 172868,
+      "unique_words": 102015,
+      "fixed_point_classes": 102015,
+      "primitive_words": 102015,
+      "known_classes_before": 10510,
+      "new_words_in_known_class": 0,
+      "new_primitive_patterns_in_known_class": 0,
+      "counts": {
+        "returns": 1108356,
+        "different_fixed_point": 597142,
+        "reset": 203267,
+        "stable_reset": 154042,
+        "equal": 200902,
+        "same_fixed_point": 63269,
+        "decrease": 256242
+      },
+      "first_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "first_stable_reset": {
+        "seed": 27,
+        "r": 2,
+        "m_start": 23,
+        "m_end": 71,
+        "old_word": [
+          [
+            2,
+            1,
+            5
+          ],
+          [
+            5,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "new_word": [
+          [
+            2,
+            1,
+            3
+          ],
+          [
+            3,
+            1,
+            4
+          ],
+          [
+            4,
+            1,
+            1
+          ],
+          [
+            1,
+            2,
+            3
+          ],
+          [
+            3,
+            1,
+            2
+          ]
+        ],
+        "old_q": [
+          -1177,
+          4513
+        ],
+        "new_q": [
+          -555019,
+          1070035
+        ],
+        "J": -1245369552,
+        "valuation_before": 4,
+        "valuation_after": 6,
+        "pullback_already_stable": true
+      },
+      "largest_reset": {
+        "gain": 23,
+        "seed": 5554879,
+        "r": 1,
+        "m_start": 9501751,
+        "m_end": 3563157,
+        "old_word": [
+          [
+            1,
+            1,
+            5
+          ],
+          [
+            5,
+            2,
+            3
+          ],
+          [
+            3,
+            3,
+            1
+          ]
+        ],
+        "new_word": [
+          [
+            1,
+            2,
+            1
+          ]
+        ],
+        "old_q": [
+          26081,
+          13085
+        ],
+        "new_q": [
+          3,
+          5
+        ],
+        "J": -91150,
+        "valuation_before": 1,
+        "valuation_after": 24,
+        "pullback_already_stable": true
+      }
+    }
+  ],
+  "scope": "return progress only; no seed closure or global rank inferred"
+}

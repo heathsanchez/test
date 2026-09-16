@@ -1,0 +1,104 @@
+{
+  "status": "EXPERIMENTALLY EXACT ON FINITE DOMAIN",
+  "training_K": 12,
+  "frozen_operator_count": 134,
+  "training_roots": 144,
+  "held_out_root_count": 0,
+  "held_out_roots": [],
+  "same_training_baseline_rules": 317,
+  "operator_serialization_sha256": "5681e0081f5a8bfdf97009c6969f12b12edef18ac1ab1682528acd14305454d6",
+  "results": [
+    {
+      "K": 16,
+      "families": 1363,
+      "counts": {
+        "macro_invocations": 3072,
+        "compiled_episode_transitions": 4752,
+        "prefix_formula_evaluations": 17538,
+        "extra_repetitions_compiled": 420,
+        "independent_macro_replays": 3072,
+        "fallback_episodes": 5906,
+        "closed": 1363,
+        "novel_sources": 1234,
+        "novel_sources_using_frozen_rule": 1104,
+        "novel_sources_using_repeat_generator": 304,
+        "closed_without_fallback": 18,
+        "novel_closed_without_fallback": 2,
+        "novel_zero_fallback_multiple_macros": 2,
+        "novel_baseline_direct_closure": 0
+      },
+      "frozen_operators_used": 118,
+      "new_operators_acquired": 0,
+      "novel_zero_fallback_examples": [
+        33947,
+        6139
+      ]
+    },
+    {
+      "K": 20,
+      "families": 15870,
+      "counts": {
+        "macro_invocations": 39720,
+        "compiled_episode_transitions": 58888,
+        "prefix_formula_evaluations": 212383,
+        "extra_repetitions_compiled": 5694,
+        "independent_macro_replays": 39720,
+        "fallback_episodes": 79654,
+        "closed": 15870,
+        "novel_sources": 15778,
+        "novel_sources_using_frozen_rule": 14600,
+        "novel_sources_using_repeat_generator": 4074,
+        "closed_without_fallback": 20,
+        "novel_closed_without_fallback": 7,
+        "novel_zero_fallback_multiple_macros": 7,
+        "novel_baseline_direct_closure": 0
+      },
+      "frozen_operators_used": 127,
+      "new_operators_acquired": 0,
+      "novel_zero_fallback_examples": [
+        240667,
+        33947,
+        249499,
+        450203,
+        525403,
+        146683,
+        524283
+      ]
+    },
+    {
+      "K": 24,
+      "families": 172868,
+      "counts": {
+        "macro_invocations": 493840,
+        "compiled_episode_transitions": 727898,
+        "prefix_formula_evaluations": 2634475,
+        "extra_repetitions_compiled": 68183,
+        "independent_macro_replays": 493840,
+        "fallback_episodes": 1022739,
+        "closed": 172868,
+        "novel_sources": 172804,
+        "novel_sources_using_frozen_rule": 163033,
+        "novel_sources_using_repeat_generator": 48217,
+        "closed_without_fallback": 57,
+        "novel_closed_without_fallback": 48,
+        "novel_zero_fallback_multiple_macros": 48,
+        "novel_baseline_direct_closure": 0
+      },
+      "frozen_operators_used": 128,
+      "new_operators_acquired": 0,
+      "novel_zero_fallback_examples": [
+        11176987,
+        3157019,
+        1584155,
+        4254747,
+        6167579,
+        12551323,
+        4605595,
+        3032731,
+        13452955,
+        9686683
+      ]
+    }
+  ],
+  "scope": "macro reuse with explicit residual fallback; no global closure"
+}
