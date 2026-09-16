@@ -24,10 +24,12 @@ jobs:
           g++ -O3 -march=native -std=c++20             experiments/collatz_forward_reverse_duality_counterexample.cpp -o /tmp/dual-residual
       - name: Isolate first exact residual
         run: |
+          set +e
           set -uo pipefail
           mkdir -p results
           /tmp/dual-residual 17 0 > results/census.txt 2>&1
           code=$?
+          set -e
           cat results/census.txt
           test "$code" -eq 70
           test "$(grep -c '^DUALITY_COUNTEREXAMPLE kind=full_low' results/census.txt)" -eq 1
