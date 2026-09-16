@@ -1,4 +1,4 @@
-import WideGatherProof
+import WideDenseByteProof
 import DenseAlgebraProof
 import Submission
 
@@ -7,27 +7,27 @@ namespace WideDense
 open GenericPack
 open WideHierarchy
 open WideGather
+open WideDenseByte
 open Submission
 
 set_option maxRecDepth 1048576
 set_option maxHeartbeats 1000000
 
-theorem dense1_eq_if (x : Nat) :
-    dense1 x = (if mixBit31 x then 1 else 0) := by
-  calc
-    dense1 x = bits1 x := rfl
-    _ = mixBit31Nat x := bits1_eq_mix x
-    _ = (mixBit31 x).toNat := mixBit31Nat_eq x
-    _ = (if mixBit31 x then 1 else 0) := boolToNat_eq_if (mixBit31 x)
+theorem pack8Nat_eq_packMixBit8 (x : Nat) :
+    pack8Nat x = packMixBit x 8 := by
+  rw [pack8Nat_eq]
+  symm
+  simpa [packMixBit] using (packMixBit_eight x 0)
 
-theorem dense2_eq (x : Nat) :
-    dense2 x = packMixBit x 2 := by
-  unfold dense2 packW
-  rw [dense1_eq_if, dense1_eq_if]
-  unfold packMixBit
-  rw [Nat.shiftLeft_eq]
-  rw [show 2 ^ 1 = 2 by decide]
-  rw [Nat.mul_comm (if mixBit31 (x + 1 * stepConst) then 1 else 0) 2]
-  rfl
+theorem dense8_eq (x : Nat) :
+    dense8 x = packMixBit x 8 := by
+  exact (dense8_eq_pack8Nat x).trans (pack8Nat_eq_packMixBit8 x)
+
+theorem dense16_eq (x : Nat) :
+    dense16 x = packMixBit x 16 := by
+  unfold dense16 packW
+  rw [dense8_eq, dense8_eq]
+  rw [show 16 = 8 + 8 by decide, DenseAlgebraProbe.packMixBit_add_probe]
+  simp [Nat.shiftLeft_eq, Nat.mul_comm]
 
 end WideDense
