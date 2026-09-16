@@ -1,7 +1,7 @@
 name: Collatz exact return interface
 on:
   push:
-    branches: [collatz-forward-witness-audit-v1]
+    branches: [collatz-forward-witness-audit-v1, collatz-return-resonance-v1]
     paths:
       - experiments/collatz_return_interface.py
       - experiments/collatz_return_interface_verify.py
