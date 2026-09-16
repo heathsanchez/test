@@ -14,7 +14,7 @@ permissions:
 jobs:
   prove:
     runs-on: ubuntu-24.04
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Install elan
@@ -27,7 +27,7 @@ jobs:
           git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
           cd lkc
           git checkout eb5e8850cdec9acf52d615529f9d1d64894e44b9
-      - name: Build proof stack
+      - name: Prepare proof stack
         working-directory: lkc/problems/ca-rule110
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
@@ -35,12 +35,21 @@ jobs:
           for f in GenericPackProof GenericMixProof GatherPairProof WideHierarchyProof WideGatherProof WideDenseProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
-          lake env lean -o GenericPackProof.olean GenericPackProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean -o GenericMixProof.olean GenericMixProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean -o GatherPairProof.olean GatherPairProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideHierarchyProof.olean WideHierarchyProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseProof.lean
-
-
-# rerun after explicit algebra bridge
+      - name: Generic pack
+        working-directory: lkc/problems/ca-rule110
+        run: lake env lean -o GenericPackProof.olean GenericPackProof.lean
+      - name: Generic mix
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o GenericMixProof.olean GenericMixProof.lean
+      - name: Pair gather
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o GatherPairProof.olean GatherPairProof.lean
+      - name: Wide hierarchy
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideHierarchyProof.olean WideHierarchyProof.lean
+      - name: Wide gather
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
+      - name: Dense payload
+        working-directory: lkc/problems/ca-rule110
+        run: LEAN_PATH=".:$LEAN_PATH" lake env lean WideDenseProof.lean
