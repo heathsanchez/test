@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Exact 2-adic resonance decomposition of Collatz first-return switches.
+"""Exact hierarchical 2-adic decomposition of Collatz first-return switches.
 
-This experiment deletes every cross-pattern switch whose old-pattern defect
-valuation differs from the exact injection valuation.  Those switches have a
-theorem-forced valuation drop.  The retained graph contains only exact
-resonances, the only switches capable of valuation recharge.
+Distinct exact first-return cylinders at one anchor are disjoint. Their fixed
+points therefore separate before the shorter exact domain ends, forcing every
+actual cross-pattern switch into first-order defect resonance. The selective
+condition is one level deeper: a switch recharges the old-pattern defect iff
+the new-cylinder excess depth equals separation_depth-1.
 
-Finite SCC structure is a theorem-discovery signal, not a global Collatz
-proof.  Every transition is reconstructed from the exact return interface.
+This census retains only those exact second-order recharge edges for the hard
+transition graph. Finite SCC structure is theorem-discovery data, not a global
+Collatz proof.
 """
 import argparse
 import json
 from collections import Counter,defaultdict
 from pathlib import Path
 
-from collatz_return_interface import certificate,switch_resonance,trace
+from collatz_return_interface import certificate,cylinder_separation,switch_recharge_law,trace
 from collatz_witness_compiler import read_rows
 
 
@@ -79,10 +81,17 @@ def edge_json(e):
     return {'from':node_json(e[0]),'to':node_json(e[1])}
 
 
+def graph_summary(edge_counter):
+    edges=set(edge_counter);nodes={x for e in edges for x in e};cyc=cyclic_sccs(nodes,edges)
+    return {'nodes':len(nodes),'unique_edges':len(edges),'occurrences':sum(edge_counter.values()),
+            'cyclic_scc_count':len(cyc),
+            'cyclic_scc_sizes':sorted((len(c) for c in cyc),reverse=True)}
+
+
 def analyze_rows(rows,cache=None):
-    """Build the exact resonant cross-pattern graph before first descent."""
+    """Build exact first-order and second-order switch graphs before descent."""
     if cache is None: cache={}
-    counts=Counter();nodes=set();resonant_edges=Counter();stable_edges=Counter()
+    counts=Counter();resonant_edges=Counter();stable_edges=Counter()
     recharge_edges=Counter();stable_recharge_edges=Counter()
     edge_cancel_max=defaultdict(int)
     max_cancel=None;first_resonance=None;first_recharge=None
@@ -99,75 +108,91 @@ def analyze_rows(rows,cache=None):
                 c=cache[word]
                 if r in last_return:
                     old=last_return[r]
-                    z=switch_resonance(old,c,mstart,mend)
-                    if z['same_fixed_point']:
+                    if old['q']==c['q']:
                         counts['same_fixed_point']+=1
                     else:
-                        counts['cross_pattern']+=1
-                        edge=(node_key(old),node_key(c));nodes.update(edge)
+                        sep=cylinder_separation(old,c)
+                        # Consecutive distinct first-return words are deterministic
+                        # alternatives, so their exact execution cylinders cannot overlap.
+                        assert sep['disjoint']
+                        z=switch_recharge_law(old,c,mstart,mend)
+                        assert z['resonant']
+                        assert z['valuation_before']==sep['separation_valuation']
+                        counts['cross_pattern']+=1;counts['resonant']+=1
+                        counts['forced_resonance_by_disjoint_cylinders']+=1
+                        counts['second_order_'+z['outcome']]+=1
+                        edge=(node_key(old),node_key(c));resonant_edges[edge]+=1
                         stable=states[start][3]
-                        if stable: counts['stable_cross_pattern']+=1
-                        if z['resonant']:
-                            counts['resonant']+=1;resonant_edges[edge]+=1
+                        if stable:
+                            counts['stable_cross_pattern']+=1;counts['stable_resonant']+=1
+                            counts['stable_forced_resonance_by_disjoint_cylinders']+=1
+                            counts['stable_second_order_'+z['outcome']]+=1
+                            stable_edges[edge]+=1
+
+                        cd=z['cancellation_depth']
+                        if cd is not None:
+                            edge_cancel_max[edge]=max(edge_cancel_max[edge],cd)
+                            if max_cancel is None or cd>max_cancel['cancellation_depth']:
+                                max_cancel={'seed':n,'edge':edge_json(edge),
+                                            'cancellation_depth':cd,
+                                            'separation_valuation':sep['separation_valuation'],
+                                            'new_domain_excess':z['new_domain_excess'],
+                                            'valuation_after':z['valuation_after']}
+                        if first_resonance is None:
+                            first_resonance={'seed':n,'edge':edge_json(edge),
+                                             'separation_valuation':sep['separation_valuation'],
+                                             'new_domain_excess':z['new_domain_excess'],
+                                             'outcome':z['outcome']}
+                        if z['recharge']:
+                            counts['recharge']+=1;recharge_edges[edge]+=1
                             if stable:
-                                counts['stable_resonant']+=1;stable_edges[edge]+=1
-                            cd=z['cancellation_depth']
-                            if cd is not None:
-                                edge_cancel_max[edge]=max(edge_cancel_max[edge],cd)
-                                if max_cancel is None or cd>max_cancel['cancellation_depth']:
-                                    max_cancel={'seed':n,'edge':edge_json(edge),
-                                                'cancellation_depth':cd,
-                                                'valuation_before':z['valuation_before'],
-                                                'valuation_after':z['valuation_after']}
-                            if first_resonance is None:
-                                first_resonance={'seed':n,'edge':edge_json(edge),
-                                                 'valuation_before':z['valuation_before'],
-                                                 'valuation_after':z['valuation_after'],
-                                                 'cancellation_depth':cd}
-                            if z['recharge']:
-                                counts['recharge']+=1;recharge_edges[edge]+=1
-                                if stable:
-                                    counts['stable_recharge']+=1;stable_recharge_edges[edge]+=1
-                                if first_recharge is None:
-                                    first_recharge={'seed':n,'edge':edge_json(edge),
-                                                    'valuation_before':z['valuation_before'],
-                                                    'valuation_after':z['valuation_after'],
-                                                    'cancellation_depth':cd,
-                                                    'stable':stable}
-                        else:
-                            counts['nonresonant']+=1
-                            if stable: counts['stable_nonresonant']+=1
-                            # The exact interface proves this can never recharge.
-                            assert not z['recharge']
+                                counts['stable_recharge']+=1;stable_recharge_edges[edge]+=1
+                            if first_recharge is None:
+                                first_recharge={'seed':n,'edge':edge_json(edge),
+                                                'separation_valuation':sep['separation_valuation'],
+                                                'new_domain_excess':z['new_domain_excess'],
+                                                'valuation_after':z['valuation_after'],
+                                                'cancellation_depth':cd,'stable':stable}
                 last_return[r]=c
             last[r]=end
 
     for key in ('same_fixed_point','cross_pattern','stable_cross_pattern','resonant',
                 'stable_resonant','nonresonant','stable_nonresonant','recharge',
-                'stable_recharge'):
+                'stable_recharge','forced_resonance_by_disjoint_cylinders',
+                'stable_forced_resonance_by_disjoint_cylinders','second_order_drop',
+                'second_order_flat','second_order_recharge','stable_second_order_drop',
+                'stable_second_order_flat','stable_second_order_recharge'):
         counts.setdefault(key,0)
-    assert counts['cross_pattern']==counts['resonant']+counts['nonresonant']
-    assert counts['stable_cross_pattern']==counts['stable_resonant']+counts['stable_nonresonant']
-    assert counts['recharge']<=counts['resonant']
-    assert counts['stable_recharge']<=counts['stable_resonant']
 
-    res_edge_set=set(resonant_edges);stable_edge_set=set(stable_edges)
-    res_nodes={x for e in res_edge_set for x in e}
-    stable_nodes={x for e in stable_edge_set for x in e}
-    cyc=cyclic_sccs(res_nodes,res_edge_set)
-    stable_cyc=cyclic_sccs(stable_nodes,stable_edge_set)
+    assert counts['nonresonant']==counts['stable_nonresonant']==0
+    assert counts['cross_pattern']==counts['resonant']==counts['forced_resonance_by_disjoint_cylinders']
+    assert counts['stable_cross_pattern']==counts['stable_resonant']==counts['stable_forced_resonance_by_disjoint_cylinders']
+    assert counts['cross_pattern']==counts['second_order_drop']+counts['second_order_flat']+counts['second_order_recharge']
+    assert counts['stable_cross_pattern']==counts['stable_second_order_drop']+counts['stable_second_order_flat']+counts['stable_second_order_recharge']
+    assert counts['recharge']==counts['second_order_recharge']
+    assert counts['stable_recharge']==counts['stable_second_order_recharge']
+
+    first_graph=graph_summary(resonant_edges);stable_first_graph=graph_summary(stable_edges)
+    second_graph=graph_summary(recharge_edges);stable_second_graph=graph_summary(stable_recharge_edges)
 
     result={
         'K':rows[0]['K'],'families':len(rows),'counts':dict(counts),
-        'resonant_nodes':len(res_nodes),'resonant_unique_edges':len(res_edge_set),
-        'stable_resonant_nodes':len(stable_nodes),'stable_resonant_unique_edges':len(stable_edge_set),
-        'resonant_cyclic_scc_count':len(cyc),
-        'resonant_cyclic_scc_sizes':sorted((len(c) for c in cyc),reverse=True),
-        'stable_resonant_cyclic_scc_count':len(stable_cyc),
-        'stable_resonant_cyclic_scc_sizes':sorted((len(c) for c in stable_cyc),reverse=True),
+        'first_order_resonant_graph':first_graph,
+        'stable_first_order_resonant_graph':stable_first_graph,
+        'second_order_recharge_graph':second_graph,
+        'stable_second_order_recharge_graph':stable_second_graph,
+        # Backward-compatible headline fields.
+        'resonant_nodes':first_graph['nodes'],'resonant_unique_edges':first_graph['unique_edges'],
+        'stable_resonant_nodes':stable_first_graph['nodes'],'stable_resonant_unique_edges':stable_first_graph['unique_edges'],
+        'resonant_cyclic_scc_count':first_graph['cyclic_scc_count'],
+        'resonant_cyclic_scc_sizes':first_graph['cyclic_scc_sizes'],
+        'stable_resonant_cyclic_scc_count':stable_first_graph['cyclic_scc_count'],
+        'stable_resonant_cyclic_scc_sizes':stable_first_graph['cyclic_scc_sizes'],
         'first_resonance':first_resonance,'first_recharge':first_recharge,
         'largest_cancellation':max_cancel,
         'recharge_requires_resonance':True,
+        'distinct_first_return_switches_force_resonance':True,
+        'recharge_iff_second_order_resonance':True,
     }
     aux={
         'resonant_edges':resonant_edges,'stable_edges':stable_edges,
@@ -179,53 +204,57 @@ def analyze_rows(rows,cache=None):
 
 def cumulative_graph_summary(edge_sets):
     edges=set().union(*edge_sets) if edge_sets else set()
-    nodes={x for e in edges for x in e}
-    cyc=cyclic_sccs(nodes,edges)
+    nodes={x for e in edges for x in e};cyc=cyclic_sccs(nodes,edges)
     return {'nodes':len(nodes),'unique_edges':len(edges),'cyclic_scc_count':len(cyc),
             'cyclic_scc_sizes':sorted((len(c) for c in cyc),reverse=True)}
 
 
-def frozen_transfer(train_edges,future_aux):
-    train=set(train_edges);occ=future_aux['stable_edges'];rch=future_aux['stable_recharge_edges']
+def frozen_transfer(train_edges,future_aux,key='stable_edges'):
+    train=set(train_edges);occ=future_aux[key]
     unique=set(occ);known=unique&train;novel=unique-train
-    return {
-        'frozen_unique_edges':len(train),
-        'future_unique_edges':len(unique),'known_unique_edges':len(known),'novel_unique_edges':len(novel),
-        'future_occurrences':sum(occ.values()),
-        'known_occurrences':sum(v for e,v in occ.items() if e in train),
-        'novel_occurrences':sum(v for e,v in occ.items() if e not in train),
-        'future_recharges':sum(rch.values()),
-        'known_edge_recharges':sum(v for e,v in rch.items() if e in train),
-        'novel_edge_recharges':sum(v for e,v in rch.items() if e not in train),
-    }
+    return {'frozen_unique_edges':len(train),'future_unique_edges':len(unique),
+            'known_unique_edges':len(known),'novel_unique_edges':len(novel),
+            'future_occurrences':sum(occ.values()),
+            'known_occurrences':sum(v for e,v in occ.items() if e in train),
+            'novel_occurrences':sum(v for e,v in occ.items() if e not in train)}
 
 
 def main():
     ap=argparse.ArgumentParser()
     ap.add_argument('inputs',nargs='+');ap.add_argument('--out',required=True)
     a=ap.parse_args()
-    cache={};results=[];aux_by_k={};cumulative=[];cum_sets=[]
+    cache={};results=[];aux_by_k={};cumulative=[];cumulative_recharge=[]
+    cum_sets=[];cum_recharge_sets=[]
     for path in a.inputs:
         rows=read_rows(path);result,aux=analyze_rows(rows,cache)
         results.append(result);aux_by_k[result['K']]=aux
         cum_sets.append(set(aux['stable_edges']))
         cs=cumulative_graph_summary(cum_sets);cs['through_K']=result['K'];cumulative.append(cs)
+        cum_recharge_sets.append(set(aux['stable_recharge_edges']))
+        cr=cumulative_graph_summary(cum_recharge_sets);cr['through_K']=result['K'];cumulative_recharge.append(cr)
         print('RESONANCE_CENSUS',json.dumps(result,separators=(',',':'),sort_keys=True),flush=True)
         print('RESONANCE_CUMULATIVE',json.dumps(cs,separators=(',',':'),sort_keys=True),flush=True)
+        print('RECHARGE_CUMULATIVE',json.dumps(cr,separators=(',',':'),sort_keys=True),flush=True)
 
-    transfer={}
+    transfer={};recharge_transfer={}
     if 12 in aux_by_k and 16 in aux_by_k:
         frozen=set(aux_by_k[12]['stable_edges'])|set(aux_by_k[16]['stable_edges'])
+        frozen_recharge=set(aux_by_k[12]['stable_recharge_edges'])|set(aux_by_k[16]['stable_recharge_edges'])
         for K in (20,24):
-            if K in aux_by_k: transfer[str(K)]=frozen_transfer(frozen,aux_by_k[K])
+            if K in aux_by_k:
+                transfer[str(K)]=frozen_transfer(frozen,aux_by_k[K],'stable_edges')
+                recharge_transfer[str(K)]=frozen_transfer(frozen_recharge,aux_by_k[K],'stable_recharge_edges')
 
     out={'status':'EXACT FINITE RESONANCE DECOMPOSITION; NOT GLOBAL CLOSURE',
          'results':results,'cumulative_stable_resonant_graph':cumulative,
+         'cumulative_stable_second_order_recharge_graph':cumulative_recharge,
          'frozen_B12_B16_transfer':transfer,
+         'frozen_B12_B16_second_order_recharge_transfer':recharge_transfer,
          'scope':'first-return switches before direct descent on supplied boundary families'}
     Path(a.out).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-    print('VERIFIED_RECHARGE_REQUIRES_EXACT_2ADIC_RESONANCE')
-    print('VERIFIED_FINITE_RESONANT_RETURN_GRAPH_CENSUS_NOT_GLOBAL_PROOF')
+    print('VERIFIED_DISTINCT_FIRST_RETURN_SWITCHES_FORCE_2ADIC_RESONANCE')
+    print('VERIFIED_RECHARGE_IFF_SECOND_ORDER_RESONANCE')
+    print('VERIFIED_FINITE_SECOND_ORDER_RECHARGE_GRAPH_NOT_GLOBAL_PROOF')
 
 
 if __name__=='__main__': main()
