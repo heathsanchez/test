@@ -32,7 +32,7 @@ jobs:
         run: |
           cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/Submission_v27.lean" Submission.lean
           lake build
-          for f in GenericPackProof GenericMixProof GatherPairProof WideProgressionProof WideHierarchyProof WideGatherProof WideDenseProof WideFastProof; do
+          for f in GenericPackProof GenericMixProof GatherPairProof WideProgressionProof WideHierarchyProof WideGatherProof WideDenseByteProof DenseByteDefsProof WideDenseBitCharProof PackedTailBitCharProof WideLow254BridgeProof WideFastProof; do
             cp "$GITHUB_WORKSPACE/experiments/lkc_rule110/$f.lean" .
           done
           lake env lean -o GenericPackProof.olean GenericPackProof.lean
@@ -41,5 +41,9 @@ jobs:
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideProgressionProof.olean WideProgressionProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideHierarchyProof.olean WideHierarchyProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideGatherProof.olean WideGatherProof.lean
-          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseProof.olean WideDenseProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseByteProof.olean WideDenseByteProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean -o DenseByteDefsProof.olean DenseByteDefsProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideDenseBitCharProof.olean WideDenseBitCharProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean -o PackedTailBitCharProof.olean PackedTailBitCharProof.lean
+          LEAN_PATH=".:$LEAN_PATH" lake env lean -o WideLow254BridgeProof.olean WideLow254BridgeProof.lean
           LEAN_PATH=".:$LEAN_PATH" lake env lean WideFastProof.lean
