@@ -74,10 +74,12 @@ static inline int state_c(const State&s){return int(s.dc&CMASK);}
 static inline uint64_t state_d(const State&s){return s.dc>>6;}
 
 static bool lower_family(i128 A,i128 D,int k,uint64_t b){
+  // Parameter a>=1.  p(a)=A*a+D < n(a)=2^k*a+b uniformly iff
+  // the difference slope is nonpositive and the inequality holds at a=1.
   const i128 M=i128(1)<<k;
-  const i128 L=A-M;
-  const i128 R=i128(b)-D;
-  return A>0 && A+D>0 && L<0 && L<R;
+  const i128 slope=A-M;
+  const i128 rhs=i128(b)-D;
+  return A>0 && A+D>0 && slope<=0 && slope<rhs;
 }
 
 static bool first_reverse_match(
@@ -158,7 +160,7 @@ static bool complete_one_block_closes(
 
     // Even with all q possible O steps, no current or larger e can recover.
     const i128 theoreticalMin=(Ae/p3q)*p2q;
-    if(theoreticalMin>=M)break;
+    if(theoreticalMin>M)break;
 
     ++ecases;
     const int m=std::min(q,v3i(De+1));
