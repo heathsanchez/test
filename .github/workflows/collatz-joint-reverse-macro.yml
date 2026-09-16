@@ -1,0 +1,46 @@
+name: Collatz joint ternary reverse macro
+
+on:
+  push:
+    branches: [collatz-valuation-quotient-v1]
+    paths:
+      - ".github/workflows/collatz-joint-reverse-macro.yml"
+      - "experiments/collatz_joint_reverse_macro_cylinders.cpp"
+  workflow_dispatch:
+
+concurrency:
+  group: collatz-joint-reverse-macro
+  cancel-in-progress: true
+
+jobs:
+  joint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { depth: 12, rb: 0, macro: 6, emax: 5 }
+          - { depth: 12, rb: 1, macro: 6, emax: 5 }
+          - { depth: 16, rb: 0, macro: 6, emax: 5 }
+          - { depth: 16, rb: 1, macro: 6, emax: 5 }
+          - { depth: 20, rb: 1, macro: 6, emax: 5 }
+    name: joint-reverse-d${{ matrix.depth }}-r${{ matrix.rb }}-m${{ matrix.macro }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          set -euo pipefail
+          g++ -O3 -march=native -std=c++20             experiments/collatz_joint_reverse_macro_cylinders.cpp             -o /tmp/joint_reverse
+      - name: Run composed exact quotient
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          /usr/bin/time -f '%e %M' -o results/time-memory.txt             /tmp/joint_reverse ${{ matrix.depth }} ${{ matrix.rb }} ${{ matrix.macro }} ${{ matrix.emax }}             | tee results/census.txt
+          grep -q "FINAL_GATE=JOINT_REVERSE_D${{ matrix.depth }}_R${{ matrix.rb }}_M${{ matrix.macro }}_E${{ matrix.emax }}" results/census.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: joint-reverse-d${{ matrix.depth }}-r${{ matrix.rb }}-m${{ matrix.macro }}
+          path: results
+          retention-days: 30
