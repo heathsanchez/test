@@ -35,11 +35,10 @@ theorem collatzConvergesOfOddLowerWitness
   have lowerAll :
       ∀ n : Nat, 1 < n → LowerWitness collatzShortcut n := by
     intro n hn
-    cases Nat.mod_two_eq_zero_or_one n with
-    | inl heven =>
-        exact evenLowerWitness n hn heven
-    | inr hodd =>
-        exact oddLower n hn hodd
+    by_cases heven : n % 2 = 0
+    · exact evenLowerWitness n hn heven
+    · have hodd : n % 2 = 1 := by omega
+      exact oddLower n hn hodd
   have h := allConvergeOfLowerWitness collatzShortcut lowerAll
   simpa [Converges] using h
 
