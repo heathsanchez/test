@@ -1,0 +1,35 @@
+name: Collatz coupled DAG v2
+
+on:
+  push:
+    branches: [collatz-coupled-dag-v2]
+    paths:
+      - "experiments/collatz_coupled_dag_v1.py"
+      - "experiments/collatz_minus_one_cycle_breaker.py"
+      - ".github/workflows/collatz-coupled-dag-v2.yml"
+  workflow_dispatch:
+
+jobs:
+  exact-minus-one-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify minus-one cycle breaker
+        run: |
+          set -euo pipefail
+          python experiments/collatz_minus_one_cycle_breaker.py --N 1000000 --J 12 | tee /tmp/result.txt
+          grep -q "VERIFIED_MINUS_ONE_CYCLE_BREAKER" /tmp/result.txt
+          grep -q "GLOBAL_STATUS CONDITIONAL" /tmp/result.txt
+
+  bounded-coupled-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run bounded coupled DAG probe
+        run: |
+          set -euo pipefail
+          python experiments/collatz_coupled_dag_v1.py --depth 12 | tee /tmp/coupled.txt
+          grep -q "PASS terminal-prefix gate" /tmp/coupled.txt
+          grep -q "HARD_SCCS" /tmp/coupled.txt
