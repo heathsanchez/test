@@ -6,6 +6,8 @@ base = (ROOT / "generated" / "Submission_v58.lean").read_text()
 
 marker = '''namespace Submission
 
+/-- Scored-path Rule110 step with masks deleted where the 256-bit state
+invariant already makes them semantically redundant. -/
 def bstepBare (m : Nat) : Nat :=
 '''
 
