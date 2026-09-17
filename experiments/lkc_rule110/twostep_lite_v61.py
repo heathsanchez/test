@@ -5,6 +5,7 @@ ROOT = Path(__file__).resolve().parent
 base = (ROOT / "generated" / "Submission_v58.lean").read_text()
 proof = (ROOT / "TwoStepCircuitProof.lean").read_text()
 proof = "\n".join(line for line in proof.splitlines() if not line.startswith("import "))
+proof = "set_option linter.unnecessarySimpa false\n" + proof
 
 marker = '''namespace Submission
 
@@ -29,28 +30,32 @@ def rotR2Lite (m : Nat) : Nat := (m >>> 2) ||| ((m &&& 3) <<< 254)
 theorem rotL1Lite_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
     (rotL1Lite m).testBit i = m.testBit ((i + 255) % 256) := by
   have h := rotL1_bit (m := m) (i := i) hm hi
-  unfold rotL1 rotL1Lite at h ⊢
+  unfold rotL1 at h
+  unfold rotL1Lite
   rw [Nat.testBit_and, testBit_M] at h
   simpa [hi] using h
 
 theorem rotR1Lite_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
     (rotR1Lite m).testBit i = m.testBit ((i + 1) % 256) := by
   have h := rotR1_bit (m := m) (i := i) hm hi
-  unfold rotR1 rotR1Lite at h ⊢
+  unfold rotR1 at h
+  unfold rotR1Lite
   rw [Nat.testBit_and, testBit_M] at h
   simpa [hi] using h
 
 theorem rotL2Lite_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
     (rotL2Lite m).testBit i = m.testBit ((i + 254) % 256) := by
   have h := rotL2_bit (m := m) (i := i) hm hi
-  unfold rotL2 rotL2Lite at h ⊢
+  unfold rotL2 at h
+  unfold rotL2Lite
   rw [Nat.testBit_and, testBit_M] at h
   simpa [hi] using h
 
 theorem rotR2Lite_bit {m i : Nat} (hm : m < 2 ^ 256) (hi : i < 256) :
     (rotR2Lite m).testBit i = m.testBit ((i + 2) % 256) := by
   have h := rotR2_bit (m := m) (i := i) hm hi
-  unfold rotR2 rotR2Lite at h ⊢
+  unfold rotR2 at h
+  unfold rotR2Lite
   rw [Nat.testBit_and, testBit_M] at h
   simpa [hi] using h
 
