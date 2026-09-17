@@ -1,4 +1,4 @@
-name: ACC Baseline Diversity Salvage V1
+name: ACC 416 Baseline Exploit V1
 
 on:
   push:
@@ -35,7 +35,7 @@ jobs:
             --acc-root /tmp/acc \
             --out-dir acc_competitive/baseline_diversity_scout \
             --attack-count 1 --defend-fraction 0 \
-            --mechanism-id gssub-v25-baseline-diversity --shards 1 \
+            --mechanism-id gssub-v26-weighted-416 --shards 1 \
             | tee acc_competitive/baseline_diversity_scout.log
           python3 - <<'PY'
           import json,sys
@@ -62,14 +62,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - tag: w006
-            weight: "0.006"
-            suffix_nodes: 180000
           - tag: w012
             weight: "0.012"
-            suffix_nodes: 180000
-          - tag: w018
-            weight: "0.018"
             suffix_nodes: 180000
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -99,7 +93,7 @@ jobs:
           sudo chmod 600 /swapfile-baseline-diversity
           sudo mkswap /swapfile-baseline-diversity
           sudo swapon /swapfile-baseline-diversity
-      - name: Probe alternative weighted baselines with unchanged exact compiler
+      - name: Exploit verified 416-step weighted baseline with unchanged exact compiler
         env:
           ACC_WEIGHTED_BASELINE_DEPTH_WEIGHT: "${{ matrix.weight }}"
           ACC_REJOIN_LOOKAHEAD: "8"
@@ -155,7 +149,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: acc-competitive-residual-v1
-      - name: Recover baseline-diversity evidence
+      - name: Recover 416-baseline evidence
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
