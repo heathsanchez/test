@@ -13,12 +13,15 @@ def bstepBare (m : Nat) : Nat :=
 
 fusion = r'''namespace WideFast
 
+set_option maxRecDepth 1048576
+set_option maxHeartbeats 4000000
+
 /-- V60: same V58 initializer arithmetic, but with the scored reduction spine
 flattened into one definition so kernel replay traverses fewer delta/application
 nodes. No algorithmic or semantic change. -/
 def fastPayloadFused (x : Nat) : Nat :=
   let p := x * WideProgression.laneOnes256 +
-    stepConst * WideProgression.laneIndex256
+    Submission.stepConst * WideProgression.laneIndex256
   let u := (p ^^^ (p >>> 16)) &&& wideMask
   let y := (u * Submission.Vec8.c1) &&& wideMask
   let v := (y ^^^ (y >>> 15)) &&& wideMask
@@ -40,7 +43,7 @@ def fastInitFused (seed : Nat) : Nat :=
 theorem fastInitFused_eq (seed : Nat) :
     fastInitFused seed = fastInit seed := by
   unfold fastInitFused fastInit
-  rw [fastPayloadFused_eq]
+  simp only [fastPayloadFused_eq]
 
 end WideFast
 
