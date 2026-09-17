@@ -1,0 +1,55 @@
+name: LKC Partition DP v3
+
+on:
+  push:
+    branches: [lkc-partition-dp-v3]
+    paths:
+      - '.github/workflows/lkc-partition-dp-v3.yml'
+      - 'experiments/lkc_partition/dp_v3.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  develop:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      LKC_COMMIT: ba681dd334a3de184db4be61a31d49d26b647e02
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout current rules/spec pin
+        shell: bash
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc && git checkout "$LKC_COMMIT"
+      - name: RED generate dynamic candidate
+        shell: bash
+        run: python3 experiments/lkc_partition/dp_v3.py
+      - name: Finite semantic shell
+        shell: bash
+        run: |
+          cp experiments/lkc_partition/generated/Probe_v3.lean lkc/problems/partition/Probe.lean
+          cd lkc/problems/partition
+          lake env lean Probe.lean
+      - name: Candidate syntax gate
+        shell: bash
+        run: |
+          cp experiments/lkc_partition/generated/Submission_v3.lean lkc/problems/partition/Submission.lean
+          cd lkc/problems/partition
+          lake build
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-partition-dp-v3
+          path: |
+            experiments/lkc_partition/generated/Probe_v3.lean
+            experiments/lkc_partition/generated/Submission_v3.lean
+          if-no-files-found: warn
