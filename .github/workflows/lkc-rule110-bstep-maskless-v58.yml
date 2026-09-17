@@ -5,6 +5,7 @@ on:
     branches: [lkc-rule110-bstep-maskless-v58]
     paths:
       - 'experiments/lkc_rule110/maskless_bstep_v58.py'
+      - 'experiments/lkc_rule110/fix_v58_chain.py'
       - '.github/workflows/lkc-rule110-bstep-maskless-v58.yml'
   workflow_dispatch:
 
@@ -33,8 +34,10 @@ jobs:
           python3 experiments/lkc_rule110/payload_mask_v51.py
           python3 experiments/lkc_rule110/init_bias_v52.py
           python3 experiments/lkc_rule110/mod_gather_v54.py
-      - name: RED generate v58 candidate
-        run: python3 experiments/lkc_rule110/maskless_bstep_v58.py
+      - name: Generate v58 candidate
+        run: |
+          python3 experiments/lkc_rule110/maskless_bstep_v58.py
+          python3 experiments/lkc_rule110/fix_v58_chain.py
       - name: Prepare evaluator
         working-directory: lkc
         run: bash evaluation/setup.sh --problem ca-rule110
