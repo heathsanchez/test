@@ -24,4 +24,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: Run frozen unit tests
-        run: python -m unittest experiments.arc_robotics_cross_domain_v1.test_core -v
+        run: python -m unittest discover -s experiments/arc_robotics_cross_domain_v1 -p 'test_*.py' -v
