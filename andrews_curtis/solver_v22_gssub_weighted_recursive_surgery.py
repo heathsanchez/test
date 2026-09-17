@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""ACC GS-Sub V22: weighted 418-step baseline + recursive exact suffix surgery.
+"""ACC GS-Sub V22: weighted <=418-step baseline + recursive exact suffix surgery.
 
 Verified residual motivating this composition:
 - ac-03665 has a live strict record of 435 atomic moves.
@@ -9,6 +9,10 @@ Verified residual motivating this composition:
   426/427, but every strict continuation hit a physical lower bound of exactly
   435 at the first rigid suffix transition. Deeper prefix search did not move
   that compatibility boundary.
+- The baseline-diversity probe later found an even shorter 416-step weighted
+  proposal at depth weight 0.012. That is an improvement, not a composition
+  regression, so the guard must accept weighted baselines no longer than the
+  verified 418-step reference while still rejecting fallback/failed proposals.
 
 V22 changes only the verified failure boundary: after choosing a carried exact
 state on the weighted baseline, it reuses V20's bounded recursive suffix surgery
@@ -19,8 +23,8 @@ verification remain unchanged.
 Composition note: V18 freezes its baseline proposal by capturing
 ``_original_complete_suffix`` at import time. Importing V21 later therefore does
 not by itself replace the baseline used by V18. V22 explicitly wires V21's
-weighted proposal into that captured hook and guards the expected 418-step
-baseline so a silent fallback to the old 438-step route cannot recur.
+weighted proposal into that captured hook and guards against silent fallback to
+the old 438-step route.
 """
 
 from __future__ import annotations
@@ -41,9 +45,9 @@ _v18_exact_prefix_search = v20.v18.exact_prefix_search
 def weighted_recursive_exact_prefix_search(*args, **kwargs):
     finals, meta = _v18_exact_prefix_search(*args, **kwargs)
     got = meta.get("baseline_suffix_steps")
-    if got != 418:
+    if got is None or got > 418:
         raise RuntimeError(
-            f"weighted baseline composition regression: expected 418 steps, got {got}"
+            f"weighted baseline composition regression: expected <=418 steps, got {got}"
         )
     return finals, meta
 
