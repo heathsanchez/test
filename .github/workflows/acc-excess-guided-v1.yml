@@ -1,0 +1,279 @@
+name: ACC Excess Guided V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-excess-guided-v1.yml"
+      - "andrews_curtis/solver_v7_gssub_excess_guided.py"
+      - "andrews_curtis/continuous_aggregate_strict_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned competition authority
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Freeze fresh ACC state and quota
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/excess_guided_scout \
+            --attack-count 2 \
+            --defend-fraction 0 \
+            --mechanism-id gssub-v7-excess-guided \
+            --shards 1 \
+            | tee acc_competitive/excess_guided_scout.log
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          from continuous_aggregate_v5 import quota_state
+          xs=json.loads(Path('acc_competitive/excess_guided_scout/mathgraph_status.json').read_text())
+          counts={}
+          for x in xs: counts[x['status']]=counts.get(x['status'],0)+1
+          snap=json.loads(Path('acc_competitive/excess_guided_scout/snapshot_ac.json').read_text())
+          d=snap.get('data',snap); m={x['challengeId']:x for x in d['items']}
+          targets={cid:{'status':m[cid].get('status'),'best':m[cid].get('currentBestLength'),'kTeams':m[cid].get('kTeams')} for cid in ('ac-01910','ac-04501')}
+          q=quota_state(api,data_obj)
+          print('LIVE_ACC_STATE',json.dumps({'mathgraph':counts,'targets':targets,'quota':q},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-excess-guided-scout-v1
+          path: |
+            acc_competitive/excess_guided_scout/
+            acc_competitive/excess_guided_scout.log
+          retention-days: 90
+
+  search:
+    needs: scout
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ac-01910, ac-04501]
+        excess_weight: ["8", "32", "128"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover frozen live snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scout
+          gh run download "${{ github.run_id }}" -n acc-excess-guided-scout-v1 -D /tmp/scout
+          snap=$(find /tmp/scout -name snapshot_ac.json -print -quit)
+          test -n "$snap"
+          cp "$snap" /tmp/snapshot_ac.json
+
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          SWAP="/swapfile-extra-acc-excess-${{ matrix.target }}-${{ matrix.excess_weight }}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Search deep low-overhead exact representatives
+        run: |
+          set -o pipefail
+          out="acc_competitive/excess_guided_search/${{ matrix.target }}/e${{ matrix.excess_weight }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v7_gssub_excess_guided.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-id "${{ matrix.target }}" \
+            --snapshot-ac-file /tmp/snapshot_ac.json \
+            --max-nodes 500000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --representatives-per-quotient 24 \
+            --search-seconds 2400 \
+            --excess-weight "${{ matrix.excess_weight }}" \
+            --guide-weight 1 \
+            --near-miss-frac 0.10 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-excess-guided-${{ matrix.target }}-e${{ matrix.excess_weight }}
+          path: |
+            acc_competitive/excess_guided_search/${{ matrix.target }}/e${{ matrix.excess_weight }}/
+          retention-days: 90
+
+  consolidate_publish:
+    needs: [scout, search]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scout /tmp/searches
+          gh run download "${{ github.run_id }}" -n acc-excess-guided-scout-v1 -D /tmp/scout
+          gh run download "${{ github.run_id }}" --pattern 'acc-excess-guided-ac-*' -D /tmp/searches || true
+          find /tmp/searches -name report.json -print | sort
+          find /tmp/searches -name candidate_any.txt -print | sort
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Merge shortest pinned-verifier-clean candidate per target
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/searches').rglob('candidate_any.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=Path('acc_competitive/excess_guided_raw_ac.txt')
+          out.write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('EXCESS_GUIDED_VERIFIED_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+
+      - name: Salvage post-mechanism candidates through proof atlas
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/excess_guided_atlas
+          if [ ! -s acc_competitive/excess_guided_raw_ac.txt ]; then
+            echo "NO_EXCESS_GUIDED_VERIFIED_CANDIDATES"
+            : > acc_competitive/excess_guided_atlas/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/excess_guided_raw_ac.txt' \
+            --out-dir acc_competitive/excess_guided_atlas \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee acc_competitive/excess_guided_atlas.log
+
+      - name: Peephole salvage thin margins
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/excess_guided_peephole
+          if [ ! -s acc_competitive/excess_guided_atlas/fortified_ac.txt ]; then
+            echo "NO_EXCESS_GUIDED_ATLAS_CANDIDATES"
+            : > acc_competitive/excess_guided_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/excess_guided_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/excess_guided_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 6 --max-path 6000 \
+            | tee acc_competitive/excess_guided_peephole.log
+
+      - name: Fresh-recheck quota-gate and publish strict rows only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p acc_competitive/excess_guided_publish
+          if [ ! -s acc_competitive/excess_guided_peephole/fortified_ac.txt ]; then
+            echo "NO_EXCESS_GUIDED_VERIFIED_CANDIDATES_TO_PUBLISH"
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/excess_guided_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/excess_guided_publish \
+            --cycle 1 \
+            | tee acc_competitive/excess_guided_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/excess_guided_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0) + r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected for publication')
+          print('STRICT_QUOTA_GATE_OK',json.dumps({'used':r.get('daily_submissions_used_pre'),'remaining':r.get('daily_submissions_remaining_pre'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id')},sort_keys=True))
+          PY
+
+      - name: Residual summary
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          def J(p):
+              q=Path(p); return json.loads(q.read_text()) if q.exists() else {}
+          reports=[]
+          for p in sorted(Path('/tmp/searches').rglob('report.json')):
+              r=J(p)
+              reports.append({'challenge_id':r.get('challenge_id'),'live_best':r.get('live_best'),'candidate_length':r.get('candidate_length'),'verified':r.get('verified'),'strict':r.get('strict_vs_frozen_live'),'near_miss':r.get('near_miss_vs_frozen_live'),'search':r.get('search')})
+          pub=J('acc_competitive/excess_guided_publish/report.json')
+          summary={'phase':'excess-cost guided true-carry search','targets':reports,'published_strict_improvements':pub.get('selected_strict_improvements',0),'daily_submissions_remaining_pre':pub.get('daily_submissions_remaining_pre'),'submission_id':pub.get('submission_id')}
+          Path('acc_competitive/excess_guided_controller_report.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print('EXCESS_GUIDED_CONTROLLER',json.dumps(summary,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-excess-guided-v1
+          path: |
+            acc_competitive/excess_guided_controller_report.json
+            acc_competitive/excess_guided_raw_ac.txt
+            acc_competitive/excess_guided_atlas/
+            acc_competitive/excess_guided_peephole/
+            acc_competitive/excess_guided_publish/
+            /tmp/scout/
+            /tmp/searches/
+          retention-days: 90
