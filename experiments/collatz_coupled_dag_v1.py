@@ -13,7 +13,6 @@ Any candidate abstraction intended for proof must later receive universal transi
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from functools import lru_cache
 from collections import defaultdict
 import argparse
 
@@ -27,26 +26,42 @@ class Score:
     # smaller S wins; at equal S larger C wins
     def key(self): return (self.S, -self.C)
 
-@lru_cache(None)
-def phi(j:int, r:int)->Score:
-    if j==0:
-        return Score(0,0)
-    mod=3**j
-    r%=mod
-    best=None
-    period=2*3**(j-1)
-    for a in range(1,period+1):
-        z=(pow(2,a,mod)*r-1)
-        if z%3: continue
-        rp=(z//3)%(3**(j-1))
-        tail=phi(j-1,rp)
-        cand=Score(a+tail.S, (1<<tail.S)+3*tail.C)
-        if best is None or cand.key()<best.key():
-            best=cand
-    if best is None:
-        # Multiples of 3 have no legal first O.
-        return Score(10**9,-10**100)
-    return best
+PHI = [{0: Score(0,0)}]
+
+def ensure_phi(max_j:int):
+    """Build Bellman tables bottom-up once. Discovery depths are deliberately modest."""
+    while len(PHI) <= max_j:
+        j=len(PHI)
+        mod=3**j
+        prev=PHI[j-1]
+        table={}
+        period=2*3**(j-1)
+        # Precompute powers once. For each residue only exponents with the
+        # required parity can make 2^a r == 1 (mod 3).
+        pows=[0]+[pow(2,a,mod) for a in range(1,period+1)]
+        for r in range(mod):
+            if r%3==0:
+                continue
+            best=None
+            parity = 0 if r%3==1 else 1  # a even for r=1, odd for r=2 mod 3
+            first=2 if parity==0 else 1
+            for a in range(first,period+1,2):
+                z=pows[a]*r-1
+                if z%3: continue
+                rp=(z//3)%(3**(j-1))
+                tail=prev.get(rp)
+                if tail is None: continue
+                cand=Score(a+tail.S,(1<<tail.S)+3*tail.C)
+                if best is None or cand.key()<best.key():
+                    best=cand
+            if best is not None:
+                table[r]=best
+        PHI.append(table)
+        print("PHI_LEVEL",j,"states",len(table),flush=True)
+
+def phi(j:int,r:int)->Score:
+    ensure_phi(j)
+    return PHI[j].get(r%(3**j),Score(10**9,-10**100))
 
 def forward_cylinder(k:int,b:int):
     # exact first k shortcut steps for n=b+2^k q
@@ -138,6 +153,12 @@ def abstraction_state(k,b):
 
 def run(K:int):
     gate=terminal_prefix_gate()
+    # Precompute only Bellman depths actually encountered by source cylinders.
+    max_c=0
+    for k in range(1,K+1):
+        for b in range(1,1<<k,2):
+            cc,_=forward_cylinder(k,b); max_c=max(max_c,cc)
+    ensure_phi(max_c)
     counts=defaultdict(int)
     rigid=[]
     for k in range(1,K+1):
