@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  evidence:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -23,5 +23,40 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+
       - name: Run frozen unit tests
         run: python -m unittest discover -s experiments/arc_robotics_cross_domain_v1 -p 'test_*.py' -v
+
+      - name: Run sealed experiment
+        run: python -m experiments.arc_robotics_cross_domain_v1.run
+
+      - name: Validate sealed packet
+        run: python -m experiments.arc_robotics_cross_domain_v1.validate
+
+      - name: Score frozen causal prediction
+        run: python -m experiments.arc_robotics_cross_domain_v1.score
+
+      - name: Hash evidence packet
+        if: always()
+        run: |
+          set -e
+          cd experiments/arc_robotics_cross_domain_v1
+          : > evidence_hashes.txt
+          for f in PRECOMMIT.md core.py run.py score.py validate.py answers.json run_metadata.json capability.json scores.json; do
+            if [ -f "$f" ]; then sha256sum "$f" >> evidence_hashes.txt; fi
+          done
+          cat evidence_hashes.txt
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arc-robotics-cross-domain-v1
+          path: |
+            experiments/arc_robotics_cross_domain_v1/PRECOMMIT.md
+            experiments/arc_robotics_cross_domain_v1/answers.json
+            experiments/arc_robotics_cross_domain_v1/run_metadata.json
+            experiments/arc_robotics_cross_domain_v1/capability.json
+            experiments/arc_robotics_cross_domain_v1/scores.json
+            experiments/arc_robotics_cross_domain_v1/evidence_hashes.txt
+          if-no-files-found: warn
