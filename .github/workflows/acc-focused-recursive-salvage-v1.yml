@@ -1,4 +1,4 @@
-name: ACC Focused Recursive Salvage V1
+name: ACC 432 Residual Salvage V1
 
 on:
   push:
@@ -36,7 +36,7 @@ jobs:
             --acc-root /tmp/acc \
             --out-dir acc_competitive/focused_recursive_scout \
             --attack-count 1 --defend-fraction 0 \
-            --mechanism-id gssub-v24-focused-recursive-salvage --shards 1 \
+            --mechanism-id gssub-v27-weighted-416-focused-432 --shards 1 \
             | tee acc_competitive/focused_recursive_scout.log
           python3 - <<'PY'
           import json,sys
@@ -63,17 +63,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - tag: r5-d7-b72
-            rounds: 3
+          - tag: r5-w012-d7-r4
+            ranks: "5"
+            rounds: 4
             surgery_depth: 7
-            surgery_beam: 72
-            hit_cap: 12
+            surgery_beam: 80
+            hit_cap: 20
             exact_per_key: 4
-          - tag: r5-d9-b48
-            rounds: 3
-            surgery_depth: 9
-            surgery_beam: 48
-            hit_cap: 16
+          - tag: r2-w012-d7-r4
+            ranks: "2"
+            rounds: 4
+            surgery_depth: 7
+            surgery_beam: 80
+            hit_cap: 20
             exact_per_key: 4
     runs-on: ubuntu-latest
     timeout-minutes: 120
@@ -103,13 +105,13 @@ jobs:
           sudo chmod 600 /swapfile-focused-recursive
           sudo mkswap /swapfile-focused-recursive
           sudo swapon /swapfile-focused-recursive
-      - name: Deepen only the verified strict-lower-bound bridge family
+      - name: Deepen only the verified 432/433 residual bridge families
         env:
-          ACC_WEIGHTED_BASELINE_DEPTH_WEIGHT: "0.010"
+          ACC_WEIGHTED_BASELINE_DEPTH_WEIGHT: "0.012"
           ACC_REJOIN_LOOKAHEAD: "8"
           ACC_REJOIN_PROBE_BEAM: "96"
           ACC_REJOIN_PROBE_CAP: "0"
-          ACC_V24_FINAL_RANKS: "5"
+          ACC_V24_FINAL_RANKS: "${{ matrix.ranks }}"
           ACC_SUFFIX_SURGERY_ROUNDS: "${{ matrix.rounds }}"
           ACC_SUFFIX_SURGERY_DEPTH: "${{ matrix.surgery_depth }}"
           ACC_SUFFIX_SURGERY_BEAM: "${{ matrix.surgery_beam }}"
@@ -138,10 +140,10 @@ jobs:
             --prefix-depth 8 \
             --overhead-weight 8.0 \
             --prefix-beam 192 --exact-per-key 4 --prefix-count 12 --prefix-seconds 480 \
-            --suffix-max-nodes 120000 --max-quotient-total 100 \
+            --suffix-max-nodes 180000 --max-quotient-total 100 \
             --reverse-depth 7 --reverse-cap 250000 \
             --strict-beam 384 --near-beam 160 \
-            --compile-seconds 1500 --near-compile-seconds 240 \
+            --compile-seconds 1800 --near-compile-seconds 240 \
             --near-miss-frac 0.10 \
             | tee "$out.log"
       - uses: actions/upload-artifact@v4
