@@ -1,0 +1,217 @@
+name: ACC Strict Record Steal V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-strict-record-steal-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  attack:
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        cid:
+          - ac-00676
+          - ac-02986
+          - ac-01921
+          - ac-03665
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          SWAP=/swapfile-extra-acc-strict-v2
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+
+      - name: Fresh live preflight
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request
+          cid='${{ matrix.cid }}'
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'User-Agent':'Mozilla/5.0','Accept':'application/json'})
+          with urllib.request.urlopen(req,timeout=60) as r: obj=json.loads(r.read().decode())
+          d=obj.get('data',obj); rows={x['challengeId']:x for x in d['items']}
+          x=rows[cid]
+          print('STRICT_TARGET_LIVE',json.dumps({'challenge_id':cid,'status':x.get('status'),'best':x.get('currentBestLength'),'kTeams':x.get('kTeams')},sort_keys=True))
+          if x.get('status')!='solved' or not isinstance(x.get('currentBestLength'),int):
+              raise SystemExit('target no longer has a stealable solved record')
+          PY
+
+      - name: Search one fresh strict-record target
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          printf '["%s"]\n' '${{ matrix.cid }}' > /tmp/targets.json
+          out="acc_competitive/strict_record_steal_v2/${{ matrix.cid }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/targets.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes 250000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            --depth-weight 0 \
+            --search-seconds 3000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-strict-steal-v2-${{ matrix.cid }}
+          path: acc_competitive/strict_record_steal_v2/
+          retention-days: 90
+          if-no-files-found: warn
+
+  consolidate_publish:
+    needs: attack
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover strict-record evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/strict
+          gh run download "${{ github.run_id }}" --pattern 'acc-strict-steal-v2-*' -D /tmp/strict || true
+          find /tmp/strict -name search_results.json -print | sort || true
+          find /tmp/strict -name submission_v2.txt -print | sort || true
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Merge pinned-verifier-clean AC candidates
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/strict').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=Path('acc_competitive/strict_v2_raw_ac.txt')
+          out.write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('STRICT_V2_VERIFIED_AC_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+
+      - name: Salvage every verifier-clean route after target phase change
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/strict_v2_atlas acc_competitive/strict_v2_peephole
+          if [ ! -s acc_competitive/strict_v2_raw_ac.txt ]; then
+            : > acc_competitive/strict_v2_peephole/fortified_ac.txt
+            echo NO_STRICT_V2_VERIFIED_CANDIDATES
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/strict_v2_raw_ac.txt' \
+            --out-dir acc_competitive/strict_v2_atlas \
+            --reverse-depth 7 --reverse-cap 250000
+          if [ ! -s acc_competitive/strict_v2_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/strict_v2_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/strict_v2_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/strict_v2_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 6 --max-path 6000
+
+      - name: Fresh recheck quota gate and publish strict rows only
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s acc_competitive/strict_v2_peephole/fortified_ac.txt ]; then
+            echo NO_STRICT_V2_VERIFIED_CANDIDATES_TO_PUBLISH
+            exit 0
+          fi
+          mkdir -p acc_competitive/strict_v2_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/strict_v2_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/strict_v2_publish \
+            --cycle 1 \
+            | tee acc_competitive/strict_v2_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/strict_v2_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0) + r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected for publication')
+          print('STRICT_V2_RESULT',json.dumps({
+              'used':r.get('daily_submissions_used_pre'),
+              'remaining':r.get('daily_submissions_remaining_pre'),
+              'selected_rows':r.get('selected_rows'),
+              'strict':r.get('selected_strict_improvements'),
+              'unsolved':r.get('selected_unsolved'),
+              'submission_id':r.get('submission_id'),
+              'terminal':r.get('terminal_status'),
+              'failed_rows':r.get('failed_rows')
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-strict-record-steal-v2
+          path: |
+            acc_competitive/strict_v2_raw_ac.txt
+            acc_competitive/strict_v2_atlas/
+            acc_competitive/strict_v2_peephole/
+            acc_competitive/strict_v2_publish/
+            acc_competitive/strict_v2_publish.log
+            /tmp/strict/
+          retention-days: 90
+          if-no-files-found: warn
