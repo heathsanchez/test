@@ -1,0 +1,40 @@
+name: LKC Mertens Singlepass v1
+
+on:
+  push:
+    branches: [lkc-mertens-singlepass-v1]
+
+jobs:
+  verify-and-measure:
+    runs-on: ubuntu-24.04
+    env:
+      LKC_COMMIT: ba681dd334a3de184db4be61a31d49d26b647e02
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout current challenge
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc && git checkout "$LKC_COMMIT"
+      - name: Setup Mertens dependencies
+        run: |
+          cd lkc/problems/mertens
+          python3 setup.py
+      - name: RED generate candidate
+        run: python3 experiments/lkc_mertens/singlepass_v1.py
+      - name: Universal proof gate
+        run: |
+          cp experiments/lkc_mertens/generated/Submission_v1.lean lkc/problems/mertens/Submission.lean
+          cd lkc/problems/mertens
+          lake build
+      - name: Prepare evaluator
+        run: |
+          cd lkc
+          bash evaluation/setup.sh --problem mertens
+      - name: Canonical acceptance
+        run: |
+          cd lkc
+          python3 evaluation/run.py --problem mertens --submission "$GITHUB_WORKSPACE/experiments/lkc_mertens/generated/Submission_v1.lean" --timeout 180
