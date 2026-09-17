@@ -49,10 +49,12 @@ def prove():
         source = SOURCES / f'Submission_{version}.lean'
         original = source.read_text()
         audit = EVIDENCE / f'Audit_{version}.lean'
+        # +kernel crosses reducibility attributes using the kernel itself;
+        # this is not native_decide and introduces no external evaluator axiom.
         audit.write_text(original + '\n#print axioms Submission.impl_correct\n'
-                         + 'example : Submission.impl 0 = 0 := by decide\n'
-                         + 'example : Submission.impl 1 = 1 := by decide\n'
-                         + 'example : Submission.impl 10 = -1 := by decide\n')
+                         + 'example : Submission.impl 0 = 0 := by decide +kernel\n'
+                         + 'example : Submission.impl 1 = 1 := by decide +kernel\n'
+                         + 'example : Submission.impl 10 = -1 := by decide +kernel\n')
         cmd = ['lake', 'env', 'lean', '-DautoImplicit=false',
                '-DwarningAsError=true', str(audit)]
         code, text = execute(cmd, f'proof-{version}.log', cwd=PACKAGE)
@@ -66,7 +68,7 @@ def prove():
                           'source_sha256': hashlib.sha256(source.read_bytes()).hexdigest()}
         if passed:
             mutation = EVIDENCE / f'Negative_{version}.lean'
-            mutation.write_text(original + '\nexample : Submission.impl 0 = 1 := by decide\n')
+            mutation.write_text(original + '\nexample : Submission.impl 0 = 1 := by decide +kernel\n')
             bad_code, bad_text = execute([*cmd[:-1], str(mutation)], f'negative-{version}.log', cwd=PACKAGE)
             caught = bad_code not in (0, 124) and 'error:' in bad_text and 'decide' in bad_text
             gates[version]['negative_control_rejected'] = caught
