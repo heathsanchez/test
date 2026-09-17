@@ -1,0 +1,101 @@
+name: ACC Salvage AC08551 V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-salvage-ac08551-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  salvage_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover prior verifier-clean strict-steal candidate
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p /tmp/pool acc_competitive
+          gh api repos/heathsanchez/test/actions/artifacts/10375472165/zip > /tmp/pool.zip
+          unzip -q /tmp/pool.zip -d /tmp/pool
+          src="$(find /tmp/pool -name pending_submission.txt -print -quit)"
+          test -n "$src"
+          grep '^ac-08551:' "$src" > acc_competitive/salvage_ac08551_input.txt
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          s=Path('acc_competitive/salvage_ac08551_input.txt').read_text().strip()
+          m=re.match(r'^ac-08551:\s*(\[.*\])$',s)
+          assert m, 'missing ac-08551 candidate'
+          xs=json.loads(m.group(1))
+          print('RECOVERED_AC08551_LENGTH',len(xs))
+          assert len(xs)==2137, len(xs)
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Replay, re-check live records and quota, publish only if still strict
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/salvage_ac08551_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/salvage_ac08551_input.txt' \
+            --out-dir acc_competitive/salvage_ac08551_publish \
+            --cycle 1 \
+            | tee acc_competitive/salvage_ac08551_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path('acc_competitive/salvage_ac08551_publish')
+          r=json.loads((out/'report.json').read_text())
+          q=json.loads((out/'quota.json').read_text())
+          sel=json.loads((out/'selection.json').read_text())
+          final=json.loads((out/'final_recheck.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0) + r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected for publication')
+          print('SALVAGE_AC08551_RESULT',json.dumps({
+              'selection':sel,
+              'final_recheck':final,
+              'quota':q,
+              'selected_rows':r.get('selected_rows'),
+              'strict':r.get('selected_strict_improvements'),
+              'unsolved':r.get('selected_unsolved'),
+              'submission_id':r.get('submission_id'),
+              'terminal':r.get('terminal_status'),
+              'failed_rows':r.get('failed_rows'),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-salvage-ac08551-v1
+          path: |
+            acc_competitive/salvage_ac08551_input.txt
+            acc_competitive/salvage_ac08551_publish/
+            acc_competitive/salvage_ac08551_publish.log
+          retention-days: 90
