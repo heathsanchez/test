@@ -1,0 +1,223 @@
+name: ACC Overhead Skeleton V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-overhead-skeleton-v1.yml"
+      - "andrews_curtis/solver_v10_gssub_overhead_skeleton.py"
+      - "andrews_curtis/solver_v9_gssub_skeleton_lookahead.py"
+      - "andrews_curtis/continuous_aggregate_strict_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze fresh live ACC state and quota
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/overhead_skeleton_scout \
+            --attack-count 2 --defend-fraction 0 \
+            --mechanism-id gssub-v10-overhead-skeleton --shards 1 \
+            | tee acc_competitive/overhead_skeleton_scout.log
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          from continuous_aggregate_v5 import quota_state
+          xs=json.loads(Path('acc_competitive/overhead_skeleton_scout/mathgraph_status.json').read_text())
+          counts={}
+          for x in xs: counts[x['status']]=counts.get(x['status'],0)+1
+          snap=json.loads(Path('acc_competitive/overhead_skeleton_scout/snapshot_ac.json').read_text())
+          d=snap.get('data',snap); rows={x['challengeId']:x for x in d['items']}
+          targets={cid:{'best':rows[cid].get('currentBestLength'),'kTeams':rows[cid].get('kTeams'),'status':rows[cid].get('status')} for cid in ('ac-01910','ac-04501')}
+          print('LIVE_ACC_STATE',json.dumps({'mathgraph':counts,'targets':targets,'quota':quota_state(api,data_obj)},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-overhead-skeleton-scout-v1
+          path: |
+            acc_competitive/overhead_skeleton_scout/
+            acc_competitive/overhead_skeleton_scout.log
+          retention-days: 90
+
+  search_compile:
+    needs: scout
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [ac-01910, ac-04501]
+        overhead_weight: ["0.05", "0.2", "1.0"]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover frozen live snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scout
+          gh run download "${{ github.run_id }}" -n acc-overhead-skeleton-scout-v1 -D /tmp/scout
+          snap=$(find /tmp/scout -name snapshot_ac.json -print -quit)
+          test -n "$snap"
+          cp "$snap" /tmp/snapshot_ac.json
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          SWAP="/swapfile-extra-overhead-${{ matrix.target }}-${{ matrix.overhead_weight }}"
+          sudo fallocate -l 8G "$SWAP"
+          sudo chmod 600 "$SWAP"
+          sudo mkswap "$SWAP"
+          sudo swapon "$SWAP"
+      - name: Search compiler-aware quotient skeleton and compile exactly
+        run: |
+          set -o pipefail
+          out="acc_competitive/overhead_skeleton/${{ matrix.target }}/w${{ matrix.overhead_weight }}"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v10_gssub_overhead_skeleton.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-id "${{ matrix.target }}" \
+            --snapshot-ac-file /tmp/snapshot_ac.json \
+            --overhead-weight "${{ matrix.overhead_weight }}" \
+            --max-nodes 120000 --max-quotient-total 100 --search-seconds 900 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --strict-beam 256 --near-beam 64 \
+            --compile-seconds 600 --near-compile-seconds 180 \
+            --near-miss-frac 0.10 \
+            | tee "$out.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-overhead-skeleton-${{ matrix.target }}-w${{ matrix.overhead_weight }}
+          path: acc_competitive/overhead_skeleton/${{ matrix.target }}/w${{ matrix.overhead_weight }}/
+          retention-days: 90
+
+  consolidate_publish:
+    needs: [scout, search_compile]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover search evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/searches
+          gh run download "${{ github.run_id }}" --pattern 'acc-overhead-skeleton-ac-*' -D /tmp/searches || true
+          find /tmp/searches -name report.json -print | sort
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+      - name: Merge shortest pinned-verifier-clean candidates
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/searches').rglob('candidate_any.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          Path('acc_competitive/overhead_skeleton_raw_ac.txt').write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('OVERHEAD_SKELETON_VERIFIED_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+      - name: Salvage verifier-clean near misses after search mechanism change
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/overhead_skeleton_atlas acc_competitive/overhead_skeleton_peephole
+          if [ ! -s acc_competitive/overhead_skeleton_raw_ac.txt ]; then
+            : > acc_competitive/overhead_skeleton_peephole/fortified_ac.txt
+            echo NO_OVERHEAD_SKELETON_CANDIDATES
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob 'acc_competitive/overhead_skeleton_raw_ac.txt' \
+            --out-dir acc_competitive/overhead_skeleton_atlas --reverse-depth 7 --reverse-cap 250000
+          if [ ! -s acc_competitive/overhead_skeleton_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/overhead_skeleton_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/overhead_skeleton_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/overhead_skeleton_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 6 --max-path 6000
+      - name: Fresh recheck quota gate and publish strict rows only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s acc_competitive/overhead_skeleton_peephole/fortified_ac.txt ]; then
+            echo NO_OVERHEAD_SKELETON_VERIFIED_CANDIDATES_TO_PUBLISH
+            exit 0
+          fi
+          mkdir -p acc_competitive/overhead_skeleton_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/overhead_skeleton_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/overhead_skeleton_publish --cycle 1 \
+            | tee acc_competitive/overhead_skeleton_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/overhead_skeleton_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0) + r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected for publication')
+          print('STRICT_QUOTA_GATE_OK',json.dumps({'used':r.get('daily_submissions_used_pre'),'remaining':r.get('daily_submissions_remaining_pre'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id')},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-overhead-skeleton-v1
+          path: |
+            acc_competitive/overhead_skeleton_raw_ac.txt
+            acc_competitive/overhead_skeleton_atlas/
+            acc_competitive/overhead_skeleton_peephole/
+            acc_competitive/overhead_skeleton_publish/
+            /tmp/searches/
+          retention-days: 90
