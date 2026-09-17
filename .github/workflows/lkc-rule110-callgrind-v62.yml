@@ -1,0 +1,100 @@
+name: LKC Rule110 Callgrind v62
+
+on:
+  push:
+    branches: [lkc-rule110-callgrind-v62]
+    paths:
+      - '.github/workflows/lkc-rule110-callgrind-v62.yml'
+      - 'experiments/lkc_rule110/direct_core_v62.py'
+      - 'experiments/lkc_rule110/ast_fusion_v60.py'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  instruction-test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install measurement dependencies
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Generate v60 and v62
+        shell: bash
+        run: |
+          python3 experiments/lkc_rule110/payload_mask_v51.py
+          python3 experiments/lkc_rule110/init_bias_v52.py
+          python3 experiments/lkc_rule110/mod_gather_v54.py
+          python3 experiments/lkc_rule110/maskless_bstep_v58.py
+          python3 experiments/lkc_rule110/fix_v58_chain.py
+          python3 experiments/lkc_rule110/ast_fusion_v60.py
+          python3 experiments/lkc_rule110/direct_core_v62.py
+          sha256sum experiments/lkc_rule110/generated/Submission_v60.lean experiments/lkc_rule110/generated/Submission_v62.lean
+      - name: Checkout pinned benchmark read-only
+        shell: bash
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          cd bench
+          git checkout "$BENCH_COMMIT"
+          python3 - <<'PY'
+          import json
+          p=json.load(open('upstream.lock.json'))
+          assert p['revision']=='eb5e8850cdec9acf52d615529f9d1d64894e44b9'
+          assert p['lean']=='leanprover/lean4:v4.33.1'
+          PY
+      - name: Setup Rule110 benchmark
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem ca-rule110
+          python3 benchmark.py doctor --problem ca-rule110 --metric callgrind
+      - name: V60 Callgrind control
+        working-directory: bench
+        run: |
+          python3 benchmark.py diagnostic --problem ca-rule110 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v60.lean" \
+            --metric callgrind --repetitions 3 --timeout 600 --memory-mb 4096 \
+            --output "$GITHUB_WORKSPACE/callgrind-v60-control"
+      - name: V62 Callgrind diagnostic
+        working-directory: bench
+        run: |
+          python3 benchmark.py diagnostic --problem ca-rule110 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v62.lean" \
+            --metric callgrind --repetitions 3 --timeout 600 --memory-mb 4096 \
+            --output "$GITHUB_WORKSPACE/callgrind-v62"
+      - name: Summarize v62 against same-run v60
+        shell: python
+        run: |
+          import json, pathlib
+          d60=json.loads(pathlib.Path('callgrind-v60-control/diagnostic.json').read_text())
+          d62=json.loads(pathlib.Path('callgrind-v62/diagnostic.json').read_text())
+          v60=d60['totals']['candidate']
+          v62=d62['totals']['candidate']
+          out={
+            'v60_callgrind_total':v60,
+            'v62_callgrind_total':v62,
+            'v62_vs_v60_improvement_pct':(1-v62/v60)*100,
+            'v62_vs_v60_speedup_x':v60/v62,
+            'promote':v62<v60,
+          }
+          pathlib.Path('callgrind-v62-summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-rule110-callgrind-v62
+          path: |
+            experiments/lkc_rule110/generated/Submission_v60.lean
+            experiments/lkc_rule110/generated/Submission_v62.lean
+            callgrind-v60-control/
+            callgrind-v62/
+            callgrind-v62-summary.json
+          if-no-files-found: warn
