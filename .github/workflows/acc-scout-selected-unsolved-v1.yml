@@ -1,0 +1,209 @@
+name: ACC Scout-Selected Unsolved V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-scout-selected-unsolved-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  TARGET_CID: "ac-06076"
+
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          sudo fallocate -l 8G /swapfile-acc-unsolved
+          sudo chmod 600 /swapfile-acc-unsolved
+          sudo mkswap /swapfile-acc-unsolved
+          sudo swapon /swapfile-acc-unsolved
+
+      - name: Fresh authenticated live preflight
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,sys
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          cid='ac-06076'
+          st,_,obj=api('GET','/competitions/acc/discoveries/snapshot?problem=ac')
+          if not 200 <= st < 300:
+              raise SystemExit(f'live snapshot HTTP {st}')
+          d=data_obj(obj); rows={x['challengeId']:x for x in d['items']}
+          x=rows[cid]
+          print('UNSOLVED_TARGET_LIVE',json.dumps({'challenge_id':cid,'status':x.get('status'),'best':x.get('currentBestLength'),'kTeams':x.get('kTeams')},sort_keys=True))
+          if x.get('status') != 'unsolved' or x.get('currentBestLength') is not None:
+              raise SystemExit('target is no longer an unsolved competitive row')
+          PY
+
+      - name: Search unchanged GS-Sub compiler on fresh unsolved target
+        run: |
+          set -euo pipefail
+          printf '["%s"]\n' "$TARGET_CID" > /tmp/targets.json
+          out="acc_competitive/scout_selected_unsolved_v1/$TARGET_CID"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/targets.json \
+            --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes 250000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            --depth-weight 0 \
+            --search-seconds 3000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-scout-selected-unsolved-v1
+          path: acc_competitive/scout_selected_unsolved_v1/
+          retention-days: 90
+          if-no-files-found: warn
+
+  consolidate_publish:
+    needs: attack
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover pinned-verifier-clean candidate evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/unsolved
+          gh run download "${{ github.run_id }}" -n acc-scout-selected-unsolved-v1 -D /tmp/unsolved || true
+          find /tmp/unsolved -name submission_v2.txt -print | sort || true
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Merge shortest pinned-verifier-clean candidate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          best={}
+          for p in Path('/tmp/unsolved').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=json.loads(m.group(2))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=Path('acc_competitive/scout_unsolved_raw_ac.txt')
+          out.write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('SCOUT_UNSOLVED_VERIFIED_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+
+      - name: Salvage verifier-clean route after target phase change
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/scout_unsolved_atlas acc_competitive/scout_unsolved_peephole
+          if [ ! -s acc_competitive/scout_unsolved_raw_ac.txt ]; then
+            : > acc_competitive/scout_unsolved_peephole/fortified_ac.txt
+            echo NO_SCOUT_UNSOLVED_VERIFIED_CANDIDATE
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/scout_unsolved_raw_ac.txt' \
+            --out-dir acc_competitive/scout_unsolved_atlas \
+            --reverse-depth 7 --reverse-cap 250000
+          if [ ! -s acc_competitive/scout_unsolved_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/scout_unsolved_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/scout_unsolved_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/scout_unsolved_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 6 --max-path 6000
+
+      - name: Fresh live recheck quota gate and strict-only publication
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s acc_competitive/scout_unsolved_peephole/fortified_ac.txt ]; then
+            echo NO_SCOUT_UNSOLVED_VERIFIED_CANDIDATE_TO_PUBLISH
+            exit 0
+          fi
+          mkdir -p acc_competitive/scout_unsolved_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/scout_unsolved_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/scout_unsolved_publish \
+            --cycle 1 \
+            | tee acc_competitive/scout_unsolved_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/scout_unsolved_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0) + r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected for publication')
+          print('SCOUT_UNSOLVED_RESULT',json.dumps({
+              'used':r.get('daily_submissions_used_pre'),
+              'remaining':r.get('daily_submissions_remaining_pre'),
+              'selected_rows':r.get('selected_rows'),
+              'strict':r.get('selected_strict_improvements'),
+              'unsolved':r.get('selected_unsolved'),
+              'submission_id':r.get('submission_id'),
+              'terminal':r.get('terminal_status'),
+              'failed_rows':r.get('failed_rows')
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-scout-selected-unsolved-publish-v1
+          path: |
+            acc_competitive/scout_unsolved_raw_ac.txt
+            acc_competitive/scout_unsolved_atlas/
+            acc_competitive/scout_unsolved_peephole/
+            acc_competitive/scout_unsolved_publish/
+            acc_competitive/scout_unsolved_publish.log
+            /tmp/unsolved/
+          retention-days: 90
+          if-no-files-found: warn
