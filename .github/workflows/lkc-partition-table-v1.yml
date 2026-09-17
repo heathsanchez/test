@@ -1,0 +1,61 @@
+name: LKC Partition Table v1
+
+on:
+  push:
+    branches: [lkc-partition-table-v1]
+    paths:
+      - '.github/workflows/lkc-partition-table-v1.yml'
+      - 'experiments/lkc_partition/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        shell: bash
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc
+          git checkout "$LKC_COMMIT"
+      - name: RED generate partition candidate
+        shell: bash
+        run: |
+          python3 experiments/lkc_partition/table_v1.py
+      - name: Universal proof gate
+        shell: bash
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v1.lean" "$GITHUB_WORKSPACE/lkc/problems/partition/Submission.lean"
+          cd "$GITHUB_WORKSPACE/lkc/problems/partition"
+          lake build
+      - name: Prepare evaluator
+        working-directory: lkc
+        shell: bash
+        run: bash evaluation/setup.sh --problem partition
+      - name: Canonical local acceptance
+        working-directory: lkc
+        shell: bash
+        run: |
+          python3 evaluation/run.py --problem partition \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v1.lean" --timeout 120
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-partition-table-v1
+          path: |
+            experiments/lkc_partition/generated/Submission_v1.lean
+            lkc/results/local-evaluation/partition/
+          if-no-files-found: warn
