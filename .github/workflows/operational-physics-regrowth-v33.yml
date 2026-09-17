@@ -1,0 +1,36 @@
+name: Operational Physics Regrowth V33
+
+on:
+  push:
+    branches: [operational-physics-regrowth-v33]
+    paths:
+      - 'experiments/operational_physics_regrowth_v33/**'
+      - 'docs/superpowers/specs/2026-09-17-operational-physics-regrowth-v33-design.md'
+      - 'docs/superpowers/plans/2026-09-17-operational-physics-regrowth-v33.md'
+      - '.github/workflows/operational-physics-regrowth-v33.yml'
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit and integration gates
+        run: python -m unittest discover -s experiments/operational_physics_regrowth_v33 -v
+      - name: Execute frozen regrowth tournament
+        run: python experiments/operational_physics_regrowth_v33/run.py --out experiments/operational_physics_regrowth_v33/evidence.json
+      - name: Check verdict
+        run: |
+          python - <<'PY'
+          import json
+          p='experiments/operational_physics_regrowth_v33/evidence.json'
+          e=json.load(open(p))
+          assert e['verdict']=='PASS_BOUNDED_OPERATIONAL_REGROWTH_V33', e['verdict']
+          assert all(e['gates'].values()), e['gates']
+          print(e['verdict'])
+          print(e['gates'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: operational-physics-regrowth-v33-evidence
+          path: experiments/operational_physics_regrowth_v33/evidence.json
