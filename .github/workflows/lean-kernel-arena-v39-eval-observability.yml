@@ -1,0 +1,188 @@
+name: V39 Eval observability separator
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: v39-eval-observability-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      ARENA_REV: aaa6aedd3a4f4de88bf825319a8a050e572c9cce
+      KERNEL_REV: 3d7585c21242f29fdaa48ae9a16e16c6afe42238
+      V38_DIAG_IR: '883730750318'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v31
+        with:
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Callgrind
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          valgrind --version
+
+      - name: Fetch frozen Arena and MathGraph source
+        run: |
+          set -euxo pipefail
+          git clone https://github.com/leanprover/lean-kernel-arena.git arena
+          git -C arena checkout "$ARENA_REV"
+          grep -q "$KERNEL_REV" arena/checkers/mathgraph.yaml
+
+      - name: Build Mathlib workload
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: ./lka.py build-test mathlib
+
+      - name: Materialize exact submitted MathGraph source
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          set -euxo pipefail
+          mkdir -p _build/checkers/mathgraph
+          git clone https://github.com/metalogiclabs/mathgraph-lean-kernel.git _build/checkers/mathgraph/src
+          git -C _build/checkers/mathgraph/src checkout "$KERNEL_REV"
+          cat > _build/checkers/mathgraph/src/config.json <<'EOF'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 4
+          }
+          EOF
+          ./lka.py build-test init-prelude
+
+      - name: Apply frozen observability-only intervention
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('arena/_build/checkers/mathgraph/src/src/eval.rs')
+          s=p.read_text()
+          needle="    fn eval_no_cache(&mut self, depth: u32, env: E<'t>, e: ExprPtr<'t>) -> V<'t> {"
+          repl="    #[inline(never)]\n"+needle
+          assert s.count(needle)==1, s.count(needle)
+          s=s.replace(needle,repl)
+          p.write_text(s)
+          print('V39 patch: eval_no_cache forced out-of-line; no semantic code changed')
+          PY
+
+      - name: Build x86-64-v2 PGO diagnostic twin with full debug info
+        working-directory: arena
+        shell: 'nix develop -c bash -euxo pipefail {0}'
+        run: |
+          set -euxo pipefail
+          SRC="$PWD/_build/checkers/mathgraph/src"
+          ROOT="$PWD"
+          cd "$SRC"
+          rm -rf target-v39 pgo-v39
+          mkdir -p pgo-v39
+          export CARGO_TARGET_DIR="$SRC/target-v39"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=2 -Cprofile-generate=$SRC/pgo-v39" cargo build --release
+          "$CARGO_TARGET_DIR/release/sokonanoda" config.json < "$ROOT/_build/tests/init-prelude.ndjson" >/dev/null
+          llvm-profdata merge -o "$SRC/pgo-v39/merged.profdata" "$SRC/pgo-v39"
+          rm -rf "$CARGO_TARGET_DIR"
+          RUSTFLAGS="-C target-cpu=x86-64-v2 -C debuginfo=2 -Cprofile-use=$SRC/pgo-v39/merged.profdata" cargo build --release
+          test -x "$CARGO_TARGET_DIR/release/sokonanoda"
+          printf '%s\n' "$CARGO_TARGET_DIR/release/sokonanoda" > "$ROOT/../diag-bin-v39.txt"
+          printf '%s\n' "$SRC/config.json" > "$ROOT/../diag-cfg-v39.txt"
+
+      - name: Full Mathlib semantic equivalence gate
+        run: |
+          set -euxo pipefail
+          BIN=$(cat diag-bin-v39.txt)
+          CFG=$(cat diag-cfg-v39.txt)
+          "$BIN" "$CFG" < arena/_build/tests/mathlib.ndjson > v39.stdout
+          test $? -eq 0
+          test ! -s v39.stdout
+
+      - name: Profile full Mathlib and expose eval_no_cache source lines
+        run: |
+          set -euxo pipefail
+          mkdir -p results/v39
+          BIN=$(cat diag-bin-v39.txt)
+          CFG=$(cat diag-cfg-v39.txt)
+          valgrind --tool=callgrind --cache-sim=no --branch-sim=no --collect-jumps=no \
+            --callgrind-out-file=results/v39/callgrind.out \
+            "$BIN" "$CFG" < arena/_build/tests/mathlib.ndjson > /dev/null
+          callgrind_annotate --inclusive=no --threshold=0.00 --auto=yes results/v39/callgrind.out \
+            > results/v39/callgrind-source.txt
+          callgrind_annotate --inclusive=no --threshold=0.01 results/v39/callgrind.out \
+            > results/v39/callgrind-self.txt
+
+      - name: Derive observability verdict and perturbation gate
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import os,re,json
+          txt=Path('results/v39/callgrind-self.txt').read_text(errors='replace')
+          m=re.search(r'^\s*([0-9,]+)\s+\(100\.0%\)\s+PROGRAM TOTALS',txt,re.M)
+          if not m: raise SystemExit('NO_PROGRAM_TOTALS')
+          total=int(m.group(1).replace(',',''))
+          baseline=int(os.environ['V38_DIAG_IR'])
+          delta_pct=100*(total-baseline)/baseline
+
+          src=Path('results/v39/callgrind-source.txt').read_text(errors='replace')
+          lines=src.splitlines()
+          hits=[]
+          # Full-debug + forced noinline should expose eval.rs line attribution. Keep only
+          # attributed instruction rows near auto-annotated eval.rs sections.
+          active=False
+          for line in lines:
+              if 'src/eval.rs' in line or 'eval.rs' in line:
+                  active=True
+              if active:
+                  mm=re.match(r'^\s*([0-9,]+)\s+(.*)$',line)
+                  if mm:
+                      n=int(mm.group(1).replace(',',''))
+                      tail=mm.group(2).strip()
+                      if n>0:
+                          hits.append({'instructions':n,'whole_pct':100*n/total,'text':tail})
+              if active and line.startswith('---') and hits:
+                  # annotation blocks are separated; later blocks can still be eval.rs,
+                  # so do not terminate globally.
+                  active=False
+          hits=sorted(hits,key=lambda x:x['instructions'],reverse=True)
+          material=[h for h in hits if h['whole_pct']>=0.10]
+          observable=bool(material)
+          perturbation_ok=abs(delta_pct)<=3.0
+          verdict=('SOURCE_LINE_SPLIT_OBSERVED' if observable and perturbation_ok else
+                   'OBSERVABLE_BUT_PERTURBED' if observable else
+                   'SOURCE_LINE_SPLIT_STILL_HIDDEN')
+          out={
+            'verdict':verdict,
+            'program_total_ir':total,
+            'v38_baseline_ir':baseline,
+            'perturbation_pct':delta_pct,
+            'perturbation_gate_abs_pct':3.0,
+            'perturbation_ok':perturbation_ok,
+            'material_eval_source_rows_ge_0_1pct':material[:100],
+            'top_eval_source_rows':hits[:100],
+            'frozen_next': {
+              'SOURCE_LINE_SPLIT_OBSERVED':'map hottest lines to semantic eval cases, then freeze smallest economic A/B separator; no optimization yet',
+              'OBSERVABLE_BUT_PERTURBED':'use source split only as qualitative localization and build explicit case-boundary accounting before intervention',
+              'SOURCE_LINE_SPLIT_STILL_HIDDEN':'stop spending full-Mathlib runs on DWARF; add explicit diagnostic case wrappers/counters with measured sham overhead'
+            }[verdict]
+          }
+          Path('results/v39/verdict.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v39-eval-observability
+          path: results/v39/
+          if-no-files-found: error
