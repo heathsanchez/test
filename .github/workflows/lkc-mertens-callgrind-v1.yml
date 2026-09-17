@@ -1,0 +1,56 @@
+name: LKC Mertens Callgrind v1
+
+on:
+  push:
+    branches: [lkc-mertens-callgrind-v1]
+
+jobs:
+  instruction-test:
+    runs-on: ubuntu-24.04
+    env:
+      BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install measurement dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Generate v1
+        run: python3 experiments/lkc_mertens/singlepass_v1.py
+      - name: Checkout pinned benchmark read-only
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          cd bench
+          git checkout "$BENCH_COMMIT"
+      - name: Setup Mertens benchmark
+        run: |
+          cd bench
+          python3 benchmark.py setup --problem mertens
+          python3 benchmark.py doctor --problem mertens --metric callgrind
+      - name: Mertens v1 Callgrind diagnostic
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic --problem mertens \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_mertens/generated/Submission_v1.lean" \
+            --metric callgrind --repetitions 3 --timeout 600 --memory-mb 4096 \
+            --output "$GITHUB_WORKSPACE/callgrind-mertens-v1"
+      - name: Summarize against official example
+        run: |
+          python3 - <<'PY'
+          import json, pathlib
+          d=json.loads(pathlib.Path('callgrind-mertens-v1/diagnostic.json').read_text())
+          b=d['totals']['baseline']; c=d['totals']['candidate']
+          out={'official_example_total':b,'mertens_v1_total':c,
+               'improvement_pct':(1-c/b)*100,'speedup_x':b/c,'promote':c<b}
+          pathlib.Path('callgrind-mertens-v1-summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-mertens-callgrind-v1
+          path: |
+            experiments/lkc_mertens/generated/Submission_v1.lean
+            callgrind-mertens-v1/
+            callgrind-mertens-v1-summary.json
