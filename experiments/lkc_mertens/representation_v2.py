@@ -41,7 +41,8 @@ theorem moebiusAdjacent_eq (xs : List Nat)
       | nil => simp [moebiusAdjacent, moebiusList]
       | cons b xs =>
           have ht := (List.pairwise_cons.mp hs).2
-          rw [moebiusAdjacent, moebiusList, head_mem_iff_adjacent a b xs hs, ih ht]
+          rw [moebiusAdjacent, moebiusList]
+          simp only [head_mem_iff_adjacent a b xs hs, ih ht]
 
 def moebiusAdjacentSingle (n : Nat) : Int :=
   if n = 0 then 0 else moebiusAdjacent n.primeFactorsList
@@ -115,7 +116,8 @@ theorem moebius_factor_step (n : Nat) (hn0 : n ≠ 0) (hn1 : n ≠ 1) :
   have hqval := moebiusSingle_eq (n / n.minFac)
   simp only [moebiusSingle, if_neg hn0] at hval
   simp only [moebiusSingle, if_neg hq0] at hqval
-  rw [← hval, heq, moebiusList, hmem, hqval]
+  rw [← hval, heq, moebiusList]
+  simp only [hmem, hqval]
 
 theorem moebiusFusedFuel_eq (fuel : Nat) : ∀ n, n < fuel →
     moebiusFusedFuel fuel n = ArithmeticFunction.moebius n := by
