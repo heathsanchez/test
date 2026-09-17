@@ -1,0 +1,90 @@
+name: LKC Partition Scored15 v2
+
+on:
+  push:
+    branches: [lkc-partition-scored15-v2]
+    paths:
+      - '.github/workflows/lkc-partition-scored15-v2.yml'
+      - 'experiments/lkc_partition/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-and-compare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      LKC_COMMIT: eb5e8850cdec9acf52d615529f9d1d64894e44b9
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        shell: bash
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Checkout frozen challenge
+        shell: bash
+        run: |
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          cd lkc && git checkout "$LKC_COMMIT"
+      - name: Generate v1 control
+        run: python3 experiments/lkc_partition/table_v1.py
+      - name: RED generate v2 candidate
+        run: python3 experiments/lkc_partition/scored15_v2.py
+      - name: Universal proof gate
+        shell: bash
+        run: |
+          cp "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v2.lean" "$GITHUB_WORKSPACE/lkc/problems/partition/Submission.lean"
+          cd "$GITHUB_WORKSPACE/lkc/problems/partition"
+          lake build
+      - name: Prepare evaluator
+        working-directory: lkc
+        run: bash evaluation/setup.sh --problem partition
+      - name: Canonical v2 acceptance
+        working-directory: lkc
+        run: |
+          python3 evaluation/run.py --problem partition \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v2.lean" --timeout 120
+      - name: Seven paired wall replays versus v1
+        working-directory: lkc
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="$GITHUB_WORKSPACE/artifacts-partition-v2"; mkdir -p "$out"
+          for rep in 1 2 3 4 5 6 7; do
+            if (( rep % 2 == 1 )); then order="v1 v2"; else order="v2 v1"; fi
+            for who in $order; do
+              sub="$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_${who}.lean"
+              python3 evaluation/run.py --problem partition --submission "$sub" --timeout 120 2>&1 | tee "$out/${who}-rep${rep}.log"
+            done
+          done
+      - name: Summarize
+        shell: python
+        run: |
+          import json,pathlib,re,statistics
+          root=pathlib.Path('artifacts-partition-v2'); out={}
+          for who in ('v1','v2'):
+              vals=[]
+              for p in sorted(root.glob(f'{who}-rep*.log')):
+                  m=re.search(r'Computation replay T: ([0-9.]+) s',p.read_text())
+                  if m: vals.append(float(m.group(1)))
+              out[who]={'runs':vals,'median':statistics.median(vals) if vals else None}
+          a=out['v1']['median']; b=out['v2']['median']
+          if a and b:
+              out['improvement_pct']=(1-b/a)*100
+              out['speedup_x']=a/b
+              out['promote_wall']=b<a
+          (root/'summary.json').write_text(json.dumps(out,indent=2)+'\n')
+          print(json.dumps(out,indent=2))
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lkc-partition-scored15-v2
+          path: |
+            experiments/lkc_partition/generated/Submission_v1.lean
+            experiments/lkc_partition/generated/Submission_v2.lean
+            artifacts-partition-v2/
+          if-no-files-found: warn
