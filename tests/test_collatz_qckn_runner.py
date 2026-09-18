@@ -4,7 +4,7 @@ from collatz_qckn.adapter import CollatzAdapter
 from collatz_qckn.authority import Authority
 from collatz_qckn.compiled_present import CompiledPresent
 from collatz_qckn.ledger import CausalLedger
-from collatz_qckn.runner import run_arm, sham_present
+from collatz_qckn.runner import run_arm, sham_present, qualification_evidence
 
 
 class RunnerTest(unittest.TestCase):
@@ -34,6 +34,13 @@ class RunnerTest(unittest.TestCase):
         sham=run_arm("SHAM",adapter,future,present=sham_present(present))
         self.assertEqual(len(sham_present(present).capabilities),len(present.capabilities))
         self.assertEqual(sham.authoritative_hits,0)
+
+    def test_qualification_evidence_is_byte_deterministic(self):
+        e1,c1,b1=qualification_evidence()
+        e2,c2,b2=qualification_evidence()
+        self.assertEqual(b1,b2)
+        self.assertEqual(c1,c2)
+        self.assertIn("Collatz remains unproved",e1["claim"])
 
     def test_ancestor_ablation_restores_cold_active_behavior(self):
         adapter,authority,cap,ledger,present,future=self.fixture()
