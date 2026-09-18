@@ -1,0 +1,24 @@
+name: Collatz one-episode parameter ablation
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-one-episode-parameter-ablation.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Parameter box sweep
+        run: |
+          set -euo pipefail
+          for B in 6 10 14 20 28 40; do
+            echo "=== BOX $B ==="
+            python -u experiments/collatz_universal_one_episode_probe.py --lo 4097 --hi 8191 --K 80 --R "$B" --S "$B" | grep -E 'RANGE|COUNTS|CLOSED|HARD|STATUS'
+          done | tee /tmp/one-episode-boxes.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: one-episode-parameter-ablation
+          path: /tmp/one-episode-boxes.txt
