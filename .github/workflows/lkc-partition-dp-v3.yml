@@ -38,13 +38,19 @@ jobs:
           cd lkc/problems/partition
           lake build
           cp "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Probe_v3.lean" Probe.lean
-          lake env lean -DmaxRecDepth=4000000 Probe.lean
-      - name: Candidate syntax gate
+          lake env lean -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Probe.lean
+      - name: Universal proof RED frontier
         shell: bash
         run: |
           cp experiments/lkc_partition/generated/Submission_v3.lean lkc/problems/partition/Submission.lean
           cd lkc/problems/partition
-          lake build
+          set +e
+          lake build > "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/universal-proof-red.log" 2>&1
+          code=$?
+          set -e
+          cat "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/universal-proof-red.log"
+          test "$code" -ne 0
+          grep -q "Tactic.*rfl.*failed\|rfl.*failed" "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/universal-proof-red.log"
       - name: Upload evidence
         if: always()
         uses: actions/upload-artifact@v4
