@@ -462,6 +462,50 @@
         "same-byte binding",
         "paired Callgrind total < frozen V1"
       ]
+    },
+    {
+      "id": "E-mertens-v6-promote",
+      "type": "PROMOTE",
+      "target": "mertens",
+      "parents": [
+        "E-mertens-v1-promote",
+        "E-mertens-structural-r2-active"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-mertens-v6-frozen",
+        "commit": "df8824794cfb1cd2764fbde1ddfe54c07957b98e",
+        "representation": "structural least-factor path with selected V6 evaluator"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom/negative controls",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind against frozen V1"
+      ],
+      "evidence": {
+        "run_id": 35331962564,
+        "develop_job_id": 105558103088,
+        "instruction_job_id": 105559316830,
+        "baseline_callgrind_total_ir": 5068571829,
+        "candidate_callgrind_total_ir": 3342666736,
+        "reduction_pct": 34.051112447991315,
+        "ratio_candidate_over_baseline": 0.6594888755200868,
+        "official_pmu_measured": false,
+        "source_sha256": "b9f57508d255d018209e66d1274a12fdff9a44d5b996bc39679de72e0d8f92c7",
+        "public_cases_won": "6/6"
+      },
+      "compiled_consequence": "Replacing the generic/well-founded least-factor reduction path with an explicitly structural kernel-reducible path materially lowers verified Mertens replay cost."
+    },
+    {
+      "id": "E-mertens-structural-r2-resolved",
+      "type": "RESOLVE",
+      "target": "mertens",
+      "parents": [
+        "E-mertens-structural-r2-active",
+        "E-mertens-v6-promote"
+      ],
+      "status": "PROMOTED"
     }
   ]
 }
