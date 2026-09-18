@@ -1,0 +1,23 @@
+name: Collatz q0 universal grammar tournament
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_universal_grammar_tournament.py'
+      - '.github/workflows/collatz-q0-universal-grammar-tournament.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Universal coalescence plus q7 tournament
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_universal_grammar_tournament.py --N 262143 --H 512 --S 12 | tee /tmp/universal-grammar.txt
+          grep -Eq '^OBSERVED_ALL_BOUNDED_RESIDUAL_ANCHORS_HAVE_SCALAR_CERT$|^SEPARATOR_UNCERTIFIED_AFTER_UNIVERSAL_GRAMMAR' /tmp/universal-grammar.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-universal-grammar-tournament
+          path: /tmp/universal-grammar.txt
