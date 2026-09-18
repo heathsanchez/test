@@ -1,0 +1,22 @@
+{
+  "schema": "gpu-developmental-optimization-v1-summary",
+  "source_run_id": 35405925307,
+  "source_artifact_id": 10571694324,
+  "source_artifact_digest": "sha256:c7a825bd3a593b1bfba3e3fe4f0b5accb77bfd88a8f8d5ed39b1b60263b112bb",
+  "head_sha": "e4c3985875593c0e507443c2541df3b112220864",
+  "finite_ir_verdict": "PASS",
+  "target_count": 24,
+  "cold_search": 120,
+  "warm_search": 24,
+  "restart_search": 24,
+  "sham_search": 120,
+  "ablation_search": 120,
+  "search_reduction": 0.8,
+  "warm_reuse_hits": 24,
+  "all_targets_verified": true,
+  "hardware_authority": {
+    "status": "GPU_HARDWARE_AUTHORITY_UNAVAILABLE",
+    "nvidia_smi_present": false
+  },
+  "claim_boundary": "Exact finite kernel-IR developmental-search result only. Structural IR cost is not GPU latency. CUDA/Triton hardware promotion remains unqualified."
+}
