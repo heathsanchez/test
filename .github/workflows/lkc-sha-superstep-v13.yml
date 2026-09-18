@@ -1,0 +1,53 @@
+name: LKC SHA Superstep v13 Giant Tournament
+
+on:
+  push:
+    branches: [lkc-sha-superstep-v13]
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  giant:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        chunk: [4, 8, 16]
+        n: [2199121876686, 2199573357346]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate superstep family
+        run: |
+          python3 -m py_compile experiments/lkc_sha256/superstep_v13.py
+          python3 experiments/lkc_sha256/superstep_v13.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-superstep-v13-lean4331-d8ea5fc
+      - name: Setup SHA environment
+        working-directory: bench
+        run: python3 benchmark.py setup --problem sha256
+      - name: Giant target-construction probe
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_super${{ matrix.chunk }}_v13.lean"             --metric wall-time --repetitions 1             --timeout 900 --memory-mb 4096             --inputs "${{ matrix.n }}"             --output "$GITHUB_WORKSPACE/sha-super${{ matrix.chunk }}-${{ matrix.n }}"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-super${{ matrix.chunk }}-${{ matrix.n }}
+          path: sha-super${{ matrix.chunk }}-${{ matrix.n }}/
