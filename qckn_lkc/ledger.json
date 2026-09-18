@@ -898,6 +898,75 @@
         "same-byte V1 comparison",
         "Callgrind total < Primecount V1"
       ]
+    },
+    {
+      "id": "E-permanent-sparse-v3-r1-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-active"
+      ],
+      "status": "SUPERSEDED_BY_LINTER_REPAIR",
+      "evidence": {
+        "run_id": 35377232108,
+        "reason": "strict unused-variable linter only; semantics not reached"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v3-r2-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-active",
+        "E-permanent-sparse-v3-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v3",
+        "commit": "165237974ee98117877da56045625d181469179e",
+        "representation": "direct three-choice DFS over exactly the nonzero row support"
+      },
+      "licensed_by": "Same V3 semantics; only empty-row binder names changed to satisfy strict linter.",
+      "promotion_requirements": [
+        "small semantic shell",
+        "universal support theorem",
+        "canonical acceptance",
+        "dimension-16 resource gate",
+        "instruction evidence"
+      ]
+    },
+    {
+      "id": "E-hyp-powshift",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-polydisc-v2-promote",
+        "E-fib-v2-promote"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "When multiplying by an exact power of two in a hot kernel path, a proved shift representation may reduce replay cost.",
+      "next_calibration": "E-polydisc-v3-active"
+    },
+    {
+      "id": "E-polydisc-v3-active",
+      "type": "PROPOSE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v2-promote",
+        "E-hyp-powshift"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-polydisc-shift-v3",
+        "commit": "24d9d996a612472f5cc4aebe9761e7cd0e023c61",
+        "representation": "V2 PRS plus shift-based exact coefficient-word construction"
+      },
+      "licensed_by": "Large-width coefficient generation still uses state' * 2^shift; pinned Lean exposes an exact shift equivalence.",
+      "promotion_requirements": [
+        "universal generator equivalence proof",
+        "canonical acceptance",
+        "Callgrind total < Polydisc V2"
+      ]
     }
   ]
 }
