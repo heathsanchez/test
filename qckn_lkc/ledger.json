@@ -173,6 +173,33 @@
       "status": "RESERVE_NOT_PROMOTED",
       "hypothesis": "Generated dynamic state can be cheaper than replaying naive recursive semantics when the state is produced inside measured computation.",
       "next_calibration": "E-partition-dp-active"
+    },
+    {
+      "id": "E-fib-mulsquare-active",
+      "type": "PROPOSE",
+      "target": "fib",
+      "parents": [
+        "E-rule110-v60-promote"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-fib-mulsquare-v1",
+        "commit": "15bf0049e4ddb939920b8f42008f8bfe22652c7a",
+        "representation": "Mathlib binary fast-doubling with x*x replacing x^2"
+      },
+      "licensed_by": "Measured-kernel AST simplification hypothesis from prior Rule110 work.",
+      "transfer_claim": "UNPROVEN until universal proof, canonical acceptance, and paired instruction diagnostics beat the protected baselines."
+    },
+    {
+      "id": "E-hyp-pow2-to-mul",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-fib-mulsquare-active"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "For hot kernel-reduction paths, replacing x^2 with x*x may reduce definitional reduction overhead while preserving semantics.",
+      "next_calibration": "E-fib-mulsquare-active"
     }
   ]
 }
