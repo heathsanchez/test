@@ -1,0 +1,24 @@
+name: Collatz minimal-candidate reverse BFS
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_minimal_candidate_reverse_bfs.py'
+      - '.github/workflows/collatz-minimal-candidate-reverse-bfs.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          for L in 1 2 3 4 5; do
+            echo "=== DEPTH $L ==="
+            python -u experiments/collatz_minimal_candidate_reverse_bfs.py --lo 4097 --hi 8191 --K 80 --L "$L" --R 14 --S 14 | grep -E 'RANGE|PREFILTER|COUNTS|CLOSED|HARD|STATUS'
+          done | tee /tmp/minimal-reverse-bfs.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-candidate-reverse-bfs
+          path: /tmp/minimal-reverse-bfs.txt
