@@ -12,35 +12,34 @@ namespace Submission
 
 variants = {
 "v1": r'''
-/-- Remove only the permanentSpecN/permanentSpec decode wrappers. -/
+/-- Remove only the outer permanentSpecN decode wrapper. -/
 def impl (n : Nat) : Nat :=
-  let d := n >>> 32
-  let s := n &&& 0xffffffff
-  permanentRows d (genPermanentMatrix d s) 0
+  permanentSpec
+    (genPermanentMatrix (n >>> 32) (n &&& 0xffffffff))
 
 theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   intro n
   rfl
 ''',
 "v2": r'''
-/-- Also inline genPermanentMatrix, retaining genPermanentRow. -/
+/-- Also inline genPermanentMatrix, preserving permanentSpec's own width computation. -/
 def impl (n : Nat) : Nat :=
   let d := n >>> 32
   let s := n &&& 0xffffffff
-  permanentRows d ((List.range d).map (genPermanentRow d s)) 0
+  permanentSpec ((List.range d).map (genPermanentRow d s))
 
 theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   intro n
   rfl
 ''',
 "v3": r'''
-/-- Inline matrix and row generation while leaving permanentEntry unchanged. -/
+/-- Inline matrix and row construction while preserving permanentSpec. -/
 def impl (n : Nat) : Nat :=
   let d := n >>> 32
   let s := n &&& 0xffffffff
-  permanentRows d
+  permanentSpec
     ((List.range d).map (fun i =>
-      (List.range d).map (permanentEntry d s i))) 0
+      (List.range d).map (permanentEntry d s i)))
 
 theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   intro n
