@@ -1233,6 +1233,75 @@
         "E-partition-v4-promote"
       ],
       "status": "PROMOTED"
+    },
+    {
+      "id": "E-permanent-sparse-v3-r3-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r3-active"
+      ],
+      "status": "SUPERSEDED_BY_MINIMAL_SUPPORT_CERTIFICATE",
+      "evidence": {
+        "reason": "filtered-list proof packaging added no execution consequence; retain only skip/column range-distinctness and exact entry-support laws"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v3-r4-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r3-active",
+        "E-permanent-sparse-v3-r3-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v3",
+        "commit": "b6e192f81514107202d5d00fd6e9a7621ade6486",
+        "representation": "direct three-choice sparse DFS plus minimal support certificate"
+      },
+      "licensed_by": "Small exact semantics already green; support proof reduced to consequential range/distinctness and entry support laws.",
+      "promotion_requirements": [
+        "minimal support certificate",
+        "universal DFS equivalence",
+        "canonical acceptance",
+        "dimension-16 resource gate",
+        "instruction evidence"
+      ]
+    },
+    {
+      "id": "E-sha256-packed-r3-r2-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-r2-active"
+      ],
+      "status": "SUPERSEDED_BY_PROOF_COMPRESSION",
+      "evidence": {
+        "reason": "proof elaboration repeatedly killed runner; computation not refuted"
+      }
+    },
+    {
+      "id": "E-sha256-packed-r3-r3-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-r2-active",
+        "E-sha256-packed-r3-r2-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-v3",
+        "commit": "cdfbe2fe9e5a8f0c20d4c75d99dad86f3d931874",
+        "representation": "same packed Nat computation; proof compressed to staged pack/unpack and opaque feed-forward validity"
+      },
+      "licensed_by": "Two runner shutdowns localized to proof elaboration; no candidate-semantic counterexample.",
+      "promotion_requirements": [
+        "proof-only gate",
+        "canonical acceptance",
+        "all six candidate resource cases complete",
+        "Callgrind evidence"
+      ]
     }
   ]
 }
