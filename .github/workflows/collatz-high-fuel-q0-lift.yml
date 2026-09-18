@@ -15,7 +15,7 @@ jobs:
       - name: Reverse-tree high-fuel lift audit
         run: |
           set -euo pipefail
-          python -u experiments/collatz_high_fuel_q0_lift_audit.py --depth 40 | tee /tmp/high-fuel-q0.txt
+          python -u experiments/collatz_high_fuel_q0_lift_audit.py --depth 45 | tee /tmp/high-fuel-q0.txt
           grep -Eq '^OBSERVED_ALL_HIGH_FUEL_Q0_LIFTS_DIRECT_DESCEND$|^SEPARATOR_HIGH_FUEL_LIFT_AVOIDS_DIRECT_DESCENT$' /tmp/high-fuel-q0.txt
       - uses: actions/upload-artifact@v4
         with:
