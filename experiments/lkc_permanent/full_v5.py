@@ -94,7 +94,7 @@ theorem support_filter_perm
       ((List.range dimension).filter (supportPred dimension seed i)).Nodup :=
     List.nodup_range.filter _
   have hright : (rowSupport dimension seed i).Nodup := by
-    simp [rowSupport, h1.2, Ne.symm h1.2,
+    simp [rowSupport, permanentChoices, h1.2, Ne.symm h1.2,
       h2.2.1, Ne.symm h2.2.1, h2.2.2, Ne.symm h2.2.2]
   apply (List.perm_ext_iff_of_nodup hleft hright).2
   intro j
@@ -104,14 +104,14 @@ theorem support_filter_perm
     have he : permanentEntry dimension seed i j = 1 := by
       simpa only [supportPred, beq_iff_eq] using hp
     rcases (permanentEntry_support_iff dimension seed i j hd).mp he with hij | hj1 | hj2
-    · simp [rowSupport, hij]
-    · simp [rowSupport, hj1]
-    · simp [rowSupport, hj2]
+    · simp [rowSupport, permanentChoices, hij]
+    · simp [rowSupport, permanentChoices, hj1]
+    · simp [rowSupport, permanentChoices, hj2]
   · intro hj
     have hj' : j = i ∨
         j = permanentColumnOne dimension seed i ∨
         j = permanentColumnTwo dimension seed i := by
-      simpa [rowSupport] using hj
+      simpa [rowSupport, permanentChoices] using hj
     have hs : i = j ∨
         j = permanentColumnOne dimension seed i ∨
         j = permanentColumnTwo dimension seed i := by
@@ -194,7 +194,6 @@ theorem denseRowStep_eq_sparseRowStep
               · by_cases hyu : used.testBit y
                 · simp [hxu, hyu]
                 · simp [hxu, hyu, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
-            · exact 0
       _ = _ := by
             rfl
 
