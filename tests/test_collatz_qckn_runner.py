@@ -29,6 +29,14 @@ class RunnerTest(unittest.TestCase):
         raw=run_arm("RAW_HISTORY",adapter,future,raw_history=(cap,))
         self.assertEqual(raw.authoritative_hits,0)
 
+    def test_stale_authority_snapshot_cannot_execute(self):
+        adapter,authority,cap,ledger,present,future=self.fixture()
+        stale=CompiledPresent(present.capabilities,present.contract_digest,("stale-authority",))
+        arm=run_arm("STALE_AUTHORITY",adapter,future,present=stale,
+                    required_authority_digest=authority.digest)
+        self.assertEqual(arm.authoritative_hits,0)
+        self.assertEqual(arm.active_capabilities,0)
+
     def test_sham_same_shape_has_no_authoritative_hit(self):
         adapter,authority,cap,ledger,present,future=self.fixture()
         sham=run_arm("SHAM",adapter,future,present=sham_present(present))
