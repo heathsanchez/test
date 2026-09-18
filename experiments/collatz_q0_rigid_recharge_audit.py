@@ -351,6 +351,31 @@ def analyze(N,K):
             if seq[j][2] >= seq[i][1]:
                 expanding_streaks.append(row)
             i=j+1
+    discharge=[]; discharge_bad=[]
+    for key,seq in switch_sequences.items():
+        i=0
+        while i<len(seq):
+            if seq[i][0]!="recharge":
+                i+=1; continue
+            j=i
+            while j+1<len(seq) and seq[j+1][0]=="recharge":
+                j+=1
+            if j+1<len(seq):
+                assert seq[j+1][0]!="recharge"
+                row=(key,j-i+1,seq[j+1][0],seq[i][1],seq[j+1][2],
+                     tuple(x[3] for x in seq[i:j+2]))
+                discharge.append(row)
+                if seq[j+1][2] >= seq[i][1]:
+                    discharge_bad.append(row)
+            i=j+1
+    print("RECHARGE_DISCHARGE_BLOCKS",len(discharge),
+          "CONTRACTING",len(discharge)-len(discharge_bad),
+          "NONCONTRACTING",len(discharge_bad))
+    if discharge_bad:
+        print("RECHARGE_DISCHARGE_SEPARATOR",discharge_bad[:10])
+    else:
+        print("OBSERVED_ALL_RECHARGE_DISCHARGE_BLOCKS_CONTRACT_M")
+
     print("RECHARGE_STREAKS",len(streaks),
           "MAX_LENGTH",max((x[1] for x in streaks),default=0),
           "CONTRACTING",len(streaks)-len(expanding_streaks),
