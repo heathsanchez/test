@@ -506,6 +506,307 @@
         "E-mertens-v6-promote"
       ],
       "status": "PROMOTED"
+    },
+    {
+      "id": "E-fib-mulsquare-resolved",
+      "type": "RESOLVE",
+      "target": "fib",
+      "parents": [
+        "E-fib-mulsquare-active"
+      ],
+      "status": "REJECTED_VS_WORKED_EXAMPLE",
+      "evidence": {
+        "run_id": 35330125633,
+        "starter_callgrind_total_ir": 94677371,
+        "candidate_callgrind_total_ir": 87144749,
+        "starter_reduction_pct": 7.955047172155739,
+        "worked_example_callgrind_total_ir": 60583221,
+        "conclusion": "x*x improves Mathlib Nat.fastFib but remains materially worse than the challenge worked example."
+      }
+    },
+    {
+      "id": "E-fib-v2-complete",
+      "type": "PROPOSE",
+      "target": "fib",
+      "parents": [
+        "E-fib-mulsquare-resolved",
+        "E-hyp-pow2-to-mul"
+      ],
+      "status": "VERIFIED_COMPLETE",
+      "candidate": {
+        "branch": "lkc-fib-v2-frozen",
+        "commit": "9f637e976b587a1623d83be12a82522a35a95b6c",
+        "representation": "worked fast-doubling architecture with bitwise halving/parity"
+      },
+      "licensed_by": "Worked-example residual after rejecting the slower Mathlib-derived representation."
+    },
+    {
+      "id": "E-fib-v2-promote",
+      "type": "PROMOTE",
+      "target": "fib",
+      "parents": [
+        "E-fib-v2-complete"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-fib-v2-frozen",
+        "commit": "9f637e976b587a1623d83be12a82522a35a95b6c",
+        "representation": "fast doubling with Nat.shiftRight/Nat.land parity path"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom audit",
+        "negative control",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind versus worked example"
+      ],
+      "evidence": {
+        "run_id": 35341682886,
+        "verify_job_id": 105588780749,
+        "instruction_job_id": 105589736069,
+        "baseline_callgrind_total_ir": 60549178,
+        "candidate_callgrind_total_ir": 60522747,
+        "reduction_pct": 0.04365212026494758,
+        "ratio_candidate_over_baseline": 0.9995634787973505,
+        "official_pmu_measured": false,
+        "source_sha256": "ecacca9af5c87a4ed66c573131ff9f542a8f5ab1b9b3f0e9a6753f1360dd6cde"
+      },
+      "compiled_consequence": "On the challenge fast-doubling formulation, bitwise halving/parity is a small but verified instruction win over arithmetic halving/parity."
+    },
+    {
+      "id": "E-polydisc-v1-promote",
+      "type": "PROMOTE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-fixedsign-active"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-polydisc-v1-frozen",
+        "commit": "57f62175c36debfdbfe30d2c8462391671c0af02",
+        "representation": "proved fixed degree-24 sign specialization"
+      },
+      "authority": [
+        "universal Lean proof",
+        "canonical challenge acceptance",
+        "paired Callgrind diagnostic"
+      ],
+      "evidence": {
+        "run_id": 35340494745,
+        "verify_job_id": 105585039420,
+        "instruction_job_id": 105585812464,
+        "baseline_callgrind_total_ir": 9966492744,
+        "candidate_callgrind_total_ir": 9965012502,
+        "reduction_pct": 0.014852185598501766,
+        "official_pmu_measured": false,
+        "source_sha256": "bba3c65fdf18a1addf9d2316b159ce549f179bfc2764902d6f60f4202ccd10ab"
+      },
+      "compiled_consequence": "A structural parameter proved constant from the generator may be specialized away safely; here the degree-24 discriminant sign is redundant."
+    },
+    {
+      "id": "E-polydisc-fixedsign-resolved",
+      "type": "RESOLVE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-fixedsign-active",
+        "E-polydisc-v1-promote"
+      ],
+      "status": "PROMOTED"
+    },
+    {
+      "id": "E-polydisc-v2-complete",
+      "type": "PROPOSE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v1-promote",
+        "E-hyp-pow2-to-mul"
+      ],
+      "status": "VERIFIED_COMPLETE",
+      "candidate": {
+        "branch": "lkc-polydisc-v2-frozen",
+        "commit": "ba2b2f718a8e98e0ac5e42afb2b1aac766484e60",
+        "representation": "V1 fixed-sign specialization plus PRS x*x square specialization"
+      }
+    },
+    {
+      "id": "E-polydisc-v2-promote",
+      "type": "PROMOTE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v2-complete"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-polydisc-v2-frozen",
+        "commit": "ba2b2f718a8e98e0ac5e42afb2b1aac766484e60",
+        "representation": "fixed degree-24 sign plus multiplication-specialized PRS square"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom/negative control",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind against protected V1"
+      ],
+      "evidence": {
+        "run_id": 35341704730,
+        "verify_job_id": 105588847426,
+        "instruction_job_id": 105589481949,
+        "baseline_callgrind_total_ir": 9968480594,
+        "candidate_callgrind_total_ir": 9964049628,
+        "reduction_pct": 0.04444976301269943,
+        "ratio_candidate_over_baseline": 0.999555502369873,
+        "official_pmu_measured": false,
+        "source_sha256": "eb49c5963a9de10e0bcd4ec75a4621fc903c0510e608f5c74348f8ce00906393"
+      },
+      "compiled_consequence": "Within the normal PRS path, replacing a fixed exponent-2 expression by direct multiplication is a verified small instruction win."
+    },
+    {
+      "id": "E-primecount-v2-reject",
+      "type": "REFUTED_RESOURCE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v2-active",
+        "E-primecount-v1-promote"
+      ],
+      "status": "REJECTED",
+      "candidate": {
+        "branch": "lkc-primecount-fastprime-v2",
+        "commit": "7a50af92ee4d8499873ceb379e7cbdf45a78ca31",
+        "representation": "V1 aggregate plus square-root trial-division primality"
+      },
+      "evidence": {
+        "run_id": 35340499597,
+        "verify_job_id": 105585054934,
+        "instruction_job_id": 105586311768,
+        "baseline_callgrind_total_ir": 6088949866,
+        "candidate_callgrind_total_ir": 6125241951,
+        "regression_pct": 0.5960319233806022,
+        "small_input_note": "n=50,100,150 improve materially, but summed public total loses at larger inputs.",
+        "conclusion": "Preserve Primecount V1."
+      }
+    },
+    {
+      "id": "E-primecount-v2-resolved",
+      "type": "RESOLVE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v2-active",
+        "E-primecount-v2-reject"
+      ],
+      "status": "REJECTED"
+    },
+    {
+      "id": "E-partition-dp-r2-resolved",
+      "type": "RESOLVE",
+      "target": "partition",
+      "parents": [
+        "E-partition-dp-r2-active"
+      ],
+      "status": "SUPERSEDED_BY_PROOF_FIRST_ROW_DP"
+    },
+    {
+      "id": "E-partition-v4-active",
+      "type": "PROPOSE",
+      "target": "partition",
+      "parents": [
+        "E-partition-dp-r2-resolved",
+        "E-hyp-generated-state"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-partition-rowdp-v4",
+        "commit": "b4e7004c56b0a788143f39e104d9d8b59d8a35b8",
+        "representation": "proof-first cached rows mirroring partAux multiplicity recurrence"
+      },
+      "licensed_by": "V3 semantic shell passed but lacked universal invariant; V4 compiles the specification into a cacheable row recurrence.",
+      "evidence_so_far": {
+        "proof_run_id": 35341898284,
+        "proof_job_id": 105589457910,
+        "universal_axioms": [
+          "propext",
+          "Quot.sound"
+        ],
+        "canonical_accepted": true,
+        "n36_candidate_wall_ns": 717657006,
+        "baseline_n36": "memory-limit at 4 GiB target compile"
+      },
+      "promotion_requirements": [
+        "stable-five Callgrind win",
+        "retain n=36 resource dominance",
+        "official PMU still unmeasured"
+      ]
+    },
+    {
+      "id": "E-permanent-inline-r2-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-inline-r2-active"
+      ],
+      "status": "SUPERSEDED_BY_STREAMED_ROWS"
+    },
+    {
+      "id": "E-permanent-stream-v2-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-inline-r2-resolved",
+        "E-hyp-delete-materialized-aggregate"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-stream-v2",
+        "commit": "f992fdab3ad1db9ce456a99e6cd57e1021aa60e6",
+        "representation": "stream generated matrix rows directly into DFS; no matrix/row materialization"
+      },
+      "evidence_so_far": {
+        "proof_run_id": 35342009998,
+        "proof_job_id": 105589814917,
+        "universal_axioms": [
+          "propext",
+          "Quot.sound"
+        ],
+        "resource_run_id": 35342299357,
+        "dimension16_case": "baseline and candidate both memory-limit even at 8 GiB target compile",
+        "completed_wall_cases": "candidate generally faster; e.g. first case 25.92% wall reduction",
+        "callgrind_obstruction": "stable14 run timed out on a giant case before aggregate completion"
+      },
+      "residual": "Target-expression/state explosion at dimension 16 survives row streaming; next licensed representation must reduce DFS state, not just matrix materialization."
+    },
+    {
+      "id": "E-sha256-nozip-r2-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-nozip-r2-active"
+      ],
+      "status": "VERIFIED_BOUNDED_RESOURCE_OBSTRUCTION",
+      "evidence": {
+        "run_id": 35340485000,
+        "verify_job_id": 105585009245,
+        "instruction_job_id": 105586696768,
+        "small_medium_baseline_callgrind_ir": 12007018611,
+        "small_medium_candidate_callgrind_ir": 10809415054,
+        "small_medium_reduction_pct": 9.97419589158326,
+        "full_contract_complete": false,
+        "obstruction": "both baseline and candidate exceed 4 GiB during target compile for 512-step cases"
+      }
+    },
+    {
+      "id": "E-sha256-packed-r3-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-nozip-r2-resolved",
+        "E-hyp-fuse-producer-consumer"
+      ],
+      "status": "ACTIVE_DESIGN",
+      "candidate": {
+        "branch": "pending-construction",
+        "representation": "packed-state / compact target-expression SHA path"
+      },
+      "licensed_by": "No-zip reduced replay instructions by ~9.97% but did not move the 512-step target-compile memory boundary.",
+      "residual": "Must reduce target expression/state size, not merely per-step list allocation."
     }
   ]
 }
