@@ -1,0 +1,28 @@
+name: Collatz C9 three-replay lift probes II
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-three-replay-lifts-ii.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        t: [9,11,12,14,15,17,18,20,21,23,24,26,27,29,30,32]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe allowed three-replay lift
+        run: |
+          set -euo pipefail
+          T=${{ matrix.t }}
+          X=$((326575849 + 536870912*T))
+          python -u experiments/collatz_generic_endpoint_reverse_tree.py --X "$X" --depth 50 | tee "/tmp/t-${T}.txt"
+          grep -Eq '^OBSERVED_NO_RIGID_NON_DIRECT_ANCESTOR$|^SEPARATOR_ENDPOINT_HAS_RIGID_NON_DIRECT_ANCESTOR$' "/tmp/t-${T}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-three-replay-ii-${{ matrix.t }}
+          path: /tmp/t-${{ matrix.t }}.txt
