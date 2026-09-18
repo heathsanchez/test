@@ -147,7 +147,10 @@ def q0_status(k,n):
 
 
 def rigid_episode_segment(n,K):
-    """Return exact episode starts/branches while the q=0 obligation stays RIGID."""
+    """Return exact episode starts/branches for a hereditarily surviving q=0 RIGID source."""
+    survives,_ = base.survives_to_q0(n)
+    if not survives:
+        return [],[]
     k=n.bit_length()
     if k>K or q0_status(k,n)!='RIGID':
         return [],[]
