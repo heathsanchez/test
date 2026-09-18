@@ -1302,6 +1302,41 @@
         "all six candidate resource cases complete",
         "Callgrind evidence"
       ]
+    },
+    {
+      "id": "E-sha256-packed-r3-r3-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-r3-active"
+      ],
+      "status": "VERIFICATION_RESOURCE_OBSTRUCTION",
+      "evidence": {
+        "run_id": 35380675228,
+        "conclusion": "bare proof elaboration still receives external runner SIGTERM; no Lean theorem counterexample produced"
+      }
+    },
+    {
+      "id": "E-sha256-packed-core-v4-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-r3-active",
+        "E-sha256-packed-r3-r3-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-core-v4",
+        "commit": "c7d53150824083dce1d2aa02d55724e724432a07",
+        "representation": "single-Nat packed chain state around trusted sha256step; no no-zip proof surface"
+      },
+      "licensed_by": "Packed representation remains unrefuted; V3 proof surface itself exceeded runner envelope. V4 isolates packing from the already-verified no-zip optimization.",
+      "promotion_requirements": [
+        "universal pack/unpack proof",
+        "canonical acceptance",
+        "resource evidence on 512-step cases",
+        "then compose no-zip only if packing earns survival"
+      ]
     }
   ]
 }
