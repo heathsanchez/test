@@ -1,0 +1,19 @@
+name: Collatz return-pattern bank probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_return_pattern_bank_probe.py'
+      - '.github/workflows/collatz-return-pattern-bank-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_return_pattern_bank_probe.py --lo 3 --hi 8191 --K 80 | tee /tmp/return-bank.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: return-pattern-bank-probe
+          path: /tmp/return-bank.txt
