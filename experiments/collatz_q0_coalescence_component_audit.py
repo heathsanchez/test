@@ -62,22 +62,40 @@ def best_complete_o_within_source_cost(k:int,b:int):
             return None
     return min(((S,y) for y,S in cur),key=lambda z:(z[0],z[1]))
 
-def birth_status(n:int):
-    k=n.bit_length()
-    c,d=forward_state(k,n)
-    if d<n:
+def cylinder_status(k:int,b:int):
+    c,d=forward_state(k,b)
+    if d<b:
         return "DESCEND",(k,c,d)
-    opt=best_complete_o_within_source_cost(k,n)
+    opt=best_complete_o_within_source_cost(k,b)
     if opt is None:
-        raise AssertionError(("missing source replay",n,k,c,d))
+        raise AssertionError(("missing source replay",k,b,c,d))
     S,x=opt
     if S<k:
-        return "TAIL_CLOSED",(k,c,d,S,x)
-    if S==k and x<n:
+        den=(1<<k)-(1<<S)
+        Q=0 if x<b else (x-b)//den+1
+        return "TAIL_CLOSED",(k,c,d,S,x,Q)
+    if S==k and x<b:
         return "CLOSED",(k,c,d,S,x)
-    if S==k and x==n:
+    if S==k and x==b:
         return "RIGID",(k,c,d,S,x)
-    raise AssertionError(("optimizer worse than source",n,k,c,d,opt))
+    raise AssertionError(("optimizer worse than source",k,b,c,d,opt))
+
+def birth_status(n:int):
+    return cylinder_status(n.bit_length(),n)
+
+def survives_to_q0(n:int):
+    """Respect every earlier fixed-source cylinder decision, including q-tail exceptions."""
+    for k in range(1,n.bit_length()+1):
+        b=n% (1<<k)
+        q=n>>k
+        out,data=cylinder_status(k,b)
+        if out in ("DESCEND","CLOSED"):
+            return False,(k,b,q,out,data)
+        if out=="TAIL_CLOSED":
+            Q=data[-1]
+            if q>=Q:
+                return False,(k,b,q,out,data)
+    return True,None
 
 def orbit_map(n:int,H:int):
     y=n; out={y:0}
@@ -129,9 +147,16 @@ def audit(N:int,H:int):
             assert got==(w[1],w[2],w[3]),(n,got,w)
 
     counts=Counter(); rigid=[]; misses=[]; examples=[]; max_hit=0
+    birth_counts=Counter()
     for n in range(3,N+1,2):
         st,_=birth_status(n)
-        counts[st]+=1
+        birth_counts[st]+=1
+        survives,why=survives_to_q0(n)
+        if not survives:
+            counts["PRE_Q0_CLOSED"]+=1
+            continue
+        st,_=birth_status(n)
+        counts["Q0_"+st]+=1
         if st!="RIGID":
             continue
         rigid.append(n)
@@ -155,8 +180,9 @@ def audit(N:int,H:int):
                 examples.append((n,hit))
 
     print("SOURCE_LIMIT",N)
-    print("BIRTH_OUTCOMES",dict(sorted(counts.items())))
-    print("RIGID_BIRTH_SOURCES",len(rigid))
+    print("RAW_BIRTH_OUTCOMES",dict(sorted(birth_counts.items())))
+    print("FIXED_SOURCE_Q0_OUTCOMES",dict(sorted(counts.items())))
+    print("HEREDITARY_Q0_RIGID_SOURCES",len(rigid))
     print("SMALL_RIGID_ANCHORS",[n for n in rigid if n<=27])
     print("ANCHOR_27_DIRECT_CERT t=59 endpoint=23")
     print("RIGID_GT27_PRE_DESCENT_COALESCE_TO_27",len([n for n in rigid if n>27])-len(misses))
