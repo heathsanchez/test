@@ -24,7 +24,7 @@ theorem half_eq (n : Nat) : n >>> 1 = n / 2 := by
   simp [Nat.shiftRight_eq_div_pow]
 
 theorem parity_eq (n : Nat) : n &&& 1 = n % 2 := by
-  simp [Nat.and_two_pow_sub_one_eq_mod]
+  simp
 
 theorem fib_odd (m : Nat) :
     Nat.fib (2 * m + 1) =
