@@ -1,0 +1,293 @@
+#!/usr/bin/env python3
+"""RIGID-filtered return/recharge audit on the q=0 boundary.
+
+For a fixed ordinary source n, once source refinement reaches q=0 the boundary
+state is (k,n,c_k,T^k(n)).  This audit follows only the unresolved symbolic
+segment on which every shortcut-depth classifier result is exactly RIGID.
+
+That segment is collapsed into exact odd/even episodes.  Consecutive distinct
+same-anchor first-return words are compared with the exact defect-transport
+law.  Only strict recharge switches are retained in the final graph.
+
+The output answers the current discovery question:
+    can strict recharge itself recur inside the bounded q=0 RIGID language?
+
+Acyclicity on this bounded sample is evidence only, not a global proof.
+"""
+from __future__ import annotations
+
+import argparse
+from collections import Counter, defaultdict
+from fractions import Fraction
+
+import collatz_coupled_dag_v1 as dag
+
+
+def v2(x:int)->int:
+    assert x>0
+    return (x & -x).bit_length()-1
+
+
+def episode(x:int):
+    assert x>0 and x&1
+    r=v2(x+1)
+    m=(x+1)>>r
+    y=x
+    for _ in range(r):
+        assert y&1
+        y=dag.T(y)
+    assert y>0 and y%2==0
+    s=v2(y)
+    for _ in range(s):
+        y=dag.T(y)
+    assert y&1
+    rp=v2(y+1)
+    mp=(y+1)>>rp
+    assert y==((3**r)*m-1)//(2**s)
+    assert mp==((3**r)*m+(1<<s)-1)//(2**(s+rp))
+    return (r,m,s,rp,mp,y)
+
+
+def certificate(word):
+    word=tuple(tuple(z) for z in word)
+    assert word
+    assert all(len(z)==3 and all(type(v) is int and v>=1 for v in z) for z in word)
+    assert all(a[2]==b[0] for a,b in zip(word,word[1:]))
+    assert word[-1][2]==word[0][0]
+    A,B,D=1,0,0
+    for r,s,rp in word:
+        A,B,D=3**r*A,3**r*B+((1<<s)-1)*(1<<D),D+s+rp
+    C=(1<<D)-A
+    q=Fraction(B,C)
+    p,u=q.numerator,q.denominator
+    mod=1<<(D+1)
+    rho=((1<<D)-B)*pow(A,-1,mod)%mod
+    assert rho==p*pow(u,-1,mod)%mod
+    return {'word':word,'r':word[0][0],'A':A,'B':B,'D':D,
+            'C':C,'q':(p,u),'rho':rho,'modulus':mod}
+
+
+def admissible(c,m):
+    p,u=c['q']
+    return m>0 and m&1 and (u*m-p)%c['modulus']==0
+
+
+def replay(c,m):
+    x=(1<<c['r'])*m-1
+    for expected in c['word']:
+        r,mm,s,rp,mp,y=episode(x)
+        assert (r,s,rp)==expected
+        x=y
+    return (x+1)>>c['r']
+
+
+def injection(w,v):
+    return (v['A']-(1<<v['D']))*w['B']+((1<<w['D'])-w['A'])*v['B']
+
+
+def separation(w,v):
+    assert w['r']==v['r']
+    J=injection(w,v)
+    same=(J==0)
+    assert same==(w['q']==v['q'])
+    bits=min(w['D']+1,v['D']+1)
+    mask=(1<<bits)-1
+    disjoint=((w['rho']-v['rho'])&mask)!=0
+    h=None if J==0 else v2(abs(J))
+    if same:
+        assert not disjoint and h is None
+    elif disjoint:
+        assert h<bits
+    return same,disjoint,h,J
+
+
+def switch_law(w,v,m_start,m_end):
+    assert w['r']==v['r']
+    assert admissible(v,m_start)
+    assert replay(v,m_start)==m_end
+
+    same,disjoint,h,J=separation(w,v)
+    if same or not disjoint:
+        return None
+
+    C=w['C']
+    before=C*m_start-w['B']
+    after=C*m_end-w['B']
+    assert (1<<v['D'])*after==v['A']*before+J
+
+    vb=v2(abs(before)); va=v2(abs(after))
+    assert vb==h  # distinct deterministic return cylinders force resonance
+
+    p,u=v['q']
+    vv=v2(abs(u*m_start-p))
+    base=v['D']+1
+    assert vv>=base
+    excess=vv-base
+    threshold=h-1
+
+    if excess<threshold:
+        outcome='drop'
+        assert va==excess+1<h
+    elif excess>threshold:
+        outcome='flat'
+        assert va==h
+    else:
+        outcome='recharge'
+        assert va>h
+    return {'outcome':outcome,'before':vb,'after':va,'h':h,
+            'excess':excess,'threshold':threshold}
+
+
+def q0_status(k,n):
+    out,data=dag.classify(k,n)
+    if out=='TAIL_CLOSED':
+        return 'CLOSED' if data[0]==0 else 'TAIL_EXCEPTION'
+    return out
+
+
+def rigid_episode_segment(n,K):
+    """Return exact episode starts/branches while the q=0 obligation stays RIGID."""
+    k=n.bit_length()
+    if k>K or q0_status(k,n)!='RIGID':
+        return [],[]
+    # Actual endpoint at q=0.
+    c,x=dag.forward_cylinder(k,n)
+    starts=[]
+    branches=[]
+    # Move through complete episodes, but only while every shortcut state is RIGID.
+    while k<K:
+        if not (x&1):
+            # Even boundary states are single shortcut steps before the next
+            # episode anchor. They must remain RIGID too.
+            if q0_status(k,n)!='RIGID':
+                break
+            x=dag.T(x); k+=1
+            if k>K or q0_status(k,n)!='RIGID':
+                break
+            c2,x2=dag.forward_cylinder(k,n)
+            assert x==x2
+            continue
+
+        r,m,s,rp,mp,y=episode(x)
+        end=k+r+s
+        if end>K:
+            break
+        ok=True
+        z=x
+        for j in range(k,end+1):
+            if q0_status(j,n)!='RIGID':
+                ok=False;break
+            if j<end:
+                z=dag.T(z)
+        if not ok:
+            break
+        assert z==y
+        starts.append((k,r,m,x))
+        branches.append((r,s,rp))
+        k=end;x=y
+    return starts,branches
+
+
+def tarjan(nodes,edges):
+    g={v:[] for v in nodes}
+    for a,b in edges:
+        g.setdefault(a,[]).append(b);g.setdefault(b,[])
+    idx=0;stack=[];on=set();ind={};low={};comps=[]
+    def visit(v):
+        nonlocal idx
+        ind[v]=low[v]=idx;idx+=1;stack.append(v);on.add(v)
+        for w in g[v]:
+            if w not in ind:
+                visit(w);low[v]=min(low[v],low[w])
+            elif w in on:
+                low[v]=min(low[v],ind[w])
+        if low[v]==ind[v]:
+            c=[]
+            while True:
+                w=stack.pop();on.remove(w);c.append(w)
+                if w==v:break
+            comps.append(c)
+    for v in list(g):
+        if v not in ind:visit(v)
+    return comps
+
+
+def analyze(N,K):
+    cache={}
+    counts=Counter()
+    recharge_edges=Counter()
+    all_switch_edges=Counter()
+    first_recharge=None
+
+    for n in range(3,N+1,2):
+        starts,branches=rigid_episode_segment(n,K)
+        if not branches:
+            continue
+        counts['sources_with_rigid_episodes']+=1
+        counts['rigid_episodes']+=len(branches)
+
+        # Each starts[i] is the state before branches[i].  Add the terminal
+        # episode-start state if the final anchor is available.
+        # From branch i=(r,s,rp), its endpoint odd state is next start iff
+        # there is another complete episode.
+        last={}
+        last_return={}
+        for end in range(1,len(starts)):
+            r,m,_,_ = starts[end][1],starts[end][2],starts[end][3],starts[end][3]
+            if r in last:
+                start=last[r]
+                word=tuple(branches[start:end])
+                if word not in cache:
+                    cache[word]=certificate(word)
+                c=cache[word]
+                mstart=starts[start][2]
+                mend=starts[end][2]
+                assert admissible(c,mstart)
+                assert replay(c,mstart)==mend
+                counts['returns']+=1
+
+                if r in last_return:
+                    old=last_return[r]
+                    if old['q']==c['q']:
+                        counts['same_pattern']+=1
+                    else:
+                        z=switch_law(old,c,mstart,mend)
+                        if z is not None:
+                            counts['switch_'+z['outcome']]+=1
+                            edge=((old['r'],)+old['q'],(c['r'],)+c['q'])
+                            all_switch_edges[edge]+=1
+                            if z['outcome']=='recharge':
+                                recharge_edges[edge]+=1
+                                if first_recharge is None:
+                                    first_recharge=(n,starts[start][0],edge,z)
+                last_return[r]=c
+            last[r]=end
+
+    edges=set(recharge_edges)
+    nodes={x for e in edges for x in e}
+    comps=tarjan(nodes,edges)
+    cyc=[c for c in comps if len(c)>1 or (len(c)==1 and (c[0],c[0]) in edges)]
+
+    print("RIGID_RETURN_COUNTS",dict(counts))
+    print("RIGID_SWITCH_UNIQUE_EDGES",len(all_switch_edges))
+    print("RIGID_RECHARGE_UNIQUE_EDGES",len(recharge_edges))
+    print("RIGID_RECHARGE_OCCURRENCES",sum(recharge_edges.values()))
+    print("RIGID_RECHARGE_CYCLIC_SCCS",len(cyc))
+    print("RIGID_RECHARGE_CYCLIC_SIZES",sorted((len(c) for c in cyc),reverse=True))
+    if first_recharge is not None:
+        print("FIRST_RIGID_RECHARGE",first_recharge)
+    if cyc:
+        for i,c in enumerate(sorted(cyc,key=len,reverse=True)[:10],1):
+            print("RECHARGE_SCC",i,c)
+        print("SEPARATOR_RECURRENT_RIGID_RECHARGE")
+    else:
+        print("OBSERVED_NO_RECURRENT_RIGID_RECHARGE")
+    print("STATUS BOUNDED_DISCOVERY_ONLY")
+
+
+if __name__=="__main__":
+    ap=argparse.ArgumentParser()
+    ap.add_argument("--source-N",type=int,default=127)
+    ap.add_argument("--depth",type=int,default=16)
+    a=ap.parse_args()
+    analyze(a.source_N,a.depth)
