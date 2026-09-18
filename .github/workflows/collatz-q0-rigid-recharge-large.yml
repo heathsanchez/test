@@ -1,0 +1,22 @@
+name: Collatz q0 RIGID recharge large scale
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-q0-rigid-recharge-large.yml'
+  workflow_dispatch:
+jobs:
+  scale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Large exact RIGID recharge intersection
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-N 65535 --depth 128 | tee /tmp/q0-rigid-recharge-large.txt
+          grep -Eq '^OBSERVED_NO_RECURRENT_RIGID_RECHARGE$|^SEPARATOR_RECURRENT_RIGID_RECHARGE$' /tmp/q0-rigid-recharge-large.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-rigid-recharge-large
+          path: /tmp/q0-rigid-recharge-large.txt
