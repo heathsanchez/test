@@ -1,0 +1,25 @@
+name: Collatz expanding recharge-cycle fuel separator
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
+      - '.github/workflows/collatz-expanding-recharge-cycle-fuel.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact shard containing source 26863
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-lo 24579 --source-N 28673 --depth 128 | tee /tmp/expanding-recharge-cycle.txt
+          grep -q '^CONCRETE_PATTERN_CYCLE_FUEL' /tmp/expanding-recharge-cycle.txt
+          grep -q '^CONCRETE_REPEATABLE_PATTERN_CYCLES 0$' /tmp/expanding-recharge-cycle.txt
+          grep -q '^CONCRETE_ZERO_DEFECT_PATTERN_CYCLES 0$' /tmp/expanding-recharge-cycle.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: expanding-recharge-cycle-fuel
+          path: /tmp/expanding-recharge-cycle.txt
