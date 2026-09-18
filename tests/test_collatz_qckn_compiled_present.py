@@ -2,7 +2,7 @@ import unittest
 
 from collatz_qckn.adapter import CollatzAdapter
 from collatz_qckn.authority import Authority
-from collatz_qckn.compiled_present import CompiledPresent, CompiledPresentError
+from collatz_qckn.compiled_present import CompiledPresent
 from collatz_qckn.ledger import CausalLedger
 
 
@@ -22,7 +22,11 @@ class CompiledPresentTest(unittest.TestCase):
         restored=CompiledPresent.from_text(text)
         self.assertEqual(restored.to_text(),text)
         self.assertEqual(restored.digest,present.digest)
-        self.assertEqual(tuple(x.semantic_id for x in restored.capabilities),(cap.semantic_id,))\n        self.assertEqual(restored.capabilities[0].payload,cap.payload)
+        self.assertEqual(
+            tuple(x.semantic_id for x in restored.capabilities),
+            (cap.semantic_id,),
+        )
+        self.assertEqual(restored.capabilities[0].payload,cap.payload)
 
     def test_raw_provenance_is_not_active_serialized_history(self):
         ledger,_=self.make_ledger()
@@ -36,9 +40,8 @@ class CompiledPresentTest(unittest.TestCase):
         self.assertEqual(restored.capabilities,())
 
     def test_insertion_order_does_not_change_text(self):
-        l1,c1=self.make_ledger()
-        # One capability is enough to assert canonicalization independent of event dict ordering.
-        p1=CompiledPresent.compile(l1)
+        ledger,_=self.make_ledger()
+        p1=CompiledPresent.compile(ledger)
         p2=CompiledPresent.from_text(p1.to_text())
         self.assertEqual(p1.to_text(),p2.to_text())
 
