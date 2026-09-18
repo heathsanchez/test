@@ -1,0 +1,19 @@
+name: Collatz synthetic one-episode bank
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_synthetic_one_episode_bank.py'
+      - '.github/workflows/collatz-synthetic-one-episode-bank.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_synthetic_one_episode_bank.py --lo 3 --hi 8191 --K 80 --Rmax 20 --Smax 12 | tee /tmp/one-episode-bank.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthetic-one-episode-bank
+          path: /tmp/one-episode-bank.txt
