@@ -21,10 +21,10 @@ def fdBit : Nat → Nat → Nat × Nat
         (b * b + a * a, a * (2 * b - a) + (b * b + a * a))
 
 theorem half_eq (n : Nat) : n >>> 1 = n / 2 := by
-  simpa using Nat.shiftRight_eq_div_pow n 1
+  simp [Nat.shiftRight_eq_div_pow]
 
 theorem parity_eq (n : Nat) : n &&& 1 = n % 2 := by
-  simpa using Nat.and_two_pow_sub_one_eq_mod n 1
+  simp [Nat.and_two_pow_sub_one_eq_mod]
 
 theorem fib_odd (m : Nat) :
     Nat.fib (2 * m + 1) =
