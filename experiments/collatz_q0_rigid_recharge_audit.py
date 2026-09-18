@@ -212,7 +212,7 @@ def tarjan(nodes,edges):
     return comps
 
 
-def analyze(N,K):
+def analyze(N,K,L=3):
     cache={}
     counts=Counter()
     recharge_edges=Counter()
@@ -225,7 +225,9 @@ def analyze(N,K):
     switch_sequences=defaultdict(list)
     return_sequences=defaultdict(list)
 
-    for n in range(3,N+1,2):
+    start=max(3,L)
+    if start%2==0: start+=1
+    for n in range(start,N+1,2):
         starts,branches=rigid_episode_segment(n,K)
         if not branches:
             continue
@@ -431,7 +433,8 @@ def analyze(N,K):
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
+    ap.add_argument("--source-lo",type=int,default=3)
     ap.add_argument("--source-N",type=int,default=127)
     ap.add_argument("--depth",type=int,default=16)
     a=ap.parse_args()
-    analyze(a.source_N,a.depth)
+    analyze(a.source_N,a.depth,a.source_lo)
