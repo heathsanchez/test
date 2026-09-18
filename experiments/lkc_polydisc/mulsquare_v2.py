@@ -37,6 +37,9 @@ def normalResultantGoMul :
                   else
                     none
 
+theorem int_pow_two (x : Int) : x ^ 2 = x * x := by
+  simp [Int.pow_succ]
+
 theorem normalResultantGoMul_eq :
     ∀ fuel initial f g,
       normalResultantGoMul fuel initial f g =
@@ -44,7 +47,8 @@ theorem normalResultantGoMul_eq :
   | 0, _, _, _ => rfl
   | fuel + 1, initial, f, g => by
       simp only [normalResultantGoMul, normalResultantGo]
-      split <;> simp_all [pow_two, normalResultantGoMul_eq fuel]
+      rw [int_pow_two]
+      split <;> simp_all [normalResultantGoMul_eq fuel]
 
 def normalResultantMul (f g : List Int) : Option Int :=
   let f := trimLeading f
@@ -66,7 +70,8 @@ def resultantFromPolyMul (p : List Int) : Int :=
 
 theorem resultantFromPolyMul_eq (p : List Int) :
     resultantFromPolyMul p = resultantFromPoly p := by
-  simp [resultantFromPolyMul, resultantFromPoly, normalResultantMul_eq]
+  unfold resultantFromPolyMul resultantFromPoly
+  rw [normalResultantMul_eq]
 
 theorem coefficientsFrom_length :
     ∀ count k index state,
