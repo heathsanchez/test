@@ -1,0 +1,23 @@
+name: Collatz complete high-fuel endpoints
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_complete_high_fuel_endpoint_audit.py'
+      - '.github/workflows/collatz-complete-high-fuel-endpoints.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Complete finite endpoint audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_complete_high_fuel_endpoint_audit.py | tee /tmp/complete-high-fuel.txt
+          grep -Eq '^PASS_COMPLETE_LOW_CHARGE_HIGH_FUEL_ENDPOINTS$|^SEPARATOR_LOW_CHARGE_HIGH_FUEL_THEOREM' /tmp/complete-high-fuel.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: complete-high-fuel-endpoints
+          path: /tmp/complete-high-fuel.txt
