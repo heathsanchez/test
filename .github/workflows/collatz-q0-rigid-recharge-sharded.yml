@@ -6,6 +6,10 @@ on:
       - 'experiments/collatz_q0_rigid_recharge_audit.py'
       - '.github/workflows/collatz-q0-rigid-recharge-sharded.yml'
   workflow_dispatch:
+
+concurrency:
+  group: collatz-q0-rigid-recharge-sharded
+  cancel-in-progress: true
 jobs:
   shard:
     strategy:
