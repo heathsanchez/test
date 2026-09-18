@@ -1,0 +1,18 @@
+name: Collatz separator 4265 deep v2
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-separator-4265-deep-v2.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_universal_reverse_episode_bfs_v2.py --lo 4265 --hi 4265 --K 240 --L 12 --R 14 --S 14 | tee /tmp/4265-deep-v2.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: separator-4265-deep-v2
+          path: /tmp/4265-deep-v2.txt
