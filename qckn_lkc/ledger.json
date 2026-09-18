@@ -1070,6 +1070,66 @@
         "target_gain_pct": 38.68492596346995,
         "boundary": "Verified on these two Stage 1 contracts; not asserted universally."
       }
+    },
+    {
+      "id": "E-permanent-sparse-v3-r2-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r2-active"
+      ],
+      "status": "SUPERSEDED_BY_SUPPORT_CERTIFICATE_GATE",
+      "evidence": {
+        "run_id": 35377595862,
+        "semantic_shell": true,
+        "universal_frontier": "support theorem"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v3-r3-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r2-active",
+        "E-permanent-sparse-v3-r2-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v3",
+        "commit": "e146392dd248e760caf0ad47fe6ef5eafb157c16",
+        "representation": "three-choice sparse DFS plus explicit support-certificate proof gate"
+      },
+      "licensed_by": "Small semantic shell passed; proof split into skip/range/distinctness/support certificate before full impl_correct.",
+      "residual": "Support certificate still has local arithmetic/syntax goals; algorithm is not refuted."
+    },
+    {
+      "id": "E-sha256-packed-r3-r1-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-verify"
+      ],
+      "status": "SUPERSEDED_BY_PROOF_ONLY_GATE",
+      "evidence": {
+        "reason": "duplicate kernel smoke/negative computation removed from proof phase after repeated runner SIGTERM"
+      }
+    },
+    {
+      "id": "E-sha256-packed-r3-r2-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-verify",
+        "E-sha256-packed-r3-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-v3",
+        "commit": "e734e7832b49953885a2c654da4212d555f5b210",
+        "representation": "no-zip verified SHA step with one base-2^32 packed Nat chain state; proof-only gate"
+      },
+      "licensed_by": "Packed-state candidate still unrefuted; two prior runs were terminated by runner shutdown during proof.",
+      "residual": "Proof elaboration/resource path still exceeds runner stability window before theorem verdict."
     }
   ]
 }
