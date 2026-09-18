@@ -6,6 +6,10 @@ on:
     paths:
       - 'collatz_qckn/**'
       - '.github/workflows/collatz-qckn-v1-research-qualification.yml'
+concurrency:
+  group: collatz-qckn-v1-research-qualification
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest
