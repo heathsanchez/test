@@ -97,7 +97,11 @@ def main():
     manifest=json.loads((acc/"competition/tools/verifier/data/manifest.json").read_text())
     limits=manifest["limits"];byid={c["challenge_id"]:c for c in manifest["challenges"]}
     snap=json.loads(Path(a.snapshot_ac).read_text());d=snap.get("data",snap)
-    live={x["challengeId"]:x for x in d["items"]}
+    live={}
+    for x in d["items"]:
+        cid=x.get("problemId") or x.get("challengeId")
+        if cid:
+            live[cid]=x
     targets=json.loads(Path(a.target_ids_file).read_text())
     targets=[x["challenge_id"] if isinstance(x,dict) else str(x) for x in targets]
 
