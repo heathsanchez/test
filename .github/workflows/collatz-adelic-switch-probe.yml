@@ -1,0 +1,19 @@
+name: Collatz adelic switch probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_adelic_switch_probe.py'
+      - '.github/workflows/collatz-adelic-switch-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_adelic_switch_probe.py --lo 3 --hi 8191 --K 80 | tee /tmp/adelic-switch.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: adelic-switch-probe
+          path: /tmp/adelic-switch.txt
