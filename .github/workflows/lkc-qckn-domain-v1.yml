@@ -1,0 +1,45 @@
+name: LKC QCKN Domain v1
+
+on:
+  push:
+    branches: [lkc-qckn-domain-v1]
+    paths:
+      - 'qckn_lkc/**'
+      - '.github/workflows/lkc-qckn-domain-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-domain:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compile present is exact and restart-canonical
+        run: python3 qckn_lkc/compile_present.py --check
+
+      - name: Validate causal and promotion invariants
+        run: python3 qckn_lkc/validate.py
+
+      - name: Verify exact champion and active-transition snapshots
+        run: python3 qckn_lkc/validate.py --verify-refs
+
+      - name: Detect official contract drift
+        run: python3 qckn_lkc/validate.py --verify-rules-head
+
+      - name: Emit closure certificate
+        run: |
+          sha256sum             qckn_lkc/contract.json             qckn_lkc/ledger.json             qckn_lkc/compiled_present.json             qckn_lkc/compile_present.py             qckn_lkc/validate.py             > qckn_lkc/closure_certificate.txt
+          cat qckn_lkc/closure_certificate.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-qckn-domain-v1-evidence
+          path: |
+            qckn_lkc/contract.json
+            qckn_lkc/ledger.json
+            qckn_lkc/compiled_present.json
+            qckn_lkc/closure_certificate.txt
