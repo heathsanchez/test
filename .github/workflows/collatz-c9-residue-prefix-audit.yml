@@ -1,0 +1,23 @@
+name: Collatz C9 residue prefix audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_residue_prefix_audit.py'
+      - '.github/workflows/collatz-c9-residue-prefix-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: C9 residue-prefix census
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_residue_prefix_audit.py --N 1048575 --H 512 | tee /tmp/c9-prefix.txt
+          grep -Eq '^OBSERVED_C9_HIGH_FUEL_RESIDUE_ABSENT$|^SEPARATOR_FULL_C9_HIGH_FUEL_RESIDUE_APPEARS' /tmp/c9-prefix.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-residue-prefix-audit
+          path: /tmp/c9-prefix.txt
