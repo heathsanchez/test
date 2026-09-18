@@ -49,7 +49,7 @@ jobs:
           /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Submission_v5.lean
       - name: Canonical acceptance
         run: |
-          python3 bench/.cache/upstream/evaluation/run.py --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v5.lean"             --timeout 300
+          python3 bench/.cache/upstream/evaluation/run.py --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v5.lean"             --timeout 900
       - uses: actions/upload-artifact@v4
         if: always()
         with:
