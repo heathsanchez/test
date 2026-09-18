@@ -1,0 +1,19 @@
+name: Collatz QCKN worker
+on:
+  push:
+    branches: [collatz-qckn-worker-v1]
+    paths:
+      - 'experiments/collatz_qckn_worker.py'
+      - 'experiments/test_collatz_qckn_worker.py'
+      - '.github/workflows/collatz-qckn-worker.yml'
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run QCKN worker qualification
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments python -m unittest experiments.test_collatz_qckn_worker -v
