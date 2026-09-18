@@ -1,0 +1,19 @@
+name: Collatz sign-refined coprimality probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_sign_refined_coprimality_probe.py'
+      - '.github/workflows/collatz-sign-refined-coprimality-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_sign_refined_coprimality_probe.py | tee /tmp/sign-coprime.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sign-refined-coprimality-probe
+          path: /tmp/sign-coprime.txt
