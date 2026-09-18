@@ -66,6 +66,9 @@ jobs:
       - name: Canonical acceptance
         run: python3 experiments/lkc_sha256/tournament_v1.py qualify
 
+      - name: Record full 4 GiB resource probe
+        run: python3 experiments/lkc_sha256/tournament_v1.py resource_probe
+
       - uses: actions/upload-artifact@v4
         if: always()
         with:
