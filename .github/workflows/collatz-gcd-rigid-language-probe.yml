@@ -1,0 +1,19 @@
+name: Collatz gcd RIGID language probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_gcd_rigid_language_probe.py'
+      - '.github/workflows/collatz-gcd-rigid-language-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_gcd_rigid_language_probe.py | tee /tmp/gcd-rigid.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gcd-rigid-language-probe
+          path: /tmp/gcd-rigid.txt
