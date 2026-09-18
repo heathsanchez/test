@@ -1,0 +1,24 @@
+name: Collatz q0 RIGID episode audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_episode_audit.py'
+      - '.github/workflows/collatz-q0-rigid-episode-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: q0 RIGID episode audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_episode_audit.py --formula-N 4095 --boundary-N 255 --depth 9 | tee /tmp/q0-episode.txt
+          grep -q '^PASS_Q_ZERO_EPISODE_ALGEBRA$' /tmp/q0-episode.txt
+          grep -Eq '^OBSERVED_ALL_HARD_EPISODES_COEFFICIENT_CONTRACT$|^SEPARATOR_COEFFICIENT_CONTRACTION_NOT_UNIVERSAL$' /tmp/q0-episode.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-rigid-episode-audit
+          path: /tmp/q0-episode.txt
