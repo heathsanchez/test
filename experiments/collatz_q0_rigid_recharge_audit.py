@@ -285,6 +285,33 @@ def analyze(N,K,L=3):
                 last_return[r]=c
             last[r]=end
 
+    # Concrete source-wise cycle audit. A global union SCC may combine
+    # opposite edges witnessed by different source integers, which is not a
+    # recurrent concrete path.
+    concrete_pattern_cycles=[]
+    concrete_recharge_cycles=[]
+    for key,seq in switch_sequences.items():
+        if not seq: continue
+        # Reconstruct node walk from chronological switch edges.
+        nodes=[seq[0][3][0]]
+        for item in seq:
+            edge=item[3]
+            assert nodes[-1]==edge[0]
+            nodes.append(edge[1])
+        first={}
+        for i,node in enumerate(nodes):
+            if node in first:
+                a=first[node]; b=i
+                outcomes=tuple(seq[j][0] for j in range(a,b))
+                row=(key,a,b,node,outcomes,
+                     tuple(seq[j][3] for j in range(a,b)),
+                     seq[a][1],seq[b-1][2])
+                concrete_pattern_cycles.append(row)
+                if outcomes and all(x=="recharge" for x in outcomes):
+                    concrete_recharge_cycles.append(row)
+            else:
+                first[node]=i
+
     edges=set(recharge_edges)
     nodes={x for e in edges for x in e}
     comps=tarjan(nodes,edges)
@@ -296,6 +323,12 @@ def analyze(N,K,L=3):
     print("RIGID_RECHARGE_OCCURRENCES",sum(recharge_edges.values()))
     print("RIGID_RECHARGE_CYCLIC_SCCS",len(cyc))
     print("RIGID_RECHARGE_CYCLIC_SIZES",sorted((len(c) for c in cyc),reverse=True))
+    print("CONCRETE_PATTERN_CYCLES",len(concrete_pattern_cycles))
+    print("CONCRETE_ALL_RECHARGE_CYCLES",len(concrete_recharge_cycles))
+    if concrete_pattern_cycles:
+        print("FIRST_CONCRETE_PATTERN_CYCLE",concrete_pattern_cycles[0])
+    if concrete_recharge_cycles:
+        print("FIRST_CONCRETE_ALL_RECHARGE_CYCLE",concrete_recharge_cycles[0])
     for edge,count in sorted(all_switch_edges.items(), key=lambda kv:(repr(kv[0]),kv[1])):
         print("RIGID_SWITCH_EDGE",switch_outcomes[edge],count,edge,switch_witness[edge])
     if recharge_meta:
