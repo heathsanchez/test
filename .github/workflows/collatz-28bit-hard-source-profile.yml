@@ -1,0 +1,29 @@
+name: Collatz 28-bit hard-source profile
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_hard_source_profile.py'
+      - '.github/workflows/collatz-28bit-hard-source-profile.yml'
+  workflow_dispatch:
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Profile isolated hotspot with cutoff
+        run: |
+          set -euo pipefail
+          set +e
+          timeout 90s python -u experiments/collatz_hard_source_profile.py --lo 218263037 --hi 218263548 | tee /tmp/hard-profile.txt
+          CODE=${PIPESTATUS[0]}
+          set -e
+          echo "PROFILE_EXIT_CODE $CODE" | tee -a /tmp/hard-profile.txt
+          if [ "$CODE" -ne 0 ] && [ "$CODE" -ne 124 ]; then
+            exit "$CODE"
+          fi
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-28bit-hard-source-profile
+          path: /tmp/hard-profile.txt
