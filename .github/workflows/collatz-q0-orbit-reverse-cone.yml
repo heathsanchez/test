@@ -1,0 +1,23 @@
+name: Collatz q0 orbit reverse cone
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_orbit_reverse_cone.py'
+      - '.github/workflows/collatz-q0-orbit-reverse-cone.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Orbit-coupled reverse cone
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_orbit_reverse_cone.py --N 262143 --H 512 --Q 7 | tee /tmp/orbit-cone.txt
+          grep -Eq '^OBSERVED_ALL_BOUNDED_ANCHORS_CLOSED_BY_ORBIT_REVERSE_CONE$|^SEPARATOR_ORBIT_REVERSE_CONE' /tmp/orbit-cone.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-orbit-reverse-cone
+          path: /tmp/orbit-cone.txt
