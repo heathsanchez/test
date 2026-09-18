@@ -1,0 +1,24 @@
+name: Collatz reverse-episode BFS v2 sweep
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_universal_reverse_episode_bfs_v2.py'
+      - '.github/workflows/collatz-reverse-episode-bfs-v2.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          for L in 1 2 3 4 5; do
+            echo "=== DEPTH $L ==="
+            python -u experiments/collatz_universal_reverse_episode_bfs_v2.py --lo 4097 --hi 8191 --K 80 --L "$L" --R 14 --S 14 | grep -E 'RANGE|COUNTS|CLOSED|HARD|STATUS'
+          done | tee /tmp/reverse-bfs-v2.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverse-episode-bfs-v2
+          path: /tmp/reverse-bfs-v2.txt
