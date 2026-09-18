@@ -3,6 +3,7 @@ on:
   push:
     branches: [collatz-rigid-component-termination-v1]
     paths:
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
       - '.github/workflows/collatz-q0-rigid-recharge-large.yml'
   workflow_dispatch:
 jobs:
