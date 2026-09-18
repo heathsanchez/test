@@ -1,0 +1,23 @@
+name: Collatz C9 three-replay reverse tree
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_three_replay_reverse_tree.py'
+      - '.github/workflows/collatz-c9-three-replay-reverse-tree.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reverse-tree separator
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_three_replay_reverse_tree.py --depth 45 | tee /tmp/c9-three-reverse.txt
+          grep -Eq '^OBSERVED_NO_RIGID_NON_DIRECT_ANCESTOR$|^SEPARATOR_THREE_REPLAY_ENDPOINT_HAS_RIGID_NON_DIRECT_ANCESTOR$' /tmp/c9-three-reverse.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-three-replay-reverse-tree
+          path: /tmp/c9-three-reverse.txt
