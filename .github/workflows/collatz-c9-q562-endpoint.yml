@@ -1,0 +1,23 @@
+name: Collatz C9 q562 endpoint probe
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_generic_endpoint_reverse_tree.py'
+      - '.github/workflows/collatz-c9-q562-endpoint.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reverse-tree q562 endpoint
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_generic_endpoint_reverse_tree.py --X 589768425 --depth 50 | tee /tmp/q562.txt
+          grep -Eq '^OBSERVED_NO_RIGID_NON_DIRECT_ANCESTOR$|^SEPARATOR_ENDPOINT_HAS_RIGID_NON_DIRECT_ANCESTOR$' /tmp/q562.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-q562-endpoint-probe
+          path: /tmp/q562.txt
