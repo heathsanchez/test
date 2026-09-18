@@ -217,6 +217,7 @@ def analyze(N,K):
     counts=Counter()
     recharge_edges=Counter()
     all_switch_edges=Counter()
+    cert_by_edge={}
     switch_outcomes={}
     switch_witness={}
     first_recharge=None
@@ -262,6 +263,7 @@ def analyze(N,K):
                             counts['switch_'+z['outcome']]+=1
                             edge=((old['r'],)+old['q'],(c['r'],)+c['q'])
                             all_switch_edges[edge]+=1
+                            cert_by_edge[edge]=(old,c)
                             switch_outcomes[edge]=z['outcome']
                             switch_witness.setdefault(edge,(n,starts[start][0],old['word'],c['word'],mstart,mend,z))
                             switch_sequences[(n,r)].append((z['outcome'],mstart,mend,edge,starts[start][0]))
@@ -362,12 +364,34 @@ def analyze(N,K):
                 j+=1
             if j+1<len(seq):
                 assert seq[j+1][0]!="recharge"
-                row=(key,j-i+1,seq[j+1][0],seq[i][1],seq[j+1][2],
-                     tuple(x[3] for x in seq[i:j+2]))
+                edges_block=tuple(x[3] for x in seq[i:j+2])
+                # Compose the actually executed target return maps.
+                AA,BB,DD=1,0,0
+                for ed in edges_block:
+                    target=cert_by_edge[ed][1]
+                    BB=target['A']*BB + target['B']*(1<<DD)
+                    AA=target['A']*AA
+                    DD+=target['D']
+                slope_contract = AA < (1<<DD)
+                m0=seq[i][1]; mout=seq[j+1][2]
+                assert (AA*m0+BB)==(1<<DD)*mout
+                threshold = BB//((1<<DD)-AA)+1 if slope_contract else None
+                row=(key,j-i+1,seq[j+1][0],m0,mout,
+                     edges_block,AA,DD,BB,threshold)
                 discharge.append(row)
-                if seq[j+1][2] >= seq[i][1]:
+                if mout >= m0:
                     discharge_bad.append(row)
             i=j+1
+    slope_bad=[x for x in discharge if not x[6] < (1<<x[7])]
+    threshold_bad=[x for x in discharge if x[9] is None or x[3] < x[9]]
+    print("RECHARGE_DISCHARGE_SLOPE_CONTRACTION",
+          len(discharge)-len(slope_bad),"fail",len(slope_bad))
+    if slope_bad:
+        print("RECHARGE_DISCHARGE_SLOPE_SEPARATOR",slope_bad[:10])
+    print("RECHARGE_DISCHARGE_THRESHOLD_VALID",
+          len(discharge)-len(threshold_bad),"fail",len(threshold_bad))
+    if threshold_bad:
+        print("RECHARGE_DISCHARGE_THRESHOLD_SEPARATOR",threshold_bad[:10])
     print("RECHARGE_DISCHARGE_BLOCKS",len(discharge),
           "CONTRACTING",len(discharge)-len(discharge_bad),
           "NONCONTRACTING",len(discharge_bad))
