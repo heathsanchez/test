@@ -126,6 +126,42 @@ def obligations_from_sources(sources:Iterable[int],K:int=96):
 
 
 
+def source_obligation_profile(sources:Iterable[int],K:int=96):
+    """Compute the sealed future q0 episode starts once, before control arms."""
+    profile=[]
+    for n0 in sources:
+        n=int(n0)
+        if not fm.candidate(n):
+            continue
+        ss,bs=fm.ra.rigid_episode_segment(n,K)
+        if not bs:
+            continue
+        profile.append({"source":n,"starts":tuple((r,m) for k,r,m,x in ss)})
+    return tuple(profile)
+
+
+def run_profile_arm(name:str,adapter:CollatzAdapter,profile,
+                    present:CompiledPresent|None=None,
+                    required_authority_digest:str|None=None):
+    authority_ok=(required_authority_digest is None or
+                  (present is not None and required_authority_digest in present.authority_digests))
+    caps=present.capabilities if present is not None and authority_ok else ()
+    by_anchor={}
+    for cap in caps:
+        by_anchor.setdefault(cap.start_anchor,[]).append(cap)
+    attempts=0;hits=0
+    for ob in profile:
+        n=ob["source"];closed=False
+        for r,m in ob["starts"]:
+            for cap in by_anchor.get(r,()):
+                attempts+=1
+                z=adapter.apply_capability(cap,n,m)
+                if z.get("applicable") and z.get("lower_merge"):
+                    hits+=1;closed=True;break
+            if closed:break
+    return ArmResult(name,len(profile),len(caps),attempts,hits,len(profile)-hits,0)
+
+
 def run_source_arm(name:str,adapter:CollatzAdapter,sources:Iterable[int],
                    present:CompiledPresent|None=None,K:int=96,
                    required_authority_digest:str|None=None):
@@ -172,16 +208,17 @@ def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen
     compiled=CompiledPresent.compile(ledger)
     present=CompiledPresent.from_text(compiled.to_text())
 
-    cold=run_source_arm("COLD",adapter,future,K=K)
-    warm=run_source_arm("WARM",adapter,future,present=present,K=K,required_authority_digest=authority.digest)
-    raw=run_source_arm("RAW_HISTORY",adapter,future,K=K)
-    sham=run_source_arm("SHAM",adapter,future,present=sham_present(present),K=K,required_authority_digest=authority.digest)
+    profile=source_obligation_profile(future,K=K)
+    cold=run_profile_arm("COLD",adapter,profile)
+    warm=run_profile_arm("WARM",adapter,profile,present=present,required_authority_digest=authority.digest)
+    raw=run_profile_arm("RAW_HISTORY",adapter,profile)
+    sham=run_profile_arm("SHAM",adapter,profile,present=sham_present(present),required_authority_digest=authority.digest)
 
     revoke_ids=[]
     for cap in tuple(ledger.active_capabilities()):
         revoke_ids.append(ledger.revoke(cap.semantic_id,"forward macro family ablation").event_id)
     ablated=CompiledPresent.from_text(CompiledPresent.compile(ledger).to_text())
-    ablation=run_source_arm("ANCESTOR_ABLATION",adapter,future,present=ablated,K=K,required_authority_digest=authority.digest)
+    ablation=run_profile_arm("ANCESTOR_ABLATION",adapter,profile,present=ablated,required_authority_digest=authority.digest)
 
     evidence={
         "schema":"COLLATZ_QCKN_V1_RESEARCH_QUALIFICATION",
@@ -190,6 +227,8 @@ def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen
         "authority_digest":authority.digest,
         "training_range":[3,train_hi],
         "future_range":[train_hi+2,future_hi],
+        "future_eligible_sources":len(profile),
+        "future_profile_digest":digest_payload(profile),
         "maxlen":maxlen,"K":K,
         "candidate_capabilities":len(proposals),
         "verified_promotions":verified,
