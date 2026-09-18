@@ -76,3 +76,70 @@ A green gate establishes only:
 It does **not** establish Collatz, completeness of the capability language, universal termination, universal lower merge, or a new mathematical theorem about all positive integers.
 
 The mathematical programme continues from its exact residuals. QCKN governs what verified developmental consequences may alter future execution.
+
+
+## Qualified evidence points — 18 September 2026
+
+### Runtime causal gate
+
+GitHub Actions run **35341498976**: GREEN.
+
+- 30 Collatz QCKN unit tests: PASS.
+- deterministic qualification output: PASS;
+- COLD: 0/1 authoritative hits;
+- WARM: 1/1 authoritative hit with zero discovery;
+- RAW_HISTORY: 0/1;
+- SHAM: 0/1;
+- ANCESTOR_ABLATION: 0/1;
+- closure certificate:
+  `6d82832cf143b8a3ce47e8da136c2e550c392c82f7a42f5451dc758a85009b30`.
+
+### Full-shell research qualification
+
+GitHub Actions run **35341612114**: GREEN.
+
+Frozen acquisition shell:
+
+[
+3le nle8191.
+]
+
+Sealed future shell:
+
+[
+8193le nle16383.
+]
+
+Acquisition accounting:
+
+- 4,095 odd sources scanned;
+- 252 eligible training sources;
+- 1,051 suffix-macro search expansions / construction attempts;
+- 1,051 valid constructions before semantic deduplication;
+- 481 deduplicated capabilities;
+- 481 independent authority verifications;
+- 481 verified causal promotions.
+
+CompiledPresent digest:
+
+`a4f3e1bfa0e615aa72a5988d55959d508f0d761e610eb1d5614b5a51d3b3e81c`
+
+Prospective matched controls on 162 eligible sealed future sources:
+
+| Arm | Active capabilities | Attempts | Authoritative closures | Residuals |
+| --- | ---: | ---: | ---: | ---: |
+| COLD | 0 | 0 | 0 | 162 |
+| WARM | 481 | 57,361 | **88** | **74** |
+| RAW_HISTORY | 0 | 0 | 0 | 162 |
+| SHAM | 481 | 95,156 | 0 | 162 |
+| ANCESTOR_ABLATION | 0 | 0 | 0 | 162 |
+
+WARM performed **zero discovery calls**. The 481 active capabilities came only from the earlier acquisition shell, were independently verified, causally promoted, compiled, serialized, parsed into a fresh CompiledPresent, and then reused.
+
+Revoking the promoted macro family and recompiling restored the cold active result exactly.
+
+Research closure certificate:
+
+`28e78c21cbea3e3f0aad0bf80abed3158eb4c94412f71be10daff590826fd86b`
+
+The result establishes bounded causal developmental advantage of the compiled capability bank under the declared accounting unit. It remains explicitly **not a proof of Collatz**.
