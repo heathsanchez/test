@@ -63,21 +63,30 @@ def ls_remote(url: str, branch: str) -> str:
     return result.stdout.split()[0]
 
 
-def verify_refs(events: list[dict]):
+def verify_refs(by_id: dict[str, dict], present: dict):
     checked = []
-    for e in events:
-        candidate = e.get("candidate", {})
+
+    refs = []
+    for target, champion in present["active_champions"].items():
+        refs.append((f"champion:{target}", champion["branch"], champion["commit"]))
+
+    for event_id in present["active_transitions"]:
+        event = by_id[event_id]
+        candidate = event.get("candidate", {})
         branch = candidate.get("branch")
         commit = candidate.get("commit")
         if branch and commit:
-            if not HEX40.fullmatch(commit):
-                fail(f"{e['id']}: invalid commit digest")
-            actual = ls_remote(REPO, branch)
-            if actual != commit:
-                fail(f"{e['id']}: stale branch snapshot {branch}: expected {commit}, got {actual}")
-            checked.append((branch, commit))
+            refs.append((event_id, branch, commit))
 
-    print(f"verified {len(checked)} exact branch snapshots")
+    for identity, branch, commit in refs:
+        if not HEX40.fullmatch(commit):
+            fail(f"{identity}: invalid commit digest")
+        actual = ls_remote(REPO, branch)
+        if actual != commit:
+            fail(f"{identity}: stale active branch snapshot {branch}: expected {commit}, got {actual}")
+        checked.append((branch, commit))
+
+    print(f"verified {len(checked)} active/frozen branch snapshots")
 
 
 def main():
@@ -138,8 +147,17 @@ def main():
         if event["status"].startswith("VERIFIED"):
             fail(f"{h['id']}: reserve hypothesis incorrectly promoted")
 
+    resolved = {
+        parent
+        for e in events
+        if e["type"] == "RESOLVE"
+        for parent in e.get("parents", [])
+    }
+    if any(event_id in resolved for event_id in present["active_transitions"]):
+        fail("resolved transition remains active in compiled present")
+
     if args.verify_refs:
-        verify_refs(events)
+        verify_refs(by_id, present)
 
     if args.verify_rules_head:
         expected = contract["gamma"]["environment"]["rules_commit"]
