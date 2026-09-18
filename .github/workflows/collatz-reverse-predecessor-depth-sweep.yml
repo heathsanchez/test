@@ -1,0 +1,23 @@
+name: Collatz reverse predecessor depth sweep
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-reverse-predecessor-depth-sweep.yml'
+  workflow_dispatch:
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          for Q in 7 8 9 10 11 12; do
+            echo "=== Q $Q ==="
+            python -u experiments/collatz_reverse_predecessor_tree.py --q "$Q" | grep -E 'REVERSE_TREE_Q|FIRST_CONTRACTION_CERTIFICATES|NONREDUNDANT_CERTIFICATES|KILLED_RESIDUES|TOTAL_RESIDUES|KILL_FRACTION|LIVE_FRACTION|VERIFIED'
+          done | tee /tmp/reverse-predecessor-sweep.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverse-predecessor-depth-sweep
+          path: /tmp/reverse-predecessor-sweep.txt
