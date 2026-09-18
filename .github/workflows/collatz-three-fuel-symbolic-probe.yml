@@ -1,0 +1,20 @@
+name: Collatz three-fuel symbolic probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_three_fuel_symbolic_probe.py'
+      - '.github/workflows/collatz-three-fuel-symbolic-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Three-fuel symbolic classifier
+        run: python -u experiments/collatz_three_fuel_symbolic_probe.py | tee /tmp/three-fuel-symbolic.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: three-fuel-symbolic-probe
+          path: /tmp/three-fuel-symbolic.txt
