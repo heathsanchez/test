@@ -1,0 +1,19 @@
+name: Collatz minimal-counterexample q0 filter
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_minimal_counterexample_q0_filter.py'
+      - '.github/workflows/collatz-minimal-counterexample-q0-filter.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_minimal_counterexample_q0_filter.py | tee /tmp/minimal-q0.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-counterexample-q0-filter
+          path: /tmp/minimal-q0.txt
