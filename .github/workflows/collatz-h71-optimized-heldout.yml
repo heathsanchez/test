@@ -1,0 +1,21 @@
+name: Collatz frozen H71 optimized heldout
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_bidirectional_h71_gate.py'
+      - '.github/workflows/collatz-h71-optimized-heldout.yml'
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_bidirectional_h71_gate.py --lo 8193 --hi 32767 --H 71 --K 130 | tee /tmp/h71-heldout.txt
+      - name: Require frozen H71
+        run: grep -q '^PASS_FROZEN_H71_HELDOUT$' /tmp/h71-heldout.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: frozen-h71-heldout
+          path: /tmp/h71-heldout.txt
