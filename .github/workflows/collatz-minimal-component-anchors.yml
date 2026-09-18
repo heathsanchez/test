@@ -1,0 +1,19 @@
+name: Collatz minimal component anchors
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_minimal_component_anchor_records.py'
+      - '.github/workflows/collatz-minimal-component-anchors.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_minimal_component_anchor_records.py | tee /tmp/minimal-anchors.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-component-anchors
+          path: /tmp/minimal-anchors.txt
