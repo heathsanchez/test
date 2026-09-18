@@ -17,7 +17,7 @@ jobs:
           set -euo pipefail
           python -u experiments/collatz_q0_coalescence_component_audit.py --N 65535 --H 512 | tee /tmp/q0-coalescence.txt
           grep -q '^ANCHOR_27_DIRECT_CERT t=59 endpoint=23$' /tmp/q0-coalescence.txt
-          grep -Eq '^OBSERVED_SINGLE_RIGID_COALESCENCE_COMPONENT_ANCHORED_AT_27$|^SEPARATOR_OUTSIDE_27_COMPONENT' /tmp/q0-coalescence.txt
+          grep -Eq '^OBSERVED_ALL_TESTED_HARD_CHAMPIONS_PRE_DESCENT_COALESCE_TO_27$|^SEPARATOR_OUTSIDE_PRE_DESCENT_27_COMPONENT' /tmp/q0-coalescence.txt
       - uses: actions/upload-artifact@v4
         with:
           name: q0-coalescence-component-audit
