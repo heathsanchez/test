@@ -38,7 +38,7 @@ jobs:
           cd lkc/problems/partition
           lake build
           cp "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Probe_v3.lean" Probe.lean
-          lake env lean Probe.lean
+          lake env lean -DmaxRecDepth=4000000 Probe.lean
       - name: Candidate syntax gate
         shell: bash
         run: |
