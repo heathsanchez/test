@@ -29,6 +29,15 @@
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
+    "partition": {
+      "capability_id": "E-partition-v4-promote",
+      "source_ledger_event": "E-partition-v4-promote",
+      "branch": "lkc-partition-v4-frozen",
+      "commit": "b4e7004c56b0a788143f39e104d9d8b59d8a35b8",
+      "representation": "universally proved proof-first row DP mirroring the partAux multiplicity recurrence",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
     "polydisc": {
       "capability_id": "E-polydisc-v3-promote",
       "source_ledger_event": "E-polydisc-v3-promote",
@@ -115,7 +124,6 @@
     }
   ],
   "active_transitions": [
-    "E-partition-v4-active",
     "E-permanent-sparse-v3-r3-active",
     "E-sha256-packed-r3-r2-active"
   ],
