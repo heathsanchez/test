@@ -76,8 +76,9 @@ def supportPred (dimension seed i j : Nat) : Bool :=
 theorem support_filter_perm
     (dimension seed i : Nat)
     (hd : 3 ≤ dimension) (hi : i < dimension) :
-    (List.range dimension).filter (supportPred dimension seed i) ~
-      rowSupport dimension seed i := by
+    List.Perm
+      ((List.range dimension).filter (supportPred dimension seed i))
+      (rowSupport dimension seed i) := by
   have h1 := permanentColumnOne_props dimension seed i hd hi
   have h2 := permanentColumnTwo_props dimension seed i hd hi
   apply (List.perm_ext_iff_of_nodup ?_ ?_).2
@@ -134,7 +135,7 @@ theorem permanentSparse_eq (dimension seed : Nat) :
                 intro total j hj
                 have hjlt : j < dimension := by simpa using hj
                 rw [genPermanentRow_getD dimension seed i j hjlt]
-                rw [ihAll (used ||| (1 <<< j))]
+                rw [← ihAll (used ||| (1 <<< j))]
                 dsimp [p, f, supportPred]
                 by_cases h1 : i = j
                 · simp [permanentEntry, hdlt, h1]
@@ -157,7 +158,22 @@ theorem permanentSparse_eq (dimension seed : Nat) :
                     · simp [hxu, hyu, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
                 · exact 0
           _ = _ := by
-                simp [rowSupport, f, Nat.add_assoc]
+                simp only [rowSupport, f, List.foldl]
+                by_cases h0 : used.testBit i
+                · by_cases h1 : used.testBit (permanentColumnOne dimension seed i)
+                  · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
+                    · simp [h0, h1, h2]
+                    · simp [h0, h1, h2]
+                  · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
+                    · simp [h0, h1, h2]
+                    · simp [h0, h1, h2, Nat.add_assoc]
+                · by_cases h1 : used.testBit (permanentColumnOne dimension seed i)
+                  · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
+                    · simp [h0, h1, h2]
+                    · simp [h0, h1, h2, Nat.add_assoc]
+                  · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
+                    · simp [h0, h1, h2, Nat.add_assoc]
+                    · simp [h0, h1, h2, Nat.add_assoc]
 
 theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   intro n
@@ -165,7 +181,7 @@ theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   rw [permanentSparse_eq
       (permanentDimension n) (permanentSeed n)
       (List.range (permanentDimension n)) 0]
-  · rfl
+  · simp [genPermanentMatrix]
   · intro i hi
     simpa using hi
 
