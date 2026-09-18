@@ -50,7 +50,7 @@ def classify(q:int)->str:
     return f"DEEPER_FUEL_BUDGET_{b}_S{s}"
 
 def main(limit:int):
-    observed=[140,146,150,248,356,1149,1230,1839,2094,3894]
+    observed=[140,146,150,248,356,699,1026,1149,1230,1839,2094,2657,3894,16610,17916,61872]
     for q in observed:
         print("OBSERVED_Q",q,"X",endpoint(q),"MOD3",q%3,
               "FUEL",fuel(q),"CLASS",classify(q))
