@@ -220,6 +220,34 @@
       },
       "licensed_by": "Cheap representation-deletion probe before theorem-heavy sparse-row restructuring.",
       "transfer_claim": "UNPROVEN until proof/canonical/paired resource gates complete."
+    },
+    {
+      "id": "E-sha256-nozip-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-mertens-v1-promote",
+        "E-rule110-v60-promote"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-nozip-v1",
+        "commit": "8b3921b0a157243024af8dd65e31b64c793c445e",
+        "representation": "parallel K/schedule traversal eliminating K.zip pair-list allocation"
+      },
+      "licensed_by": "Compiled lesson: delete intermediate aggregate structure consumed immediately downstream.",
+      "transfer_claim": "UNPROVEN until target-specific proof, canonical acceptance, and paired Callgrind evidence complete."
+    },
+    {
+      "id": "E-hyp-fuse-producer-consumer",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-sha256-nozip-active"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "When a kernel-reduced producer constructs an intermediate list only for an immediate consumer, a proved fused traversal may reduce instructions.",
+      "next_calibration": "E-sha256-nozip-active"
     }
   ]
 }
