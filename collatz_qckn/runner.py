@@ -45,6 +45,13 @@ def run_arm(name:str,adapter:CollatzAdapter,obligations:Sequence[dict],
         closed=False
         for cap in caps:
             attempts+=1
+            if "prefix_steps" in ob:
+                y=source
+                for _ in range(int(ob["prefix_steps"])):
+                    y=fm.base.T(y)
+                expected=(1<<cap.start_anchor)*start_m-1
+                if y!=expected:
+                    continue
             z=adapter.apply_capability(cap,source,start_m)
             if z.get("applicable") and z.get("lower_merge"):
                 hits+=1;closed=True;break
@@ -119,7 +126,7 @@ def _fixture_qualification():
     ledger,verified=promote_verified(((cap,w),),authority)
     present0=CompiledPresent.compile(ledger)
     present=CompiledPresent.from_text(present0.to_text())
-    future=({"source":11,"start_m":7},)
+    future=({"source":11,"start_m":7,"prefix_steps":3},)
 
     cold=run_arm("COLD",adapter,future)
     warm=run_arm("WARM",adapter,future,present=present)
