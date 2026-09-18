@@ -222,6 +222,7 @@ def analyze(N,K):
     first_recharge=None
     recharge_meta=[]
     switch_sequences=defaultdict(list)
+    return_sequences=defaultdict(list)
 
     for n in range(3,N+1,2):
         starts,branches=rigid_episode_segment(n,K)
@@ -249,6 +250,7 @@ def analyze(N,K):
                 assert admissible(c,mstart)
                 assert replay(c,mstart)==mend
                 counts['returns']+=1
+                return_sequences[(n,r)].append((c,mstart,mend,starts[start][0]))
 
                 if r in last_return:
                     old=last_return[r]
@@ -309,6 +311,31 @@ def analyze(N,K):
                   "first_fail",bad[0] if bad else None)
         hs=Counter(z['h'] for z in recharge_meta)
         print("RECHARGE_HISTOGRAM",dict(sorted(hs.items())))
+    # Exact switch-to-switch transport: after a return V, its own defect
+    # valuation loses exactly D_V.  Thus for consecutive distinct returns,
+    # the next separation equals the previous new-domain excess + 1.
+    transport_checks=0; recharge_forced_switch=0
+    for key,seq in return_sequences.items():
+        for i in range(len(seq)-1):
+            old,m0,m1,k0=seq[i]
+            new,n0,n1,k1=seq[i+1]
+            assert m1==n0
+            if old['q']==new['q']:
+                continue
+            z=switch_law(old,new,n0,n1)
+            if i+2<len(seq):
+                nxt,p0,p1,k2=seq[i+2]
+                assert n1==p0
+                if z['outcome']=="recharge":
+                    assert new['q']!=nxt['q'], ("recharge repeated target",key,i)
+                    recharge_forced_switch+=1
+                if new['q']!=nxt['q']:
+                    z2=switch_law(new,nxt,p0,p1)
+                    assert z2['h']==z['excess']+1, ("h transport",key,i,z,z2)
+                    transport_checks+=1
+    print("SWITCH_H_TRANSPORT_CHECKS",transport_checks)
+    print("RECHARGE_FORCED_NEXT_SWITCH_CHECKS",recharge_forced_switch)
+
     streaks=[]; expanding_streaks=[]
     for key,seq in switch_sequences.items():
         i=0
