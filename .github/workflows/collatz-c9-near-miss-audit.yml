@@ -1,0 +1,23 @@
+name: Collatz C9 near-miss audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_near_miss_audit.py'
+      - '.github/workflows/collatz-c9-near-miss-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Diagnose C9 17-bit near misses
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_near_miss_audit.py --N 1048575 --H 512 | tee /tmp/c9-near-miss.txt
+          grep -Eq '^OBSERVED_C9_NEAR_MISSES_STOP_AT_17_BITS$|^SEPARATOR_C9_18BIT_MATCH_FOUND$' /tmp/c9-near-miss.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-near-miss-audit
+          path: /tmp/c9-near-miss.txt
