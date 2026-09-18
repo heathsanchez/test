@@ -15,7 +15,7 @@ class RunnerTest(unittest.TestCase):
         ev=authority.verify(cap,w)
         ledger=CausalLedger(); ledger.promote(cap,ev)
         present=CompiledPresent.from_text(CompiledPresent.compile(ledger).to_text())
-        future=({"source":11,"start_m":7},)
+        future=({"source":11,"start_m":7,"prefix_steps":3},)
         return adapter,authority,cap,ledger,present,future
 
     def test_restarted_warm_reuses_with_zero_discovery(self):
