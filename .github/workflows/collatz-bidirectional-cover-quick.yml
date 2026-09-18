@@ -1,0 +1,18 @@
+name: Collatz bidirectional cover quick
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-bidirectional-cover-quick.yml'
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_bidirectional_cover_probe.py --N 2047 --K 80 --maxepisodes 4 --maxsteps 28 --Rmax 20 --Smax 12 | tee /tmp/bidirectional-quick.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bidirectional-cover-quick
+          path: /tmp/bidirectional-quick.txt
