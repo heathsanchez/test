@@ -217,7 +217,18 @@ def capability_first_optimize(
 def serialize_caps(caps: tuple[Capability, ...], path: Path) -> tuple[Capability, ...]:
     path.write_text(json.dumps([asdict(c) for c in caps], indent=2, sort_keys=True) + "\n")
     rows = json.loads(path.read_text())
-    return tuple(Capability(**row) for row in rows)
+    return tuple(
+        Capability(
+            capability_id=row["capability_id"],
+            transformation=row["transformation"],
+            applicability_signature=row["applicability_signature"],
+            source_kernel_ids=tuple(row["source_kernel_ids"]),
+            source_cost_reductions=tuple(int(x) for x in row["source_cost_reductions"]),
+            verifier_id=row.get("verifier_id", "gpu-ir-exhaustive-v1"),
+            dependencies=tuple(row.get("dependencies", ())),
+        )
+        for row in rows
+    )
 
 
 def sham_caps(caps: tuple[Capability, ...]) -> tuple[Capability, ...]:
