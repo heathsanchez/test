@@ -1,0 +1,23 @@
+name: Collatz q0 component anchor audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_component_anchor_audit.py'
+      - '.github/workflows/collatz-q0-component-anchor-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: q0 component anchor audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_component_anchor_audit.py --N 65535 --H 512 | tee /tmp/q0-anchors.txt
+          grep -Eq '^OBSERVED_ALL_BOUNDED_COMPONENT_ANCHORS_CERTIFIED$|^SEPARATOR_UNCERTIFIED_COMPONENT_ANCHOR' /tmp/q0-anchors.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-component-anchor-audit
+          path: /tmp/q0-anchors.txt
