@@ -368,6 +368,36 @@ def analyze(N,K,L=3):
         cycle_fuel.append(row)
         if repeats>=2:
             repeatable_cycles.append((x,row))
+    formal_fixedpoints=[]
+    actual_positive_fixedpoints=[]
+    rigid_positive_fixedpoints=[]
+    for x in concrete_pattern_cycles:
+        key=x[0]
+        anchor_r=key[1]
+        AA,DD,BB=x[8],x[9],x[10]
+        CC=(1<<DD)-AA
+        if CC<=0:
+            formal_fixedpoints.append((key,x[4],"negative_or_infinite",AA,BB,DD,CC,None))
+            continue
+        q=Fraction(BB,CC)
+        tag="subunit" if q<1 else ("unit" if q==1 else "positive_gt1")
+        formal_fixedpoints.append((key,x[4],tag,AA,BB,DD,CC,(q.numerator,q.denominator)))
+        if q.denominator!=1 or q.numerator<=0 or q.numerator%2==0:
+            continue
+        mf=q.numerator
+        mm=mf
+        ok=True
+        for ed in x[5]:
+            target=cert_by_edge[ed][1]
+            if not admissible(target,mm):
+                ok=False; break
+            mm=replay(target,mm)
+        if ok and mm==mf:
+            source=(1<<anchor_r)*mf-1
+            actual_positive_fixedpoints.append((key,x[4],source,mf,AA,BB,DD))
+            survives,_=base.survives_to_q0(source)
+            if survives and base.birth_status(source)[0]=="RIGID":
+                rigid_positive_fixedpoints.append((key,x[4],source,mf,AA,BB,DD))
     print("CONCRETE_PATTERN_CYCLES",len(concrete_pattern_cycles))
     print("CONCRETE_PATTERN_CYCLE_SLOPE_CONTRACT",
           len(concrete_pattern_cycles)-len(cycle_slope_bad),"fail",len(cycle_slope_bad))
@@ -391,6 +421,14 @@ def analyze(N,K,L=3):
     print("CONCRETE_REPEATABLE_PATTERN_CYCLES",len(repeatable_cycles))
     if repeatable_cycles:
         print("CONCRETE_REPEATABLE_PATTERN_CYCLE_SEPARATOR",repeatable_cycles[:10])
+    fp_counts=Counter(z[2] for z in formal_fixedpoints)
+    print("FORMAL_CYCLE_FIXEDPOINT_TYPES",dict(fp_counts))
+    print("ACTUAL_POSITIVE_INTEGER_CYCLE_FIXEDPOINTS",len(actual_positive_fixedpoints))
+    if actual_positive_fixedpoints:
+        print("ACTUAL_POSITIVE_INTEGER_CYCLE_FIXEDPOINT_WITNESSES",actual_positive_fixedpoints[:20])
+    print("HEREDITARY_RIGID_POSITIVE_CYCLE_FIXEDPOINTS",len(rigid_positive_fixedpoints))
+    if rigid_positive_fixedpoints:
+        print("HEREDITARY_RIGID_POSITIVE_CYCLE_FIXEDPOINT_WITNESSES",rigid_positive_fixedpoints[:20])
     print("CONCRETE_ZERO_DEFECT_PATTERN_CYCLES",len(zero_defect_cycles))
     if zero_defect_cycles:
         print("CONCRETE_ZERO_DEFECT_PATTERN_CYCLE_SEPARATOR",zero_defect_cycles[:10])
