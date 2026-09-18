@@ -85,12 +85,35 @@ theorem support_filter_perm
       ((List.range dimension).filter (supportPred dimension seed i)).Nodup :=
     List.nodup_range.filter _
   have hright : (rowSupport dimension seed i).Nodup := by
-    simp [rowSupport, h1.2, h2.2.1, h2.2.2]
+    simp only [rowSupport, List.nodup_cons, List.mem_cons, List.mem_singleton,
+      List.nodup_singleton, not_or]
+    exact ⟨⟨Ne.symm h1.2, Ne.symm h2.2.1⟩, Ne.symm h2.2.2⟩
   apply (List.perm_ext_iff_of_nodup hleft hright).2
   intro j
-  simp [supportPred, rowSupport,
-    permanentEntry_support_iff dimension seed i j hd,
-    hi, h1.1, h2.1]
+  constructor
+  · intro hj
+    have hp := (List.mem_filter.mp hj).2
+    have he : permanentEntry dimension seed i j = 1 := by
+      simpa only [supportPred, beq_iff_eq] using hp
+    rcases (permanentEntry_support_iff dimension seed i j hd).mp he with hij | hj1 | hj2
+    · simp [rowSupport, hij]
+    · simp [rowSupport, hj1]
+    · simp [rowSupport, hj2]
+  · intro hj
+    have hs : i = j ∨
+        j = permanentColumnOne dimension seed i ∨
+        j = permanentColumnTwo dimension seed i := by
+      simpa [rowSupport] using hj
+    have he : permanentEntry dimension seed i j = 1 :=
+      (permanentEntry_support_iff dimension seed i j hd).2 hs
+    apply List.mem_filter.mpr
+    constructor
+    · rcases hs with hij | hj1 | hj2
+      · subst hij
+        simpa using hi
+      · simpa [hj1] using h1.1
+      · simpa [hj2] using h2.1
+    · simpa only [supportPred, beq_iff_eq] using he
 
 theorem permanentSparse_eq (dimension seed : Nat) :
     ∀ is used, (∀ i, i ∈ is → i < dimension) →
