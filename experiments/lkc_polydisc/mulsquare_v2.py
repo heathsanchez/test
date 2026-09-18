@@ -48,7 +48,7 @@ theorem normalResultantGoMul_eq :
   | fuel + 1, initial, f, g => by
       simp only [normalResultantGoMul, normalResultantGo]
       rw [int_pow_two]
-      split <;> simp_all [normalResultantGoMul_eq fuel]
+      split <;> simp_all [normalResultantGoMul_eq fuel] <;> rfl
 
 def normalResultantMul (f g : List Int) : Option Int :=
   let f := trimLeading f
@@ -70,7 +70,13 @@ def resultantFromPolyMul (p : List Int) : Int :=
 
 theorem resultantFromPolyMul_eq (p : List Int) :
     resultantFromPolyMul p = resultantFromPoly p := by
-  unfold resultantFromPolyMul resultantFromPoly
+  change
+    (match normalResultantMul p (derivHL p) with
+     | some resultant => resultant
+     | none => bareissDet (monicReducedSylvester p (derivHL p))) =
+    (match normalResultant p (derivHL p) with
+     | some resultant => resultant
+     | none => bareissDet (monicReducedSylvester p (derivHL p)))
   rw [normalResultantMul_eq]
 
 theorem coefficientsFrom_length :
