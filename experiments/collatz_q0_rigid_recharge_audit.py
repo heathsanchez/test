@@ -354,7 +354,17 @@ def analyze(N,K,L=3):
         # Repeating the same exact cycle once more requires the output to
         # remain in the same cycle cylinder, i.e. vv-DD >= DD+1.
         repeats=(vv-1)//DD
-        row=(x[0],x[4],DD,vv,repeats)
+        # Record the concrete source depth and endpoint at cycle entry so
+        # high-fuel congruence lifts can be tested against the full RIGID prefix.
+        key=x[0]
+        source_n,anchor_r=key
+        start_idx=x[1]
+        seq=switch_sequences[key]
+        k_entry=seq[start_idx][4]
+        endpoint=(1<<anchor_r)*m0-1
+        cc,dd=base.forward_state(k_entry,source_n)
+        assert dd==endpoint
+        row=(key,x[4],DD,vv,repeats,k_entry,cc,endpoint)
         cycle_fuel.append(row)
         if repeats>=2:
             repeatable_cycles.append((x,row))
