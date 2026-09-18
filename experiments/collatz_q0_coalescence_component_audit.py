@@ -137,15 +137,18 @@ def audit(N:int,H:int):
         rigid.append(n)
         if n<=27:
             continue
-        y=n; hit=None
+        y=n; hit=None; descended=None
         for t in range(H+1):
+            if t>0 and y<n:
+                descended=(t,y)
+                break
             if y in anchor_orbit:
                 hit=(t,y,anchor_orbit[y]);break
             y=T(y)
         if hit is None:
-            misses.append(n)
+            misses.append((n,descended))
             if len(examples)<20:
-                examples.append(n)
+                examples.append((n,"NO_PRE_DESCENT_27_HIT",descended))
         else:
             max_hit=max(max_hit,hit[0])
             if len(examples)<20 and n in (31,47,71,91,103,111,155,167,251):
@@ -156,17 +159,17 @@ def audit(N:int,H:int):
     print("RIGID_BIRTH_SOURCES",len(rigid))
     print("SMALL_RIGID_ANCHORS",[n for n in rigid if n<=27])
     print("ANCHOR_27_DIRECT_CERT t=59 endpoint=23")
-    print("RIGID_GT27_COALESCE_TO_27",len([n for n in rigid if n>27])-len(misses))
+    print("RIGID_GT27_PRE_DESCENT_COALESCE_TO_27",len([n for n in rigid if n>27])-len(misses))
     print("MAX_STEPS_TO_27_BASIN",max_hit)
-    print("COALESCENCE_MISSES",len(misses))
+    print("PRE_DESCENT_COALESCENCE_MISSES",len(misses))
     for x in examples:
         print("WITNESS",x)
     if misses:
-        print("SEPARATOR_OUTSIDE_27_COMPONENT",misses[:20])
+        print("SEPARATOR_OUTSIDE_PRE_DESCENT_27_COMPONENT",misses[:20])
     else:
-        print("OBSERVED_SINGLE_RIGID_COALESCENCE_COMPONENT_ANCHORED_AT_27")
+        print("OBSERVED_ALL_TESTED_HARD_CHAMPIONS_PRE_DESCENT_COALESCE_TO_27")
     print("STATUS BOUNDED_DISCOVERY_ONLY")
-    print("MISSING_THEOREM universal_rigid_birth_coalescence_or_component_cover")
+    print("MISSING_THEOREM characterize_pre_descent_coalescence_components_and_terminate_anchors")
 
 def main():
     ap=argparse.ArgumentParser()
