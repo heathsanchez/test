@@ -1001,6 +1001,58 @@
         "canonical acceptance",
         "Callgrind total < Polydisc V2"
       ]
+    },
+    {
+      "id": "E-primecount-v3-promote",
+      "type": "PROMOTE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v3-active",
+        "E-mertens-v6-promote",
+        "E-primecount-v1-promote"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-primecount-v3-frozen",
+        "commit": "45b2caf3da75be177e9571b4deff118b34f24c46",
+        "representation": "Primecount V1 direct aggregate composed with Mertens-V6 explicit structural least-factor search"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom audit",
+        "negative control",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind against frozen V1"
+      ],
+      "evidence": {
+        "run_id": 35377380134,
+        "verify_job_id": 105705158883,
+        "instruction_job_id": 105707290208,
+        "baseline_callgrind_total_ir": 6081627268,
+        "candidate_callgrind_total_ir": 3728954262,
+        "reduction_pct": 38.68492596346995,
+        "ratio_candidate_over_baseline": 0.6131507403653005,
+        "official_pmu_measured": false,
+        "source_sha256": "9ac8ac20e740f1ffa7d4b8b55816a2f25e2e51331cbd5d0181304fc35178fffa",
+        "axioms": [
+          "propext",
+          "Classical.choice",
+          "Quot.sound"
+        ],
+        "canonical_accepted": true,
+        "public_cases_won": "6/6"
+      },
+      "compiled_consequence": "The structural least-factor capability learned in Mertens transfers strongly to Primecount: composing it with Primecount V1 removes 38.68% of the frozen V1 Callgrind total."
+    },
+    {
+      "id": "E-primecount-v3-resolved",
+      "type": "RESOLVE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v3-active",
+        "E-primecount-v3-promote"
+      ],
+      "status": "PROMOTED"
     }
   ]
 }
