@@ -9,27 +9,6 @@ core=r'''import Spec
 
 namespace Submission
 
-def chooseColumn
-    (dimension seed : Nat) (rest : List Nat) (used j : Nat) : Nat :=
-  if used.testBit j then
-    0
-  else
-    permanentSparse dimension seed rest (used ||| (1 <<< j))
-where
-  permanentSparse : Nat → Nat → List Nat → Nat → Nat
-    | dimension, seed, [], _ => 1
-    | dimension, seed, i :: is, used =>
-        if dimension < 3 then
-          (List.range dimension).foldl (fun total j =>
-            if used.testBit j then total
-            else total + permanentSparse dimension seed is (used ||| (1 <<< j))) 0
-        else
-          let c1 := permanentColumnOne dimension seed i
-          let c2 := permanentColumnTwo dimension seed i
-          (if used.testBit i then 0 else permanentSparse dimension seed is (used ||| (1 <<< i))) +
-          (if used.testBit c1 then 0 else permanentSparse dimension seed is (used ||| (1 <<< c1))) +
-          (if used.testBit c2 then 0 else permanentSparse dimension seed is (used ||| (1 <<< c2)))
-
 def permanentSparse : Nat → Nat → List Nat → Nat → Nat
   | dimension, seed, [], _ => 1
   | dimension, seed, i :: is, used =>
