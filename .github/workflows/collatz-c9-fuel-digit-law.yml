@@ -1,0 +1,23 @@
+name: Collatz C9 fuel digit law
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_fuel_digit_law.py'
+      - '.github/workflows/collatz-c9-fuel-digit-law.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact periodic fuel digits
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_fuel_digit_law.py --levels 40 | tee /tmp/c9-fuel-digits.txt
+          grep -q '^PASS_C9_PERIODIC_FUEL_DIGIT_LAW$' /tmp/c9-fuel-digits.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-fuel-digit-law
+          path: /tmp/c9-fuel-digits.txt
