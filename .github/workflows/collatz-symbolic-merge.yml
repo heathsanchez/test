@@ -1,0 +1,26 @@
+name: Collatz symbolic lower merge qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-symbolic-lower-merge-v1]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protected and symbolic regressions
+        run: |
+          python -m unittest discover -s experiments -p test_collatz_bellman_audit.py -v
+          python -m unittest discover -s experiments -p test_collatz_macro_qualification.py -v
+          python -m unittest discover -s experiments -p 'test_collatz_symbolic*.py' -v
+      - name: Compile and independently check lower merges
+        run: python experiments/collatz_symbolic_merge.py --depth 18 --output /tmp/symbolic-merge
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-symbolic-lower-merge
+          path: /tmp/symbolic-merge
+          if-no-files-found: error
