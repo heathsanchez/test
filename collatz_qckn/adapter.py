@@ -63,14 +63,9 @@ class CollatzAdapter:
             raise ValueError("training witness does not descend below source")
         guard={"word":[list(z) for z in cert["word"]],
                "start_anchor":cert["r0"],"end_anchor":cert["r1"]}
-        payload={
-            "word":[list(z) for z in cert["word"]],
-            "witness_source":source,
-            "witness_start_m":start_m,
-            "witness_end_m":replay["end_m"],
-            "witness_path_min":replay["path_min"],
-            "witness_argmin":replay["argmin"],
-        }
+        # Active payload is source-independent. Acquisition witness belongs
+        # to authority evidence/provenance, not executable memory.
+        payload={"word":[list(z) for z in cert["word"]]}
         cap=Capability(
             kind=CapabilityKind.FORWARD_DESCENT_MACRO,
             start_anchor=cert["r0"],end_anchor=cert["r1"],
