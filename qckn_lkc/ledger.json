@@ -273,6 +273,67 @@
       "status": "RESERVE_NOT_PROMOTED",
       "hypothesis": "A universally fixed structural parameter may be specialized away when its value is proved from the input generator rather than inferred from scored inputs.",
       "next_calibration": "E-polydisc-fixedsign-active"
+    },
+    {
+      "id": "E-primecount-v1-promote",
+      "type": "PROMOTE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-direct-active",
+        "E-mertens-v1-promote"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-primecount-v1-frozen",
+        "commit": "ad93304176335a1c6c2cd65681486b1e1bdb066f",
+        "representation": "direct recursive aggregate using Nat.minFac primality; removes List.range/countP materialization"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom audit",
+        "negative control",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind diagnostic"
+      ],
+      "evidence": {
+        "run_id": 35293605616,
+        "verify_job_id": 105441477732,
+        "instruction_job_id": 105442563902,
+        "baseline_callgrind_total_ir": 6350666490,
+        "candidate_callgrind_total_ir": 6087099187,
+        "reduction_pct": 4.1502305846956915,
+        "ratio_baseline_over_candidate": 1.0432993277919458,
+        "official_pmu_measured": false,
+        "source_sha256": "7f992d35dac2328f73284b928b14d071ca4461355d72d0c6f3afb38535466eb7",
+        "note": "Small public inputs regressed while n=600 and n=1000 improved; promotion is by the declared summed-total development metric, not per-case dominance."
+      },
+      "compiled_consequence": "For this Primecount contract, direct first-order aggregation beats materialized List.range/countP on the summed public Callgrind total."
+    },
+    {
+      "id": "E-primecount-transfer-calibration",
+      "type": "CALIBRATE",
+      "target": "cross-problem",
+      "parents": [
+        "E-hyp-delete-materialized-aggregate",
+        "E-primecount-v1-promote"
+      ],
+      "status": "VERIFIED_BOUNDED_TRANSFER",
+      "evidence": {
+        "source_domain": "mertens",
+        "target_domain": "primecount",
+        "outcome": "total instruction win with size-dependent crossover",
+        "boundary": "Does not justify a universal per-input rule."
+      }
+    },
+    {
+      "id": "E-primecount-direct-resolved",
+      "type": "RESOLVE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-direct-active",
+        "E-primecount-v1-promote"
+      ],
+      "status": "PROMOTED"
     }
   ]
 }
