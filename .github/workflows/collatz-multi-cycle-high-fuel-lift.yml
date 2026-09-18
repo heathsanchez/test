@@ -1,0 +1,23 @@
+name: Collatz multi-cycle high-fuel lift
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_multi_cycle_high_fuel_lift.py'
+      - '.github/workflows/collatz-multi-cycle-high-fuel-lift.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Multi-cycle high-fuel lift audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_multi_cycle_high_fuel_lift.py --H 128 --max-D 12 --reverse-depth 45 | tee /tmp/multi-cycle-high-fuel.txt
+          grep -Eq '^OBSERVED_ALL_LOW_CHARGE_TWO_REPLAY_LIFTS_CLOSE_BEFORE_RIGID_Q0$|^SEPARATOR_HIGH_FUEL_CAN_SURVIVE_TO_RIGID_Q0' /tmp/multi-cycle-high-fuel.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: multi-cycle-high-fuel-lift
+          path: /tmp/multi-cycle-high-fuel.txt
