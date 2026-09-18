@@ -1,0 +1,22 @@
+name: Collatz deep residual reverse search
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-deep-residual-reverse-search.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        source: [4127,4167,4207,4233,4255,4263,4265,4399]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_universal_reverse_episode_bfs.py --lo ${{ matrix.source }} --hi ${{ matrix.source }} --K 160 --L 7 --R 14 --S 14 | tee "/tmp/deep-${{ matrix.source }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deep-residual-${{ matrix.source }}
+          path: /tmp/deep-${{ matrix.source }}.txt
