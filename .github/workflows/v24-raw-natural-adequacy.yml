@@ -1,0 +1,41 @@
+name: Raw Natural Adequacy V24
+
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  raw-natural-adequacy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch native source repositories
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p /tmp/v24-sources
+          git clone --depth 1 --branch arc-v12-frame-development-operator https://github.com/heathsanchez/test.git /tmp/v24-sources/arc
+          git clone --depth 1 https://github.com/heathsanchez/mathgraph.git /tmp/v24-sources/sair
+          git clone --depth 1 https://github.com/heathsanchez/lean-kernel-arena.git /tmp/v24-sources/lean
+          # The current test mainline contains native RGRS/runtime ledgers and machine artifacts.
+          git clone --depth 1 https://github.com/heathsanchez/test.git /tmp/v24-sources/runtime
+
+      - name: Run raw natural adequacy boundary audit
+        shell: bash
+        run: |
+          set -euxo pipefail
+          rm -rf results/raw-natural-adequacy-v24
+          mkdir -p results/raw-natural-adequacy-v24
+          python3 scripts/raw_natural_adequacy_v24.py \
+            --source ARC=/tmp/v24-sources/arc \
+            --source SAIR=/tmp/v24-sources/sair \
+            --source LEAN=/tmp/v24-sources/lean \
+            --source PROGRAM_RUNTIME=/tmp/v24-sources/runtime \
+            --out-dir results/raw-natural-adequacy-v24
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raw-natural-adequacy-v24
+          path: results/raw-natural-adequacy-v24/
