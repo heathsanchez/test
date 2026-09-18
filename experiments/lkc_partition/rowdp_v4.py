@@ -30,7 +30,7 @@ theorem range_map_getD
     (f : Nat → Nat) (count i fallback : Nat) (h : i < count) :
     ((List.range count).map f).getD i fallback = f i := by
   simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
-  rw [List.getElem?_range' h]
+  rw [List.getElem?_range h]
   simp
 
 theorem initialRow_getD (n m : Nat) (h : m ≤ n) :
@@ -45,11 +45,16 @@ theorem nextRow_getD
     (nextRow k n prev).getD m 0 = partAux (k + 1) m := by
   rw [nextRow, range_map_getD (h := by omega)]
   unfold partAux
-  congr 2
-  apply List.map_congr_left
-  intro j hj
-  apply hprev
-  omega
+  have hmap :
+      (List.range (m / (k + 1) + 1)).map
+          (fun j => prev.getD (m - j * (k + 1)) 0) =
+        (List.range (m / (k + 1) + 1)).map
+          (fun j => partAux k (m - j * (k + 1))) := by
+    apply List.map_congr_left
+    intro j hj
+    apply hprev
+    omega
+  rw [hmap]
 
 theorem buildRows_getD :
     ∀ k n m, m ≤ n → (buildRows k n).getD m 0 = partAux k m
