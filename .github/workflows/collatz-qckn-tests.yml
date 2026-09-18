@@ -1,0 +1,17 @@
+name: Collatz QCKN tests
+on:
+  push:
+    branches: [collatz-qckn-v1]
+    paths:
+      - 'collatz_qckn/**'
+      - 'tests/test_collatz_qckn_*.py'
+      - '.github/workflows/collatz-qckn-tests.yml'
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit tests
+        run: python -m unittest discover -s tests -p 'test_collatz_qckn_*.py' -v
