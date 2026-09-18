@@ -14,6 +14,10 @@ import argparse
 import collatz_q0_rigid_recharge_audit as ra
 import collatz_universal_reverse_episode_bfs_v2 as bfs
 
+def shape(x:int):
+    if x is None: return None
+    return ("neg" if x<0 else "nonneg", abs(x).bit_length())
+
 def run(R:int,extra:int,L:int,B:int):
     n=(1<<R)-1
     K=R+extra
@@ -29,15 +33,16 @@ def run(R:int,extra:int,L:int,B:int):
         if row is not None:
             full=(row[0],k,r,m)+row[2:]
             if best is None or full<best:best=full
-            print("ENDPOINT_SEARCH",k,r,m,"gap",row[0],
-                  "legal",legal,"states",states,
+            print("ENDPOINT_SEARCH","k",k,"r",r,"m_bits",m.bit_length(),
+                  "gap",shape(row[0]),"legal",legal,"states",states,
                   "word",row[5] if len(row)>5 else None)
             if row[0]<0:
-                print("LOWER_MERGE_CERT",full)
+                print("LOWER_MERGE_CERT","k",k,"r",r,
+                      "gap",shape(row[0]),"word",row[5] if len(row)>5 else None)
                 print("STATUS CONSTRUCTED_C9_CLOSED_BY_REVERSE_EPISODES")
                 return
     print("TOTAL_LEGAL",total_legal)
-    print("BEST",best)
+    print("BEST",None if best is None else ("gap",shape(best[0]),"k",best[1],"r",best[2],"word",best[8] if len(best)>8 else None))
     print("STATUS CONSTRUCTED_C9_SURVIVES_REVERSE_EPISODES")
 
 if __name__=="__main__":
