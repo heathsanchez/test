@@ -18,19 +18,21 @@ def load(path: Path):
 def compile_present(contract: dict, ledger: dict) -> dict:
     events = ledger["events"]
 
-    promotions = sorted(
-        (
-            e for e in events
-            if e["type"] == "PROMOTE" and e["status"] == "VERIFIED_LOCAL_CHAMPION"
-        ),
-        key=lambda e: e["target"],
-    )
+    promotions = [
+        e for e in events
+        if e["type"] == "PROMOTE" and e["status"] == "VERIFIED_LOCAL_CHAMPION"
+    ]
+
+    # Ledger order is causal append order for this single-writer adapter.
+    # A later promotion of the same target supersedes the earlier champion;
+    # historical promotion evidence remains in the ledger.
+    latest_promotion = {}
+    for e in promotions:
+        latest_promotion[e["target"]] = e
 
     active_champions = {}
-    for e in promotions:
-        target = e["target"]
-        if target in active_champions:
-            raise RuntimeError(f"conflicting active champion for {target}")
+    for target in sorted(latest_promotion):
+        e = latest_promotion[target]
         active_champions[target] = {
             "capability_id": e["id"],
             "source_ledger_event": e["id"],
