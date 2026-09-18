@@ -1,0 +1,26 @@
+name: Collatz Flash propagation qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-flash-propagation-v1]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protected evidence and propagation boundaries
+        run: |
+          python -m unittest discover -s experiments -p test_collatz_bellman_audit.py -v
+          python -m unittest discover -s experiments -p test_collatz_macro_qualification.py -v
+          python -m unittest discover -s experiments -p test_collatz_flash.py -v
+      - name: Run five controls in fresh processes
+        run: python experiments/collatz_flash.py --output /tmp/collatz-flash
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-flash-propagation
+          path: /tmp/collatz-flash
+          if-no-files-found: error
