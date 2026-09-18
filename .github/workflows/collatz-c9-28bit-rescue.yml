@@ -1,0 +1,34 @@
+name: Collatz C9 28-bit rescue shards
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-28bit-rescue.yml'
+  workflow_dispatch:
+jobs:
+  rescue:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "10a", lo: 218103809, hi: 220200959}
+          - {name: "10b", lo: 220200960, hi: 222298110}
+          - {name: "10c", lo: 222298111, hi: 224395261}
+          - {name: "10d", lo: 224395262, hi: 226492415}
+          - {name: "14a", lo: 251658241, hi: 253755391}
+          - {name: "14b", lo: 253755392, hi: 255852542}
+          - {name: "14c", lo: 255852543, hi: 257949693}
+          - {name: "14d", lo: 257949694, hi: 260046847}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Rescue exact 28-bit range
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_compounding_sweep.py --lo "${{ matrix.lo }}" --hi "${{ matrix.hi }}" --H 512 --guard 10000 | tee "/tmp/rescue-${{ matrix.name }}.txt"
+          grep -Eq '^PASS_ALL_LIVE_HIGH_FUEL_ENDPOINTS_COMPILED$|^SEPARATOR_UNRESOLVED_LIVE_HIGH_FUEL_ENDPOINT' "/tmp/rescue-${{ matrix.name }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-28bit-rescue-${{ matrix.name }}
+          path: /tmp/rescue-${{ matrix.name }}.txt
