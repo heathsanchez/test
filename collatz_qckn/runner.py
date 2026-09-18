@@ -37,8 +37,11 @@ class ArmResult:
 
 
 def run_arm(name:str,adapter:CollatzAdapter,obligations:Sequence[dict],
-            present:CompiledPresent|None=None,raw_history:Sequence[Capability]=()):
-    caps=present.capabilities if present is not None else ()
+            present:CompiledPresent|None=None,raw_history:Sequence[Capability]=(),
+            required_authority_digest:str|None=None):
+    authority_ok=(required_authority_digest is None or
+                  (present is not None and required_authority_digest in present.authority_digests))
+    caps=present.capabilities if present is not None and authority_ok else ()
     attempts=0; hits=0
     for ob in obligations:
         source=int(ob["source"]); start_m=int(ob["start_m"])
@@ -117,9 +120,12 @@ def obligations_from_sources(sources:Iterable[int],K:int=96):
 
 
 def run_source_arm(name:str,adapter:CollatzAdapter,sources:Iterable[int],
-                   present:CompiledPresent|None=None,K:int=96):
+                   present:CompiledPresent|None=None,K:int=96,
+                   required_authority_digest:str|None=None):
     """Prospective source-level reuse on the exact q0 RIGID population."""
-    caps=present.capabilities if present is not None else ()
+    authority_ok=(required_authority_digest is None or
+                  (present is not None and required_authority_digest in present.authority_digests))
+    caps=present.capabilities if present is not None and authority_ok else ()
     attempts=0;hits=0;eligible=0
     by_anchor={}
     for cap in caps:
@@ -160,15 +166,15 @@ def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen
     present=CompiledPresent.from_text(compiled.to_text())
 
     cold=run_source_arm("COLD",adapter,future,K=K)
-    warm=run_source_arm("WARM",adapter,future,present=present,K=K)
+    warm=run_source_arm("WARM",adapter,future,present=present,K=K,required_authority_digest=authority.digest)
     raw=run_source_arm("RAW_HISTORY",adapter,future,K=K)
-    sham=run_source_arm("SHAM",adapter,future,present=sham_present(present),K=K)
+    sham=run_source_arm("SHAM",adapter,future,present=sham_present(present),K=K,required_authority_digest=authority.digest)
 
     revoke_ids=[]
     for cap in tuple(ledger.active_capabilities()):
         revoke_ids.append(ledger.revoke(cap.semantic_id,"forward macro family ablation").event_id)
     ablated=CompiledPresent.from_text(CompiledPresent.compile(ledger).to_text())
-    ablation=run_source_arm("ANCESTOR_ABLATION",adapter,future,present=ablated,K=K)
+    ablation=run_source_arm("ANCESTOR_ABLATION",adapter,future,present=ablated,K=K,required_authority_digest=authority.digest)
 
     evidence={
         "schema":"COLLATZ_QCKN_V1_RESEARCH_QUALIFICATION",
@@ -212,13 +218,13 @@ def _fixture_qualification():
     future=({"source":11,"start_m":7,"prefix_steps":3},)
 
     cold=run_arm("COLD",adapter,future)
-    warm=run_arm("WARM",adapter,future,present=present)
+    warm=run_arm("WARM",adapter,future,present=present,required_authority_digest=authority.digest)
     raw=run_arm("RAW_HISTORY",adapter,future,raw_history=(cap,))
-    sham=run_arm("SHAM",adapter,future,present=sham_present(present))
+    sham=run_arm("SHAM",adapter,future,present=sham_present(present),required_authority_digest=authority.digest)
 
     revoke=ledger.revoke(cap.semantic_id,"qualification ancestor ablation")
     ablated=CompiledPresent.from_text(CompiledPresent.compile(ledger).to_text())
-    ablation=run_arm("ANCESTOR_ABLATION",adapter,future,present=ablated)
+    ablation=run_arm("ANCESTOR_ABLATION",adapter,future,present=ablated,required_authority_digest=authority.digest)
 
     evidence={
         "schema":"COLLATZ_QCKN_V1_QUALIFICATION",
