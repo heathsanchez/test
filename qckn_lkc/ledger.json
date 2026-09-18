@@ -140,6 +140,39 @@
       },
       "licensed_by": "Cross-domain test of deleting materialized List.range/countP aggregate structure.",
       "transfer_claim": "UNPROVEN until target-specific proof, canonical acceptance, and paired resource measurement complete."
+    },
+    {
+      "id": "E-hyp-delete-materialized-aggregate",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-mertens-v1-promote"
+      ],
+      "status": "RESERVE_NOT_PROMOTED_AS_GENERAL_RULE",
+      "hypothesis": "Deleting redundant materialized/generic aggregate structure can reduce kernel replay cost without changing mathematical semantics.",
+      "next_calibration": "E-primecount-direct-active"
+    },
+    {
+      "id": "E-hyp-structural-recursion",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-mertens-structural-active"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "Explicit structural recursion may reduce kernel cost relative to generic well-founded least-factor reduction.",
+      "next_calibration": "E-mertens-structural-active"
+    },
+    {
+      "id": "E-hyp-generated-state",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-partition-dp-active"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "Generated dynamic state can be cheaper than replaying naive recursive semantics when the state is produced inside measured computation.",
+      "next_calibration": "E-partition-dp-active"
     }
   ]
 }
