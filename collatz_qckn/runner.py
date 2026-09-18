@@ -115,6 +115,89 @@ def obligations_from_sources(sources:Iterable[int],K:int=96):
     return tuple(obs)
 
 
+
+def run_source_arm(name:str,adapter:CollatzAdapter,sources:Iterable[int],
+                   present:CompiledPresent|None=None,K:int=96):
+    """Prospective source-level reuse on the exact q0 RIGID population."""
+    caps=present.capabilities if present is not None else ()
+    attempts=0;hits=0;eligible=0
+    by_anchor={}
+    for cap in caps:
+        by_anchor.setdefault(cap.start_anchor,[]).append(cap)
+    for n0 in sources:
+        n=int(n0)
+        if not fm.candidate(n):
+            continue
+        ss,bs=fm.ra.rigid_episode_segment(n,K)
+        if not bs:
+            continue
+        eligible+=1;closed=False
+        for k,r,m,x in ss:
+            for cap in by_anchor.get(r,()):
+                attempts+=1
+                z=adapter.apply_capability(cap,n,m)
+                if z.get("applicable") and z.get("lower_merge"):
+                    hits+=1;closed=True;break
+            if closed:break
+    return ArmResult(name,eligible,len(caps),attempts,hits,eligible-hits,0)
+
+
+def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen:int=12):
+    """Reproduce the forward-macro transfer experiment through QCKN causal memory."""
+    contract=digest_payload({
+        "adapter":"COLLATZ_QCKN_V1",
+        "training":[3,train_hi],
+        "future":[train_hi+2,future_hi],
+        "K":K,"maxlen":maxlen,
+    })
+    adapter=CollatzAdapter(contract)
+    authority=Authority(contract,"collatz-exact-replay-v1")
+    training=range(3,train_hi+1,2)
+    future=range(train_hi+2,future_hi+1,2)
+    proposals=discover_forward_macros(adapter,training,maxlen=maxlen)
+    ledger,verified=promote_verified(proposals,authority)
+    compiled=CompiledPresent.compile(ledger)
+    present=CompiledPresent.from_text(compiled.to_text())
+
+    cold=run_source_arm("COLD",adapter,future,K=K)
+    warm=run_source_arm("WARM",adapter,future,present=present,K=K)
+    raw=run_source_arm("RAW_HISTORY",adapter,future,K=K)
+    sham=run_source_arm("SHAM",adapter,future,present=sham_present(present),K=K)
+
+    revoke_ids=[]
+    for cap in tuple(ledger.active_capabilities()):
+        revoke_ids.append(ledger.revoke(cap.semantic_id,"forward macro family ablation").event_id)
+    ablated=CompiledPresent.from_text(CompiledPresent.compile(ledger).to_text())
+    ablation=run_source_arm("ANCESTOR_ABLATION",adapter,future,present=ablated,K=K)
+
+    evidence={
+        "schema":"COLLATZ_QCKN_V1_RESEARCH_QUALIFICATION",
+        "claim":"Bounded causal reuse of independently verified q0 forward descent macros on the declared sealed future shell; Collatz remains unproved.",
+        "contract_digest":contract,
+        "authority_digest":authority.digest,
+        "training_range":[3,train_hi],
+        "future_range":[train_hi+2,future_hi],
+        "maxlen":maxlen,"K":K,
+        "candidate_capabilities":len(proposals),
+        "verified_promotions":verified,
+        "acquisition_cost":{
+            "constructions":len(proposals),
+            "verifications":len(proposals),
+            "search_expansions":0,
+        },
+        "compiled_present_digest":present.digest,
+        "revocation_digest":digest_payload(sorted(revoke_ids)),
+        "arms":{x.name:x.to_canonical() for x in (cold,warm,raw,sham,ablation)},
+    }
+    assert verified==len(proposals)>0
+    assert warm.authoritative_hits>0 and warm.discovery_calls==0
+    assert cold.authoritative_hits==0
+    assert raw.authoritative_hits==0
+    assert sham.authoritative_hits==0
+    assert ablation.authoritative_hits==cold.authoritative_hits
+    assert ablation.active_capabilities==0
+    return evidence
+
 def _fixture_qualification():
     """Fast sealed causal fixture used by CI; same authority path as research runs."""
     contract="collatz-qckn-v1-fixture"
@@ -169,13 +252,25 @@ def qualification_evidence():
 def main(argv=None):
     ap=argparse.ArgumentParser()
     ap.add_argument("--qualify",action="store_true")
+    ap.add_argument("--research-qualify",action="store_true")
+    ap.add_argument("--train-hi",type=int,default=8191)
+    ap.add_argument("--future-hi",type=int,default=16383)
+    ap.add_argument("--K",type=int,default=96)
+    ap.add_argument("--maxlen",type=int,default=12)
     args=ap.parse_args(argv)
-    if not args.qualify:
-        ap.error("--qualify is required")
-    evidence,certificate,body=qualification_evidence()
-    print(body)
-    print("CLOSURE_CERTIFICATE",certificate)
-    print("PASS_COLLATZ_QCKN_V1_BOUNDED_CAUSAL_REUSE")
+    if args.research_qualify:
+        evidence=research_qualification(args.train_hi,args.future_hi,args.K,args.maxlen)
+        print(canonical_json(evidence))
+        print("CLOSURE_CERTIFICATE",digest_payload(evidence))
+        print("PASS_COLLATZ_QCKN_V1_RESEARCH_CAUSAL_REUSE")
+        return
+    if args.qualify:
+        evidence,certificate,body=qualification_evidence()
+        print(body)
+        print("CLOSURE_CERTIFICATE",certificate)
+        print("PASS_COLLATZ_QCKN_V1_BOUNDED_CAUSAL_REUSE")
+        return
+    ap.error("--qualify or --research-qualify is required")
 
 
 if __name__=="__main__":
