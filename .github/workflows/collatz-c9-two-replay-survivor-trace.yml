@@ -1,0 +1,23 @@
+name: Collatz C9 two-replay survivor trace
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_two_replay_survivor_trace.py'
+      - '.github/workflows/collatz-c9-two-replay-survivor-trace.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trace two-replay survivor
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_two_replay_survivor_trace.py --H 200 | tee /tmp/c9-two-replay-trace.txt
+          grep -q '^STATUS EXACT_TWO_REPLAY_SURVIVOR_TRACE$' /tmp/c9-two-replay-trace.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-two-replay-survivor-trace
+          path: /tmp/c9-two-replay-trace.txt
