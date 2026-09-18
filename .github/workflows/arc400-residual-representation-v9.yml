@@ -1,0 +1,24 @@
+name: ARC400 Residual Representation V9
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  residual-representation:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch ARC-AGI
+        run: git clone --depth 1 https://github.com/fchollet/ARC-AGI.git ARC-AGI
+      - name: Learn and refine residual representation
+        run: |
+          rm -rf results/arc400-residual-representation-v9
+          mkdir -p results/arc400-residual-representation-v9
+          python3 scripts/arc400_residual_representation_refinement_v9.py \
+            --arc-root ARC-AGI \
+            --out-dir results/arc400-residual-representation-v9 \
+            --seed 1729
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: arc400-residual-representation-v9
+          path: results/arc400-residual-representation-v9/
