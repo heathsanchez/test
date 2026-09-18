@@ -47,3 +47,44 @@ jobs:
           cd bench/.cache/upstream/evaluation/problems/permanent
           printf '\n#print axioms Submission.impl_correct\n' >> Submission_v2.lean
           lake env lean -DautoImplicit=false -DwarningAsError=true Submission_v2.lean
+
+  instructions:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate candidate
+        run: |
+          python3 experiments/lkc_permanent/stream_v2.py
+          python3 -m py_compile experiments/lkc_permanent/tournament_v2.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install measurement dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-permanent-inline-lean4331-d8ea5fc-v1
+      - name: Setup exact Permanent environment
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem permanent
+          python3 benchmark.py doctor --problem permanent --metric callgrind
+      - name: Full 8 GiB resource probe
+        run: python3 experiments/lkc_permanent/tournament_v2.py resource_probe
+      - name: Stable 14-case Callgrind tournament
+        run: python3 experiments/lkc_permanent/tournament_v2.py instructions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: permanent-stream-v2-evidence
+          path: permanent-v2-evidence/
