@@ -1,0 +1,20 @@
+name: Collatz return-word pumping probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_return_word_pumping_probe.py'
+      - '.github/workflows/collatz-return-word-pumping-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bellman repeat pumping
+        run: python -u experiments/collatz_return_word_pumping_probe.py | tee /tmp/return-pump.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: return-word-pumping-probe
+          path: /tmp/return-pump.txt
