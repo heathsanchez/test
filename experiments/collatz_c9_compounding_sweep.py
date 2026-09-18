@@ -42,6 +42,13 @@ FROZEN_ENDPOINTS={
     1928799977,
     2196186857,
     4083623657,
+    # Acquired prospectively on the 27-bit holdout:
+    733423337,
+    1076307689,
+    2786535145,
+    17417316073,
+    18786756329,
+    64877962985,
 }
 
 def rigid_prefix(n,k0,k1):
