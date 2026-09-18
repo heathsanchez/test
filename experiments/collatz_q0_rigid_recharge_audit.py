@@ -334,6 +334,10 @@ def analyze(N,K,L=3):
     cycle_slope_bad=[x for x in concrete_pattern_cycles if not x[8] < (1<<x[9])]
     cycle_threshold_bad=[x for x in concrete_pattern_cycles
                          if x[11] is None or x[6] < x[11]]
+    recharge_cycles=[x for x in concrete_pattern_cycles if "recharge" in x[4]]
+    recharge_cycle_slope_bad=[x for x in recharge_cycles if not x[8] < (1<<x[9])]
+    recharge_cycle_threshold_bad=[x for x in recharge_cycles
+                                  if x[11] is None or x[6] < x[11]]
     print("CONCRETE_PATTERN_CYCLES",len(concrete_pattern_cycles))
     print("CONCRETE_PATTERN_CYCLE_SLOPE_CONTRACT",
           len(concrete_pattern_cycles)-len(cycle_slope_bad),"fail",len(cycle_slope_bad))
@@ -343,6 +347,15 @@ def analyze(N,K,L=3):
           len(concrete_pattern_cycles)-len(cycle_threshold_bad),"fail",len(cycle_threshold_bad))
     if cycle_threshold_bad:
         print("CONCRETE_PATTERN_CYCLE_THRESHOLD_SEPARATOR",cycle_threshold_bad[:10])
+    print("CONCRETE_RECHARGE_CONTAINING_CYCLES",len(recharge_cycles))
+    print("CONCRETE_RECHARGE_CYCLE_SLOPE_CONTRACT",
+          len(recharge_cycles)-len(recharge_cycle_slope_bad),"fail",len(recharge_cycle_slope_bad))
+    if recharge_cycle_slope_bad:
+        print("CONCRETE_RECHARGE_CYCLE_SLOPE_SEPARATOR",recharge_cycle_slope_bad[:10])
+    print("CONCRETE_RECHARGE_CYCLE_THRESHOLD_VALID",
+          len(recharge_cycles)-len(recharge_cycle_threshold_bad),"fail",len(recharge_cycle_threshold_bad))
+    if recharge_cycle_threshold_bad:
+        print("CONCRETE_RECHARGE_CYCLE_THRESHOLD_SEPARATOR",recharge_cycle_threshold_bad[:10])
     print("CONCRETE_ALL_RECHARGE_CYCLES",len(concrete_recharge_cycles))
     if concrete_pattern_cycles:
         print("FIRST_CONCRETE_PATTERN_CYCLE",concrete_pattern_cycles[0])
