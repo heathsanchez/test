@@ -32,6 +32,15 @@
       "next_calibration": "E-primecount-direct-active"
     },
     {
+      "id": "E-hyp-fuse-producer-consumer",
+      "source_evidence": [
+        "E-sha256-nozip-active"
+      ],
+      "state": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "When a kernel-reduced producer constructs an intermediate list only for an immediate consumer, a proved fused traversal may reduce instructions.",
+      "next_calibration": "E-sha256-nozip-active"
+    },
+    {
       "id": "E-hyp-generated-state",
       "source_evidence": [
         "E-partition-dp-active"
@@ -64,7 +73,8 @@
     "E-mertens-structural-active",
     "E-partition-dp-active",
     "E-permanent-inline-active",
-    "E-primecount-direct-active"
+    "E-primecount-direct-active",
+    "E-sha256-nozip-active"
   ],
   "revoked": [
     "E-partition-table-revoke"
