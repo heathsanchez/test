@@ -83,7 +83,7 @@ def compile_present(contract: dict, ledger: dict) -> dict:
 
 
 def canonical_text(obj: dict) -> str:
-    return json.dumps(obj, indent=2, sort_keys=False) + "\n"
+    return json.dumps(obj, indent=2, sort_keys=False, ensure_ascii=False) + "\n"
 
 
 def main():
