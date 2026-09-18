@@ -1,0 +1,34 @@
+name: Collatz bidirectional heldout
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-bidirectional-heldout.yml'
+  workflow_dispatch:
+jobs:
+  heldout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_bidirectional_cover_probe.py --lo 8193 --N 32767 --K 120 --maxepisodes 4 --maxsteps 28 --Rmax 20 --Smax 12 | tee /tmp/bidirectional-heldout.txt
+      - name: Frozen H71 gate
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('/tmp/bidirectional-heldout.txt').read_text()
+          # The script reports the first H for which all sources surviving >H are reverse-closed.
+          # Pass only if H<=71; separator otherwise.
+          import re
+          m=re.search(r'BIDIRECTIONAL_COVER_THRESHOLD (\d+)',s)
+          if not m:
+              raise SystemExit('NO_THRESHOLD')
+          H=int(m.group(1))
+          print('HELDOUT_THRESHOLD',H)
+          if H>71:
+              raise SystemExit(f'SEPARATOR_THRESHOLD_{H}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bidirectional-heldout
+          path: /tmp/bidirectional-heldout.txt
