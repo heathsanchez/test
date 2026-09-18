@@ -1,0 +1,23 @@
+name: Collatz reverse family compiler
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_reverse_family_compiler.py'
+      - '.github/workflows/collatz-reverse-family-compiler.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify reusable reverse-family compiler
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_reverse_family_compiler.py --samples 4 | tee /tmp/reverse-family.txt
+          grep -q '^PASS_REVERSE_FAMILY_COMPILER_T153$' /tmp/reverse-family.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverse-family-compiler
+          path: /tmp/reverse-family.txt
