@@ -11,12 +11,30 @@
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
+    "fib": {
+      "capability_id": "E-fib-v2-promote",
+      "source_ledger_event": "E-fib-v2-promote",
+      "branch": "lkc-fib-v2-frozen",
+      "commit": "9f637e976b587a1623d83be12a82522a35a95b6c",
+      "representation": "fast doubling with Nat.shiftRight/Nat.land parity path",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
     "mertens": {
       "capability_id": "E-mertens-v6-promote",
       "source_ledger_event": "E-mertens-v6-promote",
       "branch": "lkc-mertens-v6-frozen",
       "commit": "df8824794cfb1cd2764fbde1ddfe54c07957b98e",
       "representation": "structural least-factor path with selected V6 evaluator",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
+    "polydisc": {
+      "capability_id": "E-polydisc-v2-promote",
+      "source_ledger_event": "E-polydisc-v2-promote",
+      "branch": "lkc-polydisc-v2-frozen",
+      "commit": "ba2b2f718a8e98e0ac5e42afb2b1aac766484e60",
+      "representation": "fixed degree-24 sign plus multiplication-specialized PRS square",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
@@ -87,12 +105,8 @@
     }
   ],
   "active_transitions": [
-    "E-fib-mulsquare-active",
-    "E-partition-dp-r2-active",
-    "E-permanent-inline-r2-active",
-    "E-polydisc-fixedsign-active",
-    "E-primecount-v2-active",
-    "E-sha256-nozip-r2-active"
+    "E-partition-v4-active",
+    "E-permanent-stream-v2-active"
   ],
   "revoked": [
     "E-partition-table-revoke"
