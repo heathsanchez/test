@@ -1,0 +1,19 @@
+name: Collatz post-DAG termination separators
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/test_collatz_post_dag_termination_separators.py'
+      - 'docs/collatz-post-dag-termination-audit-2026-09-18.md'
+      - '.github/workflows/collatz-post-dag-termination-separators.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact post-DAG separators
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments -p test_collatz_post_dag_termination_separators.py -v
