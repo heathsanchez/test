@@ -1,0 +1,23 @@
+name: Collatz q0 anchor schema transfer
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_anchor_schema_transfer.py'
+      - '.github/workflows/collatz-q0-anchor-schema-transfer.yml'
+  workflow_dispatch:
+jobs:
+  transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Frozen anchor schema transfer
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_anchor_schema_transfer.py --train 65535 --test 262143 --H 512 | tee /tmp/anchor-transfer.txt
+          grep -Eq '^OBSERVED_FROZEN_ANCHOR_SCHEMAS_COVER_ALL_NEW_ANCHORS$|^SEPARATOR_FROZEN_ANCHOR_SCHEMA_TRANSFER' /tmp/anchor-transfer.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-anchor-schema-transfer
+          path: /tmp/anchor-transfer.txt
