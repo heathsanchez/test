@@ -967,6 +967,40 @@
         "canonical acceptance",
         "Callgrind total < Polydisc V2"
       ]
+    },
+    {
+      "id": "E-polydisc-v3-r1-resolved",
+      "type": "RESOLVE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v3-active"
+      ],
+      "status": "SUPERSEDED_BY_PROOF_REPAIR",
+      "evidence": {
+        "run_id": 35377796201,
+        "reason": "let-bound polyOfShift equality proof only; candidate semantics unchanged"
+      }
+    },
+    {
+      "id": "E-polydisc-v3-r2-active",
+      "type": "PROPOSE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v3-active",
+        "E-polydisc-v3-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-polydisc-shift-v3",
+        "commit": "be92710aebb4aa59f24edd05b5a3447bfd776767",
+        "representation": "V2 PRS plus shift-based exact coefficient-word construction"
+      },
+      "licensed_by": "Same candidate semantics; proof exposes let-bound generator explicitly.",
+      "promotion_requirements": [
+        "universal generator equivalence proof",
+        "canonical acceptance",
+        "Callgrind total < Polydisc V2"
+      ]
     }
   ]
 }
