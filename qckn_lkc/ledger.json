@@ -1472,6 +1472,40 @@
         "all six resource cases complete",
         "stable instruction improvement or resource dominance"
       ]
+    },
+    {
+      "id": "E-permanent-sparse-v4-r2-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-r2-active"
+      ],
+      "status": "SUPERSEDED_BY_EXPLICIT_NODUP_ORIENTATION",
+      "evidence": {
+        "reason": "three-element support Nodup/equality orientation made explicit; computation unchanged"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v4-r3-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-r2-active",
+        "E-permanent-sparse-v4-r2-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v4",
+        "commit": "817466c22fc74c0fdbf58c653ae0f983335862b8",
+        "representation": "three-choice sparse DFS with explicit support permutation/Nodup/equality proof"
+      },
+      "licensed_by": "All prior failures were proof packaging; support computation and semantic shell remain green.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "dimension-16 resource clearance",
+        "paired instruction evidence"
+      ]
     }
   ]
 }
