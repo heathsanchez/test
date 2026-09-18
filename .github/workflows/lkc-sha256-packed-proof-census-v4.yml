@@ -1,0 +1,53 @@
+name: LKC SHA Packed Proof Census v4
+
+on:
+  push:
+    branches: [lkc-sha256-packed-core-v4]
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate staged proof files
+        run: |
+          python3 experiments/lkc_sha256/proof_census_v4.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-packed-core-lean4331-d8ea5fc-v1
+      - name: Setup SHA environment
+        working-directory: bench
+        run: python3 benchmark.py setup --problem sha256
+      - name: Stage A pack/unpack
+        run: |
+          cp experiments/lkc_sha256/generated/SHA_A_pack.lean bench/.cache/upstream/evaluation/problems/sha256/SHA_A_pack.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true SHA_A_pack.lean
+      - name: Stage B validity
+        run: |
+          cp experiments/lkc_sha256/generated/SHA_B_validity.lean bench/.cache/upstream/evaluation/problems/sha256/SHA_B_validity.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true SHA_B_validity.lean
+      - name: Stage C iteration
+        run: |
+          cp experiments/lkc_sha256/generated/SHA_C_iteration.lean bench/.cache/upstream/evaluation/problems/sha256/SHA_C_iteration.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true SHA_C_iteration.lean
