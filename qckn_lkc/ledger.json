@@ -807,6 +807,37 @@
       },
       "licensed_by": "No-zip reduced replay instructions by ~9.97% but did not move the 512-step target-compile memory boundary.",
       "residual": "Must reduce target expression/state size, not merely per-step list allocation."
+    },
+    {
+      "id": "E-sha256-packed-r3-design-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-active"
+      ],
+      "status": "CONSTRUCTED"
+    },
+    {
+      "id": "E-sha256-packed-r3-verify",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-r3-active",
+        "E-sha256-packed-r3-design-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-v3",
+        "commit": "04be24477642f9a228272b21b6e8e298f16a1fb0",
+        "representation": "no-zip verified SHA step iterated through one base-2^32 packed Nat state"
+      },
+      "licensed_by": "R2 no-zip wins ~9.97% on small/medium cases but does not move the 512-step target-compile wall.",
+      "promotion_requirements": [
+        "universal pack/unpack proof",
+        "canonical acceptance",
+        "all six candidate cases complete under 4 GiB",
+        "Callgrind evidence if resource gate clears"
+      ]
     }
   ]
 }
