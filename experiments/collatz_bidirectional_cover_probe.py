@@ -39,9 +39,10 @@ def reverse_close(n,K,maxep,maxsteps,Rmax,Smax):
             return (k,row),best
     return None,best
 
-def audit(N,K,maxep,maxsteps,Rmax,Smax):
+def audit(lo,N,K,maxep,maxsteps,Rmax,Smax):
     rows=[];hard=[];closed=[];censored=[]
-    start=3
+    start=max(3,lo)
+    if start%2==0:start+=1
     for n in range(start,N+1,2):
         k0=n.bit_length()
         if ra.q0_status(k0,n)!='RIGID':continue
@@ -59,6 +60,7 @@ def audit(N,K,maxep,maxsteps,Rmax,Smax):
 
     finite_hard=[z for z in hard if z[2] is not None]
     finite_closed=[z for z in closed if z[2] is not None]
+    print("SOURCE_RANGE",lo,N)
     print("SOURCES",len(rows),"REVERSE_CLOSED",len(closed),"REVERSE_HARD",len(hard))
     print("FORWARD_CENSORED",len(censored))
     print("HARD_MAX_LIFETIME",max((z[2] for z in finite_hard),default=None))
@@ -82,6 +84,7 @@ def audit(N,K,maxep,maxsteps,Rmax,Smax):
 
 if __name__=="__main__":
     ap=argparse.ArgumentParser()
+    ap.add_argument("--lo",type=int,default=3)
     ap.add_argument("--N",type=int,default=8191)
     ap.add_argument("--K",type=int,default=100)
     ap.add_argument("--maxepisodes",type=int,default=4)
@@ -89,4 +92,4 @@ if __name__=="__main__":
     ap.add_argument("--Rmax",type=int,default=20)
     ap.add_argument("--Smax",type=int,default=12)
     a=ap.parse_args()
-    audit(a.N,a.K,a.maxepisodes,a.maxsteps,a.Rmax,a.Smax)
+    audit(a.lo,a.N,a.K,a.maxepisodes,a.maxsteps,a.Rmax,a.Smax)
