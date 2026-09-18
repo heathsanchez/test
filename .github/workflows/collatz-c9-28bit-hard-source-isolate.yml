@@ -1,0 +1,30 @@
+name: Collatz C9 28-bit shard10 hard-source isolate
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-28bit-hard-source-isolate.yml'
+  workflow_dispatch:
+jobs:
+  isolate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "h0", lo: 218259453, hi: 218261500}
+          - {name: "h1", lo: 218261501, hi: 218263548}
+          - {name: "h2", lo: 218263549, hi: 218265596}
+          - {name: "h3", lo: 218265597, hi: 218267646}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolate exact hard source range
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_compounding_sweep.py --lo "${{ matrix.lo }}" --hi "${{ matrix.hi }}" --H 512 --guard 10000 | tee "/tmp/${{ matrix.name }}.txt"
+          grep -Eq '^PASS_ALL_LIVE_HIGH_FUEL_ENDPOINTS_COMPILED$|^SEPARATOR_UNRESOLVED_LIVE_HIGH_FUEL_ENDPOINT' "/tmp/${{ matrix.name }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-28bit-hard-${{ matrix.name }}
+          path: /tmp/${{ matrix.name }}.txt
