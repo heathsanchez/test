@@ -1,0 +1,291 @@
+# Fresh-cycle trigger after retiring ac-04722; mechanism unchanged.
+name: ACC Fresh Residual Acquisition V34
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-fresh-residual-acquisition-v34.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    outputs:
+      target: ${{ steps.pick.outputs.target }}
+      mode: ${{ steps.pick.outputs.mode }}
+      live_best: ${{ steps.pick.outputs.live_best }}
+      live_status: ${{ steps.pick.outputs.live_status }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fresh authenticated competitive scout with transient retry
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          ok=0
+          for delay in 0 15 30 60; do
+            if [ "$delay" -gt 0 ]; then sleep "$delay"; fi
+            rm -rf acc_competitive/fresh_residual_v34_scout
+            set +e
+            python3 acc_competitive/competitive_scout_v2.py \
+              --acc-root /tmp/acc \
+              --out-dir acc_competitive/fresh_residual_v34_scout \
+              --attack-count 1 --defend-fraction 0 \
+              --mechanism-id gssub-v31-fresh-residual \
+              --shards 1 \
+              --competitive-attempted acc_competitive/competitive_attempted_addendum_v1.json \
+              | tee acc_competitive/fresh_residual_v34_scout.log
+            rc=${PIPESTATUS[0]}
+            set -e
+            if [ "$rc" -eq 0 ]; then ok=1; break; fi
+            if ! grep -q 'SERVICE_UNAVAILABLE\|HTTP 503' acc_competitive/fresh_residual_v34_scout.log; then exit "$rc"; fi
+          done
+          test "$ok" -eq 1
+
+      - name: Select fresh residual and report live quota
+        id: pick
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,sys,time
+          from pathlib import Path
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          from continuous_aggregate_v5 import quota_state
+          out=Path('acc_competitive/fresh_residual_v34_scout')
+          modes=json.loads((out/'selected_modes.json').read_text())
+          if len(modes)!=1: raise SystemExit(f'expected one selected target, got {modes}')
+          x=modes[0]; cid=x['challenge_id']
+          snap=json.loads((out/'snapshot_ac.json').read_text()); d=snap.get('data',snap)
+          rows={r['challengeId']:r for r in d['items']}; row=rows[cid]
+          q=None
+          for i in range(4):
+              try:
+                  q=quota_state(api,data_obj); break
+              except Exception:
+                  if i==3: raise
+                  time.sleep((i+1)*10)
+          state={'target':cid,'mode':x['mode'],'live_status':row.get('status'),'live_best':row.get('currentBestLength'),'kTeams':row.get('kTeams'),'quota':q}
+          print('V34_SELECTED_LIVE',json.dumps(state,sort_keys=True))
+          if q.get('blocked'): raise SystemExit(f'quota blocked: {q}')
+          with open(os.environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f"target={cid}\nmode={x['mode']}\nlive_status={row.get('status')}\nlive_best={row.get('currentBestLength')}\n")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-fresh-residual-v34-scout
+          path: |
+            acc_competitive/fresh_residual_v34_scout/
+            acc_competitive/fresh_residual_v34_scout.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  attack:
+    needs: scout
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      TARGET_CID: ${{ needs.scout.outputs.target }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          test -n "$TARGET_CID"
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          test "$(git -C /tmp/acsolverx rev-parse HEAD)" = "$ACSOLVERX_PIN"
+          sudo fallocate -l 8G /swapfile-v34
+          sudo chmod 600 /swapfile-v34
+          sudo mkswap /swapfile-v34
+          sudo swapon /swapfile-v34
+
+      - name: Fresh target preflight before compute
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,sys,time
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          cid=os.environ['TARGET_CID']
+          obj=None; st=None
+          for i in range(4):
+              st,_,obj=api('GET','/competitions/acc/discoveries/snapshot?problem=ac')
+              if 200 <= st < 300: break
+              if st!=503 or i==3: raise SystemExit(f'live snapshot HTTP {st}')
+              time.sleep((i+1)*10)
+          rows={x['challengeId']:x for x in data_obj(obj)['items']}; x=rows[cid]
+          print('V34_TARGET_PREFLIGHT',json.dumps({'challenge_id':cid,'status':x.get('status'),'best':x.get('currentBestLength'),'kTeams':x.get('kTeams')},sort_keys=True))
+          if x.get('status') not in ('solved','unsolved'): raise SystemExit('target left competitive state')
+          if x.get('status')=='solved' and not isinstance(x.get('currentBestLength'),int): raise SystemExit('solved target missing live record')
+          PY
+
+      - name: Search unchanged GS-Sub compiler on fresh selected residual
+        run: |
+          set -euo pipefail
+          printf '["%s"]\n' "$TARGET_CID" > /tmp/targets.json
+          out="acc_competitive/fresh_residual_v34/$TARGET_CID"
+          mkdir -p "$out"
+          python3 andrews_curtis/solver_v2_gssub.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-ids-file /tmp/targets.json \
+            --include-solved --defer-live-filter \
+            --max-targets 1 \
+            --max-nodes 250000 \
+            --max-quotient-total 100 \
+            --reverse-depth 7 \
+            --reverse-cap 250000 \
+            --compiler-beam 16 \
+            --depth-weight 0 \
+            --search-seconds 3000 \
+            | tee "$out.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-fresh-residual-v34-attack
+          path: acc_competitive/fresh_residual_v34/
+          retention-days: 90
+          if-no-files-found: warn
+
+  consolidate_publish:
+    needs: attack
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover candidate evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v34
+          gh run download "${{ github.run_id }}" -n acc-fresh-residual-v34-attack -D /tmp/v34 || true
+          find /tmp/v34 -name submission_v2.txt -print | sort || true
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Replay every candidate through pinned official verifier
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc'); sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core
+          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']}; lim=man['limits']; best={}
+          for p in Path('/tmp/v34').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m: continue
+                  cid=m.group(1); moves=list(json.loads(m.group(2))); c=by[cid]
+                  verdict=core.verify(c,moves,c['move_spec_version'],lim)
+                  if not verdict.get('ok'):
+                      print('PINNED_REPLAY_REJECT',cid,len(moves),verdict); continue
+                  print('PINNED_REPLAY_OK',cid,len(moves),verdict.get('certificate_hash'))
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          Path('acc_competitive/fresh_residual_v34_raw.txt').write_text(''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('V34_PINNED_VERIFIED_CANDIDATES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+
+      - name: Salvage verifier-clean route without changing compiler
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/fresh_residual_v34_atlas acc_competitive/fresh_residual_v34_peephole
+          if [ ! -s acc_competitive/fresh_residual_v34_raw.txt ]; then
+            : > acc_competitive/fresh_residual_v34_peephole/fortified_ac.txt
+            echo NO_V34_PINNED_VERIFIED_CANDIDATE
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/fresh_residual_v34_raw.txt' \
+            --out-dir acc_competitive/fresh_residual_v34_atlas \
+            --reverse-depth 7 --reverse-cap 250000
+          if [ ! -s acc_competitive/fresh_residual_v34_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/fresh_residual_v34_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/fresh_residual_v34_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/fresh_residual_v34_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 6 --max-path 6000
+
+      - name: Fresh live recheck quota gate and strict-only publication
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s acc_competitive/fresh_residual_v34_peephole/fortified_ac.txt ]; then
+            echo NO_V34_VERIFIED_CANDIDATE_TO_PUBLISH
+            exit 0
+          fi
+          mkdir -p acc_competitive/fresh_residual_v34_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/fresh_residual_v34_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/fresh_residual_v34_publish --cycle 1 \
+            | tee acc_competitive/fresh_residual_v34_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/fresh_residual_v34_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('V34_STRICT_RESULT',json.dumps({'used':r.get('daily_submissions_used_pre'),'remaining':r.get('daily_submissions_remaining_pre'),'selected_rows':r.get('selected_rows'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-fresh-residual-v34-consolidated
+          path: |
+            acc_competitive/fresh_residual_v34_raw.txt
+            acc_competitive/fresh_residual_v34_atlas/
+            acc_competitive/fresh_residual_v34_peephole/
+            acc_competitive/fresh_residual_v34_publish/
+            /tmp/v34/
+          retention-days: 90
+          if-no-files-found: warn
