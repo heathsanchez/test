@@ -12,11 +12,11 @@
       "official_pmu_measured": false
     },
     "mertens": {
-      "capability_id": "E-mertens-v1-promote",
-      "source_ledger_event": "E-mertens-v1-promote",
-      "branch": "lkc-mertens-v1-frozen",
-      "commit": "05a20ba2405b70099922782b85b25d9aa2e553d2",
-      "representation": "single-pass Möbius factor-list evaluator",
+      "capability_id": "E-mertens-v6-promote",
+      "source_ledger_event": "E-mertens-v6-promote",
+      "branch": "lkc-mertens-v6-frozen",
+      "commit": "df8824794cfb1cd2764fbde1ddfe54c07957b98e",
+      "representation": "structural least-factor path with selected V6 evaluator",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
@@ -88,7 +88,6 @@
   ],
   "active_transitions": [
     "E-fib-mulsquare-active",
-    "E-mertens-structural-r2-active",
     "E-partition-dp-r2-active",
     "E-permanent-inline-r2-active",
     "E-polydisc-fixedsign-active",
