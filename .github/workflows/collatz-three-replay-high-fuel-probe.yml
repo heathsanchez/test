@@ -1,0 +1,20 @@
+name: Collatz three-replay high-fuel probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_three_replay_high_fuel_probe.py'
+      - '.github/workflows/collatz-three-replay-high-fuel-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Three-replay reverse-lift probe
+        run: python -u experiments/collatz_three_replay_high_fuel_probe.py | tee /tmp/three-replay.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: three-replay-high-fuel-probe
+          path: /tmp/three-replay.txt
