@@ -1,0 +1,23 @@
+name: Collatz q0 RIGID recharge audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
+      - '.github/workflows/collatz-q0-rigid-recharge-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: q0 RIGID recharge intersection
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-N 127 --depth 16 | tee /tmp/q0-recharge.txt
+          grep -Eq '^OBSERVED_NO_RECURRENT_RIGID_RECHARGE$|^SEPARATOR_RECURRENT_RIGID_RECHARGE$' /tmp/q0-recharge.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-rigid-recharge-audit
+          path: /tmp/q0-recharge.txt
