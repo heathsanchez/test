@@ -440,6 +440,28 @@
         "representation": "parallel K/schedule traversal eliminating K.zip pair-list allocation",
         "repair": "separate small/medium performance screen from 512-step 4GiB resource probe"
       }
+    },
+    {
+      "id": "E-primecount-v2-active",
+      "type": "PROPOSE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v1-promote",
+        "E-primecount-transfer-calibration"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-primecount-fastprime-v2",
+        "commit": "f8a35130f7412836e595e10d40858e9256239820",
+        "representation": "protected V1 direct aggregate composed with proved square-root trial-division primality"
+      },
+      "licensed_by": "Measured V1 residual: aggregate representation is improved; primality remains dominant.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "same-byte binding",
+        "paired Callgrind total < frozen V1"
+      ]
     }
   ]
 }
