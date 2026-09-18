@@ -1,0 +1,22 @@
+name: Collatz q0 RIGID recharge medium geometry
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-q0-rigid-recharge-medium.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Medium RIGID recharge geometry
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-N 8191 --depth 80 | tee /tmp/q0-rigid-recharge-medium.txt
+          grep -Eq '^OBSERVED_NO_RECURRENT_RIGID_RECHARGE$|^SEPARATOR_RECURRENT_RIGID_RECHARGE$' /tmp/q0-rigid-recharge-medium.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-rigid-recharge-medium
+          path: /tmp/q0-rigid-recharge-medium.txt
