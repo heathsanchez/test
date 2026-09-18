@@ -4,7 +4,6 @@ on:
   push:
     branches: [collatz-qckn-v1]
     paths:
-      - 'collatz_qckn/**'
       - '.github/workflows/collatz-qckn-v1-research-qualification.yml'
 concurrency:
   group: collatz-qckn-v1-research-qualification
