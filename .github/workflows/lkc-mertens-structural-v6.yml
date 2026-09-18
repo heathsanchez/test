@@ -121,7 +121,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: mertens-v6-screen-evidence
-          path: mertens-v6-evidence
+          path: .
 
       - name: Decisive V1 versus selected structural challenger
         run: python3 experiments/lkc_mertens/tournament_v6.py instructions
