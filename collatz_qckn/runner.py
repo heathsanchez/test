@@ -99,6 +99,8 @@ def discover_forward_macros(adapter:CollatzAdapter,training_sources:Iterable[int
             out.setdefault(cap.semantic_id,(cap,w))
     proposals=tuple(out[k] for k in sorted(out))
     metrics["deduplicated_capabilities"]=len(proposals)
+    # Frozen V1 acquisition/search unit: one attempted suffix-macro construction.
+    metrics["domain_search_expansions"]=metrics["construction_attempts"]
     return (proposals,metrics) if with_metrics else proposals
 
 
