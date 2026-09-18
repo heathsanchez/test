@@ -1,0 +1,30 @@
+name: Collatz C9 28-bit h13 isolate
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-28bit-h13-isolate.yml'
+  workflow_dispatch:
+jobs:
+  isolate:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "h130", lo: 218263037, hi: 218263164}
+          - {name: "h131", lo: 218263165, hi: 218263292}
+          - {name: "h132", lo: 218263293, hi: 218263420}
+          - {name: "h133", lo: 218263421, hi: 218263548}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Isolate h13 exact source neighborhood
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_compounding_sweep.py --lo "${{ matrix.lo }}" --hi "${{ matrix.hi }}" --H 512 --guard 10000 | tee "/tmp/${{ matrix.name }}.txt"
+          grep -Eq '^PASS_ALL_LIVE_HIGH_FUEL_ENDPOINTS_COMPILED$|^SEPARATOR_UNRESOLVED_LIVE_HIGH_FUEL_ENDPOINT' "/tmp/${{ matrix.name }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-28bit-${{ matrix.name }}
+          path: /tmp/${{ matrix.name }}.txt
