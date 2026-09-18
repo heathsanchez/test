@@ -1,0 +1,23 @@
+name: Collatz q0 endpoint mod3 obstruction
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_endpoint_mod3_obstruction.py'
+      - '.github/workflows/collatz-q0-endpoint-mod3.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify q0 endpoint mod3 obstruction
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_endpoint_mod3_obstruction.py --q-limit 8192 | tee /tmp/q0-mod3.txt
+          grep -q '^PASS_Q0_ENDPOINT_MOD3_OBSTRUCTION$' /tmp/q0-mod3.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-endpoint-mod3-obstruction
+          path: /tmp/q0-mod3.txt
