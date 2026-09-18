@@ -1,0 +1,29 @@
+name: Collatz constructed C9 reverse-episode probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_constructed_c9_reverse_episode_probe.py'
+      - '.github/workflows/collatz-constructed-c9-reverse-episode.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - R: 397
+            extra: 40
+            L: 6
+          - R: 19853
+            extra: 28
+            L: 5
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_constructed_c9_reverse_episode_probe.py --R ${{ matrix.R }} --extra ${{ matrix.extra }} --L ${{ matrix.L }} --B 14 | tee "/tmp/c9-reverse-${{ matrix.R }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-reverse-${{ matrix.R }}
+          path: /tmp/c9-reverse-${{ matrix.R }}.txt
