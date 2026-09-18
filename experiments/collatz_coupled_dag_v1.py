@@ -28,11 +28,13 @@ class Score:
     def key(self): return (self.S, -self.C)
 
 @lru_cache(None)
-def phi(j:int, r:int)->Score:
+def phi(j:int, r:int)->Score | None:
     if j==0:
         return Score(0,0)
     mod=3**j
     r%=mod
+    if r%3==0:
+        return None
     best=None
     period=2*3**(j-1)
     for a in range(1,period+1):
@@ -40,12 +42,11 @@ def phi(j:int, r:int)->Score:
         if z%3: continue
         rp=(z//3)%(3**(j-1))
         tail=phi(j-1,rp)
+        if tail is None:
+            continue
         cand=Score(a+tail.S, (1<<tail.S)+3*tail.C)
         if best is None or cand.key()<best.key():
             best=cand
-    if best is None:
-        # Multiples of 3 have no legal first O.
-        return Score(10**9,-10**100)
     return best
 
 def forward_cylinder(k:int,b:int):
@@ -77,6 +78,8 @@ def classify(k:int,b:int):
     sc=phi(c,d%(3**c))
     Csrc=(1<<k)*d-(3**c)*b
     # Source replay must be feasible, so optimizer cannot be worse.
+    if sc is None or sc.key()>(k,-Csrc):
+        raise AssertionError(("source baseline not covered",k,b,c,d,sc,Csrc))
     if sc.S<k:
         # reconstructed intercept at q=0
         num=(1<<sc.S)*d-sc.C

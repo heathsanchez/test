@@ -1,0 +1,29 @@
+name: Collatz rigid transition audit
+on:
+  push:
+    branches: [collatz-rigid-transition-audit-v1]
+    paths:
+      - 'experiments/collatz_coupled_dag_v1.py'
+      - 'experiments/test_collatz_bellman_audit.py'
+      - 'experiments/collatz_bellman_rigid_transition_probe.py'
+      - '.github/workflows/collatz-rigid-transition-audit.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Independent Bellman and refinement witnesses
+        run: python -m unittest discover -s experiments -p test_collatz_bellman_audit.py -v
+      - name: Replay the concrete transition separator
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_bellman_rigid_transition_probe.py --depth 9 --j 4 | tee /tmp/rigid-transition-audit.txt
+          grep -q '^SEPARATOR_NON_MINUS_RIGID_TRANSITION$' /tmp/rigid-transition-audit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rigid-transition-audit
+          path: /tmp/rigid-transition-audit.txt
