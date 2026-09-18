@@ -93,7 +93,14 @@ theorem permanentEntry_support_iff
       j = permanentColumnTwo dimension seed i := by
   have hnot : ¬ dimension < 3 := by omega
   unfold permanentEntry
-  simp [hnot]
+  rw [if_neg hnot]
+  by_cases h1 : i = j
+  · simp [h1]
+  · by_cases h2 : j = permanentColumnOne dimension seed i
+    · simp [h1, h2]
+    · by_cases h3 : j = permanentColumnTwo dimension seed i
+      · simp [h1, h2, h3]
+      · simp [h1, h2, h3]
 
 theorem permanentEntry_zero_iff
     (dimension seed i j : Nat)
@@ -104,7 +111,14 @@ theorem permanentEntry_zero_iff
       j ≠ permanentColumnTwo dimension seed i := by
   have hnot : ¬ dimension < 3 := by omega
   unfold permanentEntry
-  simp [hnot]
+  rw [if_neg hnot]
+  by_cases h1 : i = j
+  · simp [h1]
+  · by_cases h2 : j = permanentColumnOne dimension seed i
+    · simp [h1, h2]
+    · by_cases h3 : j = permanentColumnTwo dimension seed i
+      · simp [h1, h2, h3]
+      · simp [h1, h2, h3]
 
 end Submission
 '''
