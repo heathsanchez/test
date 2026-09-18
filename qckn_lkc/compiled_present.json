@@ -32,6 +32,15 @@
       "next_calibration": "E-primecount-direct-active"
     },
     {
+      "id": "E-hyp-fixed-shape-specialization",
+      "source_evidence": [
+        "E-polydisc-fixedsign-active"
+      ],
+      "state": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "A universally fixed structural parameter may be specialized away when its value is proved from the input generator rather than inferred from scored inputs.",
+      "next_calibration": "E-polydisc-fixedsign-active"
+    },
+    {
       "id": "E-hyp-fuse-producer-consumer",
       "source_evidence": [
         "E-sha256-nozip-active"
@@ -73,6 +82,7 @@
     "E-mertens-structural-active",
     "E-partition-dp-active",
     "E-permanent-inline-active",
+    "E-polydisc-fixedsign-active",
     "E-primecount-direct-active",
     "E-sha256-nozip-active"
   ],
