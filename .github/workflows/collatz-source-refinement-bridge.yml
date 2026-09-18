@@ -1,0 +1,20 @@
+name: Collatz source refinement bridge
+on:
+  push:
+    branches: [collatz-rigid-lift-v1]
+    paths:
+      - 'experiments/collatz_source_refinement_bridge.py'
+      - '.github/workflows/collatz-source-refinement-bridge.yml'
+  workflow_dispatch:
+jobs:
+  bridge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact source refinement bridge
+        run: |
+          set -euo pipefail
+          python experiments/collatz_source_refinement_bridge.py --depth 14 | tee /tmp/bridge.txt
+          grep -q PASS_SOURCE_REFINEMENT_ALGEBRA /tmp/bridge.txt
+          grep -q MISSING_THEOREM /tmp/bridge.txt
