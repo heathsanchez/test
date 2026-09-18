@@ -40,10 +40,15 @@ class CompiledPresentTest(unittest.TestCase):
         self.assertEqual(restored.capabilities,())
 
     def test_insertion_order_does_not_change_text(self):
-        ledger,_=self.make_ledger()
-        p1=CompiledPresent.compile(ledger)
-        p2=CompiledPresent.from_text(p1.to_text())
-        self.assertEqual(p1.to_text(),p2.to_text())
+        adapter=CollatzAdapter("contract")
+        auth=Authority("contract","verifier")
+        c1,w1=adapter.propose_forward_macro(7,7,((1,2,1),),"p1")
+        c2,w2=adapter.propose_forward_macro(15,1,((4,4,1),),"p2")
+        e1=auth.verify(c1,w1); e2=auth.verify(c2,w2)
+        a=CausalLedger(); a.promote(c1,e1); a.promote(c2,e2)
+        b=CausalLedger(); b.promote(c2,e2); b.promote(c1,e1)
+        self.assertEqual(CompiledPresent.compile(a).to_text(),
+                         CompiledPresent.compile(b).to_text())
 
 
 if __name__=="__main__":
