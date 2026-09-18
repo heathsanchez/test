@@ -1,0 +1,19 @@
+name: Collatz constructed q0 C9 two-block probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_q0_c9_two_block_constructed_probe.py'
+      - '.github/workflows/collatz-q0-c9-two-block-constructed-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_q0_c9_two_block_constructed_probe.py | tee /tmp/q0-c9-two-block.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-c9-two-block-constructed-probe
+          path: /tmp/q0-c9-two-block.txt
