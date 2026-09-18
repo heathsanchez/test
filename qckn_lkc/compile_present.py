@@ -52,9 +52,18 @@ def compile_present(contract: dict, ledger: dict) -> dict:
         for e in sorted((e for e in events if e["type"] == "RESERVE"), key=lambda e: e["id"])
     ]
 
+    resolved = {
+        parent
+        for e in events
+        if e["type"] == "RESOLVE"
+        for parent in e.get("parents", [])
+    }
+
     active_transitions = sorted(
         e["id"] for e in events
-        if e["type"] == "PROPOSE" and e["status"] == "ACTIVE_VERIFICATION"
+        if e["type"] == "PROPOSE"
+        and e["status"] == "ACTIVE_VERIFICATION"
+        and e["id"] not in resolved
     )
     revoked = sorted(e["id"] for e in events if e["type"] == "REVOKE")
 
