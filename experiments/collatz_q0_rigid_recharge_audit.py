@@ -338,6 +338,26 @@ def analyze(N,K,L=3):
     recharge_cycle_slope_bad=[x for x in recharge_cycles if not x[8] < (1<<x[9])]
     recharge_cycle_threshold_bad=[x for x in recharge_cycles
                                   if x[11] is None or x[6] < x[11]]
+    cycle_fuel=[]; repeatable_cycles=[]; zero_defect_cycles=[]
+    for x in concrete_pattern_cycles:
+        m0,mout,AA,DD,BB=x[6],x[7],x[8],x[9],x[10]
+        CC=(1<<DD)-AA
+        d0=CC*m0-BB
+        d1=CC*mout-BB
+        assert (1<<DD)*d1==AA*d0
+        if d0==0:
+            zero_defect_cycles.append(x)
+            cycle_fuel.append((x[0],x[4],DD,None,None))
+            continue
+        vv=v2(abs(d0))
+        assert vv>=DD+1
+        # Repeating the same exact cycle once more requires the output to
+        # remain in the same cycle cylinder, i.e. vv-DD >= DD+1.
+        repeats=(vv-1)//DD
+        row=(x[0],x[4],DD,vv,repeats)
+        cycle_fuel.append(row)
+        if repeats>=2:
+            repeatable_cycles.append((x,row))
     print("CONCRETE_PATTERN_CYCLES",len(concrete_pattern_cycles))
     print("CONCRETE_PATTERN_CYCLE_SLOPE_CONTRACT",
           len(concrete_pattern_cycles)-len(cycle_slope_bad),"fail",len(cycle_slope_bad))
@@ -357,6 +377,13 @@ def analyze(N,K,L=3):
     if recharge_cycle_threshold_bad:
         print("CONCRETE_RECHARGE_CYCLE_THRESHOLD_SEPARATOR",recharge_cycle_threshold_bad[:10])
     print("CONCRETE_ALL_RECHARGE_CYCLES",len(concrete_recharge_cycles))
+    print("CONCRETE_PATTERN_CYCLE_FUEL",cycle_fuel)
+    print("CONCRETE_REPEATABLE_PATTERN_CYCLES",len(repeatable_cycles))
+    if repeatable_cycles:
+        print("CONCRETE_REPEATABLE_PATTERN_CYCLE_SEPARATOR",repeatable_cycles[:10])
+    print("CONCRETE_ZERO_DEFECT_PATTERN_CYCLES",len(zero_defect_cycles))
+    if zero_defect_cycles:
+        print("CONCRETE_ZERO_DEFECT_PATTERN_CYCLE_SEPARATOR",zero_defect_cycles[:10])
     if concrete_pattern_cycles:
         print("FIRST_CONCRETE_PATTERN_CYCLE",concrete_pattern_cycles[0])
     if concrete_recharge_cycles:
