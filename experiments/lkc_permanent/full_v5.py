@@ -23,18 +23,18 @@ recursive proof is factored into:
   1. a non-recursive one-step equivalence, and
   2. a tiny generic structural lift over the remaining rows.
 -/
+def permanentChoices (dimension seed i : Nat) : List Nat :=
+  [i, permanentColumnOne dimension seed i,
+      permanentColumnTwo dimension seed i]
+
 def permanentSparseStep
     (dimension seed i : Nat) (next : Nat → Nat) (used : Nat) : Nat :=
-  if dimension < 3 then
-    (List.range dimension).foldl (fun total j =>
-      if used.testBit j then total
-      else total + next (used ||| (1 <<< j))) 0
-  else
-    let c1 := permanentColumnOne dimension seed i
-    let c2 := permanentColumnTwo dimension seed i
-    (if used.testBit i then 0 else next (used ||| (1 <<< i))) +
-    (if used.testBit c1 then 0 else next (used ||| (1 <<< c1))) +
-    (if used.testBit c2 then 0 else next (used ||| (1 <<< c2)))
+  let choices :=
+    if dimension < 3 then List.range dimension
+    else permanentChoices dimension seed i
+  choices.foldl (fun total j =>
+    if used.testBit j then total
+    else total + next (used ||| (1 <<< j))) 0
 
 def permanentSparse : Nat → Nat → List Nat → Nat → Nat
   | _dimension, _seed, [], _ => 1
@@ -77,8 +77,7 @@ theorem foldl_congr_local
       simp [hx]
 
 def rowSupport (dimension seed i : Nat) : List Nat :=
-  [i, permanentColumnOne dimension seed i,
-      permanentColumnTwo dimension seed i]
+  permanentChoices dimension seed i
 
 def supportPred (dimension seed i j : Nat) : Bool :=
   permanentEntry dimension seed i j == 1
@@ -197,22 +196,7 @@ theorem denseRowStep_eq_sparseRowStep
                 · simp [hxu, hyu, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
             · exact 0
       _ = _ := by
-            simp only [rowSupport, f, List.foldl]
-            by_cases h0 : used.testBit i
-            · by_cases h1 : used.testBit (permanentColumnOne dimension seed i)
-              · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
-                · simp [h0, h1, h2]
-                · simp [h0, h1, h2]
-              · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
-                · simp [h0, h1, h2]
-                · simp [h0, h1, h2, Nat.add_assoc]
-            · by_cases h1 : used.testBit (permanentColumnOne dimension seed i)
-              · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
-                · simp [h0, h1, h2]
-                · simp [h0, h1, h2, Nat.add_assoc]
-              · by_cases h2 : used.testBit (permanentColumnTwo dimension seed i)
-                · simp [h0, h1, h2, Nat.add_assoc]
-                · simp [h0, h1, h2, Nat.add_assoc]
+            rfl
 
 /--
 The recursive lift is now tiny: the induction transports an equality of
@@ -249,6 +233,7 @@ theorem permanentSparse_eq (dimension seed : Nat) :
 theorem impl_correct : ∀ n, impl n = permanentSpecN n := by
   intro n
   unfold impl permanentSpecN permanentSpec genPermanentMatrix
+  simp only [List.length_map, List.length_range]
   have hall :
       ∀ i, i ∈ List.range (permanentDimension n) →
         i < permanentDimension n := by
