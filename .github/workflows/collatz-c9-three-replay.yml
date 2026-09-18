@@ -1,0 +1,34 @@
+name: Collatz C9 three-replay sweep
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_three_replay_sweep.py'
+      - '.github/workflows/collatz-c9-three-replay.yml'
+  workflow_dispatch:
+concurrency:
+  group: collatz-c9-three-replay
+  cancel-in-progress: true
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Three-replay shard
+        run: |
+          set -euo pipefail
+          S=${{ matrix.shard }}
+          LO=$((S*1048576+3))
+          HI=$(((S+1)*1048576+1))
+          if [ "$HI" -gt 16777215 ]; then HI=16777215; fi
+          python -u experiments/collatz_c9_three_replay_sweep.py --lo "$LO" --hi "$HI" --H 512 | tee "/tmp/c9-three-${S}.txt"
+          grep -Eq '^OBSERVED_NO_C9_THREE_REPLAY_RIGID_SURVIVOR$|^SEPARATOR_C9_THREE_REPLAY_SURVIVES_RIGID' "/tmp/c9-three-${S}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-three-replay-${{ matrix.shard }}
+          path: /tmp/c9-three-${{ matrix.shard }}.txt
