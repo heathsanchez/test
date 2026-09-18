@@ -120,6 +120,11 @@ def main():
     if not required_gate_terms <= gate:
         fail("promotion gate is weaker than the declared competition contract")
 
+    promotions_by_target = {}
+    for e in events:
+        if e["type"] == "PROMOTE" and e["status"] == "VERIFIED_LOCAL_CHAMPION":
+            promotions_by_target[e["target"]] = e
+
     for target, champion in present["active_champions"].items():
         event_id = champion["source_ledger_event"]
         if event_id not in by_id:
@@ -127,6 +132,8 @@ def main():
         event = by_id[event_id]
         if event["type"] != "PROMOTE" or event["status"] != "VERIFIED_LOCAL_CHAMPION":
             fail(f"{target}: unearned champion in compiled present")
+        if promotions_by_target.get(target, {}).get("id") != event_id:
+            fail(f"{target}: compiled champion is not latest causal promotion")
         if event["candidate"]["commit"] != champion["commit"]:
             fail(f"{target}: champion commit mismatch")
 
