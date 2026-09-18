@@ -1,0 +1,34 @@
+name: Collatz generic endpoint closure qualification
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_generic_endpoint_closure.cpp'
+      - '.github/workflows/collatz-generic-endpoint-closure.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build generic closure
+        run: |
+          set -euo pipefail
+          g++ -O3 -std=c++17 experiments/collatz_generic_endpoint_closure.cpp -o /tmp/closure
+      - name: Qualify concrete endpoints by common tail 1
+        run: |
+          set -euo pipefail
+          /tmp/closure 157755113 105 1 | tee /tmp/x1.txt
+          /tmp/closure 373761769 146 1 | tee /tmp/x2.txt
+          /tmp/closure 326575849 160 1 | tee /tmp/x3.txt
+          grep -q '^PASS_GENERIC_ENDPOINT_LOWER_MERGE_CLOSURE$' /tmp/x1.txt
+          grep -q '^PASS_GENERIC_ENDPOINT_LOWER_MERGE_CLOSURE$' /tmp/x2.txt
+          grep -q '^PASS_GENERIC_ENDPOINT_LOWER_MERGE_CLOSURE$' /tmp/x3.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: generic-endpoint-closure
+          path: |
+            /tmp/x1.txt
+            /tmp/x2.txt
+            /tmp/x3.txt
