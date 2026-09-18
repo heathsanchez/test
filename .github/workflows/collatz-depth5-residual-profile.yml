@@ -1,0 +1,19 @@
+name: Collatz depth5 residual profile
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_depth5_residual_profile.py'
+      - '.github/workflows/collatz-depth5-residual-profile.yml'
+  workflow_dispatch:
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_depth5_residual_profile.py | tee /tmp/depth5-residual-profile.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: depth5-residual-profile
+          path: /tmp/depth5-residual-profile.txt
