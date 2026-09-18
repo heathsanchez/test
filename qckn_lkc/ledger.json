@@ -248,6 +248,31 @@
       "status": "RESERVE_NOT_PROMOTED",
       "hypothesis": "When a kernel-reduced producer constructs an intermediate list only for an immediate consumer, a proved fused traversal may reduce instructions.",
       "next_calibration": "E-sha256-nozip-active"
+    },
+    {
+      "id": "E-polydisc-fixedsign-active",
+      "type": "PROPOSE",
+      "target": "polydisc",
+      "parents": [],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-polydisc-fixedsign-v1",
+        "commit": "57f62175c36debfdbfe30d2c8462391671c0af02",
+        "representation": "fixed degree-24 discriminant specialization eliminating the always-positive sign factor"
+      },
+      "licensed_by": "Exact consequence: polyOf n is universally degree 24, so the sign computation is semantically redundant.",
+      "transfer_claim": "UNPROVEN until proof/canonical/paired Callgrind evidence complete."
+    },
+    {
+      "id": "E-hyp-fixed-shape-specialization",
+      "type": "RESERVE",
+      "target": "cross-problem",
+      "parents": [
+        "E-polydisc-fixedsign-active"
+      ],
+      "status": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "A universally fixed structural parameter may be specialized away when its value is proved from the input generator rather than inferred from scored inputs.",
+      "next_calibration": "E-polydisc-fixedsign-active"
     }
   ]
 }
