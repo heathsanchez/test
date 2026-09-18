@@ -30,11 +30,11 @@
       "official_pmu_measured": false
     },
     "polydisc": {
-      "capability_id": "E-polydisc-v2-promote",
-      "source_ledger_event": "E-polydisc-v2-promote",
-      "branch": "lkc-polydisc-v2-frozen",
-      "commit": "ba2b2f718a8e98e0ac5e42afb2b1aac766484e60",
-      "representation": "fixed degree-24 sign plus multiplication-specialized PRS square",
+      "capability_id": "E-polydisc-v3-promote",
+      "source_ledger_event": "E-polydisc-v3-promote",
+      "branch": "lkc-polydisc-v3-frozen",
+      "commit": "3daeb833823d33febe379fca909c7363d8439331",
+      "representation": "Polydisc V2 PRS plus shift-based exact coefficient-word construction",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
@@ -117,7 +117,6 @@
   "active_transitions": [
     "E-partition-v4-active",
     "E-permanent-sparse-v3-r3-active",
-    "E-polydisc-v3-r2-active",
     "E-sha256-packed-r3-r2-active"
   ],
   "revoked": [
