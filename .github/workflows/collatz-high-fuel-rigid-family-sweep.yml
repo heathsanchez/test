@@ -1,0 +1,31 @@
+name: Collatz high-fuel RIGID family sweep
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_high_fuel_rigid_family_sweep.py'
+      - '.github/workflows/collatz-high-fuel-rigid-family-sweep.yml'
+  workflow_dispatch:
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prospective high-fuel family shard
+        run: |
+          set -euo pipefail
+          SHARD=${{ matrix.shard }}
+          LO=$((SHARD*8192+3))
+          HI=$(((SHARD+1)*8192+1))
+          if [ "$HI" -gt 65535 ]; then HI=65535; fi
+          python -u experiments/collatz_high_fuel_rigid_family_sweep.py --lo "$LO" --hi "$HI" --H 128 | tee "/tmp/high-fuel-family-${SHARD}.txt"
+          grep -Eq '^OBSERVED_NO_HIGH_FUEL_RIGID_TWO_REPLAY_IN_SOURCE_RANGE$|^SEPARATOR_HIGH_FUEL_COMPATIBLE_WITH_RIGID_TWO_REPLAY' "/tmp/high-fuel-family-${SHARD}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: high-fuel-rigid-family-${{ matrix.shard }}
+          path: /tmp/high-fuel-family-${{ matrix.shard }}.txt
