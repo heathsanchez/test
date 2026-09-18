@@ -19,6 +19,7 @@ from __future__ import annotations
 import argparse
 from collections import Counter, defaultdict
 from fractions import Fraction
+from math import gcd
 
 import collatz_q0_coalescence_component_audit as base
 
@@ -422,8 +423,11 @@ def analyze(N,K,L=3):
     if repeatable_cycles:
         print("CONCRETE_REPEATABLE_PATTERN_CYCLE_SEPARATOR",repeatable_cycles[:10])
     fp_counts=Counter(z[2] for z in formal_fixedpoints)
+    cycle_gcds=[gcd(abs(x[10]),abs((1<<x[9])-x[8])) for x in concrete_pattern_cycles]
     positive_formal=[z for z in formal_fixedpoints if z[2]=="positive_gt1"]
     print("FORMAL_CYCLE_FIXEDPOINT_TYPES",dict(fp_counts))
+    print("CONCRETE_CYCLE_GCD_GT1",sum(g>1 for g in cycle_gcds),"OF",len(cycle_gcds),
+          "MAX_GCD",max(cycle_gcds,default=0))
     print("FORMAL_POSITIVE_GT1_FIXEDPOINTS",positive_formal[:30])
     print("ACTUAL_POSITIVE_INTEGER_CYCLE_FIXEDPOINTS",len(actual_positive_fixedpoints))
     if actual_positive_fixedpoints:
