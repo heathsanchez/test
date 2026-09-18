@@ -95,6 +95,16 @@
       "next_calibration": "E-fib-mulsquare-active"
     },
     {
+      "id": "E-hyp-powshift",
+      "source_evidence": [
+        "E-polydisc-v2-promote",
+        "E-fib-v2-promote"
+      ],
+      "state": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "When multiplying by an exact power of two in a hot kernel path, a proved shift representation may reduce replay cost.",
+      "next_calibration": "E-polydisc-v3-active"
+    },
+    {
       "id": "E-hyp-structural-recursion",
       "source_evidence": [
         "E-mertens-structural-active"
@@ -106,7 +116,8 @@
   ],
   "active_transitions": [
     "E-partition-v4-active",
-    "E-permanent-sparse-v3-active",
+    "E-permanent-sparse-v3-r2-active",
+    "E-polydisc-v3-active",
     "E-primecount-v3-active",
     "E-sha256-packed-r3-verify"
   ],
