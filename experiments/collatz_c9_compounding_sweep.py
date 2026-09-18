@@ -107,6 +107,14 @@ def audit(lo:int,hi:int,H:int,guard:int):
 
         for t in range(H+1):
             if t:y=base.T(y)
+
+            # Cheapest exact closure first. Once the fixed source reaches
+            # y<n, ordinary strong induction closes it; no later endpoint or
+            # RIGID-prefix work is relevant.
+            if y<n:
+                counts['post_q0_direct_descent']+=1
+                break
+
             if y%XMOD!=XRES:
                 continue
             counts['raw_high_fuel_hit']+=1
