@@ -17,10 +17,11 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-      - name: Generate probe and RED submission
+      - name: Generate probe, support certificate, and RED submission
         run: |
-          python3 -m py_compile experiments/lkc_permanent/sparse_v3.py
+          python3 -m py_compile experiments/lkc_permanent/sparse_v3.py experiments/lkc_permanent/support_v3.py
           python3 experiments/lkc_permanent/sparse_v3.py
+          python3 experiments/lkc_permanent/support_v3.py
       - name: Checkout pinned benchmark
         run: |
           git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
@@ -41,6 +42,12 @@ jobs:
           python3 benchmark.py setup --problem permanent
           git -C .cache/upstream fetch origin "$RULES_COMMIT"
           git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Sparse support certificate
+        run: |
+          cp experiments/lkc_permanent/generated/Support_v3.lean bench/.cache/upstream/evaluation/problems/permanent/Support_v3.lean
+          cd bench/.cache/upstream/evaluation/problems/permanent
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Support_v3.lean
+
       - name: Exact semantic shell
         run: |
           cp experiments/lkc_permanent/generated/Probe_v3.lean bench/.cache/upstream/evaluation/problems/permanent/Probe_v3.lean
