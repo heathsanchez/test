@@ -1,0 +1,19 @@
+name: Collatz C9 Bellman word probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_c9_bellman_word_probe.py'
+      - '.github/workflows/collatz-c9-bellman-word-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_c9_bellman_word_probe.py | tee /tmp/c9-bellman.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-bellman-word-probe
+          path: /tmp/c9-bellman.txt
