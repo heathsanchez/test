@@ -26,6 +26,12 @@ def laneRec : Nat → Nat → Nat
   | 0, x => x % base32
   | i + 1, x => laneRec i (x / base32)
 
+theorem laneRec_zero : ∀ i, laneRec i 0 = 0
+  | 0 => by simp [laneRec]
+  | i + 1 => by
+      simp only [laneRec, Nat.zero_div]
+      exact laneRec_zero i
+
 theorem laneRec_eq_laneB (x : Nat) : ∀ i, laneRec i x = laneB x i
   | 0 => by
       simp [laneRec, laneB]
@@ -47,8 +53,9 @@ def AllWord32 (xs : List Nat) : Prop :=
 theorem laneRec_packWords :
     ∀ i xs, AllWord32 xs →
       laneRec i (packWords xs) = xs.getD i 0
-  | _, [], _ => by
-      simp [laneRec, packWords]
+  | i, [], _ => by
+      simp only [packWords, List.getD_nil]
+      exact laneRec_zero i
   | 0, x :: xs, hall => by
       have hx : x < base32 := hall x (by simp)
       simp [laneRec, packWords, mod_consB x (packWords xs) hx]
