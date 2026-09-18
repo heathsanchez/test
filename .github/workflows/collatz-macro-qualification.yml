@@ -1,0 +1,31 @@
+name: Collatz macro restart and promotion qualification
+on:
+  push:
+    branches: [collatz-macro-qualification-v1]
+    paths:
+      - 'experiments/collatz_macro_*.py'
+      - 'experiments/test_collatz_macro_qualification.py'
+      - '.github/workflows/collatz-macro-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protected obstruction and independent authority regressions
+        run: |
+          python -m unittest discover -s experiments -p test_collatz_bellman_audit.py -v
+          python -m unittest discover -s experiments -p test_collatz_macro_qualification.py -v
+      - name: Freeze, restart, and compare controls
+        run: python -u experiments/collatz_macro_qualification.py qualify --output /tmp/macro-qualification
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-macro-qualification
+          path: /tmp/macro-qualification
+          if-no-files-found: error
+      - name: Scientific promotion requires advantage over direct iteration
+        run: python experiments/collatz_macro_qualification.py promotion --output /tmp/macro-qualification
