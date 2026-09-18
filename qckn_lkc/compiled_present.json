@@ -19,6 +19,15 @@
       "representation": "single-pass Möbius factor-list evaluator",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
+    },
+    "primecount": {
+      "capability_id": "E-primecount-v1-promote",
+      "source_ledger_event": "E-primecount-v1-promote",
+      "branch": "lkc-primecount-v1-frozen",
+      "commit": "ad93304176335a1c6c2cd65681486b1e1bdb066f",
+      "representation": "direct recursive aggregate using Nat.minFac primality; removes List.range/countP materialization",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
     }
   },
   "reserve_hypotheses": [
@@ -83,7 +92,6 @@
     "E-partition-dp-active",
     "E-permanent-inline-active",
     "E-polydisc-fixedsign-active",
-    "E-primecount-direct-active",
     "E-sha256-nozip-active"
   ],
   "revoked": [
