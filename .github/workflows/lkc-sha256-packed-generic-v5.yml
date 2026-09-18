@@ -55,3 +55,44 @@ jobs:
         with:
           name: sha256-packed-generic-v5-evidence
           path: experiments/lkc_sha256/generated/
+
+  measure:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate exact candidate
+        run: |
+          python3 experiments/lkc_sha256/packed_generic_v5.py
+          python3 -m py_compile experiments/lkc_sha256/tournament_v5.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install measurement dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-packed-core-lean4331-d8ea5fc-v1
+      - name: Setup exact SHA measurement environment
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem sha256
+          python3 benchmark.py doctor --problem sha256 --metric callgrind
+      - name: Full six-case 4 GiB resource probe
+        run: python3 experiments/lkc_sha256/tournament_v5.py resource_probe
+      - name: Stable-four Callgrind tournament
+        run: python3 experiments/lkc_sha256/tournament_v5.py instructions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha256-packed-v5-measurement-evidence
+          path: sha256-v5-evidence/
