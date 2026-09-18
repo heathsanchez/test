@@ -303,9 +303,17 @@ def analyze(N,K,L=3):
             if node in first:
                 a=first[node]; b=i
                 outcomes=tuple(seq[j][0] for j in range(a,b))
-                row=(key,a,b,node,outcomes,
-                     tuple(seq[j][3] for j in range(a,b)),
-                     seq[a][1],seq[b-1][2])
+                cyc_edges=tuple(seq[j][3] for j in range(a,b))
+                AA,BB,DD=1,0,0
+                for ed in cyc_edges:
+                    target=cert_by_edge[ed][1]
+                    BB=target['A']*BB + target['B']*(1<<DD)
+                    AA=target['A']*AA
+                    DD+=target['D']
+                m0=seq[a][1]; mout=seq[b-1][2]
+                assert AA*m0+BB==(1<<DD)*mout
+                threshold=BB//((1<<DD)-AA)+1 if AA<(1<<DD) else None
+                row=(key,a,b,node,outcomes,cyc_edges,m0,mout,AA,DD,BB,threshold)
                 concrete_pattern_cycles.append(row)
                 if outcomes and all(x=="recharge" for x in outcomes):
                     concrete_recharge_cycles.append(row)
@@ -323,7 +331,18 @@ def analyze(N,K,L=3):
     print("RIGID_RECHARGE_OCCURRENCES",sum(recharge_edges.values()))
     print("RIGID_RECHARGE_CYCLIC_SCCS",len(cyc))
     print("RIGID_RECHARGE_CYCLIC_SIZES",sorted((len(c) for c in cyc),reverse=True))
+    cycle_slope_bad=[x for x in concrete_pattern_cycles if not x[8] < (1<<x[9])]
+    cycle_threshold_bad=[x for x in concrete_pattern_cycles
+                         if x[11] is None or x[6] < x[11]]
     print("CONCRETE_PATTERN_CYCLES",len(concrete_pattern_cycles))
+    print("CONCRETE_PATTERN_CYCLE_SLOPE_CONTRACT",
+          len(concrete_pattern_cycles)-len(cycle_slope_bad),"fail",len(cycle_slope_bad))
+    if cycle_slope_bad:
+        print("CONCRETE_PATTERN_CYCLE_SLOPE_SEPARATOR",cycle_slope_bad[:10])
+    print("CONCRETE_PATTERN_CYCLE_THRESHOLD_VALID",
+          len(concrete_pattern_cycles)-len(cycle_threshold_bad),"fail",len(cycle_threshold_bad))
+    if cycle_threshold_bad:
+        print("CONCRETE_PATTERN_CYCLE_THRESHOLD_SEPARATOR",cycle_threshold_bad[:10])
     print("CONCRETE_ALL_RECHARGE_CYCLES",len(concrete_recharge_cycles))
     if concrete_pattern_cycles:
         print("FIRST_CONCRETE_PATTERN_CYCLE",concrete_pattern_cycles[0])
