@@ -20,7 +20,7 @@ import argparse
 from collections import Counter, defaultdict
 from fractions import Fraction
 
-import collatz_coupled_dag_v1 as dag
+import collatz_q0_coalescence_component_audit as base
 
 
 def v2(x:int)->int:
@@ -35,11 +35,11 @@ def episode(x:int):
     y=x
     for _ in range(r):
         assert y&1
-        y=dag.T(y)
+        y=base.T(y)
     assert y>0 and y%2==0
     s=v2(y)
     for _ in range(s):
-        y=dag.T(y)
+        y=base.T(y)
     assert y&1
     rp=v2(y+1)
     mp=(y+1)>>rp
@@ -139,9 +139,9 @@ def switch_law(w,v,m_start,m_end):
 
 
 def q0_status(k,n):
-    out,data=dag.classify(k,n)
+    out,data=base.cylinder_status(k,n)
     if out=='TAIL_CLOSED':
-        return 'CLOSED' if data[0]==0 else 'TAIL_EXCEPTION'
+        return 'CLOSED' if data[-1]==0 else 'TAIL_EXCEPTION'
     return out
 
 
@@ -151,7 +151,7 @@ def rigid_episode_segment(n,K):
     if k>K or q0_status(k,n)!='RIGID':
         return [],[]
     # Actual endpoint at q=0.
-    c,x=dag.forward_cylinder(k,n)
+    c,x=base.forward_state(k,n)
     starts=[]
     branches=[]
     # Move through complete episodes, but only while every shortcut state is RIGID.
@@ -161,10 +161,10 @@ def rigid_episode_segment(n,K):
             # episode anchor. They must remain RIGID too.
             if q0_status(k,n)!='RIGID':
                 break
-            x=dag.T(x); k+=1
+            x=base.T(x); k+=1
             if k>K or q0_status(k,n)!='RIGID':
                 break
-            c2,x2=dag.forward_cylinder(k,n)
+            c2,x2=base.forward_state(k,n)
             assert x==x2
             continue
 
@@ -178,7 +178,7 @@ def rigid_episode_segment(n,K):
             if q0_status(j,n)!='RIGID':
                 ok=False;break
             if j<end:
-                z=dag.T(z)
+                z=base.T(z)
         if not ok:
             break
         assert z==y
