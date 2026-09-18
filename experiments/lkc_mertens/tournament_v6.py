@@ -67,7 +67,7 @@ def prove():
             str(audit),
         ]
         code, text = execute(cmd, f"proof-{version}.log", cwd=PACKAGE)
-        axioms_match = re.search(r"depends on axioms:\\s*\\[([^\\]]*)\\]", text)
+        axioms_match = re.search(r"depends on axioms:\s*\[([^\]]*)\]", text)
         axiom_free = "does not depend on any axioms" in text
         axioms = (
             {x.strip() for x in axioms_match.group(1).split(",") if x.strip()}
@@ -215,7 +215,7 @@ def qualify():
         and ": accepted" in text
         and re.search(r"Computation replay T:.*complete", text) is not None
     )
-    passed = passed and all(re.search(rf"n={n}: OK\\b", text) for n in INPUTS)
+    passed = passed and all(re.search(rf"n={n}: OK\b", text) for n in INPUTS)
     save(
         "canonical.json",
         {
