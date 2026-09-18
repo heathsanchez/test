@@ -1,0 +1,19 @@
+name: Collatz fragment transfer diagnostic
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_fragment_transfer_diagnostic.py'
+      - '.github/workflows/collatz-fragment-transfer-diagnostic.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_fragment_transfer_diagnostic.py --K 96 --train-hi 4095 --held-lo 4097 --held-hi 8191 --maxfrag-hi 10 | tee /tmp/fragment-diagnostic.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fragment-transfer-diagnostic
+          path: /tmp/fragment-diagnostic.txt
