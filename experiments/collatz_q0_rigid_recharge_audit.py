@@ -221,6 +221,7 @@ def analyze(N,K):
     switch_witness={}
     first_recharge=None
     recharge_meta=[]
+    switch_sequences=defaultdict(list)
 
     for n in range(3,N+1,2):
         starts,branches=rigid_episode_segment(n,K)
@@ -261,6 +262,7 @@ def analyze(N,K):
                             all_switch_edges[edge]+=1
                             switch_outcomes[edge]=z['outcome']
                             switch_witness.setdefault(edge,(n,starts[start][0],old['word'],c['word'],mstart,mend,z))
+                            switch_sequences[(n,r)].append((z['outcome'],mstart,mend,edge,starts[start][0]))
                             if z['outcome']=='recharge':
                                 recharge_meta.append({
                                     'n':n,'k':starts[start][0],
@@ -307,6 +309,29 @@ def analyze(N,K):
                   "first_fail",bad[0] if bad else None)
         hs=Counter(z['h'] for z in recharge_meta)
         print("RECHARGE_HISTOGRAM",dict(sorted(hs.items())))
+    streaks=[]; expanding_streaks=[]
+    for key,seq in switch_sequences.items():
+        i=0
+        while i<len(seq):
+            if seq[i][0]!="recharge":
+                i+=1; continue
+            j=i
+            while j+1<len(seq) and seq[j+1][0]=="recharge":
+                j+=1
+            row=(key, j-i+1, seq[i][1], seq[j][2],
+                 tuple(x[3] for x in seq[i:j+1]))
+            streaks.append(row)
+            if seq[j][2] >= seq[i][1]:
+                expanding_streaks.append(row)
+            i=j+1
+    print("RECHARGE_STREAKS",len(streaks),
+          "MAX_LENGTH",max((x[1] for x in streaks),default=0),
+          "CONTRACTING",len(streaks)-len(expanding_streaks),
+          "NONCONTRACTING",len(expanding_streaks))
+    if expanding_streaks:
+        print("RECHARGE_STREAK_SEPARATOR",expanding_streaks[:10])
+    else:
+        print("OBSERVED_ALL_RECHARGE_STREAKS_CONTRACT_M")
     if first_recharge is not None:
         print("FIRST_RIGID_RECHARGE",first_recharge)
     if cyc:
