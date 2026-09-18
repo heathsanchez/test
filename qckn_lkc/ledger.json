@@ -1053,6 +1053,23 @@
         "E-primecount-v3-promote"
       ],
       "status": "PROMOTED"
+    },
+    {
+      "id": "E-structural-minfac-transfer",
+      "type": "CALIBRATE",
+      "target": "cross-problem",
+      "parents": [
+        "E-mertens-v6-promote",
+        "E-primecount-v3-promote"
+      ],
+      "status": "VERIFIED_TRANSFER",
+      "evidence": {
+        "source": "mertens",
+        "target": "primecount",
+        "source_gain_pct": 34.051112447991315,
+        "target_gain_pct": 38.68492596346995,
+        "boundary": "Verified on these two Stage 1 contracts; not asserted universally."
+      }
     }
   ]
 }
