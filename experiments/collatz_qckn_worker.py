@@ -96,6 +96,7 @@ def replay_twice(n:int,k:int,y:int):
 def audit(lo:int,hi:int,H:int,guard:int,bank:dict[int,int]):
     counts=Counter()
     reuse=Counter()
+    live_endpoint_counts=Counter()
     candidates={}
     unresolved=[]
 
@@ -134,6 +135,7 @@ def audit(lo:int,hi:int,H:int,guard:int,bank:dict[int,int]):
                 continue
 
             counts["live_two_replay"]+=1
+            live_endpoint_counts[y]+=1
 
             if y in bank:
                 reuse[y]+=1
@@ -179,6 +181,7 @@ def audit(lo:int,hi:int,H:int,guard:int,bank:dict[int,int]):
         "bank_size":len(bank),
         "counts":dict(sorted(counts.items())),
         "reuse":{str(k):v for k,v in sorted(reuse.items())},
+        "live_endpoint_counts":{str(k):v for k,v in sorted(live_endpoint_counts.items())},
         "candidate_acquisitions":[candidates[k] for k in sorted(candidates)],
         "unresolved":unresolved,
     }
