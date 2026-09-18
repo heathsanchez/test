@@ -41,6 +41,15 @@
       "next_calibration": "E-partition-dp-active"
     },
     {
+      "id": "E-hyp-pow2-to-mul",
+      "source_evidence": [
+        "E-fib-mulsquare-active"
+      ],
+      "state": "RESERVE_NOT_PROMOTED",
+      "hypothesis": "For hot kernel-reduction paths, replacing x^2 with x*x may reduce definitional reduction overhead while preserving semantics.",
+      "next_calibration": "E-fib-mulsquare-active"
+    },
+    {
       "id": "E-hyp-structural-recursion",
       "source_evidence": [
         "E-mertens-structural-active"
@@ -51,6 +60,7 @@
     }
   ],
   "active_transitions": [
+    "E-fib-mulsquare-active",
     "E-mertens-structural-active",
     "E-partition-dp-active",
     "E-primecount-direct-active"
