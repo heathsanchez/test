@@ -1,0 +1,24 @@
+name: Collatz q0 anchor q7 tournament
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_anchor_q7_tournament.py'
+      - '.github/workflows/collatz-q0-anchor-q7-tournament.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: q7 anchor tournament
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_anchor_q7_tournament.py --N 65535 --H 512 | tee /tmp/q7-anchor.txt
+          grep -q '^Q7_CERTIFICATES 13$' /tmp/q7-anchor.txt
+          grep -Eq '^OBSERVED_Q7_PLUS_DP_CERTIFIES_ALL_BOUNDED_ANCHORS$|^SEPARATOR_Q7_PLUS_DP_UNCERTIFIED' /tmp/q7-anchor.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-anchor-q7-tournament
+          path: /tmp/q7-anchor.txt
