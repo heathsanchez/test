@@ -29,6 +29,21 @@ WORD=((1,1,4),(4,1,1),(1,1,1))
 CERT=ra.certificate(WORD)
 L=sum(r+s for r,s,rp in WORD)
 
+# Frozen before the prospective 27-bit holdout.  These are the unique live
+# C9 two-replay endpoints discovered below 2^26.
+FROZEN_ENDPOINTS={
+    147269353,
+    153560809,
+    157755113,
+    260515561,
+    373761769,
+    1205282537,
+    1290217193,
+    1928799977,
+    2196186857,
+    4083623657,
+}
+
 def rigid_prefix(n,k0,k1):
     for k in range(k0,k1+1):
         out,data=base.cylinder_status(k,n)
@@ -62,8 +77,15 @@ def endpoint_certificate(x:int,guard:int):
 def audit(lo:int,hi:int,H:int,guard:int):
     counts=Counter()
     cache={}
+    frozen_steps={}
+    for x in sorted(FROZEN_ENDPOINTS):
+        steps=endpoint_certificate(x,guard)
+        assert steps is not None, ("frozen endpoint lost certificate",x)
+        cache[x]=steps
+        frozen_steps[x]=steps
     acquisitions=[]
     reused=Counter()
+    frozen_reuse=Counter()
     unresolved=[]
 
     for n in range(max(3,lo)|1,hi+1,2):
@@ -93,6 +115,8 @@ def audit(lo:int,hi:int,H:int,guard:int):
                 continue
 
             counts['live_two_replay']+=1
+            if y in FROZEN_ENDPOINTS:
+                frozen_reuse[y]+=1
             if y not in cache:
                 steps=endpoint_certificate(y,guard)
                 cache[y]=steps
@@ -112,9 +136,12 @@ def audit(lo:int,hi:int,H:int,guard:int):
     print("HORIZON",H)
     print("ENDPOINT_GUARD",guard)
     print("COUNTS",dict(counts))
+    print("FROZEN_BANK_SIZE",len(FROZEN_ENDPOINTS))
+    print("FROZEN_BANK_STEPS",dict(sorted(frozen_steps.items())))
     print("UNIQUE_ENDPOINTS",len(cache))
     print("ACQUIRED_CERTIFICATES",len(acquisitions))
     print("ACQUISITIONS",acquisitions)
+    print("FROZEN_REUSE_HITS",dict(sorted(frozen_reuse.items())))
     print("REUSED_ENDPOINT_HITS",dict(sorted(reused.items())))
     print("UNRESOLVED_ENDPOINTS",len(unresolved))
     if unresolved:
