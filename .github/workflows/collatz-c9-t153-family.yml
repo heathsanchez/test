@@ -1,0 +1,23 @@
+name: Collatz C9 t153 family closure
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_t153_family_closure.py'
+      - '.github/workflows/collatz-c9-t153-family.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify exact t153 reverse-family closure
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_t153_family_closure.py --samples 4 | tee /tmp/t153-family.txt
+          grep -q '^PASS_T153_REVERSE_FAMILY_DIRECT_DESCENT$' /tmp/t153-family.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-t153-family-closure
+          path: /tmp/t153-family.txt
