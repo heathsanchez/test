@@ -1337,6 +1337,74 @@
         "resource evidence on 512-step cases",
         "then compose no-zip only if packing earns survival"
       ]
+    },
+    {
+      "id": "E-permanent-sparse-v3-r4-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r4-active"
+      ],
+      "status": "SUPERSEDED_BY_UNIVERSAL_LIFT",
+      "evidence": {
+        "reason": "support certificate green; next candidate lifts support permutation through DFS fold"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v4-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v3-r4-active",
+        "E-permanent-sparse-v3-r4-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v4",
+        "commit": "0cdedf58a8625ad98d17bf5e96cb59533663fa56",
+        "representation": "same three-choice sparse DFS plus universal support-filter/permutation fold proof"
+      },
+      "licensed_by": "Support certificate passed; only universal DFS equivalence remained.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "dimension-16 resource clearance",
+        "paired instruction evidence"
+      ]
+    },
+    {
+      "id": "E-sha256-packed-core-v4-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-core-v4-active"
+      ],
+      "status": "SUPERSEDED_BY_GENERIC_CONJUGACY_PROOF",
+      "evidence": {
+        "reason": "staged proof census showed pack/unpack and step validity pass; only SHA-specialized iteration proof caused resource blow-up"
+      }
+    },
+    {
+      "id": "E-sha256-packed-generic-v5-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-core-v4-active",
+        "E-sha256-packed-core-v4-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-generic-v5",
+        "commit": "65c1a40987b48cc90f328a4c517ab0ad4794fb5e",
+        "representation": "same packed Nat chain state with abstract generic conjugacy iterator proof"
+      },
+      "licensed_by": "Proof census localized resource blow-up to SHA-specialized recursive iteration theorem; abstract conjugacy proof removes SHA from recursion.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "all six resource cases complete",
+        "Callgrind evidence"
+      ]
     }
   ]
 }
