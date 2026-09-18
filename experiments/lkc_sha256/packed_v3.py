@@ -59,8 +59,16 @@ theorem unpack_pack (d : Digest) (h : ValidDigest d) :
   rcases d with ⟨a,b,c,d,e,f,g,hword⟩
   simp only [ValidDigest] at h
   rcases h with ⟨ha,hb,hc,hd,he,hf,hg,hh⟩
-  simp [packDigestLE, unpackDigestLE, mod_cons, div_cons,
-    ha,hb,hc,hd,he,hf,hg,hh]
+  unfold packDigestLE unpackDigestLE
+  simp only
+  rw [mod_cons a _ ha, div_cons a _ ha]
+  rw [mod_cons b _ hb, div_cons b _ hb]
+  rw [mod_cons c _ hc, div_cons c _ hc]
+  rw [mod_cons d _ hd, div_cons d _ hd]
+  rw [mod_cons e _ he, div_cons e _ he]
+  rw [mod_cons f _ hf, div_cons f _ hf]
+  rw [mod_cons g hword hg, div_cons g hword hg]
+  rw [Nat.mod_eq_of_lt hh]
 
 theorem add32_lt_base (a b : Nat) : add32 a b < base32 := by
   unfold add32
@@ -77,12 +85,18 @@ theorem valid_seedDigest (seed : Nat) : ValidDigest (seedDigest seed) := by
     seedStep32_lt_base _, seedStep32_lt_base _, seedStep32_lt_base _,
     seedStep32_lt_base _, seedStep32_lt_base _⟩
 
-theorem valid_fastStepNoZip (d : Digest) : ValidDigest (fastStepNoZip d) := by
-  unfold ValidDigest fastStepNoZip
-  dsimp
+theorem valid_feedForward (f : Digest) :
+    ValidDigest
+      ⟨add32 iv.a f.a, add32 iv.b f.b, add32 iv.c f.c, add32 iv.d f.d,
+       add32 iv.e f.e, add32 iv.f f.f, add32 iv.g f.g, add32 iv.h f.h⟩ := by
+  unfold ValidDigest
   exact ⟨add32_lt_base _ _, add32_lt_base _ _, add32_lt_base _ _,
     add32_lt_base _ _, add32_lt_base _ _, add32_lt_base _ _,
     add32_lt_base _ _, add32_lt_base _ _⟩
+
+theorem valid_fastStepNoZip (d : Digest) : ValidDigest (fastStepNoZip d) := by
+  unfold fastStepNoZip
+  exact valid_feedForward (roundsNoZip K (fastSchedule d) iv)
 
 def packedStep (x : Nat) : Nat :=
   packDigestLE (fastStepNoZip (unpackDigestLE x))
