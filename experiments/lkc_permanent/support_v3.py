@@ -31,30 +31,31 @@ theorem permanentSkipTwo_props
     permanentSkipTwo a b k < dimension ∧
       permanentSkipTwo a b k ≠ a ∧
       permanentSkipTwo a b k ≠ b := by
-  unfold permanentSkipTwo
   by_cases hle : a ≤ b
   · have hlt : a < b := by omega
-    rw [Nat.min_eq_left hle, Nat.max_eq_right hle]
+    have hmin : min a b = a := Nat.min_eq_left hle
+    have hmax : max a b = b := Nat.max_eq_right hle
     by_cases hka : k < a
     · have hkb : k < b := by omega
-      simp [hka, hkb]
+      simp [permanentSkipTwo, hmin, hmax, hka, hkb]
       omega
     · by_cases hkb : k + 1 < b
-      · simp [hka, hkb]
+      · simp [permanentSkipTwo, hmin, hmax, hka, hkb]
         omega
-      · simp [hka, hkb]
+      · simp [permanentSkipTwo, hmin, hmax, hka, hkb]
         omega
   · have hba : b ≤ a := Nat.le_of_not_ge hle
     have hlt : b < a := by omega
-    rw [Nat.min_eq_right hba, Nat.max_eq_left hba]
+    have hmin : min a b = b := Nat.min_eq_right hba
+    have hmax : max a b = a := Nat.max_eq_left hba
     by_cases hkb : k < b
     · have hka : k < a := by omega
-      simp [hkb, hka]
+      simp [permanentSkipTwo, hmin, hmax, hkb, hka]
       omega
     · by_cases hka : k + 1 < a
-      · simp [hkb, hka]
+      · simp [permanentSkipTwo, hmin, hmax, hkb, hka]
         omega
-      · simp [hkb, hka]
+      · simp [permanentSkipTwo, hmin, hmax, hkb, hka]
         omega
 
 theorem permanentColumnOne_props
@@ -96,7 +97,33 @@ theorem mem_permanentRowSupport_iff
          j = permanentColumnOne dimension seed i ∨
          j = permanentColumnTwo dimension seed i) := by
   have hnot : ¬ dimension < 3 := by omega
-  simp [permanentRowSupport, permanentEntry, hnot, eq_comm]
+  unfold permanentRowSupport
+  simp only [List.mem_filter, List.mem_range]
+  constructor
+  · rintro ⟨hj, hentry⟩
+    refine ⟨hj, ?_⟩
+    unfold permanentEntry at hentry
+    simp only [hnot, if_false] at hentry
+    by_cases hji : j = i
+    · exact Or.inl hji
+    · have hij : ¬ i = j := fun h => hji h.symm
+      simp only [hij, false_or] at hentry
+      by_cases hj1 : j = permanentColumnOne dimension seed i
+      · exact Or.inr (Or.inl hj1)
+      · simp only [hj1, false_or] at hentry
+        exact Or.inr (Or.inr (by
+          cases h2 : (j = permanentColumnTwo dimension seed i)
+          · simp [h2] at hentry
+          · exact h2))
+  · rintro ⟨hj, hsupport⟩
+    refine ⟨hj, ?_⟩
+    unfold permanentEntry
+    simp only [hnot, if_false]
+    rcases hsupport with hji | hj1 | hj2
+    · have hij : i = j := hji.symm
+      simp [hij]
+    · simp [hj1]
+    · simp [hj2]
 
 theorem permanentRowSupport_perm
     (dimension seed i : Nat)
@@ -112,12 +139,30 @@ theorem permanentRowSupport_perm
   have h12 :
       permanentColumnOne dimension seed i ≠
         permanentColumnTwo dimension seed i := Ne.symm h2.2.2
-  apply (List.perm_ext_iff_of_nodup ?_ ?_).2
-  · exact List.Pairwise.filter _ List.nodup_range
-  · simp [hi1, hi2, h12]
-  · intro j
-    rw [mem_permanentRowSupport_iff dimension seed i j hd]
-    simp [hi, h1.1, h2.1]
+  have hndLeft : (permanentRowSupport dimension seed i).Nodup := by
+    unfold permanentRowSupport
+    exact List.Pairwise.filter _ List.nodup_range
+  have hndRight :
+      [i, permanentColumnOne dimension seed i,
+          permanentColumnTwo dimension seed i].Nodup := by
+    simp [hi1, hi2, h12]
+  refine (List.perm_ext_iff_of_nodup hndLeft hndRight).2 ?_
+  intro j
+  rw [mem_permanentRowSupport_iff dimension seed i j hd]
+  constructor
+  · rintro ⟨_, h⟩
+    simpa using h
+  · intro h
+    have hs :
+        j = i ∨
+        j = permanentColumnOne dimension seed i ∨
+        j = permanentColumnTwo dimension seed i := by
+      simpa using h
+    refine ⟨?_, hs⟩
+    rcases hs with hji | hj1 | hj2
+    · simpa [hji] using hi
+    · simpa [hj1] using h1.1
+    · simpa [hj2] using h2.1
 
 end Submission
 '''
