@@ -11,6 +11,7 @@ UPSTREAM = BENCH / ".cache/upstream"
 PACKAGE = UPSTREAM / "evaluation/problems/sha256"
 EVIDENCE = ROOT / "sha256-v1-evidence"
 INPUTS = [18860801433, 17252521710, 138725260120, 140599404248, 2199121876686, 2199573357346]
+SCREEN_INPUTS = INPUTS[:4]
 EVIDENCE.mkdir(exist_ok=True)
 
 
@@ -90,44 +91,77 @@ def qualify():
         raise RuntimeError("SHA-256 V1 canonical qualification failed.")
 
 
-def diagnostic(metric):
+def diagnostic(metric, inputs, label):
     sys.path.insert(0, str(BENCH))
     from lkc_bench import cli
-    out = EVIDENCE / f"{metric}-diagnostic"
+    out = EVIDENCE / f"{metric}-{label}"
     code = cli.main([
         "diagnostic", "--problem", "sha256", "--submission", str(SOURCE),
         "--metric", metric, "--repetitions", "3", "--timeout", "600",
-        "--memory-mb", "4096", "--inputs", *map(str, INPUTS),
+        "--memory-mb", "4096", "--inputs", *map(str, inputs),
         "--output", str(out)
     ])
     data = json.loads((out / "diagnostic.json").read_text())
+    return code, data
+
+
+def screen():
+    code, data = diagnostic("wall-time", SCREEN_INPUTS, "screen")
     if code != 0 or not data.get("complete"):
-        raise RuntimeError(f"incomplete SHA-256 {metric} diagnostic")
-    return {
-        "metric": metric,
+        raise RuntimeError("SHA-256 small/medium wall screen incomplete")
+    result = {
+        "metric": "wall-time",
+        "inputs": SCREEN_INPUTS,
         "totals": data["totals"],
         "ratio": data["totals"]["candidate"] / data["totals"]["baseline"],
         "reduction_pct": 100 * (1 - data["totals"]["candidate"] / data["totals"]["baseline"]),
         "comparisons": data.get("comparisons"),
         "source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+        "full_contract_complete": False,
+        "note": "512-step public diagnostic is a separate resource probe."
     }
+    save("wall-screen.json", result)
 
 
-def screen():
-    save("wall-screen.json", diagnostic("wall-time"))
+def resource_probe():
+    code, data = diagnostic("wall-time", INPUTS, "full-resource-probe")
+    result = {
+        "runner_complete": bool(data.get("complete")),
+        "returncode": code,
+        "inputs": INPUTS,
+        "totals": data.get("totals"),
+        "comparisons": data.get("comparisons"),
+        "runs": data.get("runs"),
+        "contract_memory_mb": 4096,
+        "classification": "complete" if data.get("complete") else "UNKNOWN_SEARCH_RESOURCE_OBSTRUCTION",
+    }
+    save("resource-probe.json", result)
 
 
 def instructions():
-    result = diagnostic("callgrind")
+    code, data = diagnostic("callgrind", SCREEN_INPUTS, "screen")
+    if code != 0 or not data.get("complete"):
+        raise RuntimeError("SHA-256 small/medium instruction diagnostic incomplete")
+    result = {
+        "metric": "callgrind",
+        "inputs": SCREEN_INPUTS,
+        "totals": data["totals"],
+        "ratio": data["totals"]["candidate"] / data["totals"]["baseline"],
+        "reduction_pct": 100 * (1 - data["totals"]["candidate"] / data["totals"]["baseline"]),
+        "comparisons": data.get("comparisons"),
+        "source_sha256": hashlib.sha256(SOURCE.read_bytes()).hexdigest(),
+        "official_pmu_measured": False,
+        "full_contract_complete": False,
+        "local_promotion_eligible": False,
+        "note": "Exploratory only until 512-step contract cases complete under the declared 4 GiB envelope."
+    }
     proof = json.loads((EVIDENCE / "proof-gate.json").read_text())
     if proof["source_sha256"] != result["source_sha256"]:
         raise RuntimeError("Measured bytes differ from proof-checked bytes")
-    result.update(official_pmu_measured=False,
-                  local_promotion_eligible=result["ratio"] < 1.0)
     save("instruction-verdict.json", result)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("phase", choices=["prove", "screen", "qualify", "instructions"])
+    parser.add_argument("phase", choices=["prove", "screen", "resource_probe", "qualify", "instructions"])
     globals()[parser.parse_args().phase]()
