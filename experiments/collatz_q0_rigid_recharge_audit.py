@@ -376,8 +376,16 @@ def analyze(N,K):
                 m0=seq[i][1]; mout=seq[j+1][2]
                 assert (AA*m0+BB)==(1<<DD)*mout
                 threshold = BB//((1<<DD)-AA)+1 if slope_contract else None
+                # A=3^R for total odd-resource R; D=R+S for total even-resource S.
+                tmp=AA; Rtot=0
+                while tmp>1:
+                    assert tmp%3==0
+                    tmp//=3; Rtot+=1
+                Stot=DD-Rtot
+                target_data=tuple((cert_by_edge[ed][1]['A'],cert_by_edge[ed][1]['D'],
+                                   cert_by_edge[ed][1]['word']) for ed in edges_block)
                 row=(key,j-i+1,seq[j+1][0],m0,mout,
-                     edges_block,AA,DD,BB,threshold)
+                     edges_block,AA,DD,BB,threshold,Rtot,Stot,target_data)
                 discharge.append(row)
                 if mout >= m0:
                     discharge_bad.append(row)
@@ -395,6 +403,8 @@ def analyze(N,K):
     print("RECHARGE_DISCHARGE_BLOCKS",len(discharge),
           "CONTRACTING",len(discharge)-len(discharge_bad),
           "NONCONTRACTING",len(discharge_bad))
+    for row in discharge:
+        print("RECHARGE_DISCHARGE_MACRO",row)
     if discharge_bad:
         print("RECHARGE_DISCHARGE_SEPARATOR",discharge_bad[:10])
     else:
