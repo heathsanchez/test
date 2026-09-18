@@ -39,11 +39,11 @@
       "official_pmu_measured": false
     },
     "primecount": {
-      "capability_id": "E-primecount-v1-promote",
-      "source_ledger_event": "E-primecount-v1-promote",
-      "branch": "lkc-primecount-v1-frozen",
-      "commit": "ad93304176335a1c6c2cd65681486b1e1bdb066f",
-      "representation": "direct recursive aggregate using Nat.minFac primality; removes List.range/countP materialization",
+      "capability_id": "E-primecount-v3-promote",
+      "source_ledger_event": "E-primecount-v3-promote",
+      "branch": "lkc-primecount-v3-frozen",
+      "commit": "45b2caf3da75be177e9571b4deff118b34f24c46",
+      "representation": "Primecount V1 direct aggregate composed with Mertens-V6 explicit structural least-factor search",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     }
@@ -118,7 +118,6 @@
     "E-partition-v4-active",
     "E-permanent-sparse-v3-r2-active",
     "E-polydisc-v3-r2-active",
-    "E-primecount-v3-active",
     "E-sha256-packed-r3-verify"
   ],
   "revoked": [
