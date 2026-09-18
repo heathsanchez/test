@@ -200,6 +200,26 @@
       "status": "RESERVE_NOT_PROMOTED",
       "hypothesis": "For hot kernel-reduction paths, replacing x^2 with x*x may reduce definitional reduction overhead while preserving semantics.",
       "next_calibration": "E-fib-mulsquare-active"
+    },
+    {
+      "id": "E-permanent-inline-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-rule110-v60-promote"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-inline-v1",
+        "commit": "4943ef4b64960f419e42ef91fcafc895ecd735e7",
+        "variants": [
+          "v1 decode-wrapper deletion",
+          "v2 matrix-wrapper deletion",
+          "v3 row-wrapper deletion"
+        ]
+      },
+      "licensed_by": "Cheap representation-deletion probe before theorem-heavy sparse-row restructuring.",
+      "transfer_claim": "UNPROVEN until proof/canonical/paired resource gates complete."
     }
   ]
 }
