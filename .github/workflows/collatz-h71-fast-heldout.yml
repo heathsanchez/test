@@ -1,0 +1,19 @@
+name: Collatz frozen H71 fast heldout
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_h71_fast_gate.py'
+      - '.github/workflows/collatz-h71-fast-heldout.yml'
+  workflow_dispatch:
+jobs:
+  gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_h71_fast_gate.py --lo 8193 --hi 32767 --H 71 --K 130 | tee /tmp/h71-fast.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: h71-fast-heldout
+          path: /tmp/h71-fast.txt
