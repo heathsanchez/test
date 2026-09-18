@@ -105,9 +105,24 @@ class Capability:
             "contract_digest":self.contract_digest,
         })
 
+    def active_canonical(self):
+        return {
+            "semantic_id":self.semantic_id,
+            "kind":self.kind.value,
+            "start_anchor":self.start_anchor,
+            "end_anchor":self.end_anchor,
+            "affine_a":self.affine_a,
+            "affine_b":self.affine_b,
+            "affine_d":self.affine_d,
+            "guard_digest":self.guard_digest,
+            "contract_digest":self.contract_digest,
+            "payload":_plain(self.payload),
+            "dependencies":list(self.dependencies),
+        }
+
     @property
     def payload_digest(self)->str:
-        return digest_payload(self.to_canonical())
+        return digest_payload(self.active_canonical())
 
     def as_dict(self):
         return {f.name:getattr(self,f.name) for f in fields(self)}
