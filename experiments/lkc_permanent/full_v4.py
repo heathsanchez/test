@@ -85,9 +85,8 @@ theorem support_filter_perm
       ((List.range dimension).filter (supportPred dimension seed i)).Nodup :=
     List.nodup_range.filter _
   have hright : (rowSupport dimension seed i).Nodup := by
-    simp only [rowSupport, List.nodup_cons, List.mem_cons, List.mem_singleton,
-      List.nodup_singleton, not_or]
-    exact ⟨⟨Ne.symm h1.2, Ne.symm h2.2.1⟩, Ne.symm h2.2.2⟩
+    simp [rowSupport, h1.2, Ne.symm h1.2,
+      h2.2.1, Ne.symm h2.2.1, h2.2.2, Ne.symm h2.2.2]
   apply (List.perm_ext_iff_of_nodup hleft hright).2
   intro j
   constructor
@@ -100,10 +99,17 @@ theorem support_filter_perm
     · simp [rowSupport, hj1]
     · simp [rowSupport, hj2]
   · intro hj
-    have hs : i = j ∨
+    have hj' : j = i ∨
         j = permanentColumnOne dimension seed i ∨
         j = permanentColumnTwo dimension seed i := by
       simpa [rowSupport] using hj
+    have hs : i = j ∨
+        j = permanentColumnOne dimension seed i ∨
+        j = permanentColumnTwo dimension seed i := by
+      rcases hj' with hji | hj1 | hj2
+      · exact Or.inl hji.symm
+      · exact Or.inr (Or.inl hj1)
+      · exact Or.inr (Or.inr hj2)
     have he : permanentEntry dimension seed i j = 1 :=
       (permanentEntry_support_iff dimension seed i j hd).2 hs
     apply List.mem_filter.mpr
