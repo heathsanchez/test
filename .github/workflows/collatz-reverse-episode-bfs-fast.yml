@@ -1,0 +1,18 @@
+name: Collatz reverse-episode BFS fast
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-reverse-episode-bfs-fast.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_universal_reverse_episode_bfs.py --lo 4097 --hi 8191 --K 80 --L 2 --R 14 --S 14 | tee /tmp/reverse-bfs-fast.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: reverse-episode-bfs-fast
+          path: /tmp/reverse-bfs-fast.txt
