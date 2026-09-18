@@ -49,7 +49,13 @@ def impl (n : Nat) : Nat :=
 
 theorem impl_correct : ∀ n, impl n = sha256Spec n := by
   intro n
-  unfold impl sha256Spec iterSha packedStep
+  change
+    encodeDigest
+      (unpackDigestLE
+        (iterFn (fun x => packDigestLE (sha256step (unpackDigestLE x)))
+          (sha256Steps n) (packDigestLE (seedDigest (sha256Seed n))))) =
+      encodeDigest
+        (iterDigest sha256step (sha256Steps n) (seedDigest (sha256Seed n)))
   rw [conjugate_iter
       packDigestLE unpackDigestLE sha256step ValidDigest
       unpack_pack (fun a _ => valid_sha256step a)
