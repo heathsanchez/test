@@ -1,0 +1,23 @@
+name: Collatz C9 RIGID near-miss trace
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_rigid_near_miss_trace.py'
+      - '.github/workflows/collatz-c9-rigid-near-miss-trace.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trace exact C9 near miss
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_rigid_near_miss_trace.py --H 160 | tee /tmp/c9-near-trace.txt
+          grep -q '^STATUS EXACT_TARGETED_DIAGNOSTIC$' /tmp/c9-near-trace.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-rigid-near-miss-trace
+          path: /tmp/c9-near-trace.txt
