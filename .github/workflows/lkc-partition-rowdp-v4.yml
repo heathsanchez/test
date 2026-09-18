@@ -59,3 +59,44 @@ jobs:
         with:
           name: partition-rowdp-v4-evidence
           path: experiments/lkc_partition/generated/
+
+  instructions:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate candidate
+        run: |
+          python3 experiments/lkc_partition/rowdp_v4.py
+          python3 -m py_compile experiments/lkc_partition/tournament_v4.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-partition-rowdp-lean4331-d8ea5fc-v1
+      - name: Setup exact Partition measurement environment
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem partition
+          python3 benchmark.py doctor --problem partition --metric callgrind
+      - name: Wall corroboration
+        run: python3 experiments/lkc_partition/tournament_v4.py screen
+      - name: Decisive Callgrind tournament
+        run: python3 experiments/lkc_partition/tournament_v4.py instructions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: partition-rowdp-v4-instruction-evidence
+          path: partition-v4-evidence/
