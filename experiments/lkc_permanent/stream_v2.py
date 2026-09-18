@@ -69,7 +69,7 @@ theorem genPermanentRow_getD
       permanentEntry dimension seed i j := by
   unfold genPermanentRow
   simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
-  rw [List.getElem?_range' h]
+  rw [List.getElem?_range h]
   simp
 
 theorem permanentRowsGen_eq :
