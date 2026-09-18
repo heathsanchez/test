@@ -1,0 +1,19 @@
+name: Collatz bidirectional cover probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_bidirectional_cover_probe.py'
+      - '.github/workflows/collatz-bidirectional-cover-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_bidirectional_cover_probe.py --N 8191 --K 100 --maxepisodes 4 --maxsteps 28 --Rmax 20 --Smax 12 | tee /tmp/bidirectional-cover.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bidirectional-cover-probe
+          path: /tmp/bidirectional-cover.txt
