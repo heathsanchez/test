@@ -1,0 +1,97 @@
+name: LKC SHA-256 Packed v3
+
+on:
+  push:
+    branches: [lkc-sha256-packed-v3]
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate packed candidate
+        run: |
+          python3 -m py_compile             experiments/lkc_sha256/nozip_v1.py             experiments/lkc_sha256/packed_v3.py             experiments/lkc_sha256/tournament_v3.py
+          python3 experiments/lkc_sha256/packed_v3.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-packed-lean4331-d8ea5fc-v1
+      - name: Setup exact SHA environment and rules
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem sha256
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Universal proof and negative control
+        run: python3 experiments/lkc_sha256/tournament_v3.py prove
+      - name: Canonical acceptance
+        run: python3 experiments/lkc_sha256/tournament_v3.py qualify
+      - name: Full six-case 4 GiB resource gate
+        run: python3 experiments/lkc_sha256/tournament_v3.py resource_probe
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha256-v3-verification-evidence
+          path: |
+            sha256-v3-evidence/
+            experiments/lkc_sha256/generated/
+
+  instructions:
+    needs: verify
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate exact packed candidate bytes
+        run: python3 experiments/lkc_sha256/packed_v3.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install measurement dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-packed-lean4331-d8ea5fc-v1
+      - name: Setup exact SHA measurement environment
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem sha256
+          python3 benchmark.py doctor --problem sha256 --metric callgrind
+      - uses: actions/download-artifact@v4
+        with:
+          name: sha256-v3-verification-evidence
+          path: .
+      - name: Full six-case Callgrind
+        run: python3 experiments/lkc_sha256/tournament_v3.py instructions
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha256-v3-instruction-evidence
+          path: sha256-v3-evidence/
