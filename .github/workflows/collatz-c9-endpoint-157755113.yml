@@ -1,0 +1,24 @@
+name: Collatz C9 two-replay endpoint closure
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_endpoint_157755113_closure.cpp'
+      - '.github/workflows/collatz-c9-endpoint-157755113.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build exact endpoint closure
+        run: |
+          set -euo pipefail
+          g++ -O3 -std=c++17 experiments/collatz_c9_endpoint_157755113_closure.cpp -o /tmp/c9-endpoint
+          /tmp/c9-endpoint | tee /tmp/c9-endpoint.txt
+          grep -q '^PASS_C9_TWO_REPLAY_ENDPOINT_COMPLETE_CLOSURE$' /tmp/c9-endpoint.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-two-replay-endpoint-closure
+          path: /tmp/c9-endpoint.txt
