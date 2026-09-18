@@ -422,7 +422,9 @@ def analyze(N,K,L=3):
     if repeatable_cycles:
         print("CONCRETE_REPEATABLE_PATTERN_CYCLE_SEPARATOR",repeatable_cycles[:10])
     fp_counts=Counter(z[2] for z in formal_fixedpoints)
+    positive_formal=[z for z in formal_fixedpoints if z[2]=="positive_gt1"]
     print("FORMAL_CYCLE_FIXEDPOINT_TYPES",dict(fp_counts))
+    print("FORMAL_POSITIVE_GT1_FIXEDPOINTS",positive_formal[:30])
     print("ACTUAL_POSITIVE_INTEGER_CYCLE_FIXEDPOINTS",len(actual_positive_fixedpoints))
     if actual_positive_fixedpoints:
         print("ACTUAL_POSITIVE_INTEGER_CYCLE_FIXEDPOINT_WITNESSES",actual_positive_fixedpoints[:20])
