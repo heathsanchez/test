@@ -1,0 +1,33 @@
+name: Collatz C9 24-bit dangerous high-fuel sweep
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-24bit-dangerous.yml'
+  workflow_dispatch:
+concurrency:
+  group: collatz-c9-24bit-dangerous
+  cancel-in-progress: true
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact dangerous C9 high-fuel shard
+        run: |
+          set -euo pipefail
+          S=${{ matrix.shard }}
+          LO=$((S*1048576+3))
+          HI=$(((S+1)*1048576+1))
+          if [ "$HI" -gt 16777215 ]; then HI=16777215; fi
+          python -u experiments/collatz_c9_high_fuel_large_sweep.py --lo "$LO" --hi "$HI" --H 512 | tee "/tmp/c9-danger-${S}.txt"
+          grep -Eq '^OBSERVED_NO_EXPANDING_C9_TWO_REPLAY_RIGID_SURVIVOR$|^SEPARATOR_EXPANDING_HIGH_FUEL_SURVIVES_RIGID' "/tmp/c9-danger-${S}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-danger-shard-${{ matrix.shard }}
+          path: /tmp/c9-danger-${{ matrix.shard }}.txt
