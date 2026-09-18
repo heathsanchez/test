@@ -36,25 +36,25 @@ theorem permanentSkipTwo_props
   · have hlt : a < b := by omega
     rw [Nat.min_eq_left hle, Nat.max_eq_right hle]
     by_cases hka : k < a
-    · simp [hka]
+    · have hkb : k < b := by omega
+      simp [hka, hkb]
       omega
-    · simp [hka]
-      by_cases hkb : k + 1 < b
-      · simp [hkb]
+    · by_cases hkb : k + 1 < b
+      · simp [hka, hkb]
         omega
-      · simp [hkb]
+      · simp [hka, hkb]
         omega
   · have hba : b ≤ a := Nat.le_of_not_ge hle
     have hlt : b < a := by omega
     rw [Nat.min_eq_right hba, Nat.max_eq_left hba]
     by_cases hkb : k < b
-    · simp [hkb]
+    · have hka : k < a := by omega
+      simp [hkb, hka]
       omega
-    · simp [hkb]
-      by_cases hka : k + 1 < a
-      · simp [hka]
+    · by_cases hka : k + 1 < a
+      · simp [hkb, hka]
         omega
-      · simp [hka]
+      · simp [hkb, hka]
         omega
 
 theorem permanentColumnOne_props
@@ -96,13 +96,13 @@ theorem mem_permanentRowSupport_iff
          j = permanentColumnOne dimension seed i ∨
          j = permanentColumnTwo dimension seed i) := by
   have hnot : ¬ dimension < 3 := by omega
-  simp [permanentRowSupport, permanentEntry, hnot]
+  simp [permanentRowSupport, permanentEntry, hnot, eq_comm]
 
 theorem permanentRowSupport_perm
     (dimension seed i : Nat)
     (hd : 3 ≤ dimension)
     (hi : i < dimension) :
-    permanentRowSupport dimension seed i ~
+    List.Perm (permanentRowSupport dimension seed i)
       [i, permanentColumnOne dimension seed i,
           permanentColumnTwo dimension seed i] := by
   have h1 := permanentColumnOne_props dimension seed i hd hi
