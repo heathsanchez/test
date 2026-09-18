@@ -56,8 +56,9 @@ theorem div_cons (a rest : Nat) (ha : a < base32) :
 
 theorem unpack_pack (d : Digest) (h : ValidDigest d) :
     unpackDigestLE (packDigestLE d) = d := by
+  rcases d with ⟨a,b,c,d,e,f,g,hword⟩
+  simp only [ValidDigest] at h
   rcases h with ⟨ha,hb,hc,hd,he,hf,hg,hh⟩
-  cases d
   simp [packDigestLE, unpackDigestLE, mod_cons, div_cons,
     ha,hb,hc,hd,he,hf,hg,hh]
 
@@ -71,15 +72,17 @@ theorem seedStep32_lt_base (x : Nat) : seedStep32 x < base32 := by
 
 theorem valid_seedDigest (seed : Nat) : ValidDigest (seedDigest seed) := by
   unfold ValidDigest seedDigest
-  simp only
-  repeat' apply And.intro
-  all_goals exact seedStep32_lt_base _
+  dsimp
+  exact ⟨seedStep32_lt_base _, seedStep32_lt_base _, seedStep32_lt_base _,
+    seedStep32_lt_base _, seedStep32_lt_base _, seedStep32_lt_base _,
+    seedStep32_lt_base _, seedStep32_lt_base _⟩
 
 theorem valid_fastStepNoZip (d : Digest) : ValidDigest (fastStepNoZip d) := by
   unfold ValidDigest fastStepNoZip
   dsimp
-  repeat' apply And.intro
-  all_goals exact add32_lt_base _ _
+  exact ⟨add32_lt_base _ _, add32_lt_base _ _, add32_lt_base _ _,
+    add32_lt_base _ _, add32_lt_base _ _, add32_lt_base _ _,
+    add32_lt_base _ _, add32_lt_base _ _⟩
 
 def packedStep (x : Nat) : Nat :=
   packDigestLE (fastStepNoZip (unpackDigestLE x))
