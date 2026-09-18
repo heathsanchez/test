@@ -1,0 +1,19 @@
+name: Collatz minimal residual spine profile
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_minimal_residual_spine_profile.py'
+      - '.github/workflows/collatz-minimal-residual-spine-profile.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_minimal_residual_spine_profile.py | tee /tmp/minimal-spine.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: minimal-residual-spine-profile
+          path: /tmp/minimal-spine.txt
