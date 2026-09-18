@@ -1,0 +1,19 @@
+name: Collatz three-replay q0 cylinder search
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_three_replay_q0_cylinder_search.py'
+      - '.github/workflows/collatz-three-replay-q0-cylinder.yml'
+  workflow_dispatch:
+jobs:
+  search:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_three_replay_q0_cylinder_search.py --depth 80 | tee /tmp/three-q0.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: three-replay-q0-cylinder
+          path: /tmp/three-q0.txt
