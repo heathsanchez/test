@@ -1,0 +1,285 @@
+name: ACC 434 Deep Near-Miss Materialization V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-434-deep-near-materialize-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze fresh ACC state and authenticated quota
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir acc_competitive/residual_434_near_scout \
+            --attack-count 1 --defend-fraction 0 \
+            --mechanism-id gssub-v30-deep-near-materialize --shards 2 \
+            --competitive-attempted acc_competitive/competitive_attempted_addendum_v1.json \
+            | tee acc_competitive/residual_434_near_scout.log
+          python3 - <<'PY'
+          import json,sys
+          from pathlib import Path
+          sys.path.insert(0,'andrews_curtis')
+          from solver_v2_gssub import api,data_obj
+          from continuous_aggregate_v5 import quota_state
+          snap=json.loads(Path('acc_competitive/residual_434_near_scout/snapshot_ac.json').read_text())
+          d=snap.get('data',snap); rows={x['challengeId']:x for x in d['items']}
+          row=rows['ac-03665']; q=quota_state(api,data_obj)
+          print('LIVE_ACC_STATE',json.dumps({
+            'target':{'best':row.get('currentBestLength'),'kTeams':row.get('kTeams'),'status':row.get('status')},
+            'quota':q,
+          },sort_keys=True))
+          if row.get('status') != 'solved' or not isinstance(row.get('currentBestLength'),int):
+              raise SystemExit('target no longer has a solved live record')
+          if row['currentBestLength'] <= 434:
+              raise SystemExit(f'434 residual no longer strict against live {row["currentBestLength"]}')
+          if q.get('blocked'):
+              raise SystemExit(f'quota blocked: {q}')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-434-deep-near-scout-v1
+          path: |
+            acc_competitive/residual_434_near_scout/
+            acc_competitive/residual_434_near_scout.log
+          retention-days: 90
+
+  materialize:
+    needs: scout
+    strategy:
+      fail-fast: false
+      matrix:
+        margin: [4, 8]
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover frozen live snapshot
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/scout
+          gh run download "${{ github.run_id }}" -n acc-434-deep-near-scout-v1 -D /tmp/scout
+          snap=$(find /tmp/scout -name snapshot_ac.json -print -quit)
+          test -n "$snap"
+          cp "$snap" /tmp/snapshot_ac.json
+      - name: Prepare pinned search and verifier authority
+        run: |
+          set -euo pipefail
+          python3 -m pip install --quiet 'numpy==2.1.3' 'numba==0.63.1'
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          test "$(git -C /tmp/acsolverx rev-parse HEAD)" = "$ACSOLVERX_PIN"
+          sudo fallocate -l 8G /swapfile-near
+          sudo chmod 600 /swapfile-near
+          sudo mkswap /swapfile-near
+          sudo swapon /swapfile-near
+      - name: Materialize the exhausted 434 corridor as a verifier-valid near miss
+        env:
+          ACC_WEIGHT_SWEEP: "0.011"
+          ACC_PREFIX_RANK: "5"
+          ACC_SUFFIX_SURGERY_ROOT_HIT_RANK: "1"
+          ACC_REJOIN_LOOKAHEAD: "8"
+          ACC_REJOIN_PROBE_BEAM: "96"
+          ACC_REJOIN_PROBE_CAP: "0"
+          ACC_SUFFIX_SURGERY_ROUNDS: "4"
+          ACC_SUFFIX_SURGERY_DEPTH: "7"
+          ACC_SUFFIX_SURGERY_BEAM: "80"
+          ACC_SUFFIX_SURGERY_EXACT_PER_KEY: "4"
+          ACC_SUFFIX_SURGERY_HIT_CAP: "20"
+          ACC_DEEP_NEAR_MARGIN: "${{ matrix.margin }}"
+        run: |
+          set -o pipefail
+          export ACC_REJOIN_STRICT_CEILING=$(python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('/tmp/snapshot_ac.json').read_text()); d=d.get('data',d)
+          rows={x['challengeId']:x for x in d['items']}
+          print(rows['ac-03665']['currentBestLength'])
+          PY
+          )
+          test "$ACC_REJOIN_STRICT_CEILING" -gt 434
+          out="acc_competitive/residual_434_near/m${{ matrix.margin }}"
+          mkdir -p "$out"
+          echo "STRICT_CEILING_EXCLUSIVE=$ACC_REJOIN_STRICT_CEILING DEEP_NEAR_MARGIN=${{ matrix.margin }}"
+          python3 andrews_curtis/solver_v30_gssub_deep_near_materialize.py \
+            --acc-root /tmp/acc \
+            --acsolverx-root /tmp/acsolverx \
+            --out-dir "$out" \
+            --target-id ac-03665 \
+            --snapshot-ac-file /tmp/snapshot_ac.json \
+            --prefix-depth 8 \
+            --overhead-weight 8.0 \
+            --prefix-beam 192 --exact-per-key 4 --prefix-count 12 --prefix-seconds 480 \
+            --suffix-max-nodes 180000 --max-quotient-total 100 \
+            --reverse-depth 7 --reverse-cap 250000 \
+            --strict-beam 384 --near-beam 128 \
+            --compile-seconds 2100 --near-compile-seconds 60 \
+            --near-miss-frac 0.10 \
+            | tee "$out.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-434-deep-near-m${{ matrix.margin }}-v1
+          path: |
+            acc_competitive/residual_434_near/m${{ matrix.margin }}/
+            acc_competitive/residual_434_near/m${{ matrix.margin }}.log
+          retention-days: 90
+
+  consolidate_publish:
+    needs: [scout, materialize]
+    if: always() && needs.scout.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Recover near-miss candidates and evidence
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/searches
+          gh run download "${{ github.run_id }}" --pattern 'acc-434-deep-near-m*-v1' -D /tmp/searches || true
+          find /tmp/searches -name report.json -print | sort || true
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+      - name: Replay every materialized candidate with the pinned verifier
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,re,sys
+          from pathlib import Path
+          acc=Path('/tmp/acc'); sys.path.insert(0,str(acc/'competition/tools'))
+          from verifier import core
+          man=json.loads((acc/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']}; lim=man['limits']
+          best={}; evidence=[]
+          for p in Path('/tmp/searches').rglob('report.json'):
+              try:r=json.loads(p.read_text())
+              except Exception:continue
+              for q in r.get('prefixes') or []:
+                  sm=q.get('strict_compile') or {}
+                  if sm.get('deep_near_materialize'):
+                      evidence.append({
+                          'margin':sm.get('deep_near_margin'),
+                          'materialized':sm.get('materialized_candidate'),
+                          'materialized_length':sm.get('materialized_candidate_length'),
+                          'code':sm.get('code'),
+                          'root_lb':sm.get('root_hit_lower_bound'),
+                          'recursive_best_lb':sm.get('recursive_surgery_best_lb'),
+                      })
+          for p in Path('/tmp/searches').rglob('candidate_any.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^(ac-[^:]+):\s*(\[.*\])$',line.strip())
+                  if not m:continue
+                  cid=m.group(1); moves=list(json.loads(m.group(2)))
+                  c=by[cid]; verdict=core.verify(c,moves,c['move_spec_version'],lim)
+                  if not verdict.get('ok'):
+                      print('PINNED_REPLAY_REJECT',cid,len(moves),verdict); continue
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+                  print('PINNED_REPLAY_OK',cid,len(moves),verdict.get('certificate_hash'))
+          Path('acc_competitive/residual_434_near_raw.txt').write_text(
+              ''.join(f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          print('DEEP_NEAR_EVIDENCE',json.dumps(evidence,sort_keys=True))
+          print('PINNED_VERIFIED_NEAR_MISSES',len(best),{k:len(v) for k,v in sorted(best.items())})
+          PY
+      - name: Fortify and peephole only pinned-verifier-clean near misses
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/residual_434_near_atlas acc_competitive/residual_434_near_peephole
+          if [ ! -s acc_competitive/residual_434_near_raw.txt ]; then
+            : > acc_competitive/residual_434_near_peephole/fortified_ac.txt
+            echo NO_PINNED_VERIFIED_NEAR_MISS
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob 'acc_competitive/residual_434_near_raw.txt' \
+            --out-dir acc_competitive/residual_434_near_atlas --reverse-depth 7 --reverse-cap 250000
+          if [ ! -s acc_competitive/residual_434_near_atlas/fortified_ac.txt ]; then
+            : > acc_competitive/residual_434_near_peephole/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/batch_peephole_fortify_v1.py \
+            --acc-root /tmp/acc \
+            --input acc_competitive/residual_434_near_atlas/fortified_ac.txt \
+            --out-dir acc_competitive/residual_434_near_peephole \
+            --thin-win-frac 0.25 --near-miss-frac 0.10 --max-window 7 --max-path 6000
+      - name: Fresh live record and quota recheck then strict-only publication
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          if [ ! -s acc_competitive/residual_434_near_peephole/fortified_ac.txt ]; then
+            echo NO_VERIFIED_CANDIDATE_AFTER_NEAR_MISS_SALVAGE
+            exit 0
+          fi
+          mkdir -p acc_competitive/residual_434_near_publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob 'acc_competitive/residual_434_near_peephole/fortified_ac.txt' \
+            --out-dir acc_competitive/residual_434_near_publish --cycle 1 \
+            | tee acc_competitive/residual_434_near_publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/residual_434_near_publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('STRICT_RESULT',json.dumps({
+            'used':r.get('daily_submissions_used_pre'),
+            'remaining':r.get('daily_submissions_remaining_pre'),
+            'selected_rows':r.get('selected_rows'),
+            'strict':r.get('selected_strict_improvements'),
+            'unsolved':r.get('selected_unsolved'),
+            'submission_id':r.get('submission_id'),
+            'terminal':r.get('terminal_status')
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-434-deep-near-consolidated-v1
+          path: |
+            acc_competitive/residual_434_near_raw.txt
+            acc_competitive/residual_434_near_atlas/
+            acc_competitive/residual_434_near_peephole/
+            acc_competitive/residual_434_near_publish/
+            /tmp/searches/
+          retention-days: 90
