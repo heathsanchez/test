@@ -38,15 +38,56 @@ theorem roundsWindow_eq (ks : List Nat) (w : Window) (s : Digest) :
       simp only [roundsWindow, List.length_cons, streamWords, roundsNoZip]
       exact ih w.advance (round s k w.x0)
 
+def advanceN : Nat → Window → Window
+  | 0, w => w
+  | k + 1, w => advanceN k w.advance
+
+theorem streamWords_add :
+    ∀ m n w, streamWords (m + n) w =
+      streamWords m w ++ streamWords n (advanceN m w)
+  | 0, n, w => by
+      rfl
+  | m + 1, n, w => by
+      simp only [Nat.succ_add, streamWords, advanceN, List.cons_append]
+      rw [streamWords_add m n w.advance]
+
+theorem streamWords16_eq_toList (w : Window) :
+    streamWords 16 w = w.toList := by
+  rcases w with ⟨x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15⟩
+  rfl
+
+theorem advanceN_succ_right :
+    ∀ k w, (advanceN k w).advance = advanceN k w.advance
+  | 0, w => rfl
+  | k + 1, w => by
+      simp only [advanceN]
+      exact advanceN_succ_right k w.advance
+
+theorem advanceN16_x0 (w : Window) :
+    (advanceN 16 w).x0 = w.nextWord := by
+  rcases w with ⟨x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15⟩
+  rfl
+
+theorem streamWords_after16_eq_generate :
+    ∀ k w, streamWords k (advanceN 16 w) = generate k w
+  | 0, w => rfl
+  | k + 1, w => by
+      simp only [streamWords, generate]
+      rw [advanceN16_x0]
+      rw [advanceN_succ_right 16 w]
+      exact congrArg (List.cons w.nextWord)
+        (streamWords_after16_eq_generate k w.advance)
+
 /--
 A 16-word Window followed by 48 generated words is exactly the 64-word
-on-demand stream.  This finite bridge is paid once in the proof, not at
-every SHA chain step.
+on-demand stream, proved compositionally rather than by expanding the schedule.
 -/
 theorem streamWords64_eq (w : Window) :
     streamWords 64 w = w.toList ++ generate 48 w := by
-  rcases w with ⟨x0,x1,x2,x3,x4,x5,x6,x7,x8,x9,x10,x11,x12,x13,x14,x15⟩
-  rfl
+  change streamWords (16 + 48) w = _
+  rw [streamWords_add]
+  rw [streamWords16_eq_toList]
+  rw [streamWords_after16_eq_generate]
 
 def fastStepWindow (d : Digest) : Digest :=
   let f := roundsWindow K (initialWindow d) iv
