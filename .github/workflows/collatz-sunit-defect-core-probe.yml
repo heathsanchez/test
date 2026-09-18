@@ -1,0 +1,19 @@
+name: Collatz S-unit defect-core probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_sunit_defect_core_probe.py'
+      - '.github/workflows/collatz-sunit-defect-core-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_sunit_defect_core_probe.py --N 8191 --K 80 | tee /tmp/sunit-core.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sunit-defect-core-probe
+          path: /tmp/sunit-core.txt
