@@ -52,7 +52,7 @@ theorem impl_correct : ∀ n, impl n = sha256Spec n := by
   unfold impl sha256Spec iterSha packedStep
   rw [conjugate_iter
       packDigestLE unpackDigestLE sha256step ValidDigest
-      unpack_pack valid_sha256step
+      unpack_pack (fun a _ => valid_sha256step a)
       (sha256Steps n) (seedDigest (sha256Seed n))
       (valid_seedDigest (sha256Seed n))]
   rw [iterFn_eq_iterDigest]
