@@ -1,0 +1,55 @@
+{
+  "schema": "qckn-lkc-compiled-present-v1",
+  "domain_id": "sair-lean-kernel-challenge-stage1",
+  "active_champions": {
+    "ca-rule110": {
+      "capability_id": "rule110-v60",
+      "branch": "lkc-rule110-v60-frozen",
+      "commit": "9ae9e5b1d0d77a04f8f31ef56a66934e3feeff68",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
+    "mertens": {
+      "capability_id": "mertens-v1",
+      "branch": "lkc-mertens-v1-frozen",
+      "commit": "05a20ba2405b70099922782b85b25d9aa2e553d2",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    }
+  },
+  "reserve_hypotheses": [
+    {
+      "id": "H-delete-materialized-aggregate",
+      "source_evidence": [
+        "E-mertens-v1-promote"
+      ],
+      "state": "RESERVE_NOT_PROMOTED_AS_GENERAL_RULE",
+      "next_calibration": "primecount direct V1"
+    },
+    {
+      "id": "H-structural-recursion-over-generic-well-founded-path",
+      "source_evidence": [],
+      "state": "RESERVE_NOT_PROMOTED",
+      "next_calibration": "mertens V6/V7"
+    },
+    {
+      "id": "H-generated-state-over-naive-recursive-semantics",
+      "source_evidence": [],
+      "state": "RESERVE_NOT_PROMOTED",
+      "next_calibration": "partition DP V3"
+    }
+  ],
+  "active_transitions": [
+    "E-mertens-structural-active",
+    "E-partition-dp-active",
+    "E-primecount-direct-active"
+  ],
+  "revoked": [
+    "E-partition-table-revoke"
+  ],
+  "policy": {
+    "discovery_replay": "Do not rediscover an already verified problem-local champion.",
+    "transfer": "Cross-problem lessons remain reserve hypotheses until independently calibrated.",
+    "promotion": "Only evidence-backed strict resource wins may replace an active champion."
+  }
+}
