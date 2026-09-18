@@ -2,9 +2,16 @@
 from __future__ import annotations
 
 from typing import Iterable, Mapping, Sequence, Tuple
+from pathlib import Path
+import sys
 
-from experiments import collatz_q0_coalescence_component_audit as base
-from experiments import collatz_q0_rigid_recharge_audit as ra
+# Existing research engines use sibling-style imports when executed from
+# experiments/. Add that directory explicitly without changing their code.
+_EXPERIMENTS=str(Path(__file__).resolve().parent.parent / "experiments")
+if _EXPERIMENTS not in sys.path:
+    sys.path.insert(0,_EXPERIMENTS)
+import collatz_q0_coalescence_component_audit as base
+import collatz_q0_rigid_recharge_audit as ra
 
 from .types import Capability, CapabilityKind, CostRecord, digest_payload
 
