@@ -1,0 +1,38 @@
+name: Collatz QCKN V1 qualification
+on:
+  push:
+    branches: [collatz-qckn-v1]
+    paths:
+      - 'collatz_qckn/**'
+      - 'tests/test_collatz_qckn_*.py'
+      - 'docs/collatz-qckn-v1-qualification.md'
+      - '.github/workflows/collatz-qckn-v1-qualification.yml'
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit qualification
+        run: python -m unittest discover -s tests -p 'test_collatz_qckn_*.py' -v
+      - name: Reject placeholders
+        run: |
+          set -euo pipefail
+          if grep -R -nE '(^|[^A-Za-z])(TODO|TBD|admit|sorry)([^A-Za-z]|$)' collatz_qckn; then
+            echo "placeholder found in qualified runtime" >&2
+            exit 1
+          fi
+      - name: Deterministic qualification evidence
+        run: |
+          set -euo pipefail
+          python -m collatz_qckn.runner --qualify > /tmp/q1.txt
+          python -m collatz_qckn.runner --qualify > /tmp/q2.txt
+          cmp /tmp/q1.txt /tmp/q2.txt
+          grep -q '^PASS_COLLATZ_QCKN_V1_BOUNDED_CAUSAL_REUSE$' /tmp/q1.txt
+          cp /tmp/q1.txt collatz-qckn-v1-evidence.txt
+          cat collatz-qckn-v1-evidence.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-qckn-v1-evidence
+          path: collatz-qckn-v1-evidence.txt
