@@ -112,7 +112,7 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: primecount-v2-verification-evidence
-          path: primecount-v2-evidence
+          path: .
 
       - name: Decisive V1 versus V2 instruction tournament
         run: python3 experiments/lkc_primecount/tournament_v2.py instructions
