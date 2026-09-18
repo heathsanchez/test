@@ -3,21 +3,17 @@ on:
   push:
     branches: [collatz-final-bridge-probes-v1]
     paths:
+      - 'experiments/collatz_fragment_length_ablation.py'
       - '.github/workflows/collatz-fragment-length-ablation.yml'
   workflow_dispatch:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - name: Fragment length ablation
-        run: |
-          set -euo pipefail
-          for L in 1 2 3 4 5 6 7; do
-            echo "=== MAXFRAG $L ==="
-            python -u experiments/collatz_fragment_transfer_probe.py --train-hi 4095 --held-hi 8191 --K 80 --maxfrag "$L" | grep -E 'TRAIN_SOURCES|HELD_COUNTS|HELD_CLOSED|HELD_HARD|STATUS'
-          done | tee /tmp/fragment-length-ablation.txt
+        run: python -u experiments/collatz_fragment_length_ablation.py | tee /tmp/fragment-length-ablation.txt
       - uses: actions/upload-artifact@v4
         with:
           name: fragment-length-ablation
