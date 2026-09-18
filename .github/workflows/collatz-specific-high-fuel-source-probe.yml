@@ -1,0 +1,20 @@
+name: Collatz specific high-fuel source probe
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_specific_high_fuel_sources_probe.py'
+      - '.github/workflows/collatz-specific-high-fuel-source-probe.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify specific source witnesses
+        run: python -u experiments/collatz_specific_high_fuel_sources_probe.py | tee /tmp/specific-high-fuel.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: specific-high-fuel-source-probe
+          path: /tmp/specific-high-fuel.txt
