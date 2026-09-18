@@ -1,0 +1,35 @@
+name: Collatz C9 27-bit compounding holdout
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_compounding_sweep.py'
+      - '.github/workflows/collatz-c9-27bit-compounding.yml'
+  workflow_dispatch:
+concurrency:
+  group: collatz-c9-27bit-compounding
+  cancel-in-progress: true
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fresh 27-bit compounding shard
+        run: |
+          set -euo pipefail
+          S=${{ matrix.shard }}
+          BASE=67108864
+          W=4194304
+          LO=$((BASE+S*W+1))
+          HI=$((BASE+(S+1)*W-1))
+          python -u experiments/collatz_c9_compounding_sweep.py --lo "$LO" --hi "$HI" --H 512 --guard 10000 | tee "/tmp/c9-compound-${S}.txt"
+          grep -Eq '^PASS_ALL_LIVE_HIGH_FUEL_ENDPOINTS_COMPILED$|^SEPARATOR_UNRESOLVED_LIVE_HIGH_FUEL_ENDPOINT' "/tmp/c9-compound-${S}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-27bit-compound-${{ matrix.shard }}
+          path: /tmp/c9-compound-${{ matrix.shard }}.txt
