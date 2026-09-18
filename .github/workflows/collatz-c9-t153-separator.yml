@@ -1,0 +1,23 @@
+name: Collatz C9 t153 separator audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_c9_t153_separator_audit.py'
+      - '.github/workflows/collatz-c9-t153-separator.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact t153 hereditary audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_t153_separator_audit.py --H 2048 | tee /tmp/t153.txt
+          grep -q '^STATUS EXACT_TARGETED_T153_AUDIT$' /tmp/t153.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-t153-separator-audit
+          path: /tmp/t153.txt
