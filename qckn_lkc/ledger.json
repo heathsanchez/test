@@ -1130,6 +1130,57 @@
       },
       "licensed_by": "Packed-state candidate still unrefuted; two prior runs were terminated by runner shutdown during proof.",
       "residual": "Proof elaboration/resource path still exceeds runner stability window before theorem verdict."
+    },
+    {
+      "id": "E-polydisc-v3-promote",
+      "type": "PROMOTE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v3-active",
+        "E-polydisc-v2-promote"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-polydisc-v3-frozen",
+        "commit": "3daeb833823d33febe379fca909c7363d8439331",
+        "representation": "Polydisc V2 PRS plus shift-based exact coefficient-word construction"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom audit",
+        "canonical challenge acceptance",
+        "paired 3-repetition Callgrind versus frozen V2"
+      ],
+      "evidence": {
+        "run_id": 35378145920,
+        "verify_job_id": 105707675982,
+        "instruction_job_id": 105708393512,
+        "baseline_callgrind_total_ir": 9969401916,
+        "candidate_callgrind_total_ir": 9969317295,
+        "reduction_pct": 0.0008488071873591352,
+        "ratio_candidate_over_baseline": 0.9999915119281264,
+        "official_pmu_measured": false,
+        "source_sha256": "8c029f22112ecd7fffd6c73f65ec499e7794dab26892a434c85fa63df6b7f6d0",
+        "axioms": [
+          "propext",
+          "Quot.sound"
+        ]
+      },
+      "compiled_consequence": "Exact shift representation for multiply-by-two-power coefficient construction is a verified but very small instruction win on Polydisc."
+    },
+    {
+      "id": "E-polydisc-v3-r2-resolved",
+      "type": "RESOLVE",
+      "target": "polydisc",
+      "parents": [
+        "E-polydisc-v3-r2-active",
+        "E-polydisc-v3-promote"
+      ],
+      "status": "PROMOTED_BY_MEASURED_EQUIVALENT_HEAD",
+      "evidence": {
+        "measured_commit": "3daeb833823d33febe379fca909c7363d8439331",
+        "note": "Later be92710 head changed only proof presentation; freeze exact measured successful head."
+      }
     }
   ]
 }
