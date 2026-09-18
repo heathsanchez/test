@@ -1,0 +1,23 @@
+name: Collatz high-fuel q0 lift audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_high_fuel_q0_lift_audit.py'
+      - '.github/workflows/collatz-high-fuel-q0-lift.yml'
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reverse-tree high-fuel lift audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_high_fuel_q0_lift_audit.py --depth 40 | tee /tmp/high-fuel-q0.txt
+          grep -Eq '^OBSERVED_ALL_HIGH_FUEL_Q0_LIFTS_DIRECT_DESCEND$|^SEPARATOR_HIGH_FUEL_LIFT_AVOIDS_DIRECT_DESCENT$' /tmp/high-fuel-q0.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: high-fuel-q0-lift-audit
+          path: /tmp/high-fuel-q0.txt
