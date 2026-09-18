@@ -53,8 +53,7 @@ def polyOfShift (n : Nat) : List Int :=
   1 :: coefficientsFromShift 24 k 1 (lcgSeed n)
 
 theorem polyOfShift_eq (n : Nat) : polyOfShift n = polyOf n := by
-  unfold polyOfShift polyOf
-  rw [coefficientsFromShift_eq]
+  simp [polyOfShift, polyOf, coefficientsFromShift_eq]
 
 def impl (n : Nat) : Int := resultantFromPolyMul (polyOfShift n)
 
