@@ -1,0 +1,33 @@
+name: Collatz C9 25-bit high-fuel holdout
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-25bit-holdout.yml'
+  workflow_dispatch:
+concurrency:
+  group: collatz-c9-25bit-holdout
+  cancel-in-progress: true
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fresh 25-bit holdout shard
+        run: |
+          set -euo pipefail
+          S=${{ matrix.shard }}
+          BASE=16777216
+          LO=$((BASE+S*1048576+1))
+          HI=$((BASE+(S+1)*1048576-1))
+          python -u experiments/collatz_c9_high_fuel_large_sweep.py --lo "$LO" --hi "$HI" --H 512 | tee "/tmp/c9-holdout-${S}.txt"
+          grep -Eq '^OBSERVED_NO_EXPANDING_C9_TWO_REPLAY_RIGID_SURVIVOR$|^SEPARATOR_EXPANDING_HIGH_FUEL_SURVIVES_RIGID' "/tmp/c9-holdout-${S}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-25bit-holdout-${{ matrix.shard }}
+          path: /tmp/c9-holdout-${{ matrix.shard }}.txt
