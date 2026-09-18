@@ -220,6 +220,7 @@ def analyze(N,K):
     switch_outcomes={}
     switch_witness={}
     first_recharge=None
+    recharge_meta=[]
 
     for n in range(3,N+1,2):
         starts,branches=rigid_episode_segment(n,K)
@@ -261,6 +262,15 @@ def analyze(N,K):
                             switch_outcomes[edge]=z['outcome']
                             switch_witness.setdefault(edge,(n,starts[start][0],old['word'],c['word'],mstart,mend,z))
                             if z['outcome']=='recharge':
+                                recharge_meta.append({
+                                    'n':n,'k':starts[start][0],
+                                    'oldD':old['D'],'newD':c['D'],
+                                    'oldC':old['C'],'newC':c['C'],
+                                    'oldA':old['A'],'newA':c['A'],
+                                    'oldq':old['q'],'newq':c['q'],
+                                    'h':z['h'],'before':z['before'],'after':z['after'],
+                                    'mstart':mstart,'mend':mend,
+                                })
                                 recharge_edges[edge]+=1
                                 if first_recharge is None:
                                     first_recharge=(n,starts[start][0],edge,z)
@@ -280,6 +290,23 @@ def analyze(N,K):
     print("RIGID_RECHARGE_CYCLIC_SIZES",sorted((len(c) for c in cyc),reverse=True))
     for edge,count in sorted(all_switch_edges.items(), key=lambda kv:(repr(kv[0]),kv[1])):
         print("RIGID_SWITCH_EDGE",switch_outcomes[edge],count,edge,switch_witness[edge])
+    if recharge_meta:
+        tests={
+            'D_STRICT_UP': lambda z:z['newD']>z['oldD'],
+            'D_STRICT_DOWN': lambda z:z['newD']<z['oldD'],
+            'ABS_C_STRICT_UP': lambda z:abs(z['newC'])>abs(z['oldC']),
+            'ABS_C_STRICT_DOWN': lambda z:abs(z['newC'])<abs(z['oldC']),
+            'DEN_STRICT_UP': lambda z:z['newq'][1]>z['oldq'][1],
+            'DEN_STRICT_DOWN': lambda z:z['newq'][1]<z['oldq'][1],
+            'M_STRICT_DOWN': lambda z:z['mend']<z['mstart'],
+            'M_STRICT_UP': lambda z:z['mend']>z['mstart'],
+        }
+        for name,test in tests.items():
+            bad=[z for z in recharge_meta if not test(z)]
+            print("RECHARGE_ORDER_TEST",name,"pass",len(recharge_meta)-len(bad),"fail",len(bad),
+                  "first_fail",bad[0] if bad else None)
+        hs=Counter(z['h'] for z in recharge_meta)
+        print("RECHARGE_HISTOGRAM",dict(sorted(hs.items())))
     if first_recharge is not None:
         print("FIRST_RIGID_RECHARGE",first_recharge)
     if cyc:
