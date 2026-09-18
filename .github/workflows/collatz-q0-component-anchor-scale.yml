@@ -1,0 +1,22 @@
+name: Collatz q0 component anchor scale audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-q0-component-anchor-scale.yml'
+  workflow_dispatch:
+jobs:
+  scale:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: million-source component anchor audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_component_anchor_audit.py --N 1048575 --H 1024 | tee /tmp/q0-anchor-scale.txt
+          grep -Eq '^OBSERVED_ALL_BOUNDED_COMPONENT_ANCHORS_CERTIFIED$|^SEPARATOR_UNCERTIFIED_COMPONENT_ANCHOR' /tmp/q0-anchor-scale.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-component-anchor-scale
+          path: /tmp/q0-anchor-scale.txt
