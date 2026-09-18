@@ -64,7 +64,8 @@ The live round machine is one Nat:
 lanes 0..7 = a..h, lanes 8..23 = W[t]..W[t+15].
 -/
 def initialMachine (digest : Nat) : Nat :=
-  digest ||| (initialWindowBits digest <<< 256)
+  pack8 iv.a iv.b iv.c iv.d iv.e iv.f iv.g iv.h |||
+    (initialWindowBits digest <<< 256)
 
 def machineRound (st k : Nat) : Nat :=
   let a := lane32 st 0
