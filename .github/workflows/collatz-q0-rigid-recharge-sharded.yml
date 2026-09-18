@@ -1,0 +1,32 @@
+name: Collatz q0 RIGID recharge sharded separator
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
+      - '.github/workflows/collatz-q0-rigid-recharge-sharded.yml'
+  workflow_dispatch:
+jobs:
+  shard:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Exact shard
+        run: |
+          set -euo pipefail
+          SHARD=${{ matrix.shard }}
+          LO=$((SHARD*4096+3))
+          HI=$(((SHARD+1)*4096+1))
+          if [ "$HI" -gt 65535 ]; then HI=65535; fi
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-lo "$LO" --source-N "$HI" --depth 128 | tee "/tmp/shard-${SHARD}.txt"
+          grep -q '^RECHARGE_DISCHARGE_SLOPE_CONTRACTION' "/tmp/shard-${SHARD}.txt" || true
+          grep -Eq '^OBSERVED_NO_RECURRENT_RIGID_RECHARGE$|^SEPARATOR_RECURRENT_RIGID_RECHARGE$' "/tmp/shard-${SHARD}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rigid-recharge-shard-${{ matrix.shard }}
+          path: /tmp/shard-${{ matrix.shard }}.txt
