@@ -1,0 +1,19 @@
+name: Collatz return-pattern composition bank
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_return_pattern_composition_bank_probe.py'
+      - '.github/workflows/collatz-return-pattern-composition-bank.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_return_pattern_composition_bank_probe.py --lo 3 --hi 8191 --K 80 --maxlen 3 | tee /tmp/return-composition-bank.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: return-pattern-composition-bank
+          path: /tmp/return-composition-bank.txt
