@@ -1405,6 +1405,73 @@
         "all six resource cases complete",
         "Callgrind evidence"
       ]
+    },
+    {
+      "id": "E-permanent-sparse-v4-r1-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-active"
+      ],
+      "status": "SUPERSEDED_BY_MEMBERSHIP_PROOF",
+      "evidence": {
+        "reason": "support permutation broad simp caused proof packaging/deep recursion; candidate computation unchanged"
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v4-r2-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-active",
+        "E-permanent-sparse-v4-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v4",
+        "commit": "e538b69e02d6ae0e31993f09de667bee04cf8931",
+        "representation": "three-choice sparse DFS with explicit support-membership/permutation proof"
+      },
+      "licensed_by": "Support certificate already green; only universal fold-lift proof packaging changed.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "dimension-16 resource clearance",
+        "paired instruction evidence"
+      ]
+    },
+    {
+      "id": "E-sha256-packed-generic-v5-r1-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-generic-v5-active"
+      ],
+      "status": "SUPERSEDED_BY_CANONICAL_WINDOW",
+      "evidence": {
+        "reason": "universal proof green; prior canonical run hit configured 300-second window, not Lean theorem failure"
+      }
+    },
+    {
+      "id": "E-sha256-packed-generic-v5-r2-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-generic-v5-active",
+        "E-sha256-packed-generic-v5-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-packed-generic-v5",
+        "commit": "b986fcb63bd1938df395ffdf19c1e49dcd261890",
+        "representation": "packed Nat SHA chain with generic conjugacy proof; 900-second canonical/resource window"
+      },
+      "licensed_by": "Universal proof is verified; canonical timeout was harness-limited at exactly 300 seconds.",
+      "promotion_requirements": [
+        "canonical acceptance",
+        "all six resource cases complete",
+        "stable instruction improvement or resource dominance"
+      ]
     }
   ]
 }
