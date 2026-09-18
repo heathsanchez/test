@@ -1,0 +1,26 @@
+name: Collatz symbolic frontier qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-symbolic-frontier-v1]
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Protected evidence and symbolic authority
+        run: |
+          python -m unittest discover -s experiments -p test_collatz_bellman_audit.py -v
+          python -m unittest discover -s experiments -p test_collatz_macro_qualification.py -v
+          python -m unittest discover -s experiments -p test_collatz_symbolic_frontier.py -v
+      - name: Compile, propagate, independently replay, and restart
+        run: python experiments/collatz_symbolic_frontier.py --depth 18 --output /tmp/symbolic-frontier
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-symbolic-frontier
+          path: /tmp/symbolic-frontier
+          if-no-files-found: error
