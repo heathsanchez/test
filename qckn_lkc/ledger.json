@@ -334,6 +334,112 @@
         "E-primecount-v1-promote"
       ],
       "status": "PROMOTED"
+    },
+    {
+      "id": "E-mertens-structural-r1-resolved",
+      "type": "RESOLVE",
+      "target": "mertens",
+      "parents": [
+        "E-mertens-structural-active"
+      ],
+      "status": "SUPERSEDED_BY_HARNESS_REPAIR"
+    },
+    {
+      "id": "E-mertens-structural-r2-active",
+      "type": "PROPOSE",
+      "target": "mertens",
+      "parents": [
+        "E-mertens-structural-active",
+        "E-mertens-structural-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-mertens-structural-v6",
+        "commit": "f68eca6b521f481e5c25039c8abd35260b601193",
+        "variants": [
+          "v6 structural least-factor path",
+          "v7 structural least-factor + first-order summation"
+        ],
+        "repair": "proof-gate regex only"
+      }
+    },
+    {
+      "id": "E-partition-dp-r1-resolved",
+      "type": "RESOLVE",
+      "target": "partition",
+      "parents": [
+        "E-partition-dp-active"
+      ],
+      "status": "SUPERSEDED_BY_HARNESS_REPAIR"
+    },
+    {
+      "id": "E-partition-dp-r2-active",
+      "type": "PROPOSE",
+      "target": "partition",
+      "parents": [
+        "E-partition-dp-active",
+        "E-partition-dp-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-partition-dp-v3",
+        "commit": "b1a877925072a12b778745d083e425fd79df33e0",
+        "representation": "generated bottom-up DP; unlimited finite-shell heartbeats; explicit universal-proof RED frontier"
+      }
+    },
+    {
+      "id": "E-permanent-inline-r1-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-inline-active"
+      ],
+      "status": "SUPERSEDED_BY_PROOF_REPAIR"
+    },
+    {
+      "id": "E-permanent-inline-r2-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-inline-active",
+        "E-permanent-inline-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-inline-v1",
+        "commit": "9fccd167fffbe5802c9fe93a187766a5c4f43447",
+        "variants": [
+          "v1 outer-wrapper deletion",
+          "v2 matrix-wrapper deletion",
+          "v3 row-wrapper deletion"
+        ],
+        "repair": "preserve permanentSpec width computation for definitional equality"
+      }
+    },
+    {
+      "id": "E-sha256-nozip-r1-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-nozip-active"
+      ],
+      "status": "SUPERSEDED_BY_RESOURCE_AWARE_GATE"
+    },
+    {
+      "id": "E-sha256-nozip-r2-active",
+      "type": "PROPOSE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-nozip-active",
+        "E-sha256-nozip-r1-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-sha256-nozip-v1",
+        "commit": "ea5d2b86af3a071537a419e2776bc86d5f2a5b5d",
+        "representation": "parallel K/schedule traversal eliminating K.zip pair-list allocation",
+        "repair": "separate small/medium performance screen from 512-step 4GiB resource probe"
+      }
     }
   ]
 }
