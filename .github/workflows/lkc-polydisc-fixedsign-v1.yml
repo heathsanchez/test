@@ -103,6 +103,11 @@ jobs:
             bench/.cache
           key: lkc-polydisc-fixedsign-lean4331-d8ea5fc-v1
 
+      - uses: actions/download-artifact@v4
+        with:
+          name: polydisc-v1-verification-evidence
+          path: .
+
       - name: Verify restored benchmark environment
         working-directory: bench
         run: |
