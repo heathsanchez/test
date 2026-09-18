@@ -10,7 +10,7 @@ core=r'''import Spec
 namespace Submission
 
 def permanentSparse : Nat → Nat → List Nat → Nat → Nat
-  | dimension, seed, [], _ => 1
+  | _dimension, _seed, [], _ => 1
   | dimension, seed, i :: is, used =>
       if dimension < 3 then
         (List.range dimension).foldl (fun total j =>
