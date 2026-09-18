@@ -1181,6 +1181,58 @@
         "measured_commit": "3daeb833823d33febe379fca909c7363d8439331",
         "note": "Later be92710 head changed only proof presentation; freeze exact measured successful head."
       }
+    },
+    {
+      "id": "E-partition-v4-promote",
+      "type": "PROMOTE",
+      "target": "partition",
+      "parents": [
+        "E-partition-v4-active",
+        "E-hyp-generated-state"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-partition-v4-frozen",
+        "commit": "b4e7004c56b0a788143f39e104d9d8b59d8a35b8",
+        "representation": "universally proved proof-first row DP mirroring the partAux multiplicity recurrence"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom audit",
+        "canonical challenge acceptance",
+        "stable-five 3-repetition Callgrind",
+        "full six-case resource probe"
+      ],
+      "evidence": {
+        "run_id": 35376419111,
+        "verify_job_id": 105702029743,
+        "instruction_job_id": 105703905320,
+        "stable5_baseline_callgrind_total_ir": 53565753565,
+        "stable5_candidate_callgrind_total_ir": 8306246131,
+        "stable5_reduction_pct": 84.49336455069061,
+        "stable5_ratio_candidate_over_baseline": 0.15506635449309394,
+        "n36_baseline": "memory-limit during 4 GiB target compile",
+        "n36_candidate": "complete",
+        "n36_candidate_canonical_wall_s": 0.736552856,
+        "public_cases_correct": "6/6",
+        "axioms": [
+          "propext",
+          "Quot.sound"
+        ],
+        "source_sha256": "2a191971ed624b45342a8bdf325887b5c6553fe5ce67f97c719bb239cd2a08b0",
+        "official_pmu_measured": false
+      },
+      "compiled_consequence": "A proof-first cached row representation can simultaneously simplify universal correctness and collapse kernel replay cost; on Partition it cuts stable-five Callgrind by 84.49% and crosses the n=36 compile-resource boundary."
+    },
+    {
+      "id": "E-partition-v4-resolved",
+      "type": "RESOLVE",
+      "target": "partition",
+      "parents": [
+        "E-partition-v4-active",
+        "E-partition-v4-promote"
+      ],
+      "status": "PROMOTED"
     }
   ]
 }
