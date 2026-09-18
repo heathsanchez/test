@@ -1,0 +1,19 @@
+name: Collatz forward descent macro transfer
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_forward_descent_macro_transfer.py'
+      - '.github/workflows/collatz-forward-descent-macro-transfer.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_forward_descent_macro_transfer.py --train-hi 8191 --held-hi 16383 --K 96 --maxlen 12 | tee /tmp/forward-macro.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: forward-descent-macro-transfer
+          path: /tmp/forward-macro.txt
