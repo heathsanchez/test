@@ -1,0 +1,23 @@
+name: Collatz q0 RIGID parity complexity
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_parity_complexity.py'
+      - '.github/workflows/collatz-q0-rigid-parity-complexity.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: RIGID parity-complexity separator
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_parity_complexity.py --N 8191 --H 128 --max-L 32 --C 8 | tee /tmp/rigid-complexity.txt
+          grep -Eq '^OBSERVED_FINITE_RIGID_PREFIXES_WITHIN_FIVE_THIRDS_ENVELOPE$|^SEPARATOR_RIGID_DOES_NOT_IMPLY_TESTED_LOW_COMPLEXITY$' /tmp/rigid-complexity.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: q0-rigid-parity-complexity
+          path: /tmp/rigid-complexity.txt
