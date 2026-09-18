@@ -1,0 +1,25 @@
+name: Collatz final bridge dual probe
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
+      - '.github/workflows/collatz-final-bridge-dual-probe.yml'
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Zero-defect and cycle-fuel probe
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_q0_rigid_recharge_audit.py --source-lo 3 --source-N 32767 --depth 128 | tee /tmp/final-bridge.txt
+          grep -q '^FORMAL_CYCLE_FIXEDPOINT_TYPES' /tmp/final-bridge.txt
+          grep -q '^HEREDITARY_RIGID_POSITIVE_CYCLE_FIXEDPOINTS' /tmp/final-bridge.txt
+          grep -q '^CONCRETE_PATTERN_CYCLE_FUEL' /tmp/final-bridge.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: final-bridge-dual-probe
+          path: /tmp/final-bridge.txt
