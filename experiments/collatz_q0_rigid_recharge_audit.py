@@ -217,6 +217,8 @@ def analyze(N,K):
     counts=Counter()
     recharge_edges=Counter()
     all_switch_edges=Counter()
+    switch_outcomes={}
+    switch_witness={}
     first_recharge=None
 
     for n in range(3,N+1,2):
@@ -256,6 +258,8 @@ def analyze(N,K):
                             counts['switch_'+z['outcome']]+=1
                             edge=((old['r'],)+old['q'],(c['r'],)+c['q'])
                             all_switch_edges[edge]+=1
+                            switch_outcomes[edge]=z['outcome']
+                            switch_witness.setdefault(edge,(n,starts[start][0],old['word'],c['word'],mstart,mend,z))
                             if z['outcome']=='recharge':
                                 recharge_edges[edge]+=1
                                 if first_recharge is None:
@@ -274,6 +278,8 @@ def analyze(N,K):
     print("RIGID_RECHARGE_OCCURRENCES",sum(recharge_edges.values()))
     print("RIGID_RECHARGE_CYCLIC_SCCS",len(cyc))
     print("RIGID_RECHARGE_CYCLIC_SIZES",sorted((len(c) for c in cyc),reverse=True))
+    for edge,count in sorted(all_switch_edges.items(), key=lambda kv:(repr(kv[0]),kv[1])):
+        print("RIGID_SWITCH_EDGE",switch_outcomes[edge],count,edge,switch_witness[edge])
     if first_recharge is not None:
         print("FIRST_RIGID_RECHARGE",first_recharge)
     if cyc:
