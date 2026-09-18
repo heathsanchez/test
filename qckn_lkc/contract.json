@@ -1,0 +1,67 @@
+{
+  "schema": "qckn-lkc-domain-v1",
+  "domain_id": "sair-lean-kernel-challenge-stage1",
+  "domain_kind": "verified-kernel-computation-optimization",
+  "qckn_profile": "domain-adapter",
+  "qckn_claim_boundary": "Uses QCKN V1 developmental discipline; does not claim the Stage 1 benchmark is itself a realization of the QCK finite-linear theorem surface.",
+  "gamma": {
+    "protected_consequences": [
+      "Submission.impl has the required type for its problem.",
+      "Submission.impl_correct proves equality to the fixed specification for every input.",
+      "The submission passes the challenge axiom/restriction checks.",
+      "The measured candidate bytes are identical to the proof-checked candidate bytes.",
+      "The candidate passes canonical challenge acceptance.",
+      "Only rule-compliant general algorithms and representations are eligible for promotion."
+    ],
+    "authority": {
+      "correctness_primary": "Lean 4.33.1 kernel under the pinned challenge environment",
+      "canonical_acceptance": "SAIR Lean Kernel Challenge evaluator at rules commit 940f0a2ead23ef70ab1387edabb347e629111edd",
+      "development_cost_proxy": "Callgrind Ir, 3 repetitions per public endpoint, summed medians",
+      "official_rank_authority": "Linux PERF_COUNT_HW_INSTRUCTIONS on the official Stage 1 PMU evaluator",
+      "note": "Callgrind/wall results never imply official leaderboard rank."
+    },
+    "environment": {
+      "challenge_repo": "SAIRcompetition/lean-kernel-challenge",
+      "rules_commit": "940f0a2ead23ef70ab1387edabb347e629111edd",
+      "lean": "4.33.1",
+      "mathlib": "v4.33.1 where required",
+      "public_benchmark_repo": "shalashaska117/LeanKernelChallengeStage1Benchmark",
+      "public_benchmark_commit": "d8ea5fcefefd7f25b9c451d386f449c8f9312e25"
+    },
+    "resource_envelope": {
+      "submission_max_bytes": 1048576,
+      "official_primary_metric": "retired CPU instructions",
+      "development_policy": "Prefer lower protected Callgrind total; use wall only as a screening metric."
+    },
+    "legal_interventions": [
+      "COMPILE",
+      "RESTRUCTURE",
+      "CONSTRUCT",
+      "VERIFY",
+      "SPLIT",
+      "MERGE",
+      "REVOKE"
+    ],
+    "promotion_gate": [
+      "universal proof",
+      "axiom/restriction audit",
+      "negative or falsifying control where applicable",
+      "canonical acceptance",
+      "same-byte hash binding",
+      "paired resource measurement against protected champion",
+      "strict resource improvement for local promotion"
+    ],
+    "uncertainty_policy": {
+      "timeout": "UNKNOWN_SEARCH unless stronger evidence exists",
+      "incomplete_candidate_portfolio": "UNKNOWN_SEARCH",
+      "tied_verified_candidates": "UNKNOWN_CHOICE",
+      "benchmark_or_harness_fault": "ImplementationMismatch",
+      "failed_proof_or_axiom_audit": "CertificateInvalid"
+    },
+    "future_obligations": [
+      "Re-evaluate on a new cohort if the official toolchain, input policy, metric, or evaluator changes.",
+      "Do not transfer an optimization rule across problems without independent target-specific verification.",
+      "Preserve prior champions so any claimed warm advantage can be ablated back to a cold baseline."
+    ]
+  }
+}
