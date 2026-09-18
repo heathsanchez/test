@@ -1,0 +1,18 @@
+name: Collatz fragment compounding fast
+on:
+  push:
+    branches: [collatz-final-bridge-probes-v1]
+    paths:
+      - '.github/workflows/collatz-fragment-compounding-fast.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python -u experiments/collatz_fragment_compounding_probe.py --K 80 --maxfrag 5 --bits-lo 9 --bits-hi 12 | tee /tmp/fragment-compounding-fast.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fragment-compounding-fast
+          path: /tmp/fragment-compounding-fast.txt
