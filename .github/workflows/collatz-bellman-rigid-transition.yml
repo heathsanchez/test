@@ -1,0 +1,19 @@
+name: Collatz Bellman rigid transition probe
+on:
+  push:
+    branches: [collatz-rigid-lift-v1]
+    paths:
+      - 'experiments/collatz_bellman_rigid_transition_probe.py'
+      - '.github/workflows/collatz-bellman-rigid-transition.yml'
+  workflow_dispatch:
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: RIGID transition separator
+        run: |
+          set -euo pipefail
+          python experiments/collatz_bellman_rigid_transition_probe.py --depth 9 --j 4 | tee /tmp/out.txt
+          grep -Eq 'OBSERVED_ALL_RIGID_TRANSITIONS_MINUS_ONE|SEPARATOR_NON_MINUS_RIGID_TRANSITION' /tmp/out.txt
