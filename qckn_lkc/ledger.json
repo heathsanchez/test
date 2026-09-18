@@ -838,6 +838,66 @@
         "all six candidate cases complete under 4 GiB",
         "Callgrind evidence if resource gate clears"
       ]
+    },
+    {
+      "id": "E-permanent-stream-v2-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-stream-v2-active"
+      ],
+      "status": "SUPERSEDED_BY_THREE_CHOICE_SPARSE",
+      "evidence": {
+        "resource_run_id": 35342299357,
+        "obstruction": "dimension-16 target compile still exceeds 8 GiB for both baseline and streamed-row candidate",
+        "conclusion": "Matrix/row materialization was not the decisive remaining representation."
+      }
+    },
+    {
+      "id": "E-permanent-sparse-v3-active",
+      "type": "PROPOSE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-stream-v2-active",
+        "E-permanent-stream-v2-resolved"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-permanent-sparse-v3",
+        "commit": "30bc42fe1d11341817b458655e09a4b857e8196d",
+        "representation": "direct three-choice DFS over diagonal and two seeded off-diagonal columns"
+      },
+      "licensed_by": "Trusted spec guarantees exactly three distinct nonzero entries per row for dimension >= 3; V2 showed width-d scanning/state expression remains consequential.",
+      "promotion_requirements": [
+        "exact small semantic shell",
+        "universal support-equivalence proof",
+        "canonical acceptance",
+        "resource gate on dimension 16",
+        "paired instruction evidence"
+      ]
+    },
+    {
+      "id": "E-primecount-v3-active",
+      "type": "PROPOSE",
+      "target": "primecount",
+      "parents": [
+        "E-primecount-v1-promote",
+        "E-mertens-v6-promote",
+        "E-primecount-v2-reject"
+      ],
+      "status": "ACTIVE_VERIFICATION",
+      "candidate": {
+        "branch": "lkc-primecount-structural-v3",
+        "commit": "45b2caf3da75be177e9571b4deff118b34f24c46",
+        "representation": "Primecount V1 direct aggregate composed with Mertens-V6 explicit structural least-factor search"
+      },
+      "licensed_by": "V2 trial division showed an unfavorable size crossover; Mertens V6 independently verified a cheaper structural minFac representation.",
+      "promotion_requirements": [
+        "universal proof",
+        "canonical acceptance",
+        "same-byte V1 comparison",
+        "Callgrind total < Primecount V1"
+      ]
     }
   ]
 }
