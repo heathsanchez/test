@@ -1,0 +1,24 @@
+name: Collatz RIGID component parameter audit
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/collatz_rigid_component_parameter_audit.py'
+      - '.github/workflows/collatz-rigid-component-parameter-audit.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fixed-parameter and q=0 boundary audit
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_rigid_component_parameter_audit.py --parameter-N 4096 --boundary-N 255 --depth 9 | tee /tmp/parameter-audit.txt
+          grep -q '^PASS_Q_HALVING_LAW$' /tmp/parameter-audit.txt
+          grep -q '^AUTHORITATIVE_RESIDUAL q_zero_boundary_rigid_or_tail_exception$' /tmp/parameter-audit.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rigid-component-parameter-audit
+          path: /tmp/parameter-audit.txt
