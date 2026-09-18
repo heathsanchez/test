@@ -1,0 +1,18 @@
+name: Collatz C9 short-circuit regression
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - 'experiments/test_collatz_c9_compounding_short_circuit.py'
+      - '.github/workflows/collatz-c9-short-circuit-regression.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run short-circuit regression
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments -p test_collatz_c9_compounding_short_circuit.py -v
