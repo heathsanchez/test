@@ -1,0 +1,87 @@
+name: GPU Developmental Optimization V1
+
+on:
+  push:
+    branches:
+      - gpu-developmental-optimization-v1
+    paths:
+      - "experiments/gpu_developmental_optimization_v1/**"
+      - ".github/workflows/gpu-developmental-optimization-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  finite-developmental-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run exact finite causal tests
+        run: |
+          python -m unittest experiments.gpu_developmental_optimization_v1.test_gpu_developmental -v
+
+      - name: Run prospective target tournament
+        run: |
+          mkdir -p /tmp/gpu-developmental-v1
+          python experiments/gpu_developmental_optimization_v1/run.py \
+            --out /tmp/gpu-developmental-v1
+
+      - name: Record hardware authority boundary
+        run: |
+          python - <<'PY'
+          import json
+          import shutil
+          from pathlib import Path
+
+          out = Path("/tmp/gpu-developmental-v1")
+          status = {
+              "schema": "gpu-hardware-authority-v1",
+              "nvidia_smi_present": shutil.which("nvidia-smi") is not None,
+          }
+          if status["nvidia_smi_present"]:
+              status["status"] = "GPU_PRESENT_BUT_HARDWARE_PROMOTION_NOT_YET_QUALIFIED"
+          else:
+              status["status"] = "GPU_HARDWARE_AUTHORITY_UNAVAILABLE"
+          status["claim_boundary"] = (
+              "Finite IR qualification is separate from CUDA/Triton hardware authority."
+          )
+          (out / "hardware-authority.json").write_text(
+              json.dumps(status, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(status, indent=2, sort_keys=True))
+          PY
+
+      - name: Gate evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          root = Path("/tmp/gpu-developmental-v1")
+          r = json.loads((root / "evidence.json").read_text())
+          h = json.loads((root / "hardware-authority.json").read_text())
+          assert r["verdict"] == "PASS"
+          assert all(r["gates"].values())
+          assert r["comparison"]["warm_search"] < r["comparison"]["cold_search"]
+          assert r["comparison"]["restart_search"] == r["comparison"]["warm_search"]
+          assert r["comparison"]["ablation_search"] == r["comparison"]["cold_search"]
+          assert h["status"] in {
+              "GPU_HARDWARE_AUTHORITY_UNAVAILABLE",
+              "GPU_PRESENT_BUT_HARDWARE_PROMOTION_NOT_YET_QUALIFIED",
+          }
+          print("PASS_GPU_DEVELOPMENTAL_OPTIMIZATION_V1")
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gpu-developmental-optimization-v1
+          path: /tmp/gpu-developmental-v1/
+          if-no-files-found: error
