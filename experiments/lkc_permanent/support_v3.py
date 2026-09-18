@@ -100,7 +100,7 @@ theorem permanentEntry_support_iff
     · simp [h2]
     · by_cases h3 : j = permanentColumnTwo dimension seed i
       · simp [h3]
-      · simp [h3]
+      · simp [h1, h2, h3]
 
 theorem permanentEntry_zero_iff
     (dimension seed i j : Nat)
@@ -118,7 +118,7 @@ theorem permanentEntry_zero_iff
     · simp [h2]
     · by_cases h3 : j = permanentColumnTwo dimension seed i
       · simp [h3]
-      · simp [h3]
+      · simp [h1, h2, h3]
 
 end Submission
 '''
