@@ -1,0 +1,30 @@
+name: Collatz C9 28-bit shard10a01 pico-rescue
+on:
+  push:
+    branches: [collatz-rigid-component-termination-v1]
+    paths:
+      - '.github/workflows/collatz-c9-28bit-shard10a01-rescue.yml'
+  workflow_dispatch:
+jobs:
+  rescue:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "10a010", lo: 218234880, hi: 218267646}
+          - {name: "10a011", lo: 218267647, hi: 218300413}
+          - {name: "10a012", lo: 218300414, hi: 218333180}
+          - {name: "10a013", lo: 218333181, hi: 218365950}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pico rescue exact range
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_c9_compounding_sweep.py --lo "${{ matrix.lo }}" --hi "${{ matrix.hi }}" --H 512 --guard 10000 | tee "/tmp/${{ matrix.name }}.txt"
+          grep -Eq '^PASS_ALL_LIVE_HIGH_FUEL_ENDPOINTS_COMPILED$|^SEPARATOR_UNRESOLVED_LIVE_HIGH_FUEL_ENDPOINT' "/tmp/${{ matrix.name }}.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: c9-28bit-${{ matrix.name }}
+          path: /tmp/${{ matrix.name }}.txt
