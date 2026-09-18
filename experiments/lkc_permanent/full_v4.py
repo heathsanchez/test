@@ -81,13 +81,16 @@ theorem support_filter_perm
       (rowSupport dimension seed i) := by
   have h1 := permanentColumnOne_props dimension seed i hd hi
   have h2 := permanentColumnTwo_props dimension seed i hd hi
-  apply (List.perm_ext_iff_of_nodup ?_ ?_).2
-  · exact List.nodup_range.filter _
-  · simp [rowSupport, Ne.symm h1.2, Ne.symm h2.2.1, Ne.symm h2.2.2]
-  · intro j
-    simp [supportPred, rowSupport,
-      permanentEntry_support_iff dimension seed i j hd,
-      hi, h1.1, h2.1]
+  have hleft :
+      ((List.range dimension).filter (supportPred dimension seed i)).Nodup :=
+    List.nodup_range.filter _
+  have hright : (rowSupport dimension seed i).Nodup := by
+    simp [rowSupport, h1.2, h2.2.1, h2.2.2]
+  apply (List.perm_ext_iff_of_nodup hleft hright).2
+  intro j
+  simp [supportPred, rowSupport,
+    permanentEntry_support_iff dimension seed i j hd,
+    hi, h1.1, h2.1]
 
 theorem permanentSparse_eq (dimension seed : Nat) :
     ∀ is used, (∀ i, i ∈ is → i < dimension) →
