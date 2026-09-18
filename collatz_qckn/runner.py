@@ -73,26 +73,33 @@ def sham_present(present:CompiledPresent)->CompiledPresent:
 
 
 def discover_forward_macros(adapter:CollatzAdapter,training_sources:Iterable[int],
-                            maxlen:int=12):
+                            maxlen:int=12,with_metrics:bool=False):
     """Discover source-independent q0 forward descent macros from frozen sources."""
     out={}
+    metrics={"sources_scanned":0,"eligible_sources":0,"construction_attempts":0,
+             "valid_constructions":0,"deduplicated_capabilities":0}
     for n in training_sources:
-        n=int(n)
+        n=int(n); metrics["sources_scanned"]+=1
         if not fm.candidate(n):
             continue
         starts,words=fm.q0_odd_starts_and_words(n)
         if not words:
             continue
+        metrics["eligible_sources"]+=1
         end=len(words)
         for a in range(max(0,end-maxlen),end):
+            metrics["construction_attempts"]+=1
             word=tuple(words[a:end])
             start_m=starts[a][2]
             try:
                 cap,w=adapter.propose_forward_macro(n,start_m,word,f"source:{n}")
             except (AssertionError,ValueError):
                 continue
+            metrics["valid_constructions"]+=1
             out.setdefault(cap.semantic_id,(cap,w))
-    return tuple(out[k] for k in sorted(out))
+    proposals=tuple(out[k] for k in sorted(out))
+    metrics["deduplicated_capabilities"]=len(proposals)
+    return (proposals,metrics) if with_metrics else proposals
 
 
 def promote_verified(proposals,authority:Authority):
@@ -160,7 +167,7 @@ def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen
     authority=Authority(contract,"collatz-exact-replay-v1")
     training=range(3,train_hi+1,2)
     future=range(train_hi+2,future_hi+1,2)
-    proposals=discover_forward_macros(adapter,training,maxlen=maxlen)
+    proposals,discovery=discover_forward_macros(adapter,training,maxlen=maxlen,with_metrics=True)
     ledger,verified=promote_verified(proposals,authority)
     compiled=CompiledPresent.compile(ledger)
     present=CompiledPresent.from_text(compiled.to_text())
@@ -187,9 +194,9 @@ def research_qualification(train_hi:int=8191,future_hi:int=16383,K:int=96,maxlen
         "candidate_capabilities":len(proposals),
         "verified_promotions":verified,
         "acquisition_cost":{
-            "constructions":len(proposals),
-            "verifications":len(proposals),
-            "search_expansions":0,
+            **discovery,
+            "independent_verifications":len(proposals),
+            "verified_promotions":verified,
         },
         "compiled_present_digest":present.digest,
         "revocation_digest":digest_payload(sorted(revoke_ids)),
