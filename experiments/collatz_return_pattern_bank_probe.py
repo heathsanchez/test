@@ -47,7 +47,7 @@ def inverse(c,mend):
     return p
 
 def audit(lo,hi,K):
-    counts=Counter(); witnesses=[]; hard=[]
+    counts=Counter(); witnesses=[]; hard=[]; near=[]
     start=max(3,lo)
     if start%2==0:start+=1
     for n in range(start,hi+1,2):
@@ -67,6 +67,8 @@ def audit(lo,hi,K):
                         continue
                     counts['bank_legal']+=1
                     y=(1<<r)*p-1
+                    gap=y-n
+                    near.append((gap,y,n,r,k1,m1,old['q'],c['q'],old['word'],c['word']))
                     if y<n:
                         counts['bank_lower_merge']+=1
                         row=(n,r,k1,y,m1,old['q'],c['q'],old['word'],c['word'])
@@ -81,7 +83,9 @@ def audit(lo,hi,K):
             hard.append(n)
     print("SOURCE_RANGE",lo,hi,"DEPTH",K)
     print("COUNTS",dict(counts))
+    near.sort(key=lambda z:(z[0],z[1]))
     print("SOURCES_CLOSED_BY_BANK",len(witnesses))
+    print("CLOSEST_LEGAL_BANK_PREDECESSORS",near[:30])
     print("FIRST_WITNESSES",witnesses[:30])
     print("SOURCES_WITH_RETURNS_NOT_CLOSED_BY_BANK",len(hard))
     print("FIRST_HARD",hard[:50])
