@@ -1,0 +1,23 @@
+name: Collatz QCKN V1 research qualification
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-qckn-v1]
+    paths:
+      - 'collatz_qckn/**'
+      - '.github/workflows/collatz-qckn-v1-research-qualification.yml'
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prospective causal macro qualification
+        run: |
+          set -euo pipefail
+          python -m collatz_qckn.runner --research-qualify --train-hi 8191 --future-hi 16383 --K 96 --maxlen 12 | tee collatz-qckn-v1-research-evidence.txt
+          grep -q '^PASS_COLLATZ_QCKN_V1_RESEARCH_CAUSAL_REUSE$' collatz-qckn-v1-research-evidence.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-qckn-v1-research-evidence
+          path: collatz-qckn-v1-research-evidence.txt
