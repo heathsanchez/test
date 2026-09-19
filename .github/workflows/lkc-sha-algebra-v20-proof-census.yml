@@ -1,8 +1,7 @@
 name: LKC SHA Algebra v20 Proof Census
 
 on:
-  push:
-    branches: [lkc-sha-algebra-v20-proof]
+  workflow_dispatch:
 
 permissions:
   contents: read
