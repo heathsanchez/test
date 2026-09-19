@@ -22,6 +22,12 @@ jobs:
           test "$(gh api repos/heathsanchez/test/actions/runs/35403074591 --jq .conclusion)" = success
           test "$(gh api repos/heathsanchez/test/actions/runs/35403074591 --jq .head_sha)" = 0bd6cc71a5fb4268109d5b404ecbf21c7aaaf4c1
           test "$(gh api repos/heathsanchez/test/actions/artifacts/10570879149 --jq .digest)" = sha256:0062e1df0f118b2c788a02082c8319b9359d79dc7eba11de702d3b2aab211a27
+          test "$(gh api repos/heathsanchez/test/actions/runs/35063857334 --jq .conclusion)" = success
+          test "$(gh api repos/heathsanchez/test/actions/runs/35063857334 --jq .head_sha)" = 8d4ff807f59dd0bf41f06a67b15f25e1c0c8ffc5
+          test "$(gh api repos/heathsanchez/test/actions/jobs/104689752490 --jq .conclusion)" = success
+          test "$(gh api repos/heathsanchez/test/actions/jobs/104689796559 --jq .conclusion)" = success
+          test "$(gh api repos/heathsanchez/test/actions/artifacts/10433007976 --jq .digest)" = sha256:6fbceab4dcb0da71b5f8a311bc2dc7126acd89b320047615e5b0dc8a8d6b241b
+          test "$(gh api repos/heathsanchez/test/actions/artifacts/10432833694 --jq .digest)" = sha256:f2f499a07ca04a9bd85ac14a61b55eddf08c3c8d142b74d1bf59d6bc5a90e5f3
       - name: Run emitter tests
         working-directory: experiments
         run: python -m unittest test_emit_qckn_flash_event -v
