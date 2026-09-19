@@ -1,0 +1,77 @@
+name: GPU Developmental Hardware V1
+
+on:
+  push:
+    branches:
+      - gpu-developmental-hardware-v1
+    paths:
+      - "experiments/gpu_developmental_hardware_v1/**"
+      - ".github/workflows/gpu-developmental-hardware-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  runpod-triton-hardware:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Require Runpod API key
+        run: |
+          if [ -z "$RUNPOD_API_KEY" ]; then
+            echo "::error::Repository secret RUNPOD_API_KEY is not configured."
+            exit 1
+          fi
+
+      - name: Install Runpod Flash
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install runpod-flash
+
+      - name: Run remote RTX 4090 Triton authority benchmark
+        run: |
+          mkdir -p /tmp/gpu-developmental-hardware-v1
+          python experiments/gpu_developmental_hardware_v1/runpod_flash_triton.py \
+            --out /tmp/gpu-developmental-hardware-v1/evidence.json
+
+      - name: Gate hardware evidence
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          r=json.loads(Path("/tmp/gpu-developmental-hardware-v1/evidence.json").read_text())
+          assert r["status"]=="COMPLETED"
+          assert r["cuda_available"] is True
+          assert all(r["correctness"].values())
+          assert r["speedup"]["fuse_adjacent_affine"] > 1.05
+          assert r["speedup"]["remove_identity"] > 1.05
+          print("PASS_GPU_HARDWARE_AUTHORITY_V1")
+          print(json.dumps({
+              "gpu_name":r["gpu_name"],
+              "timing_ms_median":r["timing_ms_median"],
+              "speedup":r["speedup"],
+          }, indent=2, sort_keys=True))
+          PY
+
+      - name: Best-effort endpoint cleanup
+        if: always()
+        run: |
+          flash undeploy qckn-gpu-hardware-v1 --force || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gpu-developmental-hardware-v1
+          path: /tmp/gpu-developmental-hardware-v1/
+          if-no-files-found: warn
