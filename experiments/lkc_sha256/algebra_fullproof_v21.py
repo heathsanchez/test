@@ -423,7 +423,7 @@ theorem fastStepAlgebra_correct (d : Digest) (hd : ValidDigest d) :
 
 theorem valid_fastStepAlgebra (d : Digest) :
     ValidDigest (fastStepAlgebra d) := by
-  unfold fastStepAlgebra
+  unfold fastStepAlgebra feedForwardIV
   constructor <;> exact mask32_lt _
 
 theorem seedStep32_lt (x : Nat) : seedStep32 x < 2^32 := by
