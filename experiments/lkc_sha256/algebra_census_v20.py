@@ -34,6 +34,7 @@ theorem majFast_eq (x y z : Nat) :
 theorem chFast_eq (x y z : Nat)
     (hx : x < 2^32) (hz : z < 2^32) :
     chFast x y z = ch x y z := by
+  unfold chFast ch
   rw [show w32 = 2^32 - 1 by exact w32_eq]
   apply Nat.eq_of_testBit_eq
   intro i
@@ -58,13 +59,15 @@ theorem mask4_eq_nested (a b c d : Nat) :
     (a + b + c + d) &&& w32 =
       add32 (add32 a b) (add32 c d) := by
   simp only [add32, mask32_eq_mod]
-  simp [Nat.add_mod, Nat.add_assoc]
+  simp only [Nat.mod_add_mod, Nat.add_mod_mod, Nat.mod_mod]
+  simp [Nat.add_assoc]
 
 theorem mask5_eq_nested (a b c d e : Nat) :
     (a + b + c + d + e) &&& w32 =
       add32 a (add32 b (add32 c (add32 d e))) := by
   simp only [add32, mask32_eq_mod]
-  simp [Nat.add_mod, Nat.add_assoc]
+  simp only [Nat.mod_add_mod, Nat.add_mod_mod, Nat.mod_mod]
+  simp [Nat.add_assoc]
 
 theorem mask2_eq_add32 (a b : Nat) :
     (a + b) &&& w32 = add32 a b := rfl
