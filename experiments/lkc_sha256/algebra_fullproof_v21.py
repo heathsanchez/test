@@ -450,7 +450,7 @@ theorem iterAlgebra_correct (t : Nat) (d : Digest) (hd : ValidDigest d) :
     iterDigest fastStepAlgebra t d = iterDigest sha256step t d :=
   iterDigest_congr_of_invariant
     ValidDigest fastStepAlgebra sha256step
-    fastStepAlgebra_correct valid_fastStepAlgebra t d hd
+    fastStepAlgebra_correct (fun d _ => valid_fastStepAlgebra d) t d hd
 
 theorem impl_correct : ∀ n, impl n = sha256Spec n := by
   intro n
