@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# V1B rerun marker: panic-source residual tracing enabled
 from pathlib import Path
 import collections
 import json
@@ -83,7 +84,6 @@ for r in nonempty:
         kind_counts[e.get('kind','?')]+=1
         site_counts[e.get('site','?')]+=1
 
-# Frozen information-value router. This is not a repair-rate claim.
 UNIVERSE=8
 def routed_size(events):
     kinds={e.get('kind') for e in events}
