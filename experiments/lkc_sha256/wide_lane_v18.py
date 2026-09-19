@@ -109,13 +109,14 @@ def iterWide : Nat → Nat → Nat
   | n + 1, d => iterWide n (packedShaStepWide d)
 
 def encodeWide (d : Nat) : Nat :=
-  (((((((lane64 d 0) * 4294967296 + lane64 d 1)
-      * 4294967296 + lane64 d 2)
-      * 4294967296 + lane64 d 3)
-      * 4294967296 + lane64 d 4)
-      * 4294967296 + lane64 d 5)
-      * 4294967296 + lane64 d 6)
-      * 4294967296 + lane64 d 7
+  let x := lane64 d 0
+  let x := x * 4294967296 + lane64 d 1
+  let x := x * 4294967296 + lane64 d 2
+  let x := x * 4294967296 + lane64 d 3
+  let x := x * 4294967296 + lane64 d 4
+  let x := x * 4294967296 + lane64 d 5
+  let x := x * 4294967296 + lane64 d 6
+  x * 4294967296 + lane64 d 7
 
 def impl (n : Nat) : Nat :=
   let d0 := packDigestWide (seedDigest (sha256Seed n))
