@@ -1,0 +1,24 @@
+name: ACC MDA Microbridge Qualifier Trigger 20260920
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-mda-microbridge-qualifier-trigger-20260920.yml"
+
+permissions:
+  contents: read
+  actions: write
+
+jobs:
+  dispatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Dispatch existing held-out qualifier
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh workflow run acc-mda-microbridge-capability-qualification-v1.yml \
+            --repo "${{ github.repository }}" \
+            --ref acc-competitive-residual-v1
