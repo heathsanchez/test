@@ -1,0 +1,25 @@
+name: Developmental Controller Pilot v3 Unsupplied Specification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'experiments/developmental_controller_pilot_v3_unsupplied_spec_freeze.py'
+      - 'experiments/developmental_controller_pilot_v3_unsupplied_spec_eval.py'
+      - '.github/workflows/developmental-controller-pilot-v3-unsupplied-spec.yml'
+jobs:
+  unsupplied-spec-v3:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -m pip install scikit-learn
+      - name: Run v3 unsupplied specification evaluation
+        working-directory: experiments
+        run: python developmental_controller_pilot_v3_unsupplied_spec_eval.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: developmental-controller-pilot-v3-result
+          path: experiments/developmental_controller_pilot_v3_result.json

@@ -1,0 +1,26 @@
+name: Developmental controller pilot v4 regime escape
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  regime-escape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run constrained regime escape pilot
+        run: python experiments/developmental_controller_pilot_v4_regime_escape.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-pilot-v4-regime-escape
+          path: developmental_controller_pilot_v4_result.json

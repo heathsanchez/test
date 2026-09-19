@@ -1,0 +1,28 @@
+name: Developmental controller pilot v10 version space stage1
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  packet:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate blind version-space packet
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python experiments/developmental_controller_pilot_v10_version_space_blind_stage1.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v10-version-space-packet
+          path: v10_version_space_blind_packet.json

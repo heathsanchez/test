@@ -1,0 +1,27 @@
+name: Developmental controller pilot v8 SAIR blind stage2
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reveal and score SAIR future
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python experiments/developmental_controller_pilot_v8_sair_blind_stage2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v8-sair-blind-result
+          path: v8_sair_blind_result.json

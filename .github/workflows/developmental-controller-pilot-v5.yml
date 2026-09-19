@@ -1,0 +1,26 @@
+name: Developmental controller pilot v5 real kernel replay
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  replay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run real Lean-kernel replay
+        run: python experiments/developmental_controller_pilot_v5_real_kernel_replay.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-pilot-v5-real-kernel-replay
+          path: developmental_controller_pilot_v5_result.json

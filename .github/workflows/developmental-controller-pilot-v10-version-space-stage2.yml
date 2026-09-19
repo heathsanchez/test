@@ -1,0 +1,28 @@
+name: Developmental controller pilot v10 version space stage2
+
+on:
+  push:
+    branches:
+      - developmental-controller-pilot-v1
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  reveal-score:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Reveal future and score frozen version space
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python experiments/developmental_controller_pilot_v10_version_space_blind_stage2.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v10-version-space-result
+          path: v10_version_space_blind_result.json

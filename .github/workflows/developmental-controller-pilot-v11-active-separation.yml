@@ -1,0 +1,23 @@
+name: Developmental controller pilot v11 active separation
+
+on:
+  push:
+    branches: [developmental-controller-pilot-v1]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  active-separation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compare active versus passive developmental separators
+        run: python experiments/developmental_controller_pilot_v11_active_separation.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-controller-v11-active-separation
+          path: v11_active_separation_result.json
