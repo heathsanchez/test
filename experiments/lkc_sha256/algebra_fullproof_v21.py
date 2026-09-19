@@ -142,14 +142,22 @@ theorem valid_initialWindow (d : Digest) (hd : ValidDigest d) :
   · exact hd.f
   · exact hd.g
   · exact hd.h
-  · decide
-  · decide
-  · decide
-  · decide
-  · decide
-  · decide
-  · decide
-  · decide
+  · change 0x80000000 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 0 < 2^32
+    decide
+  · change 256 < 2^32
+    decide
 
 theorem valid_push (w : Window) (x : Nat)
     (hw : ValidWindow w) (hx : x < 2^32) :
