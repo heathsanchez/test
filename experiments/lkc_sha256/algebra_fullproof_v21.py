@@ -372,13 +372,11 @@ theorem streamWords64_eq (w : Window) :
   rw [streamWords_after16_eq_generate]
 
 def fastStepNoZipProof (d : Digest) : Digest :=
-  let f := roundsNoZip K (fastSchedule d) iv
-  ⟨add32 iv.a f.a, add32 iv.b f.b, add32 iv.c f.c, add32 iv.d f.d,
-   add32 iv.e f.e, add32 iv.f f.f, add32 iv.g f.g, add32 iv.h f.h⟩
+  feedForwardIV (roundsNoZip K (fastSchedule d) iv)
 
 theorem fastStepNoZipProof_correct (d : Digest) :
     fastStepNoZipProof d = sha256step d := by
-  unfold fastStepNoZipProof sha256step compress
+  unfold fastStepNoZipProof feedForwardIV sha256step compress
   rw [roundsNoZip_eq, schedule_correct]
 
 theorem streamWordsK_eq_fastSchedule (d : Digest) :
@@ -400,14 +398,8 @@ theorem roundsFastK_eq_nozip (d : Digest) (hd : ValidDigest d) :
     _ = roundsNoZip K (fastSchedule d) iv := by
       rw [streamWordsK_eq_fastSchedule]
 
-def feedForwardIV (f : Digest) : Digest :=
-  ⟨add32 iv.a f.a, add32 iv.b f.b, add32 iv.c f.c, add32 iv.d f.d,
-   add32 iv.e f.e, add32 iv.f f.f, add32 iv.g f.g, add32 iv.h f.h⟩
-
 theorem fastStepAlgebra_eq_nozip (d : Digest) (hd : ValidDigest d) :
     fastStepAlgebra d = fastStepNoZipProof d := by
-  change feedForwardIV (roundsFast K (initialWindow d) iv) =
-    feedForwardIV (roundsNoZip K (fastSchedule d) iv)
   exact congrArg feedForwardIV (roundsFastK_eq_nozip d hd)
 
 theorem fastStepAlgebra_correct (d : Digest) (hd : ValidDigest d) :
@@ -417,7 +409,7 @@ theorem fastStepAlgebra_correct (d : Digest) (hd : ValidDigest d) :
 
 theorem valid_fastStepAlgebra (d : Digest) :
     ValidDigest (fastStepAlgebra d) := by
-  unfold fastStepAlgebra
+  unfold fastStepAlgebra feedForwardIV
   constructor <;> exact mask32_lt _
 
 theorem seedStep32_lt (x : Nat) : seedStep32 x < 2^32 := by
