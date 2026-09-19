@@ -1,0 +1,24 @@
+name: Existential Viability Factorization V20
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/existential_viability_factorization_v20.py'
+      - '.github/workflows/existential-viability-factorization-v20.yml'
+      - 'V20_PRECOMMIT.md'
+  workflow_dispatch:
+
+jobs:
+  existential-viability-factorization:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V20 existential viability factorization
+        run: |
+          rm -rf results/existential-viability-factorization-v20
+          mkdir -p results/existential-viability-factorization-v20
+          python3 scripts/existential_viability_factorization_v20.py --out-dir results/existential-viability-factorization-v20
+      - uses: actions/upload-artifact@v4
+        with:
+          name: existential-viability-factorization-v20
+          path: results/existential-viability-factorization-v20/
