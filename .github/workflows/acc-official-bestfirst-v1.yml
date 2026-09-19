@@ -43,17 +43,18 @@ jobs:
           req=urllib.request.Request(B+'/api/acc/discoveries/snapshot?problem=ac',headers=H)
           with urllib.request.urlopen(req,timeout=60) as r:obj=json.loads(r.read().decode())
           d=obj.get('data',obj);items=d['items']
-          rows=[x for x in items if x.get('status')=='solved' and x.get('kTeams')==1
+          def cid(x): return x.get('problemId') or x.get('challengeId')
+          rows=[x for x in items if cid(x) and x.get('status')=='solved' and x.get('kTeams')==1
                 and isinstance(x.get('currentBestLength'),int)
                 and 300 <= x['currentBestLength'] <= 2500]
-          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows.sort(key=lambda x:(-x['currentBestLength'],cid(x)))
           rows=rows[:32]
           pathlib.Path('acc_competitive/official_freeze/snapshot_ac.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
-          ids=[x['challengeId'] for x in rows]
+          ids=[cid(x) for x in rows]
           for shard in range(4):
               pathlib.Path(f'acc_competitive/official_freeze/shard_{shard}.json').write_text(json.dumps(ids[shard::4],indent=2)+'\n')
           pathlib.Path('acc_competitive/official_freeze/selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
-          print('OFFICIAL_TARGETS',[(x['challengeId'],x['currentBestLength']) for x in rows])
+          print('OFFICIAL_TARGETS',[(cid(x),x['currentBestLength']) for x in rows])
           PY
 
       - uses: actions/upload-artifact@v4
