@@ -1,0 +1,80 @@
+name: ACC Live Schema Repair v1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - .github/workflows/acc-live-schema-repair-v1.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+          fetch-depth: 0
+
+      - name: Repair current problemId snapshot compatibility
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+
+          solver = Path('andrews_curtis/solver_v2_gssub.py')
+          s = solver.read_text(encoding='utf-8')
+          old = 'return obj, {x["challengeId"]: x for x in items}'
+          new = 'return obj, {(x.get("problemId") or x.get("challengeId")): x for x in items if (x.get("problemId") or x.get("challengeId"))}'
+          count = s.count(old)
+          if count != 2:
+              raise SystemExit(f'expected 2 solver snapshot-map sites, found {count}')
+          solver.write_text(s.replace(old, new), encoding='utf-8')
+
+          scout = Path('acc_competitive/competitive_scout_v2.py')
+          s = scout.read_text(encoding='utf-8')
+          replacements = {
+              'prev_ac={x["challengeId"]:x for x in prev_ac_items}': 'prev_ac={(x.get("problemId") or x.get("challengeId")):x for x in prev_ac_items if (x.get("problemId") or x.get("challengeId"))}',
+              'prev_s={x["challengeId"]:x for x in prev_s_items}': 'prev_s={(x.get("problemId") or x.get("challengeId")):x for x in prev_s_items if (x.get("problemId") or x.get("challengeId"))}',
+          }
+          for old, new in replacements.items():
+              if s.count(old) != 1:
+                  raise SystemExit(f'expected exactly one scout site: {old}')
+              s = s.replace(old, new)
+          scout.write_text(s, encoding='utf-8')
+          PY
+
+      - name: Verify compatibility offline
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m py_compile andrews_curtis/solver_v2_gssub.py acc_competitive/competitive_scout_v2.py
+          python - <<'PY'
+          import json, tempfile
+          from pathlib import Path
+          from andrews_curtis.solver_v2_gssub import snapshot_file_map
+
+          for key in ('problemId', 'challengeId'):
+              with tempfile.TemporaryDirectory() as td:
+                  p = Path(td) / 'snapshot.json'
+                  p.write_text(json.dumps({'data': {'items': [{key: 'ac-test', 'status': 'unsolved'}]}}), encoding='utf-8')
+                  _, rows = snapshot_file_map(p)
+                  assert list(rows) == ['ac-test'], (key, rows)
+          print('snapshot compatibility: problemId + challengeId PASS')
+          PY
+
+      - name: Commit repair and remove one-shot workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/acc-live-schema-repair-v1.yml
+          git add andrews_curtis/solver_v2_gssub.py acc_competitive/competitive_scout_v2.py
+          git diff --cached --check
+          git commit -m "fix(acc): unify live snapshot identifiers"
+          git push origin HEAD:acc-competitive-residual-v1
