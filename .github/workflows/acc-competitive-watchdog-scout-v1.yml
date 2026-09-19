@@ -39,7 +39,12 @@ jobs:
           def snap(problem):
               o=get(f'{PUB}/api/acc/discoveries/snapshot?problem={problem}')
               d=data(o)
-              return {x['challengeId']:x for x in d['items']}
+              out={}
+              for x in d['items']:
+                  cid=x.get('problemId') or x.get('challengeId')
+                  if cid:
+                      out[cid]=x
+              return out
           def stamp(rec):
               for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
                   s=rec.get(k) if isinstance(rec,dict) else None
