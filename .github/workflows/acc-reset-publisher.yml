@@ -41,21 +41,18 @@ jobs:
             fi
           done
           python3 - <<'PY'
-          import pathlib
+          import hashlib, pathlib
           roots=pathlib.Path('/tmp/pending'); outs=[]
-          for p in roots.rglob('*'):
+          for p in sorted(roots.rglob('*'), key=lambda q: str(q)):
               if p.is_file() and p.name in ('submission_v2.txt','pending_submission.txt'):
                   txt=p.read_text().strip()
                   if txt: outs.append(txt); print('SOURCE',p)
           out=pathlib.Path('acc_competitive/reset_inputs/all.txt')
           out.write_text(('\n'.join(outs)+'\n') if outs else '')
-          print('PENDING_SOURCE_FILES',len(outs)); print('PENDING_LINES',sum(len(x.splitlines()) for x in outs))
+          digest=hashlib.sha256(out.read_bytes()).hexdigest()
+          pathlib.Path('acc_competitive/reset_inputs/input.sha256').write_text(digest+'\n')
+          print('PENDING_SOURCE_FILES',len(outs)); print('PENDING_LINES',sum(len(x.splitlines()) for x in outs)); print('INPUT_SHA256',digest)
           PY
-
-      - name: Fetch pinned official verifier
-        run: |
-          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
-          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
 
       - name: Recover prior proof atlas if available
         run: |
@@ -67,7 +64,28 @@ jobs:
             unzip -q /tmp/prior_atlas.zip -d /tmp/prior_atlas
           fi
 
+      - name: Stop at certified stale fixed point
+        id: source_gate
+        run: |
+          set -euo pipefail
+          CURRENT="acc_competitive/reset_inputs/input.sha256"
+          PRIOR="$(find /tmp/prior_atlas -name exhausted_input.sha256 2>/dev/null | head -1 || true)"
+          if [ -n "$PRIOR" ] && cmp -s "$CURRENT" "$PRIOR"; then
+            echo "unchanged=true" >> "$GITHUB_OUTPUT"
+            echo "EXHAUSTED_INPUT_FIXED_POINT $(cat "$CURRENT")"
+          else
+            echo "unchanged=false" >> "$GITHUB_OUTPUT"
+            echo "NEW_OR_UNCERTIFIED_INPUT $(cat "$CURRENT")"
+          fi
+
+      - name: Fetch pinned official verifier
+        if: steps.source_gate.outputs.unchanged != 'true'
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
       - name: Fortify every candidate through shared proof atlas
+        if: steps.source_gate.outputs.unchanged != 'true'
         run: |
           set -euo pipefail
           if [ ! -s acc_competitive/reset_inputs/all.txt ]; then echo "No pending candidates."; exit 0; fi
@@ -77,6 +95,7 @@ jobs:
           python3 acc_competitive/proof_atlas_fortify_v1.py "${ARGS[@]}" | tee acc_competitive/fortify.log
 
       - name: Superoptimize before any POST
+        if: steps.source_gate.outputs.unchanged != 'true'
         run: |
           set -euo pipefail
           if [ ! -s acc_competitive/fortified/fortified_ac.txt ]; then echo "No fortified candidates."; exit 0; fi
@@ -86,6 +105,7 @@ jobs:
             | tee acc_competitive/batch_peephole.log
 
       - name: Fresh live strict-only quota gate and publish one packed batch
+        if: steps.source_gate.outputs.unchanged != 'true'
         run: |
           set -euo pipefail
           if [ ! -s acc_competitive/peephole_fortified/fortified_ac.txt ]; then echo "No fortified candidates."; exit 0; fi
@@ -111,10 +131,20 @@ jobs:
               'strict': r.get('selected_strict_improvements'),
               'submission_id': r.get('submission_id')
           }, sort_keys=True))
+          # Records are monotone: once this exact input has no strict win under
+          # a proved quota state, replaying it cannot become competitive later.
+          # Persist the exhaustion certificate only for the zero-strict case;
+          # quota-blocked strict candidates remain eligible for a later retry.
+          if not r.get('quota_blocked') and r.get('selected_strict_improvements',0) == 0:
+              src=Path('acc_competitive/reset_inputs/input.sha256')
+              dst=Path('acc_competitive/fortified/exhausted_input.sha256')
+              dst.parent.mkdir(parents=True, exist_ok=True)
+              dst.write_text(src.read_text())
+              print('EXHAUSTION_CERTIFIED', src.read_text().strip())
           PY
 
       - name: Persist compounding proof atlas
-        if: always()
+        if: ${{ always() && steps.source_gate.outputs.unchanged != 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: acc-proof-atlas-state
@@ -122,6 +152,7 @@ jobs:
             acc_competitive/fortified/proof_atlas.sqlite
             acc_competitive/fortified/fortification.json
             acc_competitive/fortified/report.json
+            acc_competitive/fortified/exhausted_input.sha256
           retention-days: 90
           if-no-files-found: warn
 
