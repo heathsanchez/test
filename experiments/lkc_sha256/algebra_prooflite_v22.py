@@ -9,6 +9,25 @@ OUT.mkdir(parents=True,exist_ok=True)
 runpy.run_path(str(ROOT/"algebra_v20.py"))
 src=(OUT/"Submission_algebra_v20.lean").read_text()
 src=src.replace("chFast s.e s.f s.g", "ch s.e s.f s.g")
+old_finish=r'''def fastStepAlgebra (d : Digest) : Digest :=
+  let f := roundsFast K (initialWindow d) iv
+  ⟨(iv.a + f.a) &&& w32, (iv.b + f.b) &&& w32,
+   (iv.c + f.c) &&& w32, (iv.d + f.d) &&& w32,
+   (iv.e + f.e) &&& w32, (iv.f + f.f) &&& w32,
+   (iv.g + f.g) &&& w32, (iv.h + f.h) &&& w32⟩
+'''
+new_finish=r'''def finishAlgebra (f : Digest) : Digest :=
+  ⟨(iv.a + f.a) &&& w32, (iv.b + f.b) &&& w32,
+   (iv.c + f.c) &&& w32, (iv.d + f.d) &&& w32,
+   (iv.e + f.e) &&& w32, (iv.f + f.f) &&& w32,
+   (iv.g + f.g) &&& w32, (iv.h + f.h) &&& w32⟩
+
+def fastStepAlgebra (d : Digest) : Digest :=
+  finishAlgebra (roundsFast K (initialWindow d) iv)
+'''
+if old_finish not in src:
+    raise RuntimeError("fastStepAlgebra block not found")
+src=src.replace(old_finish,new_finish)
 runtime=OUT/"Submission_algebra_prooflite_v22.lean"
 runtime.write_text(src)
 print(f"generated {runtime} bytes={len(src.encode())}")
@@ -209,13 +228,11 @@ theorem streamWords64_eq (w : Window) :
   rw [streamWords_after16_eq_generate]
 
 def fastStepNoZipProof (d : Digest) : Digest :=
-  let f := roundsNoZip K (fastSchedule d) iv
-  ⟨add32 iv.a f.a, add32 iv.b f.b, add32 iv.c f.c, add32 iv.d f.d,
-   add32 iv.e f.e, add32 iv.f f.f, add32 iv.g f.g, add32 iv.h f.h⟩
+  finishAlgebra (roundsNoZip K (fastSchedule d) iv)
 
 theorem fastStepNoZipProof_correct (d : Digest) :
     fastStepNoZipProof d = sha256step d := by
-  unfold fastStepNoZipProof sha256step compress
+  unfold fastStepNoZipProof finishAlgebra sha256step compress
   rw [roundsNoZip_eq, schedule_correct]
 
 theorem streamWordsK_eq_fastSchedule (d : Digest) :
@@ -239,8 +256,7 @@ theorem roundsFastK_eq_nozip (d : Digest) :
 theorem fastStepAlgebra_eq_nozip (d : Digest) :
     fastStepAlgebra d = fastStepNoZipProof d := by
   unfold fastStepAlgebra fastStepNoZipProof
-  rw [roundsFastK_eq_nozip]
-  rfl
+  exact congrArg finishAlgebra (roundsFastK_eq_nozip d)
 
 theorem fastStepAlgebra_correct (d : Digest) :
     fastStepAlgebra d = sha256step d := by
