@@ -7,6 +7,7 @@ ARTIFACT=10570879149
 ARTIFACT_DIGEST="sha256:0062e1df0f118b2c788a02082c8319b9359d79dc7eba11de702d3b2aab211a27"
 AUTHORITY="collatz-reviewed-dominance@0bd6cc71a5fb4268109d5b404ecbf21c7aaaf4c1"
 VERIFIER="manual-review+finite-replay-v1"
+BANK_EVENT_COMMIT="7fe10392f2865a008ff8642f4da64d93378c780f"
 def canonical(v): return json.dumps(v,sort_keys=True,separators=(",",":"))
 def h(s): return hashlib.sha256(s.encode()).hexdigest()
 def build_event(*,source_commit):
@@ -22,7 +23,7 @@ def build_event(*,source_commit):
       "provenance":f"manual-review:reviewed-dominance-v1/run:{RUN}/artifact:{ARTIFACT}"}
     payload={"obstruction":obs}; et=canonical(evidence)
     event={"schema":"qckn-flash-external-event-v1","event_id":obs["obstruction_id"],"event_kind":"obstruction_admission",
-      "repository":"heathsanchez/test","commit":source_commit,"authority_snapshot":AUTHORITY,"verifier_id":VERIFIER,
+      "repository":"heathsanchez/test","commit":BANK_EVENT_COMMIT,"authority_snapshot":AUTHORITY,"verifier_id":VERIFIER,
       "source_evidence_sha256":h(et),"payload":payload,"payload_sha256":h(canonical(payload))}
     return evidence,event
 
@@ -36,6 +37,7 @@ SHARED_SCOUT_ARTIFACT=10432833694
 SHARED_SCOUT_DIGEST="sha256:f2f499a07ca04a9bd85ac14a61b55eddf08c3c8d142b74d1bf59d6bc5a90e5f3"
 SHARED_AUTHORITY=f"collatz-shared-normalized@{SHARED_SOURCE_SHA}"
 SHARED_VERIFIER="differential-equivalence+bounded-scout-v1"
+SHARED_EVENT_COMMIT="c444e21e15557126fae555ddbdfa1e04016e1573"
 
 def build_shared_normalized_event(*,source_commit):
     if len(source_commit)!=40 or any(ch not in "0123456789abcdef" for ch in source_commit):
@@ -115,7 +117,7 @@ def build_shared_normalized_event(*,source_commit):
       "event_id":capability["capability_id"],
       "event_kind":"capability_admission",
       "repository":"heathsanchez/test",
-      "commit":source_commit,
+      "commit":SHARED_EVENT_COMMIT,
       "authority_snapshot":SHARED_AUTHORITY,
       "verifier_id":SHARED_VERIFIER,
       "source_evidence_sha256":h(evidence_text),
