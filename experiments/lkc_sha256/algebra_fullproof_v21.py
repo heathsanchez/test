@@ -421,9 +421,9 @@ theorem fastStepAlgebra_correct (d : Digest) (hd : ValidDigest d) :
   rw [fastStepAlgebra_eq_nozip d hd]
   exact fastStepNoZipProof_correct d
 
-theorem valid_fastStepAlgebra (d : Digest) :
-    ValidDigest (fastStepAlgebra d) := by
-  unfold fastStepAlgebra feedForwardIV
+theorem valid_sha256step (d : Digest) :
+    ValidDigest (sha256step d) := by
+  unfold sha256step compress add32
   constructor <;> exact mask32_lt _
 
 theorem seedStep32_lt (x : Nat) : seedStep32 x < 2^32 := by
@@ -441,9 +441,7 @@ theorem iterAlgebra_correct :
   | t + 1, d, hd => by
       simp only [iterDigest]
       rw [fastStepAlgebra_correct d hd]
-      apply iterAlgebra_correct t (sha256step d)
-      rw [← fastStepAlgebra_correct d hd]
-      exact valid_fastStepAlgebra d
+      exact iterAlgebra_correct t (sha256step d) (valid_sha256step d)
 
 theorem impl_correct : ∀ n, impl n = sha256Spec n := by
   intro n
