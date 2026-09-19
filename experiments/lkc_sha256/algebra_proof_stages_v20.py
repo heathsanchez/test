@@ -13,7 +13,10 @@ markers={
   "A_round":"def Window.toList",
   "B_schedule":"def streamWords",
   "C_stream":"def fastStepNoZipProof",
-  "D_step":"theorem fastStepAlgebra_fun",
+  "D_nozip":"theorem streamWordsK_eq_fastSchedule",
+  "E_kbridge":"theorem fastStepAlgebra_eq_nozip",
+  "F_eq":"theorem fastStepAlgebra_correct",
+  "G_step":"theorem fastStepAlgebra_fun",
 }
 for name,marker in markers.items():
     i=src.index(marker)
