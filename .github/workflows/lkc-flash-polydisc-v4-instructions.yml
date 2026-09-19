@@ -28,6 +28,8 @@ jobs:
           python3 benchmark.py setup --problem polydisc
           git -C .cache/upstream fetch origin "$RULES_COMMIT"
           git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Install Callgrind
+        run: sudo apt-get update && sudo apt-get install -y valgrind
       - name: Callgrind paired
         shell: bash
         run: |
