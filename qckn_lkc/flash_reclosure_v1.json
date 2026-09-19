@@ -1,0 +1,148 @@
+{
+  "schema": "lkc-flash-reclosure-v1",
+  "generated_on": "2026-09-19",
+  "rule": "Every verified result or certified obstruction recloses every dependent benchmark frontier before further local search.",
+  "frozen_champions": {
+    "rule110": {
+      "branch": "lkc-rule110-v60-frozen",
+      "sha": "9ae9e5b1d0d77a04f8f31ef56a66934e3feeff68"
+    },
+    "fib": {
+      "branch": "lkc-fib-v2-frozen",
+      "sha": "9f637e976b587a1623d83be12a82522a35a95b6c"
+    },
+    "mertens": {
+      "branch": "lkc-mertens-v6-frozen",
+      "sha": "df8824794cfb1cd2764fbde1ddfe54c07957b98e"
+    },
+    "partition": {
+      "branch": "lkc-partition-v4-frozen",
+      "sha": "b4e7004c56b0a788143f39e104d9d8b59d8a35b8"
+    },
+    "primecount": {
+      "branch": "lkc-primecount-v3-frozen",
+      "sha": "45b2caf3da75be177e9571b4deff118b34f24c46"
+    },
+    "polydisc": {
+      "branch": "lkc-polydisc-v3-frozen",
+      "sha": "3daeb833823d33febe379fca909c7363d8439331"
+    },
+    "permanent": {
+      "branch": "lkc-permanent-v5-frozen",
+      "sha": "3573e2c75d79c69344e032f154683d5fe63fe47f"
+    },
+    "sha256": {
+      "branch": "lkc-sha256-v23-frozen",
+      "sha": "04f7a8042210b87ad360d29eba0248bfbaff1cf1"
+    }
+  },
+  "compiled_capabilities": [
+    {
+      "id": "C-algebra-defer-normalization",
+      "source": "sha256",
+      "lesson": "Delay masks/normalization until the last consequence-preserving boundary."
+    },
+    {
+      "id": "C-local-transition-lift",
+      "source": "permanent+sha256",
+      "lesson": "Prove a local transition equivalent for arbitrary continuations, then lift through iteration generically."
+    },
+    {
+      "id": "C-generated-state",
+      "source": "partition",
+      "lesson": "Materialize generated dynamic state when it removes repeated semantic recomputation."
+    },
+    {
+      "id": "C-structural-recursion",
+      "source": "mertens+primecount",
+      "lesson": "Replace generic/well-founded machinery with explicit structural recursion when semantics are unchanged."
+    },
+    {
+      "id": "C-delete-intermediate-aggregate",
+      "source": "mertens+primecount+sha256",
+      "lesson": "Fuse producer/consumer paths and remove lists/ranges/zips consumed immediately."
+    },
+    {
+      "id": "C-bitwise-equivalent-arithmetic",
+      "source": "fib+polydisc",
+      "lesson": "Use proved shifts/bit operations for exact powers of two, parity, and hot fixed-width arithmetic."
+    },
+    {
+      "id": "C-flatten-reduction-spine",
+      "source": "rule110",
+      "lesson": "Flatten semantically fixed reduction paths to reduce delta/application work."
+    },
+    {
+      "id": "C-eq-dist-unknown",
+      "source": "WCD",
+      "lesson": "Merge only on warranted EQ; preserve DIST separators and UNKNOWN authority gaps."
+    }
+  ],
+  "active_frontiers": {
+    "rule110": {
+      "branch": "lkc-flash2-rule110-v64",
+      "first_pass": [
+        "C-algebra-defer-normalization",
+        "C-local-transition-lift"
+      ]
+    },
+    "fib": {
+      "branch": "lkc-flash2-fib-v3",
+      "first_pass": [
+        "C-flatten-reduction-spine",
+        "C-delete-intermediate-aggregate"
+      ]
+    },
+    "mertens": {
+      "branch": "lkc-flash2-mertens-v8",
+      "first_pass": [
+        "C-generated-state",
+        "C-delete-intermediate-aggregate"
+      ]
+    },
+    "partition": {
+      "branch": "lkc-flash2-partition-v5",
+      "first_pass": [
+        "C-local-transition-lift",
+        "C-delete-intermediate-aggregate"
+      ]
+    },
+    "primecount": {
+      "branch": "lkc-flash2-primecount-v4",
+      "first_pass": [
+        "C-generated-state",
+        "C-delete-intermediate-aggregate"
+      ]
+    },
+    "polydisc": {
+      "branch": "lkc-flash2-polydisc-v4",
+      "first_pass": [
+        "C-flatten-reduction-spine",
+        "C-algebra-defer-normalization"
+      ]
+    },
+    "permanent": {
+      "branch": "lkc-flash2-permanent-v6",
+      "first_pass": [
+        "C-generated-state",
+        "C-delete-intermediate-aggregate"
+      ]
+    },
+    "sha256": {
+      "branch": "lkc-flash2-sha-v24",
+      "first_pass": [
+        "C-algebra-defer-normalization",
+        "C-local-transition-lift"
+      ]
+    }
+  },
+  "promotion_policy": [
+    "universal proof",
+    "axiom/restriction audit",
+    "canonical acceptance",
+    "same-byte binding",
+    "paired resource measurement",
+    "strict improvement"
+  ],
+  "propagation_policy": "On PROMOTE, REJECT, DIST, UNKNOWN_SEARCH, or REVOKE, append a typed event and re-evaluate all active_frontiers whose first_pass or dependencies intersect the new consequence."
+}
