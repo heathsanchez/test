@@ -65,17 +65,29 @@ theorem mask5_eq_nested (a b c d e : Nat) :
   simp only [Nat.add_mod_mod]
   simp [Nat.add_assoc]
 
+theorem mask5_chFast_replace
+    (a b x y z d e : Nat) :
+    (a + b + chFast x y z + d + e) &&& w32 =
+      (a + b + ch x y z + d + e) &&& w32 := by
+  simp only [mask32_eq_mod]
+  have hp :
+      (a + b + chFast x y z) % 2^32 =
+        (a + b + ch x y z) % 2^32 := by
+    rw [← Nat.add_mod_mod (a + b) (chFast x y z) (2^32)]
+    rw [← Nat.add_mod_mod (a + b) (ch x y z) (2^32)]
+    rw [chFast_mod_eq]
+  rw [Nat.add_assoc (a + b + chFast x y z) d e]
+  rw [Nat.add_assoc (a + b + ch x y z) d e]
+  rw [← Nat.mod_add_mod (a + b + chFast x y z) (2^32) (d + e)]
+  rw [← Nat.mod_add_mod (a + b + ch x y z) (2^32) (d + e)]
+  rw [hp]
+
 theorem mask5_chFast_eq_nested
     (a b x y z d e : Nat) :
     (a + b + chFast x y z + d + e) &&& w32 =
       add32 a (add32 b (add32 (ch x y z) (add32 d e))) := by
-  calc
-    (a + b + chFast x y z + d + e) &&& w32 =
-        (a + b + ch x y z + d + e) &&& w32 := by
-      simp only [mask32_eq_mod, Nat.add_mod]
-      rw [chFast_mod_eq]
-    _ = add32 a (add32 b (add32 (ch x y z) (add32 d e))) :=
-      mask5_eq_nested a b (ch x y z) d e
+  rw [mask5_chFast_replace a b x y z d e]
+  exact mask5_eq_nested a b (ch x y z) d e
 
 theorem roundFast_eq_round (s : Digest) (k w : Nat) :
     roundFast s k w = round s k w := by
