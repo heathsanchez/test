@@ -1,0 +1,112 @@
+name: LKC Flash Resource-Dominant Retry V1
+
+on:
+  push:
+    branches: [lkc-flash-reclosure-v1]
+    paths:
+      - '.github/workflows/lkc-flash-resource-retry-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  retry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - problem: partition
+            branch: lkc-flash2-partition-v5
+            generate: python3 experiments/lkc_partition/rowdp_v4.py && python3 experiments/lkc_partition/flash_v5_probe.py
+            champion: experiments/lkc_partition/generated/Submission_v4.lean
+            challenger: experiments/lkc_partition/generated/Submission_v5_probe.lean
+            inputs: "14 18 22 26 32 36"
+          - problem: permanent
+            branch: lkc-flash2-permanent-v6
+            generate: python3 experiments/lkc_permanent/flash_v6_reverse_probe.py
+            champion: experiments/lkc_permanent/generated/Submission_v5.lean
+            challenger: experiments/lkc_permanent/generated/Submission_v6_reverse_probe.lean
+            inputs: "28064292647 26230790088 53794586207 54079857374 71077100717 72835838140"
+          - problem: sha256
+            branch: lkc-flash2-sha-v24
+            generate: python3 experiments/lkc_sha256/algebra_fullproof_v21.py && python3 experiments/lkc_sha256/algebra_v24_probe.py
+            champion: experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean
+            challenger: experiments/lkc_sha256/generated/Submission_algebra_v24_probe.lean
+            inputs: "18860801433 17252521710 138725260120 140599404248 2199121876686 2199573357346"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: "${{ matrix.branch }}"
+      - name: Generate
+        run: ${{ matrix.generate }}
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem "${{ matrix.problem }}"
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Measure both even if official baseline OOMs
+        shell: bash
+        run: |
+          set +e
+          mkdir -p "flash-retry/${{ matrix.problem }}"
+          read -ra INPUTS <<< "${{ matrix.inputs }}"
+          cd bench
+          python3 benchmark.py diagnostic --problem "${{ matrix.problem }}"             --submission "$GITHUB_WORKSPACE/${{ matrix.champion }}"             --metric wall-time --repetitions 3 --timeout 900 --memory-mb 4096             --inputs "${INPUTS[@]}" --output "$GITHUB_WORKSPACE/flash-retry/${{ matrix.problem }}/champion"
+          echo $? > "$GITHUB_WORKSPACE/flash-retry/${{ matrix.problem }}/champion-exit.txt"
+          python3 benchmark.py diagnostic --problem "${{ matrix.problem }}"             --submission "$GITHUB_WORKSPACE/${{ matrix.challenger }}"             --metric wall-time --repetitions 3 --timeout 900 --memory-mb 4096             --inputs "${INPUTS[@]}" --output "$GITHUB_WORKSPACE/flash-retry/${{ matrix.problem }}/challenger"
+          echo $? > "$GITHUB_WORKSPACE/flash-retry/${{ matrix.problem }}/challenger-exit.txt"
+          exit 0
+      - name: Compare candidate-role cases directly
+        if: always()
+        shell: python
+        run: |
+          import json,pathlib,statistics
+          problem="${{ matrix.problem }}"
+          root=pathlib.Path("flash-retry")/problem
+          def data(role):
+              p=root/role/"diagnostic.json"
+              return json.loads(p.read_text()) if p.exists() else None
+          def candidate_cases(d):
+              if not d: return {}
+              run=next((r for r in d.get("runs",[]) if r.get("role")=="candidate"),None)
+              if not run: return {}
+              return {str(c["n"]):c for c in run.get("cases",[])}
+          a,b=data("champion"),data("challenger")
+          ca,cb=candidate_cases(a),candidate_cases(b)
+          common=[]
+          for n in sorted(set(ca)&set(cb),key=int):
+              x,y=ca[n],cb[n]
+              if x.get("status")=="complete" and y.get("status")=="complete":
+                  vx=x.get("median"); vy=y.get("median")
+                  if vx is not None and vy is not None:
+                      common.append((n,vx,vy))
+          out={"problem":problem,"common_complete":common}
+          if common:
+              A=sum(x[1] for x in common); B=sum(x[2] for x in common)
+              out.update(champion_sum=A,challenger_sum=B,ratio=B/A,
+                         improvement_pct=100*(1-B/A),
+                         consequence="PROMOTE_SCREEN" if B<A else "REFUTED_RESOURCE")
+          out["champion_status"]={n:c.get("status") for n,c in ca.items()}
+          out["challenger_status"]={n:c.get("status") for n,c in cb.items()}
+          (root/"flash-result.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: "flash-resource-retry-${{ matrix.problem }}"
+          path: "flash-retry/${{ matrix.problem }}/"
