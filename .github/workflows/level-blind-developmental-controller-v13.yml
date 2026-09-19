@@ -1,0 +1,23 @@
+name: Level Blind Developmental Controller V13
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  level-blind-controller:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run level-blind developmental controller benchmark
+        run: |
+          rm -rf results/level-blind-developmental-controller-v13
+          mkdir -p results/level-blind-developmental-controller-v13
+          python3 scripts/level_blind_developmental_controller_v13.py \
+            --out-dir results/level-blind-developmental-controller-v13 \
+            --seed 1729 \
+            --per-domain 84
+      - uses: actions/upload-artifact@v4
+        with:
+          name: level-blind-developmental-controller-v13
+          path: results/level-blind-developmental-controller-v13/

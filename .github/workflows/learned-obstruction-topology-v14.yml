@@ -1,0 +1,23 @@
+name: Learned Obstruction Topology V14
+on:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  learned-obstruction-topology:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run learned obstruction topology benchmark
+        run: |
+          rm -rf results/learned-obstruction-topology-v14
+          mkdir -p results/learned-obstruction-topology-v14
+          python3 scripts/learned_obstruction_topology_v14.py \
+            --out-dir results/learned-obstruction-topology-v14 \
+            --seed 1729 \
+            --per-class 24
+      - uses: actions/upload-artifact@v4
+        with:
+          name: learned-obstruction-topology-v14
+          path: results/learned-obstruction-topology-v14/
