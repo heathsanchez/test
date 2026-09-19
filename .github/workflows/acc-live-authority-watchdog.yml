@@ -1,0 +1,152 @@
+name: ACC Live Authority Watchdog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/acc-live-authority-watchdog.yml"
+  schedule:
+    - cron: "12 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: acc-live-authority-watchdog
+  cancel-in-progress: true
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - name: Fresh ACC authority snapshot
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from datetime import datetime, timezone
+
+          KEY=os.environ['SAIR_API_KEY']
+          PUB='https://server-9527.sair.foundation'
+          API='https://api.sair.foundation/api/public/v1'
+
+          def get(url, auth=False):
+              h={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+              if auth:
+                  h['Authorization']=f'Bearer {KEY}'
+              req=urllib.request.Request(url,headers=h)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+
+          def data(o):
+              return o.get('data',o) if isinstance(o,dict) else o
+
+          def snap(problem):
+              o=get(f'{PUB}/api/acc/discoveries/snapshot?problem={problem}')
+              d=data(o)
+              out={}
+              for x in d['items']:
+                  cid=x.get('problemId') or x.get('challengeId')
+                  if cid:
+                      out[str(cid)]=x
+              return out
+
+          def stamp(rec):
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  s=rec.get(k) if isinstance(rec,dict) else None
+                  if not isinstance(s,str) or not s.strip():
+                      continue
+                  try:
+                      t=s.strip().replace('Z','+00:00')
+                      dt=datetime.fromisoformat(t)
+                      if dt.tzinfo is None:
+                          dt=dt.replace(tzinfo=timezone.utc)
+                      return dt.astimezone(timezone.utc)
+                  except Exception:
+                      pass
+              return None
+
+          ac=snap('ac')
+          sac=snap('stable_ac')
+          mine=data(get(f'{API}/competitions/acc/submissions/mine?limit=100',auth=True))
+          comp=data(get(f'{API}/competitions/acc',auth=True))
+          items=mine.get('items',[]) if isinstance(mine,dict) else []
+
+          lim=None
+          for k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay'):
+              v=comp.get(k) if isinstance(comp,dict) else None
+              if isinstance(v,int):
+                  lim=v
+                  break
+          if lim is None:
+              lim=40
+
+          today=datetime.now(timezone.utc).date()
+          stamps=[stamp(x) for x in items]
+          used=sum(x is not None and x.date()==today for x in stamps)
+          remaining=max(0,lim-used)
+
+          ours={}
+          for sub in items:
+              for rr in sub.get('results',[]) if isinstance(sub,dict) else []:
+                  if not rr.get('ok'):
+                      continue
+                  cid=rr.get('challenge_id') or rr.get('problemId') or rr.get('challengeId')
+                  n=rr.get('length')
+                  if cid and isinstance(n,int):
+                      cid=str(cid)
+                      ours[cid]=min(n,ours.get(cid,n))
+
+          unique=tied=lost=0
+          for cid,n in ours.items():
+              row=(ac if cid.startswith('ac-') else sac).get(cid)
+              if not row or row.get('status')!='solved' or not isinstance(row.get('currentBestLength'),int):
+                  continue
+              best=row['currentBestLength']; kt=row.get('kTeams')
+              if n==best and kt==1:
+                  unique+=1
+              elif n==best:
+                  tied+=1
+              elif n>best:
+                  lost+=1
+
+          def census(rows):
+              vals=list(rows.values())
+              unsolved=[x for x in vals if x.get('status')!='solved' or x.get('kTeams')==0]
+              singleton=[x for x in vals if x.get('status')=='solved' and x.get('kTeams')==1 and isinstance(x.get('currentBestLength'),int)]
+              singleton.sort(key=lambda x:(-x['currentBestLength'], str(x.get('problemId') or x.get('challengeId') or '')))
+              return {
+                  'rows':len(vals),
+                  'unsolved':len(unsolved),
+                  'singleton_records':len(singleton),
+                  'top_singletons':[
+                      {
+                          'id':str(x.get('problemId') or x.get('challengeId')),
+                          'best':x.get('currentBestLength'),
+                          'kTeams':x.get('kTeams')
+                      }
+                      for x in singleton[:25]
+                  ]
+              }
+
+          out={
+              'utc':datetime.now(timezone.utc).isoformat(),
+              'quota':{'used':used,'remaining':remaining,'limit':lim},
+              'standing':{'unique':unique,'tied':tied,'lost':lost},
+              'ac':census(ac),
+              'stable_ac':census(sac),
+          }
+          print('ACC_LIVE_AUTHORITY',json.dumps(out,sort_keys=True))
+          open('acc_live_authority.json','w').write(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-live-authority-watchdog
+          path: acc_live_authority.json
+          retention-days: 30
