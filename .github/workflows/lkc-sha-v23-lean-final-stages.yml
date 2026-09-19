@@ -1,0 +1,43 @@
+name: LKC SHA V23 Lean-Only Final Stages
+
+on:
+  push:
+    branches: [lkc-sha-algebra-v23-proof-stages]
+
+permissions:
+  contents: read
+
+env:
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  stage:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        stage: [V_valid, G_generic, S_special, I_impl]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate final proof stages
+        run: python3 experiments/lkc_sha256/lean_only_stages_v23.py
+      - name: Install exact Lean 4.33.1
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh |
+            sh -s -- -y --default-toolchain leanprover/lean4:v4.33.1
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          "$HOME/.elan/bin/lean" --version
+      - name: Prepare pinned Spec
+        run: |
+          mkdir -p lean-stage
+          curl --fail --location             "https://raw.githubusercontent.com/SAIRcompetition/lean-kernel-challenge/$RULES_COMMIT/evaluation/problems/sha256/Spec.lean"             -o lean-stage/Spec.lean
+          cp "experiments/lkc_sha256/generated/V23_${{ matrix.stage }}.lean" lean-stage/Stage.lean
+      - name: Compile Spec
+        working-directory: lean-stage
+        run: |
+          lean -DautoImplicit=false -DwarningAsError=true             -DmaxRecDepth=4000000 -DmaxHeartbeats=0             -o Spec.olean Spec.lean
+      - name: Check stage
+        working-directory: lean-stage
+        run: |
+          /usr/bin/time -v env LEAN_PATH=. lean             -DautoImplicit=false -DwarningAsError=true             -DmaxRecDepth=4000000 -DmaxHeartbeats=0             Stage.lean
