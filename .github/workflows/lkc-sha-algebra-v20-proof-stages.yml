@@ -17,7 +17,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        stage: [A_round, B_schedule, C_stream, D_step]
+        stage: [A_round, B_schedule, C_stream, D_nozip, E_kbridge, F_eq, G_step]
     steps:
       - uses: actions/checkout@v4
       - name: Generate proof stages
