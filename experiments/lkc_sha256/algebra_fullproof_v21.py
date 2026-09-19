@@ -23,6 +23,37 @@ theorem mask32_lt (x : Nat) : x &&& w32 < 2^32 := by
   rw [mask32_eq_mod]
   exact Nat.mod_lt _ (by decide)
 
+theorem and_mask32_eq_self (x : Nat) (hx : x < 2^32) :
+    x &&& w32 = x := by
+  rw [w32_eq]
+  exact Nat.and_two_pow_sub_one_of_lt_two_pow hx
+
+theorem bigSigma0Fast_eq (x : Nat) :
+    bigSigma0Fast x = bigSigma0 x := by
+  unfold bigSigma0Fast bigSigma0 rotrRaw rotr32
+  rw [Nat.and_xor_distrib_right, Nat.and_xor_distrib_right]
+
+theorem bigSigma1Fast_eq (x : Nat) :
+    bigSigma1Fast x = bigSigma1 x := by
+  unfold bigSigma1Fast bigSigma1 rotrRaw rotr32
+  rw [Nat.and_xor_distrib_right, Nat.and_xor_distrib_right]
+
+theorem smallSigma0Fast_eq (x : Nat) (hx : x < 2^32) :
+    smallSigma0Fast x = smallSigma0 x := by
+  unfold smallSigma0Fast smallSigma0 rotrRaw rotr32
+  rw [Nat.and_xor_distrib_right, Nat.and_xor_distrib_right]
+  have hs : x >>> 3 < 2^32 :=
+    Nat.lt_of_le_of_lt (Nat.shiftRight_le x 3) hx
+  rw [and_mask32_eq_self (x >>> 3) hs]
+
+theorem smallSigma1Fast_eq (x : Nat) (hx : x < 2^32) :
+    smallSigma1Fast x = smallSigma1 x := by
+  unfold smallSigma1Fast smallSigma1 rotrRaw rotr32
+  rw [Nat.and_xor_distrib_right, Nat.and_xor_distrib_right]
+  have hs : x >>> 10 < 2^32 :=
+    Nat.lt_of_le_of_lt (Nat.shiftRight_le x 10) hx
+  rw [and_mask32_eq_self (x >>> 10) hs]
+
 theorem majFast_eq (x y z : Nat) :
     majFast x y z = maj x y z := by
   apply Nat.eq_of_testBit_eq
@@ -81,6 +112,65 @@ structure ValidDigest (s : Digest) : Prop where
   g : s.g < 2^32
   h : s.h < 2^32
 
+structure ValidWindow (w : Window) : Prop where
+  x0 : w.x0 < 2^32
+  x1 : w.x1 < 2^32
+  x2 : w.x2 < 2^32
+  x3 : w.x3 < 2^32
+  x4 : w.x4 < 2^32
+  x5 : w.x5 < 2^32
+  x6 : w.x6 < 2^32
+  x7 : w.x7 < 2^32
+  x8 : w.x8 < 2^32
+  x9 : w.x9 < 2^32
+  x10 : w.x10 < 2^32
+  x11 : w.x11 < 2^32
+  x12 : w.x12 < 2^32
+  x13 : w.x13 < 2^32
+  x14 : w.x14 < 2^32
+  x15 : w.x15 < 2^32
+
+theorem valid_initialWindow (d : Digest) (hd : ValidDigest d) :
+    ValidWindow (initialWindow d) := by
+  constructor
+  · exact hd.a
+  · exact hd.b
+  · exact hd.c
+  · exact hd.d
+  · exact hd.e
+  · exact hd.f
+  · exact hd.g
+  · exact hd.h
+  · decide
+  · decide
+  · decide
+  · decide
+  · decide
+  · decide
+  · decide
+  · decide
+
+theorem valid_push (w : Window) (x : Nat)
+    (hw : ValidWindow w) (hx : x < 2^32) :
+    ValidWindow (w.push x) := by
+  constructor
+  · exact hw.x1
+  · exact hw.x2
+  · exact hw.x3
+  · exact hw.x4
+  · exact hw.x5
+  · exact hw.x6
+  · exact hw.x7
+  · exact hw.x8
+  · exact hw.x9
+  · exact hw.x10
+  · exact hw.x11
+  · exact hw.x12
+  · exact hw.x13
+  · exact hw.x14
+  · exact hw.x15
+  · exact hx
+
 theorem valid_iv : ValidDigest iv := by
   constructor <;> decide
 
@@ -100,7 +190,9 @@ theorem valid_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
 theorem roundFast_eq_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
     roundFast s k w = round s k w := by
   unfold roundFast round
+  rw [bigSigma1Fast_eq s.e]
   rw [chFast_eq s.e s.f s.g hs.e hs.g]
+  rw [bigSigma0Fast_eq s.a]
   rw [majFast_eq s.a s.b s.c]
   rw [mask5_eq_nested s.h (bigSigma1 s.e) (ch s.e s.f s.g) k w]
   rw [show (bigSigma0 s.a + maj s.a s.b s.c) &&& w32 =
@@ -115,14 +207,23 @@ def Window.nextWord (w : Window) : Nat :=
   add32 (add32 (smallSigma1 w.x14) w.x9)
     (add32 (smallSigma0 w.x1) w.x0)
 
-theorem Window.nextFast_eq_nextWord (w : Window) :
+theorem Window.nextFast_eq_nextWord (w : Window) (hw : ValidWindow w) :
     w.nextFast = w.nextWord := by
   unfold Window.nextFast Window.nextWord
+  rw [smallSigma1Fast_eq w.x14 hw.x14]
+  rw [smallSigma0Fast_eq w.x1 hw.x1]
   exact mask4_eq_nested
     (smallSigma1 w.x14) w.x9 (smallSigma0 w.x1) w.x0
 
 def Window.advance (w : Window) : Window :=
   w.push w.nextWord
+
+theorem valid_advance (w : Window) (hw : ValidWindow w) :
+    ValidWindow w.advance := by
+  unfold Window.advance
+  apply valid_push w w.nextWord hw
+  rw [← Window.nextFast_eq_nextWord w hw]
+  exact mask32_lt _
 
 def roundsSlow : List Nat → Window → Digest → Digest
   | [], _, s => s
@@ -130,15 +231,15 @@ def roundsSlow : List Nat → Window → Digest → Digest
       roundsSlow ks win.advance (round s k win.x0)
 
 theorem roundsFast_eq_slow :
-    ∀ ks win s, ValidDigest s →
+    ∀ ks win s, ValidDigest s → ValidWindow win →
       roundsFast ks win s = roundsSlow ks win s
-  | [], win, s, hs => rfl
-  | k :: ks, win, s, hs => by
+  | [], win, s, hs, hw => rfl
+  | k :: ks, win, s, hs, hw => by
       simp only [roundsFast, roundsSlow]
-      rw [Window.nextFast_eq_nextWord]
+      rw [Window.nextFast_eq_nextWord win hw]
       rw [roundFast_eq_round s k win.x0 hs]
       exact roundsFast_eq_slow ks win.advance (round s k win.x0)
-        (valid_round s k win.x0 hs)
+        (valid_round s k win.x0 hs) (valid_advance win hw)
 
 def generate : Nat → Window → List Nat
   | 0, _ => []
@@ -276,37 +377,60 @@ theorem streamWordsK_eq_fastSchedule (d : Digest) :
   rw [hk, streamWords64_eq]
   rfl
 
-theorem roundsFastK_eq_nozip (d : Digest) :
+theorem roundsFastK_eq_nozip (d : Digest) (hd : ValidDigest d) :
     roundsFast K (initialWindow d) iv =
       roundsNoZip K (fastSchedule d) iv := by
   calc
     roundsFast K (initialWindow d) iv =
         roundsSlow K (initialWindow d) iv :=
       roundsFast_eq_slow K (initialWindow d) iv valid_iv
+        (valid_initialWindow d hd)
     _ = roundsNoZip K (streamWords K.length (initialWindow d)) iv :=
       roundsSlow_eq K (initialWindow d) iv
     _ = roundsNoZip K (fastSchedule d) iv := by
       rw [streamWordsK_eq_fastSchedule]
 
-theorem fastStepAlgebra_eq_nozip (d : Digest) :
+theorem fastStepAlgebra_eq_nozip (d : Digest) (hd : ValidDigest d) :
     fastStepAlgebra d = fastStepNoZipProof d := by
   unfold fastStepAlgebra fastStepNoZipProof
-  rw [roundsFastK_eq_nozip]
+  rw [roundsFastK_eq_nozip d hd]
   rfl
 
-theorem fastStepAlgebra_correct (d : Digest) :
+theorem fastStepAlgebra_correct (d : Digest) (hd : ValidDigest d) :
     fastStepAlgebra d = sha256step d := by
-  rw [fastStepAlgebra_eq_nozip]
+  rw [fastStepAlgebra_eq_nozip d hd]
   exact fastStepNoZipProof_correct d
 
-theorem fastStepAlgebra_fun : fastStepAlgebra = sha256step :=
-  funext fastStepAlgebra_correct
+theorem valid_fastStepAlgebra (d : Digest) :
+    ValidDigest (fastStepAlgebra d) := by
+  unfold fastStepAlgebra
+  constructor <;> exact mask32_lt _
 
-theorem impl_correct : ∀ n, impl n = sha256Spec n := fun n =>
-  congrArg
-    (fun step => encodeDigest
-      (iterDigest step (sha256Steps n) (seedDigest (sha256Seed n))))
-    fastStepAlgebra_fun
+theorem seedStep32_lt (x : Nat) : seedStep32 x < 2^32 := by
+  unfold seedStep32
+  exact Nat.lt_of_le_of_lt Nat.and_le_right (by decide)
+
+theorem valid_seedDigest (seed : Nat) : ValidDigest (seedDigest seed) := by
+  unfold seedDigest
+  constructor <;> exact seedStep32_lt _
+
+theorem iterAlgebra_correct :
+    ∀ t d, ValidDigest d →
+      iterDigest fastStepAlgebra t d = iterDigest sha256step t d
+  | 0, d, hd => rfl
+  | t + 1, d, hd => by
+      simp only [iterDigest]
+      rw [fastStepAlgebra_correct d hd]
+      apply iterAlgebra_correct t (sha256step d)
+      rw [← fastStepAlgebra_correct d hd]
+      exact valid_fastStepAlgebra d
+
+theorem impl_correct : ∀ n, impl n = sha256Spec n := by
+  intro n
+  unfold impl sha256Spec iterSha
+  rw [iterAlgebra_correct
+      (sha256Steps n) (seedDigest (sha256Seed n))
+      (valid_seedDigest (sha256Seed n))]
 
 end Submission
 '''
