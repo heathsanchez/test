@@ -25,8 +25,117 @@ def build_event(*,source_commit):
       "repository":"heathsanchez/test","commit":source_commit,"authority_snapshot":AUTHORITY,"verifier_id":VERIFIER,
       "source_evidence_sha256":h(et),"payload":payload,"payload_sha256":h(canonical(payload))}
     return evidence,event
+
+SHARED_RUN=35063857334
+SHARED_SOURCE_SHA="8d4ff807f59dd0bf41f06a67b15f25e1c0c8ffc5"
+SHARED_EQ_JOB=104689752490
+SHARED_SCOUT_JOB=104689796559
+SHARED_EQ_ARTIFACT=10433007976
+SHARED_EQ_DIGEST="sha256:6fbceab4dcb0da71b5f8a311bc2dc7126acd89b320047615e5b0dc8a8d6b241b"
+SHARED_SCOUT_ARTIFACT=10432833694
+SHARED_SCOUT_DIGEST="sha256:f2f499a07ca04a9bd85ac14a61b55eddf08c3c8d142b74d1bf59d6bc5a90e5f3"
+SHARED_AUTHORITY=f"collatz-shared-normalized@{SHARED_SOURCE_SHA}"
+SHARED_VERIFIER="differential-equivalence+bounded-scout-v1"
+
+def build_shared_normalized_event(*,source_commit):
+    if len(source_commit)!=40 or any(ch not in "0123456789abcdef" for ch in source_commit):
+        raise ValueError("source commit must be full SHA")
+    evidence={
+      "schema":"collatz-shared-normalized-evidence-v1",
+      "run":SHARED_RUN,
+      "source_sha":SHARED_SOURCE_SHA,
+      "equivalence":{
+        "job":SHARED_EQ_JOB,
+        "artifact":SHARED_EQ_ARTIFACT,
+        "artifact_digest":SHARED_EQ_DIGEST,
+        "K":8,
+        "R":4,
+        "residual":16,
+        "comparisons":80,
+        "reference_nodes":1467,
+        "reference_memo_hits":665,
+        "shared_calls":2607,
+        "shared_unique_states":1139,
+        "shared_memo_hits":1468,
+        "shared_peak_memo":367,
+        "shared_e_cases":2141,
+        "shared_o_run_cases":2527,
+        "shared_prunes":1100,
+        "max_u":14,
+        "max_v":12,
+        "marker":"VERIFIED_SHARED_EQUIVALENCE",
+      },
+      "scout":{
+        "job":SHARED_SCOUT_JOB,
+        "artifact":SHARED_SCOUT_ARTIFACT,
+        "artifact_digest":SHARED_SCOUT_DIGEST,
+        "K":12,
+        "R":8,
+        "residual":144,
+        "closed":75,
+        "unresolved":69,
+        "max_required_r":7,
+        "max_witness_b":111,
+        "calls":52798,
+        "unique_states":27464,
+        "memo_hits":25334,
+        "prunes":27245,
+        "marker":"VERIFIED_SHARED_NORMALIZED_SCOUT",
+        "residual_marker":"SHARED_NORMALIZED_ZERO_TERNARY_RESIDUAL_REMAINS",
+      },
+      "claim_boundary":"bounded shared-normalized equivalence and scout evidence only; no Collatz termination claim",
+    }
+    capability={
+      "capability_id":"collatz:shared-normalized-equivalence:k8-r4:v1",
+      "input_type":"collatz-shared-normalized-contract",
+      "output_type":"verification-status",
+      "semantics":[["K8-R4","equivalent-to-reference"]],
+      "guard_inputs":["K8-R4"],
+      "certificate_id":f"run:{SHARED_RUN}/jobs:{SHARED_EQ_JOB},{SHARED_SCOUT_JOB}",
+      "dependencies":[],
+      "authority_snapshot":SHARED_AUTHORITY,
+      "verifier_id":SHARED_VERIFIER,
+      "provenance_ids":[
+        f"source-commit:{SHARED_SOURCE_SHA}",
+        f"run:{SHARED_RUN}",
+        f"artifact:{SHARED_EQ_ARTIFACT}",
+        f"artifact:{SHARED_SCOUT_ARTIFACT}",
+      ],
+      "cost":0,
+    }
+    payload={
+      "capability":capability,
+      "oracle":[["K8-R4","equivalent-to-reference"]],
+      "support_ids":[],
+      "origin":"collatz-shared-normalized",
+    }
+    evidence_text=canonical(evidence)
+    event={
+      "schema":"qckn-flash-external-event-v1",
+      "event_id":capability["capability_id"],
+      "event_kind":"capability_admission",
+      "repository":"heathsanchez/test",
+      "commit":source_commit,
+      "authority_snapshot":SHARED_AUTHORITY,
+      "verifier_id":SHARED_VERIFIER,
+      "source_evidence_sha256":h(evidence_text),
+      "payload":payload,
+      "payload_sha256":h(canonical(payload)),
+    }
+    return evidence,event
+
 def main():
     p=argparse.ArgumentParser();p.add_argument("--commit",required=True);p.add_argument("--out",type=Path,required=True);a=p.parse_args()
-    e,v=build_event(source_commit=a.commit);a.out.mkdir(parents=True,exist_ok=True)
-    (a.out/"evidence.json").write_text(canonical(e));(a.out/"event.json").write_text(canonical(v));print("QCKN_FLASH_EVENT="+v["event_id"])
+    e,v=build_event(source_commit=a.commit)
+    a.out.mkdir(parents=True,exist_ok=True)
+    (a.out/"evidence.json").write_text(canonical(e))
+    (a.out/"event.json").write_text(canonical(v))
+    print("QCKN_FLASH_EVENT="+v["event_id"])
+
+    se,sv=build_shared_normalized_event(source_commit=a.commit)
+    shared_out=a.out/"shared-normalized"
+    shared_out.mkdir(parents=True,exist_ok=True)
+    (shared_out/"evidence.json").write_text(canonical(se))
+    (shared_out/"event.json").write_text(canonical(sv))
+    print("QCKN_FLASH_EVENT="+sv["event_id"])
 if __name__=="__main__":main()
