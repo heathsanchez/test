@@ -1,0 +1,27 @@
+name: Verifier Induced Witness Types V22
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/verifier_induced_witness_types_v22.py'
+      - '.github/workflows/verifier-induced-witness-types-v22.yml'
+      - 'V22_VERIFIER_INDUCED_WITNESS_TYPES.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifier-induced-witness-types:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V22 verifier-induced witness type formation
+        run: |
+          rm -rf results/verifier-induced-witness-types-v22
+          mkdir -p results/verifier-induced-witness-types-v22
+          python3 scripts/verifier_induced_witness_types_v22.py --out-dir results/verifier-induced-witness-types-v22
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verifier-induced-witness-types-v22
+          path: results/verifier-induced-witness-types-v22/

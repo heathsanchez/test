@@ -1,0 +1,27 @@
+name: Synthesized Developmental Contexts V23
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/synthesized_developmental_contexts_v23.py'
+      - '.github/workflows/synthesized-developmental-contexts-v23.yml'
+      - 'experiments/V23_SYNTHESIZED_DEVELOPMENTAL_CONTEXTS_PRECOMMIT.md'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  synthesized-developmental-contexts:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V23 synthesized developmental contexts
+        run: |
+          rm -rf results/synthesized-developmental-contexts-v23
+          mkdir -p results/synthesized-developmental-contexts-v23
+          python3 scripts/synthesized_developmental_contexts_v23.py --out-dir results/synthesized-developmental-contexts-v23
+      - uses: actions/upload-artifact@v4
+        with:
+          name: synthesized-developmental-contexts-v23
+          path: results/synthesized-developmental-contexts-v23/
