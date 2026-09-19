@@ -1,0 +1,35 @@
+name: GPU Developmental Hardware Cleanup V1
+
+on:
+  push:
+    branches:
+      - gpu-developmental-hardware-v1
+    paths:
+      - ".github/workflows/gpu-developmental-hardware-cleanup-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      RUNPOD_API_KEY: ${{ secrets.RUNPOD_API_KEY }}
+
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Runpod Flash
+        run: python -m pip install runpod-flash
+
+      - name: Delete benchmark production environment and resources
+        run: |
+          printf 'y\n' | flash env delete production --app qckn-gpu-hardware-v1
+
+      - name: Verify environment removed
+        run: |
+          flash env list --app qckn-gpu-hardware-v1 || true
