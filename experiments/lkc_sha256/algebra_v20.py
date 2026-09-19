@@ -27,9 +27,25 @@ structure Window where
   x14 : Nat
   x15 : Nat
 
+/-- Raw rotate; callers combine several rotations and mask once at the end. -/
+def rotrRaw (x n : Nat) : Nat :=
+  (x >>> n) ||| (x <<< (32 - n))
+
+def smallSigma0Fast (x : Nat) : Nat :=
+  (rotrRaw x 7 ^^^ rotrRaw x 18 ^^^ (x >>> 3)) &&& w32
+
+def smallSigma1Fast (x : Nat) : Nat :=
+  (rotrRaw x 17 ^^^ rotrRaw x 19 ^^^ (x >>> 10)) &&& w32
+
+def bigSigma0Fast (x : Nat) : Nat :=
+  (rotrRaw x 2 ^^^ rotrRaw x 13 ^^^ rotrRaw x 22) &&& w32
+
+def bigSigma1Fast (x : Nat) : Nat :=
+  (rotrRaw x 6 ^^^ rotrRaw x 11 ^^^ rotrRaw x 25) &&& w32
+
 /-- One final reduction mod 2^32 instead of three nested add32 masks. -/
 def Window.nextFast (w : Window) : Nat :=
-  (smallSigma1 w.x14 + w.x9 + smallSigma0 w.x1 + w.x0) &&& w32
+  (smallSigma1Fast w.x14 + w.x9 + smallSigma0Fast w.x1 + w.x0) &&& w32
 
 def Window.push (w : Window) (x : Nat) : Window :=
   ⟨w.x1, w.x2, w.x3, w.x4, w.x5, w.x6, w.x7, w.x8,
@@ -51,8 +67,8 @@ The round algebra only needs the final sums modulo 2^32.
 This removes three intermediate masks from t1 on every round.
 -/
 def roundFast (s : Digest) (k w : Nat) : Digest :=
-  let t1 := (s.h + bigSigma1 s.e + chFast s.e s.f s.g + k + w) &&& w32
-  let t2 := (bigSigma0 s.a + majFast s.a s.b s.c) &&& w32
+  let t1 := (s.h + bigSigma1Fast s.e + chFast s.e s.f s.g + k + w) &&& w32
+  let t2 := (bigSigma0Fast s.a + majFast s.a s.b s.c) &&& w32
   ⟨(t1 + t2) &&& w32, s.a, s.b, s.c,
    (s.d + t1) &&& w32, s.e, s.f, s.g⟩
 
