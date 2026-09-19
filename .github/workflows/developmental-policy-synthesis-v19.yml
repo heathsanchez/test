@@ -1,0 +1,19 @@
+name: Developmental Policy Synthesis V19
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+jobs:
+  developmental-policy-synthesis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V19 developmental policy synthesis
+        run: |
+          rm -rf results/developmental-policy-synthesis-v19
+          mkdir -p results/developmental-policy-synthesis-v19
+          python3 scripts/developmental_policy_synthesis_v19.py --out-dir results/developmental-policy-synthesis-v19
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-policy-synthesis-v19
+          path: results/developmental-policy-synthesis-v19/
