@@ -45,4 +45,4 @@ jobs:
         working-directory: lean-v23-check
         run: |
           printf '\n#print axioms Submission.impl_correct\n' >> Submission.lean
-          /usr/bin/time -v lean             -DautoImplicit=false -DwarningAsError=true             -DmaxRecDepth=4000000 -DmaxHeartbeats=0             Submission.lean
+          /usr/bin/time -v env LEAN_PATH=. lean             -DautoImplicit=false -DwarningAsError=true             -DmaxRecDepth=4000000 -DmaxHeartbeats=0             Submission.lean
