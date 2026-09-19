@@ -14,9 +14,27 @@ on:
       - '.github/workflows/developmental-checker-live-v1.yml'
       - 'scripts/patch_developmental_checker_trace.py'
       - 'scripts/run_developmental_checker_trace.py'
+      - 'scripts/commitment_router_math_v26.py'
+      - 'COMMITMENT_ROUTER_MATH_SPEC_V26.md'
 
 jobs:
+  commitment-router-v26:
+    if: github.event_name == 'pull_request' && github.head_ref == 'v26-commitment-router-math-spec'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen 14-test commitment router suite
+        run: python scripts/commitment_router_math_v26.py | tee commitment_router_math_v26_result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: commitment-router-math-v26
+          path: commitment_router_math_v26_result.json
+
   live-trace-gate:
+    if: github.event_name != 'pull_request' || github.head_ref != 'v26-commitment-router-math-spec'
     runs-on: ubuntu-24.04
     timeout-minutes: 45
     permissions:
