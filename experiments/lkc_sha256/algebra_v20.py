@@ -79,12 +79,14 @@ def roundsFast : List Nat → Window → Digest → Digest
       let next := win.nextFast
       roundsFast ks (win.push next) (roundFast s k win.x0)
 
-def fastStepAlgebra (d : Digest) : Digest :=
-  let f := roundsFast K (initialWindow d) iv
+def feedForwardIV (f : Digest) : Digest :=
   ⟨(iv.a + f.a) &&& w32, (iv.b + f.b) &&& w32,
    (iv.c + f.c) &&& w32, (iv.d + f.d) &&& w32,
    (iv.e + f.e) &&& w32, (iv.f + f.f) &&& w32,
    (iv.g + f.g) &&& w32, (iv.h + f.h) &&& w32⟩
+
+def fastStepAlgebra (d : Digest) : Digest :=
+  feedForwardIV (roundsFast K (initialWindow d) iv)
 
 def impl (n : Nat) : Nat :=
   encodeDigest
