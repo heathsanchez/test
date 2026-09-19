@@ -376,7 +376,7 @@ def fastStepNoZipProof (d : Digest) : Digest :=
 
 theorem fastStepNoZipProof_correct (d : Digest) :
     fastStepNoZipProof d = sha256step d := by
-  unfold fastStepNoZipProof sha256step compress feedForwardIV
+  unfold fastStepNoZipProof sha256step compress feedForwardIV add32
   rw [roundsNoZip_eq, schedule_correct]
 
 theorem streamWordsK_eq_fastSchedule (d : Digest) :
