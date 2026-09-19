@@ -132,6 +132,7 @@ structure ValidWindow (w : Window) : Prop where
 
 theorem valid_initialWindow (d : Digest) (hd : ValidDigest d) :
     ValidWindow (initialWindow d) := by
+  unfold initialWindow
   constructor
   · exact hd.a
   · exact hd.b
@@ -153,6 +154,7 @@ theorem valid_initialWindow (d : Digest) (hd : ValidDigest d) :
 theorem valid_push (w : Window) (x : Nat)
     (hw : ValidWindow w) (hx : x < 2^32) :
     ValidWindow (w.push x) := by
+  unfold Window.push
   constructor
   · exact hw.x1
   · exact hw.x2
