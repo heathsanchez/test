@@ -1,0 +1,128 @@
+name: LKC SHA Algebra v23 Proof Friendly
+
+on:
+  push:
+    branches: [lkc-sha-algebra-v23-proof-friendly]
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V23 proof census
+        run: |
+          python3 experiments/lkc_sha256/algebra_fullproof_v21.py
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path("experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean")
+          s=p.read_text()
+          i=s.index("def Window.toList")
+          Path("experiments/lkc_sha256/generated/V23_round_census.lean").write_text(s[:i]+"\nend Submission\n")
+          PY
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-algebra-v23-lean4331-d8ea5fc
+      - name: Setup SHA environment
+        working-directory: bench
+        run: python3 benchmark.py setup --problem sha256
+      - name: Check V23 invariant bank
+        run: |
+          cp experiments/lkc_sha256/generated/V23_round_census.lean bench/.cache/upstream/evaluation/problems/sha256/V23_round_census.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V23_round_census.lean
+
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate universally proved V23
+        run: |
+          python3 -m py_compile experiments/lkc_sha256/algebra_fullproof_v21.py
+          python3 experiments/lkc_sha256/algebra_fullproof_v21.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-algebra-v23-lean4331-d8ea5fc
+      - name: Setup exact SHA environment and rules
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem sha256
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Universal proof and axiom audit
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean bench/.cache/upstream/evaluation/problems/sha256/Submission_v23.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          printf '\n#print axioms Submission.impl_correct\n' >> Submission_v23.lean
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Submission_v23.lean
+      - name: Canonical acceptance
+        run: |
+          python3 bench/.cache/upstream/evaluation/run.py --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean"             --timeout 900
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-algebra-v23-proof-evidence
+          path: experiments/lkc_sha256/generated/
+
+  resource:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        n: [18860801433, 2199573357346]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V23 runtime
+        run: python3 experiments/lkc_sha256/algebra_v20.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-algebra-v23-resource-lean4331-d8ea5fc
+      - name: Setup SHA environment
+        working-directory: bench
+        run: python3 benchmark.py setup --problem sha256
+      - name: Exact-output resource smoke
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v20.lean"             --metric wall-time --repetitions 1             --timeout 900 --memory-mb 4096             --inputs "${{ matrix.n }}"             --output "$GITHUB_WORKSPACE/v23-${{ matrix.n }}"
