@@ -434,21 +434,31 @@ theorem valid_seedDigest (seed : Nat) : ValidDigest (seedDigest seed) := by
   unfold seedDigest
   constructor <;> exact seedStep32_lt _
 
-theorem iterAlgebra_correct :
-    ∀ t d, ValidDigest d →
-      iterDigest fastStepAlgebra t d = iterDigest sha256step t d
+theorem iterDigest_congr_of_invariant
+    (P : Digest → Prop) (f g : Digest → Digest)
+    (hstep : ∀ d, P d → f d = g d)
+    (hinv : ∀ d, P d → P (g d)) :
+    ∀ t d, P d → iterDigest f t d = iterDigest g t d
   | 0, d, hd => rfl
   | t + 1, d, hd => by
       simp only [iterDigest]
-      rw [fastStepAlgebra_correct d hd]
-      exact iterAlgebra_correct t (sha256step d) (valid_sha256step d)
+      rw [hstep d hd]
+      exact iterDigest_congr_of_invariant P f g hstep hinv
+        t (g d) (hinv d hd)
+
+theorem iterAlgebra_correct (t : Nat) (d : Digest) (hd : ValidDigest d) :
+    iterDigest fastStepAlgebra t d = iterDigest sha256step t d :=
+  iterDigest_congr_of_invariant
+    ValidDigest fastStepAlgebra sha256step
+    fastStepAlgebra_correct valid_sha256step t d hd
 
 theorem impl_correct : ∀ n, impl n = sha256Spec n := by
   intro n
   unfold impl sha256Spec iterSha
-  rw [iterAlgebra_correct
+  exact congrArg encodeDigest
+    (iterAlgebra_correct
       (sha256Steps n) (seedDigest (sha256Seed n))
-      (valid_seedDigest (sha256Seed n))]
+      (valid_seedDigest (sha256Seed n)))
 
 end Submission
 '''
