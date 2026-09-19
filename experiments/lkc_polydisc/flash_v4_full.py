@@ -44,21 +44,41 @@ theorem derivHL_polyOfShift_length (n : Nat) :
     (derivHL (polyOfShift n)).length = 24 := by
   simp [derivHL, polyOfShift_length]
 
-theorem trimLeading_derivHL_polyOfShift (n : Nat) :
-    trimLeading (derivHL (polyOfShift n)) = derivHL (polyOfShift n) := by
+theorem trimLeading_eq_self_of_headD_ne_zero
+    (xs : List Int) (h : xs.headD 0 ≠ 0) :
+    trimLeading xs = xs := by
+  cases xs with
+  | nil =>
+      simp at h
+  | cons x xs =>
+      simp only [List.headD_cons] at h
+      cases x with
+      | ofNat k =>
+          cases k with
+          | zero => exact (h rfl).elim
+          | succ k => rfl
+      | negSucc k => rfl
+
+theorem derivHL_polyOfShift_headD (n : Nat) :
+    (derivHL (polyOfShift n)).headD 0 = 24 := by
   unfold derivHL
   rw [polyOfShift_length]
-  simp [polyOfShift, trimLeading]
+  simp [polyOfShift]
+
+theorem trimLeading_derivHL_polyOfShift (n : Nat) :
+    trimLeading (derivHL (polyOfShift n)) = derivHL (polyOfShift n) := by
+  apply trimLeading_eq_self_of_headD_ne_zero
+  rw [derivHL_polyOfShift_headD]
+  decide
 
 theorem resultantFromPolyFixed24_eq (n : Nat) :
     resultantFromPolyFixed24 (polyOfShift n) =
       resultantFromPolyMul (polyOfShift n) := by
   unfold resultantFromPolyFixed24 resultantFromPolyMul normalResultantMul
-  rw [trimLeading_polyOfShift, trimLeading_derivHL_polyOfShift]
   have hd : (derivHL (polyOfShift n)).length = 24 :=
     derivHL_polyOfShift_length n
   have hp : (polyOfShift n).length = 25 := polyOfShift_length n
-  simp [hd, hp]
+  simp [trimLeading_polyOfShift, trimLeading_derivHL_polyOfShift, hd, hp]
 
 def impl (n : Nat) : Int := resultantFromPolyFixed24 (polyOfShift n)
 
