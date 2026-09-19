@@ -38,7 +38,7 @@ theorem chFast_eq (x y z : Nat)
   rw [show w32 = 2^32 - 1 by exact w32_eq]
   apply Nat.eq_of_testBit_eq
   intro i
-  simp only [chFast, ch, Nat.testBit_xor, Nat.testBit_and,
+  simp only [Nat.testBit_xor, Nat.testBit_and,
     Nat.testBit_two_pow_sub_one]
   by_cases hi : i < 32
   · simp only [hi, decide_true]
@@ -59,14 +59,14 @@ theorem mask4_eq_nested (a b c d : Nat) :
     (a + b + c + d) &&& w32 =
       add32 (add32 a b) (add32 c d) := by
   simp only [add32, mask32_eq_mod]
-  simp only [Nat.mod_add_mod, Nat.add_mod_mod, Nat.mod_mod]
+  simp only [Nat.mod_add_mod, Nat.add_mod_mod]
   simp [Nat.add_assoc]
 
 theorem mask5_eq_nested (a b c d e : Nat) :
     (a + b + c + d + e) &&& w32 =
       add32 a (add32 b (add32 c (add32 d e))) := by
   simp only [add32, mask32_eq_mod]
-  simp only [Nat.mod_add_mod, Nat.add_mod_mod, Nat.mod_mod]
+  simp only [Nat.add_mod_mod]
   simp [Nat.add_assoc]
 
 theorem mask2_eq_add32 (a b : Nat) :
