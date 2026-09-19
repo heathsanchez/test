@@ -1,0 +1,24 @@
+name: Developmental Identity Reflection V18
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/developmental_identity_reflection_v18.py'
+      - '.github/workflows/developmental_identity_reflection_v18.yml'
+      - 'experiments/developmental_identity_reflection_v18/**'
+  workflow_dispatch:
+
+jobs:
+  developmental-identity-reflection:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V18 developmental identity reflection
+        run: |
+          rm -rf results/developmental-identity-reflection-v18
+          mkdir -p results/developmental-identity-reflection-v18
+          python3 scripts/developmental_identity_reflection_v18.py --out-dir results/developmental-identity-reflection-v18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: developmental-identity-reflection-v18
+          path: results/developmental-identity-reflection-v18/
