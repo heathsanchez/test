@@ -144,5 +144,137 @@
     "paired resource measurement",
     "strict improvement"
   ],
-  "propagation_policy": "On PROMOTE, REJECT, DIST, UNKNOWN_SEARCH, or REVOKE, append a typed event and re-evaluate all active_frontiers whose first_pass or dependencies intersect the new consequence."
+  "propagation_policy": "On PROMOTE, REJECT, DIST, UNKNOWN_SEARCH, or REVOKE, append a typed event and re-evaluate all active_frontiers whose first_pass or dependencies intersect the new consequence.",
+  "events": [
+    {
+      "id": "F1-partition-v5-runtime",
+      "type": "PROMOTE_SCREEN",
+      "target": "partition",
+      "candidate_branch": "lkc-flash2-partition-v5",
+      "transformation": "stream multiplicity recurrence as linear coin-change row transition",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": 65.95691777655102,
+        "ratio": 0.3404308222344899,
+        "all_six_cases_complete": true
+      },
+      "status": "AWAITING_UNIVERSAL_PROOF_AND_CANONICAL"
+    },
+    {
+      "id": "F1-permanent-v6-runtime",
+      "type": "PROMOTE_SCREEN",
+      "target": "permanent",
+      "candidate_branch": "lkc-flash2-permanent-v6",
+      "transformation": "reverse row traversal under row-permutation invariance hypothesis",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": 12.949778693094249,
+        "ratio": 0.8705022130690575,
+        "all_six_cases_complete": true
+      },
+      "status": "AWAITING_ROW_PERMUTATION_PROOF_AND_CANONICAL"
+    },
+    {
+      "id": "F1-sha-v24-runtime",
+      "type": "PROMOTE_SCREEN",
+      "target": "sha256",
+      "candidate_branch": "lkc-flash2-sha-v24",
+      "transformation": "defer sigma/t1/t2 modular normalization to consuming output boundaries",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": 4.857579338514595,
+        "ratio": 0.951424206614854,
+        "all_six_cases_complete": true,
+        "h3_512_complete": true
+      },
+      "status": "AWAITING_MODULAR_EQUIVALENCE_PROOF_AND_CANONICAL"
+    },
+    {
+      "id": "F1-polydisc-v4-runtime",
+      "type": "PROMOTE_INSTRUCTION_GATE",
+      "target": "polydisc",
+      "candidate_branch": "lkc-flash2-polydisc-v4",
+      "transformation": "specialize universally fixed monic degree-24 resultant entry shape",
+      "evidence": {
+        "callgrind_champion": 9968158714,
+        "callgrind_challenger": 9967096808,
+        "improvement_pct": 0.01065298045975771
+      },
+      "status": "PROOF_PATCH_IN_FLIGHT"
+    },
+    {
+      "id": "F1-mertens-shared-primes-reject",
+      "type": "REFUTED_RESOURCE",
+      "target": "mertens",
+      "candidate_branch": "lkc-flash2-mertens-v8",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": -36.281620150822945,
+        "ratio": 1.3628162015082295
+      },
+      "compiled_separator": "Shared prime-list discovery overhead exceeds saved repeated minFac work on the current range; do not reuse this list-based realization."
+    },
+    {
+      "id": "F1-primecount-shared-primes-reject",
+      "type": "REFUTED_RESOURCE",
+      "target": "primecount",
+      "candidate_branch": "lkc-flash2-primecount-v4",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": -30.294677081002618,
+        "ratio": 1.3029467708100262
+      },
+      "compiled_separator": "Incremental prime-list append/traversal is too expensive in kernel reduction; seek a non-list generated-state representation."
+    },
+    {
+      "id": "F1-rule110-generic-maskless-reject",
+      "type": "REFUTED_RESOURCE",
+      "target": "rule110",
+      "candidate_branch": "lkc-flash2-rule110-v64",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": -0.38492230958067086,
+        "ratio": 1.0038492230958067
+      },
+      "compiled_separator": "V60's specialized 2/4/8 paths remain preferable; generic maskless recursion adds overhead."
+    },
+    {
+      "id": "F1-fib-shared-locals-reject",
+      "type": "REFUTED_RESOURCE",
+      "target": "fib",
+      "candidate_branch": "lkc-flash2-fib-v3",
+      "evidence": {
+        "metric": "wall-time",
+        "improvement_pct": -2.76715995976613,
+        "ratio": 1.0276715995976613
+      },
+      "compiled_separator": "Lean sharing via local lets does not imply cheaper kernel reduction for fast-doubling expressions."
+    }
+  ],
+  "reclosure_after_F1": {
+    "partition": [
+      "qualify V5; if proved, transfer streaming recurrence pattern to other cumulative DP frontiers"
+    ],
+    "permanent": [
+      "prove row permutation invariance; then test dynamic row ordering only if proof cost stays outside scored path"
+    ],
+    "sha256": [
+      "derive modular-consumption lemmas rather than pointwise sigma equality; this is the new operation-level quotient capability"
+    ],
+    "polydisc": [
+      "finish fixed-shape proof; instruction gain is small so freeze only if qualification is clean"
+    ],
+    "mertens": [
+      "reject list-based shared-prime state; explore arithmetic quotient/block recurrence instead"
+    ],
+    "primecount": [
+      "reject list-based prime state; explore bitset/packed/sieve-like or quotient-count formulations"
+    ],
+    "rule110": [
+      "preserve V60 specialized path; next search is true multi-step transition algebra, not generic recursion"
+    ],
+    "fib": [
+      "preserve V2; next search must change transition representation, not merely introduce syntactic sharing"
+    ]
+  }
 }
