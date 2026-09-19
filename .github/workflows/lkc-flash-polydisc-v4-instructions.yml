@@ -1,0 +1,55 @@
+name: LKC Flash Polydisc V4 Instruction Gate
+on:
+  push:
+    branches: [lkc-flash2-polydisc-v4]
+    paths:
+      - '.github/workflows/lkc-flash-polydisc-v4-instructions.yml'
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+jobs:
+  callgrind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 experiments/lkc_polydisc/flash_v4_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem polydisc
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Callgrind paired
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p poly-v4-ir
+          cd bench
+          for who in champion challenger; do
+            if [ "$who" = champion ]; then sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v3.lean"; else sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v4_probe.lean"; fi
+            python3 benchmark.py diagnostic --problem polydisc --submission "$sub" --metric callgrind               --repetitions 3 --timeout 900 --memory-mb 4096               --inputs 19337098 9225987 6476047012455 10487306645701 5042242704654352709 4530401864863699852               --output "$GITHUB_WORKSPACE/poly-v4-ir/$who"
+          done
+      - name: Result
+        shell: python
+        run: |
+          import json,pathlib
+          r=pathlib.Path("poly-v4-ir")
+          a=json.loads((r/"champion/diagnostic.json").read_text())["totals"]["candidate"]
+          b=json.loads((r/"challenger/diagnostic.json").read_text())["totals"]["candidate"]
+          out={"metric":"callgrind","champion":a,"challenger":b,"ratio":b/a,
+               "improvement_pct":100*(1-b/a),
+               "consequence":"PROMOTE_INSTRUCTION_GATE" if b<a else "REFUTED_RESOURCE"}
+          (r/"result.json").write_text(json.dumps(out,indent=2)+"\n");print(json.dumps(out,indent=2))
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-flash-polydisc-v4-instructions
+          path: poly-v4-ir/
