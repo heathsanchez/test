@@ -33,6 +33,10 @@ class CollatzFlashEventEmitterTests(unittest.TestCase):
         self.assertIn("manual-review", obs["provenance"])
         text = canonical(event)
         self.assertEqual(text, canonical(json.loads(text)))
+        self.assertEqual(
+            event["commit"],
+            "7fe10392f2865a008ff8642f4da64d93378c780f",
+        )
 
     def test_shared_normalized_equivalence_emits_bounded_capability(self):
         evidence, event = build_shared_normalized_event(
@@ -73,6 +77,20 @@ class CollatzFlashEventEmitterTests(unittest.TestCase):
             cap["certificate_id"],
             "run:35063857334/jobs:104689752490,104689796559",
         )
+        self.assertEqual(
+            event["commit"],
+            "c444e21e15557126fae555ddbdfa1e04016e1573",
+        )
+
+    def test_event_identity_is_stable_when_emitter_head_advances(self):
+        head_a="0123456789abcdef0123456789abcdef01234567"
+        head_b="fedcba9876543210fedcba9876543210fedcba98"
+        _,old_a=build_event(source_commit=head_a)
+        _,old_b=build_event(source_commit=head_b)
+        _,shared_a=build_shared_normalized_event(source_commit=head_a)
+        _,shared_b=build_shared_normalized_event(source_commit=head_b)
+        self.assertEqual(canonical(old_a),canonical(old_b))
+        self.assertEqual(canonical(shared_a),canonical(shared_b))
 
     def test_source_commit_must_be_full_sha(self):
         with self.assertRaises(ValueError):
