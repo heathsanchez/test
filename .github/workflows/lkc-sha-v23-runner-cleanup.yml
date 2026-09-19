@@ -1,0 +1,26 @@
+name: LKC SHA V23 Runner Cleanup
+
+on:
+  push:
+    branches: [lkc-sha-v23-runner-cleanup]
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  cancel-obsolete:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Cancel obsolete SHA proof runs
+        shell: bash
+        run: |
+          set -u
+          for id in             35412532925             35412417673             35412395854             35412260563             35411937054             35411771015             35411726843             35412422646             35412399524             35412265442             35412036068             35411947304             35411855893             35412100814
+          do
+            echo "cancel $id"
+            gh api --method POST "repos/heathsanchez/test/actions/runs/$id/cancel" || true
+          done
