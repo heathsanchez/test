@@ -60,19 +60,20 @@ jobs:
           def get(p):
               u=f'{B}/api/acc/discoveries/snapshot?problem={p}'
               with urllib.request.urlopen(urllib.request.Request(u,headers=H),timeout=60) as r:return json.loads(r.read().decode())
+          def cid(x): return x.get('problemId') or x.get('challengeId')
           out=pathlib.Path('acc_competitive/orbit_v4_live');out.mkdir(parents=True,exist_ok=True)
           live=get('ac');d=live.get('data',live)
           prior=set(json.loads(pathlib.Path('/tmp/v3/compound_v3_next/targets.json').read_text()))|{'ac-08551'}
           rows=[x for x in d['items'] if x.get('status')=='solved' and x.get('kTeams')==1
                 and isinstance(x.get('currentBestLength'),int) and x['currentBestLength']>=700
-                and x['challengeId'] not in prior]
+                and cid(x) is not None and cid(x) not in prior]
           # Priority = exposed point ownership first, then largest headroom.
-          rows.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          rows.sort(key=lambda x:(-x['currentBestLength'],cid(x)))
           rows=rows[:64]
           (out/'snapshot_ac.json').write_text(json.dumps(live,indent=2,sort_keys=True)+'\n')
-          (out/'targets.json').write_text(json.dumps([x['challengeId'] for x in rows])+'\n')
+          (out/'targets.json').write_text(json.dumps([cid(x) for x in rows])+'\n')
           (out/'selection.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
-          print('ORBIT_V4_HARVEST_TARGETS',json.dumps([(x['challengeId'],x['currentBestLength']) for x in rows]))
+          print('ORBIT_V4_HARVEST_TARGETS',json.dumps([(cid(x),x['currentBestLength']) for x in rows]))
           PY
 
       - name: Decide whether quotient transport earned harvest expansion
@@ -150,6 +151,7 @@ jobs:
             'fortified_candidates':f.get('optimized_candidates',0),'fortify_moves_saved':f.get('moves_saved',0),
             'published_rows':p.get('selected_rows',0),'published_ac':p.get('selected_ac',0),'published_stable':p.get('selected_stable',0),
             'submission_id':p.get('submission_id'),'terminal_status':p.get('terminal_status'),'failed_rows':p.get('failed_rows'),
+            'daily_used_pre':p.get('daily_submissions_used_pre'),'daily_remaining_pre':p.get('daily_submissions_remaining_pre'),
             'publication_policy':'ONE_PACKED_CALL_STRICT_LIVE_WINS_ONLY'
           }
           pathlib.Path('acc_competitive/orbit_v4_report.json').write_text(json.dumps(r,indent=2,sort_keys=True)+'\n')
