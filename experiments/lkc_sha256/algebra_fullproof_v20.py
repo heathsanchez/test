@@ -270,14 +270,28 @@ theorem fastStepNoZipProof_correct (d : Digest) :
   unfold fastStepNoZipProof sha256step compress
   rw [roundsNoZip_eq, schedule_correct]
 
+theorem streamWordsK_eq_fastSchedule (d : Digest) :
+    streamWords K.length (initialWindow d) = fastSchedule d := by
+  have hk : K.length = 64 := by decide
+  rw [hk, streamWords64_eq]
+  rfl
+
+theorem roundsFastK_eq_nozip (d : Digest) :
+    roundsFast K (initialWindow d) iv =
+      roundsNoZip K (fastSchedule d) iv := by
+  calc
+    roundsFast K (initialWindow d) iv =
+        roundsSlow K (initialWindow d) iv :=
+      roundsFast_eq_slow K (initialWindow d) iv valid_iv
+    _ = roundsNoZip K (streamWords K.length (initialWindow d)) iv :=
+      roundsSlow_eq K (initialWindow d) iv
+    _ = roundsNoZip K (fastSchedule d) iv := by
+      rw [streamWordsK_eq_fastSchedule]
+
 theorem fastStepAlgebra_eq_nozip (d : Digest) :
     fastStepAlgebra d = fastStepNoZipProof d := by
-  unfold fastStepAlgebra fastStepNoZipProof fastSchedule
-  rw [roundsFast_eq_slow K (initialWindow d) iv valid_iv]
-  rw [roundsSlow_eq]
-  have hk : K.length = 64 := by decide
-  rw [hk]
-  rw [streamWords64_eq]
+  unfold fastStepAlgebra fastStepNoZipProof
+  rw [roundsFastK_eq_nozip]
   rfl
 
 theorem fastStepAlgebra_correct (d : Digest) :
