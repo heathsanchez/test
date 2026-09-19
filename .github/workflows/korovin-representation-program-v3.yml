@@ -1,0 +1,37 @@
+name: Korovin Representation Program V3
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, experiment/korovin-representation-program-v3]
+    paths:
+      - '.github/workflows/korovin-representation-program-v3.yml'
+      - 'experiments/korovin_full_v3/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/korovin-representation-program-v3.yml'
+      - 'experiments/korovin_full_v3/**'
+jobs:
+  frozen-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - name: Freeze source hashes
+        run: |
+          mkdir -p experiments/korovin_full_v3/results
+          sha256sum experiments/korovin_full_v3/{PRECOMMIT.md,worlds.py,constructor.py,verifier.py,run.py} | tee experiments/korovin_full_v3/results/SOURCE_SHA256.txt
+      - name: Run
+        run: python experiments/korovin_full_v3/run.py
+      - name: Determinism replay
+        run: |
+          cp experiments/korovin_full_v3/results/RESULT.json /tmp/r1.json
+          python experiments/korovin_full_v3/run.py
+          cmp /tmp/r1.json experiments/korovin_full_v3/results/RESULT.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: korovin-representation-program-v3
+          path: experiments/korovin_full_v3/results/
