@@ -250,14 +250,18 @@ theorem streamWords64_eq (w : Window) :
   rw [streamWords16_eq_toList]
   rw [streamWords_after16_eq_generate]
 
+def finishProof (f : Digest) : Digest :=
+  ⟨(iv.a + f.a) &&& w32, (iv.b + f.b) &&& w32,
+   (iv.c + f.c) &&& w32, (iv.d + f.d) &&& w32,
+   (iv.e + f.e) &&& w32, (iv.f + f.f) &&& w32,
+   (iv.g + f.g) &&& w32, (iv.h + f.h) &&& w32⟩
+
 def fastStepNoZipProof (d : Digest) : Digest :=
-  let f := roundsNoZip K (fastSchedule d) iv
-  ⟨add32 iv.a f.a, add32 iv.b f.b, add32 iv.c f.c, add32 iv.d f.d,
-   add32 iv.e f.e, add32 iv.f f.f, add32 iv.g f.g, add32 iv.h f.h⟩
+  finishProof (roundsNoZip K (fastSchedule d) iv)
 
 theorem fastStepNoZipProof_correct (d : Digest) :
     fastStepNoZipProof d = sha256step d := by
-  unfold fastStepNoZipProof sha256step compress
+  unfold fastStepNoZipProof finishProof sha256step compress
   rw [roundsNoZip_eq, schedule_correct]
 
 theorem streamWordsK_eq_fastSchedule (d : Digest) :
@@ -280,14 +284,14 @@ theorem roundsFastK_eq_nozip (d : Digest) :
 
 theorem fastStepAlgebra_eq_nozip (d : Digest) :
     fastStepAlgebra d = fastStepNoZipProof d := by
-  have h := roundsFastK_eq_nozip d
-  exact congrArg
-    (fun f : Digest =>
-      ⟨(iv.a + f.a) &&& w32, (iv.b + f.b) &&& w32,
-       (iv.c + f.c) &&& w32, (iv.d + f.d) &&& w32,
-       (iv.e + f.e) &&& w32, (iv.f + f.f) &&& w32,
-       (iv.g + f.g) &&& w32, (iv.h + f.h) &&& w32⟩)
-    h
+  calc
+    fastStepAlgebra d =
+        finishProof (roundsFast K (initialWindow d) iv) := by
+      rfl
+    _ = finishProof (roundsNoZip K (fastSchedule d) iv) :=
+      congrArg finishProof (roundsFastK_eq_nozip d)
+    _ = fastStepNoZipProof d := by
+      rfl
 
 theorem fastStepAlgebra_correct (d : Digest) :
     fastStepAlgebra d = sha256step d := by
