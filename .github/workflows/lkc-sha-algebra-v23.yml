@@ -1,6 +1,7 @@
 name: LKC SHA Algebra v23 Proof Friendly
 
 on:
+  workflow_dispatch:
   push:
     branches: [lkc-sha-algebra-v23-proof-friendly]
 
@@ -13,6 +14,7 @@ env:
 
 jobs:
   census:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 60
     steps:
@@ -95,6 +97,7 @@ jobs:
           path: experiments/lkc_sha256/generated/
 
   resource:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
     runs-on: ubuntu-24.04
     timeout-minutes: 90
     strategy:
