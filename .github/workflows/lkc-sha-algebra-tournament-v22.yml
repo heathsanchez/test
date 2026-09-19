@@ -1,0 +1,66 @@
+name: LKC SHA Algebra Tournament v22
+
+on:
+  push:
+    branches: [lkc-sha-algebra-tournament-v22]
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  callgrind:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V20 and V21
+        run: |
+          python3 experiments/lkc_sha256/algebra_v20_original.py
+          python3 experiments/lkc_sha256/algebra_v20.py
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-algebra-v22-lean4331-d8ea5fc
+      - name: Setup SHA environment
+        working-directory: bench
+        run: python3 benchmark.py setup --problem sha256
+      - name: V20 Callgrind
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v20_original.lean"             --metric callgrind --repetitions 1             --timeout 900 --memory-mb 4096             --inputs 18860801433 138725260120             --output "$GITHUB_WORKSPACE/v20-callgrind"
+      - name: V21 Callgrind
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v20.lean"             --metric callgrind --repetitions 1             --timeout 900 --memory-mb 4096             --inputs 18860801433 138725260120             --output "$GITHUB_WORKSPACE/v21-callgrind"
+      - name: Compare candidate instruction totals
+        run: |
+          python3 - <<'PY'
+          import json
+          for name in ("v20","v21"):
+              d=json.load(open(f"{name}-callgrind/diagnostic.json"))
+              run=next(r for r in d["runs"] if r["role"]=="candidate")
+              vals=[c["median"] for c in run["cases"]]
+              print(name, vals, sum(vals))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-algebra-v22-callgrind
+          path: |
+            v20-callgrind/
+            v21-callgrind/
