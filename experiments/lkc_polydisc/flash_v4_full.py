@@ -59,11 +59,15 @@ theorem trimLeading_eq_self_of_headD_ne_zero
           | succ k => rfl
       | negSucc k => rfl
 
+theorem derivHL_monic24_headD (xs : List Int) (hxs : xs.length = 24) :
+    (derivHL (1 :: xs)).headD 0 = 24 := by
+  simp [derivHL, hxs]
+
 theorem derivHL_polyOfShift_headD (n : Nat) :
     (derivHL (polyOfShift n)).headD 0 = 24 := by
-  unfold derivHL
-  rw [polyOfShift_length]
-  simp [polyOfShift]
+  unfold polyOfShift
+  apply derivHL_monic24_headD
+  exact coefficientsFromShift_length 24 (kbitsOf n) 1 (lcgSeed n)
 
 theorem trimLeading_derivHL_polyOfShift (n : Nat) :
     trimLeading (derivHL (polyOfShift n)) = derivHL (polyOfShift n) := by
@@ -78,7 +82,12 @@ theorem resultantFromPolyFixed24_eq (n : Nat) :
   have hd : (derivHL (polyOfShift n)).length = 24 :=
     derivHL_polyOfShift_length n
   have hp : (polyOfShift n).length = 25 := polyOfShift_length n
-  simp [trimLeading_polyOfShift, trimLeading_derivHL_polyOfShift, hd, hp]
+  have hne : derivHL (polyOfShift n) ≠ [] := by
+    intro h
+    rw [h] at hd
+    simp at hd
+  simp [trimLeading_polyOfShift, trimLeading_derivHL_polyOfShift,
+    hd, hp, hne]
 
 def impl (n : Nat) : Int := resultantFromPolyFixed24 (polyOfShift n)
 
