@@ -1,0 +1,26 @@
+name: Full Power Developmental Synthesis V16
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/full_power_developmental_synthesis_v16.py'
+      - '.github/workflows/full-power-developmental-synthesis-v16.yml'
+  workflow_dispatch:
+
+jobs:
+  full-power-developmental-synthesis:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run full-power developmental synthesis benchmark
+        run: |
+          rm -rf results/full-power-developmental-synthesis-v16
+          mkdir -p results/full-power-developmental-synthesis-v16
+          python3 scripts/full_power_developmental_synthesis_v16.py \
+            --out-dir results/full-power-developmental-synthesis-v16 \
+            --seed 314159 \
+            --per-class 18
+      - uses: actions/upload-artifact@v4
+        with:
+          name: full-power-developmental-synthesis-v16
+          path: results/full-power-developmental-synthesis-v16/

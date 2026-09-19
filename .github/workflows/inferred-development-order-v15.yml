@@ -1,0 +1,19 @@
+name: Inferred Development Order V15
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  inferred-development-order:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run inferred development order benchmark
+        run: |
+          rm -rf results/inferred-development-order-v15
+          mkdir -p results/inferred-development-order-v15
+          python3 scripts/inferred_development_order_v15.py --out-dir results/inferred-development-order-v15 --seed 271828 --per-class 24
+      - uses: actions/upload-artifact@v4
+        with:
+          name: inferred-development-order-v15
+          path: results/inferred-development-order-v15/
