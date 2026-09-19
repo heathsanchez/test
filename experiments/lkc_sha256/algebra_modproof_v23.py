@@ -263,6 +263,7 @@ theorem fastStepNoZipProof_correct (d : Digest) :
     fastStepNoZipProof d = sha256step d := by
   unfold fastStepNoZipProof finishProof sha256step compress
   rw [roundsNoZip_eq, schedule_correct]
+  rfl
 
 theorem streamWordsK_eq_fastSchedule (d : Digest) :
     streamWords K.length (initialWindow d) = fastSchedule d := by
