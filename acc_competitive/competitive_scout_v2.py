@@ -124,9 +124,9 @@ def main():
     save(out/"leaderboard_ac.json",lba); save(out/"leaderboard_stable.json",lbs); save(out/"submissions_mine.json",mine)
 
     prev_ac_items=load_items(a.prev_ac) or []
-    prev_ac={x["challengeId"]:x for x in prev_ac_items}
+    prev_ac={(x.get("problemId") or x.get("challengeId")):x for x in prev_ac_items if (x.get("problemId") or x.get("challengeId"))}
     prev_s_items=load_items(a.prev_stable) or []
-    prev_s={x["challengeId"]:x for x in prev_s_items}
+    prev_s={(x.get("problemId") or x.get("challengeId")):x for x in prev_s_items if (x.get("problemId") or x.get("challengeId"))}
 
     events=[]
     for cid,row in ac.items():

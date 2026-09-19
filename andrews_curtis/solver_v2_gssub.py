@@ -98,7 +98,7 @@ def snapshot_map(problem):
     _, obj = api_get(f"/competitions/acc/discoveries/snapshot?problem={problem}")
     d = data_obj(obj)
     items = d["items"]
-    return obj, {x["challengeId"]: x for x in items}
+    return obj, {(x.get("problemId") or x.get("challengeId")): x for x in items if (x.get("problemId") or x.get("challengeId"))}
 
 
 
@@ -106,7 +106,7 @@ def snapshot_file_map(path):
     obj = json.loads(Path(path).read_text(encoding="utf-8"))
     d = data_obj(obj)
     items = d["items"]
-    return obj, {x["challengeId"]: x for x in items}
+    return obj, {(x.get("problemId") or x.get("challengeId")): x for x in items if (x.get("problemId") or x.get("challengeId"))}
 
 
 def int_word_to_str(w):
