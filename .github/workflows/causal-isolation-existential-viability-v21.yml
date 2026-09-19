@@ -1,0 +1,21 @@
+name: Causal Isolation Existential Viability V21
+on:
+  pull_request:
+    paths:
+      - 'scripts/causal_isolation_existential_viability_v21.py'
+      - '.github/workflows/causal-isolation-existential-viability-v21.yml'
+  workflow_dispatch:
+jobs:
+  causal-isolation-existential-viability:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run V21 causal isolation
+        run: |
+          rm -rf results/causal-isolation-existential-viability-v21
+          mkdir -p results/causal-isolation-existential-viability-v21
+          python3 scripts/causal_isolation_existential_viability_v21.py --out-dir results/causal-isolation-existential-viability-v21
+      - uses: actions/upload-artifact@v4
+        with:
+          name: causal-isolation-existential-viability-v21
+          path: results/causal-isolation-existential-viability-v21/
