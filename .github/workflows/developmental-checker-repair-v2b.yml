@@ -1,0 +1,57 @@
+name: Developmental Checker Repair V2B
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/developmental-checker-repair-v2b.yml'
+      - 'scripts/patch_developmental_checker_repair_v2b.py'
+      - 'scripts/run_developmental_checker_repair_game.py'
+      - 'scripts/patch_developmental_checker_trace.py'
+  workflow_dispatch:
+
+jobs:
+  terminal-residual-repair-game:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+      actions: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Freeze V2B terminal-residual controller
+        run: python3 scripts/patch_developmental_checker_repair_v2b.py
+      - name: Fetch frozen Arena corpus
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p arena-tests artifact results/developmental-checker-repair-v2
+          curl -fL -H "Authorization: Bearer $GH_TOKEN" -H "X-GitHub-Api-Version: 2022-11-28" \
+            "https://api.github.com/repos/leanprover/lean-kernel-arena/actions/artifacts/8931227426/zip" -o tests.zip
+          unzip -q tests.zip -d artifact
+          tar -xzf artifact/lean-arena-tests.tar.gz -C arena-tests
+      - name: Reconstruct binary and developmental-trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --depth 1 https://github.com/metalogiclabs/mathgraph-lean-kernel.git base
+          cp -a base trace
+          python3 scripts/patch_developmental_checker_trace.py
+          printf '%s\n' '{"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":1}' > base/config.json
+          cp base/config.json trace/config.json
+          git -C base rev-parse HEAD | tee results/developmental-checker-repair-v2/kernel_commit.txt
+      - name: Build baseline and trace checker
+        shell: bash
+        run: |
+          set -euo pipefail
+          (cd base && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+          (cd trace && RUSTFLAGS='-C target-cpu=native' cargo build --release)
+      - name: Run V2B terminal-residual repair ablation
+        run: python3 scripts/run_developmental_checker_repair_game.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: developmental-checker-repair-v2b
+          path: results/developmental-checker-repair-v2/
