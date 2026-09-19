@@ -1,0 +1,36 @@
+name: Collatz QCKN Flash event emitter v1
+
+on:
+  push:
+    branches: [collatz-qckn-flash-event-emitter-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  emit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify qualified source run and artifact
+        run: |
+          test "$(gh api repos/heathsanchez/test/actions/runs/35403074591 --jq .conclusion)" = success
+          test "$(gh api repos/heathsanchez/test/actions/runs/35403074591 --jq .head_sha)" = 0bd6cc71a5fb4268109d5b404ecbf21c7aaaf4c1
+          test "$(gh api repos/heathsanchez/test/actions/artifacts/10570879149 --jq .digest)" = sha256:0062e1df0f118b2c788a02082c8319b9359d79dc7eba11de702d3b2aab211a27
+      - name: Run emitter tests
+        working-directory: experiments
+        run: python -m unittest test_emit_qckn_flash_event -v
+      - name: Emit canonical Flash event
+        run: |
+          mkdir -p /tmp/qckn-flash-event
+          python experiments/emit_qckn_flash_event.py --commit "$GITHUB_SHA" --out /tmp/qckn-flash-event
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-qckn-flash-event-v1
+          path: /tmp/qckn-flash-event/
+          if-no-files-found: error
