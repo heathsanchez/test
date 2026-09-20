@@ -1,0 +1,64 @@
+name: ACC Atlas LB4 Frontier V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-lb4-frontier-v1.yml"
+      - "acc_competitive/atlas_product_lb4_frontier_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Fetch pinned ACC and latest qualified product artifact
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p lb4/input /tmp/product
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-atlas-product-quotient-v1&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/product.zip
+          unzip -q /tmp/product.zip -d /tmp/product
+          ATLAS="$(find /tmp/product -name proof_atlas.sqlite -print -quit)"
+          ROWS="$(find /tmp/product -path '*/product/rows.json' -print -quit)"
+          test -n "$ATLAS"; test -n "$ROWS"
+          cp "$ATLAS" lb4/input/proof_atlas.sqlite
+          cp "$ROWS" lb4/input/product_rows.json
+      - name: Search only the certified exact depth-4 frontier
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_product_lb4_frontier_v1.py \
+            --acc-root /tmp/acc \
+            --atlas lb4/input/proof_atlas.sqlite \
+            --product-rows lb4/input/product_rows.json \
+            --out-dir lb4/result \
+            | tee lb4/search.log
+          if [ -s lb4/result/candidates.txt ]; then
+            PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+              --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+              --submission lb4/result/candidates.txt --pretty \
+              | tee lb4/result/verifier.json
+          else
+            echo 'NO_LB4_EXACT_CANDIDATES'
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-lb4-frontier-v1
+          path: lb4/
+          retention-days: 90
+          if-no-files-found: warn
