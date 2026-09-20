@@ -1,0 +1,140 @@
+name: ACC Atlas Fiber Exact Depth5 V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-fiber-exact-depth5-v1.yml"
+      - "acc_competitive/atlas_fiber_exact_depth5_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  qualify_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned verifier, current Atlas, refined-fiber evidence, and live authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p fiber5/input /tmp/atlas /tmp/fiber
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          FID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-atlas-fiber-refinement-v1&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"; test -n "$FID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          gh api "repos/heathsanchez/test/actions/artifacts/$FID/zip" > /tmp/fiber.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          unzip -q /tmp/fiber.zip -d /tmp/fiber
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          ROWS="$(find /tmp/fiber -path '*/out/rows.json' -print -quit)"
+          REPORT="$(find /tmp/fiber -path '*/out/report.json' -print -quit)"
+          test -n "$ATLAS"; test -n "$ROWS"; test -n "$REPORT"
+          cp "$ATLAS" fiber5/input/proof_atlas.sqlite
+          cp "$ROWS" fiber5/input/fiber_rows.json
+          cp "$REPORT" fiber5/input/fiber_report.json
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          report=json.loads(Path('fiber5/input/fiber_report.json').read_text())
+          if report.get('version')!='atlas-fiber-refinement-v1': raise SystemExit('wrong fiber artifact version')
+          if int(report.get('atlas_states',-1))!=433272: raise SystemExit('fiber artifact Atlas mismatch')
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          Path('fiber5/input/snapshot_ac.json').write_text(json.dumps(o))
+          d=o.get('data',o); items=d['items']
+          live={str(x.get('problemId') or x.get('challengeId')):x for x in items if x.get('problemId') or x.get('challengeId')}
+          rows=json.loads(Path('fiber5/input/fiber_rows.json').read_text())
+          residual=[x for x in rows if isinstance(x.get('refined_product_distance'),int) and x['refined_product_distance']<=5]
+          keep=[]
+          for x in residual:
+              cid=x['challenge_id']; r=live.get(cid,{})
+              if r.get('status')!='solved' or (r.get('kTeams') or 0)==0:
+                  keep.append(x)
+          Path('fiber5/input/eligible_rows.json').write_text(json.dumps(keep,indent=2,sort_keys=True)+'\n')
+          uns=sum(1 for x in items if x.get('status')!='solved' or (x.get('kTeams') or 0)==0)
+          hist={str(k):sum(x.get('refined_product_distance')==k for x in keep) for k in (3,4,5)}
+          print('LIVE_FIBER5_AUTHORITY',json.dumps({'ac_unsolved':uns,'eligible':len(keep),'by_refined_distance':hist},sort_keys=True))
+          PY
+
+      - name: Exact depth-5 search only on refined residual rows
+        run: |
+          set -euo pipefail
+          mkdir -p fiber5/search
+          if [ "$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('fiber5/input/eligible_rows.json'))))
+          PY
+          )" = "0" ]; then
+            echo NO_LIVE_REFINED_RESIDUAL_TARGETS
+            : > fiber5/search/candidates.txt
+            exit 0
+          fi
+          python3 acc_competitive/atlas_fiber_exact_depth5_v1.py \
+            --acc-root /tmp/acc \
+            --atlas fiber5/input/proof_atlas.sqlite \
+            --fiber-rows fiber5/input/eligible_rows.json \
+            --out-dir fiber5/search --max-depth 5 \
+            | tee fiber5/search.log
+
+      - name: Pinned official-verifier replay for every candidate
+        run: |
+          set -euo pipefail
+          mkdir -p fiber5/verified
+          if [ ! -s fiber5/search/candidates.txt ]; then
+            echo NO_REFINED_DEPTH5_BRIDGE_CANDIDATES
+            : > fiber5/verified/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob 'fiber5/search/candidates.txt' \
+            --out-dir fiber5/verified --prior-atlas fiber5/input/proof_atlas.sqlite \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee fiber5/verify.log
+
+      - name: Fresh live strict-only quota gate and publication
+        run: |
+          set -euo pipefail
+          mkdir -p fiber5/publish
+          if [ ! -s fiber5/verified/fortified_ac.txt ]; then
+            echo NO_PINNED_VERIFIER_CLEAN_CANDIDATES_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc --glob 'fiber5/verified/fortified_ac.txt' \
+            --out-dir fiber5/publish --cycle 1 \
+            | tee fiber5/publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('fiber5/publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('FIBER5_STRICT_RESULT',json.dumps({'used_pre':r.get('daily_submissions_used_pre'),'remaining_pre':r.get('daily_submissions_remaining_pre'),'selected_rows':r.get('selected_rows'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-fiber-exact-depth5-v1
+          path: fiber5/
+          retention-days: 90
+          if-no-files-found: warn
