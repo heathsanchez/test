@@ -3,7 +3,7 @@ import argparse, json, sqlite3
 from collections import Counter
 from pathlib import Path
 
-from acc_competitive.atlas_product_guided_bridge_v1 import (
+from atlas_product_guided_bridge_v1 import (
     TARGET, atlas_suffix, decode_state, move, search,
 )
 
