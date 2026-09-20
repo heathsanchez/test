@@ -1,0 +1,38 @@
+{
+  "version": "atlas-fiber-refinement-v1-certificate",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "atlas_states": 433272,
+  "base_contexts": [
+    "S6:xy",
+    "S6:yx",
+    "S7:xy",
+    "S7:yx"
+  ],
+  "refinement_contexts": [
+    "S7:quad-cycle",
+    "S8:quad-cycle"
+  ],
+  "base_signatures": 365459,
+  "refined_signatures": 428625,
+  "base_collisions": 67813,
+  "refined_collisions": 4647,
+  "source_collision_reduction": 63166,
+  "source_run": {
+    "run_id": 35536458093,
+    "attempt": 2,
+    "job_id": 106154705709
+  },
+  "qualified_depth6_probe": {
+    "challenge_ids": [
+      "ac-00116",
+      "ac-05555"
+    ],
+    "prior_exact_atlas_distance_lb": 6,
+    "refined_product_max_depth": 6,
+    "projected_nodes": 20,
+    "promoted_exact_lb7": 0
+  },
+  "claim": "Adding cycle-type-distinct S7 and S8 evaluation contexts to the synchronized S6xS6xS7xS7 product quotient is an exact official-move-equivariant refinement. On the 433272-state Proof Atlas it increases exact product signatures from 365459 to 428625 and reduces source-signature collisions from 67813 to 4647. A no-hit search in this refined quotient remains an admissible lower bound on exact Atlas distance.",
+  "obstruction": "The two prior quotient-zero rows still reach a refined Atlas signature within depth 6 despite having no exact Atlas bridge through depth 5. Therefore the remaining shallow false-near phenomenon is not explained mainly by source-signature collisions; quotient-path lifting/fiber mismatch remains the active obstruction.",
+  "reuse_rule": "Prefer this six-context synchronized quotient over the four-context product when screening future exact Atlas bridge work. Never treat a projected hit as an exact bridge; only no-hit depth certificates are safe lower bounds. Do not repeat exact depth-5 search on the certified exhausted 48-row cohort against the same Atlas snapshot."
+}
