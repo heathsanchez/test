@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import argparse, collections, json, sqlite3, sys
+import argparse, base64, collections, hashlib, json, sqlite3, sys
 from pathlib import Path
 
 REV={1:-2,2:-1,3:1,4:2}
@@ -8,6 +8,17 @@ REV={1:-2,2:-1,3:1,4:2}
 def load_ids(path):
     if not path or not Path(path).exists(): return set()
     obj=json.loads(Path(path).read_text())
+    if isinstance(obj,dict) and obj.get('challenge_bitset_base64'):
+        raw=base64.b64decode(obj['challenge_bitset_base64'])
+        want=obj.get('challenge_bitset_sha256')
+        got=hashlib.sha256(raw).hexdigest()
+        if want and got != want:
+            raise RuntimeError(f'challenge bitset checksum mismatch: got={got} want={want}')
+        out={f'ac-{i:05d}' for i in range(len(raw)*8) if raw[i//8] & (1 << (i%8))}
+        expected=obj.get('eligible_fresh_unsolved_count')
+        if isinstance(expected,int) and len(out) != expected:
+            raise RuntimeError(f'challenge bitset count mismatch: got={len(out)} want={expected}')
+        return out
     if isinstance(obj,dict): obj=obj.get('challenge_ids',obj.get('items',[]))
     out=set()
     for x in obj if isinstance(obj,list) else []:
