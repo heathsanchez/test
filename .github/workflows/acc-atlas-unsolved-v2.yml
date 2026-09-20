@@ -1,0 +1,178 @@
+name: ACC Proof Atlas Unsolved V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-unsolved-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+
+      - name: Recover newest compounding Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas qualification/input
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          test -n "$ATLAS"
+          cp "$ATLAS" qualification/input/proof_atlas.sqlite
+          python3 - <<'PY'
+          import sqlite3,json
+          p='qualification/input/proof_atlas.sqlite'
+          db=sqlite3.connect(p)
+          n=db.execute('select count(*) from atlas').fetchone()[0]
+          mx=db.execute('select max(distance) from atlas').fetchone()[0]
+          print('ATLAS_AUTHORITY',json.dumps({'states':n,'max_distance':mx},sort_keys=True))
+          db.close()
+          PY
+
+      - name: Rank fresh competitive frontier
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/competitive_scout_v2.py \
+            --acc-root /tmp/acc \
+            --out-dir qualification/scout \
+            --attack-count 32 \
+            --defend-fraction 0 \
+            --shards 1 \
+            --mechanism-id atlas-unsolved-v2 \
+            | tee qualification/scout.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rows=json.loads(Path('qualification/scout/attack_ranking.json').read_text())
+          ids=[]
+          for r in rows:
+              if r.get('live_status')!='unsolved': continue
+              cid=r.get('challenge_id')
+              if cid and cid not in ids: ids.append(cid)
+              if len(ids)>=8: break
+          if not ids: raise SystemExit('no fresh unseen unsolved targets')
+          Path('qualification/input/targets.json').write_text(json.dumps(ids,indent=2)+'\n')
+          print('FRESH_UNSOLVED_TARGETS',json.dumps(ids))
+          PY
+
+      - name: Exact Proof Atlas connector on fresh unsolved rows
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_connector_v2.py \
+            --acc-root /tmp/acc \
+            --atlas qualification/input/proof_atlas.sqlite \
+            --snapshot-ac qualification/scout/snapshot_ac.json \
+            --target-ids-file qualification/input/targets.json \
+            --out-dir qualification/connector \
+            --allow-unsolved \
+            --connector-depth 5 \
+            --node-cap 120000 \
+            | tee qualification/connector.log
+
+      - name: Replay every candidate with pinned official verifier
+        run: |
+          set -euo pipefail
+          C=qualification/connector/pending_submission.txt
+          if [ ! -s "$C" ]; then
+            echo NO_PINNED_CANDIDATE
+            exit 0
+          fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission "$C" --pretty \
+            | tee qualification/pinned_replay.json
+
+      - name: Recheck live records and UTC quota immediately before publication
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          src=Path('qualification/connector/pending_submission.txt')
+          out=Path('qualification/publish_ready.txt')
+          if not src.exists() or not src.read_text().strip():
+              out.write_text(''); print('PUBLICATION_GATE no_candidate'); raise SystemExit(0)
+          key=os.environ['SAIR_API_KEY']
+          def get(url,auth=False):
+              h={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+              if auth:h['Authorization']=f'Bearer {key}'
+              with urllib.request.urlopen(urllib.request.Request(url,headers=h),timeout=60) as r:
+                  return json.loads(r.read().decode())
+          api='https://api.sair.foundation/api/public/v1'
+          pub='https://server-9527.sair.foundation'
+          mine=get(api+'/competitions/acc/submissions/mine?limit=100',True)
+          comp=get(api+'/competitions/acc',True)
+          d=mine.get('data',mine); items=d.get('items',[]) if isinstance(d,dict) else []
+          lim=(comp.get('data',comp) if isinstance(comp,dict) else {})
+          limit=next((lim.get(k) for k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay') if isinstance(lim.get(k),int)),40)
+          today=datetime.now(timezone.utc).date(); used=0
+          for x in items:
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  s=x.get(k) if isinstance(x,dict) else None
+                  if not isinstance(s,str): continue
+                  try:
+                      dt=datetime.fromisoformat(s.replace('Z','+00:00'))
+                      if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+                      if dt.astimezone(timezone.utc).date()==today:used+=1
+                      break
+                  except Exception: pass
+          if used>=limit:
+              out.write_text(''); Path('qualification/quota_gate.json').write_text(json.dumps({'used':used,'limit':limit,'blocked':True},indent=2)+'\n')
+              print('PUBLICATION_GATE quota_exhausted',used,limit); raise SystemExit(0)
+          snap=get(pub+'/api/acc/discoveries/snapshot?problem=ac')
+          sd=snap.get('data',snap); live={str(x.get('problemId') or x.get('challengeId')):x for x in sd['items']}
+          keep=[]; decisions=[]
+          for line in src.read_text().splitlines():
+              if not line.strip():continue
+              cid,rest=line.split(':',1); moves=json.loads(rest.strip()); row=live.get(cid,{})
+              best=row.get('currentBestLength'); solved=row.get('status')=='solved' and isinstance(best,int) and (row.get('kTeams') or 0)>0
+              ok=(not solved) or len(moves)<best
+              decisions.append({'challenge_id':cid,'ours':len(moves),'live_best':best,'live_status':row.get('status'),'publish':ok})
+              if ok:keep.append(line)
+          out.write_text('\n'.join(keep)+('\n' if keep else ''))
+          Path('qualification/quota_gate.json').write_text(json.dumps({'used':used,'limit':limit,'remaining':limit-used,'decisions':decisions},indent=2,sort_keys=True)+'\n')
+          print('PUBLICATION_GATE',json.dumps({'used':used,'limit':limit,'selected':len(keep)},sort_keys=True))
+          PY
+
+      - name: Publish only still-improving verifier-clean rows
+        if: hashFiles('qualification/publish_ready.txt') != ''
+        env:
+          ACC_SUBMISSION_FILE: qualification/publish_ready.txt
+          ACC_SUBMIT_OUT: qualification/publish
+        run: |
+          set -euo pipefail
+          test -s qualification/publish_ready.txt || exit 0
+          python3 acc_submit/submit_live_filtered.py | tee qualification/publish.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-unsolved-v2
+          path: qualification/
+          retention-days: 90
+          if-no-files-found: warn
