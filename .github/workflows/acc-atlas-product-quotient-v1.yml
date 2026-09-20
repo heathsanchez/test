@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/acc-atlas-product-quotient-v1.yml"
       - "acc_competitive/atlas_product_quotient_v1.py"
+      - "acc_competitive/atlas_product_exact_lift_v1.py"
       - "acc_competitive/atlas_large_quotient_bridge_v2.py"
       - "acc_competitive/finite_group_pdb_v1.py"
   workflow_dispatch:
@@ -77,6 +78,15 @@ jobs:
             --out-dir productq/product \
             --max-depth 3 \
             | tee productq/product.log
+      - name: Exact-lift every quotient witness through depth 3
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_product_exact_lift_v1.py \
+            --acc-root /tmp/acc \
+            --atlas productq/input/proof_atlas.sqlite \
+            --product-rows productq/product/rows.json \
+            --out productq/exact_lift.json \
+            | tee productq/exact_lift.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
