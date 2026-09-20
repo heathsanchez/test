@@ -5,6 +5,8 @@ on:
     branches: [acc-competitive-residual-v1]
     paths:
       - ".github/workflows/acc-atlas-fiber-refinement-v1.yml"
+      - "acc_competitive/atlas_fiber_refinement_v1.py"
+      - "acc_competitive/atlas_exact_radius4_exhausted_v1.json"
   workflow_dispatch:
 
 permissions:
