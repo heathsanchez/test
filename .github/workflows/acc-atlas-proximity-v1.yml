@@ -1,0 +1,123 @@
+name: ACC Proof Atlas Proximity V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-proximity-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned verifier and newest Proof Atlas
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          mkdir -p /tmp/atlas proximity/input
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          test -n "$ATLAS"
+          cp "$ATLAS" proximity/input/proof_atlas.sqlite
+          python3 - <<'PY'
+          import json,sqlite3,urllib.request
+          from pathlib import Path
+          db=sqlite3.connect('proximity/input/proof_atlas.sqlite')
+          print('ATLAS_STATES',db.execute('select count(*) from atlas').fetchone()[0]);db.close()
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          Path('proximity/input/snapshot_ac.json').write_text(json.dumps(o))
+          PY
+
+      - name: Global shallow proximity scan over fresh unsolved rows
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/atlas_proximity_scout_v1.py \
+            --acc-root /tmp/acc \
+            --atlas proximity/input/proof_atlas.sqlite \
+            --snapshot-ac proximity/input/snapshot_ac.json \
+            --attempted acc_competitive/competitive_attempted_seed_v1.json \
+            --exclude acc_competitive/atlas_unsolved_v2_exhausted.json \
+            --out-dir proximity/scan \
+            --max-depth 3 \
+            | tee proximity/scan.log
+
+      - name: Replay all gains with pinned official verifier
+        run: |
+          set -euo pipefail
+          C=proximity/scan/pending_submission.txt
+          if [ ! -s "$C" ]; then echo NO_PINNED_CANDIDATE; exit 0; fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission "$C" --pretty | tee proximity/pinned_replay.json
+
+      - name: Gate publication on current UTC quota
+        run: |
+          set -euo pipefail
+          rm -f proximity/quota_ok
+          C=proximity/scan/pending_submission.txt
+          if [ ! -s "$C" ]; then echo NO_CANDIDATE_FOR_QUOTA; exit 0; fi
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          key=os.environ['SAIR_API_KEY'];base='https://api.sair.foundation/api/public/v1'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'Authorization':f'Bearer {key}','Accept':'application/json','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          mine=get('/competitions/acc/submissions/mine?limit=100');comp=get('/competitions/acc')
+          d=mine.get('data',mine);items=d.get('items',[]) if isinstance(d,dict) else []
+          c=comp.get('data',comp);limit=next((c.get(k) for k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay') if isinstance(c.get(k),int)),40)
+          today=datetime.now(timezone.utc).date();used=0
+          for x in items:
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  s=x.get(k) if isinstance(x,dict) else None
+                  if not isinstance(s,str):continue
+                  try:
+                      z=datetime.fromisoformat(s.replace('Z','+00:00'))
+                      if z.tzinfo is None:z=z.replace(tzinfo=timezone.utc)
+                      if z.astimezone(timezone.utc).date()==today:used+=1
+                      break
+                  except Exception:pass
+          Path('proximity/quota.json').write_text(json.dumps({'used':used,'limit':limit,'remaining':max(0,limit-used)},indent=2)+'\n')
+          print('QUOTA',used,limit)
+          if used<limit:Path('proximity/quota_ok').write_text('ok\n')
+          PY
+
+      - name: Live-filter and publish only current improvements
+        if: hashFiles('proximity/quota_ok') != ''
+        env:
+          ACC_SUBMISSION_FILE: proximity/scan/pending_submission.txt
+          ACC_SUBMIT_OUT: proximity/publish
+        run: |
+          set -euo pipefail
+          python3 acc_submit/submit_live_filtered.py | tee proximity/publish.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-proximity-v1
+          path: proximity/
+          retention-days: 90
+          if-no-files-found: warn
