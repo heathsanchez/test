@@ -1,0 +1,45 @@
+name: LKC Contributor Network Ingest
+
+on:
+  push:
+    branches: [lkc-contributor-network-ingest-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ingest:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require read-only SAIR credential
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          test -n "$SAIR_API_KEY"
+
+      - name: Fetch and hash-verify all public Lean Kernel packages
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          python3 experiments/lkc_public_packages/ingest.py
+
+      - name: Summarize snapshot
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("experiments/lkc_public_packages/out/manifest.json").read_text())
+          print("total", d["total_items"])
+          for p, x in d["problems"].items():
+              print(p, x["count"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-contributor-network-snapshot
+          path: experiments/lkc_public_packages/out
+          if-no-files-found: error
