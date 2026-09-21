@@ -176,9 +176,9 @@ theorem iterateShift_getD (step : Nat) (prev : List Nat) :
         (shiftPad step (iterateShift step prev q)) m hm]
       · rw [shiftPad_getD]
         by_cases h : step ≤ m
-        · rw [if_pos h]
+        · simp only [if_pos h]
           rw [iterateShift_getD step prev q (m - step) (by omega)]
-        · rw [if_neg h]
+        · simp only [if_neg h]
       · rw [shiftPad_length, iterateShift_length]
         omega
 
@@ -198,6 +198,13 @@ theorem iterValue_eq_rowValue
           simpa [Nat.add_mul] using h
         omega
       · simp [hle]
+
+theorem range_map_getD
+    (f : Nat → Nat) (count i fallback : Nat) (h : i < count) :
+    ((List.range count).map f).getD i fallback = f i := by
+  simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
+  rw [List.getElem?_range h]
+  simp
 
 def nextRowShift (k n : Nat) (prev : List Nat) : List Nat :=
   iterateShift (k + 1) prev (n / (k + 1) + 1)
@@ -232,12 +239,26 @@ theorem nextRowShift_eq
     have him : i ≤ n := by
       rw [nextRowShift_length, hlen] at hi
       omega
-    have hget := nextRowShift_getD k n prev hlen i him
-    simp only [List.getD_eq_getElem?_getD,
-      List.getElem?_eq_getElem hi,
-      List.getElem?_eq_getElem hs,
-      Option.getD_some] at hget
-    simpa [nextRowFold, range_map_getD] using hget
+    have hshift := nextRowShift_getD k n prev hlen i him
+    have hfold :
+        (nextRowFold k n prev).getD i 0 =
+          rowValue (k + 1) prev i := by
+      unfold nextRowFold
+      apply range_map_getD
+      omega
+    have hD :
+        (nextRowShift k n prev).getD i 0 =
+          (nextRowFold k n prev).getD i 0 :=
+      hshift.trans hfold.symm
+    have hleft :
+        (nextRowShift k n prev).getD i 0 =
+          (nextRowShift k n prev)[i] := by
+      simp [List.getD_eq_getElem?_getD, hi]
+    have hright :
+        (nextRowFold k n prev).getD i 0 =
+          (nextRowFold k n prev)[i] := by
+      simp [List.getD_eq_getElem?_getD, hs]
+    exact hleft.symm.trans (hD.trans hright)
 
 def buildRowsShift : Nat → Nat → List Nat
   | 0, n => initialRow n
@@ -254,13 +275,6 @@ theorem buildRowsShift_eq : ∀ k n, buildRowsShift k n = buildRows k n
       rw [buildRowsShift_eq k n]
       rw [nextRowShift_eq k n (buildRows k n) (buildRows_length k n)]
       rw [nextRowFold_eq]
-
-theorem range_map_getD
-    (f : Nat → Nat) (count i fallback : Nat) (h : i < count) :
-    ((List.range count).map f).getD i fallback = f i := by
-  simp only [List.getD_eq_getElem?_getD, List.getElem?_map]
-  rw [List.getElem?_range h]
-  simp
 
 theorem initialRow_getD (n m : Nat) (h : m ≤ n) :
     (initialRow n).getD m 0 = partAux 0 m := by
