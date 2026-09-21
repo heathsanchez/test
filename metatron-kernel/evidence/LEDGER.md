@@ -36,3 +36,24 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   Rust tests and the protected suite passed.
 - Performance: the non-explosion test passed; official retired instructions
   remain deliberately unmeasured until an end-to-end checker qualifies.
+
+## G1-002 — Explicit guarded reduction machine
+
+- Status: RETAINED
+- Arena authority: `f5e1bce6e2dc9c60479b3001b76e01722b403799`
+- Implementation: `7582fe3d29aa9c3114d4c4fe0334c6dcc6cab216`
+- Obstruction: application inference and conversion need beta/zeta/delta, but
+  neither substitution copying nor global normalization is warranted.
+- Least capability: lazy closures over immutable `Rc` environment frames,
+  guarded WHNF transitions, authority-scoped delta-cycle detection, and a
+  hard step budget.
+- Falsifier: disagreement with Lean beta/zeta, unfolding through opaque
+  transparency, proving a delta cycle, or rejecting shared syntax after beta.
+- Qualification: six machine tests and the full protected Rust suite passed;
+  Lean 4.29.1 accepted the beta and zeta reference obligations.
+- Corrective experiment: a first global visited-set rule falsely classified
+  `(fun x => x) (fun x => x)` as cyclic. The frozen regression forced visited
+  state to reset at beta/zeta/environment boundaries while delta chains retain
+  cycle detection.
+- Performance: closures avoid expression copying by construction; official
+  retired instructions remain unmeasured until end-to-end qualification.
