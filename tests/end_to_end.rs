@@ -152,3 +152,164 @@ fn binary_enum_recursor_rules_are_derived_not_axiomatized() {
         Verdict::Reject
     );
 }
+
+fn run_g11_perturbation(from: &str, to: &str) -> Verdict {
+    let bytes = include_str!("../evidence/residuals/G11-001/fixture.ndjson");
+    assert!(bytes.contains(from), "missing perturbation source: {from}");
+    metatron_kernel::run(Cursor::new(bytes.replacen(from, to, 1)))
+}
+
+#[test]
+fn g11_001_derived_twobool_authority_is_accepted() {
+    assert_eq!(run_residual("G11-001"), Verdict::Accept);
+}
+
+#[test]
+fn twobool_constructor_claims_are_derived_not_trusted() {
+    let cases = [
+        ("\"cidx\":0,\"induct\":10", "\"cidx\":1,\"induct\":10"),
+        ("\"induct\":10,\"isUnsafe\"", "\"induct\":1,\"isUnsafe\""),
+        (
+            "\"numFields\":2,\"numParams\":0,\"type\":24",
+            "\"numFields\":1,\"numParams\":0,\"type\":24",
+        ),
+        (
+            "\"numFields\":2,\"numParams\":0,\"type\":24",
+            "\"numFields\":2,\"numParams\":0,\"type\":23",
+        ),
+    ];
+    for (from, to) in cases {
+        assert_eq!(run_g11_perturbation(from, to), Verdict::Reject);
+    }
+}
+
+#[test]
+fn twobool_recursor_and_rule_claims_are_derived_not_trusted() {
+    let cases = [
+        (
+            "\"numMinors\":1,\"numMotives\":1",
+            "\"numMinors\":0,\"numMotives\":1",
+        ),
+        (
+            "\"ctor\":11,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":2,\"nfields\":2,\"rhs\":42",
+        ),
+        (
+            "\"ctor\":11,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":11,\"nfields\":1,\"rhs\":42",
+        ),
+        (
+            "\"ctor\":11,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":11,\"nfields\":2,\"rhs\":41",
+        ),
+        (
+            "\"name\":14,\"numIndices\":0",
+            "\"name\":11,\"numIndices\":0",
+        ),
+        ("\"rules\":[{\"ctor\":11", "\"rules\":[{\"ctor\":2"),
+        ("\"type\":36}],\"types\"", "\"type\":35}],\"types\""),
+    ];
+    for (from, to) in cases {
+        assert_eq!(run_g11_perturbation(from, to), Verdict::Reject);
+    }
+}
+
+#[test]
+fn twobool_does_not_earn_indexed_inductive_authority() {
+    assert_eq!(
+        run_g11_perturbation(
+            "\"name\":10,\"numIndices\":0,\"numNested\":0",
+            "\"name\":10,\"numIndices\":1,\"numNested\":0",
+        ),
+        Verdict::Unknown
+    );
+}
+
+#[test]
+fn twobool_does_not_earn_recursive_or_unsafe_authority() {
+    assert_eq!(
+        run_g11_perturbation(
+            "\"ctors\":[11],\"isRec\":false",
+            "\"ctors\":[11],\"isRec\":true",
+        ),
+        Verdict::Unknown
+    );
+    assert_eq!(
+        run_g11_perturbation(
+            "\"types\":[{\"all\":[10],\"ctors\":[11],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[10],\"ctors\":[11],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        Verdict::Unknown
+    );
+}
+
+#[test]
+fn shared_closed_inductive_engine_matches_sealed_g9_g10_g11_verdict_vector() {
+    let g9 = include_str!("../evidence/residuals/G9-001/fixture.ndjson");
+    let g10 = include_str!("../evidence/residuals/G10-001/fixture.ndjson");
+    let g11 = include_str!("../evidence/residuals/G11-001/fixture.ndjson");
+    let cases = [
+        ("G9 exact", g9.to_owned(), Verdict::Accept),
+        (
+            "G9 recursor metadata",
+            g9.replacen("\"k\":false", "\"k\":true", 1),
+            Verdict::Reject,
+        ),
+        ("G10 exact", g10.to_owned(), Verdict::Accept),
+        (
+            "G10 constructor index",
+            g10.replacen("\"cidx\":0", "\"cidx\":1", 1),
+            Verdict::Reject,
+        ),
+        (
+            "G10 rule body",
+            g10.replacen(
+                "\"ctor\":2,\"nfields\":0,\"rhs\":18",
+                "\"ctor\":2,\"nfields\":0,\"rhs\":21",
+                1,
+            ),
+            Verdict::Reject,
+        ),
+        ("G11 exact", g11.to_owned(), Verdict::Accept),
+        (
+            "G11 constructor owner",
+            g11.replacen("\"induct\":10,\"isUnsafe\"", "\"induct\":1,\"isUnsafe\"", 1),
+            Verdict::Reject,
+        ),
+        (
+            "G11 rule body",
+            g11.replacen(
+                "\"ctor\":11,\"nfields\":2,\"rhs\":42",
+                "\"ctor\":11,\"nfields\":2,\"rhs\":41",
+                1,
+            ),
+            Verdict::Reject,
+        ),
+        (
+            "G11 indexed neighbor",
+            g11.replacen(
+                "\"name\":10,\"numIndices\":0,\"numNested\":0",
+                "\"name\":10,\"numIndices\":1,\"numNested\":0",
+                1,
+            ),
+            Verdict::Unknown,
+        ),
+        (
+            "G11 recursive neighbor",
+            g11.replacen(
+                "\"ctors\":[11],\"isRec\":false",
+                "\"ctors\":[11],\"isRec\":true",
+                1,
+            ),
+            Verdict::Unknown,
+        ),
+    ];
+
+    for (label, bytes, sealed_verdict) in cases {
+        assert_eq!(
+            metatron_kernel::run(Cursor::new(bytes)),
+            sealed_verdict,
+            "causal equivalence failed for {label}",
+        );
+    }
+}

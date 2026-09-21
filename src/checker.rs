@@ -4,10 +4,11 @@ use crate::convert::DeltaPolicy;
 use crate::environment::{ConstantDecl, Environment};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
+use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
 use crate::parser::ResolvedExport;
-use crate::syntax::{Declaration, Expr, InductiveBlock, Level, Name, Recursor};
+use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, Recursor};
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::EnvFrame;
 use crate::verdict::Verdict;
@@ -39,6 +40,8 @@ fn check_export_with_policy(
     // Keep the resolved tables available while consuming declaration records.
     let declarations = std::mem::take(&mut export.declarations);
     for declaration in declarations {
+        #[cfg(feature = "diagnostics")]
+        crate::diagnostics::declaration();
         let level_parameters = match &declaration {
             Declaration::Axiom { level_params, .. }
             | Declaration::Definition { level_params, .. }
@@ -152,6 +155,7 @@ fn check_inductive(
 ) -> Result<Environment, Verdict> {
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
+        1 => check_twobool_structure(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
         _ => Err(Verdict::Unknown),
     }
@@ -201,23 +205,13 @@ fn check_empty_inductive(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        environment,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(inductive.ty, limits.judgment_steps))?;
-
-    // Stage the type locally. Failure below never returns this environment,
-    // so no recursor claim can partially extend caller authority.
-    let staged = environment
-        .extend(
-            inductive.name,
-            ConstantDecl::inductive_type(Vec::new(), inductive.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
 
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
@@ -228,21 +222,13 @@ fn check_empty_inductive(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        parameter_substitution(&recursor.level_params),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
-
-    staged
-        .extend(
-            recursor.name,
-            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
-        )
-        .map_err(|_| Verdict::Reject)
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
 }
 
 fn valid_empty_recursor_metadata(
@@ -357,20 +343,13 @@ fn check_binary_enum(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        environment,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(inductive.ty, limits.judgment_steps))?;
-    let mut staged = environment
-        .extend(
-            inductive.name,
-            ConstantDecl::inductive_type(Vec::new(), inductive.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
 
     for (index, constructor) in block.constructors.iter().enumerate() {
         if constructor.index != index as u64
@@ -383,20 +362,12 @@ fn check_binary_enum(
         {
             return Err(Verdict::Reject);
         }
-        let checker = TypeChecker::with_level_substitution(
-            &export.exprs,
-            &export.levels,
-            &staged,
-            HashMap::new(),
-        )
-        .with_delta_policy(delta_policy);
-        verdict_boundary(checker.is_type(constructor.ty, limits.judgment_steps))?;
-        staged = staged
-            .extend(
-                constructor.name,
-                ConstantDecl::constructor(Vec::new(), constructor.ty),
-            )
-            .map_err(|_| Verdict::Reject)?;
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
     }
 
     let [recursor] = block.recursors.as_slice() else {
@@ -408,20 +379,13 @@ fn check_binary_enum(
     {
         return Err(Verdict::Reject);
     }
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        parameter_substitution(&recursor.level_params),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
-    staged
-        .extend(
-            recursor.name,
-            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
-        )
-        .map_err(|_| Verdict::Reject)
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
 }
 
 fn valid_binary_recursor_metadata(
@@ -594,6 +558,373 @@ fn is_bvar_applied_to_bvar(
     )
 }
 
+/// G11-001's exact `TwoBool` promotion boundary. This deliberately names the
+/// fixture family: a generic structure/positivity rule has not yet been
+/// earned. The exported rule is validated but no iota, projection, or eta
+/// operation is installed.
+fn check_twobool_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || !name_is_root_str(export, inductive.name, "TwoBool")
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [constructor] = block.constructors.as_slice() else {
+        unreachable!("dispatched by constructor count");
+    };
+    if constructor.is_unsafe || !constructor.level_params.is_empty() {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 2
+        || constructor.num_params != 0
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+    {
+        return Err(Verdict::Reject);
+    }
+    let Some(bool_name) = first_constructor_domain_constant(export, constructor.ty) else {
+        return Err(Verdict::Reject);
+    };
+    if !name_is_root_str(export, bool_name, "Bool")
+        || !is_twobool_constructor_type(export, constructor.ty, bool_name, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(constructor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !valid_twobool_recursor_metadata(export, inductive.name, constructor.name, recursor)
+        || !is_derived_twobool_recursor_type(
+            export,
+            inductive.name,
+            constructor.name,
+            bool_name,
+            recursor,
+        )
+        || !is_derived_twobool_rule(
+            export,
+            inductive.name,
+            constructor.name,
+            bool_name,
+            recursor,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn valid_twobool_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> bool {
+    recursor.all == [inductive]
+        && !recursor.is_unsafe
+        && !recursor.k
+        && recursor.level_params.len() == 1
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == 0
+        && recursor.num_indices == 0
+        && recursor.num_motives == 1
+        && recursor.num_minors == 1
+        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
+fn is_twobool_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    field_type: NameId,
+    inductive: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: first,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: second,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *first, field_type)
+        && is_empty_constant(export, *second, field_type)
+        && is_empty_constant(export, *body, inductive)
+}
+
+fn is_derived_twobool_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    field_type: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(recursor.ty)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: motive_arg,
+        body: motive_sort,
+    }) = export.exprs.get(*motive)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *motive_arg, inductive)
+        && matches!(
+            export.exprs.get(*motive_sort),
+            Some(Expr::Sort(level)) if matches!(
+                export.levels.get(*level),
+                Some(Level::Param(name)) if name == &recursor.level_params[0]
+            )
+        )
+        && is_twobool_minor_type(export, *minor, constructor, field_type)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_applied_to_bvar(export, *result, 2, 0)
+}
+
+fn is_twobool_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    field_type: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: first,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: second,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *first, field_type)
+        && is_empty_constant(export, *second, field_type)
+        && matches!(export.exprs.get(*motive), Some(Expr::BVar(2)))
+        && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
+}
+
+fn is_derived_twobool_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    field_type: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(rule.rhs)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: motive_arg, ..
+    }) = export.exprs.get(*motive)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: first,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: second,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *motive_arg, inductive)
+        && is_twobool_minor_type(export, *minor, constructor, field_type)
+        && is_empty_constant(export, *first, field_type)
+        && is_empty_constant(export, *second, field_type)
+        && is_bvar_applied_to_two_bvars(export, *result, 2, 1, 0)
+}
+
+fn is_constructor_applied_to_two_bvars(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *head, constructor)
+        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
+        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
+}
+
+fn is_bvar_applied_to_two_bvars(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    matches!(export.exprs.get(*head), Some(Expr::BVar(index)) if *index == function)
+        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
+        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
+}
+
+fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
+}
+
+fn name_is_child_str(export: &ResolvedExport, name: NameId, prefix: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: actual_prefix, value: actual }) if *actual_prefix == prefix && actual == value)
+}
+
+fn first_constructor_domain_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let Expr::Pi { domain, .. } = export.exprs.get(expression)? else {
+        return None;
+    };
+    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
+        return None;
+    };
+    levels.is_empty().then_some(*name)
+}
+
+fn derived_type(name: NameId, ty: ExprId) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Type,
+        name,
+        level_params: Vec::new(),
+        ty,
+    }
+}
+
+fn derived_constructor(constructor: &Constructor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Constructor,
+        name: constructor.name,
+        level_params: constructor.level_params.clone(),
+        ty: constructor.ty,
+    }
+}
+
+fn derived_recursor(recursor: &Recursor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Recursor,
+        name: recursor.name,
+        level_params: recursor.level_params.clone(),
+        ty: recursor.ty,
+    }
+}
+
 fn has_duplicate_parameter(parameters: &[NameId]) -> bool {
     parameters
         .iter()
@@ -620,11 +951,13 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
 mod tests {
     use std::io::Cursor;
 
-    use super::{Limits, check_export, check_export_with_policy};
+    use super::{Limits, check_export, check_export_with_policy, check_inductive};
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
+    use crate::environment::Environment;
     use crate::id::NameId;
     use crate::parser::parse;
+    use crate::syntax::Declaration;
     use crate::verdict::Verdict;
 
     #[test]
@@ -670,5 +1003,52 @@ mod tests {
             NameId(2),
             NameId(1),
         ]));
+    }
+
+    #[test]
+    fn rejected_twobool_block_cannot_partially_extend_authority() {
+        let bytes = include_bytes!("../evidence/residuals/G11-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        let blocks: Vec<_> = export
+            .declarations
+            .iter()
+            .filter_map(|declaration| match declaration {
+                Declaration::Inductive(block) => Some(block.clone()),
+                _ => None,
+            })
+            .collect();
+        let [bool_block, twobool_block] = blocks.as_slice() else {
+            panic!("fixture must contain Bool followed by TwoBool");
+        };
+        let environment = check_inductive(
+            &export,
+            &Environment::empty(),
+            bool_block,
+            Limits::default(),
+            DeltaPolicy::GuardedSemanticFallback,
+        )
+        .unwrap();
+        let authority_before = environment.authority();
+        let mut malformed = twobool_block.clone();
+        malformed.recursors[0].rules[0].num_fields = 1;
+
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &environment,
+                &malformed,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+        assert_eq!(environment.authority(), authority_before);
+        for name in [
+            twobool_block.types[0].name,
+            twobool_block.constructors[0].name,
+            twobool_block.recursors[0].name,
+        ] {
+            assert!(environment.get(name).is_none());
+        }
     }
 }

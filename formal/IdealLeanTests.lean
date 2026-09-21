@@ -11,3 +11,5 @@ import IdealLean.Semantics
 #check IdealLean.Install.prior_environment_is_prefix
 #check IdealLean.Install.checked_proof_uses_prior_environment
 #check IdealLean.Install.checked_theorem_is_not_self_referential
+#check IdealLean.InductivePromotion.promote_preserves_environment_validity
+#check IdealLean.InductivePromotion.promoted_signatures_are_opaque

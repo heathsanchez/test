@@ -1,0 +1,19 @@
+{
+  "id": "G11-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "78a53e3ed6e4f6d5f741c4869ae098cfdcda31bd",
+    "fixture_sha256": "91a1f7379e22ebbec710ce6b43b7e0750be258ace8fc22d0b889fb76b57010de",
+    "tutorial_ordinal": 38
+  },
+  "obstruction": "After the qualified Bool block, TwoBool introduces the first one-constructor structure with two fields. Its type, constructor, recursor and rule remain outside earned authority, so the final definition returns UNKNOWN.",
+  "residual_class": "closed nonrecursive inductive with constructor fields",
+  "observed": {"expected_exit": 0, "actual_exit": 2, "preceding_cases_matched": 37},
+  "least_candidate_capability": "Derive and validate exactly one safe closed Type inductive, one nonrecursive constructor with two fields of the inductive's previously validated field type, and its one-motive/one-minor recursor and rule; atomically install only opaque signatures.",
+  "strongest_competing_explanation": "General positivity, parameters, projections, eta or iota are needed. Exact TwoBool uses none of them: its fields are closed Bool values and case 038 only asks for the structure type, so those mechanisms are not earned.",
+  "falsifier": "Reject the candidate if any owner/result/field/index, motive/minor/rule/RHS perturbation gains authority, installation is partial, any G0-G10 verdict changes, or a parameterized/indexed/recursive/unsafe/nested/mutual neighbor stops being UNKNOWN.",
+  "causal_ablation": "The sealed G10 checker returns UNKNOWN on identical case-038 bytes. Only the exact derived TwoBool block may change to ACCEPT.",
+  "protected_suite": ["all G0-G10 tests", "exact tutorial prefix 001-037", "G9/G10 perturbation corpus", "unsupported parameterized/indexed/recursive/unsafe/nested/mutual inductives remain UNKNOWN", "cycles and budgets remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions", "diagnostic_only":["deterministic operation counters","Callgrind"], "promotion_rule":"same-cohort candidate and control retired instructions only"},
+  "decision": "OPEN_RESIDUAL_EXACT_SHAPE_ONLY"
+}

@@ -55,6 +55,8 @@ pub(crate) fn convert_with_policy_at_depth(
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
+    #[cfg(feature = "diagnostics")]
+    crate::diagnostics::conversion();
 
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone(), initial_depth)];

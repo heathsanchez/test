@@ -69,6 +69,9 @@ inductive Declaration where
   | axiom : DeclName → Expr → Declaration
   | definition : DeclName → Expr → Expr → Declaration
   | theorem : DeclName → Expr → Declaration
+  | inductiveType : DeclName → Expr → Declaration
+  | constructor : DeclName → Expr → Declaration
+  | recursor : DeclName → Expr → Declaration
   deriving DecidableEq, Repr
 
 namespace Declaration
@@ -77,17 +80,26 @@ def name : Declaration → DeclName
   | .axiom n _ => n
   | .definition n _ _ => n
   | .theorem n _ => n
+  | .inductiveType n _ => n
+  | .constructor n _ => n
+  | .recursor n _ => n
 
 def type : Declaration → Expr
   | .axiom _ ty => ty
   | .definition _ ty _ => ty
   | .theorem _ ty => ty
+  | .inductiveType _ ty => ty
+  | .constructor _ ty => ty
+  | .recursor _ ty => ty
 
 /-- Reducible bodies exist only for definitions. -/
 def body : Declaration → Option Expr
   | .definition _ _ value => some value
   | .axiom _ _ => none
   | .theorem _ _ => none
+  | .inductiveType _ _ => none
+  | .constructor _ _ => none
+  | .recursor _ _ => none
 
 end Declaration
 
@@ -187,4 +199,72 @@ theorem checked_theorem_is_not_self_referential
       exact checked.fresh (checked.proofSupported candidate.name selfReference)
 
 end Install
+
+/-! ## Opaque inductive-signature promotion
+
+This is the portable warrant used by the current closed, nonrecursive Rust
+engine.  It does not validate positivity or derive a particular eliminator;
+those remain premises in `SignatureValid`.  It states only the common rule:
+signatures validated in dependency order can be installed opaquely while
+preserving an independently supplied environment-validity invariant. -/
+
+namespace InductivePromotion
+
+inductive Kind where
+  | inductiveType
+  | constructor
+  | recursor
+  deriving DecidableEq, Repr
+
+structure Signature where
+  kind : Kind
+  name : DeclName
+  type : Expr
+  deriving DecidableEq, Repr
+
+def installedDeclaration : Signature → Declaration
+  | ⟨.inductiveType, name, type⟩ => .inductiveType name type
+  | ⟨.constructor, name, type⟩ => .constructor name type
+  | ⟨.recursor, name, type⟩ => .recursor name type
+
+/-- Validation is sequential: later signatures are checked in the environment
+that already contains the earlier opaque signatures. -/
+inductive Validated
+    (SignatureValid : Environment → Signature → Prop) :
+    Environment → List Signature → Environment → Prop where
+  | nil : Validated SignatureValid prior [] prior
+  | cons
+      (checked : SignatureValid prior signature)
+      (rest : Validated SignatureValid
+        (prior ++ [installedDeclaration signature]) signatures next) :
+      Validated SignatureValid prior (signature :: signatures) next
+
+/-- The smallest semantic promotion law shared by G9/G10/G11.  No concrete
+typing relation or whole-checker correctness claim is assumed. -/
+theorem promote_preserves_environment_validity
+    (EnvironmentValid : Environment → Prop)
+    (SignatureValid : Environment → Signature → Prop)
+    (extendValid : ∀ environment signature,
+      EnvironmentValid environment →
+      SignatureValid environment signature →
+      EnvironmentValid (environment ++ [installedDeclaration signature]))
+    (validated : Validated SignatureValid prior signatures next)
+    (priorValid : EnvironmentValid prior) :
+    EnvironmentValid next := by
+  induction validated with
+  | nil => exact priorValid
+  | cons checked _ inductionHypothesis =>
+      exact inductionHypothesis (extendValid _ _ priorValid checked)
+
+/-- Every promoted signature is opaque; computation rules require a separate
+qualification and cannot enter delta authority through this transition. -/
+theorem promoted_signatures_are_opaque
+    (signatures : List Signature) (declaration : Declaration)
+    (member : declaration ∈ signatures.map installedDeclaration) :
+    declaration.body = none := by
+  obtain ⟨signature, _, rfl⟩ := List.mem_map.mp member
+  cases signature with
+  | mk kind name type => cases kind <;> rfl
+
+end InductivePromotion
 end IdealLean
