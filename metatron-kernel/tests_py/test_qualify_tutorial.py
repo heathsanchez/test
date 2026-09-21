@@ -6,6 +6,7 @@ from pathlib import Path
 from scripts.qualify_tutorial import (
     CaseResult,
     TutorialCase,
+    build_differential_summary,
     build_summary,
     load_declared_suite,
 )
@@ -88,6 +89,46 @@ class TutorialSummaryTests(unittest.TestCase):
         self.assertEqual(summary["counts"], {"incorrect": 1, "matched": 0})
         self.assertEqual(summary["cases"][0]["status"], "incorrect")
         self.assertFalse(summary["qualified"])
+
+
+class DifferentialSummaryTests(unittest.TestCase):
+    def test_only_declared_earned_case_may_differ_from_sealed_oracle(self):
+        manifest = (
+            TutorialCase("039", Path("good/039_andType.ndjson"), 0, "3" * 64),
+            TutorialCase("040", Path("good/040_prodType.ndjson"), 0, "4" * 64),
+        )
+        summary = build_differential_summary(
+            oracle_sha="b" * 40,
+            candidate_sha="c" * 40,
+            manifest=manifest,
+            oracle_results=(CaseResult("039", 0), CaseResult("040", 2)),
+            candidate_results=(CaseResult("039", 0), CaseResult("040", 0)),
+            earned_case="040",
+            earned_oracle_exit=2,
+            earned_candidate_exit=0,
+        )
+
+        self.assertTrue(summary["qualified"])
+        self.assertEqual(summary["counts"], {"equal": 1, "earned_delta": 1, "mismatch": 0})
+
+    def test_difference_outside_earned_case_fails(self):
+        manifest = (
+            TutorialCase("039", Path("good/039_andType.ndjson"), 0, "3" * 64),
+            TutorialCase("040", Path("good/040_prodType.ndjson"), 0, "4" * 64),
+        )
+        summary = build_differential_summary(
+            oracle_sha="b" * 40,
+            candidate_sha="c" * 40,
+            manifest=manifest,
+            oracle_results=(CaseResult("039", 0), CaseResult("040", 2)),
+            candidate_results=(CaseResult("039", 1), CaseResult("040", 0)),
+            earned_case="040",
+            earned_oracle_exit=2,
+            earned_candidate_exit=0,
+        )
+
+        self.assertFalse(summary["qualified"])
+        self.assertEqual(summary["counts"]["mismatch"], 1)
 
 
 if __name__ == "__main__":

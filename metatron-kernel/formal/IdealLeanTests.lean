@@ -14,3 +14,4 @@ import IdealLean.Semantics
 #check IdealLean.InductivePromotion.promote_preserves_environment_validity
 #check IdealLean.InductivePromotion.promoted_signatures_are_opaque
 #check IdealLean.ParameterizedInductivePromotion.promote_preserves_environment_validity
+#check IdealLean.ProdUniversePromotion.promote_preserves_environment_validity

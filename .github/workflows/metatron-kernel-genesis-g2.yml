@@ -22,6 +22,7 @@ jobs:
     timeout-minutes: 30
     env:
       ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      G12_SHA: b4de8f5937d0b4d91e384ebbe922652a62796d64
     steps:
       - uses: actions/checkout@v4
 
@@ -88,18 +89,30 @@ jobs:
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
+          git fetch --depth 1 origin "$G12_SHA"
+          git worktree add --detach /tmp/metatron-g12-oracle "$G12_SHA"
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g12-oracle/metatron-kernel/Cargo.toml
           python scripts/qualify_tutorial.py \
             --checker target/release/metatron-kernel \
             --tutorial-output /tmp/lean-kernel-tutorial \
             --candidate-sha "$GITHUB_SHA" \
             --arena-sha "$ARENA_SHA" \
-            --output evidence-out/tutorial-qualification.json
+            --output evidence-out/tutorial-qualification.json \
+            --oracle /tmp/metatron-g12-oracle/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$G12_SHA" \
+            --earned-case 040 \
+            --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
-          assert q['counts']=={'incorrect':0,'matched':39}, q
-          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
+          assert q['counts']=={'incorrect':0,'matched':40}, q
+          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
+          d=json.load(open('evidence-out/tutorial-differential.json'))
+          assert d['qualified'] is True, d
+          assert d['counts']=={'earned_delta':1,'equal':39,'mismatch':0}, d
+          assert d['oracle_sha']=='b4de8f5937d0b4d91e384ebbe922652a62796d64', d
           PY
 
       - name: Attempt same-cohort retired-instruction measurement
@@ -185,6 +198,7 @@ jobs:
             },
             'qualification':json.loads((root/'qualification.json').read_text()),
             'tutorial_qualification':json.loads((root/'tutorial-qualification.json').read_text()),
+            'tutorial_differential':json.loads((root/'tutorial-differential.json').read_text()),
             'retired_instructions':json.loads((root/'instructions.json').read_text()),
           }
           (root/'attestation.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')

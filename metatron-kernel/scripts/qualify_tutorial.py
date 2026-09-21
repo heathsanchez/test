@@ -63,6 +63,7 @@ TUTORIAL_MANIFEST = (
     TutorialCase("037", Path("good/037_boolType.ndjson"), 0, "02053d077abf5a63594d1025f9ef2f90dfff65f331503aa3b7486bbbb997b3e8"),
     TutorialCase("038", Path("good/038_twoBool.ndjson"), 0, "91a1f7379e22ebbec710ce6b43b7e0750be258ace8fc22d0b889fb76b57010de"),
     TutorialCase("039", Path("good/039_andType.ndjson"), 0, "d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1"),
+    TutorialCase("040", Path("good/040_prodType.ndjson"), 0, "a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d"),
 )
 
 
@@ -157,6 +158,64 @@ def build_summary(
     }
 
 
+def build_differential_summary(
+    *,
+    oracle_sha: str,
+    candidate_sha: str,
+    manifest: Sequence[TutorialCase],
+    oracle_results: Sequence[CaseResult],
+    candidate_results: Sequence[CaseResult],
+    earned_case: str,
+    earned_oracle_exit: int,
+    earned_candidate_exit: int,
+) -> dict:
+    oracle = {result.number: result.actual_exit_code for result in oracle_results}
+    candidate = {result.number: result.actual_exit_code for result in candidate_results}
+    expected_numbers = {case.number for case in manifest}
+    if set(oracle) != expected_numbers or set(candidate) != expected_numbers:
+        raise ValueError("differential results must cover the declared manifest exactly")
+    if earned_case not in expected_numbers:
+        raise ValueError(f"earned case {earned_case} is not in the declared manifest")
+
+    counts = {"equal": 0, "earned_delta": 0, "mismatch": 0}
+    cases = []
+    for case in manifest:
+        oracle_exit = oracle[case.number]
+        candidate_exit = candidate[case.number]
+        if case.number == earned_case:
+            status = (
+                "earned_delta"
+                if oracle_exit == earned_oracle_exit
+                and candidate_exit == earned_candidate_exit
+                else "mismatch"
+            )
+        else:
+            status = "equal" if oracle_exit == candidate_exit else "mismatch"
+        counts[status] += 1
+        cases.append(
+            {
+                "candidate_exit_code": candidate_exit,
+                "input": case.relative_path.as_posix(),
+                "input_sha256": case.sha256,
+                "number": case.number,
+                "oracle_exit_code": oracle_exit,
+                "status": status,
+            }
+        )
+
+    qualified = counts["mismatch"] == 0 and counts["earned_delta"] == 1
+    return {
+        "candidate_sha": candidate_sha,
+        "cases": cases,
+        "counts": counts,
+        "earned_case": earned_case,
+        "oracle_sha": oracle_sha,
+        "outcome": "passed" if qualified else "failed",
+        "qualified": qualified,
+        "schema": "metatron-kernel-tutorial-differential-v1",
+    }
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--checker", required=True, type=Path)
@@ -164,6 +223,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--candidate-sha", required=True)
     parser.add_argument("--arena-sha", required=True)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--oracle", type=Path)
+    parser.add_argument("--oracle-sha")
+    parser.add_argument("--differential-output", type=Path)
+    parser.add_argument("--earned-case")
+    parser.add_argument("--earned-oracle-exit", type=int, default=2)
+    parser.add_argument("--earned-candidate-exit", type=int, default=0)
     return parser.parse_args()
 
 
@@ -184,7 +249,30 @@ def main() -> int:
         args.output.write_text(rendered)
     else:
         print(rendered, end="")
-    return 0 if summary["qualified"] else 1
+
+    differential_qualified = True
+    if args.oracle:
+        if not args.oracle_sha or not args.earned_case or not args.differential_output:
+            raise ValueError(
+                "--oracle requires --oracle-sha, --earned-case, and --differential-output"
+            )
+        oracle = args.oracle.resolve()
+        oracle_results = tuple(run_case(oracle, tutorial_output, case) for case in suite)
+        differential = build_differential_summary(
+            oracle_sha=args.oracle_sha,
+            candidate_sha=args.candidate_sha,
+            manifest=suite,
+            oracle_results=oracle_results,
+            candidate_results=results,
+            earned_case=args.earned_case,
+            earned_oracle_exit=args.earned_oracle_exit,
+            earned_candidate_exit=args.earned_candidate_exit,
+        )
+        args.differential_output.write_text(
+            json.dumps(differential, indent=2, sort_keys=True) + "\n"
+        )
+        differential_qualified = differential["qualified"]
+    return 0 if summary["qualified"] and differential_qualified else 1
 
 
 if __name__ == "__main__":

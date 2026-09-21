@@ -357,10 +357,41 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G13-001 — Universe-polymorphic `Prod`
 
-- Status: OPEN; deliberately not implemented.
+- Status: RETAINED locally; exact-head external qualification is pending.
 - Exact obstruction: tutorial 040 `good/040_prodType.ndjson`, SHA-256
   `a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d`,
   expects ACCEPT and the G12 checker returns `UNKNOWN`.
-- Boundary: the case introduces a universe-polymorphic two-parameter `Prod`.
-  Its exact bytes are frozen; no broader parameter or universe capability is
-  selected until the next deciding experiment.
+- Retained capability: a separate exact `Prod` classifier validates two
+  ordered universe parameters, `Type u`/`Type v` parameter sorts, the computed
+  `Type (max u v)` result, universe-instantiated constructor and recursor
+  signatures, and the exported rule. It reuses the unchanged opaque-signature
+  promotion transaction.
+- Causal differential: the sealed G12 oracle and G13 candidate agree on all
+  tutorial cases 001–039; case 040 is the sole permitted delta, from `UNKNOWN`
+  to `ACCEPT`.
+- Falsifiers: universe count/order, parameter levels, computed result level,
+  constant universe instances, constructor result/order, recursor
+  universe/telescope, minor/rule, owner and count perturbations reject.
+  Indexed, recursive, unsafe, nested, dependent-parameter and broader shapes
+  remain `UNKNOWN`.
+- Explicit exclusions: no shared G12/G13 parameterized-inductive abstraction,
+  general universe framework, positivity, iota, projections, or eta.
+- Formal warrant: `IdealLean.ProdUniversePromotion.
+  promote_preserves_environment_validity` proves the prior parameterized
+  opaque-promotion law remains valid after the exact two-universe telescope
+  and computed-level obligations are established. This is not Rust refinement.
+- Local qualification: tutorial 001–040 has 40 matched and zero incorrect;
+  differential result is 39 equal, one earned delta, zero mismatches. Rust,
+  Python, ledger, Clippy and portable Lean gates pass.
+- Performance: the deterministic case-040 counts are three promoted
+  signatures, four type judgments and thirteen conversions. Retired
+  instructions remain unqualified without a same-cohort control.
+
+## G14-001 — `PProd` replication residual
+
+- Status: OPEN; deliberately not implemented or abstracted.
+- Exact obstruction: tutorial 041 `good/041_pprodType.ndjson`, SHA-256
+  `9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a`,
+  expects ACCEPT and the G13 candidate returns `UNKNOWN`.
+- Boundary: tutorial 041 is frozen as the replication test for the apparent
+  G12/G13 composition law. No shared abstraction is promoted before that test.
