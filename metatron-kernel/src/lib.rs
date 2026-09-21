@@ -1,5 +1,7 @@
 use std::io::BufRead;
 
+pub mod id;
+pub mod syntax;
 pub mod verdict;
 
 use verdict::Verdict;
