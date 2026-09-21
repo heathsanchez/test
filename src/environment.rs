@@ -54,6 +54,12 @@ impl ConstantDecl {
         Self::theorem(level_params, ty)
     }
 
+    /// A validated constructor is executable only as a rigid constant until
+    /// a separately qualified iota rule is installed.
+    pub fn constructor(level_params: Vec<NameId>, ty: ExprId) -> Self {
+        Self::theorem(level_params, ty)
+    }
+
     /// A checked recursor is opaque: its reduction rules require a separately
     /// qualified iota mechanism and are not definition bodies.
     pub fn recursor(level_params: Vec<NameId>, ty: ExprId) -> Self {

@@ -123,3 +123,32 @@ fn empty_recursor_metadata_is_checked_not_trusted() {
         Verdict::Reject
     );
 }
+
+#[test]
+fn g10_001_derived_binary_enum_authority_is_accepted() {
+    assert_eq!(run_residual("G10-001"), Verdict::Accept);
+}
+
+#[test]
+fn binary_enum_constructor_index_is_checked_not_trusted() {
+    let bytes = include_str!("../evidence/residuals/G10-001/fixture.ndjson");
+    let perturbed = bytes.replacen("\"cidx\":0", "\"cidx\":1", 1);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(perturbed)),
+        Verdict::Reject
+    );
+}
+
+#[test]
+fn binary_enum_recursor_rules_are_derived_not_axiomatized() {
+    let bytes = include_str!("../evidence/residuals/G10-001/fixture.ndjson");
+    let perturbed = bytes.replacen(
+        "\"ctor\":2,\"nfields\":0,\"rhs\":18",
+        "\"ctor\":2,\"nfields\":0,\"rhs\":21",
+        1,
+    );
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(perturbed)),
+        Verdict::Reject
+    );
+}
