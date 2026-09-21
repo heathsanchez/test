@@ -1,0 +1,52 @@
+{
+  "id": "G4-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "6e4b07c6695e2d2c5ff2f6ad08c963006af76140",
+    "lean_githash": "f72c35b3f637c8c6571d353742168ab66cc22c00",
+    "fixture_sha256": "b4af42800421f4ac5ec7e699a706bdd82f9f1324a5d2d49769fb340bf36e6a48",
+    "upstream_path": "tutorial output good/008_forallSortWhnf.ndjson",
+    "tutorial_ordinal": 8
+  },
+  "obstruction": "The checker rejects the fixture while checking its first declaration, the dependent identity function; relational Pi comparison compares open bodies without establishing a shared binder witness and reports distinct-neutral-heads.",
+  "residual_class": "conversion",
+  "observed": {
+    "expected_exit": 0,
+    "actual_exit": 1,
+    "internal_obstruction": "distinct-neutral-heads",
+    "failing_prefix_lines": 14,
+    "preceding_tutorial_cases_matched": [
+      "001_basicDef",
+      "002_badDef",
+      "003_arrowType",
+      "004_dependentType",
+      "005_constType",
+      "006_betaReduction",
+      "007_betaReduction2"
+    ]
+  },
+  "least_candidate_capability": "Relate dependent Pi bodies under one explicit fresh neutral witness at a shared binder depth, preserving the two original closure environments and authority.",
+  "strongest_competing_explanation": "Universe-parameter substitution, application inference, or sort WHNF for the final declaration is the primary defect.",
+  "deciding_experiment": {
+    "change": "Truncate after the first declaration, replace its universe parameter with a concrete successor level, and remove its level parameter; retain the dependent binder structure.",
+    "transformed_fixture_sha256": "2dab399683b32b86fbd2070ca40e9a498028d5babda10211809b2d18fcc74e9b",
+    "transformed_exit": 1,
+    "conclusion": "The monomorphic dependent identity still rejects before the final declaration, falsifying universe polymorphism and final-domain WHNF as the primary obstruction."
+  },
+  "falsifier": "Reject the capability if a shared binder witness does not accept the exact fixture, identifies unrelated free variables, changes any prior tutorial verdict, or converts cycle/budget uncertainty into a Boolean answer.",
+  "causal_ablation": "Compare raw open-body pairing with shared-witness body instantiation on the same fixture and authority; only the shared-witness arm may accept case 008.",
+  "protected_suite": [
+    "all G0-G3 Rust and Python tests",
+    "exact Lean 4.29.1 oracles",
+    "tutorial cases 001 through 007 retain exact exits",
+    "G3 guarded delta ablation remains exact",
+    "cycles and budgets remain UNKNOWN"
+  ],
+  "performance_plan": {
+    "primary_metric": "retired_instructions",
+    "cohort": "identical ordered tutorial prefix through 008 plus the G2 cohort",
+    "control": "pinned flash on the same runner, metric, build, Arena SHA, and case order",
+    "promotion_rule": "No performance promotion without measured same-identity candidate and control counters."
+  },
+  "decision": "OPEN_RESIDUAL_NO_MECHANISM_IMPLEMENTED"
+}

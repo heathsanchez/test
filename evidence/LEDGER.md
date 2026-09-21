@@ -172,3 +172,22 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Performance: the local environment has no `perf` executable, so candidate
   and flash retired-instruction totals are absent. Status is
   `UNKNOWN_NO_COUNTERS`; semantic retention is not a performance claim.
+
+## G4-001 — Dependent conversion under a shared binder
+
+- Status: OPEN; no mechanism implemented.
+- Exact residual: pinned tutorial `good/008_forallSortWhnf.ndjson`, SHA-256
+  `b4af42800421f4ac5ec7e699a706bdd82f9f1324a5d2d49769fb340bf36e6a48`.
+  Cases 001–007 match; case 008 should ACCEPT but REJECTS.
+- Localization: the first 14 lines—the dependent identity declaration alone—
+  already reject with `distinct-neutral-heads`. The later sort-WHNF declaration
+  is not reached.
+- Separator: concretizing the universe and removing its level parameter still
+  rejects the dependent identity. Universe substitution is therefore not the
+  primary residual.
+- Least candidate capability: compare dependent Pi bodies after extending both
+  original environments with the same explicit fresh neutral at a shared
+  binder depth. No substitution copying or global normalization is warranted.
+- Falsifier: witness aliasing, any protected verdict drift, or loss of UNKNOWN
+  at cycle/budget edges. Retired-instruction comparison remains planned under
+  the same-identity measurement law.
