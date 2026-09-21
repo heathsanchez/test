@@ -1,0 +1,59 @@
+name: LKC Partition Seeded v10
+
+on:
+  push:
+    branches: [lkc-partition-seeded-v10]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V10
+        run: |
+          python3 -m py_compile experiments/lkc_partition/seeded_v10.py
+          python3 experiments/lkc_partition/seeded_v10.py
+          sha256sum experiments/lkc_partition/generated/Submission_v10.lean
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-partition-seeded-v10-lean4331-d8ea5fc
+      - name: Setup exact Partition environment and rules
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem partition
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Universal proof and axiom audit
+        run: |
+          cp experiments/lkc_partition/generated/Submission_v10.lean bench/.cache/upstream/evaluation/problems/partition/Submission_v10.lean
+          cd bench/.cache/upstream/evaluation/problems/partition
+          printf '\n#print axioms Submission.impl_correct\n' >> Submission_v10.lean
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Submission_v10.lean
+      - name: Canonical acceptance
+        run: |
+          python3 bench/.cache/upstream/evaluation/run.py --problem partition             --submission "$GITHUB_WORKSPACE/experiments/lkc_partition/generated/Submission_v10.lean"             --timeout 900
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: partition-seeded-v10-evidence
+          path: experiments/lkc_partition/generated/Submission_v10.lean
