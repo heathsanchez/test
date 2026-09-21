@@ -97,3 +97,23 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
         Judgment::Unknown { .. } => Err(Verdict::Unknown),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::io::Cursor;
+
+    use super::{Limits, check_export};
+    use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
+    use crate::parser::parse;
+    use crate::verdict::Verdict;
+
+    #[test]
+    fn good_beta_definition_has_one_trusted_conversion_call() {
+        let bytes = include_bytes!("../tests/fixtures/good-beta-definition.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        reset_test_conversion_calls();
+
+        assert_eq!(check_export(export, Limits::default()), Verdict::Accept);
+        assert_eq!(test_conversion_calls(), 1);
+    }
+}
