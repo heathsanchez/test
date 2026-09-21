@@ -109,3 +109,21 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   Residuals earn generators; a non-recurring obligation has earned none.
 - Performance: no ablation or retired-instruction claim is meaningful because
   enabled and disabled programs would be identical.
+
+## G2-002 — Exact-head external qualification
+
+- Status: RETAINED for correctness qualification; performance UNKNOWN.
+- Candidate: `47aff936001f88204f2bf05a9fad9abe4eda9a9c` at Arena authority
+  `f5e1bce6e2dc9c60479b3001b76e01722b403799`.
+- External evidence: GitHub Actions run `35620658852`, job `106402590918`,
+  artifact `10648885370`, digest
+  `sha256:c100e632fef5e952b7fabee07fbb0f1a7358a7634441a43a86f99095a4d39176`.
+- Qualification: all six ordered cases matched; zero cases were incomplete,
+  incorrect, or errored. Verdict totals were three ACCEPT, two REJECT, and one
+  preserved UNKNOWN.
+- Falsifier: any authority mismatch, fixture or verdict drift, or presenting
+  unavailable hardware counters as a performance improvement.
+- Performance: GitHub's runner exposed no usable `perf instructions:u`
+  counter, and no same-cohort flash control count exists. Retired-instruction
+  performance is therefore `UNKNOWN_NO_PMU_OR_CONTROL`; wall time is not a
+  substitute and no promotion is claimed.
