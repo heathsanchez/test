@@ -1034,4 +1034,45 @@ mod tests {
             NameId(1),
         ]));
     }
+    #[test]
+    fn closed_inductive_refactor_is_causally_equivalent_on_frozen_family_bank() {
+        let mut bank = vec![
+            include_bytes!("../evidence/residuals/G9-001/fixture.ndjson").to_vec(),
+            include_bytes!("../evidence/residuals/G10-001/fixture.ndjson").to_vec(),
+            include_bytes!("../evidence/residuals/G11-001/fixture.ndjson").to_vec(),
+            include_bytes!("../tests/fixtures/unsupported-inductive.ndjson").to_vec(),
+        ];
+        bank.push(
+            include_str!("../evidence/residuals/G10-001/fixture.ndjson")
+                .replacen("\"cidx\":0", "\"cidx\":1", 1)
+                .into_bytes(),
+        );
+        bank.push(
+            include_str!("../evidence/residuals/G11-001/fixture.ndjson")
+                .replacen(
+                    "\"numFields\":2,\"numParams\":0,\"type\":24",
+                    "\"numFields\":1,\"numParams\":0,\"type\":24",
+                    1,
+                )
+                .into_bytes(),
+        );
+
+        for bytes in bank {
+            let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+            let legacy = check_export_with_policy_and_installer(
+                export.clone(),
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+                install_closed_nonrecursive_inductive_legacy,
+            );
+            let generic = check_export_with_policy_and_installer(
+                export,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+                install_closed_nonrecursive_inductive,
+            );
+            assert_eq!(generic, legacy);
+        }
+    }
+
 }
