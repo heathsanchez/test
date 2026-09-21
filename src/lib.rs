@@ -1,6 +1,8 @@
 use std::io::BufRead;
 
 pub mod id;
+pub mod judgment;
+pub mod level;
 pub mod parser;
 pub mod syntax;
 pub mod verdict;
