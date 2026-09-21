@@ -1,0 +1,37 @@
+name: Read LKC Playground Runs 190-197
+
+on:
+  push:
+    branches: [lkc-official-8of8-submit-v1]
+    paths:
+      - '.github/workflows/lkc-read-playground-runs.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - name: Read playground runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p playground-runs
+          for id in 190 191 192 193 194 195 196 197; do
+            curl -fsS "$BASE/playground/runs/$id" \
+              -H "Authorization: Bearer $SAIR_API_KEY" \
+              -H "Accept: application/json" \
+              -H "User-Agent: curl/8.5.0" \
+              > "playground-runs/$id.json"
+            jq '{id: .data.runId, problem: .data.problem, status: .data.status, result: .data.result}' "playground-runs/$id.json" || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-playground-runs-190-197
+          path: playground-runs/
