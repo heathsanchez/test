@@ -267,4 +267,57 @@ theorem promoted_signatures_are_opaque
   | mk kind name type => cases kind <;> rfl
 
 end InductivePromotion
+
+/-! ## Parameterized opaque-signature promotion
+
+This layer adds only an explicit, validated parameter telescope to the opaque
+promotion law. It does not derive an inductive declaration, positivity, or a
+recursor, and it makes no statement about the Rust implementation. -/
+
+namespace ParameterizedInductivePromotion
+
+structure Parameter where
+  name : DeclName
+  type : Expr
+  deriving DecidableEq, Repr
+
+abbrev Telescope := List Parameter
+
+/-- A parameterized candidate carries the telescope which justified all of its
+derived signatures. Signature validation remains sequential in the promoted
+environment, exactly as in the nonparameterized rule. -/
+structure Validated
+    (TelescopeValid : Environment → Telescope → Prop)
+    (SignatureValid : Telescope → Environment → InductivePromotion.Signature → Prop)
+    (prior : Environment) (telescope : Telescope)
+    (signatures : List InductivePromotion.Signature) (next : Environment) : Prop where
+  telescopeValid : TelescopeValid prior telescope
+  signaturesValid : InductivePromotion.Validated
+    (SignatureValid telescope) prior signatures next
+
+/-- If a checked telescope authorizes each sequential opaque-signature
+extension, promoting those signatures preserves environment validity. The
+typing and derivation relations remain abstract parameters. -/
+theorem promote_preserves_environment_validity
+    (EnvironmentValid : Environment → Prop)
+    (TelescopeValid : Environment → Telescope → Prop)
+    (SignatureValid : Telescope → Environment → InductivePromotion.Signature → Prop)
+    (extendValid : ∀ environment signature,
+      EnvironmentValid environment →
+      TelescopeValid prior telescope →
+      SignatureValid telescope environment signature →
+      EnvironmentValid
+        (environment ++ [InductivePromotion.installedDeclaration signature]))
+    (validated : Validated TelescopeValid SignatureValid
+      prior telescope signatures next)
+    (priorValid : EnvironmentValid prior) :
+    EnvironmentValid next := by
+  apply InductivePromotion.promote_preserves_environment_validity
+    EnvironmentValid (SignatureValid telescope)
+    (fun environment signature environmentValid signatureValid =>
+      extendValid environment signature environmentValid
+        validated.telescopeValid signatureValid)
+    validated.signaturesValid priorValid
+
+end ParameterizedInductivePromotion
 end IdealLean

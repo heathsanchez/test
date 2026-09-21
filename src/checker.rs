@@ -155,9 +155,26 @@ fn check_inductive(
 ) -> Result<Environment, Verdict> {
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
-        1 => check_twobool_structure(export, environment, block, limits, delta_policy),
+        1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
         _ => Err(Verdict::Unknown),
+    }
+}
+
+fn check_single_constructor_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if name_is_root_str(export, inductive.name, "And") {
+        check_exact_and(export, environment, block, limits, delta_policy)
+    } else {
+        check_twobool_structure(export, environment, block, limits, delta_policy)
     }
 }
 
@@ -558,6 +575,411 @@ fn is_bvar_applied_to_bvar(
     )
 }
 
+/// G12-001's complete external frontier: the built-in-shaped `And` declaration
+/// with two Prop parameters and one field for each parameter. This is a named
+/// classifier, not a general parameterized-inductive rule. The shared
+/// promotion transaction is reused unchanged and installs no computation.
+fn check_exact_and(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    // These dimensions leave the exact And envelope. Their semantics remain
+    // unsupported rather than being guessed from this one declaration.
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+
+    if !is_exact_and_parameter_telescope(export, inductive.ty)
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 2
+        || constructor.num_params != 2
+        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
+        || !is_derived_and_constructor_type(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(constructor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    if !valid_and_recursor_metadata(export, inductive.name, constructor.name, recursor)
+        || !is_derived_and_recursor_type(export, inductive.name, constructor.name, recursor)
+        || !is_derived_and_rule(export, inductive.name, constructor.name, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_exact_and_parameter_telescope(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some(Expr::Pi {
+        domain: first,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: second,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_prop_sort(export, *first) && is_prop_sort(export, *second) && is_prop_sort(export, *result)
+}
+
+fn is_derived_and_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: first,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: second,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: right,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_prop_sort(export, *first)
+        && is_prop_sort(export, *second)
+        && is_bvar(export, *left, 1)
+        && is_bvar(export, *right, 1)
+        && is_binary_constant_application(export, *result, inductive, 3, 2)
+}
+
+fn valid_and_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> bool {
+    recursor.all == [inductive]
+        && !recursor.k
+        && recursor.level_params.len() == 1
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == 2
+        && recursor.num_indices == 0
+        && recursor.num_motives == 1
+        && recursor.num_minors == 1
+        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
+fn is_derived_and_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: first,
+        body,
+    }) = export.exprs.get(recursor.ty)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: second,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_prop_sort(export, *first)
+        && is_prop_sort(export, *second)
+        && is_and_motive_type(export, *motive, inductive, recursor)
+        && is_and_minor_type(export, *minor, constructor)
+        && is_binary_constant_application(export, *target, inductive, 3, 2)
+        && is_bvar_application(export, *result, 2, 0)
+}
+
+fn is_and_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: argument,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    is_binary_constant_application(export, *argument, inductive, 1, 0)
+        && matches!(
+            export.exprs.get(*result),
+            Some(Expr::Sort(level)) if matches!(
+                export.levels.get(*level),
+                Some(Level::Param(name)) if name == &recursor.level_params[0]
+            )
+        )
+}
+
+fn is_and_minor_type(export: &ResolvedExport, expression: ExprId, constructor: NameId) -> bool {
+    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: right,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(*result)
+    else {
+        return false;
+    };
+    is_bvar(export, *left, 2)
+        && is_bvar(export, *right, 2)
+        && is_bvar(export, *motive, 2)
+        && is_and_constructor_application(export, *constructed, constructor)
+}
+
+fn is_derived_and_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: first,
+        body,
+    }) = export.exprs.get(rule.rhs)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: second,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: right,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_prop_sort(export, *first)
+        && is_prop_sort(export, *second)
+        && is_and_motive_type(export, *motive, inductive, recursor)
+        && is_and_minor_type(export, *minor, constructor)
+        && is_bvar(export, *left, 3)
+        && is_bvar(export, *right, 3)
+        && is_binary_bvar_application(export, *result, 2, 1, 0)
+}
+
+fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))
+    )
+}
+
+fn is_bvar(export: &ResolvedExport, expression: ExprId, expected: u64) -> bool {
+    matches!(export.exprs.get(expression), Some(Expr::BVar(index)) if *index == expected)
+}
+
+fn is_binary_constant_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *head, constant)
+        && is_bvar(export, *first_arg, first)
+        && is_bvar(export, *arg, second)
+}
+
+fn is_and_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> bool {
+    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun,
+        arg: second_parameter,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_parameter,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *head, constructor)
+        && is_bvar(export, *first_parameter, 4)
+        && is_bvar(export, *second_parameter, 3)
+        && is_bvar(export, *left, 1)
+        && is_bvar(export, *right, 0)
+}
+
+fn is_bvar_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    argument: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, function) && is_bvar(export, *arg, argument)
+    )
+}
+
+fn is_binary_bvar_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_bvar(export, *head, function)
+        && is_bvar(export, *first_arg, first)
+        && is_bvar(export, *arg, second)
+}
+
 /// G11-001's exact `TwoBool` promotion boundary. This deliberately names the
 /// fixture family: a generic structure/positivity rule has not yet been
 /// earned. The exported rule is validated but no iota, projection, or eta
@@ -951,13 +1373,18 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
 mod tests {
     use std::io::Cursor;
 
-    use super::{Limits, check_export, check_export_with_policy, check_inductive};
+    use super::{
+        Limits, check_export, check_export_with_policy, check_inductive, is_and_minor_type,
+        is_and_motive_type, is_binary_constant_application, is_bvar_application,
+        is_derived_and_constructor_type, is_derived_and_recursor_type, is_derived_and_rule,
+        is_exact_and_parameter_telescope, is_prop_sort, valid_and_recursor_metadata,
+    };
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
     use crate::environment::Environment;
     use crate::id::NameId;
     use crate::parser::parse;
-    use crate::syntax::Declaration;
+    use crate::syntax::{Declaration, Expr};
     use crate::verdict::Verdict;
 
     #[test]
@@ -1050,5 +1477,99 @@ mod tests {
         ] {
             assert!(environment.get(name).is_none());
         }
+    }
+
+    #[test]
+    fn exact_and_fixture_satisfies_each_independently_derived_claim() {
+        let bytes = include_bytes!("../evidence/residuals/G12-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        let block = export
+            .declarations
+            .iter()
+            .find_map(|declaration| match declaration {
+                Declaration::Inductive(block) => Some(block),
+                _ => None,
+            })
+            .unwrap();
+        let inductive = &block.types[0];
+        let constructor = &block.constructors[0];
+        let recursor = &block.recursors[0];
+
+        assert!(is_exact_and_parameter_telescope(&export, inductive.ty));
+        assert!(is_derived_and_constructor_type(
+            &export,
+            constructor.ty,
+            inductive.name,
+        ));
+        assert!(valid_and_recursor_metadata(
+            &export,
+            inductive.name,
+            constructor.name,
+            recursor,
+        ));
+        let Expr::Pi {
+            domain: first,
+            body,
+        } = export.exprs.get(recursor.ty).unwrap()
+        else {
+            panic!("recursor parameter one");
+        };
+        let Expr::Pi {
+            domain: second,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor parameter two");
+        };
+        let Expr::Pi {
+            domain: motive,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor motive");
+        };
+        let Expr::Pi {
+            domain: minor,
+            body,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor minor");
+        };
+        let Expr::Pi {
+            domain: target,
+            body: result,
+        } = export.exprs.get(*body).unwrap()
+        else {
+            panic!("recursor target");
+        };
+        assert!(is_prop_sort(&export, *first));
+        assert!(is_prop_sort(&export, *second));
+        assert!(is_and_motive_type(
+            &export,
+            *motive,
+            inductive.name,
+            recursor,
+        ));
+        assert!(is_and_minor_type(&export, *minor, constructor.name));
+        assert!(is_binary_constant_application(
+            &export,
+            *target,
+            inductive.name,
+            3,
+            2,
+        ));
+        assert!(is_bvar_application(&export, *result, 2, 0));
+        assert!(is_derived_and_recursor_type(
+            &export,
+            inductive.name,
+            constructor.name,
+            recursor,
+        ));
+        assert!(is_derived_and_rule(
+            &export,
+            inductive.name,
+            constructor.name,
+            recursor,
+        ));
     }
 }

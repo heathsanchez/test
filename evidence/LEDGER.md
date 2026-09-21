@@ -281,9 +281,10 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G11-001 — Exact `TwoBool` structure
 
-- Status: RETAINED locally at source commit
-  `174ba4dc80b095308c9aed9286d5d871d6e8a4b1`; exact-head external
-  qualification of the new head remains pending.
+- Status: RETAINED and externally sealed at
+  `d7d7fd055634eaad17eff40f6ef3610790c656ce` by run `35657906764`, job
+  `106525973850`, artifact `10665242896`, digest
+  `sha256:185b26274ae7e19cfd64d13275420c8f105be24145a7ee284337b0b376e83052`.
 - Exact obstruction: tutorial 038, SHA-256
   `91a1f7379e22ebbec710ce6b43b7e0750be258ace8fc22d0b889fb76b57010de`,
   should accept but returns `UNKNOWN` after 001–037 match.
@@ -305,7 +306,8 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G9/G10/G11 shared closed-inductive promotion
 
-- Status: RETAINED locally at `871c8f76691a46694a05599f296c1f9a88bfd845`.
+- Status: RETAINED; the integrated G11 checkpoint is externally sealed at
+  `d7d7fd055634eaad17eff40f6ef3610790c656ce`.
 - Family finding: the three retained handlers share one structural action after
   their distinct exact classifiers derive claims: validate signatures in
   dependency order and stage opaque type, constructor, and recursor authority.
@@ -323,10 +325,39 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G12-001 — Parameterized `And`
 
-- Status: OPEN; deliberately not implemented.
+- Status: RETAINED locally; exact-head external qualification is pending.
 - Exact obstruction: tutorial 039 `good/039_andType.ndjson`, SHA-256
   `d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1`,
   expects ACCEPT and the sealed G11 checker returns `UNKNOWN`.
-- Boundary: this is the first parameterized inductive (`And` with two `Prop`
-  parameters). No parameter mechanism is selected until a deciding experiment
-  and falsifier are specified.
+- Retained capability: recognize only the exact built-in-shaped `And` envelope:
+  two `Prop` parameters, one nonrecursive constructor whose two fields directly
+  and in order correspond to those parameters, plus an independently derived
+  recursor signature and rule. The existing opaque-signature transaction is
+  reused unchanged.
+- Falsifiers: parameter and field order, field type/count, result application,
+  recursor metadata/type/rule, and owner perturbations reject. Indexed,
+  recursive, unsafe, nested, and broader parameterized neighbors remain
+  `UNKNOWN`. The exact sealed G11 bytes remain `UNKNOWN` on tutorial 039 while
+  the G12 checker accepts those same bytes.
+- Explicit exclusions: no general parameterized-inductive engine, positivity,
+  iota, projections, or eta.
+- Formal warrant: `IdealLean.ParameterizedInductivePromotion.
+  promote_preserves_environment_validity` models a validated telescope and
+  proves opaque signature promotion preserves environment validity. Its
+  validity relations are abstract; it is not Rust refinement or whole-checker
+  verification.
+- Local qualification: tutorial 001–039 matches with zero incorrect; all
+  Rust/Python/ledger/Clippy and portable Lean gates pass.
+- Performance: deterministic operation counters are recorded for G11/G12.
+  Callgrind is unavailable locally; retired instructions remain `UNKNOWN` and
+  no performance promotion is claimed.
+
+## G13-001 — Universe-polymorphic `Prod`
+
+- Status: OPEN; deliberately not implemented.
+- Exact obstruction: tutorial 040 `good/040_prodType.ndjson`, SHA-256
+  `a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d`,
+  expects ACCEPT and the G12 checker returns `UNKNOWN`.
+- Boundary: the case introduces a universe-polymorphic two-parameter `Prod`.
+  Its exact bytes are frozen; no broader parameter or universe capability is
+  selected until the next deciding experiment.
