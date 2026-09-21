@@ -325,7 +325,10 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G12-001 — Parameterized `And`
 
-- Status: RETAINED locally; exact-head external qualification is pending.
+- Status: RETAINED and externally qualified at exact implementation head
+  `b8a28332e48bb1d885d03cf670cd6f619bd730e5` by run `35663878360`, job
+  `106545136635`, artifact `10668253045`, digest
+  `sha256:9d1072f78a9b0eb718265b051a4f1fc56c6e07dde7254aab7a9a46c7031fd777`.
 - Exact obstruction: tutorial 039 `good/039_andType.ndjson`, SHA-256
   `d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1`,
   expects ACCEPT and the sealed G11 checker returns `UNKNOWN`.
