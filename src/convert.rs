@@ -13,10 +13,12 @@ pub enum DeltaPolicy {
 }
 
 #[cfg(test)]
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::cell::Cell;
 
 #[cfg(test)]
-static TRUSTED_CONVERSION_CALLS: AtomicU64 = AtomicU64::new(0);
+thread_local! {
+    static TRUSTED_CONVERSION_CALLS: Cell<u64> = const { Cell::new(0) };
+}
 
 pub fn convert(
     checker: &TypeChecker<'_>,
@@ -52,7 +54,7 @@ pub(crate) fn convert_with_policy_at_depth(
     initial_depth: usize,
 ) -> Judgment<()> {
     #[cfg(test)]
-    TRUSTED_CONVERSION_CALLS.fetch_add(1, Ordering::Relaxed);
+    TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
 
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone(), initial_depth)];
@@ -164,12 +166,12 @@ pub(crate) fn convert_with_policy_at_depth(
 
 #[cfg(test)]
 pub(crate) fn reset_test_conversion_calls() {
-    TRUSTED_CONVERSION_CALLS.store(0, Ordering::Relaxed);
+    TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(0));
 }
 
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
-    TRUSTED_CONVERSION_CALLS.load(Ordering::Relaxed)
+    TRUSTED_CONVERSION_CALLS.with(Cell::get)
 }
 
 fn compare_values(
