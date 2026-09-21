@@ -43,6 +43,17 @@ TUTORIAL_MANIFEST = (
     TutorialCase("017", Path("good/017_levelComp3.ndjson"), 0, "e11ecbb09540778e2d2d0084d7759ce1c1483ca7f02168b87e1ec8bd1bf2c5cd"),
     TutorialCase("018", Path("good/018_levelParams.ndjson"), 0, "d78d458ea81bb210c80d3915976a03536f1b267879207f3604745b777014a167"),
     TutorialCase("019", Path("bad/019_tut06_bad01.ndjson"), 1, "9c5c0329065ef0b470c7b43a365c30a0098697dbeb8d69f2c2bea2e345ab9533"),
+    TutorialCase("020", Path("good/020_levelComp4.ndjson"), 0, "39dced2925dcce7f66539f47f408d276b48d57638b4bfefc47860eed2f710a58"),
+    TutorialCase("021", Path("good/021_levelComp5.ndjson"), 0, "31910166228cf46f68dbaa876d1c155734475b0f3f7a15c2a82f5535e8c150f8"),
+    TutorialCase("022", Path("good/022_imax1.ndjson"), 0, "8fe3d41b913c8717847bc4a544e6b947bb5a1b616d80dbe19859d465ff225d57"),
+    TutorialCase("023", Path("good/023_imax2.ndjson"), 0, "9d7fdab95e9ac1f87e19055e3133b98173f90d94c641870dc49cff6db2d1061f"),
+    TutorialCase("024", Path("good/024_levelMaxComm.ndjson"), 0, "8a2ed8095cf9f69fcebb1e8b695944599cd524b42334cd6ff3051a5deebe7134"),
+    TutorialCase("025", Path("good/025_levelMaxAssoc.ndjson"), 0, "2e97e820cfffa0f890ea70f7c3ea7f7e1636568196f3fc738868249644f9f229"),
+    TutorialCase("026", Path("good/026_levelMaxIdem.ndjson"), 0, "1ee0d884c19ef76feb4ba77f5448507da2f8d983a688f4e8711d61784f50e571"),
+    TutorialCase("027", Path("good/027_levelMaxAbsorb.ndjson"), 0, "87fab97e0b524a64e21ebe2adbadb407b381d1bee45cd2060e4a24055d554b11"),
+    TutorialCase("028", Path("good/028_inferVar.ndjson"), 0, "2ed39c087f88481185d28085d7d2ba2f2985426da70062bfe4e6dd987af46110"),
+    TutorialCase("029", Path("good/029_defEqLambda.ndjson"), 0, "7a28d11e2a035c2d0d97c75d5cb0bb12e16be1c5502b9975aa08775e1928ba92"),
+    TutorialCase("030", Path("good/030_peano1.ndjson"), 0, "fe92f67341850f0c222c43cd99e9f17904cdb003654f394890f49df431ceaf7d"),
 )
 
 

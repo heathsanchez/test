@@ -91,3 +91,8 @@ fn theorem_is_not_installed_before_its_proof_is_checked() {
 fn g7_001_duplicate_universe_parameters_are_rejected() {
     assert_eq!(run_residual("G7-001"), Verdict::Reject);
 }
+
+#[test]
+fn g8_001_imax_idempotence_decides_the_peano_type() {
+    assert_eq!(run_residual("G8-001"), Verdict::Accept);
+}
