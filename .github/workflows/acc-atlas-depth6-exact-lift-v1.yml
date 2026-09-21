@@ -1,0 +1,139 @@
+name: ACC Atlas Depth6 Exact Lift V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-depth6-exact-lift-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+  SOURCE_FIBER_ARTIFACT_ID: "10618354009"
+
+jobs:
+  exact_lift_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned verifier, current Atlas, cancelled depth-6 evidence, and live authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p lift/input /tmp/atlas /tmp/fiber
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          gh api "repos/heathsanchez/test/actions/artifacts/$SOURCE_FIBER_ARTIFACT_ID/zip" > /tmp/fiber.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          unzip -q /tmp/fiber.zip -d /tmp/fiber
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          LOG="$(find /tmp/fiber -name refinement.log -print -quit)"
+          test -n "$ATLAS"; test -n "$LOG"
+          cp "$ATLAS" lift/input/proof_atlas.sqlite
+          cp "$LOG" lift/input/refinement.log
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          rows=[]
+          for line in Path('lift/input/refinement.log').read_text().splitlines():
+              if not line.startswith('FIBER_REFINEMENT_PROMOTION '):
+                  continue
+              r=json.loads(line.split(' ',1)[1])
+              if r.get('refined_product_distance') == 6 and len(r.get('witness_moves') or []) == 6:
+                  rows.append(r)
+          if not rows:
+              raise SystemExit('no depth-6 quotient witnesses in source evidence')
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as resp: snap=json.loads(resp.read().decode())
+          items=snap.get('data',snap)['items']
+          live={str(x.get('problemId') or x.get('challengeId')):x for x in items if x.get('problemId') or x.get('challengeId')}
+          keep=[]
+          for r in rows:
+              x=live.get(r['challenge_id'],{})
+              if x.get('status')!='solved' or (x.get('kTeams') or 0)==0:
+                  keep.append(r)
+          Path('lift/input/eligible_rows.json').write_text(json.dumps(keep,indent=2,sort_keys=True)+'\n')
+          uns=sum(x.get('status')!='solved' or (x.get('kTeams') or 0)==0 for x in items)
+          print('DEPTH6_LIFT_AUTHORITY',json.dumps({'ac_unsolved':uns,'source_depth6_witnesses':len(rows),'eligible':len(keep),'ids':[r['challenge_id'] for r in keep]},sort_keys=True))
+          PY
+
+      - name: Exact replay of depth-6 quotient witnesses into Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p lift/search
+          if [ "$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('lift/input/eligible_rows.json'))))
+          PY
+          )" = "0" ]; then
+            echo NO_LIVE_DEPTH6_LIFT_TARGETS
+            : > lift/search/candidates.txt
+            exit 0
+          fi
+          python3 acc_competitive/atlas_fiber_witness_tail_v1.py \
+            --acc-root /tmp/acc \
+            --atlas lift/input/proof_atlas.sqlite \
+            --fiber-rows lift/input/eligible_rows.json \
+            --out-dir lift/search --max-total-depth 6 --prior-exact-depth 5 \
+            | tee lift/search.log
+
+      - name: Pinned official-verifier replay for every exact lift
+        run: |
+          set -euo pipefail
+          mkdir -p lift/verified
+          if [ ! -s lift/search/candidates.txt ]; then
+            echo NO_EXACT_DEPTH6_ATLAS_LIFTS
+            : > lift/verified/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob 'lift/search/candidates.txt' \
+            --out-dir lift/verified --prior-atlas lift/input/proof_atlas.sqlite \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee lift/verify.log
+
+      - name: Fresh live strict-only quota gate and publication
+        run: |
+          set -euo pipefail
+          mkdir -p lift/publish
+          if [ ! -s lift/verified/fortified_ac.txt ]; then
+            echo NO_PINNED_VERIFIER_CLEAN_DEPTH6_LIFTS_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc --glob 'lift/verified/fortified_ac.txt' \
+            --out-dir lift/publish --cycle 1 \
+            | tee lift/publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('lift/publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('DEPTH6_LIFT_STRICT_RESULT',json.dumps({'used_pre':r.get('daily_submissions_used_pre'),'remaining_pre':r.get('daily_submissions_remaining_pre'),'selected_rows':r.get('selected_rows'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-depth6-exact-lift-v1
+          path: lift/
+          retention-days: 90
+          if-no-files-found: warn
