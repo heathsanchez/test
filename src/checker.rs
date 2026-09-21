@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use crate::convert::DeltaPolicy;
 use crate::environment::{ConstantDecl, Environment};
 use crate::id::NameId;
 use crate::judgment::Judgment;
@@ -24,6 +25,14 @@ impl Default for Limits {
 }
 
 pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
+    check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback)
+}
+
+fn check_export_with_policy(
+    export: ResolvedExport,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Verdict {
     let mut environment = Environment::empty();
 
     for declaration in export.declarations {
@@ -38,7 +47,8 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
                     &export.levels,
                     &environment,
                     parameter_substitution(&level_params),
-                );
+                )
+                .with_delta_policy(delta_policy);
                 if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
                     return verdict;
                 }
@@ -49,14 +59,15 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
                 level_params,
                 ty,
                 value,
-                reducible,
+                preferred_for_reduction,
             } => {
                 let checker = TypeChecker::with_level_substitution(
                     &export.exprs,
                     &export.levels,
                     &environment,
                     parameter_substitution(&level_params),
-                );
+                )
+                .with_delta_policy(delta_policy);
                 if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
                     return verdict;
                 }
@@ -68,7 +79,7 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
                 }
                 (
                     name,
-                    ConstantDecl::definition(level_params, ty, value, reducible),
+                    ConstantDecl::definition(level_params, ty, value, preferred_for_reduction),
                 )
             }
             Declaration::Unsupported { .. } => return Verdict::Unknown,
@@ -102,7 +113,8 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
 mod tests {
     use std::io::Cursor;
 
-    use super::{Limits, check_export};
+    use super::{Limits, check_export, check_export_with_policy};
+    use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
     use crate::parser::parse;
     use crate::verdict::Verdict;
@@ -115,5 +127,28 @@ mod tests {
 
         assert_eq!(check_export(export, Limits::default()), Verdict::Accept);
         assert_eq!(test_conversion_calls(), 1);
+    }
+
+    #[test]
+    fn g3_001_ablation_requires_guarded_semantic_delta() {
+        let bytes = include_bytes!("../evidence/residuals/G3-001/fixture.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+
+        assert_eq!(
+            check_export_with_policy(
+                export.clone(),
+                Limits::default(),
+                DeltaPolicy::PreferredOnly,
+            ),
+            Verdict::Reject,
+        );
+        assert_eq!(
+            check_export_with_policy(
+                export,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Verdict::Accept,
+        );
     }
 }

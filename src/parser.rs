@@ -334,7 +334,9 @@ fn parse_definition(value: &Value, line: usize) -> Result<Declaration, ParseErro
     let hints = value
         .get("hints")
         .ok_or_else(|| malformed(line, "definition is missing hints"))?;
-    let reducible = hints.as_str() != Some("opaque");
+    // Arena hints rank reduction work; they do not erase a definition body
+    // from kernel conversion.
+    let preferred_for_reduction = hints.as_str() != Some("opaque");
     Ok(Declaration::Definition {
         name: NameId(nested_number(value, "name", line)?),
         level_params: nested_numbers(value, "levelParams", line)?
@@ -343,7 +345,7 @@ fn parse_definition(value: &Value, line: usize) -> Result<Declaration, ParseErro
             .collect(),
         ty: ExprId(nested_number(value, "type", line)?),
         value: ExprId(nested_number(value, "value", line)?),
-        reducible,
+        preferred_for_reduction,
     })
 }
 

@@ -90,7 +90,7 @@ fn cyclic_delta_returns_unknown() {
         NameId(1),
         DefinitionBody {
             value: ExprId(0),
-            reducible: true,
+            preferred_for_reduction: true,
             level_param_count: 0,
         },
     )]);
@@ -101,6 +101,39 @@ fn cyclic_delta_returns_unknown() {
             .expose(
                 Closure::new(ExprId(0), EnvFrame::empty()),
                 Transparency::Reducible,
+                16,
+            )
+            .is_unknown()
+    );
+}
+
+#[test]
+fn full_transparency_keeps_a_nonpreferred_delta_cycle_unknown() {
+    let mut exprs = IdTable::default();
+    exprs
+        .insert(
+            ExprId(0),
+            Expr::Const {
+                name: NameId(1),
+                levels: Vec::new(),
+            },
+        )
+        .unwrap();
+    let definitions = HashMap::from([(
+        NameId(1),
+        DefinitionBody {
+            value: ExprId(0),
+            preferred_for_reduction: false,
+            level_param_count: 0,
+        },
+    )]);
+    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+
+    assert!(
+        machine
+            .expose(
+                Closure::new(ExprId(0), EnvFrame::empty()),
+                Transparency::Full,
                 16,
             )
             .is_unknown()
@@ -160,7 +193,7 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
         NameId(4),
         DefinitionBody {
             value: ExprId(0),
-            reducible: true,
+            preferred_for_reduction: true,
             level_param_count: 0,
         },
     )]);
@@ -182,6 +215,47 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
         .clone();
     assert!(matches!(opaque.value, Value::Neutral(_)));
     assert!(!opaque.transitions.contains(&TransitionWitness::Delta));
+}
+
+#[test]
+fn full_transparency_can_request_a_nonpreferred_definition_body() {
+    let mut exprs = IdTable::default();
+    exprs.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    exprs
+        .insert(
+            ExprId(1),
+            Expr::Const {
+                name: NameId(4),
+                levels: Vec::new(),
+            },
+        )
+        .unwrap();
+    let definitions = HashMap::from([(
+        NameId(4),
+        DefinitionBody {
+            value: ExprId(0),
+            preferred_for_reduction: false,
+            level_param_count: 0,
+        },
+    )]);
+    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let root = Closure::new(ExprId(1), EnvFrame::empty());
+
+    let cheap = machine
+        .expose_with_witnesses(root.clone(), Transparency::Reducible, 8)
+        .proven_value()
+        .unwrap()
+        .clone();
+    assert!(matches!(cheap.value, Value::Neutral(_)));
+    assert!(!cheap.transitions.contains(&TransitionWitness::Delta));
+
+    let semantic = machine
+        .expose_with_witnesses(root, Transparency::Full, 8)
+        .proven_value()
+        .unwrap()
+        .clone();
+    assert_eq!(semantic.value, Value::Sort(LevelId(0)));
+    assert!(semantic.transitions.contains(&TransitionWitness::Delta));
 }
 
 #[test]
@@ -217,7 +291,7 @@ fn polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit() {
         NameId(5),
         DefinitionBody {
             value: ExprId(0),
-            reducible: true,
+            preferred_for_reduction: true,
             level_param_count: 1,
         },
     )]);

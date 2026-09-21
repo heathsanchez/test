@@ -6,6 +6,12 @@ use crate::machine::Transparency;
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{Neutral, NeutralHead, Value};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum DeltaPolicy {
+    PreferredOnly,
+    GuardedSemanticFallback,
+}
+
 #[cfg(test)]
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -17,6 +23,22 @@ pub fn convert(
     left: &TypeValue,
     right: &TypeValue,
     budget: usize,
+) -> Judgment<()> {
+    convert_with_policy(
+        checker,
+        left,
+        right,
+        budget,
+        DeltaPolicy::GuardedSemanticFallback,
+    )
+}
+
+pub fn convert_with_policy(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    budget: usize,
+    delta_policy: DeltaPolicy,
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.fetch_add(1, Ordering::Relaxed);
@@ -62,13 +84,35 @@ pub fn convert(
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
-                let left = machine.expose(left, Transparency::Reducible, remaining);
-                let right = machine.expose(right, Transparency::Reducible, remaining);
-                let (Some(left), Some(right)) = (left.proven_value(), right.proven_value()) else {
+                let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
+                let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
+                let (Some(cheap_left), Some(cheap_right)) =
+                    (cheap_left.proven_value(), cheap_right.proven_value())
+                else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(checker, left, right, remaining, &mut work) {
+                match compare_values(checker, cheap_left, cheap_right, remaining, &mut work) {
                     Judgment::Proven { .. } => {}
+                    Judgment::Refuted { .. }
+                        if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
+                    {
+                        let full_left = machine.expose(left, Transparency::Full, remaining);
+                        let full_right = machine.expose(right, Transparency::Full, remaining);
+                        let (Some(full_left), Some(full_right)) =
+                            (full_left.proven_value(), full_right.proven_value())
+                        else {
+                            return Judgment::unknown("full-conversion-exposure");
+                        };
+                        match compare_values(checker, full_left, full_right, remaining, &mut work) {
+                            Judgment::Proven { .. } => {}
+                            Judgment::Refuted { obstruction } => {
+                                return Judgment::Refuted { obstruction };
+                            }
+                            Judgment::Unknown { residual } => {
+                                return Judgment::Unknown { residual };
+                            }
+                        }
+                    }
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
                     }
@@ -77,11 +121,22 @@ pub fn convert(
             }
             (TypeValue::Term(term), other) | (other, TypeValue::Term(term)) => {
                 let machine = checker.machine();
-                let exposed = machine.expose(term, Transparency::Reducible, remaining);
+                let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
                 let Some(exposed) = exposed.proven_value() else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                let Some(exposed) = value_as_type(checker, exposed, remaining) else {
+                let exposed = if let Some(exposed) = value_as_type(checker, exposed, remaining) {
+                    exposed
+                } else if delta_policy == DeltaPolicy::GuardedSemanticFallback {
+                    let full = machine.expose(term, Transparency::Full, remaining);
+                    let Some(full) = full.proven_value() else {
+                        return Judgment::unknown("full-conversion-exposure");
+                    };
+                    let Some(full) = value_as_type(checker, full, remaining) else {
+                        return Judgment::refuted("rigid-type-constructor-mismatch");
+                    };
+                    full
+                } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
                 work.push((exposed, other));

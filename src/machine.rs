@@ -12,6 +12,7 @@ pub struct AuthorityId(pub u64);
 pub enum Transparency {
     Opaque,
     Reducible,
+    Full,
 }
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -25,7 +26,7 @@ pub enum TransitionWitness {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct DefinitionBody {
     pub value: ExprId,
-    pub reducible: bool,
+    pub preferred_for_reduction: bool,
     pub level_param_count: usize,
 }
 
@@ -146,8 +147,7 @@ impl<'a> Machine<'a> {
                 }
                 Expr::Const { name, levels } => {
                     if let Some(definition) = self.definitions.get(name)
-                        && transparency == Transparency::Reducible
-                        && definition.reducible
+                        && permits_delta(transparency, definition.preferred_for_reduction)
                     {
                         if definition.level_param_count != 0 || !levels.is_empty() {
                             return Judgment::unknown("polymorphic-delta-instantiation");
@@ -175,6 +175,14 @@ impl<'a> Machine<'a> {
                 }
             }
         }
+    }
+}
+
+fn permits_delta(transparency: Transparency, preferred_for_reduction: bool) -> bool {
+    match transparency {
+        Transparency::Opaque => false,
+        Transparency::Reducible => preferred_for_reduction,
+        Transparency::Full => true,
     }
 }
 

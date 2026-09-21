@@ -11,7 +11,7 @@ pub struct ConstantDecl {
     pub level_params: Vec<NameId>,
     pub ty: ExprId,
     pub value: Option<ExprId>,
-    pub reducible: bool,
+    pub preferred_for_reduction: bool,
 }
 
 impl ConstantDecl {
@@ -20,7 +20,7 @@ impl ConstantDecl {
             level_params,
             ty,
             value: None,
-            reducible: false,
+            preferred_for_reduction: false,
         }
     }
 
@@ -28,13 +28,13 @@ impl ConstantDecl {
         level_params: Vec<NameId>,
         ty: ExprId,
         value: ExprId,
-        reducible: bool,
+        preferred_for_reduction: bool,
     ) -> Self {
         Self {
             level_params,
             ty,
             value: Some(value),
-            reducible,
+            preferred_for_reduction,
         }
     }
 }
@@ -91,7 +91,7 @@ impl Environment {
                         *name,
                         DefinitionBody {
                             value,
-                            reducible: declaration.reducible,
+                            preferred_for_reduction: declaration.preferred_for_reduction,
                             level_param_count: declaration.level_params.len(),
                         },
                     )
