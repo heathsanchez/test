@@ -1,0 +1,33 @@
+name: Probe SAIR Playground Solution API
+
+on:
+  push:
+    branches: [lkc-partition-frontier-v5]
+    paths:
+      - '.github/workflows/lkc-partition-playground-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - name: Probe saved-solution endpoints
+        run: |
+          set -euo pipefail
+          mkdir -p out
+          for path in             "playground/solutions?limit=50"             "playground/solutions/207"; do
+            code=$(curl -sS -o "out/$(echo "$path" | tr '/?' '__').json" -w '%{http_code}'               "$BASE/$path"               -H "Authorization: Bearer $SAIR_API_KEY"               -H "Accept: application/json"               -H "User-Agent: curl/8.5.0" || true)
+            echo "$path -> $code"
+            cat "out/$(echo "$path" | tr '/?' '__').json" || true
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: partition-playground-api-probe
+          path: out/
