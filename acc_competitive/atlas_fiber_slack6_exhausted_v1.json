@@ -1,0 +1,70 @@
+{
+  "version": "atlas-fiber-slack6-exhausted-v1",
+  "atlas_snapshot": "acc-proof-atlas-state",
+  "atlas_states": 433272,
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "source_run": 35556067552,
+  "source_commit": "87c11b7d1e55a6a7867c91ce7fe00cf12c6ab260",
+  "mechanism": "six-context quotient-slack exact lifting through total depth 6",
+  "contexts": [
+    "S6:xy",
+    "S6:yx",
+    "S7:xy",
+    "S7:yx",
+    "S7:quad-cycle",
+    "S8:quad-cycle"
+  ],
+  "targets": 28,
+  "candidates": 0,
+  "certified_exact_atlas_distance_lb7": 28,
+  "challenge_ids": [
+    "ac-00373",
+    "ac-00885",
+    "ac-01036",
+    "ac-01486",
+    "ac-01869",
+    "ac-02534",
+    "ac-02729",
+    "ac-02839",
+    "ac-02901",
+    "ac-02999",
+    "ac-03278",
+    "ac-03455",
+    "ac-05976",
+    "ac-06325",
+    "ac-07659",
+    "ac-07824",
+    "ac-08043",
+    "ac-08144",
+    "ac-08405",
+    "ac-08409",
+    "ac-08444",
+    "ac-08829",
+    "ac-09137",
+    "ac-09145",
+    "ac-09178",
+    "ac-09533",
+    "ac-09542",
+    "ac-09903"
+  ],
+  "challenge_ids_sha256_lf": "9747f2e61a98edf83ce9a8fe50fb9e9a27bf583f03432b555f1eae06e38bce93",
+  "claim": "All 28 previously lb6-only residual rows were exhaustively lifted through six official moves while permitting quotient slack/detours. Every shard returned zero exact Proof-Atlas intersections and zero candidates. Therefore each row has exact Proof-Atlas distance at least 7 against this 433272-state Atlas.",
+  "combined_depth6_phase": {
+    "cohort_rows": 234,
+    "previously_certified_exact_atlas_distance_lb7": 206,
+    "newly_certified_exact_atlas_distance_lb7": 28,
+    "total_certified_exact_atlas_distance_lb7": 234,
+    "remaining_lb6_only_count": 0
+  },
+  "obstruction": "The complete 234-row six-context residual cohort is now closed through exact depth 6. Quotient-shortest lifting, stored witnesses, local holonomy, single-witness tails, and positive-slack/detour lifting all fail to reconnect these rows to the current Proof Atlas within six official moves.",
+  "reuse_rule": "Do not repeat any depth<=6 six-context quotient search, exact Atlas connector, quotient-shortest DAG lift, stored-witness replay, local holonomy, single-witness tail, or quotient-slack/detour lift on this 234-row cohort against the same Atlas. Further search requires material Atlas growth or a genuinely stronger independently justified representation/admissible residual before spending exact depth-7 work.",
+  "live_authority_at_source_run": {
+    "ac_unsolved": 2672,
+    "live_residual_rows": 28
+  },
+  "publication": {
+    "pinned_verifier_candidates": 0,
+    "submitted_rows": 0,
+    "quota_consumed": 0
+  }
+}
