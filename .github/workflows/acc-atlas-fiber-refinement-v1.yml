@@ -60,7 +60,7 @@ jobs:
           uns=sum(x.get('status')!='solved' or (x.get('kTeams') or 0)==0 for x in items)
           print('LIVE_AC',json.dumps({'rows':len(items),'unsolved':uns},sort_keys=True))
           PY
-      - name: Qualify cycle-type-distinct fiber refinement through depth 5
+      - name: Advance cycle-type-distinct fiber refinement through depth 6
         run: |
           set -euo pipefail
           python3 acc_competitive/atlas_fiber_refinement_v1.py \
@@ -70,7 +70,7 @@ jobs:
             --prior-rows fiber/input/prior_rows.json \
             --radius4-cert acc_competitive/atlas_exact_radius4_exhausted_v1.json \
             --out-dir fiber/out \
-            --max-depth 5 \
+            --max-depth 6 \
             | tee fiber/refinement.log
       - uses: actions/upload-artifact@v4
         if: always()
