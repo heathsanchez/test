@@ -2,7 +2,7 @@ name: Metatron Kernel Genesis G2
 
 on:
   push:
-    branches: [metatron-kernel-genesis-v1]
+    branches: [metatron-kernel-genesis-v1, metatron-kernel-g11-v1]
     paths:
       - ".github/workflows/metatron-kernel-genesis-g2.yml"
       - "metatron-kernel/**"
@@ -98,7 +98,7 @@ jobs:
           import json
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
-          assert q['counts']=={'incorrect':0,'matched':37}, q
+          assert q['counts']=={'incorrect':0,'matched':38}, q
           assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
           PY
 

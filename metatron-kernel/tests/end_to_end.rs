@@ -125,6 +125,70 @@ fn empty_recursor_metadata_is_checked_not_trusted() {
 }
 
 #[test]
+fn g11_001_derived_two_field_structure_authority_is_accepted() {
+    assert_eq!(run_residual("G11-001"), Verdict::Accept);
+}
+
+#[test]
+fn g11_constructor_shape_is_derived_not_trusted() {
+    let bytes = include_str!("../evidence/residuals/G11-001/fixture.ndjson");
+
+    let bad_index = bytes.replacen(
+        "\"cidx\":0,\"induct\":10",
+        "\"cidx\":1,\"induct\":10",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_index)), Verdict::Reject);
+
+    let bad_fields = bytes.replacen(
+        "\"numFields\":2,\"numParams\":0,\"type\":24",
+        "\"numFields\":1,\"numParams\":0,\"type\":24",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_fields)), Verdict::Reject);
+}
+
+#[test]
+fn g11_recursor_metadata_and_rule_are_derived_not_axiomatized() {
+    let bytes = include_str!("../evidence/residuals/G11-001/fixture.ndjson");
+
+    let bad_all = bytes.replacen(
+        "\"all\":[10],\"isUnsafe\":false,\"k\":false,\"levelParams\":[5],\"name\":14",
+        "\"all\":[1],\"isUnsafe\":false,\"k\":false,\"levelParams\":[5],\"name\":14",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_all)), Verdict::Reject);
+
+    let bad_k = bytes.replacen(
+        "\"all\":[10],\"isUnsafe\":false,\"k\":false,\"levelParams\":[5],\"name\":14",
+        "\"all\":[10],\"isUnsafe\":false,\"k\":true,\"levelParams\":[5],\"name\":14",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_k)), Verdict::Reject);
+
+    let bad_arity = bytes.replacen(
+        "\"numIndices\":0,\"numMinors\":1,\"numMotives\":1,\"numParams\":0",
+        "\"numIndices\":0,\"numMinors\":2,\"numMotives\":1,\"numParams\":0",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_arity)), Verdict::Reject);
+
+    let bad_rule = bytes.replacen(
+        "\"ctor\":11,\"nfields\":2,\"rhs\":42",
+        "\"ctor\":11,\"nfields\":2,\"rhs\":41",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_rule)), Verdict::Reject);
+
+    let bad_type = bytes.replacen(
+        "\"rules\":[{\"ctor\":11,\"nfields\":2,\"rhs\":42}],\"type\":36",
+        "\"rules\":[{\"ctor\":11,\"nfields\":2,\"rhs\":42}],\"type\":35",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(bad_type)), Verdict::Reject);
+}
+
+#[test]
 fn g10_001_derived_binary_enum_authority_is_accepted() {
     assert_eq!(run_residual("G10-001"), Verdict::Accept);
 }
