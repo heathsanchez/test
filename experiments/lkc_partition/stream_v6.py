@@ -124,9 +124,9 @@ theorem streamRev_eq
       congr 1
       rw [rowValue_recurrence step prev m hs]
       by_cases hle : step ≤ m
-      · rw [if_pos hle]
+      · simp only [if_pos hle]
         rw [reverse_map_range_getD (rowValue step prev) step m hs hle]
-      · rw [if_neg hle]
+      · simp only [if_neg hle]
 
 def nextRowStream (k n : Nat) (prev : List Nat) : List Nat :=
   (streamRev (k + 1) prev (n + 1)).reverse
