@@ -1,0 +1,39 @@
+name: Submit LKC Frozen 8-of-8 to SAIR
+
+on:
+  push:
+    branches: [lkc-official-8of8-submit-v1]
+    paths:
+      - '.github/workflows/lkc-submit-8of8.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  submit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify API key is configured
+        shell: bash
+        run: |
+          if [ -z "${SAIR_API_KEY:-}" ]; then
+            echo "SAIR_API_KEY secret is not configured"
+            exit 2
+          fi
+
+      - name: Submit exact frozen 8-of-8 portfolio
+        run: python3 submit_lkc_8of8.py
+
+      - name: Upload submission receipts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sair-lkc-8of8-submission-receipts
+          path: sair-submission-receipts.json
+          if-no-files-found: warn
