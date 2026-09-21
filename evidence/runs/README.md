@@ -19,3 +19,14 @@ cannot be replaced with wall time, Callgrind, or a different cohort.
 Artifacts remain external evidence rather than copied into this directory.
 The machine-readable experiment ledger records the inspected run and artifact
 IDs after qualification.
+
+## Inspected runs
+
+| Candidate | Run / job | Artifact | Correctness | Instructions |
+| --- | --- | --- | --- | --- |
+| `47aff936001f88204f2bf05a9fad9abe4eda9a9c` | `35620658852` / `106402590918` | `10648885370`, digest `c100e632...9176` | 6 matched; 0 incomplete, incorrect, or error | `UNKNOWN`: PMU unavailable; no same-cohort control |
+
+The successful run is available at
+<https://github.com/heathsanchez/test/actions/runs/35620658852>. Its correctness
+attestation is retained. Its performance record is deliberately not eligible
+for promotion.
