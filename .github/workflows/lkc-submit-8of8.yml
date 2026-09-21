@@ -37,3 +37,5 @@ jobs:
           name: sair-lkc-8of8-submission-receipts
           path: sair-submission-receipts.json
           if-no-files-found: warn
+
+# retrigger after syncing exact frozen generators and hash-checked submit client
