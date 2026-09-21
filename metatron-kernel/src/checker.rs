@@ -1080,7 +1080,10 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
 mod tests {
     use std::io::Cursor;
 
-    use super::{Limits, check_export, check_export_with_policy};
+    use super::{
+        Limits, check_export, check_export_with_policy, check_export_with_policy_and_installer,
+        install_closed_nonrecursive_inductive, install_closed_nonrecursive_inductive_legacy,
+    };
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
     use crate::id::NameId;
