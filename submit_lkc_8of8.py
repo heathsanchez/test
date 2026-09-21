@@ -114,25 +114,50 @@ def prepare_exact_files() -> None:
 
 
 def request(method: str, path: str, payload=None):
-    data = None if payload is None else json.dumps(payload).encode()
-    req = urllib.request.Request(
-        BASE + path,
-        data=data,
-        method=method,
-        headers={
-            "Authorization": f"Bearer {API_KEY}",
-            "Content-Type": "application/json",
-            "Accept": "application/json",
-        },
+    url = BASE + path
+    cmd = [
+        "curl", "-sS",
+        "--connect-timeout", "30",
+        "--max-time", "120",
+        "-X", method,
+        url,
+        "-H", f"Authorization: Bearer {API_KEY}",
+        "-H", "Accept: application/json",
+        "-H", "User-Agent: curl/8.5.0",
+        "-w", "\n%{http_code}",
+    ]
+    body = None
+    if payload is not None:
+        cmd += ["-H", "Content-Type: application/json", "--data-binary", "@-"]
+        body = json.dumps(payload)
+
+    proc = subprocess.run(
+        cmd,
+        input=body,
+        text=True,
+        capture_output=True,
+        cwd=REPO,
     )
+    if proc.returncode != 0:
+        raise RuntimeError(
+            f"{method} {path} curl failed ({proc.returncode}): {proc.stderr.strip()}"
+        )
+
+    raw = proc.stdout
+    if "\n" not in raw:
+        raise RuntimeError(f"{method} {path}: malformed curl response")
+    text_body, status = raw.rsplit("\n", 1)
+    if not status.isdigit():
+        raise RuntimeError(f"{method} {path}: malformed HTTP status {status!r}")
+    code = int(status)
+    if code < 200 or code >= 300:
+        raise RuntimeError(f"{method} {path} -> HTTP {code}\n{text_body}")
     try:
-        with urllib.request.urlopen(req, timeout=120) as response:
-            return json.loads(response.read().decode())
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode(errors="replace")
-        raise RuntimeError(f"{method} {path} -> HTTP {exc.code}\n{body}") from exc
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"{method} {path} -> {exc}") from exc
+        return json.loads(text_body)
+    except json.JSONDecodeError as exc:
+        raise RuntimeError(
+            f"{method} {path}: non-JSON success response\n{text_body[:4000]}"
+        ) from exc
 
 
 def contract_version() -> str:
