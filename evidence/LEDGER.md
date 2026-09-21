@@ -96,3 +96,16 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   0, unbound/self-proof cases exit 1, and unsupported inductive exits 2.
 - Performance: intentionally unmeasured here. Only Task 9's exact external
   same-cohort retired-instruction run may promote performance claims.
+
+## G2-001 — Promoted-judgment experiment
+
+- Status: UNKNOWN_NO_RECURRENCE
+- Arena authority: `f5e1bce6e2dc9c60479b3001b76e01722b403799`
+- Frozen fixture: `evidence/residuals/G2-001/fixture.ndjson`, SHA-256
+  `3ab79d5676f0e70523b67c083e35c8a2322d1f5b476c081069d2a039f0e0023d`.
+- Measurement: the exact good-beta path made one trusted conversion call and
+  therefore repeated zero positive calls at the promotion boundary.
+- Decision: no capability bank, cache, persistence, or direct map was added.
+  Residuals earn generators; a non-recurring obligation has earned none.
+- Performance: no ablation or retired-instruction claim is meaningful because
+  enabled and disabled programs would be identical.

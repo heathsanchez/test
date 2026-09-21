@@ -6,12 +6,21 @@ use crate::machine::Transparency;
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{Neutral, NeutralHead, Value};
 
+#[cfg(test)]
+use std::sync::atomic::{AtomicU64, Ordering};
+
+#[cfg(test)]
+static TRUSTED_CONVERSION_CALLS: AtomicU64 = AtomicU64::new(0);
+
 pub fn convert(
     checker: &TypeChecker<'_>,
     left: &TypeValue,
     right: &TypeValue,
     budget: usize,
 ) -> Judgment<()> {
+    #[cfg(test)]
+    TRUSTED_CONVERSION_CALLS.fetch_add(1, Ordering::Relaxed);
+
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone())];
     let mut visited = HashSet::new();
@@ -85,6 +94,16 @@ pub fn convert(
     }
 
     Judgment::proven((), "guarded-relational-conversion")
+}
+
+#[cfg(test)]
+pub(crate) fn reset_test_conversion_calls() {
+    TRUSTED_CONVERSION_CALLS.store(0, Ordering::Relaxed);
+}
+
+#[cfg(test)]
+pub(crate) fn test_conversion_calls() -> u64 {
+    TRUSTED_CONVERSION_CALLS.load(Ordering::Relaxed)
 }
 
 fn compare_values(
