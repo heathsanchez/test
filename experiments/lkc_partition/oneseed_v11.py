@@ -424,7 +424,13 @@ theorem partAux_one (m : Nat) : partAux 1 m = 1 := by
         List.replicate m 0 := by
     simpa using hzero0
   rw [hzero]
-  simp
+  have hfold :
+      List.foldl (· + ·) 0 (List.replicate m 0) = 0 := by
+    induction m with
+    | zero => rfl
+    | succ m ih => simp [List.replicate_succ, ih]
+  rw [hfold]
+  rfl
 
 def onesRow (n : Nat) : List Nat :=
   List.replicate (n + 1) 1
