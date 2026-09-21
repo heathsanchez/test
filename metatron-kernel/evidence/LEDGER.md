@@ -357,7 +357,10 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G13-001 — Universe-polymorphic `Prod`
 
-- Status: RETAINED locally; exact-head external qualification is pending.
+- Status: RETAINED and externally qualified at exact implementation head
+  `bc0952e2263d55626514035a872004e173654ae7` by run `35668236889`, job
+  `106558640628`, artifact `10670560654`, digest
+  `sha256:4fed5032c513d7f996c150d88c9b20aa5ae04cb77ba0ef3e76bd39d26145b786`.
 - Exact obstruction: tutorial 040 `good/040_prodType.ndjson`, SHA-256
   `a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d`,
   expects ACCEPT and the G12 checker returns `UNKNOWN`.
