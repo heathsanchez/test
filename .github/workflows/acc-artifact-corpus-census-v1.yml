@@ -1,0 +1,65 @@
+name: ACC Artifact Corpus Census V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-artifact-corpus-census-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Census nonexpired ACC artifacts since competition open
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from collections import Counter,defaultdict
+          from datetime import datetime,timezone
+          tok=os.environ['GH_TOKEN']
+          url='https://api.github.com/repos/heathsanchez/test/actions/artifacts?per_page=100'
+          arts=[]
+          while url:
+              req=urllib.request.Request(url,headers={'Authorization':f'Bearer {tok}','Accept':'application/vnd.github+json','User-Agent':'acc-census'})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  obj=json.loads(r.read().decode()); link=r.headers.get('Link','')
+              arts.extend(obj.get('artifacts',[]))
+              nxt=None
+              for part in link.split(','):
+                  if 'rel="next"' in part:
+                      nxt=part[part.find('<')+1:part.find('>')]
+              url=nxt
+          cutoff='2026-09-11T16:00:00Z'
+          rows=[a for a in arts if not a.get('expired') and str(a.get('created_at',''))>=cutoff and str(a.get('name','')).startswith('acc-')]
+          groups=defaultdict(lambda:{'count':0,'bytes':0})
+          for a in rows:
+              n=a['name']
+              prefix='-'.join(n.split('-')[:3]) if n.count('-')>=2 else n
+              groups[prefix]['count']+=1; groups[prefix]['bytes']+=int(a.get('size_in_bytes') or 0)
+          out={
+              'all_artifacts':len(arts),'acc_nonexpired_since_open':len(rows),
+              'total_bytes':sum(int(a.get('size_in_bytes') or 0) for a in rows),
+              'largest':[{'id':a['id'],'name':a['name'],'bytes':a.get('size_in_bytes'),'created_at':a.get('created_at')} for a in sorted(rows,key=lambda x:int(x.get('size_in_bytes') or 0),reverse=True)[:30]],
+              'groups':dict(sorted(groups.items())),
+              'artifacts':[{'id':a['id'],'name':a['name'],'bytes':a.get('size_in_bytes'),'created_at':a.get('created_at')} for a in rows],
+          }
+          open('acc_artifact_corpus_census.json','w').write(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('ACC_ARTIFACT_CORPUS_CENSUS',json.dumps({k:out[k] for k in ('all_artifacts','acc_nonexpired_since_open','total_bytes')},sort_keys=True))
+          print('ACC_ARTIFACT_GROUPS',json.dumps(out['groups'],sort_keys=True))
+          print('ACC_ARTIFACT_LARGEST',json.dumps(out['largest'][:15],sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-artifact-corpus-census-v1
+          path: acc_artifact_corpus_census.json
+          retention-days: 30
