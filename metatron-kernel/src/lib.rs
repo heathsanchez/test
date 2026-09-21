@@ -3,8 +3,10 @@ use std::io::BufRead;
 pub mod id;
 pub mod judgment;
 pub mod level;
+pub mod machine;
 pub mod parser;
 pub mod syntax;
+pub mod value;
 pub mod verdict;
 
 use parser::parse;
