@@ -1,0 +1,102 @@
+name: ACC Atlas Fiber Depth6 Sharded V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-fiber-depth6-sharded-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+  RESUME_AFTER: "ac-02971"
+
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      max-parallel: 12
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11]
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      SHARD_COUNT: "12"
+      SHARD_INDEX: ${{ matrix.shard }}
+      PYTHONUNBUFFERED: "1"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned ACC, Atlas, prior rows, live authority, and build nonrepeating shard
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p /tmp/atlas /tmp/prior fiber/input
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          PID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-atlas-product-depth4-v1&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"; test -n "$PID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          gh api "repos/heathsanchez/test/actions/artifacts/$PID/zip" > /tmp/prior.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          unzip -q /tmp/prior.zip -d /tmp/prior
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          PRIOR="$(find /tmp/prior -path '*/product/rows.json' -o -name rows.json | head -1)"
+          test -n "$ATLAS"; test -n "$PRIOR"
+          cp "$ATLAS" fiber/input/proof_atlas.sqlite
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          prior=json.loads(Path(os.environ['PRIOR_PATH']).read_text()) if os.environ.get('PRIOR_PATH') else json.loads(Path('/tmp/prior/'+next(p.name for p in Path('/tmp/prior').rglob('rows.json'))).read_text())
+          if isinstance(prior,dict): prior=prior.get('rows',prior.get('items',[]))
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:snap=json.loads(r.read().decode())
+          Path('fiber/input/snapshot_ac.json').write_text(json.dumps(snap))
+          items=snap.get('data',snap)['items']
+          live={str(x.get('problemId') or x.get('challengeId')):x for x in items if x.get('problemId') or x.get('challengeId')}
+          resume=os.environ['RESUME_AFTER']; si=int(os.environ['SHARD_INDEX']); sc=int(os.environ['SHARD_COUNT'])
+          eligible=[]
+          for r in prior:
+              cid=str(r.get('challenge_id') or '')
+              if not cid or cid <= resume or r.get('product_distance') not in (3,4): continue
+              x=live.get(cid,{})
+              if x.get('status')!='solved' or (x.get('kTeams') or 0)==0: eligible.append(r)
+          eligible.sort(key=lambda r:r['challenge_id'])
+          shard=[r for i,r in enumerate(eligible) if i % sc == si]
+          Path('fiber/input/shard_rows.json').write_text(json.dumps(shard,indent=2,sort_keys=True)+'\n')
+          uns=sum(x.get('status')!='solved' or (x.get('kTeams') or 0)==0 for x in items)
+          print('DEPTH6_SHARD_AUTHORITY',json.dumps({'ac_unsolved':uns,'resume_after':resume,'remaining':len(eligible),'shard':si,'shard_count':sc,'shard_rows':len(shard),'ids':[r['challenge_id'] for r in shard]},sort_keys=True))
+          PY
+        env:
+          PRIOR_PATH: ""
+
+      - name: Qualify only this remaining depth-6 shard
+        run: |
+          set -euo pipefail
+          mkdir -p "fiber/out-$SHARD_INDEX"
+          python3 acc_competitive/atlas_fiber_refinement_v1.py \
+            --acc-root /tmp/acc \
+            --atlas fiber/input/proof_atlas.sqlite \
+            --snapshot-ac fiber/input/snapshot_ac.json \
+            --prior-rows fiber/input/shard_rows.json \
+            --radius4-cert acc_competitive/atlas_exact_radius4_exhausted_v1.json \
+            --out-dir "fiber/out-$SHARD_INDEX" \
+            --max-depth 6 \
+            | tee "fiber/refinement-$SHARD_INDEX.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-fiber-depth6-shard-${{ matrix.shard }}
+          path: fiber/
+          retention-days: 90
+          if-no-files-found: warn
