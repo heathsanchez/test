@@ -1,0 +1,19 @@
+{
+  "id": "G10-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "ad5911b3de6c98cf867ffb3cce047bad8c9b4db1",
+    "fixture_sha256": "02053d077abf5a63594d1025f9ef2f90dfff65f331503aa3b7486bbbb997b3e8",
+    "tutorial_ordinal": 37
+  },
+  "obstruction": "The first nonempty inductive block is explicitly represented but remains outside earned authority, so Bool and its following definition return UNKNOWN.",
+  "residual_class": "inductive constructors / recursor authority",
+  "observed": {"expected_exit": 0, "actual_exit": 2, "preceding_cases_matched": 36},
+  "least_candidate_capability": "Undecided. Audit the exact Bool type, constructor, recursor and rule obligations before choosing between a narrow finite-enumeration rule and a more general positive-inductive validator.",
+  "strongest_competing_explanation": "Merely type-check and install exported constructors and recursors as axioms; this is disallowed because positivity, constructor result shape and recursor equations are authority claims.",
+  "falsifier": "Any candidate accepts malformed constructor ownership/indexing, a forged eliminator or equation, or changes an earlier protected verdict.",
+  "causal_ablation": "Not yet designed; the exact residual is frozen before implementation.",
+  "protected_suite": ["all G0-G9 tests", "exact tutorial prefix 001-036", "unsupported indexed/recursive/mutual/nested inductives remain UNKNOWN", "cycles and budgets remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions", "promotion_rule":"same-identity candidate and flash counters only"},
+  "decision": "OPEN_RESIDUAL_NO_MECHANISM_SELECTED"
+}

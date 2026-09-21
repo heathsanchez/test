@@ -236,3 +236,36 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Least candidate capability: an explicit theorem node, a proof check before
   authority extension, and a separate proof-type-is-Prop obligation. Theorem
   bodies must remain unavailable to conversion.
+
+## G9-001 — Derived empty-inductive authority
+
+- Status: CANDIDATE RETAINED, pending exact-head CI.
+- Implementation: `ad5911b3de6c98cf867ffb3cce047bad8c9b4db1`.
+- Exact obstruction: tutorial 036, SHA-256
+  `030852937308e66cb90de3b8de7cd336f3d825e81c87c5be5cc1fe33c6d54356`,
+  returned `UNKNOWN` after cases 001–035 matched.
+- Least capability: preserve the complete Arena block, but recognize only a
+  singleton safe empty type in `Prop` or `Type`. Independently derive the
+  unique eliminator signature, type-check it in the staged type authority,
+  and atomically install opaque type and recursor signatures.
+- Falsifiers: exact recursor-use case 062 accepts; `k` perturbation and
+  fabricated extra/orphan empty recursors reject; empty placeholders and
+  nonempty `Bool` remain `UNKNOWN`; recursors have no delta/iota body.
+- Local qualification: release Rust suite, strict Clippy, Python tests, ledger
+  validation, portable Lean skeleton, and exact tutorial prefix 001–036 pass.
+- Formal status: exact external certificate pending. A portable formal
+  empty-inductive rule and Rust-to-spec refinement theorem do not yet exist.
+- Performance: `UNKNOWN_NO_PMU_OR_SAME_COHORT_CONTROL`; no wall-time claim.
+
+## G10-001 — First nonempty inductive (`Bool`)
+
+- Status: OPEN; no mechanism selected.
+- Exact obstruction: tutorial 037, SHA-256
+  `02053d077abf5a63594d1025f9ef2f90dfff65f331503aa3b7486bbbb997b3e8`,
+  should accept but remains `UNKNOWN` after the protected 001–036 prefix.
+- Required audit: constructor ownership/indexing and result shape, positivity,
+  recursor motive/minor structure, and exported equation claims.
+- Rejected shortcut: merely type-checking and installing constructors and
+  recursors as axioms would grant unearned authority.
+- Next action: compare the smallest exact `Bool` validator against a reusable
+  positive-inductive rule only after freezing the relevant malformed cases.

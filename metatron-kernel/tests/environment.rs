@@ -12,3 +12,18 @@ fn theorem_signature_has_no_delta_body() {
     assert!(declaration.value.is_none());
     assert!(!environment.definition_bodies().contains_key(&NameId(7)));
 }
+
+#[test]
+fn recursor_signature_has_no_delta_or_iota_body() {
+    let environment = Environment::empty()
+        .extend(
+            NameId(8),
+            ConstantDecl::recursor(vec![NameId(3)], ExprId(12)),
+        )
+        .unwrap();
+
+    let declaration = environment.get(NameId(8)).unwrap();
+    assert_eq!(declaration.ty, ExprId(12));
+    assert!(declaration.value.is_none());
+    assert!(!environment.definition_bodies().contains_key(&NameId(8)));
+}
