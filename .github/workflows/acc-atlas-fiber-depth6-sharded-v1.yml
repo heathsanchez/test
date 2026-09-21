@@ -52,10 +52,11 @@ jobs:
           PRIOR="$(find /tmp/prior -path '*/product/rows.json' -o -name rows.json | head -1)"
           test -n "$ATLAS"; test -n "$PRIOR"
           cp "$ATLAS" fiber/input/proof_atlas.sqlite
+          export PRIOR_PATH="$PRIOR"
           python3 - <<'PY'
           import json,os,urllib.request
           from pathlib import Path
-          prior=json.loads(Path(os.environ['PRIOR_PATH']).read_text()) if os.environ.get('PRIOR_PATH') else json.loads(Path('/tmp/prior/'+next(p.name for p in Path('/tmp/prior').rglob('rows.json'))).read_text())
+          prior=json.loads(Path(os.environ['PRIOR_PATH']).read_text())
           if isinstance(prior,dict): prior=prior.get('rows',prior.get('items',[]))
           u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
           req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
@@ -76,8 +77,6 @@ jobs:
           uns=sum(x.get('status')!='solved' or (x.get('kTeams') or 0)==0 for x in items)
           print('DEPTH6_SHARD_AUTHORITY',json.dumps({'ac_unsolved':uns,'resume_after':resume,'remaining':len(eligible),'shard':si,'shard_count':sc,'shard_rows':len(shard),'ids':[r['challenge_id'] for r in shard]},sort_keys=True))
           PY
-        env:
-          PRIOR_PATH: ""
 
       - name: Qualify only this remaining depth-6 shard
         run: |
