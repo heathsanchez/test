@@ -1,5 +1,6 @@
 use std::io::BufRead;
 
+pub mod checker;
 pub mod convert;
 pub mod environment;
 pub mod id;
@@ -12,16 +13,15 @@ pub mod typecheck;
 pub mod value;
 pub mod verdict;
 
+use checker::{Limits, check_export};
 use parser::parse;
 use verdict::Verdict;
 
 /// Check one Arena export stream.
 ///
-/// G0 deliberately declines every readable stream until the parser and
-/// semantic substrate earn stronger verdicts.
 pub fn run<R: BufRead>(reader: R) -> Verdict {
     match parse(reader).and_then(|export| export.resolve()) {
-        Ok(_) => Verdict::Unknown,
+        Ok(export) => check_export(export, Limits::default()),
         Err(_) => Verdict::Error,
     }
 }
