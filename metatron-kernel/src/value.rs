@@ -1,4 +1,5 @@
 use std::fmt;
+use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -80,7 +81,13 @@ impl PartialEq for EnvFrame {
 
 impl Eq for EnvFrame {}
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+impl Hash for EnvFrame {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.id().hash(state);
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Closure {
     pub expr: ExprId,
     pub env: EnvFrame,

@@ -26,6 +26,7 @@ pub enum TransitionWitness {
 pub struct DefinitionBody {
     pub value: ExprId,
     pub reducible: bool,
+    pub level_param_count: usize,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -148,6 +149,9 @@ impl<'a> Machine<'a> {
                         && transparency == Transparency::Reducible
                         && definition.reducible
                     {
+                        if definition.level_param_count != 0 || !levels.is_empty() {
+                            return Judgment::unknown("polymorphic-delta-instantiation");
+                        }
                         transitions.push(TransitionWitness::Delta);
                         closure = Closure::new(definition.value, EnvFrame::empty());
                         continue;
