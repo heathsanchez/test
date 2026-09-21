@@ -27,3 +27,5 @@ jobs:
           echo
           echo "INVALID POST:"
           curl -sS -i -X POST "$BASE/playground/solutions"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Content-Type: application/json"             -H "Accept: application/json"             -H "User-Agent: curl/8.5.0"             --data '{}' | head -160
+
+# trigger
