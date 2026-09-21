@@ -30,9 +30,23 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
 }
 
 fn check_export_with_policy(
+    export: ResolvedExport,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Verdict {
+    check_export_with_policy_and_installer(
+        export,
+        limits,
+        delta_policy,
+        install_closed_nonrecursive_inductive,
+    )
+}
+
+fn check_export_with_policy_and_installer(
     mut export: ResolvedExport,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    installer: ClosedInstaller,
 ) -> Verdict {
     let mut environment = Environment::empty();
 
@@ -123,7 +137,14 @@ fn check_export_with_policy(
                 (name, ConstantDecl::theorem(level_params, ty))
             }
             Declaration::Inductive(block) => {
-                match check_inductive(&export, &environment, &block, limits, delta_policy) {
+                match check_inductive_with_installer(
+                    &export,
+                    &environment,
+                    &block,
+                    limits,
+                    delta_policy,
+                    installer,
+                ) {
                     Ok(extended) => {
                         environment = extended;
                         continue;
@@ -143,19 +164,190 @@ fn check_export_with_policy(
     Verdict::Accept
 }
 
-fn check_inductive(
+fn check_inductive_with_installer(
     export: &ResolvedExport,
     environment: &Environment,
     block: &InductiveBlock,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    installer: ClosedInstaller,
 ) -> Result<Environment, Verdict> {
     match block.constructors.len() {
-        0 => check_empty_inductive(export, environment, block, limits, delta_policy),
-        1 => check_two_bool_structure(export, environment, block, limits, delta_policy),
-        2 => check_binary_enum(export, environment, block, limits, delta_policy),
+        0 => check_empty_inductive(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            installer,
+        ),
+        1 => check_two_bool_structure(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            installer,
+        ),
+        2 => check_binary_enum(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            installer,
+        ),
         _ => Err(Verdict::Unknown),
     }
+}
+
+#[derive(Clone, Debug)]
+struct DerivedConstructorSignature {
+    name: NameId,
+    level_params: Vec<NameId>,
+    ty: ExprId,
+}
+
+#[derive(Clone, Debug)]
+struct DerivedRecursorSignature {
+    name: NameId,
+    level_params: Vec<NameId>,
+    ty: ExprId,
+}
+
+#[derive(Clone, Debug)]
+struct DerivedClosedInductive {
+    name: NameId,
+    level_params: Vec<NameId>,
+    ty: ExprId,
+    constructors: Vec<DerivedConstructorSignature>,
+    recursor: DerivedRecursorSignature,
+}
+
+type ClosedInstaller = fn(
+    &ResolvedExport,
+    &Environment,
+    &DerivedClosedInductive,
+    Limits,
+    DeltaPolicy,
+) -> Result<Environment, Verdict>;
+
+fn install_closed_nonrecursive_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    derived: &DerivedClosedInductive,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&derived.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    verdict_boundary(checker.is_type(derived.ty, limits.judgment_steps))?;
+
+    let mut staged = environment
+        .extend(
+            derived.name,
+            ConstantDecl::inductive_type(derived.level_params.clone(), derived.ty),
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    for constructor in &derived.constructors {
+        let checker = TypeChecker::with_level_substitution(
+            &export.exprs,
+            &export.levels,
+            &staged,
+            parameter_substitution(&constructor.level_params),
+        )
+        .with_delta_policy(delta_policy);
+        verdict_boundary(checker.is_type(constructor.ty, limits.judgment_steps))?;
+        staged = staged
+            .extend(
+                constructor.name,
+                ConstantDecl::constructor(constructor.level_params.clone(), constructor.ty),
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
+
+    let recursor = &derived.recursor;
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        &staged,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
+
+    staged
+        .extend(
+            recursor.name,
+            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
+        )
+        .map_err(|_| Verdict::Reject)
+}
+
+#[cfg(test)]
+fn install_closed_nonrecursive_inductive_legacy(
+    export: &ResolvedExport,
+    environment: &Environment,
+    derived: &DerivedClosedInductive,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let type_checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&derived.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    verdict_boundary(type_checker.is_type(derived.ty, limits.judgment_steps))?;
+
+    let mut staged = environment
+        .extend(
+            derived.name,
+            ConstantDecl::inductive_type(derived.level_params.clone(), derived.ty),
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    for constructor in &derived.constructors {
+        let constructor_checker = TypeChecker::with_level_substitution(
+            &export.exprs,
+            &export.levels,
+            &staged,
+            parameter_substitution(&constructor.level_params),
+        )
+        .with_delta_policy(delta_policy);
+        verdict_boundary(
+            constructor_checker.is_type(constructor.ty, limits.judgment_steps),
+        )?;
+        staged = staged
+            .extend(
+                constructor.name,
+                ConstantDecl::constructor(constructor.level_params.clone(), constructor.ty),
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
+
+    let recursor = &derived.recursor;
+    let recursor_checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        &staged,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    verdict_boundary(recursor_checker.is_type(recursor.ty, limits.judgment_steps))?;
+    staged
+        .extend(
+            recursor.name,
+            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
+        )
+        .map_err(|_| Verdict::Reject)
 }
 
 /// G9-001's deliberately narrow promotion boundary. Parsing preserves the
@@ -167,6 +359,7 @@ fn check_empty_inductive(
     block: &InductiveBlock,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    installer: ClosedInstaller,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
@@ -175,9 +368,6 @@ fn check_empty_inductive(
         return Err(Verdict::Unknown);
     }
 
-    // This is the G9 family discriminator, not a general empty inductive
-    // rule: a nullary type living structurally in either Prop or Type.  Prop
-    // is included because the extra/orphan-rec falsifiers target `False`.
     if inductive.num_params != 0
         || inductive.num_indices != 0
         || inductive.num_nested != 0
@@ -202,24 +392,6 @@ fn check_empty_inductive(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        environment,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(inductive.ty, limits.judgment_steps))?;
-
-    // Stage the type locally. Failure below never returns this environment,
-    // so no recursor claim can partially extend caller authority.
-    let staged = environment
-        .extend(
-            inductive.name,
-            ConstantDecl::inductive_type(Vec::new(), inductive.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
-
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
@@ -229,21 +401,18 @@ fn check_empty_inductive(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        parameter_substitution(&recursor.level_params),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
-
-    staged
-        .extend(
-            recursor.name,
-            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
-        )
-        .map_err(|_| Verdict::Reject)
+    let derived = DerivedClosedInductive {
+        name: inductive.name,
+        level_params: inductive.level_params.clone(),
+        ty: inductive.ty,
+        constructors: Vec::new(),
+        recursor: DerivedRecursorSignature {
+            name: recursor.name,
+            level_params: recursor.level_params.clone(),
+            ty: recursor.ty,
+        },
+    };
+    installer(export, environment, &derived, limits, delta_policy)
 }
 
 fn valid_empty_recursor_metadata(
@@ -328,6 +497,7 @@ fn check_two_bool_structure(
     block: &InductiveBlock,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    installer: ClosedInstaller,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
@@ -360,22 +530,6 @@ fn check_two_bool_structure(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        environment,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(inductive.ty, limits.judgment_steps))?;
-
-    let mut staged = environment
-        .extend(
-            inductive.name,
-            ConstantDecl::inductive_type(Vec::new(), inductive.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
-
     let exact_constructor_metadata = constructor.index == 0
         && constructor.inductive == inductive.name
         && !constructor.is_unsafe
@@ -387,21 +541,6 @@ fn check_two_bool_structure(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(constructor.ty, limits.judgment_steps))?;
-    staged = staged
-        .extend(
-            constructor.name,
-            ConstantDecl::constructor(Vec::new(), constructor.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
-
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
@@ -412,21 +551,22 @@ fn check_two_bool_structure(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        parameter_substitution(&recursor.level_params),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
-
-    staged
-        .extend(
-            recursor.name,
-            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
-        )
-        .map_err(|_| Verdict::Reject)
+    let derived = DerivedClosedInductive {
+        name: inductive.name,
+        level_params: inductive.level_params.clone(),
+        ty: inductive.ty,
+        constructors: vec![DerivedConstructorSignature {
+            name: constructor.name,
+            level_params: constructor.level_params.clone(),
+            ty: constructor.ty,
+        }],
+        recursor: DerivedRecursorSignature {
+            name: recursor.name,
+            level_params: recursor.level_params.clone(),
+            ty: recursor.ty,
+        },
+    };
+    installer(export, environment, &derived, limits, delta_policy)
 }
 
 fn is_root_name(export: &ResolvedExport, name: NameId, expected: &str) -> bool {
@@ -690,6 +830,7 @@ fn check_binary_enum(
     block: &InductiveBlock,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    installer: ClosedInstaller,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
@@ -705,6 +846,7 @@ fn check_binary_enum(
     {
         return Err(Verdict::Unknown);
     }
+
     let constructor_names = block
         .constructors
         .iter()
@@ -720,21 +862,6 @@ fn check_binary_enum(
         return Err(Verdict::Reject);
     }
 
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        environment,
-        HashMap::new(),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(inductive.ty, limits.judgment_steps))?;
-    let mut staged = environment
-        .extend(
-            inductive.name,
-            ConstantDecl::inductive_type(Vec::new(), inductive.ty),
-        )
-        .map_err(|_| Verdict::Reject)?;
-
     for (index, constructor) in block.constructors.iter().enumerate() {
         if constructor.index != index as u64
             || constructor.inductive != inductive.name
@@ -746,20 +873,6 @@ fn check_binary_enum(
         {
             return Err(Verdict::Reject);
         }
-        let checker = TypeChecker::with_level_substitution(
-            &export.exprs,
-            &export.levels,
-            &staged,
-            HashMap::new(),
-        )
-        .with_delta_policy(delta_policy);
-        verdict_boundary(checker.is_type(constructor.ty, limits.judgment_steps))?;
-        staged = staged
-            .extend(
-                constructor.name,
-                ConstantDecl::constructor(Vec::new(), constructor.ty),
-            )
-            .map_err(|_| Verdict::Reject)?;
     }
 
     let [recursor] = block.recursors.as_slice() else {
@@ -771,20 +884,27 @@ fn check_binary_enum(
     {
         return Err(Verdict::Reject);
     }
-    let checker = TypeChecker::with_level_substitution(
-        &export.exprs,
-        &export.levels,
-        &staged,
-        parameter_substitution(&recursor.level_params),
-    )
-    .with_delta_policy(delta_policy);
-    verdict_boundary(checker.is_type(recursor.ty, limits.judgment_steps))?;
-    staged
-        .extend(
-            recursor.name,
-            ConstantDecl::recursor(recursor.level_params.clone(), recursor.ty),
-        )
-        .map_err(|_| Verdict::Reject)
+
+    let derived = DerivedClosedInductive {
+        name: inductive.name,
+        level_params: inductive.level_params.clone(),
+        ty: inductive.ty,
+        constructors: block
+            .constructors
+            .iter()
+            .map(|constructor| DerivedConstructorSignature {
+                name: constructor.name,
+                level_params: constructor.level_params.clone(),
+                ty: constructor.ty,
+            })
+            .collect(),
+        recursor: DerivedRecursorSignature {
+            name: recursor.name,
+            level_params: recursor.level_params.clone(),
+            ty: recursor.ty,
+        },
+    };
+    installer(export, environment, &derived, limits, delta_policy)
 }
 
 fn valid_binary_recursor_metadata(
