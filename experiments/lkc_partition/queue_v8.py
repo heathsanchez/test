@@ -128,14 +128,14 @@ def initialQueue (step : Nat) : Std.Queue Nat :=
 def initialState (step : Nat) : RowState :=
   { q := initialQueue step, outRev := [] }
 
-def rowStep (step : Nat) (prev : List Nat) (m : Nat) (st : RowState) : RowState :=
+def rowStep (prev : List Nat) (m : Nat) (st : RowState) : RowState :=
   let popped := queuePop st.q
   let y := prev.getD m 0 + popped.1
   { q := popped.2.enqueue y, outRev := y :: st.outRev }
 
 def rowState (step : Nat) (prev : List Nat) : Nat → RowState
   | 0 => initialState step
-  | m + 1 => rowStep step prev m (rowState step prev m)
+  | m + 1 => rowStep prev m (rowState step prev m)
 
 def rowValues (step : Nat) (prev : List Nat) (count : Nat) : List Nat :=
   (List.range count).map (rowValue step prev)
@@ -149,7 +149,8 @@ theorem expectedQueue_succ
       (expectedQueue step prev m).tail ++ [rowValue step prev m] := by
   unfold expectedQueue rowValues
   rw [List.range_succ, List.map_append]
-  simp only [List.map, List.append_assoc]
+  simp only [List.map]
+  rw [← List.append_assoc]
   rw [List.drop_append_of_le_length]
   · rw [List.drop_add_one_eq_tail_drop]
   · simp
@@ -162,8 +163,9 @@ theorem expectedQueue_head
   unfold expectedQueue rowValues
   rw [List.headD_eq_head?_getD, List.head?_drop]
   by_cases hlt : m < step
-  · rw [List.getElem?_append_left (by simpa using hlt)]
-    simp [List.getElem?_replicate, hlt]
+  · have hnle : ¬ step ≤ m := by omega
+    rw [List.getElem?_append_left (by simpa using hlt)]
+    simp [hlt, hnle]
   · have hle : step ≤ m := by omega
     rw [List.getElem?_append_right (by simpa using hle)]
     simp only [List.length_replicate]
@@ -223,8 +225,8 @@ def nextRowFold (k n : Nat) (prev : List Nat) : List Nat :=
 
 theorem nextRowQueue_eq (k n : Nat) (prev : List Nat) :
     nextRowQueue k n prev = nextRowFold k n prev := by
-  unfold nextRowQueue nextRowFold rowValues
-  exact nextRowQueueCore_eq (k + 1) prev (n + 1) (by omega)
+  simpa [nextRowQueue, nextRowFold, rowValues] using
+    nextRowQueueCore_eq (k + 1) prev (n + 1) (by omega)
 
 theorem natFold_sum_eq_list (f : Nat → Nat) :
     ∀ q, Nat.fold q (fun i _ acc => acc + f i) 0 =
