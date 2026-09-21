@@ -1,0 +1,210 @@
+name: ACC Artifact Proof Recovery V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-artifact-proof-recovery-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p acc_competitive/artifact_proof_recovery_v1
+
+      - name: Recover and pinned-verify retained AC proof corpus
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import concurrent.futures, io, json, os, re, sys, urllib.request, zipfile
+          from collections import defaultdict
+          from pathlib import Path
+
+          ACC=Path('/tmp/acc')
+          sys.path.insert(0,str(ACC/'competition/tools'))
+          from verifier import core, stable_core
+          sys.path.insert(0,str(Path('acc_competitive').resolve()))
+          import proof_atlas_fortify_v1 as pa
+
+          token=os.environ['GH_TOKEN']
+          cutoff='2026-09-11T16:00:00Z'
+          keywords=(
+              'submission','publication','strict','continuous','competitive','record',
+              'points','frontier','fresh','number-one','mda-causal','mda-capability',
+              'compounding','live-submission','v5','peephole','salvage','current-tail',
+              'near-miss'
+          )
+
+          def api_json(url):
+              req=urllib.request.Request(url,headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','User-Agent':'acc-proof-recovery'})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode()),r.headers.get('Link','')
+
+          arts=[]; url='https://api.github.com/repos/heathsanchez/test/actions/artifacts?per_page=100'
+          while url:
+              obj,link=api_json(url); arts.extend(obj.get('artifacts',[])); nxt=None
+              for part in link.split(','):
+                  if 'rel="next"' in part: nxt=part[part.find('<')+1:part.find('>')]
+              url=nxt
+          selected=[]
+          for a in arts:
+              name=str(a.get('name','')); size=int(a.get('size_in_bytes') or 0)
+              if a.get('expired') or str(a.get('created_at',''))<cutoff: continue
+              if not name.startswith('acc-') or size>2_000_000: continue
+              if not any(k in name for k in keywords): continue
+              selected.append(a)
+
+          line_re=re.compile(r'\b(ac-\d{5})\s*:\s*(\[[0-9,\s]*\])')
+          raw=defaultdict(set)
+          errors=[]
+          stats={'artifacts_selected':len(selected),'artifact_bytes':sum(int(a.get('size_in_bytes') or 0) for a in selected),'artifacts_downloaded':0,'text_members_scanned':0,'proof_line_hits':0}
+
+          def fetch_art(a):
+              aid=a['id']
+              url=f'https://api.github.com/repos/heathsanchez/test/actions/artifacts/{aid}/zip'
+              req=urllib.request.Request(url,headers={'Authorization':f'Bearer {token}','Accept':'application/vnd.github+json','User-Agent':'acc-proof-recovery'})
+              with urllib.request.urlopen(req,timeout=90) as r: return a,r.read()
+
+          def scan_one(pair):
+              a,b=pair; found=[]; members=0
+              try:
+                  with zipfile.ZipFile(io.BytesIO(b)) as z:
+                      for info in z.infolist():
+                          if info.is_dir() or info.file_size>8_000_000: continue
+                          n=info.filename.lower()
+                          if not n.endswith(('.txt','.log','.json','.md','.csv')): continue
+                          try: text=z.read(info).decode('utf-8','ignore')
+                          except Exception: continue
+                          members+=1
+                          for cid,arr in line_re.findall(text):
+                              try: moves=tuple(json.loads(arr))
+                              except Exception: continue
+                              if moves and all(isinstance(x,int) and not isinstance(x,bool) for x in moves): found.append((cid,moves))
+              except Exception as e:
+                  return a,[],0,str(e)
+              return a,found,members,None
+
+          # Download bounded, text-heavy artifacts concurrently. No search is rerun.
+          with concurrent.futures.ThreadPoolExecutor(max_workers=12) as ex:
+              futs=[ex.submit(fetch_art,a) for a in selected]
+              for fut in concurrent.futures.as_completed(futs):
+                  try: pair=fut.result()
+                  except Exception as e:
+                      errors.append({'stage':'download','error':repr(e)}); continue
+                  stats['artifacts_downloaded']+=1
+                  a,found,members,err=scan_one(pair)
+                  stats['text_members_scanned']+=members
+                  if err: errors.append({'stage':'scan','artifact':a.get('name'),'id':a.get('id'),'error':err}); continue
+                  stats['proof_line_hits']+=len(found)
+                  for cid,moves in found: raw[cid].add(moves)
+
+          manifest=json.loads((ACC/'competition/tools/verifier/data/manifest.json').read_text())
+          byid={c['challenge_id']:c for c in manifest['challenges']}; limits=manifest['limits']
+          verified={}; verification_trials=0
+          for cid,seqs in sorted(raw.items()):
+              c=byid.get(cid)
+              if c is None: continue
+              for moves in sorted(seqs,key=lambda x:(len(x),x)):
+                  verification_trials+=1
+                  short=pa.compress(core,c['initial_relators'],list(moves))
+                  v=core.verify(c,short,c['move_spec_version'],limits)
+                  if not v.get('ok'): continue
+                  sid='sac-'+cid[3:]; sc=byid[sid]; stable=short+[16,15]
+                  sv=stable_core.verify(sc,stable,sc['move_spec_version'],limits)
+                  if not sv.get('ok'): continue
+                  verified[cid]=short
+                  break
+
+          def snapshot(problem):
+              u=f'https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem={problem}'
+              req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: obj=json.loads(r.read().decode())
+              d=obj.get('data',obj)
+              return {str(x.get('problemId') or x.get('challengeId')):x for x in d['items']}
+          ac=snapshot('ac'); sac=snapshot('stable_ac')
+
+          live=[]
+          for cid,moves in verified.items():
+              sid='sac-'+cid[3:]; stable=moves+[16,15]
+              ar=ac[cid]; sr=sac[sid]
+              ab=ar.get('currentBestLength'); sb=sr.get('currentBestLength')
+              au=ar.get('status')!='solved' or (ar.get('kTeams') or 0)==0
+              su=sr.get('status')!='solved' or (sr.get('kTeams') or 0)==0
+              ag=(ab-len(moves)) if isinstance(ab,int) else None
+              sg=(sb-len(stable)) if isinstance(sb,int) else None
+              aw=au or (isinstance(ag,int) and ag>0); sw=su or (isinstance(sg,int) and sg>0)
+              if not (aw or sw): continue
+              live.append({'cid':cid,'moves':moves,'sid':sid,'ac_len':len(moves),'stable_len':len(stable),'ac_best':ab,'stable_best':sb,'ac_gain':ag,'stable_gain':sg,'ac_unsolved':au,'stable_unsolved':su,'wins':int(aw)+int(sw)})
+          live.sort(key=lambda x:(-x['wins'],-int(x['ac_unsolved'] or x['stable_unsolved']),-max(x['ac_gain'] or 0,x['stable_gain'] or 0),x['cid']))
+          live=live[:250]
+
+          out=Path('acc_competitive/artifact_proof_recovery_v1/recovered_live_strict_ac.txt')
+          out.write_text(''.join(f"{x['cid']}: {json.dumps(x['moves'],separators=(',',':'))}\n" for x in live))
+          report={**stats,
+              'download_or_scan_errors':len(errors),'unique_raw_ac_ids':len(raw),'verification_trials':verification_trials,
+              'pinned_verified_ac_ids':len(verified),'live_strict_source_candidates':len(live),
+              'live_strict_rows_pre_recheck':sum(x['wins'] for x in live),
+              'top':[{k:v for k,v in x.items() if k!='moves'} for x in live[:50]],
+          }
+          Path('acc_competitive/artifact_proof_recovery_v1/recovery_report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          Path('acc_competitive/artifact_proof_recovery_v1/errors.json').write_text(json.dumps(errors[:200],indent=2,sort_keys=True)+'\n')
+          print('ACC_ARTIFACT_PROOF_RECOVERY',json.dumps(report,sort_keys=True))
+          PY
+
+      - name: Double live recheck quota gate and strict-only publication
+        run: |
+          set -euo pipefail
+          CAND=acc_competitive/artifact_proof_recovery_v1/recovered_live_strict_ac.txt
+          if [ ! -s "$CAND" ]; then
+            echo NO_RECOVERED_STRICT_LIVE_GAPS
+            exit 0
+          fi
+          mkdir -p acc_competitive/artifact_proof_recovery_v1/publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc --glob "$CAND" \
+            --out-dir acc_competitive/artifact_proof_recovery_v1/publish --cycle 1 \
+            | tee acc_competitive/artifact_proof_recovery_v1/publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/artifact_proof_recovery_v1/publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected')
+          if r.get('selected_rows',0)!=r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('ACC_ARTIFACT_PROOF_RECOVERY_RESULT',json.dumps({
+              'used_pre':r.get('daily_submissions_used_pre'),'remaining_pre':r.get('daily_submissions_remaining_pre'),
+              'selected_rows':r.get('selected_rows'),'selected_ac':r.get('selected_ac'),'selected_stable':r.get('selected_stable'),
+              'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),
+              'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status'),'failed_rows':r.get('failed_rows')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-artifact-proof-recovery-v1
+          path: acc_competitive/artifact_proof_recovery_v1/
+          retention-days: 90
+          if-no-files-found: warn
