@@ -1,0 +1,29 @@
+name: Probe SAIR Playground Save Schema
+
+on:
+  push:
+    branches: [lkc-partition-frontier-v5]
+    paths:
+      - '.github/workflows/lkc-partition-playground-save-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - name: Probe save schema without creating a solution
+        run: |
+          set -euo pipefail
+          echo "OPTIONS:"
+          curl -sS -i -X OPTIONS "$BASE/playground/solutions"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Accept: application/json"             -H "User-Agent: curl/8.5.0" | head -80
+
+          echo
+          echo "INVALID POST:"
+          curl -sS -i -X POST "$BASE/playground/solutions"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Content-Type: application/json"             -H "Accept: application/json"             -H "User-Agent: curl/8.5.0"             --data '{}' | head -160
