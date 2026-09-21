@@ -35,6 +35,14 @@ TUTORIAL_MANIFEST = (
     TutorialCase("009", Path("bad/009_forallSortBad.ndjson"), 1, "36eef2fa43e86af2d031a9cb9ec8fbd452dd7e50d3444997fe71003cc7295051"),
     TutorialCase("010", Path("bad/010_nonTypeType.ndjson"), 1, "18cba14f24723f0325721cdd1a5699e45b61bcce7ed94f2bded0f42c848ba4c4"),
     TutorialCase("011", Path("bad/011_nonTypeAxiom.ndjson"), 1, "687a8966b2727b26143b3340e8bead862b9057e5b4ec1ee7fc51a2a6e7211dc6"),
+    TutorialCase("012", Path("bad/012_nonPropThm.ndjson"), 1, "07c030b1e9ee321bb537f4f82f5238087cbed199f5e4f8673650c3190e54a33a"),
+    TutorialCase("013", Path("good/013_thmProof.ndjson"), 0, "5e4664a6d4f05afbeff4e0af19681e88b2817c48787a9a281c4ba95d80483333"),
+    TutorialCase("014", Path("bad/014_selfProof.ndjson"), 1, "f39b1bba5099649997a6c7cd49c870f91dfc86432979eafae58692d236142499"),
+    TutorialCase("015", Path("good/015_levelComp1.ndjson"), 0, "2e6b6016ac241c9e1dd01ee86782f21adabd928bca24880b60619de453bec0c3"),
+    TutorialCase("016", Path("good/016_levelComp2.ndjson"), 0, "aa971f4ba7603e183ebcf90a8ac92241f5fa2a96fbc6659e45380f52de3ffd6e"),
+    TutorialCase("017", Path("good/017_levelComp3.ndjson"), 0, "e11ecbb09540778e2d2d0084d7759ce1c1483ca7f02168b87e1ec8bd1bf2c5cd"),
+    TutorialCase("018", Path("good/018_levelParams.ndjson"), 0, "d78d458ea81bb210c80d3915976a03536f1b267879207f3604745b777014a167"),
+    TutorialCase("019", Path("bad/019_tut06_bad01.ndjson"), 1, "9c5c0329065ef0b470c7b43a365c30a0098697dbeb8d69f2c2bea2e345ab9533"),
 )
 
 
