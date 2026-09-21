@@ -1,11 +1,48 @@
 use std::collections::HashMap;
 
 use metatron_kernel::id::{ExprId, IdTable, LevelId, NameId};
+use metatron_kernel::level::LevelTerm;
 use metatron_kernel::machine::{
     AuthorityId, DefinitionBody, Machine, TransitionWitness, Transparency,
 };
-use metatron_kernel::syntax::Expr;
-use metatron_kernel::value::{Closure, EnvFrame, Value};
+use metatron_kernel::syntax::{Expr, Level};
+use metatron_kernel::value::{Closure, EnvFrame, FreeId, NeutralHead, Value};
+
+fn zero_levels() -> IdTable<LevelId, Level> {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    levels
+}
+
+#[test]
+fn semantic_locals_use_explicit_identity_not_source_index_aliasing() {
+    let mut exprs = IdTable::default();
+    exprs.insert(ExprId(0), Expr::BVar(0)).unwrap();
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new());
+
+    let expose = |free| {
+        machine
+            .expose(
+                Closure::new(ExprId(0), EnvFrame::empty().extend_free(free)),
+                Transparency::Opaque,
+                8,
+            )
+            .proven_value()
+            .unwrap()
+            .clone()
+    };
+    let left = expose(FreeId(7));
+    let same = expose(FreeId(7));
+    let distinct = expose(FreeId(8));
+
+    assert_eq!(left, same);
+    assert_ne!(left, distinct);
+    assert!(matches!(
+        left,
+        Value::Neutral(ref neutral) if neutral.head == NeutralHead::Free(FreeId(7))
+    ));
+}
 
 #[test]
 fn beta_uses_explicit_environment_extension() {
@@ -31,11 +68,12 @@ fn beta_uses_explicit_environment_extension() {
             },
         )
         .unwrap();
-    let machine = Machine::new(AuthorityId(0), &exprs, HashMap::new());
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new());
     let root = Closure::new(ExprId(4), EnvFrame::empty());
 
     let result = machine.expose(root.clone(), Transparency::Reducible, 64);
-    assert_eq!(result.proven_value(), Some(&Value::Sort(LevelId(0))));
+    assert_eq!(result.proven_value(), Some(&Value::Sort(LevelTerm::Zero)));
 
     let traced = machine
         .expose_with_witnesses(root, Transparency::Reducible, 64)
@@ -62,7 +100,8 @@ fn zeta_uses_let_value_without_substitution_copy() {
             },
         )
         .unwrap();
-    let machine = Machine::new(AuthorityId(0), &exprs, HashMap::new());
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new());
 
     let result = machine.expose_with_witnesses(
         Closure::new(ExprId(2), EnvFrame::empty()),
@@ -70,7 +109,7 @@ fn zeta_uses_let_value_without_substitution_copy() {
         64,
     );
     let exposure = result.proven_value().unwrap();
-    assert_eq!(exposure.value, Value::Sort(LevelId(0)));
+    assert_eq!(exposure.value, Value::Sort(LevelTerm::Zero));
     assert!(exposure.transitions.contains(&TransitionWitness::Zeta));
 }
 
@@ -91,10 +130,11 @@ fn cyclic_delta_returns_unknown() {
         DefinitionBody {
             value: ExprId(0),
             preferred_for_reduction: true,
-            level_param_count: 0,
+            level_params: Vec::new(),
         },
     )]);
-    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions);
 
     assert!(
         machine
@@ -124,10 +164,11 @@ fn full_transparency_keeps_a_nonpreferred_delta_cycle_unknown() {
         DefinitionBody {
             value: ExprId(0),
             preferred_for_reduction: false,
-            level_param_count: 0,
+            level_params: Vec::new(),
         },
     )]);
-    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions);
 
     assert!(
         machine
@@ -163,7 +204,8 @@ fn revisiting_shared_syntax_after_beta_is_not_a_cycle() {
             },
         )
         .unwrap();
-    let machine = Machine::new(AuthorityId(0), &exprs, HashMap::new());
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new());
 
     assert!(
         machine
@@ -194,10 +236,11 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
         DefinitionBody {
             value: ExprId(0),
             preferred_for_reduction: true,
-            level_param_count: 0,
+            level_params: Vec::new(),
         },
     )]);
-    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions);
     let root = Closure::new(ExprId(1), EnvFrame::empty());
 
     let reducible = machine
@@ -205,7 +248,7 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
         .proven_value()
         .unwrap()
         .clone();
-    assert_eq!(reducible.value, Value::Sort(LevelId(0)));
+    assert_eq!(reducible.value, Value::Sort(LevelTerm::Zero));
     assert!(reducible.transitions.contains(&TransitionWitness::Delta));
 
     let opaque = machine
@@ -235,10 +278,11 @@ fn full_transparency_can_request_a_nonpreferred_definition_body() {
         DefinitionBody {
             value: ExprId(0),
             preferred_for_reduction: false,
-            level_param_count: 0,
+            level_params: Vec::new(),
         },
     )]);
-    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions);
     let root = Closure::new(ExprId(1), EnvFrame::empty());
 
     let cheap = machine
@@ -254,7 +298,7 @@ fn full_transparency_can_request_a_nonpreferred_definition_body() {
         .proven_value()
         .unwrap()
         .clone();
-    assert_eq!(semantic.value, Value::Sort(LevelId(0)));
+    assert_eq!(semantic.value, Value::Sort(LevelTerm::Zero));
     assert!(semantic.transitions.contains(&TransitionWitness::Delta));
 }
 
@@ -262,7 +306,8 @@ fn full_transparency_can_request_a_nonpreferred_definition_body() {
 fn exhausted_reduction_budget_preserves_unknown() {
     let mut exprs = IdTable::default();
     exprs.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
-    let machine = Machine::new(AuthorityId(0), &exprs, HashMap::new());
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(0), &exprs, &levels, HashMap::new());
 
     assert!(
         machine
@@ -292,10 +337,11 @@ fn polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit() {
         DefinitionBody {
             value: ExprId(0),
             preferred_for_reduction: true,
-            level_param_count: 1,
+            level_params: vec![NameId(9)],
         },
     )]);
-    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+    let levels = zero_levels();
+    let machine = Machine::new(AuthorityId(1), &exprs, &levels, definitions);
 
     assert!(
         machine

@@ -8,7 +8,7 @@ use crate::level::LevelTerm;
 use crate::parser::ResolvedExport;
 use crate::syntax::Declaration;
 use crate::typecheck::{TypeChecker, TypeValue};
-use crate::value::{Closure, EnvFrame};
+use crate::value::EnvFrame;
 use crate::verdict::Verdict;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -71,7 +71,7 @@ fn check_export_with_policy(
                 if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
                     return verdict;
                 }
-                let expected = TypeValue::Term(Closure::new(ty, EnvFrame::empty()));
+                let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
                 if let Err(verdict) =
                     verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
                 {

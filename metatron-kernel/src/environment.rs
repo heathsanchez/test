@@ -92,7 +92,7 @@ impl Environment {
                         DefinitionBody {
                             value,
                             preferred_for_reduction: declaration.preferred_for_reduction,
-                            level_param_count: declaration.level_params.len(),
+                            level_params: declaration.level_params.clone(),
                         },
                     )
                 })

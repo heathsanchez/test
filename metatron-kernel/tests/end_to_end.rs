@@ -61,3 +61,8 @@ fn definition_is_not_installed_before_its_value_is_checked() {
 fn g3_001_opaque_hint_does_not_make_a_definition_semantically_inaccessible() {
     assert_eq!(run_residual("G3-001"), Verdict::Accept);
 }
+
+#[test]
+fn g4_001_dependent_bodies_are_related_under_a_shared_binder() {
+    assert_eq!(run_residual("G4-001"), Verdict::Accept);
+}

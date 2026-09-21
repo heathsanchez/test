@@ -1,9 +1,12 @@
 use std::collections::{HashMap, HashSet};
 
-use crate::id::{ExprId, IdTable, NameId};
+use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
-use crate::syntax::Expr;
-use crate::value::{Closure, EnvFrame, Neutral, NeutralHead, Value};
+use crate::level::instantiate_level;
+use crate::syntax::{Expr, Level};
+use crate::value::{
+    Closure, EnvBinding, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value,
+};
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
@@ -23,11 +26,11 @@ pub enum TransitionWitness {
     Rigid,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct DefinitionBody {
     pub value: ExprId,
     pub preferred_for_reduction: bool,
-    pub level_param_count: usize,
+    pub level_params: Vec<NameId>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -39,6 +42,7 @@ pub struct Exposure {
 pub struct Machine<'a> {
     authority: AuthorityId,
     expressions: &'a IdTable<ExprId, Expr>,
+    levels: &'a IdTable<LevelId, Level>,
     definitions: HashMap<NameId, DefinitionBody>,
 }
 
@@ -46,11 +50,13 @@ impl<'a> Machine<'a> {
     pub fn new(
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
+        levels: &'a IdTable<LevelId, Level>,
         definitions: HashMap<NameId, DefinitionBody>,
     ) -> Self {
         Self {
             authority,
             expressions,
+            levels,
             definitions,
         }
     }
@@ -90,31 +96,50 @@ impl<'a> Machine<'a> {
             match expression {
                 Expr::BVar(index) => {
                     if let Some(bound) = closure.env.lookup(*index) {
-                        visited.clear();
-                        closure = bound;
-                        continue;
+                        match bound {
+                            EnvBinding::Closure(bound) => {
+                                visited.clear();
+                                closure = bound;
+                                continue;
+                            }
+                            EnvBinding::Free(free) => {
+                                let mut spine = Vec::new();
+                                append_pending(&mut spine, &mut pending);
+                                transitions.push(TransitionWitness::Rigid);
+                                return exposed(
+                                    Value::Neutral(Neutral {
+                                        head: NeutralHead::Free(free),
+                                        spine,
+                                    }),
+                                    transitions,
+                                );
+                            }
+                        }
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
                     transitions.push(TransitionWitness::Rigid);
                     return exposed(
                         Value::Neutral(Neutral {
-                            head: NeutralHead::Free(*index),
+                            head: NeutralHead::Free(FreeId(*index)),
                             spine,
                         }),
                         transitions,
                     );
                 }
                 Expr::Sort(level) if pending.is_empty() => {
+                    let Some(level) = self.resolve_level(*level, &closure, budget) else {
+                        return Judgment::unknown("unresolved-sort-level-during-reduction");
+                    };
                     transitions.push(TransitionWitness::Rigid);
-                    return exposed(Value::Sort(*level), transitions);
+                    return exposed(Value::Sort(level), transitions);
                 }
                 Expr::Pi { domain, body } if pending.is_empty() => {
                     transitions.push(TransitionWitness::Rigid);
                     return exposed(
                         Value::Pi {
-                            domain: Closure::new(*domain, closure.env.clone()),
-                            body: Closure::new(*body, closure.env),
+                            domain: closure.sibling(*domain, closure.env.clone()),
+                            body: closure.sibling(*body, closure.env.clone()),
                         },
                         transitions,
                     );
@@ -123,14 +148,14 @@ impl<'a> Machine<'a> {
                     if let Some(argument) = pending.pop() {
                         transitions.push(TransitionWitness::Beta);
                         visited.clear();
-                        closure = Closure::new(*body, closure.env.extend(argument));
+                        closure = closure.sibling(*body, closure.env.extend(argument));
                         continue;
                     }
                     transitions.push(TransitionWitness::Rigid);
                     return exposed(
                         Value::Lam {
-                            domain: Closure::new(*domain, closure.env.clone()),
-                            body: Closure::new(*body, closure.env),
+                            domain: closure.sibling(*domain, closure.env.clone()),
+                            body: closure.sibling(*body, closure.env.clone()),
                         },
                         transitions,
                     );
@@ -138,23 +163,41 @@ impl<'a> Machine<'a> {
                 Expr::Let { value, body, .. } => {
                     transitions.push(TransitionWitness::Zeta);
                     visited.clear();
-                    let value = Closure::new(*value, closure.env.clone());
-                    closure = Closure::new(*body, closure.env.extend(value));
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
                 }
                 Expr::App { fun, arg } => {
-                    pending.push(Closure::new(*arg, closure.env.clone()));
-                    closure = Closure::new(*fun, closure.env);
+                    pending.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
                     if let Some(definition) = self.definitions.get(name)
                         && permits_delta(transparency, definition.preferred_for_reduction)
                     {
-                        if definition.level_param_count != 0 || !levels.is_empty() {
-                            return Judgment::unknown("polymorphic-delta-instantiation");
+                        if definition.level_params.len() != levels.len() {
+                            return Judgment::unknown("polymorphic-delta-arity");
+                        }
+                        let mut substitution = Vec::with_capacity(levels.len());
+                        for (parameter, level) in definition.level_params.iter().zip(levels) {
+                            let Some(level) = self.resolve_level(*level, &closure, budget) else {
+                                return Judgment::unknown("polymorphic-delta-instantiation");
+                            };
+                            substitution.push((*parameter, level));
                         }
                         transitions.push(TransitionWitness::Delta);
-                        closure = Closure::new(definition.value, EnvFrame::empty());
+                        closure = Closure::with_levels(
+                            definition.value,
+                            EnvFrame::empty(),
+                            LevelSubstitution::new(substitution),
+                        );
                         continue;
+                    }
+                    let mut instantiated_levels = Vec::with_capacity(levels.len());
+                    for level in levels {
+                        let Some(level) = self.resolve_level(*level, &closure, budget) else {
+                            return Judgment::unknown("neutral-level-instantiation");
+                        };
+                        instantiated_levels.push(level);
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
@@ -163,7 +206,7 @@ impl<'a> Machine<'a> {
                         Value::Neutral(Neutral {
                             head: NeutralHead::Const {
                                 name: *name,
-                                levels: levels.clone(),
+                                levels: instantiated_levels,
                             },
                             spine,
                         }),
@@ -175,6 +218,15 @@ impl<'a> Machine<'a> {
                 }
             }
         }
+    }
+
+    fn resolve_level(
+        &self,
+        level: LevelId,
+        closure: &Closure,
+        budget: usize,
+    ) -> Option<crate::level::LevelTerm> {
+        instantiate_level(self.levels, level, &closure.levels.to_map(), budget).ok()
     }
 }
 

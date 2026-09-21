@@ -3,7 +3,8 @@ use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 use std::sync::atomic::{AtomicU64, Ordering};
 
-use crate::id::{ExprId, LevelId, NameId};
+use crate::id::{ExprId, NameId};
+use crate::level::LevelTerm;
 
 static NEXT_ENV_FRAME_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -16,9 +17,18 @@ enum EnvNode {
     Extend {
         id: u64,
         parent: EnvFrame,
-        value: Closure,
+        value: EnvBinding,
     },
 }
+
+#[derive(Clone, Debug)]
+pub enum EnvBinding {
+    Closure(Closure),
+    Free(FreeId),
+}
+
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub struct FreeId(pub u64);
 
 impl EnvFrame {
     pub fn empty() -> Self {
@@ -26,6 +36,14 @@ impl EnvFrame {
     }
 
     pub fn extend(&self, value: Closure) -> Self {
+        self.extend_binding(EnvBinding::Closure(value))
+    }
+
+    pub fn extend_free(&self, free: FreeId) -> Self {
+        self.extend_binding(EnvBinding::Free(free))
+    }
+
+    fn extend_binding(&self, value: EnvBinding) -> Self {
         Self(Rc::new(EnvNode::Extend {
             id: NEXT_ENV_FRAME_ID.fetch_add(1, Ordering::Relaxed),
             parent: self.clone(),
@@ -33,7 +51,7 @@ impl EnvFrame {
         }))
     }
 
-    pub fn lookup(&self, index: u64) -> Option<Closure> {
+    pub fn lookup(&self, index: u64) -> Option<EnvBinding> {
         let mut frame = self.clone();
         let mut remaining = index;
         loop {
@@ -91,17 +109,47 @@ impl Hash for EnvFrame {
 pub struct Closure {
     pub expr: ExprId,
     pub env: EnvFrame,
+    pub levels: LevelSubstitution,
+}
+
+#[derive(Clone, Debug, Default, Eq, Hash, PartialEq)]
+pub struct LevelSubstitution(Rc<Vec<(NameId, LevelTerm)>>);
+
+impl LevelSubstitution {
+    pub fn new(entries: Vec<(NameId, LevelTerm)>) -> Self {
+        Self(Rc::new(entries))
+    }
+
+    pub fn to_map(&self) -> std::collections::HashMap<NameId, LevelTerm> {
+        self.0.iter().cloned().collect()
+    }
 }
 
 impl Closure {
     pub fn new(expr: ExprId, env: EnvFrame) -> Self {
-        Self { expr, env }
+        Self {
+            expr,
+            env,
+            levels: LevelSubstitution::default(),
+        }
+    }
+
+    pub fn with_levels(expr: ExprId, env: EnvFrame, levels: LevelSubstitution) -> Self {
+        Self { expr, env, levels }
+    }
+
+    pub fn under_free(&self, free: FreeId) -> Self {
+        Self::with_levels(self.expr, self.env.extend_free(free), self.levels.clone())
+    }
+
+    pub fn sibling(&self, expr: ExprId, env: EnvFrame) -> Self {
+        Self::with_levels(expr, env, self.levels.clone())
     }
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Value {
-    Sort(LevelId),
+    Sort(LevelTerm),
     Pi { domain: Closure, body: Closure },
     Lam { domain: Closure, body: Closure },
     Neutral(Neutral),
@@ -115,6 +163,9 @@ pub struct Neutral {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum NeutralHead {
-    Free(u64),
-    Const { name: NameId, levels: Vec<LevelId> },
+    Free(FreeId),
+    Const {
+        name: NameId,
+        levels: Vec<LevelTerm>,
+    },
 }
