@@ -1,0 +1,14 @@
+{
+  "id":"G6-001",
+  "authority":{"arena_sha":"f5e1bce6e2dc9c60479b3001b76e01722b403799","candidate_baseline":"817ed678589cd4b8a3e7c3847ed2e9f10960ad9c","fixture_sha256":"07c030b1e9ee321bb537f4f82f5238087cbed199f5e4f8673650c3190e54a33a","tutorial_ordinal":12},
+  "obstruction":"The parser preserves theorem declarations only as Unsupported, so an invalid theorem whose type is Sort 0 returns UNKNOWN instead of REJECT.",
+  "residual_class":"parser/format",
+  "observed":{"expected_exit":1,"actual_exit":2,"preceding_cases_matched":11},
+  "least_candidate_capability":"Represent theorem declarations explicitly, require their declared type to infer as Prop (Sort 0), check the proof before authority extension, and retain theorem opacity during delta.",
+  "strongest_competing_explanation":"Treat the theorem as an ordinary definition; this loses the theorem-specific proposition obligation and could accept non-propositional proof objects.",
+  "falsifier":"Reject if exact case 012 is not rejected, a qualified theorem fails, theorem self-reference is accepted, or theorem bodies become conversion fuel.",
+  "causal_ablation":"Unsupported theorem returns UNKNOWN; explicit theorem validation must return REJECT on the identical fixture.",
+  "protected_suite":["all G0-G5 tests","tutorial cases 001-011","UNKNOWN for other unsupported declarations"],
+  "performance_plan":{"primary_metric":"retired_instructions","promotion_rule":"same-identity candidate and flash counters only"},
+  "decision":"OPEN_RESIDUAL_NO_MECHANISM_IMPLEMENTED"
+}

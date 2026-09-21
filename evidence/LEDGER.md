@@ -217,3 +217,22 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   UNKNOWN. No eager AST substitution or global universe assignment was added.
 - Retired-instruction counters and a same-cohort flash control remain absent,
   so no performance promotion is claimed.
+
+## G5-001 — Preserve sort-judgment polarity
+
+- Status: RETAINED at `817ed678589cd4b8a3e7c3847ed2e9f10960ad9c`.
+- `sort_level` now returns a three-valued judgment. A rigid neutral nonsort is
+  refuted, while failed exposure, cycles, and budgets remain UNKNOWN.
+- Exact bad tutorial case 009 now REJECTS; cases 001–011 match and the complete
+  protected suite passes. Performance remains UNKNOWN without counters.
+
+## G6-001 — Theorem representation and proposition obligation
+
+- Status: OPEN; no theorem mechanism implemented.
+- Exact tutorial case 012, SHA-256
+  `07c030b1e9ee321bb537f4f82f5238087cbed199f5e4f8673650c3190e54a33a`,
+  should REJECT but returns UNKNOWN because `thm` is only preserved as an
+  unsupported declaration.
+- Least candidate capability: an explicit theorem node, a proof check before
+  authority extension, and a separate proof-type-is-Prop obligation. Theorem
+  bodies must remain unavailable to conversion.
