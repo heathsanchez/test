@@ -1074,5 +1074,4 @@ mod tests {
             assert_eq!(generic, legacy);
         }
     }
-
 }
