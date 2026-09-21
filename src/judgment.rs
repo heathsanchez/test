@@ -45,4 +45,22 @@ impl<T> Judgment<T> {
     pub fn is_unknown(&self) -> bool {
         matches!(self, Self::Unknown { .. })
     }
+
+    pub fn proven_value(&self) -> Option<&T> {
+        match self {
+            Self::Proven { value, .. } => Some(value),
+            Self::Refuted { .. } | Self::Unknown { .. } => None,
+        }
+    }
+
+    pub fn map<U>(self, function: impl FnOnce(T) -> U) -> Judgment<U> {
+        match self {
+            Self::Proven { value, warrant } => Judgment::Proven {
+                value: function(value),
+                warrant,
+            },
+            Self::Refuted { obstruction } => Judgment::Refuted { obstruction },
+            Self::Unknown { residual } => Judgment::Unknown { residual },
+        }
+    }
 }
