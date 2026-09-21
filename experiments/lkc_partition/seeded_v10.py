@@ -325,6 +325,7 @@ theorem iterateSeeded_eq (step : Nat) (prev : List Nat) :
   | q + 1 => by
       simp only [iterateSeeded, iterateDirect]
       rw [iterateSeeded_eq step prev q]
+      rfl
 
 def nextRowSeeded (k n : Nat) (prev : List Nat) : List Nat :=
   iterateSeeded (k + 1) prev (n / (k + 1))
