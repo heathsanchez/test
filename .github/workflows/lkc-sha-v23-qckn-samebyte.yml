@@ -1,0 +1,138 @@
+name: LKC SHA V23 QCKN Same-Byte Qualification
+
+on:
+  push:
+    branches: [lkc-sha-v23-qckn-samebyte-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate exact proof-bearing V23 candidate
+        run: |
+          python3 -m py_compile experiments/lkc_sha256/algebra_fullproof_v21.py
+          python3 experiments/lkc_sha256/algebra_fullproof_v21.py
+          sha256sum experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean | tee v23-source.sha256
+
+      - name: Checkout pinned benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.elan/toolchains
+            bench/.cache
+          key: lkc-sha256-v23-qckn-samebyte-lean4331-d8ea5fc
+
+      - name: Setup exact SHA environment and rules
+        working-directory: bench
+        run: |
+          python3 benchmark.py setup --problem sha256
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+
+      - name: Universal proof and axiom audit on measured bytes
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean bench/.cache/upstream/evaluation/problems/sha256/Submission_qckn_v23.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          printf '\n#print axioms Submission.impl_correct\n' >> Submission_qckn_v23.lean
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Submission_qckn_v23.lean
+
+      - name: Canonical acceptance on exact measured candidate
+        run: |
+          python3 bench/.cache/upstream/evaluation/run.py --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean"             --timeout 900
+
+      - name: Full six-case resource probe on exact proof-bearing bytes
+        run: |
+          set +e
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean"             --metric wall-time --repetitions 1             --timeout 900 --memory-mb 4096             --inputs 18860801433 17252521710 138725260120 140599404248 2199121876686 2199573357346             --output "$GITHUB_WORKSPACE/v23-qckn-wall"
+          echo $? > "$GITHUB_WORKSPACE/v23-qckn-wall.returncode"
+          exit 0
+
+      - name: Paired Callgrind on exact proof-bearing bytes
+        run: |
+          cd bench
+          python3 benchmark.py diagnostic             --problem sha256             --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean"             --metric callgrind --repetitions 1             --timeout 900 --memory-mb 4096             --inputs 18860801433 138725260120             --output "$GITHUB_WORKSPACE/v23-qckn-callgrind"
+
+      - name: Enforce QCKN promotion gate and emit evidence
+        run: |
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          src = Path("experiments/lkc_sha256/generated/Submission_algebra_v21_proof.lean")
+          source_sha = hashlib.sha256(src.read_bytes()).hexdigest()
+          recorded = Path("v23-source.sha256").read_text().split()[0]
+          assert source_sha == recorded, "measured bytes drifted after proof/canonical gate"
+
+          wall = json.loads(Path("v23-qckn-wall/diagnostic.json").read_text())
+          call = json.loads(Path("v23-qckn-callgrind/diagnostic.json").read_text())
+
+          def run_by_role(d, role):
+              return next(r for r in d["runs"] if r["role"] == role)
+
+          wb = run_by_role(wall, "baseline")
+          wc = run_by_role(wall, "candidate")
+          cb = run_by_role(call, "baseline")
+          cc = run_by_role(call, "candidate")
+
+          wc_status = {str(c["n"]): c["status"] for c in wc["cases"]}
+          wb_status = {str(c["n"]): c["status"] for c in wb["cases"]}
+          assert all(v == "complete" for v in wc_status.values()), wc_status
+
+          bvals = [c["median"] for c in cb["cases"] if c["status"] == "complete"]
+          cvals = [c["median"] for c in cc["cases"] if c["status"] == "complete"]
+          assert len(bvals) == len(cvals) == 2
+          btot, ctot = sum(bvals), sum(cvals)
+          assert ctot < btot, (btot, ctot)
+
+          evidence = {
+              "schema": "lkc-sha-v23-qckn-samebyte-evidence-v1",
+              "source_sha256": source_sha,
+              "candidate_commit": "04f7a8042210b87ad360d29eba0248bfbaff1cf1",
+              "candidate_branch": "lkc-sha256-v23-frozen",
+              "canonical_accepted": True,
+              "candidate_all_six_resource_cases_complete": True,
+              "wall_candidate_status": wc_status,
+              "wall_baseline_status": wb_status,
+              "callgrind_inputs": [c["n"] for c in cc["cases"]],
+              "baseline_callgrind_total_ir": btot,
+              "candidate_callgrind_total_ir": ctot,
+              "reduction_pct": 100 * (1 - ctot / btot),
+              "official_pmu_measured": False,
+              "same_byte_bound": True,
+          }
+          Path("sha-v23-qckn-samebyte-evidence.json").write_text(json.dumps(evidence, indent=2) + "\n")
+          print(json.dumps(evidence, indent=2))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-v23-qckn-samebyte-evidence
+          path: |
+            v23-source.sha256
+            sha-v23-qckn-samebyte-evidence.json
+            v23-qckn-wall/
+            v23-qckn-callgrind/
