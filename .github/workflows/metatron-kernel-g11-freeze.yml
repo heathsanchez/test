@@ -1,0 +1,60 @@
+name: Metatron Kernel G11 Freeze
+
+on:
+  push:
+    branches: [metatron-kernel-g11-v1]
+    paths:
+      - '.github/workflows/metatron-kernel-g11-freeze.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned Arena
+        run: |
+          set -euo pipefail
+          git clone https://github.com/leanprover/lean-kernel-arena.git /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena checkout "$ARENA_SHA"
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build pinned tutorial export
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Freeze exact G11 residual
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/G11-001
+          cp /tmp/lean-kernel-tutorial/good/038_twoBool.ndjson evidence-out/G11-001/fixture.ndjson
+          sha256sum evidence-out/G11-001/fixture.ndjson | tee evidence-out/G11-001/fixture.sha256
+          python3 - <<'PY'
+          import hashlib, json, pathlib, os
+          p=pathlib.Path('evidence-out/G11-001/fixture.ndjson')
+          out={
+            'schema':'metatron-kernel-g11-freeze-v1',
+            'arena_sha':os.environ['ARENA_SHA'],
+            'source':'tutorial/good/038_twoBool.ndjson',
+            'fixture_sha256':hashlib.sha256(p.read_bytes()).hexdigest(),
+            'expected_exit_code':0,
+            'baseline_sha':'78a53e3ed6e4f6d5f741c4869ae098cfdcda31bd'
+          }
+          pathlib.Path('evidence-out/G11-001/protocol.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: metatron-kernel-g11-freeze
+          path: evidence-out/G11-001/
+          if-no-files-found: error
