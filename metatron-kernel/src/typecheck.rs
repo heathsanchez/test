@@ -183,8 +183,12 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::Pi { domain, body } => {
                 let domain_type = self.infer_in(*domain, context, frame, remaining);
-                let Some(domain_sort) = self.sort_level(domain_type, *remaining) else {
-                    return Judgment::unknown("pi-domain-sort");
+                let domain_sort = match self.sort_level(domain_type, *remaining) {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 };
                 let domain_value = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
@@ -194,8 +198,12 @@ impl<'a> TypeChecker<'a> {
                 };
                 let body_frame = frame.extend_free(free);
                 let body_type = self.infer_in(*body, &extended, &body_frame, remaining);
-                let Some(body_sort) = self.sort_level(body_type, *remaining) else {
-                    return Judgment::unknown("pi-body-sort");
+                let body_sort = match self.sort_level(body_type, *remaining) {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 };
                 Judgment::proven(
                     TypeValue::Sort(imax(domain_sort, body_sort)),
@@ -204,8 +212,12 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::Lam { domain, body } => {
                 let domain_type = self.infer_in(*domain, context, frame, remaining);
-                if self.sort_level(domain_type, *remaining).is_none() {
-                    return Judgment::unknown("lambda-domain-sort");
+                match self.sort_level(domain_type, *remaining) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let domain_type = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
@@ -243,8 +255,12 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::Let { ty, value, body } => {
                 let annotation_type = self.infer_in(*ty, context, frame, remaining);
-                if self.sort_level(annotation_type, *remaining).is_none() {
-                    return Judgment::unknown("let-annotation-sort");
+                match self.sort_level(annotation_type, *remaining) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
                 match self.check_in(*value, &established, context, frame, remaining) {
@@ -285,19 +301,28 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
-    fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<LevelTerm> {
-        let ty = ty.proven_value()?.clone();
+    fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Judgment<LevelTerm> {
+        let ty = match ty {
+            Judgment::Proven { value, .. } => value,
+            Judgment::Refuted { obstruction } => return Judgment::Refuted { obstruction },
+            Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+        };
         match ty {
-            TypeValue::Sort(level) => Some(level),
+            TypeValue::Sort(level) => Judgment::proven(level, "known-sort-level"),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
                 let exposed = machine.expose(closure, Transparency::Reducible, budget);
-                match exposed.proven_value()? {
-                    Value::Sort(level) => Some(level.clone()),
-                    Value::Pi { .. } | Value::Lam { .. } | Value::Neutral(_) => None,
+                match exposed {
+                    Judgment::Proven {
+                        value: Value::Sort(level),
+                        ..
+                    } => Judgment::proven(level, "term-type-reduces-to-sort"),
+                    Judgment::Proven { .. } => Judgment::refuted("term-type-is-rigid-nonsort"),
+                    Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+                    Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
             }
-            TypeValue::Pi { .. } => None,
+            TypeValue::Pi { .. } => Judgment::refuted("pi-value-is-not-a-sort"),
         }
     }
 
