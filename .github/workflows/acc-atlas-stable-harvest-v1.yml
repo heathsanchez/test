@@ -1,0 +1,178 @@
+name: ACC Atlas Stable Harvest V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-stable-harvest-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  harvest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned official verifier and latest verified Proof Atlas
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p /tmp/atlas acc_competitive/atlas_stable_harvest_v1
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          test -n "$ATLAS"
+          cp "$ATLAS" acc_competitive/atlas_stable_harvest_v1/proof_atlas.sqlite
+          echo "ATLAS_ARTIFACT_ID=$AID"
+
+      - name: Reconstruct only live strict wins from accumulated Atlas capability
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, sqlite3, sys, urllib.request
+          from pathlib import Path
+
+          ACC=Path('/tmp/acc')
+          sys.path.insert(0,str(ACC/'competition/tools'))
+          from verifier import core, stable_core
+          sys.path.insert(0,str(Path('acc_competitive').resolve()))
+          import proof_atlas_fortify_v1 as pa
+
+          manifest=json.loads((ACC/'competition/tools/verifier/data/manifest.json').read_text())
+          byid={c['challenge_id']:c for c in manifest['challenges']}
+          limits=manifest['limits']
+          db=sqlite3.connect('acc_competitive/atlas_stable_harvest_v1/proof_atlas.sqlite')
+
+          def snapshot(problem):
+              u=f'https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem={problem}'
+              req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: obj=json.loads(r.read().decode())
+              d=obj.get('data',obj)
+              return {str(x.get('problemId') or x.get('challengeId')):x for x in d['items']}
+
+          ac_live=snapshot('ac')
+          sac_live=snapshot('stable_ac')
+          atlas_states=db.execute('SELECT COUNT(*) FROM atlas').fetchone()[0]
+          reconstructed=[]
+          candidates=[]
+
+          for i in range(1,10116):
+              cid=f'ac-{i:05d}'
+              sid=f'sac-{i:05d}'
+              c=byid[cid]
+              row=pa.get_row(db,tuple(tuple(w) for w in c['initial_relators']))
+              if row is None: continue
+              dist=int(row[0])
+              moves=pa.reconstruct(core,db,c['initial_relators'],max_steps=dist+8)
+              if moves is None: continue
+              v=core.verify(c,moves,c['move_spec_version'],limits)
+              if not v.get('ok'):
+                  raise SystemExit(f'pinned AC replay failed {cid}: {v}')
+              sc=byid[sid]
+              stable=moves+[16,15]
+              sv=stable_core.verify(sc,stable,sc['move_spec_version'],limits)
+              if not sv.get('ok'):
+                  raise SystemExit(f'pinned Stable-AC compiler replay failed {sid}: {sv}')
+              reconstructed.append((cid,moves,sid,stable,dist))
+
+              ar=ac_live[cid]; sr=sac_live[sid]
+              ab=ar.get('currentBestLength'); sb=sr.get('currentBestLength')
+              a_uns=ar.get('status')!='solved' or (ar.get('kTeams') or 0)==0
+              s_uns=sr.get('status')!='solved' or (sr.get('kTeams') or 0)==0
+              a_gain=(ab-len(moves)) if isinstance(ab,int) else None
+              s_gain=(sb-len(stable)) if isinstance(sb,int) else None
+              a_win=a_uns or (isinstance(a_gain,int) and a_gain>0)
+              s_win=s_uns or (isinstance(s_gain,int) and s_gain>0)
+              if not (a_win or s_win): continue
+              priority=(1000000 if a_uns or s_uns else 0) + max(a_gain or 0,s_gain or 0) + (a_gain or 0) + (s_gain or 0)
+              candidates.append({
+                  'cid':cid,'moves':moves,'sid':sid,'stable':stable,'atlas_distance':dist,
+                  'ac_live_best':ab,'ac_gain':a_gain,'ac_unsolved':a_uns,
+                  'stable_live_best':sb,'stable_gain':s_gain,'stable_unsolved':s_uns,
+                  'priority':priority,
+              })
+
+          # At most 250 AC source paths => at most 500 publishable AC+Stable rows in one batch.
+          candidates.sort(key=lambda x:(-x['priority'],x['cid']))
+          selected=candidates[:250]
+          out=Path('acc_competitive/atlas_stable_harvest_v1/atlas_live_strict_ac.txt')
+          out.write_text(''.join(f"{x['cid']}: {json.dumps(x['moves'],separators=(',',':'))}\n" for x in selected))
+          report={
+              'atlas_states':atlas_states,
+              'reconstructed_verified_ac_paths':len(reconstructed),
+              'live_strict_source_candidates':len(candidates),
+              'selected_source_candidates':len(selected),
+              'strict_rows_possible_pre_recheck':sum((x['ac_unsolved'] or (x['ac_gain'] or 0)>0) + (x['stable_unsolved'] or (x['stable_gain'] or 0)>0) for x in selected),
+              'top':[{
+                  k:x[k] for k in ('cid','sid','atlas_distance','ac_live_best','ac_gain','ac_unsolved','stable_live_best','stable_gain','stable_unsolved')
+              } for x in selected[:50]],
+          }
+          Path('acc_competitive/atlas_stable_harvest_v1/reconstruction_report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('ATLAS_STABLE_HARVEST_RECONSTRUCTION',json.dumps(report,sort_keys=True))
+          PY
+
+      - name: Pinned replay, double live recheck, quota gate, strict-only publication
+        if: ${{ hashFiles('acc_competitive/atlas_stable_harvest_v1/atlas_live_strict_ac.txt') != '' }}
+        run: |
+          set -euo pipefail
+          CAND=acc_competitive/atlas_stable_harvest_v1/atlas_live_strict_ac.txt
+          if [ ! -s "$CAND" ]; then
+            echo NO_ATLAS_DERIVED_STRICT_LIVE_GAPS
+            exit 0
+          fi
+          mkdir -p acc_competitive/atlas_stable_harvest_v1/publish
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc \
+            --glob "$CAND" \
+            --out-dir acc_competitive/atlas_stable_harvest_v1/publish \
+            --cycle 1 \
+            | tee acc_competitive/atlas_stable_harvest_v1/publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('acc_competitive/atlas_stable_harvest_v1/publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected')
+          print('ATLAS_STABLE_HARVEST_RESULT',json.dumps({
+              'used_pre':r.get('daily_submissions_used_pre'),
+              'remaining_pre':r.get('daily_submissions_remaining_pre'),
+              'selected_rows':r.get('selected_rows'),
+              'selected_ac':r.get('selected_ac'),
+              'selected_stable':r.get('selected_stable'),
+              'strict':r.get('selected_strict_improvements'),
+              'unsolved':r.get('selected_unsolved'),
+              'submission_id':r.get('submission_id'),
+              'terminal':r.get('terminal_status'),
+              'failed_rows':r.get('failed_rows'),
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-stable-harvest-v1
+          path: acc_competitive/atlas_stable_harvest_v1/
+          retention-days: 90
+          if-no-files-found: warn
