@@ -1,0 +1,29 @@
+name: Read LKC Playground Usage
+
+on:
+  push:
+    branches: [lkc-partition-stream-v6]
+    paths:
+      - '.github/workflows/lkc-playground-usage.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  read:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - name: Read playground usage
+        run: |
+          set -euo pipefail
+          curl -sS "$BASE/playground/usage"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Accept: application/json"             -H "User-Agent: curl/8.5.0"             > usage.json
+          cat usage.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-playground-usage
+          path: usage.json
