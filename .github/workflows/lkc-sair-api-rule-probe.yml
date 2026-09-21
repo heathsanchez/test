@@ -1,0 +1,32 @@
+name: LKC SAIR API rule metadata probe
+
+on:
+  push:
+    branches: [lkc-sair-api-submit-v1]
+    paths:
+      - '.github/workflows/lkc-sair-api-rule-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Read rule-related API metadata only
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          base="https://api.sair.foundation/api/public/v1"
+          curl -fsS "$base/competitions/lean-kernel-challenge"             -H "Authorization: Bearer $SAIR_API_KEY" > /tmp/c.json
+          curl -fsS "$base/competitions/lean-kernel-challenge/me"             -H "Authorization: Bearer $SAIR_API_KEY" > /tmp/p.json
+
+          echo "competition_top_keys="
+          jq -c '(.data // .) | keys' /tmp/c.json
+          echo "competition_rule_paths="
+          jq -c '(.data // .) as $d | [paths(scalars) as $p | select(($p|map(tostring)|join("."))|test("rule|ack|revision|workspace|problem|submission";"i")) | {path:($p|map(tostring)|join(".")), value:getpath($p)}]' /tmp/c.json
+          echo "participation_rule_paths="
+          jq -c '(.data // .) as $d | [paths(scalars) as $p | select(($p|map(tostring)|join("."))|test("rule|ack|revision|workspace|problem|submit";"i")) | {path:($p|map(tostring)|join(".")), value:getpath($p)}]' /tmp/p.json
