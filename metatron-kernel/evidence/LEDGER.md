@@ -127,3 +127,28 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   counter, and no same-cohort flash control count exists. Retired-instruction
   performance is therefore `UNKNOWN_NO_PMU_OR_CONTROL`; wall time is not a
   substitute and no promotion is claimed.
+
+## G3-001 — Opaque-hint delta at conversion mismatch
+
+- Status: OPEN; no semantic mechanism implemented.
+- Arena authority: `f5e1bce6e2dc9c60479b3001b76e01722b403799`;
+  exact tutorial case `good/006_betaReduction.ndjson`, SHA-256
+  `3320f6f67cd55b2bae9112ea9b0d002f231e88ec4fb3c3f3c8fd4e750b13ce78`.
+- Ordered result: cases 001–005 matched their expected exits. Case 006 should
+  ACCEPT but the baseline checker REJECTS, so execution stopped there.
+- Primary class: conversion. The expected type needs delta and beta through
+  the earlier `constType` definition, whose body was incorrectly made
+  semantically inaccessible because its exporter hint is `opaque`.
+- Deciding experiment: changing only that first hint to `regular` made the
+  unchanged checker ACCEPT. This falsifies an independent application or
+  dependent-instantiation failure for this fixture.
+- Least candidate capability: keep definition bodies semantically available;
+  let hints select cheap work, then permit guarded full-transparency delta only
+  after rigid comparison stalls. Cycles, budgets, and absent evidence retain
+  `UNKNOWN`.
+- Causal ablation: enabled versus disabled post-mismatch delta on identical
+  code and authority; only case 006 may change on the protected prefix.
+- Performance plan: official retired instructions on the identical ordered
+  tutorial prefix plus G2 cohort against pinned flash, same runner and build.
+  Missing PMU or control evidence remains UNKNOWN and cannot be replaced by
+  wall time.
