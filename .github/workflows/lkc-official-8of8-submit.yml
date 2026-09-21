@@ -1,0 +1,186 @@
+name: LKC Official 8-of-8 Submission Bundle
+
+on:
+  push:
+    branches: [lkc-official-8of8-submit-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+  API_BASE: https://api.sair.foundation/api/public/v1
+  COMPETITION_SLUG: lean-kernel-challenge
+
+jobs:
+  package:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download frozen qualification artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/lkc-artifacts official_submissions
+
+          fetch_artifact () {
+            local id="$1" name="$2"
+            gh api -H "Accept: application/vnd.github+json" \
+              "/repos/${GITHUB_REPOSITORY}/actions/artifacts/${id}/zip" > "/tmp/lkc-artifacts/${name}.zip"
+            mkdir -p "/tmp/lkc-artifacts/${name}"
+            unzip -q "/tmp/lkc-artifacts/${name}.zip" -d "/tmp/lkc-artifacts/${name}"
+          }
+
+          fetch_artifact 10477103555 rule110-v60
+          fetch_artifact 10545298267 fib-v2
+          fetch_artifact 10541049944 mertens-v6
+          fetch_artifact 10560307931 partition-v4
+          fetch_artifact 10561390523 polydisc-v3
+          fetch_artifact 10560594700 primecount-v3
+          fetch_artifact 10570424110 permanent-v5
+          fetch_artifact 10575835378 sha256-v23
+
+      - name: Materialize exact Submission.lean files
+        run: |
+          set -euo pipefail
+          install_one () {
+            local problem="$1" src="$2"
+            mkdir -p "official_submissions/${problem}"
+            cp "${src}" "official_submissions/${problem}/Submission.lean"
+          }
+
+          install_one ca-rule110 /tmp/lkc-artifacts/rule110-v60/experiments/lkc_rule110/generated/Submission_v60.lean
+          install_one fib /tmp/lkc-artifacts/fib-v2/experiments/lkc_fib/generated/Submission_v2.lean
+          install_one mertens /tmp/lkc-artifacts/mertens-v6/experiments/lkc_mertens/generated/Submission_v6.lean
+          install_one partition /tmp/lkc-artifacts/partition-v4/Submission_v4.lean
+          install_one polydisc /tmp/lkc-artifacts/polydisc-v3/experiments/lkc_polydisc/generated/Submission_v3.lean
+          install_one primecount /tmp/lkc-artifacts/primecount-v3/experiments/lkc_primecount/generated/Submission_v3.lean
+          install_one permanent /tmp/lkc-artifacts/permanent-v5/Submission_v5.lean
+          install_one sha256 /tmp/lkc-artifacts/sha256-v23/Submission_algebra_v21_proof.lean
+
+      - name: Verify frozen hashes, size limit, and build manifest
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+
+          expected = {
+            "ca-rule110": ["ba0074747e59c898d448bea8d0995dc8c9809ca857791db97ca3cb35c44909a9","lkc-rule110-v60-frozen","9ae9e5b1d0d77a04f8f31ef56a66934e3feeff68","V60"],
+            "fib": ["ecacca9af5c87a4ed66c573131ff9f542a8f5ab1b9b3f0e9a6753f1360dd6cde","lkc-fib-v2-frozen","9f637e976b587a1623d83be12a82522a35a95b6c","V2"],
+            "mertens": ["b9f57508d255d018209e66d1274a12fdff9a44d5b996bc39679de72e0d8f92c7","lkc-mertens-v6-frozen","df8824794cfb1cd2764fbde1ddfe54c07957b98e","V6"],
+            "partition": ["2a191971ed624b45342a8bdf325887b5c6553fe5ce67f97c719bb239cd2a08b0","lkc-partition-v4-frozen","b4e7004c56b0a788143f39e104d9d8b59d8a35b8","V4"],
+            "polydisc": ["8c029f22112ecd7fffd6c73f65ec499e7794dab26892a434c85fa63df6b7f6d0","lkc-polydisc-v3-frozen","3daeb833823d33febe379fca909c7363d8439331","V3"],
+            "primecount": ["9ac8ac20e740f1ffa7d4b8b55816a2f25e2e51331cbd5d0181304fc35178fffa","lkc-primecount-v3-frozen","45b2caf3da75be177e9571b4deff118b34f24c46","V3"],
+            "permanent": ["7901b6bcd8aa87a82322b4ee0e697c6c193c9354d4b04481be611b9bed40ce39","lkc-permanent-v5-frozen","3573e2c75d79c69344e032f154683d5fe63fe47f","V5"],
+            "sha256": ["07ba4769dc8fc218556890286947db89a19b6f8110b110d494c6e3b24e618204","lkc-sha256-v23-frozen","04f7a8042210b87ad360d29eba0248bfbaff1cf1","V23"],
+          }
+
+          manifest = {
+            "schema": "lkc-official-submission-bundle-v1",
+            "qckn_frozen_ref": "lkc-qckn-8of8-frozen",
+            "qckn_commit": "a2375b797fec337a9555470239f1e57fc7ed835e",
+            "rules_commit": "940f0a2ead23ef70ab1387edabb347e629111edd",
+            "official_pmu_measured": False,
+            "problems": {},
+          }
+
+          for problem, (want, branch, commit, version) in expected.items():
+              p = Path("official_submissions") / problem / "Submission.lean"
+              data = p.read_bytes()
+              digest = hashlib.sha256(data).hexdigest()
+              size = len(data)
+              assert digest == want, (problem, digest, want)
+              assert size <= 1024 * 1024, (problem, size)
+              manifest["problems"][problem] = {
+                  "version": version,
+                  "branch": branch,
+                  "commit": commit,
+                  "sha256": digest,
+                  "size_bytes": size,
+                  "path": str(p),
+              }
+
+          Path("official_submissions/manifest.json").write_text(
+              json.dumps(manifest, indent=2) + "\n"
+          )
+          print(json.dumps(manifest, indent=2))
+          PY
+
+      - name: Build user-uploadable bundle
+        run: |
+          set -euo pipefail
+          tar -czf lkc-official-8of8-submissions.tar.gz official_submissions
+          sha256sum lkc-official-8of8-submissions.tar.gz | tee lkc-official-8of8-submissions.tar.gz.sha256
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-official-8of8-submission-bundle
+          path: |
+            official_submissions/
+            lkc-official-8of8-submissions.tar.gz
+            lkc-official-8of8-submissions.tar.gz.sha256
+
+  qualify:
+    needs: package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    strategy:
+      fail-fast: false
+      matrix:
+        problem: [ca-rule110, fib, mertens, partition, polydisc, primecount, permanent, sha256]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lkc-official-8of8-submission-bundle
+          path: bundle
+
+      - name: Checkout exact official rules
+        run: |
+          set -euo pipefail
+          git clone https://github.com/SAIRcompetition/lean-kernel-challenge.git lkc
+          git -C lkc checkout "$RULES_COMMIT"
+          test "$(git -C lkc rev-parse HEAD)" = "$RULES_COMMIT"
+
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Official local canonical acceptance
+        run: |
+          set -euo pipefail
+          cd lkc
+          bash evaluation/setup.sh --problem "${{ matrix.problem }}"
+          python3 evaluation/run.py \
+            --problem "${{ matrix.problem }}" \
+            --submission "$GITHUB_WORKSPACE/bundle/official_submissions/${{ matrix.problem }}/Submission.lean" \
+            --timeout 900
+
+  api-probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Probe unauthenticated competition schema
+        run: |
+          set -euo pipefail
+          mkdir -p api-probe
+          code=$(curl -sS -o api-probe/competition.json -w '%{http_code}' \
+            "$API_BASE/competitions/$COMPETITION_SLUG" || true)
+          echo "http_status=$code" | tee api-probe/status.txt
+          if [ "$code" = "200" ]; then
+            jq '{slug, status, submissionSpec, capabilities, limits}' api-probe/competition.json > api-probe/schema-summary.json || true
+            cat api-probe/schema-summary.json || true
+          else
+            head -c 4000 api-probe/competition.json || true
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-sair-api-probe
+          path: api-probe/
