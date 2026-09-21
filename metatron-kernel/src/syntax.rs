@@ -54,7 +54,7 @@ pub enum Declaration {
         level_params: Vec<NameId>,
         ty: ExprId,
         value: ExprId,
-        reducible: bool,
+        preferred_for_reduction: bool,
     },
     Unsupported {
         tag: String,

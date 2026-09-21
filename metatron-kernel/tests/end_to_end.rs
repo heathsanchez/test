@@ -12,6 +12,15 @@ fn run_fixture(name: &str) -> Verdict {
     metatron_kernel::run(BufReader::new(File::open(path).unwrap()))
 }
 
+fn run_residual(name: &str) -> Verdict {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("evidence")
+        .join("residuals")
+        .join(name)
+        .join("fixture.ndjson");
+    metatron_kernel::run(BufReader::new(File::open(path).unwrap()))
+}
+
 #[test]
 fn sparse_name_axiom_is_accepted() {
     assert_eq!(run_fixture("sparse-name-index.ndjson"), Verdict::Accept);
@@ -46,4 +55,9 @@ fn beta_checked_definition_is_accepted() {
 #[test]
 fn definition_is_not_installed_before_its_value_is_checked() {
     assert_eq!(run_fixture("bad-self-proof.ndjson"), Verdict::Reject);
+}
+
+#[test]
+fn g3_001_opaque_hint_does_not_make_a_definition_semantically_inaccessible() {
+    assert_eq!(run_residual("G3-001"), Verdict::Accept);
 }

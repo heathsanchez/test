@@ -23,6 +23,7 @@ pub struct TypeChecker<'a> {
     levels: &'a IdTable<LevelId, Level>,
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
+    delta_policy: crate::convert::DeltaPolicy,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -36,6 +37,7 @@ impl<'a> TypeChecker<'a> {
             levels,
             environment,
             level_substitution: HashMap::new(),
+            delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
         }
     }
 
@@ -50,7 +52,13 @@ impl<'a> TypeChecker<'a> {
             levels,
             environment,
             level_substitution,
+            delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
         }
+    }
+
+    pub fn with_delta_policy(mut self, policy: crate::convert::DeltaPolicy) -> Self {
+        self.delta_policy = policy;
+        self
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
@@ -100,7 +108,17 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
-        crate::convert::convert(self, left, right, budget)
+        crate::convert::convert_with_policy(self, left, right, budget, self.delta_policy)
+    }
+
+    pub fn convert_with_policy(
+        &self,
+        left: &TypeValue,
+        right: &TypeValue,
+        budget: usize,
+        policy: crate::convert::DeltaPolicy,
+    ) -> Judgment<()> {
+        crate::convert::convert_with_policy(self, left, right, budget, policy)
     }
 
     fn infer_in(
