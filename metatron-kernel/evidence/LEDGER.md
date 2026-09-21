@@ -80,3 +80,19 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   remains eligible for a later session/memory residual.
 - Performance: official retired instructions remain unmeasured until the
   end-to-end Arena verdict layer qualifies.
+
+## G2-000 — Sequential Arena verdict boundary
+
+- Status: RETAINED
+- Arena authority: `f5e1bce6e2dc9c60479b3001b76e01722b403799`
+- Implementation: `d107a3eb1fdd9ac593b6a05cda1d5c7fbd8cc53d`
+- Obstruction: internal judgments were not composed into official process
+  verdicts or a monotone declaration session.
+- Least capability: check a declaration against current authority, extend only
+  after proof, and map proven/refuted/residual/malformed to exits 0/1/2/3.
+- Falsifier: accepting a self-proof, guessing an inductive, or producing any
+  wrong exit on the frozen six-case cohort.
+- Qualification: release tests passed; sparse/out-of-order and beta cases exit
+  0, unbound/self-proof cases exit 1, and unsupported inductive exits 2.
+- Performance: intentionally unmeasured here. Only Task 9's exact external
+  same-cohort retired-instruction run may promote performance claims.
