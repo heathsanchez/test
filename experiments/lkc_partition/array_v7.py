@@ -115,10 +115,11 @@ theorem array_getD_toList (xs : Array Nat) (i : Nat) :
     simp only [Array.getD, hi, dite_true]
     rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hil]
     simp only [Option.getD_some]
-    exact (Array.getElem_toList (xs := xs) (i := i)).symm
+    symm
+    exact Array.getElem_toList (xs := xs) (i := i) hil
   · have hil : ¬ i < xs.toList.length := by simpa using hi
     simp [Array.getD, hi, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_none.2 (Nat.le_of_not_gt hil)]
+      List.getElem?_eq_none (Nat.le_of_not_gt hil)]
 
 /--
 Build a row left-to-right in an Array.  Every cell reuses two indexed values:
@@ -176,7 +177,7 @@ def buildRowsArray : Nat → Nat → Array Nat
 theorem buildRowsArray_toList :
     ∀ k n, (buildRowsArray k n).toList = buildRows k n
   | 0, n => by
-      simp [buildRowsArray]
+      simp [buildRowsArray, buildRows]
   | k + 1, n => by
       simp only [buildRowsArray, buildRows]
       rw [nextRowArray_toList]
