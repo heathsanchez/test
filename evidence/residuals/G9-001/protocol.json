@@ -1,0 +1,19 @@
+{
+  "id": "G9-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "a24e66b58a0d5d7e8f9bce8139d3c92eef7220e5",
+    "fixture_sha256": "030852937308e66cb90de3b8de7cd336f3d825e81c87c5be5cc1fe33c6d54356",
+    "tutorial_ordinal": 36
+  },
+  "obstruction": "The exact empty-inductive block is preserved only as Unsupported, so neither its type nor its recursor can earn authority and the following definition returns UNKNOWN.",
+  "residual_class": "inductive types / recursor authority",
+  "observed": {"expected_exit": 0, "actual_exit": 2, "preceding_cases_matched": 35},
+  "least_candidate_capability": "Explicitly represent the zero-parameter, zero-index, zero-constructor nonrecursive inductive; derive and compare its unique empty eliminator claim before atomically installing opaque type and recursor signatures.",
+  "strongest_competing_explanation": "Treat the exported recursor as an axiom after checking only that its type is a type; this would extend authority without deriving the eliminator from the inductive declaration and is not an acceptable kernel rule.",
+  "falsifier": "Reject if exact case 036 and recursor-use case 062 do not ACCEPT, a name/type/all/k perturbation or fabricated extra recursor is accepted, block failure leaks partial authority, or earlier verdicts change.",
+  "causal_ablation": "Compare unsupported-block UNKNOWN with a narrowly gated empty-inductive validator; only the exact validated schema may install authority and change case 036.",
+  "protected_suite": ["all G0-G8 tests", "exact tutorial cases 001-030", "unsupported nonempty or indexed inductives remain UNKNOWN", "cycles and budgets remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions", "promotion_rule":"same-identity candidate and flash counters only"},
+  "decision": "OPEN_RESIDUAL_CONTRACT_AUDITED_NO_MECHANISM_IMPLEMENTED"
+}
