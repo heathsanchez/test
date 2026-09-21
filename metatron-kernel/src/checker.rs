@@ -406,12 +406,7 @@ fn check_two_bool_structure(
         return Err(Verdict::Reject);
     };
     if !valid_two_bool_recursor_metadata(export, inductive.name, recursor)
-        || !is_derived_two_bool_recursor_type(
-            export,
-            inductive.name,
-            constructor.name,
-            recursor,
-        )
+        || !is_derived_two_bool_recursor_type(export, inductive.name, constructor.name, recursor)
         || !is_derived_two_bool_rule(export, inductive.name, constructor.name, recursor)
     {
         return Err(Verdict::Reject);
@@ -442,12 +437,7 @@ fn is_root_name(export: &ResolvedExport, name: NameId, expected: &str) -> bool {
     )
 }
 
-fn is_child_name(
-    export: &ResolvedExport,
-    name: NameId,
-    parent: NameId,
-    expected: &str,
-) -> bool {
+fn is_child_name(export: &ResolvedExport, name: NameId, parent: NameId, expected: &str) -> bool {
     matches!(
         export.names.get(name),
         Some(Name::Str { prefix, value })
