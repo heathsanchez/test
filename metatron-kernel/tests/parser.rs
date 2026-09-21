@@ -57,9 +57,14 @@ fn preserves_unsupported_declaration_for_semantic_unknown() {
 }
 
 #[test]
-fn run_separates_malformed_input_from_unimplemented_semantics() {
+fn run_separates_malformed_input_from_supported_and_unimplemented_semantics() {
     let valid = include_bytes!("fixtures/sparse-name-index.ndjson");
-    assert_eq!(metatron_kernel::run(Cursor::new(valid)), Verdict::Unknown);
+    let unsupported = include_bytes!("fixtures/unsupported-inductive.ndjson");
+    assert_eq!(metatron_kernel::run(Cursor::new(valid)), Verdict::Accept);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(unsupported)),
+        Verdict::Unknown
+    );
     assert_eq!(
         metatron_kernel::run(Cursor::new(b"{not-json}\n")),
         Verdict::Error

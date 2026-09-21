@@ -69,6 +69,36 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    pub fn is_type(&self, expression: ExprId, budget: usize) -> Judgment<()> {
+        match self.infer(expression, budget) {
+            Judgment::Proven {
+                value: TypeValue::Sort(_),
+                ..
+            } => Judgment::proven((), "type-has-sort"),
+            Judgment::Proven {
+                value: TypeValue::Term(closure),
+                ..
+            } => match self
+                .machine()
+                .expose(closure, Transparency::Reducible, budget)
+            {
+                Judgment::Proven {
+                    value: Value::Sort(_),
+                    ..
+                } => Judgment::proven((), "type-reduces-to-sort"),
+                Judgment::Proven { .. } => Judgment::refuted("term-is-not-a-type"),
+                Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+                Judgment::Unknown { residual } => Judgment::Unknown { residual },
+            },
+            Judgment::Proven {
+                value: TypeValue::Pi { .. },
+                ..
+            } => Judgment::refuted("term-is-not-a-type"),
+            Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+            Judgment::Unknown { residual } => Judgment::Unknown { residual },
+        }
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert(self, left, right, budget)
     }
