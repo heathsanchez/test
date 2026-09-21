@@ -8,6 +8,8 @@ import re
 import subprocess
 import urllib.parse
 import zipfile
+import tarfile
+import io
 from pathlib import Path
 
 API_BASE = "https://api.sair.foundation/api/public/v1"
@@ -138,8 +140,28 @@ def main() -> None:
             package_dir.mkdir(parents=True, exist_ok=True)
             zip_path.write_bytes(blob)
 
-            with zipfile.ZipFile(zip_path) as zf:
-                names = safe_extract(zf, package_dir / "workspace")
+            workspace = package_dir / "workspace"
+            names = []
+            if zipfile.is_zipfile(zip_path):
+                with zipfile.ZipFile(zip_path) as zf:
+                    names = safe_extract(zf, workspace)
+            else:
+                try:
+                    with tarfile.open(fileobj=io.BytesIO(blob), mode="r:*") as tf:
+                        workspace.mkdir(parents=True, exist_ok=True)
+                        root = workspace.resolve()
+                        for member in tf.getmembers():
+                            target = (workspace / member.name).resolve()
+                            if root != target and root not in target.parents:
+                                raise RuntimeError(f"unsafe tar path: {member.name}")
+                        tf.extractall(workspace, filter="data")
+                        names = [m.name for m in tf.getmembers() if m.isfile()]
+                except tarfile.ReadError:
+                    workspace.mkdir(parents=True, exist_ok=True)
+                    raw_name = item.get("packageFilename") or "package.bin"
+                    raw_target = workspace / raw_name
+                    raw_target.write_bytes(blob)
+                    names = [raw_name]
 
             submissions = []
             for path in sorted((package_dir / "workspace").rglob("Submission.lean")):
