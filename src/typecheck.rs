@@ -1,0 +1,270 @@
+use std::collections::HashMap;
+
+use crate::environment::Environment;
+use crate::id::{ExprId, IdTable, LevelId, NameId};
+use crate::judgment::Judgment;
+use crate::level::{LevelTerm, imax, instantiate_level, succ};
+use crate::machine::{Machine, Transparency};
+use crate::syntax::{Expr, Level};
+use crate::value::{Closure, EnvFrame, Value};
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub enum TypeValue {
+    Sort(LevelTerm),
+    Term(Closure),
+    Pi {
+        domain: Box<TypeValue>,
+        body: Box<TypeValue>,
+    },
+}
+
+pub struct TypeChecker<'a> {
+    expressions: &'a IdTable<ExprId, Expr>,
+    levels: &'a IdTable<LevelId, Level>,
+    environment: &'a Environment,
+    level_substitution: HashMap<NameId, LevelTerm>,
+}
+
+impl<'a> TypeChecker<'a> {
+    pub fn new(
+        expressions: &'a IdTable<ExprId, Expr>,
+        levels: &'a IdTable<LevelId, Level>,
+        environment: &'a Environment,
+    ) -> Self {
+        Self {
+            expressions,
+            levels,
+            environment,
+            level_substitution: HashMap::new(),
+        }
+    }
+
+    pub fn with_level_substitution(
+        expressions: &'a IdTable<ExprId, Expr>,
+        levels: &'a IdTable<LevelId, Level>,
+        environment: &'a Environment,
+        level_substitution: HashMap<NameId, LevelTerm>,
+    ) -> Self {
+        Self {
+            expressions,
+            levels,
+            environment,
+            level_substitution,
+        }
+    }
+
+    pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
+        let mut remaining = budget;
+        self.infer_in(expression, &[], &EnvFrame::empty(), &mut remaining)
+    }
+
+    pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
+        let mut remaining = budget;
+        self.check_in(
+            expression,
+            expected,
+            &[],
+            &EnvFrame::empty(),
+            &mut remaining,
+        )
+    }
+
+    pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
+        crate::convert::convert(self, left, right, budget)
+    }
+
+    fn infer_in(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+    ) -> Judgment<TypeValue> {
+        if !take_step(remaining) {
+            return Judgment::unknown("type-inference-budget");
+        }
+        let Some(expression_node) = self.expressions.get(expression) else {
+            return Judgment::unknown("missing-expression-during-inference");
+        };
+        match expression_node {
+            Expr::BVar(index) => {
+                let Some(offset) = usize::try_from(*index).ok() else {
+                    return Judgment::refuted("unbound-bvar");
+                };
+                context
+                    .iter()
+                    .rev()
+                    .nth(offset)
+                    .cloned()
+                    .map(|value| Judgment::proven(value, "context-lookup"))
+                    .unwrap_or_else(|| Judgment::refuted("unbound-bvar"))
+            }
+            Expr::Sort(level) => match self.instantiate(*level, *remaining) {
+                Ok(level) => Judgment::proven(TypeValue::Sort(succ(level)), "sort-inference"),
+                Err(()) => Judgment::unknown("unresolved-sort-level"),
+            },
+            Expr::Const { name, levels } => {
+                let Some(declaration) = self.environment.get(*name) else {
+                    return Judgment::refuted("unknown-constant");
+                };
+                if !levels.is_empty() || !declaration.level_params.is_empty() {
+                    return Judgment::unknown("polymorphic-constant-instantiation");
+                }
+                Judgment::proven(
+                    TypeValue::Term(Closure::new(declaration.ty, EnvFrame::empty())),
+                    "constant-type",
+                )
+            }
+            Expr::Pi { domain, body } => {
+                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                let Some(domain_sort) = self.sort_level(domain_type, *remaining) else {
+                    return Judgment::unknown("pi-domain-sort");
+                };
+                let domain_value = TypeValue::Term(Closure::new(*domain, frame.clone()));
+                let mut extended = context.to_vec();
+                extended.push(domain_value);
+                let body_type = self.infer_in(*body, &extended, frame, remaining);
+                let Some(body_sort) = self.sort_level(body_type, *remaining) else {
+                    return Judgment::unknown("pi-body-sort");
+                };
+                Judgment::proven(
+                    TypeValue::Sort(imax(domain_sort, body_sort)),
+                    "pi-sort-inference",
+                )
+            }
+            Expr::Lam { domain, body } => {
+                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                if self.sort_level(domain_type, *remaining).is_none() {
+                    return Judgment::unknown("lambda-domain-sort");
+                }
+                let domain_type = TypeValue::Term(Closure::new(*domain, frame.clone()));
+                let mut extended = context.to_vec();
+                extended.push(domain_type.clone());
+                self.infer_in(*body, &extended, frame, remaining)
+                    .map(|body_type| TypeValue::Pi {
+                        domain: Box::new(domain_type),
+                        body: Box::new(body_type),
+                    })
+            }
+            Expr::App { fun, arg } => {
+                let function_type = self.infer_in(*fun, context, frame, remaining);
+                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    return Judgment::unknown("application-function-type");
+                };
+                match self.check_in(*arg, &domain, context, frame, remaining) {
+                    Judgment::Proven { .. } => Judgment::proven(
+                        match body {
+                            PiBody::Fixed(body) => body,
+                            PiBody::Closure(body) => TypeValue::Term(Closure::new(
+                                body.expr,
+                                body.env.extend(Closure::new(*arg, frame.clone())),
+                            )),
+                        },
+                        "application-type-instantiation",
+                    ),
+                    Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+                    Judgment::Unknown { residual } => Judgment::Unknown { residual },
+                }
+            }
+            Expr::Let { ty, value, body } => {
+                let annotation_type = self.infer_in(*ty, context, frame, remaining);
+                if self.sort_level(annotation_type, *remaining).is_none() {
+                    return Judgment::unknown("let-annotation-sort");
+                }
+                let established = TypeValue::Term(Closure::new(*ty, frame.clone()));
+                match self.check_in(*value, &established, context, frame, remaining) {
+                    Judgment::Proven { .. } => {}
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                }
+                let mut extended = context.to_vec();
+                extended.push(established);
+                let extended_frame = frame.extend(Closure::new(*value, frame.clone()));
+                self.infer_in(*body, &extended, &extended_frame, remaining)
+            }
+        }
+    }
+
+    fn check_in(
+        &self,
+        expression: ExprId,
+        expected: &TypeValue,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+    ) -> Judgment<()> {
+        let inferred = self.infer_in(expression, context, frame, remaining);
+        match inferred {
+            Judgment::Proven { value, .. } => self.convert(&value, expected, *remaining),
+            Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
+            Judgment::Unknown { residual } => Judgment::Unknown { residual },
+        }
+    }
+
+    fn sort_level(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<LevelTerm> {
+        let ty = ty.proven_value()?.clone();
+        match ty {
+            TypeValue::Sort(level) => Some(level),
+            TypeValue::Term(closure) => {
+                let machine = self.machine();
+                let exposed = machine.expose(closure, Transparency::Reducible, budget);
+                match exposed.proven_value()? {
+                    Value::Sort(level) => self.instantiate(*level, budget).ok(),
+                    Value::Pi { .. } | Value::Lam { .. } | Value::Neutral(_) => None,
+                }
+            }
+            TypeValue::Pi { .. } => None,
+        }
+    }
+
+    fn pi_view(&self, ty: Judgment<TypeValue>, budget: usize) -> Option<(TypeValue, PiBody)> {
+        let ty = ty.proven_value()?.clone();
+        match ty {
+            TypeValue::Pi { domain, body } => Some((*domain, PiBody::Fixed(*body))),
+            TypeValue::Term(closure) => {
+                let machine = self.machine();
+                let exposed = machine.expose(closure, Transparency::Reducible, budget);
+                match exposed.proven_value()? {
+                    Value::Pi { domain, body } => Some((
+                        TypeValue::Term(domain.clone()),
+                        PiBody::Closure(body.clone()),
+                    )),
+                    Value::Sort(_) | Value::Lam { .. } | Value::Neutral(_) => None,
+                }
+            }
+            TypeValue::Sort(_) => None,
+        }
+    }
+
+    pub(crate) fn machine(&self) -> Machine<'_> {
+        Machine::new(
+            self.environment.authority(),
+            self.expressions,
+            self.environment.definition_bodies(),
+        )
+    }
+
+    pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
+        instantiate_level(self.levels, level, &self.level_substitution, budget).map_err(|_| ())
+    }
+
+    pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
+        self.environment.authority()
+    }
+}
+
+enum PiBody {
+    Fixed(TypeValue),
+    Closure(Closure),
+}
+
+fn take_step(remaining: &mut usize) -> bool {
+    if *remaining == 0 {
+        false
+    } else {
+        *remaining -= 1;
+        true
+    }
+}

@@ -91,6 +91,7 @@ fn cyclic_delta_returns_unknown() {
         DefinitionBody {
             value: ExprId(0),
             reducible: true,
+            level_param_count: 0,
         },
     )]);
     let machine = Machine::new(AuthorityId(1), &exprs, definitions);
@@ -160,6 +161,7 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
         DefinitionBody {
             value: ExprId(0),
             reducible: true,
+            level_param_count: 0,
         },
     )]);
     let machine = Machine::new(AuthorityId(1), &exprs, definitions);
@@ -194,6 +196,39 @@ fn exhausted_reduction_budget_preserves_unknown() {
                 Closure::new(ExprId(0), EnvFrame::empty()),
                 Transparency::Reducible,
                 0,
+            )
+            .is_unknown()
+    );
+}
+
+#[test]
+fn polymorphic_delta_preserves_unknown_until_level_instantiation_is_explicit() {
+    let mut exprs = IdTable::default();
+    exprs
+        .insert(
+            ExprId(0),
+            Expr::Const {
+                name: NameId(5),
+                levels: vec![LevelId(0)],
+            },
+        )
+        .unwrap();
+    let definitions = HashMap::from([(
+        NameId(5),
+        DefinitionBody {
+            value: ExprId(0),
+            reducible: true,
+            level_param_count: 1,
+        },
+    )]);
+    let machine = Machine::new(AuthorityId(1), &exprs, definitions);
+
+    assert!(
+        machine
+            .expose(
+                Closure::new(ExprId(0), EnvFrame::empty()),
+                Transparency::Reducible,
+                8,
             )
             .is_unknown()
     );
