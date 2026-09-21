@@ -1,0 +1,140 @@
+name: ACC Atlas Fiber Holonomy V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-fiber-holonomy-v1.yml"
+      - "acc_competitive/atlas_fiber_holonomy_v1.py"
+      - "acc_competitive/atlas_fiber_depth5_exhausted_v1.json"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  qualify_publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned verifier, current Atlas, and fresh live authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p holonomy/input /tmp/atlas
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          test -n "$ATLAS"
+          cp "$ATLAS" holonomy/input/proof_atlas.sqlite
+
+          python3 - <<'PY'
+          import json, urllib.request
+          from pathlib import Path
+          cert=json.loads(Path('acc_competitive/atlas_fiber_depth5_exhausted_v1.json').read_text())
+          ids=[str(x) for x in cert.get('exact_depth5_residual_ids',[])]
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); items=d['items']
+          live={str(x.get('problemId') or x.get('challengeId')):x for x in items if x.get('problemId') or x.get('challengeId')}
+          keep=[]
+          for cid in ids:
+              row=live.get(cid,{})
+              if row.get('status')!='solved' or (row.get('kTeams') or 0)==0:
+                  keep.append(cid)
+          Path('holonomy/input/eligible_targets.json').write_text(json.dumps({'challenge_ids':keep},indent=2,sort_keys=True)+'\n')
+          Path('holonomy/input/snapshot_ac.json').write_text(json.dumps(o))
+          uns=sum(1 for x in items if x.get('status')!='solved' or (x.get('kTeams') or 0)==0)
+          print('LIVE_HOLONOMY_AUTHORITY',json.dumps({'ac_unsolved':uns,'certified_residual':len(ids),'eligible':len(keep)},sort_keys=True))
+          PY
+
+      - name: Search short quotient-null holonomy loops and multiple exact lifts
+        run: |
+          set -euo pipefail
+          mkdir -p holonomy/search
+          N="$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('holonomy/input/eligible_targets.json'))['challenge_ids']))
+          PY
+          )"
+          if [ "$N" = "0" ]; then
+            echo NO_LIVE_HOLONOMY_TARGETS
+            : > holonomy/search/candidates.txt
+            exit 0
+          fi
+          python3 acc_competitive/atlas_fiber_holonomy_v1.py \
+            --acc-root /tmp/acc \
+            --atlas holonomy/input/proof_atlas.sqlite \
+            --targets-json holonomy/input/eligible_targets.json \
+            --out-dir holonomy/search \
+            --quotient-depth 5 --holonomy-radius 4 --alts-per-checkpoint 12 --tail-depth 2 \
+            | tee holonomy/search.log
+
+      - name: Pinned official-verifier replay for every candidate
+        run: |
+          set -euo pipefail
+          mkdir -p holonomy/verified
+          if [ ! -s holonomy/search/candidates.txt ]; then
+            echo NO_HOLONOMY_CANDIDATES
+            : > holonomy/verified/fortified_ac.txt
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob 'holonomy/search/candidates.txt' \
+            --out-dir holonomy/verified --prior-atlas holonomy/input/proof_atlas.sqlite \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee holonomy/verify.log
+
+      - name: Fresh live strict-only quota gate and publication
+        run: |
+          set -euo pipefail
+          mkdir -p holonomy/publish
+          if [ ! -s holonomy/verified/fortified_ac.txt ]; then
+            echo NO_PINNED_VERIFIER_CLEAN_CANDIDATES_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc --glob 'holonomy/verified/fortified_ac.txt' \
+            --out-dir holonomy/publish --cycle 1 \
+            | tee holonomy/publish.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('holonomy/publish/report.json').read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0):
+              raise SystemExit('noncompetitive row selected')
+          print('HOLONOMY_STRICT_RESULT',json.dumps({
+              'used_pre':r.get('daily_submissions_used_pre'),'remaining_pre':r.get('daily_submissions_remaining_pre'),
+              'selected_rows':r.get('selected_rows'),'strict':r.get('selected_strict_improvements'),
+              'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status')
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-fiber-holonomy-v1
+          path: holonomy/
+          retention-days: 90
+          if-no-files-found: warn
