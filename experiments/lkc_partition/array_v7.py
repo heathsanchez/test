@@ -118,8 +118,7 @@ theorem array_getD_toList (xs : Array Nat) (i : Nat) :
     symm
     exact Array.getElem_toList (xs := xs) (i := i) hil
   · have hil : ¬ i < xs.toList.length := by simpa using hi
-    simp [Array.getD, hi, List.getD_eq_getElem?_getD,
-      List.getElem?_eq_none (Nat.le_of_not_gt hil)]
+    simp [Array.getD, hi, List.getD_eq_getElem?_getD]
 
 /--
 Build a row left-to-right in an Array.  Every cell reuses two indexed values:
