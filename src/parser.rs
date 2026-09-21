@@ -5,7 +5,10 @@ use std::io::BufRead;
 use serde_json::{Map, Value};
 
 use crate::id::{DuplicateId, ExprId, IdTable, LevelId, NameId};
-use crate::syntax::{Declaration, Expr, Level, Name};
+use crate::syntax::{
+    Constructor, Declaration, Expr, InductiveBlock, InductiveType, Level, Name, Recursor,
+    RecursorRule,
+};
 
 #[derive(Clone, Debug)]
 pub struct Meta {
@@ -202,6 +205,10 @@ fn parse_record(export: &mut ParsedExport, value: Value, line: usize) -> Result<
         export.declarations.push(parse_theorem(value, line)?);
         return Ok(());
     }
+    if let Some(value) = object.get("inductive") {
+        export.declarations.push(parse_inductive(value, line)?);
+        return Ok(());
+    }
     if object.len() != 1 {
         return Err(malformed(line, "unknown structural record"));
     }
@@ -369,6 +376,75 @@ fn parse_theorem(value: &Value, line: usize) -> Result<Declaration, ParseError> 
     })
 }
 
+fn parse_inductive(value: &Value, line: usize) -> Result<Declaration, ParseError> {
+    let types = nested_array(value, "types", line)?
+        .iter()
+        .map(|item| {
+            Ok(InductiveType {
+                all: name_ids(item, "all", line)?,
+                constructors: name_ids(item, "ctors", line)?,
+                is_recursive: nested_bool(item, "isRec", line)?,
+                is_reflexive: nested_bool(item, "isReflexive", line)?,
+                is_unsafe: nested_bool(item, "isUnsafe", line)?,
+                level_params: name_ids(item, "levelParams", line)?,
+                name: NameId(nested_number(item, "name", line)?),
+                num_indices: nested_number(item, "numIndices", line)?,
+                num_nested: nested_number(item, "numNested", line)?,
+                num_params: nested_number(item, "numParams", line)?,
+                ty: ExprId(nested_number(item, "type", line)?),
+            })
+        })
+        .collect::<Result<Vec<_>, ParseError>>()?;
+    let constructors = nested_array(value, "ctors", line)?
+        .iter()
+        .map(|item| {
+            Ok(Constructor {
+                index: nested_number(item, "cidx", line)?,
+                inductive: NameId(nested_number(item, "induct", line)?),
+                is_unsafe: nested_bool(item, "isUnsafe", line)?,
+                level_params: name_ids(item, "levelParams", line)?,
+                name: NameId(nested_number(item, "name", line)?),
+                num_fields: nested_number(item, "numFields", line)?,
+                num_params: nested_number(item, "numParams", line)?,
+                ty: ExprId(nested_number(item, "type", line)?),
+            })
+        })
+        .collect::<Result<Vec<_>, ParseError>>()?;
+    let recursors = nested_array(value, "recs", line)?
+        .iter()
+        .map(|item| {
+            let rules = nested_array(item, "rules", line)?
+                .iter()
+                .map(|rule| {
+                    Ok(RecursorRule {
+                        constructor: NameId(nested_number(rule, "ctor", line)?),
+                        num_fields: nested_number(rule, "nfields", line)?,
+                        rhs: ExprId(nested_number(rule, "rhs", line)?),
+                    })
+                })
+                .collect::<Result<Vec<_>, ParseError>>()?;
+            Ok(Recursor {
+                all: name_ids(item, "all", line)?,
+                is_unsafe: nested_bool(item, "isUnsafe", line)?,
+                k: nested_bool(item, "k", line)?,
+                level_params: name_ids(item, "levelParams", line)?,
+                name: NameId(nested_number(item, "name", line)?),
+                num_indices: nested_number(item, "numIndices", line)?,
+                num_minors: nested_number(item, "numMinors", line)?,
+                num_motives: nested_number(item, "numMotives", line)?,
+                num_params: nested_number(item, "numParams", line)?,
+                rules,
+                ty: ExprId(nested_number(item, "type", line)?),
+            })
+        })
+        .collect::<Result<Vec<_>, ParseError>>()?;
+    Ok(Declaration::Inductive(InductiveBlock {
+        types,
+        constructors,
+        recursors,
+    }))
+}
+
 fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
     match expr {
         Expr::BVar(_) => Ok(()),
@@ -422,6 +498,7 @@ fn resolve_declaration(export: &ParsedExport, declaration: &Declaration) -> Resu
             ty,
             value,
         } => (*name, level_params, all, &[*ty, *value]),
+        Declaration::Inductive(block) => return resolve_inductive(export, block),
         Declaration::Unsupported { .. } => return Ok(()),
     };
     require_name(&export.names, name)?;
@@ -433,6 +510,48 @@ fn resolve_declaration(export: &ParsedExport, declaration: &Declaration) -> Resu
     }
     for expression in expressions {
         require_expr(&export.exprs, *expression)?;
+    }
+    Ok(())
+}
+
+fn resolve_inductive(export: &ParsedExport, block: &InductiveBlock) -> Result<(), ParseError> {
+    for inductive in &block.types {
+        require_name(&export.names, inductive.name)?;
+        for name in inductive
+            .all
+            .iter()
+            .chain(&inductive.constructors)
+            .chain(&inductive.level_params)
+        {
+            require_name(&export.names, *name)?;
+        }
+        require_expr(&export.exprs, inductive.ty)?;
+    }
+    for constructor in &block.constructors {
+        for name in constructor
+            .level_params
+            .iter()
+            .chain(std::iter::once(&constructor.inductive))
+            .chain(std::iter::once(&constructor.name))
+        {
+            require_name(&export.names, *name)?;
+        }
+        require_expr(&export.exprs, constructor.ty)?;
+    }
+    for recursor in &block.recursors {
+        for name in recursor
+            .all
+            .iter()
+            .chain(&recursor.level_params)
+            .chain(std::iter::once(&recursor.name))
+        {
+            require_name(&export.names, *name)?;
+        }
+        require_expr(&export.exprs, recursor.ty)?;
+        for rule in &recursor.rules {
+            require_name(&export.names, rule.constructor)?;
+            require_expr(&export.exprs, rule.rhs)?;
+        }
     }
     Ok(())
 }
@@ -478,6 +597,28 @@ fn nested_string<'a>(value: &'a Value, key: &str, line: usize) -> Result<&'a str
         .get(key)
         .and_then(Value::as_str)
         .ok_or_else(|| malformed(line, &format!("{key} must be a string")))
+}
+
+fn nested_bool(value: &Value, key: &str, line: usize) -> Result<bool, ParseError> {
+    value
+        .get(key)
+        .and_then(Value::as_bool)
+        .ok_or_else(|| malformed(line, &format!("{key} must be a boolean")))
+}
+
+fn nested_array<'a>(value: &'a Value, key: &str, line: usize) -> Result<&'a [Value], ParseError> {
+    value
+        .get(key)
+        .and_then(Value::as_array)
+        .map(Vec::as_slice)
+        .ok_or_else(|| malformed(line, &format!("{key} must be an array")))
+}
+
+fn name_ids(value: &Value, key: &str, line: usize) -> Result<Vec<NameId>, ParseError> {
+    Ok(nested_numbers(value, key, line)?
+        .into_iter()
+        .map(NameId)
+        .collect())
 }
 
 fn nested_numbers(value: &Value, key: &str, line: usize) -> Result<Vec<u64>, ParseError> {

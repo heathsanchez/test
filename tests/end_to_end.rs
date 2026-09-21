@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::io::BufReader;
+use std::io::Cursor;
 use std::path::PathBuf;
 
 use metatron_kernel::verdict::Verdict;
@@ -95,4 +96,30 @@ fn g7_001_duplicate_universe_parameters_are_rejected() {
 #[test]
 fn g8_001_imax_idempotence_decides_the_peano_type() {
     assert_eq!(run_residual("G8-001"), Verdict::Accept);
+}
+
+#[test]
+fn g9_001_derived_empty_inductive_authority_is_accepted() {
+    assert_eq!(run_residual("G9-001"), Verdict::Accept);
+}
+
+#[test]
+fn derived_empty_recursor_is_available_as_an_opaque_constant() {
+    assert_eq!(run_fixture("good-empty-recursor.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn fabricated_extra_and_orphan_recursors_are_rejected() {
+    assert_eq!(run_fixture("bad-extra-recursor.ndjson"), Verdict::Reject);
+    assert_eq!(run_fixture("bad-orphan-recursor.ndjson"), Verdict::Reject);
+}
+
+#[test]
+fn empty_recursor_metadata_is_checked_not_trusted() {
+    let bytes = include_str!("../evidence/residuals/G9-001/fixture.ndjson");
+    let perturbed = bytes.replacen("\"k\":false", "\"k\":true", 1);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(perturbed)),
+        Verdict::Reject
+    );
 }

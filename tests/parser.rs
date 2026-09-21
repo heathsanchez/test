@@ -51,9 +51,46 @@ fn preserves_unsupported_declaration_for_semantic_unknown() {
     let export = parse_fixture("unsupported-inductive.ndjson").unwrap();
     assert!(matches!(
         export.declarations.as_slice(),
-        [Declaration::Unsupported { tag }] if tag == "inductive"
+        [Declaration::Inductive(block)] if block.types.is_empty()
+            && block.constructors.is_empty()
+            && block.recursors.is_empty()
     ));
     export.resolve().unwrap();
+}
+
+#[test]
+fn parses_the_complete_empty_inductive_contract() {
+    let bytes = include_bytes!("../evidence/residuals/G9-001/fixture.ndjson");
+    let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+    let Declaration::Inductive(block) = &export.declarations[0] else {
+        panic!("expected explicit inductive block");
+    };
+    assert_eq!(block.types.len(), 1);
+    assert!(block.constructors.is_empty());
+    assert_eq!(block.recursors.len(), 1);
+    assert_eq!(block.types[0].name, NameId(1));
+    assert_eq!(block.recursors[0].name, NameId(2));
+    assert_eq!(block.recursors[0].all, vec![NameId(1)]);
+    assert_eq!(block.recursors[0].num_motives, 1);
+    assert!(!block.recursors[0].k);
+}
+
+#[test]
+fn missing_nested_inductive_type_reference_is_malformed() {
+    const MISSING_TYPE: &str = concat!(
+        "{\"meta\":{\"exporter\":{\"name\":\"handcrafted\",\"version\":\"0.1.0\"},",
+        "\"format\":{\"version\":\"3.1.0\"},\"lean\":{\"githash\":\"test\",\"version\":\"4.29.1\"}}}\n",
+        "{\"in\":1,\"str\":{\"pre\":0,\"str\":\"I\"}}\n",
+        "{\"inductive\":{\"types\":[{\"all\":[1],\"ctors\":[],\"isRec\":false,",
+        "\"isReflexive\":false,\"isUnsafe\":false,\"levelParams\":[],\"name\":1,",
+        "\"numIndices\":0,\"numNested\":0,\"numParams\":0,\"type\":99}],",
+        "\"ctors\":[],\"recs\":[]}}\n",
+    );
+    let error = parse(Cursor::new(MISSING_TYPE))
+        .unwrap()
+        .resolve()
+        .unwrap_err();
+    assert!(matches!(error, ParseError::MissingExpr(ExprId(99))));
 }
 
 #[test]

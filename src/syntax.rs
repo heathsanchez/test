@@ -63,7 +63,64 @@ pub enum Declaration {
         ty: ExprId,
         value: ExprId,
     },
+    Inductive(InductiveBlock),
     Unsupported {
         tag: String,
     },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InductiveBlock {
+    pub types: Vec<InductiveType>,
+    pub constructors: Vec<Constructor>,
+    pub recursors: Vec<Recursor>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct InductiveType {
+    pub all: Vec<NameId>,
+    pub constructors: Vec<NameId>,
+    pub is_recursive: bool,
+    pub is_reflexive: bool,
+    pub is_unsafe: bool,
+    pub level_params: Vec<NameId>,
+    pub name: NameId,
+    pub num_indices: u64,
+    pub num_nested: u64,
+    pub num_params: u64,
+    pub ty: ExprId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Constructor {
+    pub index: u64,
+    pub inductive: NameId,
+    pub is_unsafe: bool,
+    pub level_params: Vec<NameId>,
+    pub name: NameId,
+    pub num_fields: u64,
+    pub num_params: u64,
+    pub ty: ExprId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct Recursor {
+    pub all: Vec<NameId>,
+    pub is_unsafe: bool,
+    pub k: bool,
+    pub level_params: Vec<NameId>,
+    pub name: NameId,
+    pub num_indices: u64,
+    pub num_minors: u64,
+    pub num_motives: u64,
+    pub num_params: u64,
+    pub rules: Vec<RecursorRule>,
+    pub ty: ExprId,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RecursorRule {
+    pub constructor: NameId,
+    pub num_fields: u64,
+    pub rhs: ExprId,
 }

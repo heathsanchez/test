@@ -54,6 +54,12 @@ TUTORIAL_MANIFEST = (
     TutorialCase("028", Path("good/028_inferVar.ndjson"), 0, "2ed39c087f88481185d28085d7d2ba2f2985426da70062bfe4e6dd987af46110"),
     TutorialCase("029", Path("good/029_defEqLambda.ndjson"), 0, "7a28d11e2a035c2d0d97c75d5cb0bb12e16be1c5502b9975aa08775e1928ba92"),
     TutorialCase("030", Path("good/030_peano1.ndjson"), 0, "fe92f67341850f0c222c43cd99e9f17904cdb003654f394890f49df431ceaf7d"),
+    TutorialCase("031", Path("good/031_peano2.ndjson"), 0, "63c8aec3c8457d2f4e76476b1d503647fb58d998b0dc2176cacc5efd814586e0"),
+    TutorialCase("032", Path("good/032_peano3.ndjson"), 0, "e731f91828d3bb6186205233ba8ba94dd54bdf21e7b9a06e020f789be70ad55d"),
+    TutorialCase("033", Path("good/033_letType.ndjson"), 0, "1222e60968ee37505bbb4952811a9645af2307f2a85e7f3d2d6fa2a7f1d5e667"),
+    TutorialCase("034", Path("good/034_letTypeDep.ndjson"), 0, "eca16eea9573a481f232edfd0ff84a02ae208c1f379d967a56aec75f86fc7ca1"),
+    TutorialCase("035", Path("good/035_letRed.ndjson"), 0, "b3d5e6f1f6e45721973e4e7167fbe0a92abbdcd69f039112eac70ab25c028acc"),
+    TutorialCase("036", Path("good/036_empty.ndjson"), 0, "030852937308e66cb90de3b8de7cd336f3d825e81c87c5be5cc1fe33c6d54356"),
 )
 
 

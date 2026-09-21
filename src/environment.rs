@@ -48,6 +48,17 @@ impl ConstantDecl {
             preferred_for_reduction: false,
         }
     }
+
+    /// A checked inductive type contributes only its signature at runtime.
+    pub fn inductive_type(level_params: Vec<NameId>, ty: ExprId) -> Self {
+        Self::theorem(level_params, ty)
+    }
+
+    /// A checked recursor is opaque: its reduction rules require a separately
+    /// qualified iota mechanism and are not definition bodies.
+    pub fn recursor(level_params: Vec<NameId>, ty: ExprId) -> Self {
+        Self::theorem(level_params, ty)
+    }
 }
 
 #[derive(Clone, Debug)]
