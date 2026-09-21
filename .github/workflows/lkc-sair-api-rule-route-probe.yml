@@ -1,0 +1,43 @@
+name: LKC SAIR API rule route probe
+
+on:
+  push:
+    branches: [lkc-sair-api-submit-v1]
+    paths:
+      - '.github/workflows/lkc-sair-api-rule-route-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe read-only rule acknowledgement routes
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          base="https://api.sair.foundation/api/public/v1"
+          paths=(
+            "competitions/lean-kernel-challenge/rules"
+            "competitions/lean-kernel-challenge/rules/current"
+            "competitions/lean-kernel-challenge/rule-acknowledgement"
+            "competitions/lean-kernel-challenge/rules/acknowledgement"
+            "competitions/lean-kernel-challenge/rules/ack"
+            "competitions/lean-kernel-challenge/acknowledgements"
+            "competitions/lean-kernel-challenge/rule-ack"
+            "competitions/lean-kernel-challenge/me/rules"
+            "competitions/lean-kernel-challenge/me/rule-acknowledgement"
+          )
+          for p in "${paths[@]}"; do
+            code=$(curl -sS -o /tmp/r.json -w '%{http_code}'               "$base/$p" -H "Authorization: Bearer $SAIR_API_KEY")
+            printf '%s -> %s ' "$p" "$code"
+            if [ "$code" = "200" ]; then
+              jq -c '(.data // .) | if type=="object" then with_entries(select(.key|test("id|version|revision|ack|rule|title|status";"i"))) else . end' /tmp/r.json
+            else
+              jq -c '{code:(.code // .error.code // null),message:(.message // .error.message // null)}' /tmp/r.json 2>/dev/null || echo '{}'
+            fi
+          done
