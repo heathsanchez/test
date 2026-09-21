@@ -6,7 +6,7 @@ on:
     paths:
       - ".github/workflows/acc-live-authority-watchdog.yml"
   schedule:
-    - cron: "12 * * * *"
+    - cron: "37 * * * *"
   workflow_dispatch:
 
 permissions:
@@ -180,4 +180,4 @@ jobs:
             acc_live_state.json
           retention-days: 30
 
-# recovery touch: force current-revision snapshot after native schedule delivery stopped
+# shifted away from the prior schedule slot after repeated dropped native runs
