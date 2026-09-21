@@ -181,3 +181,20 @@ fn delta_requires_reducible_transparency_and_records_its_witness() {
     assert!(matches!(opaque.value, Value::Neutral(_)));
     assert!(!opaque.transitions.contains(&TransitionWitness::Delta));
 }
+
+#[test]
+fn exhausted_reduction_budget_preserves_unknown() {
+    let mut exprs = IdTable::default();
+    exprs.insert(ExprId(0), Expr::Sort(LevelId(0))).unwrap();
+    let machine = Machine::new(AuthorityId(0), &exprs, HashMap::new());
+
+    assert!(
+        machine
+            .expose(
+                Closure::new(ExprId(0), EnvFrame::empty()),
+                Transparency::Reducible,
+                0,
+            )
+            .is_unknown()
+    );
+}
