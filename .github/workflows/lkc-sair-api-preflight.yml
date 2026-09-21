@@ -1,0 +1,43 @@
+name: LKC SAIR API preflight
+
+on:
+  push:
+    branches: [lkc-sair-api-submit-v1]
+    paths:
+      - '.github/workflows/lkc-sair-api-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check configured SAIR key without exposing it
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          test -n "$SAIR_API_KEY" || { echo "SAIR_API_KEY_MISSING"; exit 2; }
+          base="https://api.sair.foundation/api/public/v1"
+
+          code=$(curl -sS -o /tmp/me.json -w '%{http_code}'             "$base/me" -H "Authorization: Bearer $SAIR_API_KEY")
+          echo "account_http=$code"
+          test "$code" = "200"
+
+          code=$(curl -sS -o /tmp/competition.json -w '%{http_code}'             "$base/competitions/lean-kernel-challenge"             -H "Authorization: Bearer $SAIR_API_KEY")
+          echo "competition_http=$code"
+          test "$code" = "200"
+
+          code=$(curl -sS -o /tmp/participation.json -w '%{http_code}'             "$base/competitions/lean-kernel-challenge/me"             -H "Authorization: Bearer $SAIR_API_KEY")
+          echo "participation_http=$code"
+          test "$code" = "200"
+
+          echo "competition_submission_spec="
+          jq -c '.data.submissionSpec // .submissionSpec // {}' /tmp/competition.json
+          echo "submission_eligibility="
+          jq -c '(.data // .) | {canSubmit,submitBlockedReason,role}' /tmp/participation.json
+          echo "api_scopes="
+          jq -c '(.data // .) | {scopes:(.scopes // .apiKey.scopes // null)}' /tmp/me.json
