@@ -28,7 +28,7 @@ jobs:
           set -euo pipefail
           test -n "$SAIR_API_KEY"
           python3 - <<'PY'
-          import json, os, urllib.request
+          import hashlib, json, os, urllib.request
           from datetime import datetime, timezone
 
           KEY=os.environ['SAIR_API_KEY']
@@ -134,12 +134,39 @@ jobs:
                   ]
               }
 
+          def lite(rows):
+              return {
+                  cid:{
+                      'status':row.get('status'),
+                      'currentBestLength':row.get('currentBestLength'),
+                      'kTeams':row.get('kTeams'),
+                  }
+                  for cid,row in sorted(rows.items())
+              }
+
+          now=datetime.now(timezone.utc).isoformat()
+          live_state={
+              'schema':'acc-live-row-state-v1',
+              'utc':now,
+              'ac':lite(ac),
+              'stable_ac':lite(sac),
+          }
+          state_bytes=(json.dumps(live_state,sort_keys=True,separators=(',',':'))+'\n').encode()
+          state_sha256=hashlib.sha256(state_bytes).hexdigest()
+          open('acc_live_state.json','wb').write(state_bytes)
+
           out={
-              'utc':datetime.now(timezone.utc).isoformat(),
+              'utc':now,
               'quota':{'used':used,'remaining':remaining,'limit':lim},
               'standing':{'unique':unique,'tied':tied,'lost':lost},
               'ac':census(ac),
               'stable_ac':census(sac),
+              'live_state':{
+                  'schema':'acc-live-row-state-v1',
+                  'sha256':state_sha256,
+                  'ac_rows':len(ac),
+                  'stable_ac_rows':len(sac),
+              },
           }
           print('ACC_LIVE_AUTHORITY',json.dumps(out,sort_keys=True))
           open('acc_live_authority.json','w').write(json.dumps(out,indent=2,sort_keys=True)+'\n')
@@ -148,5 +175,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: acc-live-authority-watchdog
-          path: acc_live_authority.json
+          path: |
+            acc_live_authority.json
+            acc_live_state.json
           retention-days: 30
