@@ -191,3 +191,29 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Falsifier: witness aliasing, any protected verdict drift, or loss of UNKNOWN
   at cycle/budget edges. Retired-instruction comparison remains planned under
   the same-identity measurement law.
+
+## G4-002 — Explicit semantic locals
+
+- Status: RETAINED at `d94bd1dc51ab93b476f4a738feab9e1f964ac79c`.
+- The first declaration of G4-001 changed from REJECT to proven when both open
+  bodies were extended with the same depth-indexed `FreeId`. A dedicated test
+  verifies that distinct `FreeId` values never alias.
+- The full fixture then returned UNKNOWN rather than ACCEPT, exposing a second
+  residual. This intermediate result is preserved rather than misreported as
+  full qualification.
+
+## G4-003 — Universe substitutions in closures
+
+- Status: RETAINED at `d94bd1dc51ab93b476f4a738feab9e1f964ac79c`;
+  performance UNKNOWN.
+- Obstruction: after shared binders proved the dependent identity, the final
+  declaration stopped at `pi-domain-sort` because occurrence-specific universe
+  arguments were discarded.
+- Least capability: immutable closure-local maps from declaration parameters
+  to `LevelTerm`; constant inference and delta construct them explicitly, and
+  evaluated sorts and neutral constants retain instantiated terms.
+- Qualification: exact G4-001 ACCEPTS, tutorial cases 001–008 match, all Rust
+  release tests and strict Clippy pass, and unresolved universe cases retain
+  UNKNOWN. No eager AST substitution or global universe assignment was added.
+- Retired-instruction counters and a same-cohort flash control remain absent,
+  so no performance promotion is claimed.
