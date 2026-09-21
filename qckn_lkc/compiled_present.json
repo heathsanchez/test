@@ -38,6 +38,15 @@
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     },
+    "permanent": {
+      "capability_id": "E-permanent-v5-promote",
+      "source_ledger_event": "E-permanent-v5-promote",
+      "branch": "lkc-permanent-v5-frozen",
+      "commit": "3573e2c75d79c69344e032f154683d5fe63fe47f",
+      "representation": "certified three-choice sparse transition evaluator with compact universal proof",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
     "polydisc": {
       "capability_id": "E-polydisc-v3-promote",
       "source_ledger_event": "E-polydisc-v3-promote",
@@ -53,6 +62,15 @@
       "branch": "lkc-primecount-v3-frozen",
       "commit": "45b2caf3da75be177e9571b4deff118b34f24c46",
       "representation": "Primecount V1 direct aggregate composed with Mertens-V6 explicit structural least-factor search",
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "official_pmu_measured": false
+    },
+    "sha256": {
+      "capability_id": "E-sha256-v23-promote",
+      "source_ledger_event": "E-sha256-v23-promote",
+      "branch": "lkc-sha256-v23-frozen",
+      "commit": "04f7a8042210b87ad360d29eba0248bfbaff1cf1",
+      "representation": "algebra-compressed streamed SHA evaluator with reduced masking, lower-operation Ch/Maj identities, compact Window schedule, and invariant iterator proof",
       "status": "VERIFIED_LOCAL_CHAMPION",
       "official_pmu_measured": false
     }
@@ -123,10 +141,7 @@
       "next_calibration": "E-mertens-structural-active"
     }
   ],
-  "active_transitions": [
-    "E-permanent-sparse-v4-r3-active",
-    "E-sha256-packed-generic-v5-r2-active"
-  ],
+  "active_transitions": [],
   "revoked": [
     "E-partition-table-revoke"
   ],

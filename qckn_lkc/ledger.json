@@ -1506,6 +1506,135 @@
         "dimension-16 resource clearance",
         "paired instruction evidence"
       ]
+    },
+    {
+      "id": "E-permanent-v5-promote",
+      "type": "PROMOTE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-r3-active"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-permanent-v5-frozen",
+        "commit": "3573e2c75d79c69344e032f154683d5fe63fe47f",
+        "representation": "certified three-choice sparse transition evaluator with compact universal proof"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom/restriction audit",
+        "canonical challenge acceptance",
+        "same-byte hash binding",
+        "paired resource measurement against protected champion",
+        "strict resource improvement with resource dominance"
+      ],
+      "evidence": {
+        "run_id": 35402745064,
+        "verify_job_id": 105785970072,
+        "instruction_job_id": 105786546165,
+        "source_sha256": "7901b6bcd8aa87a82322b4ee0e697c6c193c9354d4b04481be611b9bed40ce39",
+        "same_byte_bound": true,
+        "canonical_accepted": true,
+        "candidate_resource_cases_complete": "15/15",
+        "baseline_resource_cases_complete": "14/15",
+        "baseline_resource_memory_limit_case": 72835838140,
+        "comparable_callgrind_inputs": [
+          28064292647,
+          26230790088,
+          53794586207,
+          54079857374
+        ],
+        "comparable_baseline_callgrind_total_ir": 24801289662,
+        "comparable_candidate_callgrind_total_ir": 8832956580,
+        "comparable_reduction_pct": 64.3850916610451,
+        "callgrind_resource_dominance": {
+          "71077100717": "baseline timeout; candidate complete at 37070740600 Ir",
+          "72835838140": "baseline memory-limit; candidate complete at 60038964737 Ir"
+        },
+        "axioms": [
+          "propext",
+          "Classical.choice",
+          "Quot.sound"
+        ],
+        "official_pmu_measured": false
+      },
+      "compiled_consequence": "Exact three-choice support can replace width-scanning Permanent evaluation: V5 is universally proved, completes every 15-case resource probe, cuts comparable Callgrind by 64.39%, and crosses baseline timeout/memory boundaries."
+    },
+    {
+      "id": "E-permanent-sparse-v4-r3-resolved",
+      "type": "RESOLVE",
+      "target": "permanent",
+      "parents": [
+        "E-permanent-sparse-v4-r3-active",
+        "E-permanent-v5-promote"
+      ],
+      "status": "PROMOTED",
+      "evidence": {
+        "conclusion": "Permanent V5 closes the sparse-support frontier and supersedes V4 proof-packaging work."
+      }
+    },
+    {
+      "id": "E-sha256-v23-promote",
+      "type": "PROMOTE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-generic-v5-r2-active"
+      ],
+      "status": "VERIFIED_LOCAL_CHAMPION",
+      "candidate": {
+        "branch": "lkc-sha256-v23-frozen",
+        "commit": "04f7a8042210b87ad360d29eba0248bfbaff1cf1",
+        "representation": "algebra-compressed streamed SHA evaluator with reduced masking, lower-operation Ch/Maj identities, compact Window schedule, and invariant iterator proof"
+      },
+      "authority": [
+        "universal Lean proof",
+        "axiom/restriction audit",
+        "canonical challenge acceptance",
+        "same-byte hash binding",
+        "paired resource measurement against protected champion",
+        "strict resource improvement for local promotion"
+      ],
+      "evidence": {
+        "run_id": 35586840534,
+        "qualification_job_id": 106292043106,
+        "artifact_id": 10632719057,
+        "source_sha256": "07ba4769dc8fc218556890286947db89a19b6f8110b110d494c6e3b24e618204",
+        "same_byte_bound": true,
+        "canonical_accepted": true,
+        "candidate_resource_cases_complete": "6/6",
+        "baseline_resource_cases_complete": "4/6",
+        "baseline_resource_memory_limit_cases": [
+          2199121876686,
+          2199573357346
+        ],
+        "callgrind_inputs": [
+          18860801433,
+          138725260120
+        ],
+        "baseline_callgrind_total_ir": 6008482390,
+        "candidate_callgrind_total_ir": 4180675148,
+        "reduction_pct": 30.420447683129513,
+        "axioms": [
+          "propext",
+          "Classical.choice",
+          "Quot.sound"
+        ],
+        "official_pmu_measured": false
+      },
+      "compiled_consequence": "Algebraic compression plus streamed schedule and invariant proof crosses both 512-step baseline memory walls while reducing same-byte paired Callgrind by 30.42% on the measured cases."
+    },
+    {
+      "id": "E-sha256-packed-generic-v5-r2-resolved",
+      "type": "RESOLVE",
+      "target": "sha256",
+      "parents": [
+        "E-sha256-packed-generic-v5-r2-active",
+        "E-sha256-v23-promote"
+      ],
+      "status": "PROMOTED",
+      "evidence": {
+        "conclusion": "The packed-state frontier is superseded by the verified algebra-compressed V23 representation."
+      }
     }
   ]
 }
