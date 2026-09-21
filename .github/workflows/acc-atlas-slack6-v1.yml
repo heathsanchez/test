@@ -1,0 +1,142 @@
+name: ACC Atlas Slack6 V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-atlas-slack6-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  GH_TOKEN: ${{ github.token }}
+  SHARD_COUNT: "7"
+
+jobs:
+  qualify:
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0,1,2,3,4,5,6]
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SHARD_INDEX: ${{ matrix.shard }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Fetch pinned verifier, current Atlas, certified residual, and live authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          mkdir -p slack/input /tmp/atlas
+          AID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$AID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$AID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          ATLAS="$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          test -n "$ATLAS"
+          cp "$ATLAS" slack/input/proof_atlas.sqlite
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          cert=json.loads(Path('acc_competitive/atlas_fiber_shortest_dag_exhausted_v1.json').read_text())
+          rows=[{'challenge_id':x} for x in cert['combined_depth6_phase']['lb6_only_ids']]
+          if len(rows)!=28: raise SystemExit('unexpected slack residual count')
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as resp: snap=json.loads(resp.read().decode())
+          items=snap.get('data',snap)['items']
+          live={str(x.get('problemId') or x.get('challengeId')):x for x in items if x.get('problemId') or x.get('challengeId')}
+          eligible=[]
+          for r in rows:
+              x=live.get(r['challenge_id'],{})
+              if x.get('status')!='solved' or (x.get('kTeams') or 0)==0: eligible.append(r)
+          eligible.sort(key=lambda r:r['challenge_id'])
+          si=int(os.environ['SHARD_INDEX']); sc=int(os.environ['SHARD_COUNT'])
+          shard=[r for i,r in enumerate(eligible) if i % sc == si]
+          Path('slack/input/shard_rows.json').write_text(json.dumps(shard,indent=2,sort_keys=True)+'\n')
+          Path('slack/input/snapshot_ac.json').write_text(json.dumps(snap))
+          uns=sum(x.get('status')!='solved' or (x.get('kTeams') or 0)==0 for x in items)
+          print('SLACK6_AUTHORITY',json.dumps({'ac_unsolved':uns,'certified_residual':len(rows),'live_residual':len(eligible),'shard':si,'shard_count':sc,'shard_rows':len(shard),'ids':[r['challenge_id'] for r in shard]},sort_keys=True))
+          PY
+
+      - name: Exhaust exact six-move lifts with quotient slack
+        run: |
+          set -euo pipefail
+          mkdir -p "slack/out-$SHARD_INDEX"
+          if [ "$(python3 - <<'PY'
+          import json
+          print(len(json.load(open('slack/input/shard_rows.json'))))
+          PY
+          )" = "0" ]; then
+            echo NO_LIVE_SLACK6_TARGETS
+            : > "slack/out-$SHARD_INDEX/candidates.txt"
+            exit 0
+          fi
+          python3 acc_competitive/atlas_fiber_slack6_v1.py \
+            --acc-root /tmp/acc \
+            --atlas slack/input/proof_atlas.sqlite \
+            --rows slack/input/shard_rows.json \
+            --depth5-cert acc_competitive/atlas_fiber_depth5_exhausted_v1.json \
+            --shortest-dag-cert acc_competitive/atlas_fiber_shortest_dag_exhausted_v1.json \
+            --out-dir "slack/out-$SHARD_INDEX" --depth 6 \
+            | tee "slack/slack6-$SHARD_INDEX.log"
+
+      - name: Pinned official-verifier replay for every exact lift
+        run: |
+          set -euo pipefail
+          mkdir -p "slack/verified-$SHARD_INDEX"
+          CAND="slack/out-$SHARD_INDEX/candidates.txt"
+          if [ ! -s "$CAND" ]; then
+            echo NO_SLACK6_EXACT_LIFTS
+            : > "slack/verified-$SHARD_INDEX/fortified_ac.txt"
+            exit 0
+          fi
+          python3 acc_competitive/proof_atlas_fortify_v1.py \
+            --acc-root /tmp/acc --glob "$CAND" \
+            --out-dir "slack/verified-$SHARD_INDEX" --prior-atlas slack/input/proof_atlas.sqlite \
+            --reverse-depth 7 --reverse-cap 250000 \
+            | tee "slack/verify-$SHARD_INDEX.log"
+
+      - name: Fresh live strict-only quota gate and publication
+        run: |
+          set -euo pipefail
+          VERIFIED="slack/verified-$SHARD_INDEX/fortified_ac.txt"
+          mkdir -p "slack/publish-$SHARD_INDEX"
+          if [ ! -s "$VERIFIED" ]; then
+            echo NO_PINNED_VERIFIER_CLEAN_SLACK6_LIFTS_TO_PUBLISH
+            exit 0
+          fi
+          python3 andrews_curtis/continuous_aggregate_strict_v1.py \
+            --acc-root /tmp/acc --glob "$VERIFIED" \
+            --out-dir "slack/publish-$SHARD_INDEX" --cycle 1 \
+            | tee "slack/publish-$SHARD_INDEX.log"
+          export REPORT="slack/publish-$SHARD_INDEX/report.json"
+          python3 - <<'PY'
+          import json,os
+          from pathlib import Path
+          r=json.loads(Path(os.environ['REPORT']).read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit(f"unsafe quota state: {r.get('quota_reason')}")
+          if r.get('selected_scoring_ties',0): raise SystemExit('tie selected for publication')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0)+r.get('selected_unsolved',0): raise SystemExit('noncompetitive row selected')
+          print('SLACK6_STRICT_RESULT',json.dumps({'used_pre':r.get('daily_submissions_used_pre'),'remaining_pre':r.get('daily_submissions_remaining_pre'),'selected_rows':r.get('selected_rows'),'strict':r.get('selected_strict_improvements'),'unsolved':r.get('selected_unsolved'),'submission_id':r.get('submission_id'),'terminal':r.get('terminal_status')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-atlas-slack6-v1-shard-${{ matrix.shard }}
+          path: slack/
+          retention-days: 90
+          if-no-files-found: warn
