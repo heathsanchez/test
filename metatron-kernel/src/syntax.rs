@@ -1,6 +1,12 @@
 use crate::id::{ExprId, LevelId, NameId};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum Name {
+    Str { prefix: NameId, value: String },
+    Num { prefix: NameId, value: u64 },
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Level {
     Zero,
     Succ(LevelId),

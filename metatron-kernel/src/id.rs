@@ -97,4 +97,8 @@ impl<I: TableId, T> IdTable<I, T> {
     pub fn is_empty(&self) -> bool {
         self.entries.is_empty()
     }
+
+    pub fn values(&self) -> impl Iterator<Item = &T> {
+        self.entries.values()
+    }
 }
