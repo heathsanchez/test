@@ -54,6 +54,16 @@ jobs:
           test "$(sha256sum /tmp/lean-kernel-arena/tests/other/sparse-name-index.ndjson | cut -d' ' -f1)" = "3279c9c8ae24d5b3a8433ddee5d4a421c4e15e3cd84117fb4873d1284112b96d"
           test "$(sha256sum /tmp/lean-kernel-arena/tests/other/level-index-out-of-order.ndjson | cut -d' ' -f1)" = "7db8148079e2e8160a1a4c71258ad11b17ce18edfa84ab1e12eae937ec9538d1"
 
+      - name: Build pinned Arena tutorial cases
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
       - name: Run deterministic G2 qualification
         working-directory: metatron-kernel
         run: |
@@ -70,6 +80,24 @@ jobs:
           q=json.load(open('evidence-out/qualification.json'))
           assert q['qualified'] is True, q
           assert q['counts']=={'error':0,'incomplete':0,'incorrect':0,'matched':6}, q
+          PY
+
+      - name: Run exact tutorial qualification
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python scripts/qualify_tutorial.py \
+            --checker target/release/metatron-kernel \
+            --tutorial-output /tmp/lean-kernel-tutorial \
+            --candidate-sha "$GITHUB_SHA" \
+            --arena-sha "$ARENA_SHA" \
+            --output evidence-out/tutorial-qualification.json
+          python - <<'PY'
+          import json
+          q=json.load(open('evidence-out/tutorial-qualification.json'))
+          assert q['qualified'] is True, q
+          assert q['counts']=={'incorrect':0,'matched':11}, q
+          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1], q
           PY
 
       - name: Attempt same-cohort retired-instruction measurement
@@ -145,7 +173,7 @@ jobs:
           import json, os, pathlib
           root=pathlib.Path('evidence-out')
           out={
-            'schema':'metatron-kernel-genesis-g2-attestation-v1',
+            'schema':'metatron-kernel-genesis-g2-attestation-v2',
             'candidate_sha':os.environ['GITHUB_SHA'],
             'arena_sha':os.environ['ARENA_SHA'],
             'workflow_run':{
@@ -154,6 +182,7 @@ jobs:
               'url':f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
             },
             'qualification':json.loads((root/'qualification.json').read_text()),
+            'tutorial_qualification':json.loads((root/'tutorial-qualification.json').read_text()),
             'retired_instructions':json.loads((root/'instructions.json').read_text()),
           }
           (root/'attestation.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')

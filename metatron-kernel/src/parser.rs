@@ -198,6 +198,10 @@ fn parse_record(export: &mut ParsedExport, value: Value, line: usize) -> Result<
         export.declarations.push(parse_definition(value, line)?);
         return Ok(());
     }
+    if let Some(value) = object.get("thm") {
+        export.declarations.push(parse_theorem(value, line)?);
+        return Ok(());
+    }
     if object.len() != 1 {
         return Err(malformed(line, "unknown structural record"));
     }
@@ -349,6 +353,22 @@ fn parse_definition(value: &Value, line: usize) -> Result<Declaration, ParseErro
     })
 }
 
+fn parse_theorem(value: &Value, line: usize) -> Result<Declaration, ParseError> {
+    Ok(Declaration::Theorem {
+        all: nested_numbers(value, "all", line)?
+            .into_iter()
+            .map(NameId)
+            .collect(),
+        name: NameId(nested_number(value, "name", line)?),
+        level_params: nested_numbers(value, "levelParams", line)?
+            .into_iter()
+            .map(NameId)
+            .collect(),
+        ty: ExprId(nested_number(value, "type", line)?),
+        value: ExprId(nested_number(value, "value", line)?),
+    })
+}
+
 fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
     match expr {
         Expr::BVar(_) => Ok(()),
@@ -377,22 +397,37 @@ fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
 }
 
 fn resolve_declaration(export: &ParsedExport, declaration: &Declaration) -> Result<(), ParseError> {
-    let (name, level_params, expressions): (NameId, &[NameId], &[ExprId]) = match declaration {
+    let (name, level_params, referenced_names, expressions): (
+        NameId,
+        &[NameId],
+        &[NameId],
+        &[ExprId],
+    ) = match declaration {
         Declaration::Axiom {
             name,
             level_params,
             ty,
-        } => (*name, level_params, std::slice::from_ref(ty)),
+        } => (*name, level_params, &[], std::slice::from_ref(ty)),
         Declaration::Definition {
             name,
             level_params,
             ty,
             value,
             ..
-        } => (*name, level_params, &[*ty, *value]),
+        } => (*name, level_params, &[], &[*ty, *value]),
+        Declaration::Theorem {
+            all,
+            name,
+            level_params,
+            ty,
+            value,
+        } => (*name, level_params, all, &[*ty, *value]),
         Declaration::Unsupported { .. } => return Ok(()),
     };
     require_name(&export.names, name)?;
+    for referenced_name in referenced_names {
+        require_name(&export.names, *referenced_name)?;
+    }
     for parameter in level_params {
         require_name(&export.names, *parameter)?;
     }

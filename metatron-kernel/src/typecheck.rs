@@ -107,6 +107,14 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    /// Establish that `expression` itself inhabits `Prop` (`Sort 0`).
+    ///
+    /// This remains three-valued: unresolved universe equality or reduction
+    /// is not a refutation.
+    pub fn is_proposition(&self, expression: ExprId, budget: usize) -> Judgment<()> {
+        self.check(expression, &TypeValue::Sort(LevelTerm::Zero), budget)
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert_with_policy_at_depth(
             self,

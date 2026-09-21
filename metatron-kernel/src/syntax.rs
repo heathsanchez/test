@@ -56,6 +56,13 @@ pub enum Declaration {
         value: ExprId,
         preferred_for_reduction: bool,
     },
+    Theorem {
+        all: Vec<NameId>,
+        name: NameId,
+        level_params: Vec<NameId>,
+        ty: ExprId,
+        value: ExprId,
+    },
     Unsupported {
         tag: String,
     },
