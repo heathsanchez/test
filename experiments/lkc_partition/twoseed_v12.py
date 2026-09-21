@@ -489,13 +489,18 @@ theorem partAux_two (m : Nat) : partAux 2 m = m / 2 + 1 := by
     ((List.range (m / 2 + 1)).map
       (fun j => partAux 1 (m - j * 2))).foldl (· + ·) 0 =
       m / 2 + 1
+  have hones0 :
+      (List.range (m / 2 + 1)).map
+          (fun j => partAux 1 (m - j * 2)) =
+        List.replicate (List.range (m / 2 + 1)).length 1 := by
+    apply (List.map_eq_replicate_iff).2
+    intro j hj
+    exact partAux_one _
   have hones :
       (List.range (m / 2 + 1)).map
           (fun j => partAux 1 (m - j * 2)) =
         List.replicate (m / 2 + 1) 1 := by
-    apply (List.map_eq_replicate_iff).2
-    intro j hj
-    exact partAux_one _
+    simpa using hones0
   rw [hones, ← List.sum_eq_foldl_nat]
   simp
 
