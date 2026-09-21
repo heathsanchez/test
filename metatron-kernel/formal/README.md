@@ -45,15 +45,21 @@ The proof term is never stored in the installed declaration. Only a
   invariant whose one-signature extension rule has been established.
 - `promoted_signatures_are_opaque`: the promoted signatures have no delta body;
   iota, projections and eta require separately qualified rules.
+- `ParameterizedInductivePromotion.promote_preserves_environment_validity`:
+  a validated parameter telescope plus dependency-ordered opaque signatures
+  preserves environment validity under the existing one-signature extension
+  rule.
 
 ## Non-goals
 
 This skeleton does not derive positivity or recursor signatures, and it does
-not specify Lean's universe levels, definitional equality, reduction, iota,
+not specify concrete parameter-telescope typing, Lean's universe levels,
+definitional equality, reduction, iota,
 projections, eta, quotient primitives, proof irrelevance, elaboration, kernel
 serialization, or trust boundary. `TypeCorrect`, `SignatureValid`, and
 `EnvironmentValid` are abstract, so these files do not establish soundness of
-the Rust checker or of any whole checker.
+the Rust checker or of any whole checker. In particular, the parameterized
+promotion theorem is a portable environment law, not a Rust-refinement claim.
 
 ## Build
 

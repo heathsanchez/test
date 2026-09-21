@@ -313,3 +313,126 @@ fn shared_closed_inductive_engine_matches_sealed_g9_g10_g11_verdict_vector() {
         );
     }
 }
+
+fn run_g12_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G12-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
+#[test]
+fn g12_001_exact_and_authority_is_accepted() {
+    assert_eq!(run_residual("G12-001"), Verdict::Accept);
+}
+
+#[test]
+fn and_parameter_and_field_order_are_derived_not_trusted() {
+    let cases: &[&[(&str, &str)]] = &[
+        &[
+            (
+                "\"forallE\":{\"binderInfo\":\"default\",\"body\":9,\"name\":5,\"type\":3}",
+                "\"forallE\":{\"binderInfo\":\"default\",\"body\":9,\"name\":5,\"type\":14}",
+            ),
+            (
+                "\"forallE\":{\"binderInfo\":\"default\",\"body\":8,\"name\":6,\"type\":3}",
+                "\"forallE\":{\"binderInfo\":\"default\",\"body\":8,\"name\":6,\"type\":7}",
+            ),
+        ],
+        &[
+            (
+                "\"app\":{\"arg\":5,\"fn\":4},\"ie\":6",
+                "\"app\":{\"arg\":7,\"fn\":4},\"ie\":6",
+            ),
+            (
+                "\"app\":{\"arg\":7,\"fn\":6},\"ie\":8",
+                "\"app\":{\"arg\":5,\"fn\":6},\"ie\":8",
+            ),
+        ],
+        &[(
+            "\"numFields\":2,\"numParams\":2,\"type\":12",
+            "\"numFields\":1,\"numParams\":2,\"type\":12",
+        )],
+        &[(
+            "\"numFields\":2,\"numParams\":2,\"type\":12",
+            "\"numFields\":2,\"numParams\":2,\"type\":11",
+        )],
+    ];
+
+    for replacements in cases {
+        assert_eq!(run_g12_perturbations(replacements), Verdict::Reject);
+    }
+}
+
+#[test]
+fn and_recursor_rule_and_metadata_are_derived_not_trusted() {
+    let cases: &[(&str, &str)] = &[
+        ("\"types\":[{\"all\":[1]", "\"types\":[{\"all\":[]"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":1,\"induct\":1"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":0,\"induct\":4"),
+        (
+            "\"numMinors\":1,\"numMotives\":1",
+            "\"numMinors\":0,\"numMotives\":1",
+        ),
+        ("\"numParams\":2,\"rules\"", "\"numParams\":1,\"rules\""),
+        (
+            "\"ctor\":4,\"nfields\":2,\"rhs\":40",
+            "\"ctor\":1,\"nfields\":2,\"rhs\":40",
+        ),
+        (
+            "\"ctor\":4,\"nfields\":2,\"rhs\":40",
+            "\"ctor\":4,\"nfields\":1,\"rhs\":40",
+        ),
+        (
+            "\"ctor\":4,\"nfields\":2,\"rhs\":40",
+            "\"ctor\":4,\"nfields\":2,\"rhs\":39",
+        ),
+        ("\"name\":7,\"numIndices\":0", "\"name\":4,\"numIndices\":0"),
+        ("\"rules\":[{\"ctor\":4", "\"rules\":[{\"ctor\":1"),
+        ("\"type\":32}],\"types\"", "\"type\":31}],\"types\""),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g12_perturbations(&[(*from, *to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn and_broader_neighbors_preserve_unknown() {
+    let cases = [
+        (
+            "\"name\":1,\"numIndices\":0,\"numNested\":0",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0",
+        ),
+        (
+            "\"ctors\":[4],\"isRec\":false",
+            "\"ctors\":[4],\"isRec\":true",
+        ),
+        (
+            "\"types\":[{\"all\":[1],\"ctors\":[4],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[1],\"ctors\":[4],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+        (
+            "\"numIndices\":0,\"numNested\":0",
+            "\"numIndices\":0,\"numNested\":1",
+        ),
+        (
+            "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":2",
+            "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":3",
+        ),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g12_perturbations(&[(from, to)]), Verdict::Unknown);
+    }
+}
