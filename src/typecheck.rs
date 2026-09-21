@@ -6,7 +6,7 @@ use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
 use crate::machine::{Machine, Transparency};
 use crate::syntax::{Expr, Level};
-use crate::value::{Closure, EnvFrame, Value};
+use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, Value};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TypeValue {
@@ -108,7 +108,14 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
-        crate::convert::convert_with_policy(self, left, right, budget, self.delta_policy)
+        crate::convert::convert_with_policy_at_depth(
+            self,
+            left,
+            right,
+            budget,
+            self.delta_policy,
+            0,
+        )
     }
 
     pub fn convert_with_policy(
@@ -155,11 +162,22 @@ impl<'a> TypeChecker<'a> {
                 let Some(declaration) = self.environment.get(*name) else {
                     return Judgment::refuted("unknown-constant");
                 };
-                if !levels.is_empty() || !declaration.level_params.is_empty() {
-                    return Judgment::unknown("polymorphic-constant-instantiation");
+                if levels.len() != declaration.level_params.len() {
+                    return Judgment::refuted("constant-level-arity");
+                }
+                let mut substitution = Vec::with_capacity(levels.len());
+                for (parameter, level) in declaration.level_params.iter().zip(levels) {
+                    let Ok(level) = self.instantiate(*level, *remaining) else {
+                        return Judgment::unknown("polymorphic-constant-instantiation");
+                    };
+                    substitution.push((*parameter, level));
                 }
                 Judgment::proven(
-                    TypeValue::Term(Closure::new(declaration.ty, EnvFrame::empty())),
+                    TypeValue::Term(Closure::with_levels(
+                        declaration.ty,
+                        EnvFrame::empty(),
+                        LevelSubstitution::new(substitution),
+                    )),
                     "constant-type",
                 )
             }
@@ -168,10 +186,14 @@ impl<'a> TypeChecker<'a> {
                 let Some(domain_sort) = self.sort_level(domain_type, *remaining) else {
                     return Judgment::unknown("pi-domain-sort");
                 };
-                let domain_value = TypeValue::Term(Closure::new(*domain, frame.clone()));
+                let domain_value = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
                 extended.push(domain_value);
-                let body_type = self.infer_in(*body, &extended, frame, remaining);
+                let Some(free) = fresh_local(context.len()) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let body_frame = frame.extend_free(free);
+                let body_type = self.infer_in(*body, &extended, &body_frame, remaining);
                 let Some(body_sort) = self.sort_level(body_type, *remaining) else {
                     return Judgment::unknown("pi-body-sort");
                 };
@@ -185,10 +207,14 @@ impl<'a> TypeChecker<'a> {
                 if self.sort_level(domain_type, *remaining).is_none() {
                     return Judgment::unknown("lambda-domain-sort");
                 }
-                let domain_type = TypeValue::Term(Closure::new(*domain, frame.clone()));
+                let domain_type = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
                 extended.push(domain_type.clone());
-                self.infer_in(*body, &extended, frame, remaining)
+                let Some(free) = fresh_local(context.len()) else {
+                    return Judgment::unknown("binder-depth-overflow");
+                };
+                let body_frame = frame.extend_free(free);
+                self.infer_in(*body, &extended, &body_frame, remaining)
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
                         body: Box::new(body_type),
@@ -203,9 +229,10 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
                             PiBody::Fixed(body) => body,
-                            PiBody::Closure(body) => TypeValue::Term(Closure::new(
+                            PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
                                 body.expr,
-                                body.env.extend(Closure::new(*arg, frame.clone())),
+                                body.env.extend(self.closure(*arg, frame.clone())),
+                                body.levels,
                             )),
                         },
                         "application-type-instantiation",
@@ -219,7 +246,7 @@ impl<'a> TypeChecker<'a> {
                 if self.sort_level(annotation_type, *remaining).is_none() {
                     return Judgment::unknown("let-annotation-sort");
                 }
-                let established = TypeValue::Term(Closure::new(*ty, frame.clone()));
+                let established = TypeValue::Term(self.closure(*ty, frame.clone()));
                 match self.check_in(*value, &established, context, frame, remaining) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
@@ -229,7 +256,7 @@ impl<'a> TypeChecker<'a> {
                 }
                 let mut extended = context.to_vec();
                 extended.push(established);
-                let extended_frame = frame.extend(Closure::new(*value, frame.clone()));
+                let extended_frame = frame.extend(self.closure(*value, frame.clone()));
                 self.infer_in(*body, &extended, &extended_frame, remaining)
             }
         }
@@ -245,7 +272,14 @@ impl<'a> TypeChecker<'a> {
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
-            Judgment::Proven { value, .. } => self.convert(&value, expected, *remaining),
+            Judgment::Proven { value, .. } => crate::convert::convert_with_policy_at_depth(
+                self,
+                &value,
+                expected,
+                *remaining,
+                self.delta_policy,
+                context.len(),
+            ),
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
@@ -259,7 +293,7 @@ impl<'a> TypeChecker<'a> {
                 let machine = self.machine();
                 let exposed = machine.expose(closure, Transparency::Reducible, budget);
                 match exposed.proven_value()? {
-                    Value::Sort(level) => self.instantiate(*level, budget).ok(),
+                    Value::Sort(level) => Some(level.clone()),
                     Value::Pi { .. } | Value::Lam { .. } | Value::Neutral(_) => None,
                 }
             }
@@ -290,6 +324,7 @@ impl<'a> TypeChecker<'a> {
         Machine::new(
             self.environment.authority(),
             self.expressions,
+            self.levels,
             self.environment.definition_bodies(),
         )
     }
@@ -300,6 +335,16 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn authority(&self) -> crate::machine::AuthorityId {
         self.environment.authority()
+    }
+
+    pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
+        let mut entries: Vec<_> = self
+            .level_substitution
+            .iter()
+            .map(|(name, level)| (*name, level.clone()))
+            .collect();
+        entries.sort_by_key(|(name, _)| name.0);
+        Closure::with_levels(expr, env, LevelSubstitution::new(entries))
     }
 }
 
@@ -315,4 +360,8 @@ fn take_step(remaining: &mut usize) -> bool {
         *remaining -= 1;
         true
     }
+}
+
+fn fresh_local(depth: usize) -> Option<FreeId> {
+    u64::try_from(depth).ok().map(FreeId)
 }

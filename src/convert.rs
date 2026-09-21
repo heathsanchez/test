@@ -4,7 +4,7 @@ use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
 use crate::typecheck::{TypeChecker, TypeValue};
-use crate::value::{Neutral, NeutralHead, Value};
+use crate::value::{FreeId, Neutral, NeutralHead, Value};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DeltaPolicy {
@@ -40,14 +40,25 @@ pub fn convert_with_policy(
     budget: usize,
     delta_policy: DeltaPolicy,
 ) -> Judgment<()> {
+    convert_with_policy_at_depth(checker, left, right, budget, delta_policy, 0)
+}
+
+pub(crate) fn convert_with_policy_at_depth(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    initial_depth: usize,
+) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.fetch_add(1, Ordering::Relaxed);
 
     let mut remaining = budget;
-    let mut work = vec![(left.clone(), right.clone())];
+    let mut work = vec![(left.clone(), right.clone(), initial_depth)];
     let mut visited = HashSet::new();
 
-    while let Some((left, right)) = work.pop() {
+    while let Some((left, right, depth)) = work.pop() {
         if left == right {
             continue;
         }
@@ -79,8 +90,8 @@ pub fn convert_with_policy(
                     body: right_body,
                 },
             ) => {
-                work.push((*left_body, *right_body));
-                work.push((*left_domain, *right_domain));
+                work.push((*left_body, *right_body, depth.saturating_add(1)));
+                work.push((*left_domain, *right_domain, depth));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
@@ -91,7 +102,7 @@ pub fn convert_with_policy(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(checker, cheap_left, cheap_right, remaining, &mut work) {
+                match compare_values(cheap_left, cheap_right, remaining, depth, &mut work) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
@@ -103,7 +114,7 @@ pub fn convert_with_policy(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        match compare_values(checker, full_left, full_right, remaining, &mut work) {
+                        match compare_values(full_left, full_right, remaining, depth, &mut work) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
                                 return Judgment::Refuted { obstruction };
@@ -125,21 +136,21 @@ pub fn convert_with_policy(
                 let Some(exposed) = exposed.proven_value() else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                let exposed = if let Some(exposed) = value_as_type(checker, exposed, remaining) {
+                let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
                     exposed
                 } else if delta_policy == DeltaPolicy::GuardedSemanticFallback {
                     let full = machine.expose(term, Transparency::Full, remaining);
                     let Some(full) = full.proven_value() else {
                         return Judgment::unknown("full-conversion-exposure");
                     };
-                    let Some(full) = value_as_type(checker, full, remaining) else {
+                    let Some(full) = value_as_type(full, depth) else {
                         return Judgment::refuted("rigid-type-constructor-mismatch");
                     };
                     full
                 } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
-                work.push((exposed, other));
+                work.push((exposed, other, depth));
             }
             (TypeValue::Sort(_), TypeValue::Pi { .. })
             | (TypeValue::Pi { .. }, TypeValue::Sort(_)) => {
@@ -162,21 +173,19 @@ pub(crate) fn test_conversion_calls() -> u64 {
 }
 
 fn compare_values(
-    checker: &TypeChecker<'_>,
     left: &Value,
     right: &Value,
     budget: usize,
-    work: &mut Vec<(TypeValue, TypeValue)>,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
 ) -> Judgment<()> {
     match (left, right) {
         (Value::Sort(left), Value::Sort(right)) => {
-            let (Ok(left), Ok(right)) = (
-                checker.instantiate(*left, budget),
-                checker.instantiate(*right, budget),
-            ) else {
-                return Judgment::unknown("unresolved-conversion-level");
-            };
-            work.push((TypeValue::Sort(left), TypeValue::Sort(right)));
+            work.push((
+                TypeValue::Sort(left.clone()),
+                TypeValue::Sort(right.clone()),
+                depth,
+            ));
         }
         (
             Value::Pi {
@@ -198,17 +207,22 @@ fn compare_values(
                 body: right_body,
             },
         ) => {
+            let Some(free) = fresh_local(depth) else {
+                return Judgment::unknown("binder-depth-overflow");
+            };
             work.push((
-                TypeValue::Term(left_body.clone()),
-                TypeValue::Term(right_body.clone()),
+                TypeValue::Term(left_body.under_free(free)),
+                TypeValue::Term(right_body.under_free(free)),
+                depth.saturating_add(1),
             ));
             work.push((
                 TypeValue::Term(left_domain.clone()),
                 TypeValue::Term(right_domain.clone()),
+                depth,
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
+            match compare_neutral_heads(left, right, budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
@@ -219,6 +233,7 @@ fn compare_values(
                 (
                     TypeValue::Term(left.clone()),
                     TypeValue::Term(right.clone()),
+                    depth,
                 )
             }));
         }
@@ -227,12 +242,7 @@ fn compare_values(
     Judgment::proven((), "rigid-value-comparison")
 }
 
-fn compare_neutral_heads(
-    checker: &TypeChecker<'_>,
-    left: &Neutral,
-    right: &Neutral,
-    budget: usize,
-) -> Judgment<()> {
+fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judgment<()> {
     match (&left.head, &right.head) {
         (NeutralHead::Free(left), NeutralHead::Free(right)) if left == right => {
             Judgment::proven((), "same-free-variable")
@@ -248,13 +258,7 @@ fn compare_neutral_heads(
             },
         ) if left_name == right_name && left_levels.len() == right_levels.len() => {
             for (left, right) in left_levels.iter().zip(right_levels) {
-                let (Ok(left), Ok(right)) = (
-                    checker.instantiate(*left, budget),
-                    checker.instantiate(*right, budget),
-                ) else {
-                    return Judgment::unknown("unresolved-neutral-level");
-                };
-                match level_equal(left, right, budget) {
+                match level_equal(left.clone(), right.clone(), budget) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -268,16 +272,20 @@ fn compare_neutral_heads(
     }
 }
 
-fn value_as_type(checker: &TypeChecker<'_>, value: &Value, budget: usize) -> Option<TypeValue> {
+fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
     match value {
-        Value::Sort(level) => checker
-            .instantiate(*level, budget)
-            .ok()
-            .map(TypeValue::Sort),
-        Value::Pi { domain, body } => Some(TypeValue::Pi {
-            domain: Box::new(TypeValue::Term(domain.clone())),
-            body: Box::new(TypeValue::Term(body.clone())),
-        }),
+        Value::Sort(level) => Some(TypeValue::Sort(level.clone())),
+        Value::Pi { domain, body } => {
+            let free = fresh_local(depth)?;
+            Some(TypeValue::Pi {
+                domain: Box::new(TypeValue::Term(domain.clone())),
+                body: Box::new(TypeValue::Term(body.under_free(free))),
+            })
+        }
         Value::Lam { .. } | Value::Neutral(_) => None,
     }
+}
+
+fn fresh_local(depth: usize) -> Option<FreeId> {
+    u64::try_from(depth).ok().map(FreeId)
 }
