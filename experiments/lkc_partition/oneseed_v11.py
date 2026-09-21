@@ -405,6 +405,12 @@ theorem buildRows_getD :
 
 /-! V11: universally seed the complete part-size-1 row. -/
 
+theorem foldl_replicate_zero :
+    ∀ m, List.foldl (· + ·) 0 (List.replicate m 0) = 0
+  | 0 => rfl
+  | m + 1 => by
+      simp [List.replicate_succ, foldl_replicate_zero m]
+
 theorem partAux_one (m : Nat) : partAux 1 m = 1 := by
   unfold partAux
   simp only [Nat.zero_add, Nat.div_one, Nat.mul_one]
@@ -423,14 +429,8 @@ theorem partAux_one (m : Nat) : partAux 1 m = 1 := by
       (List.range m).map (fun j => partAux 0 (m - j)) =
         List.replicate m 0 := by
     simpa using hzero0
-  rw [hzero]
-  have hfold :
-      List.foldl (· + ·) 0 (List.replicate m 0) = 0 := by
-    induction m with
-    | zero => rfl
-    | succ m ih => simp [List.replicate_succ, ih]
-  rw [hfold]
-  rfl
+  rw [hzero, foldl_replicate_zero]
+  simp [partAux]
 
 def onesRow (n : Nat) : List Nat :=
   List.replicate (n + 1) 1
