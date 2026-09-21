@@ -57,3 +57,26 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   cycle detection.
 - Performance: closures avoid expression copying by construction; official
   retired instructions remain unmeasured until end-to-end qualification.
+
+## G1-003 — Bidirectional dependent core and relational conversion
+
+- Status: RETAINED
+- Arena authority: `f5e1bce6e2dc9c60479b3001b76e01722b403799`
+- Implementation: `6c5d8941e91181644addb4e760004065f3998ee0`
+- Obstruction: reduced terms still cannot earn a typing or conversion
+  judgment, especially for application and dependent Pi instantiation.
+- Least capability: syntax-directed inference plus a guarded worklist that
+  tries rigid identity before requesting WHNF transitions.
+- Falsifier: failure to instantiate a Pi body with its argument closure,
+  proving unequal supported sorts, or guessing at unresolved `imax`, cycles,
+  polymorphic delta, or budget exhaustion.
+- Qualification: seven inference tests, six conversion tests, the full
+  protected suite, and the exact Lean 4.29.1 dependent-core oracle passed.
+- Semantic boundary: monomorphic core declarations are implemented;
+  polymorphic delta remains `UNKNOWN` until explicit universe substitution is
+  represented in closures.
+- Cost boundary: environment extension currently clones a small `Rc`-backed
+  map. That is an implementation selection, not part of semantic identity, and
+  remains eligible for a later session/memory residual.
+- Performance: official retired instructions remain unmeasured until the
+  end-to-end Arena verdict layer qualifies.
