@@ -407,11 +407,11 @@ theorem buildRows_getD :
 
 theorem partAux_one (m : Nat) : partAux 1 m = 1 := by
   unfold partAux
-  simp only [Nat.div_one, Nat.mul_one]
+  simp only [Nat.zero_add, Nat.div_one, Nat.mul_one]
   rw [List.range_succ, List.map_append, List.foldl_append]
-  have hzero :
+  have hzero0 :
       (List.range m).map (fun j => partAux 0 (m - j)) =
-        List.replicate m 0 := by
+        List.replicate (List.range m).length 0 := by
     apply (List.map_eq_replicate_iff).2
     intro j hj
     have hjlt : j < m := by simpa using hj
@@ -419,6 +419,10 @@ theorem partAux_one (m : Nat) : partAux 1 m = 1 := by
     cases hsub : m - j with
     | zero => omega
     | succ t => rfl
+  have hzero :
+      (List.range m).map (fun j => partAux 0 (m - j)) =
+        List.replicate m 0 := by
+    simpa using hzero0
   rw [hzero]
   simp
 
@@ -466,8 +470,9 @@ theorem buildAboveOne_eq :
     ∀ r n, buildAboveOne r n = buildRowsSeeded (r + 1) n
   | 0, n => onesRow_eq_buildRowsSeeded_one n
   | r + 1, n => by
-      simp only [buildAboveOne, buildRowsSeeded]
+      simp only [buildAboveOne]
       rw [buildAboveOne_eq r n]
+      rfl
 
 def partitionOne : Nat → Nat
   | 0 => 1
@@ -481,7 +486,8 @@ def impl : Nat → Nat := partitionOne
 theorem impl_correct : ∀ n, impl n = partitionSpec n
   | 0 => rfl
   | n + 1 => by
-      unfold impl partitionOne partitionSpec
+      change (buildAboveOne n (n + 1)).getD (n + 1) 0 =
+        partAux (n + 1) (n + 1)
       rw [buildAboveOne_eq]
       rw [buildRowsSeeded_eq, buildRowsDirect_eq, buildRowsShift_eq]
       exact buildRows_getD (n + 1) (n + 1) (n + 1) (Nat.le_refl _)
