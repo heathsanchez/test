@@ -152,3 +152,23 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   tutorial prefix plus G2 cohort against pinned flash, same runner and build.
   Missing PMU or control evidence remains UNKNOWN and cannot be replaced by
   wall time.
+
+## G3-002 — Guarded semantic-delta experiment
+
+- Status: RETAINED for semantics at implementation
+  `6c61a895c8055a3da16ba2a38a716e4995b5c467`; no performance promotion.
+- Representation correction: `preferred_for_reduction` now records a cost
+  preference, while `Transparency::Full` expresses semantic availability.
+  The distinction is explicit in syntax, environment, and machine state.
+- Execution remains shallow: relational conversion first uses preferred
+  bodies, then requests full transparency only after a rigid mismatch. It does
+  not construct a global normal form or assume confluence or termination.
+- Exact ablation: `PreferredOnly` REJECTS G3-001; the guarded semantic fallback
+  ACCEPTS it. The same build matches tutorial cases 001–006 and the complete
+  protected Rust/Python suite.
+- UNKNOWN protection: nonpreferred full-transparency delta cycles and exhausted
+  budgets remain UNKNOWN; polymorphic delta remains unsupported rather than
+  guessed.
+- Performance: the local environment has no `perf` executable, so candidate
+  and flash retired-instruction totals are absent. Status is
+  `UNKNOWN_NO_COUNTERS`; semantic retention is not a performance claim.
