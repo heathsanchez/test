@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use metatron_kernel::id::{IdTable, LevelId, NameId};
-use metatron_kernel::level::{LevelTerm, imax, instantiate_level, level_equal, max, succ};
+use metatron_kernel::level::{
+    LevelError, LevelTerm, imax, instantiate_level, level_equal, max, succ,
+};
 use metatron_kernel::syntax::Level;
 
 #[test]
@@ -54,4 +56,25 @@ fn instantiation_expands_sparse_level_graph_with_explicit_substitution() {
 
     let instantiated = instantiate_level(&levels, LevelId(2), &substitution, 16).unwrap();
     assert_eq!(instantiated, succ(LevelTerm::param("u")));
+}
+
+#[test]
+fn instantiation_rejects_cycles_missing_parameters_and_exhausted_budget() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(1), Level::Succ(LevelId(1))).unwrap();
+    levels.insert(LevelId(2), Level::Param(NameId(9))).unwrap();
+    let substitution = HashMap::new();
+
+    assert_eq!(
+        instantiate_level(&levels, LevelId(1), &substitution, 8),
+        Err(LevelError::Cycle(LevelId(1)))
+    );
+    assert_eq!(
+        instantiate_level(&levels, LevelId(2), &substitution, 8),
+        Err(LevelError::MissingSubstitution(NameId(9)))
+    );
+    assert_eq!(
+        instantiate_level(&levels, LevelId(1), &substitution, 0),
+        Err(LevelError::BudgetExhausted)
+    );
 }
