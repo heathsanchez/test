@@ -99,7 +99,7 @@ jobs:
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
           assert q['counts']=={'incorrect':0,'matched':38}, q
-          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
+          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
           PY
 
       - name: Attempt same-cohort retired-instruction measurement
