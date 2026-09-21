@@ -37,6 +37,17 @@ impl ConstantDecl {
             preferred_for_reduction,
         }
     }
+
+    /// Compile a checked theorem to its shallow executable representative.
+    /// The proof body is deliberately absent, so it cannot become delta fuel.
+    pub fn theorem(level_params: Vec<NameId>, ty: ExprId) -> Self {
+        Self {
+            level_params,
+            ty,
+            value: None,
+            preferred_for_reduction: false,
+        }
+    }
 }
 
 #[derive(Clone, Debug)]

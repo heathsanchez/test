@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::{BufReader, Cursor};
 use std::path::PathBuf;
 
-use metatron_kernel::id::{LevelId, NameId};
+use metatron_kernel::id::{ExprId, LevelId, NameId};
 use metatron_kernel::parser::{ParseError, parse};
 use metatron_kernel::syntax::Declaration;
 use metatron_kernel::verdict::Verdict;
@@ -54,6 +54,56 @@ fn preserves_unsupported_declaration_for_semantic_unknown() {
         [Declaration::Unsupported { tag }] if tag == "inductive"
     ));
     export.resolve().unwrap();
+}
+
+#[test]
+fn parses_theorem_as_a_distinct_supported_declaration() {
+    let bytes = include_bytes!("../evidence/residuals/G6-001/fixture.ndjson");
+    let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+    assert!(matches!(
+        export.declarations.as_slice(),
+        [Declaration::Theorem {
+            all,
+            name: NameId(1),
+            level_params,
+            ty: ExprId(0),
+            value: ExprId(2),
+        }] if all == &[NameId(1)] && level_params.is_empty()
+    ));
+}
+
+#[test]
+fn missing_theorem_expression_reference_is_malformed() {
+    const MISSING_THEOREM_VALUE: &str = concat!(
+        "{\"meta\":{\"exporter\":{\"name\":\"handcrafted\",\"version\":\"0.1.0\"},",
+        "\"format\":{\"version\":\"3.1.0\"},\"lean\":{\"githash\":\"test\",\"version\":\"4.29.1\"}}}\n",
+        "{\"in\":1,\"str\":{\"pre\":0,\"str\":\"missingProof\"}}\n",
+        "{\"ie\":0,\"sort\":0}\n",
+        "{\"thm\":{\"all\":[1],\"levelParams\":[],\"name\":1,\"type\":0,\"value\":99}}\n",
+    );
+
+    let error = parse(Cursor::new(MISSING_THEOREM_VALUE))
+        .unwrap()
+        .resolve()
+        .unwrap_err();
+    assert!(matches!(error, ParseError::MissingExpr(ExprId(99))));
+}
+
+#[test]
+fn missing_theorem_all_name_reference_is_malformed() {
+    const MISSING_THEOREM_NAME: &str = concat!(
+        "{\"meta\":{\"exporter\":{\"name\":\"handcrafted\",\"version\":\"0.1.0\"},",
+        "\"format\":{\"version\":\"3.1.0\"},\"lean\":{\"githash\":\"test\",\"version\":\"4.29.1\"}}}\n",
+        "{\"in\":1,\"str\":{\"pre\":0,\"str\":\"theoremName\"}}\n",
+        "{\"ie\":0,\"sort\":0}\n",
+        "{\"thm\":{\"all\":[99],\"levelParams\":[],\"name\":1,\"type\":0,\"value\":0}}\n",
+    );
+
+    let error = parse(Cursor::new(MISSING_THEOREM_NAME))
+        .unwrap()
+        .resolve()
+        .unwrap_err();
+    assert!(matches!(error, ParseError::MissingName(NameId(99))));
 }
 
 #[test]

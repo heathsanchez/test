@@ -82,6 +82,33 @@ fn check_export_with_policy(
                     ConstantDecl::definition(level_params, ty, value, preferred_for_reduction),
                 )
             }
+            Declaration::Theorem {
+                all: _,
+                name,
+                level_params,
+                ty,
+                value,
+            } => {
+                let checker = TypeChecker::with_level_substitution(
+                    &export.exprs,
+                    &export.levels,
+                    &environment,
+                    parameter_substitution(&level_params),
+                )
+                .with_delta_policy(delta_policy);
+                if let Err(verdict) =
+                    verdict_boundary(checker.is_proposition(ty, limits.judgment_steps))
+                {
+                    return verdict;
+                }
+                let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
+                if let Err(verdict) =
+                    verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
+                {
+                    return verdict;
+                }
+                (name, ConstantDecl::theorem(level_params, ty))
+            }
             Declaration::Unsupported { .. } => return Verdict::Unknown,
         };
 

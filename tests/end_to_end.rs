@@ -71,3 +71,18 @@ fn g4_001_dependent_bodies_are_related_under_a_shared_binder() {
 fn g5_001_rigid_nonsort_is_refuted_not_erased_to_unknown() {
     assert_eq!(run_residual("G5-001"), Verdict::Reject);
 }
+
+#[test]
+fn g6_001_non_propositional_theorem_is_rejected() {
+    assert_eq!(run_residual("G6-001"), Verdict::Reject);
+}
+
+#[test]
+fn valid_theorem_can_be_used_by_a_later_theorem() {
+    assert_eq!(run_fixture("good-theorem-use.ndjson"), Verdict::Accept);
+}
+
+#[test]
+fn theorem_is_not_installed_before_its_proof_is_checked() {
+    assert_eq!(run_fixture("bad-self-theorem.ndjson"), Verdict::Reject);
+}
