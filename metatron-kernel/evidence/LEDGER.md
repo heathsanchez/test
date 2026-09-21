@@ -239,8 +239,8 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G9-001 — Derived empty-inductive authority
 
-- Status: CANDIDATE RETAINED, pending exact-head CI.
-- Implementation: `ad5911b3de6c98cf867ffb3cce047bad8c9b4db1`.
+- Status: RETAINED by exact-head external qualification.
+- Qualifying head: `78a53e3ed6e4f6d5f741c4869ae098cfdcda31bd`.
 - Exact obstruction: tutorial 036, SHA-256
   `030852937308e66cb90de3b8de7cd336f3d825e81c87c5be5cc1fe33c6d54356`,
   returned `UNKNOWN` after cases 001–035 matched.
@@ -253,19 +253,80 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   nonempty `Bool` remain `UNKNOWN`; recursors have no delta/iota body.
 - Local qualification: release Rust suite, strict Clippy, Python tests, ledger
   validation, portable Lean skeleton, and exact tutorial prefix 001–036 pass.
-- Formal status: exact external certificate pending. A portable formal
+- External qualification: run `35653364302`, job `106510875913`, artifact
+  `10662982778`, digest
+  `sha256:c8fc2be20ec01c957005cdf7047500fab4f37f453f588629587e84ed63e087e4`;
+  tutorial 001–037 matched with zero incorrect.
+- Formal status: exact external certificate. A portable formal
   empty-inductive rule and Rust-to-spec refinement theorem do not yet exist.
 - Performance: `UNKNOWN_NO_PMU_OR_SAME_COHORT_CONTROL`; no wall-time claim.
 
 ## G10-001 — First nonempty inductive (`Bool`)
 
-- Status: OPEN; no mechanism selected.
+- Status: RETAINED at qualifying head
+  `78a53e3ed6e4f6d5f741c4869ae098cfdcda31bd`.
 - Exact obstruction: tutorial 037, SHA-256
   `02053d077abf5a63594d1025f9ef2f90dfff65f331503aa3b7486bbbb997b3e8`,
   should accept but remains `UNKNOWN` after the protected 001–036 prefix.
-- Required audit: constructor ownership/indexing and result shape, positivity,
-  recursor motive/minor structure, and exported equation claims.
+- Retained capability: derive both nullary constructor signatures, eliminator
+  signature, and exported rule bodies before atomically installing opaque
+  signatures. No iota behavior is installed.
+- Falsifiers: constructor-index and rule-RHS perturbations reject; the first
+  field-bearing structure remains `UNKNOWN`.
+- External qualification: the same run/job/artifact above directly replayed
+  tutorial 001–037 with zero incorrect.
 - Rejected shortcut: merely type-checking and installing constructors and
   recursors as axioms would grant unearned authority.
-- Next action: compare the smallest exact `Bool` validator against a reusable
-  positive-inductive rule only after freezing the relevant malformed cases.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_RETIRED_INSTRUCTIONS`.
+
+## G11-001 — Exact `TwoBool` structure
+
+- Status: RETAINED locally at source commit
+  `174ba4dc80b095308c9aed9286d5d871d6e8a4b1`; exact-head external
+  qualification of the new head remains pending.
+- Exact obstruction: tutorial 038, SHA-256
+  `91a1f7379e22ebbec710ce6b43b7e0750be258ace8fc22d0b889fb76b57010de`,
+  should accept but returns `UNKNOWN` after 001–037 match.
+- Retained capability: exactly one closed safe `TwoBool : Type`, one
+  nonrecursive `TwoBool.mk` constructor with two `Bool` fields, and the
+  independently derived `TwoBool.rec` signature and rule claim. The promoted
+  runtime authority is signature-only and opaque.
+- Falsifiers: constructor index/owner/field count/result, recursor identity,
+  minor count/type, rule owner/field count/body, and recursor type perturbations
+  reject; indexed, recursive, and unsafe neighboring shapes remain `UNKNOWN`;
+  a rejected block cannot partially extend authority.
+- Explicit exclusions: parameters, indices, recursion, nesting, mutuality,
+  unsafe declarations, iota, projections, and eta.
+- Local qualification: exact tutorial 001–038, all Rust/Python/ledger/Clippy
+  gates, and the portable Lean build pass.
+- Performance: diagnostic counters are recorded. Callgrind is unavailable in
+  the local environment and retired instructions remain
+  `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`; no promotion is claimed.
+
+## G9/G10/G11 shared closed-inductive promotion
+
+- Status: RETAINED locally at `871c8f76691a46694a05599f296c1f9a88bfd845`.
+- Family finding: the three retained handlers share one structural action after
+  their distinct exact classifiers derive claims: validate signatures in
+  dependency order and stage opaque type, constructor, and recursor authority.
+- Refactor: `ClosedNonrecursiveDerivation` performs that transaction. The exact
+  G9, G10, and named `TwoBool` gates remain outside it, so the accepted external
+  frontier is not broadened.
+- Causal equivalence: a sealed ten-case G9/G10/G11 vector preserves ACCEPT,
+  REJECT, and UNKNOWN outcomes, and the original semantic/structural rule order
+  is unchanged.
+- Formal warrant: `IdealLean.InductivePromotion.
+  promote_preserves_environment_validity` proves the generic sequential
+  promotion law, and `promoted_signatures_are_opaque` proves the installed
+  representatives have no body. The signature-validity premises are abstract;
+  this is not a Rust-refinement theorem and not whole-checker verification.
+
+## G12-001 — Parameterized `And`
+
+- Status: OPEN; deliberately not implemented.
+- Exact obstruction: tutorial 039 `good/039_andType.ndjson`, SHA-256
+  `d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1`,
+  expects ACCEPT and the sealed G11 checker returns `UNKNOWN`.
+- Boundary: this is the first parameterized inductive (`And` with two `Prop`
+  parameters). No parameter mechanism is selected until a deciding experiment
+  and falsifier are specified.

@@ -78,6 +78,8 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn is_type(&self, expression: ExprId, budget: usize) -> Judgment<()> {
+        #[cfg(feature = "diagnostics")]
+        crate::diagnostics::type_judgment();
         match self.infer(expression, budget) {
             Judgment::Proven {
                 value: TypeValue::Sort(_),

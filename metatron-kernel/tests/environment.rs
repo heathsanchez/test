@@ -27,3 +27,15 @@ fn recursor_signature_has_no_delta_or_iota_body() {
     assert!(declaration.value.is_none());
     assert!(!environment.definition_bodies().contains_key(&NameId(8)));
 }
+
+#[test]
+fn constructor_signature_has_no_delta_body() {
+    let environment = Environment::empty()
+        .extend(NameId(9), ConstantDecl::constructor(vec![], ExprId(13)))
+        .unwrap();
+
+    let declaration = environment.get(NameId(9)).unwrap();
+    assert_eq!(declaration.ty, ExprId(13));
+    assert!(declaration.value.is_none());
+    assert!(!environment.definition_bodies().contains_key(&NameId(9)));
+}

@@ -1,8 +1,8 @@
 # IdealLean portable semantics
 
 `IdealLean` is a small, provisional specification vocabulary for reasoning
-about theorem declaration and installation. It is intentionally independent of
-the Rust kernel APIs and is **not** a model of full Lean.
+about theorem declaration and opaque signature promotion. It is intentionally
+independent of the Rust kernel APIs and is **not** a model of full Lean.
 
 ## Scope and assumptions
 
@@ -40,13 +40,20 @@ The proof term is never stored in the installed declaration. Only a
   installation.
 - `checked_theorem_is_not_self_referential`: a fresh theorem cannot cite
   itself, because its proof is checked against the prior environment.
+- `promote_preserves_environment_validity`: inductive, constructor and recursor
+  signatures validated in dependency order preserve any environment-validity
+  invariant whose one-signature extension rule has been established.
+- `promoted_signatures_are_opaque`: the promoted signatures have no delta body;
+  iota, projections and eta require separately qualified rules.
 
 ## Non-goals
 
-This skeleton does not specify Lean's universe levels, definitional equality,
-reduction, inductive types, recursors, quotient primitives, proof irrelevance,
-elaboration, kernel serialization, or trust boundary. `TypeCorrect` is abstract,
-so these files do not establish soundness of any concrete type checker.
+This skeleton does not derive positivity or recursor signatures, and it does
+not specify Lean's universe levels, definitional equality, reduction, iota,
+projections, eta, quotient primitives, proof irrelevance, elaboration, kernel
+serialization, or trust boundary. `TypeCorrect`, `SignatureValid`, and
+`EnvironmentValid` are abstract, so these files do not establish soundness of
+the Rust checker or of any whole checker.
 
 ## Build
 
