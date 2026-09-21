@@ -32,6 +32,13 @@ fn imax_with_successor_right_is_max() {
 }
 
 #[test]
+fn imax_is_idempotent_without_parameter_case_enumeration() {
+    let u = LevelTerm::param("u");
+
+    assert!(level_equal(imax(u.clone(), u.clone()), u, 64).is_proven());
+}
+
+#[test]
 fn equality_over_26_parameters_does_not_enumerate_boolean_cases() {
     let ascending = ('a'..='z')
         .map(|name| LevelTerm::param(name.to_string()))

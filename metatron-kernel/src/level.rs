@@ -35,6 +35,9 @@ pub fn max(left: LevelTerm, right: LevelTerm) -> LevelTerm {
 }
 
 pub fn level_imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
+    if left == right {
+        return left;
+    }
     match right {
         LevelTerm::Zero => LevelTerm::Zero,
         right @ LevelTerm::Succ(_) => max(left, right),
