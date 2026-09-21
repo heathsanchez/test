@@ -49,17 +49,23 @@ The proof term is never stored in the installed declaration. Only a
   a validated parameter telescope plus dependency-ordered opaque signatures
   preserves environment validity under the existing one-signature extension
   rule.
+- `ProdUniversePromotion.promote_preserves_environment_validity`: the same
+  promotion law remains valid after validating the exact two-universe `Prod`
+  telescope, its computed result level, and signatures at those levels.
 
 ## Non-goals
 
 This skeleton does not derive positivity or recursor signatures, and it does
-not specify concrete parameter-telescope typing, Lean's universe levels,
+not specify general parameter-telescope typing or general Lean universe levels,
 definitional equality, reduction, iota,
 projections, eta, quotient primitives, proof irrelevance, elaboration, kernel
 serialization, or trust boundary. `TypeCorrect`, `SignatureValid`, and
 `EnvironmentValid` are abstract, so these files do not establish soundness of
 the Rust checker or of any whole checker. In particular, the parameterized
 promotion theorem is a portable environment law, not a Rust-refinement claim.
+The `ProdUniversePromotion.Level` vocabulary contains only the level forms
+forced by tutorial 040 and likewise does not constitute a general universe
+framework.
 
 ## Build
 

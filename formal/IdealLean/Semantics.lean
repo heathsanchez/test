@@ -320,4 +320,86 @@ theorem promote_preserves_environment_validity
     validated.signaturesValid priorValid
 
 end ParameterizedInductivePromotion
+
+/-! ## Exact `Prod` universe-telescope promotion
+
+This G13 layer records only the level expressions forced by tutorial 040:
+two universe variables, `Type u`, `Type v`, their computed `Type (max u v)`
+result, and a separate motive universe. It deliberately does not present a
+general universe language or a generic parameterized-inductive rule. -/
+
+namespace ProdUniversePromotion
+
+/-- The only symbolic levels required by the exact `Prod` experiment. -/
+inductive Level where
+  | first
+  | second
+  | motive
+  | succ : Level → Level
+  | max : Level → Level → Level
+  deriving DecidableEq, Repr
+
+def firstParameterSort : Level := .succ .first
+def secondParameterSort : Level := .succ .second
+def computedResultSort : Level := .max firstParameterSort secondParameterSort
+
+/-- A portable record of the exact two-universe telescope. The underlying
+term-parameter telescope is kept in the already-warranted G12 vocabulary. -/
+structure Telescope where
+  firstUniverse : DeclName
+  secondUniverse : DeclName
+  motiveUniverse : DeclName
+  parameters : ParameterizedInductivePromotion.Telescope
+  deriving DecidableEq, Repr
+
+/-- Universe validation and the existing parameterized validation are separate
+premises. `SignatureAtComputedLevels` is where a client states that the
+derived type, constructor, and recursor inhabit the level expressions above. -/
+structure Validated
+    (UniverseTelescopeValid : Environment → Telescope → Prop)
+    (TelescopeValid : Environment →
+      ParameterizedInductivePromotion.Telescope → Prop)
+    (SignatureAtComputedLevels : Telescope → Environment →
+      InductivePromotion.Signature → Prop)
+    (prior : Environment) (telescope : Telescope)
+    (signatures : List InductivePromotion.Signature)
+    (next : Environment) : Prop where
+  universeTelescopeValid : UniverseTelescopeValid prior telescope
+  parameterized : ParameterizedInductivePromotion.Validated
+    TelescopeValid
+    (fun _ environment signature =>
+      SignatureAtComputedLevels telescope environment signature)
+    prior telescope.parameters signatures next
+
+/-- The G12 opaque-promotion theorem remains valid after the exact G13
+universe telescope and computed-level obligations have been validated. This is
+a portable promotion law, not a refinement theorem for the Rust classifier. -/
+theorem promote_preserves_environment_validity
+    (EnvironmentValid : Environment → Prop)
+    (UniverseTelescopeValid : Environment → Telescope → Prop)
+    (TelescopeValid : Environment →
+      ParameterizedInductivePromotion.Telescope → Prop)
+    (SignatureAtComputedLevels : Telescope → Environment →
+      InductivePromotion.Signature → Prop)
+    (extendValid : ∀ environment signature,
+      EnvironmentValid environment →
+      UniverseTelescopeValid prior telescope →
+      TelescopeValid prior telescope.parameters →
+      SignatureAtComputedLevels telescope environment signature →
+      EnvironmentValid
+        (environment ++ [InductivePromotion.installedDeclaration signature]))
+    (validated : Validated UniverseTelescopeValid TelescopeValid
+      SignatureAtComputedLevels prior telescope signatures next)
+    (priorValid : EnvironmentValid prior) :
+    EnvironmentValid next := by
+  apply ParameterizedInductivePromotion.promote_preserves_environment_validity
+    EnvironmentValid TelescopeValid
+    (fun _ environment signature =>
+      SignatureAtComputedLevels telescope environment signature)
+    (fun environment signature environmentValid telescopeValid signatureValid =>
+      extendValid environment signature environmentValid
+        validated.universeTelescopeValid telescopeValid signatureValid)
+    validated.parameterized priorValid
+
+end ProdUniversePromotion
 end IdealLean

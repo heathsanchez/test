@@ -1,0 +1,23 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G14-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "G13 exact Prod candidate",
+    "fixture_sha256": "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a",
+    "tutorial_ordinal": 41,
+    "upstream_path": "tutorial output good/041_pprodType.ndjson"
+  },
+  "obstruction": "The first PProd declaration is outside the separate exact And and Prod classifiers.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "UNDECIDED: frozen for the G14 replication experiment; no shared parameterized-inductive abstraction has been promoted.",
+  "falsifier": "Must be specified before implementation.",
+  "protected_suite": [
+    "all G0-G13 tests",
+    "exact tutorial prefix 001-040",
+    "sealed G12 differential oracle",
+    "unsupported broader inductives remain UNKNOWN"
+  ],
+  "decision": "open"
+}
