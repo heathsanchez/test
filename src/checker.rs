@@ -36,6 +36,16 @@ fn check_export_with_policy(
     let mut environment = Environment::empty();
 
     for declaration in export.declarations {
+        let level_parameters = match &declaration {
+            Declaration::Axiom { level_params, .. }
+            | Declaration::Definition { level_params, .. }
+            | Declaration::Theorem { level_params, .. } => Some(level_params.as_slice()),
+            Declaration::Unsupported { .. } => None,
+        };
+        if level_parameters.is_some_and(has_duplicate_parameter) {
+            return Verdict::Reject;
+        }
+
         let (name, established) = match declaration {
             Declaration::Axiom {
                 name,
@@ -121,6 +131,13 @@ fn check_export_with_policy(
     Verdict::Accept
 }
 
+fn has_duplicate_parameter(parameters: &[NameId]) -> bool {
+    parameters
+        .iter()
+        .enumerate()
+        .any(|(index, parameter)| parameters[..index].contains(parameter))
+}
+
 fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
     parameters
         .iter()
@@ -143,6 +160,7 @@ mod tests {
     use super::{Limits, check_export, check_export_with_policy};
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
+    use crate::id::NameId;
     use crate::parser::parse;
     use crate::verdict::Verdict;
 
@@ -177,5 +195,17 @@ mod tests {
             ),
             Verdict::Accept,
         );
+    }
+
+    #[test]
+    fn universe_parameter_uniqueness_keeps_distinct_binders() {
+        assert!(!super::has_duplicate_parameter(&[]));
+        assert!(!super::has_duplicate_parameter(&[NameId(1), NameId(2)]));
+        assert!(super::has_duplicate_parameter(&[NameId(1), NameId(1)]));
+        assert!(super::has_duplicate_parameter(&[
+            NameId(1),
+            NameId(2),
+            NameId(1),
+        ]));
     }
 }

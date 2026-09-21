@@ -1,0 +1,19 @@
+{
+  "id": "G7-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "38c0b9909a89a9b5e67708d2985b4929f5056c91",
+    "fixture_sha256": "9c5c0329065ef0b470c7b43a365c30a0098697dbeb8d69f2c2bea2e345ab9533",
+    "tutorial_ordinal": 19
+  },
+  "obstruction": "A definition declaring the same universe parameter twice is accepted because parameter_substitution collapses duplicate keys in a HashMap.",
+  "residual_class": "declaration well-formedness",
+  "observed": {"expected_exit": 1, "actual_exit": 0, "preceding_cases_matched": 18},
+  "least_candidate_capability": "Establish pairwise uniqueness of declaration universe-parameter identities before any type/proof check or authority extension.",
+  "strongest_competing_explanation": "The duplicated parameter occurrences could be treated as one binder because their current substitution is extensionally identical; Lean's declaration well-formedness rejects duplicate binders before this quotient is permitted.",
+  "falsifier": "Reject if exact case 019 does not REJECT, distinct universe parameter lists regress, the declaration enters authority before rejection, or unresolved universe equality changes polarity.",
+  "causal_ablation": "The current HashMap construction accepts after collapsing duplicate parameters; the candidate uniqueness gate must reject the identical fixture before constructing that quotient.",
+  "protected_suite": ["all G0-G6 tests", "tutorial cases 001-018", "cycles and budgets remain UNKNOWN", "unsupported declarations remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions", "promotion_rule":"same-identity candidate and flash counters only"},
+  "decision": "OPEN_RESIDUAL_NO_MECHANISM_IMPLEMENTED"
+}
