@@ -173,30 +173,9 @@ fn check_inductive_with_installer(
     installer: ClosedInstaller,
 ) -> Result<Environment, Verdict> {
     match block.constructors.len() {
-        0 => check_empty_inductive(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-            installer,
-        ),
-        1 => check_two_bool_structure(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-            installer,
-        ),
-        2 => check_binary_enum(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-            installer,
-        ),
+        0 => check_empty_inductive(export, environment, block, limits, delta_policy, installer),
+        1 => check_two_bool_structure(export, environment, block, limits, delta_policy, installer),
+        2 => check_binary_enum(export, environment, block, limits, delta_policy, installer),
         _ => Err(Verdict::Unknown),
     }
 }
@@ -322,9 +301,7 @@ fn install_closed_nonrecursive_inductive_legacy(
             parameter_substitution(&constructor.level_params),
         )
         .with_delta_policy(delta_policy);
-        verdict_boundary(
-            constructor_checker.is_type(constructor.ty, limits.judgment_steps),
-        )?;
+        verdict_boundary(constructor_checker.is_type(constructor.ty, limits.judgment_steps))?;
         staged = staged
             .extend(
                 constructor.name,
