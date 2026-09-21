@@ -1,0 +1,31 @@
+name: LKC SAIR API schema probe
+
+on:
+  push:
+    branches: [lkc-sair-api-submit-v1]
+    paths:
+      - '.github/workflows/lkc-sair-api-schema-probe.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Probe lean-kernel-package validator with guaranteed-invalid payload
+        env:
+          SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          url="https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge/submissions"
+
+          code=$(curl -sS -o /tmp/error.json -w '%{http_code}' -X POST "$url"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Content-Type: application/json"             --data '{"payload":{}}')
+          echo "probe_http=$code"
+          # Only print error/schema information, never account/team identity.
+          jq -c '{ok,error:(.error // null),code:(.code // .error.code // null),message:(.message // .error.message // null),details:(.details // .error.details // null)}' /tmp/error.json
+          test "$code" != "200"
+          test "$code" != "201"
