@@ -1465,13 +1465,21 @@ fn is_rbtree_black_minor_type(
         return false;
     };
 
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
-    let (Some((left_ih_color, left_ih_height, left_ih_tree)), Some((right_ih_color, right_ih_height, right_ih_tree)), Some((result_color, result_height, result_tree))) = (
+    let (
+        Some((left_ih_color, left_ih_height, left_ih_tree)),
+        Some((right_ih_color, right_ih_height, right_ih_tree)),
+        Some((result_color, result_height, result_tree)),
+    ) = (
         motive_application_parts(export, *left_ih, 8),
         motive_application_parts(export, *right_ih, 9),
         motive_application_parts(export, *result, 10),
