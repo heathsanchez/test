@@ -153,6 +153,15 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G17-001 is the first independently earned indexed family. Route only
+    // the exact root Eq family before the global unearned-index boundary.
+    // Rule K metadata is validated here; Rule K reduction remains unimplemented.
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Eq")
+    {
+        return check_exact_eq(export, environment, block, limits, delta_policy);
+    }
+
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader
@@ -885,6 +894,392 @@ impl ExactBinaryProductDerivation<'_> {
         )?;
         Ok(derivation.finish())
     }
+}
+
+fn check_exact_eq(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 1
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 0
+        || constructor.num_params != 2
+        || constructor.level_params != [*level]
+        || !name_is_child_str(export, constructor.name, inductive.name, "refl")
+        || !is_exact_eq_type(export, inductive.ty, *level)
+        || !is_derived_eq_constructor_type(export, constructor.ty, inductive.name, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(constructor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    if !valid_eq_recursor_metadata(export, inductive.name, constructor.name, *level, recursor)
+        || !is_derived_eq_recursor_type(export, inductive.name, constructor.name, *level, recursor)
+        || !is_derived_eq_rule(export, inductive.name, constructor.name, *level, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some(Expr::Pi {
+        domain: alpha,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: parameter,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: index,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+
+    is_sort_parameter(export, *alpha, level)
+        && is_bvar(export, *parameter, 0)
+        && is_bvar(export, *index, 1)
+        && is_prop_sort(export, *result)
+}
+
+fn is_derived_eq_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: alpha,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: parameter,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+
+    is_sort_parameter(export, *alpha, level)
+        && is_bvar(export, *parameter, 0)
+        && is_eq_application(export, *result, inductive, level, 1, 0, 0)
+}
+
+fn valid_eq_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    recursor.all == [inductive]
+        && recursor.k
+        && matches!(
+            recursor.level_params.as_slice(),
+            [motive_level, inductive_level]
+                if motive_level != inductive_level && *inductive_level == level
+        )
+        && recursor.num_params == 2
+        && recursor.num_indices == 1
+        && recursor.num_motives == 1
+        && recursor.num_minors == 1
+        && matches!(
+            recursor.rules.as_slice(),
+            [rule] if rule.constructor == constructor && rule.num_fields == 0
+        )
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
+fn is_derived_eq_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: alpha,
+        body,
+    }) = export.exprs.get(recursor.ty)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: parameter,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: index,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: major,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+
+    is_sort_parameter(export, *alpha, level)
+        && is_bvar(export, *parameter, 0)
+        && is_eq_motive_type(export, *motive, inductive, level, recursor.level_params[0])
+        && is_eq_minor_type(export, *minor, constructor, level)
+        && is_bvar(export, *index, 3)
+        && is_eq_application(export, *major, inductive, level, 4, 3, 0)
+        && is_binary_bvar_application(export, *result, 3, 1, 0)
+}
+
+fn is_eq_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: index,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: equality,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+
+    is_bvar(export, *index, 1)
+        && is_eq_application(export, *equality, inductive, level, 2, 1, 0)
+        && is_sort_parameter(export, *result, motive_level)
+}
+
+fn is_eq_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+) -> bool {
+    let Some(Expr::App {
+        fun: motive_at_parameter,
+        arg: reflexivity,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: parameter,
+    }) = export.exprs.get(*motive_at_parameter)
+    else {
+        return false;
+    };
+
+    is_bvar(export, *motive, 0)
+        && is_bvar(export, *parameter, 1)
+        && is_eq_refl_application(export, *reflexivity, constructor, level, 2, 1)
+}
+
+fn is_derived_eq_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: alpha,
+        body,
+    }) = export.exprs.get(rule.rhs)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: parameter,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: minor,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+
+    is_sort_parameter(export, *alpha, level)
+        && is_bvar(export, *parameter, 0)
+        && is_eq_motive_type(
+            export,
+            *motive,
+            inductive,
+            level,
+            recursor.level_params[0],
+        )
+        && is_eq_minor_type(export, *minor, constructor, level)
+        && is_bvar(export, *result, 0)
+}
+
+fn is_eq_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    alpha: u64,
+    parameter: u64,
+    index: u64,
+) -> bool {
+    let Some(Expr::App {
+        fun,
+        arg: index_arg,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun,
+        arg: parameter_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: alpha_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+
+    is_unary_polymorphic_constant(export, *head, inductive, level)
+        && is_bvar(export, *alpha_arg, alpha)
+        && is_bvar(export, *parameter_arg, parameter)
+        && is_bvar(export, *index_arg, index)
+}
+
+fn is_eq_refl_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+    alpha: u64,
+    parameter: u64,
+) -> bool {
+    let Some(Expr::App {
+        fun,
+        arg: parameter_arg,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: alpha_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+
+    is_unary_polymorphic_constant(export, *head, constructor, level)
+        && is_bvar(export, *alpha_arg, alpha)
+        && is_bvar(export, *parameter_arg, parameter)
 }
 
 /// G12-001's complete external frontier: the built-in-shaped `And` declaration
