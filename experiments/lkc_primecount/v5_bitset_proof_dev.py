@@ -78,6 +78,43 @@ theorem clearMultiples_hits
           · rw [← ht]
             exact hi
 
+
+theorem clearMultiples_preserves_not_dvd
+    (fuel n p m bits i : Nat)
+    (hm : p ∣ m) (hi : ¬ p ∣ i) :
+    (clearMultiples fuel n p m bits).testBit i = bits.testBit i := by
+  induction fuel generalizing m bits with
+  | zero =>
+      rfl
+  | succ fuel ih =>
+      rw [clearMultiples]
+      by_cases hnm : n < m
+      · rw [if_pos hnm]
+      · rw [if_neg hnm]
+        rw [ih (m + p) (clearBitIfSet bits m)]
+        · rw [clearBitIfSet_testBit]
+          have hne : i ≠ m := by
+            intro h
+            subst i
+            exact hi hm
+          simp [hne]
+        · exact dvd_add hm (dvd_refl p)
+
+theorem composite_on_minFac_progression
+    (i : Nat) (hi : 0 < i) (hc : ¬ Nat.Prime i) :
+    ∃ k, i = i.minFac * i.minFac + k * i.minFac := by
+  let p := i.minFac
+  have hp : p ∣ i := Nat.minFac_dvd i
+  have hpq : p ≤ i / p := Nat.minFac_le_div hi hc
+  refine ⟨i / p - p, ?_⟩
+  have hmul : i / p * p = i := Nat.div_mul_cancel hp
+  have hsplit : p + (i / p - p) = i / p := by omega
+  calc
+    i = (i / p) * p := hmul.symm
+    _ = (p + (i / p - p)) * p := by rw [hsplit]
+    _ = p * p + (i / p - p) * p := by
+      rw [Nat.add_mul]
+
 theorem initialPrimeBits_testBit (n i : Nat) :
     ((((1 <<< (n + 1)) - 1) ^^^ 3).testBit i) =
       ((decide (i < n + 1)) ^^ ((3 : Nat).testBit i)) := by
