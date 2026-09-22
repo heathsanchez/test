@@ -70,7 +70,8 @@ theorem countOddStructural_eq (k : Nat) :
   induction k with
   | zero =>
       have h1 := primeCounting_succ_step 1
-      simp [countOddStructural, Nat.primeCounting_one] at h1 ⊢
+      have hp2 : Nat.Prime 2 := Nat.prime_two
+      simpa [countOddStructural, hp2] using h1.symm
   | succ k ih =>
       simp only [countOddStructural, ih, Nat.mul_succ]
       rw [show 2 * k + 2 + 1 = 2 * k + 3 by omega]
@@ -81,7 +82,10 @@ theorem countOddStructural_eq (k : Nat) :
 
 def impl (n : Nat) : Nat :=
   if n < 2 then 0
-  else countOddStructural ((n - 1) / 2)
+  else if n % 2 = 0 then
+    countOddStructural (n / 2 - 1)
+  else
+    countOddStructural (n / 2)
 
 theorem impl_correct : ∀ n, impl n = primeCountSpec n := by
   intro n
@@ -91,11 +95,13 @@ theorem impl_correct : ∀ n, impl n = primeCountSpec n := by
   · rw [if_pos hsmall]
     exact Nat.primeCounting_eq_zero_iff.mpr (by omega)
   · rw [if_neg hsmall]
-    rw [countOddStructural_eq]
+    have hdecomp := Nat.mod_add_div n 2
     rcases n.mod_two_eq_zero_or_one with heven | hodd
-    · have harg : 2 * ((n - 1) / 2) + 2 = n := by omega
+    · rw [if_pos heven, countOddStructural_eq]
+      have harg : 2 * (n / 2 - 1) + 2 = n := by omega
       rw [harg]
-    · have harg : 2 * ((n - 1) / 2) + 2 = n + 1 := by omega
+    · rw [if_neg (by omega : n % 2 ≠ 0), countOddStructural_eq]
+      have harg : 2 * (n / 2) + 2 = n + 1 := by omega
       rw [harg, primeCounting_succ_step n]
       have hnp : ¬ Nat.Prime (n + 1) := by
         intro hp
