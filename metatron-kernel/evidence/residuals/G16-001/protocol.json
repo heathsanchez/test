@@ -11,7 +11,7 @@
   },
   "obstruction": "The universe-polymorphic nullary singleton PUnit is outside all retained exact inductive classifiers.",
   "expected": "ACCEPT",
-  "observed": "UNKNOWN",
+  "observed": "ACCEPT",
   "preregistered_hypothesis": {
     "proposed_delta": [
       "nullary_singleton_constructor_shape",
@@ -30,5 +30,75 @@
     "Eq tutorial 043 remains UNKNOWN"
   ],
   "formal_plan": "Add no theorem merely for symmetry. Reuse the existing generic opaque-promotion environment-validity theorem if the PUnit-specific signature derivation is externally validated; no Rust refinement is claimed.",
-  "decision": "preregistered"
+  "decision": "retained",
+  "replication_result": {
+    "hypothesis_confirmed": true,
+    "observed_delta": [
+      "nullary_singleton_constructor_shape",
+      "single_level_sort_polymorphism"
+    ],
+    "promotion_mechanism_reused": true,
+    "unrelated_family_authority_gained": false
+  },
+  "qualification": {
+    "candidate_sha": "9c6c96e13fd1146f8355c2231d3ea2cdaa26f316",
+    "implementation_commit": "e1ce96e616c1146a0f3b7a12940f8a9594b16297",
+    "run_id": 35705215065,
+    "job_id": 106672384320,
+    "artifact_id": 10684042596,
+    "artifact_digest": "sha256:3b47d31f9c299a3c53e932ac2168d5ae54e23714fffdf8813fc9f688b9806fa6",
+    "protected_tests": {
+      "rust": 100,
+      "python": 14,
+      "clippy": "passed",
+      "formatting": "passed",
+      "ledger": "passed",
+      "ideal_lean": "passed"
+    },
+    "tutorial_prefix": {
+      "matched": 42,
+      "incorrect": 0
+    },
+    "differential": {
+      "oracle_sha": "c70e7a033b3660d3705f6566027f2b75e36cda2e",
+      "equal": 41,
+      "earned_delta": 1,
+      "mismatch": 0,
+      "earned_case": "042"
+    },
+    "future_closure": {
+      "changed_cases": [
+        42,
+        68
+      ],
+      "changes": [
+        {
+          "case": 42,
+          "path": "042_pUnitType.ndjson",
+          "from": "UNKNOWN",
+          "to": "ACCEPT",
+          "role": "earned capability"
+        },
+        {
+          "case": 68,
+          "path": "068_punitRec.ndjson",
+          "from": "UNKNOWN",
+          "to": "ACCEPT",
+          "role": "downstream consequence"
+        }
+      ],
+      "bad_deltas": [],
+      "eq_043": "UNKNOWN"
+    }
+  },
+  "formal_status": {
+    "new_theorem": false,
+    "reused_warrant": "IdealLean.InductivePromotion.promote_preserves_environment_validity",
+    "rust_refinement": false,
+    "whole_checker_verification": false
+  },
+  "performance": {
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "promotion_eligible": false
+  }
 }

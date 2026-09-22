@@ -480,11 +480,41 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Formal status: no new theorem is claimed. This change removes unwarranted
   conclusive authority rather than adding semantic authority.
 
-## G16-001 — Frozen `PUnit` stress residual
+## G16-001 — Exact `PUnit` law through the retained skeleton
 
-- Status: OPEN as the next exact residual; deliberately untouched by G15.
-- Exact fixture: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
-  `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`.
-- Current retained G15 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
-- Role: an independent nullary/singleton stress test for any abstraction
-  retained by G15, not evidence permitted to broaden G15 in advance.
+- Status: RETAINED.
+- Sealed predecessor: `c70e7a033b3660d3705f6566027f2b75e36cda2e`
+  (G15 architecture plus the retained zero-authority epistemic boundary).
+- Exact obstruction: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
+  `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`,
+  expected ACCEPT while the predecessor returns `UNKNOWN`.
+- Preregistered delta confirmed: nullary/singleton constructor shape plus
+  single-level Sort polymorphism. PUnit has zero term parameters, zero fields,
+  one universe parameter, result `Sort u`, one nullary `unit` constructor,
+  and a field-free motive/minor/rule shape.
+- Architecture result: PUnit reuses the retained
+  `ExactBinaryProductDerivation` / `ClosedNonrecursiveDerivation` opaque
+  promotion transaction. No generic arbitrary-inductive classifier, indices,
+  recursion, positivity, iota, projections, or eta were added.
+- Tutorial qualification: 001–042 = **42 matched, 0 incorrect**. Differential
+  against the sealed predecessor is **41 equal + 1 earned delta (042) +
+  0 mismatches**.
+- RED-first boundary: malformed claims inside the exact named PUnit envelope
+  reject; indexed, recursive, reflexive, nested, and unsafe neighbors remain
+  `UNKNOWN`; a renamed PUnit-like family remains `UNKNOWN`.
+- Prospective consequence: tutorial 068 `punitRec` also changes
+  `UNKNOWN → ACCEPT` with no additional semantic mechanism. It is recorded
+  as a downstream consequence of G16, not a second earned capability.
+- Tutorial 043 / Eq remains `UNKNOWN`.
+- Full future audit 042–141 found only two changes, both correct
+  `UNKNOWN → ACCEPT`: cases 042 and 068. No bad deltas were observed.
+- Qualification: 100 Rust tests, 14 Python tests, Clippy, formatting, ledger
+  validation and IdealLean all passed. Run `35705215065`, job
+  `106672384320`, artifact `10684042596`, digest
+  `sha256:3b47d31f9c299a3c53e932ac2168d5ae54e23714fffdf8813fc9f688b9806fa6`.
+- Formal status: no new theorem was introduced. The retained generic sequential
+  opaque-promotion environment-validity theorem remains the semantic warrant;
+  Rust refinement and whole-checker verification are not claimed.
+- Performance remains unqualified; no retired-instruction promotion is made.
+
+
