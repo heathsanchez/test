@@ -1257,7 +1257,11 @@ fn is_rbtree_motive_type(
     level: NameId,
     motive_level: NameId,
 ) -> bool {
-    let Some(Expr::Pi { domain: color, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Pi {
+        domain: color,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1318,10 +1322,18 @@ fn is_rbtree_red_minor_type(
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: right, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: right,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1349,7 +1361,8 @@ fn is_rbtree_red_minor_type(
         motive_application_parts(export, *left_ih, 5),
         motive_application_parts(export, *right_ih, 6),
         motive_application_parts(export, *result, 7),
-    ) else {
+    )
+    else {
         return false;
     };
     let Some(result_args) = rbtree_constructor_application_args(export, result_tree, red, level)
@@ -1407,10 +1420,18 @@ fn is_rbtree_black_minor_type(
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: right, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: right,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1438,7 +1459,8 @@ fn is_rbtree_black_minor_type(
         motive_application_parts(export, *left_ih, 8),
         motive_application_parts(export, *right_ih, 9),
         motive_application_parts(export, *result, 10),
-    ) else {
+    )
+    else {
         return false;
     };
     let Some(result_args) = rbtree_constructor_application_args(export, result_tree, black, level)
@@ -1509,7 +1531,11 @@ fn is_derived_rbtree_recursor_type(
     else {
         return false;
     };
-    let Some(Expr::Pi { domain: color, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: color,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1573,6 +1599,9 @@ fn rbtree_recursor_prefix_domains(
     else {
         return None;
     };
+    let Expr::Pi { domain: leaf, body } = export.exprs.get(*body)? else {
+        return None;
+    };
     let Expr::Pi { domain: red, body } = export.exprs.get(*body)? else {
         return None;
     };
@@ -1598,11 +1627,8 @@ fn peel_rbtree_rule_prefix(
     else {
         return None;
     };
-    let Expr::Lam { domain: motive, body } = export.exprs.get(*body)? else {
-        return None;
-    };
     let Expr::Lam {
-        domain: leaf,
+        domain: motive,
         body,
     } = export.exprs.get(*body)?
     else {
@@ -1674,7 +1700,11 @@ fn is_derived_rbtree_red_rule(
     let Some(body) = peel_rbtree_rule_prefix(export, expression, prefix) else {
         return false;
     };
-    let Some(Expr::Lam { domain: height, body }) = export.exprs.get(body) else {
+    let Some(Expr::Lam {
+        domain: height,
+        body,
+    }) = export.exprs.get(body)
+    else {
         return false;
     };
     let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
@@ -1690,10 +1720,14 @@ fn is_derived_rbtree_red_rule(
     else {
         return false;
     };
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
     let (head, arguments) = application_spine(export, *result);
@@ -1765,7 +1799,11 @@ fn is_derived_rbtree_black_rule(
     else {
         return false;
     };
-    let Some(Expr::Lam { domain: height, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Lam {
+        domain: height,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
@@ -1781,10 +1819,14 @@ fn is_derived_rbtree_black_rule(
     else {
         return false;
     };
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
     let (head, arguments) = application_spine(export, *result);
