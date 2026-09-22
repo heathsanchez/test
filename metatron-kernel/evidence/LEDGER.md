@@ -392,9 +392,11 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G14-001 — `PProd` replication residual
 
-- Status: RETAINED locally at implementation commit
-  `ce19e8c9c4c5908c59cdf01996e3842fef9c38c4`; exact-head external seal
-  pending.
+- Status: RETAINED at implementation commit
+  `ce19e8c9c4c5908c59cdf01996e3842fef9c38c4` and externally qualified at
+  published head `d6542201fd3aa8fac3e401c3a75fa97fd344defc` by run
+  `35673231544`, job `106574159278`, artifact `10671569298`, digest
+  `sha256:13d74e8c0ef1f6dc65c9227d94ed402cc434f848af36874bdf028e7b95504a14`.
 - Exact obstruction: tutorial 041 `good/041_pprodType.ndjson`, SHA-256
   `9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a`,
   expects ACCEPT and sealed G13 `6b50ae9d...` returns `UNKNOWN`.
