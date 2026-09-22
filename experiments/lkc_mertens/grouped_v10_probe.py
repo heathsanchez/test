@@ -9,7 +9,7 @@ namespace Submission
 
 /-- Sum the quotient blocks i..j having the same floor(n/i). -/
 def mertensGroupedRow (n : Nat) : Nat → Nat → Array Int → Int → Int
-  | 0, _, _, _, acc => 1 - acc
+  | 0, _, _, acc => 1 - acc
   | fuel + 1, i, vals, acc =>
       if n < i then 1 - acc
       else
