@@ -235,6 +235,12 @@ fn check_inductive(
         .validate_and_promote(export, environment, limits, delta_policy);
     }
 
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "N")
+    {
+        return check_exact_nat(export, environment, block, limits, delta_policy);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -406,6 +412,387 @@ fn is_empty_constant(export: &ResolvedExport, expression: ExprId, name: NameId) 
     )
 }
 
+/// G18-001: exact local recursive N. Recursion is admitted only inside this
+/// name-sealed envelope; the existing staged signature transaction is reused
+/// and no general positivity or recursive-inductive search is introduced.
+fn check_exact_nat(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    if !inductive.is_recursive {
+        return Err(Verdict::Reject);
+    }
+    if !inductive.level_params.is_empty()
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [zero, succ] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if zero.is_unsafe || succ.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [zero.name, succ.name]
+        || zero.index != 0
+        || zero.inductive != inductive.name
+        || !zero.level_params.is_empty()
+        || zero.num_fields != 0
+        || zero.num_params != 0
+        || !name_is_child_str(export, zero.name, inductive.name, "zero")
+        || !is_empty_constant(export, zero.ty, inductive.name)
+        || succ.index != 1
+        || succ.inductive != inductive.name
+        || !succ.level_params.is_empty()
+        || succ.num_fields != 1
+        || succ.num_params != 0
+        || !name_is_child_str(export, succ.name, inductive.name, "succ")
+        || !is_nat_succ_type(export, succ.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if !valid_nat_recursor_metadata(
+        export,
+        inductive.name,
+        zero.name,
+        succ.name,
+        recursor,
+    ) || !is_derived_nat_recursor_type(
+        export,
+        inductive.name,
+        zero.name,
+        succ.name,
+        recursor,
+    ) || !are_derived_nat_rules(
+        export,
+        inductive.name,
+        zero.name,
+        succ.name,
+        recursor,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_type(inductive.name, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(zero),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(succ),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_nat_succ_type(export: &ResolvedExport, expression: ExprId, inductive: NameId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Pi { domain, body })
+            if is_empty_constant(export, *domain, inductive)
+                && is_empty_constant(export, *body, inductive)
+    )
+}
+
+fn valid_nat_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    recursor: &Recursor,
+) -> bool {
+    recursor.all == [inductive]
+        && !recursor.k
+        && recursor.level_params.len() == 1
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == 0
+        && recursor.num_indices == 0
+        && recursor.num_motives == 1
+        && recursor.num_minors == 2
+        && matches!(
+            recursor.rules.as_slice(),
+            [zero_rule, succ_rule]
+                if zero_rule.constructor == zero
+                    && zero_rule.num_fields == 0
+                    && succ_rule.constructor == succ
+                    && succ_rule.num_fields == 1
+        )
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
+fn is_nat_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Pi { domain, body })
+            if is_empty_constant(export, *domain, inductive)
+                && is_sort_parameter(export, *body, motive_level)
+    )
+}
+
+fn is_nat_succ_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    succ: NameId,
+) -> bool {
+    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: induction_hypothesis,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: motive,
+        arg: succ_value,
+    }) = export.exprs.get(*result)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: succ_head,
+        arg: succ_arg,
+    }) = export.exprs.get(*succ_value)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *value, inductive)
+        && is_bvar_application(export, *induction_hypothesis, 2, 0)
+        && is_bvar(export, *motive, 3)
+        && is_empty_constant(export, *succ_head, succ)
+        && is_bvar(export, *succ_arg, 1)
+}
+
+fn is_derived_nat_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let Some(Expr::Pi { domain: motive, body }) = export.exprs.get(recursor.ty) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: zero_minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: succ_minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_nat_motive_type(export, *motive, inductive, recursor.level_params[0])
+        && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+        && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_applied_to_bvar(export, *result, 3, 0)
+}
+
+fn are_derived_nat_rules(
+    export: &ResolvedExport,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    is_derived_nat_zero_rule(
+        export,
+        zero_rule.rhs,
+        inductive,
+        zero,
+        succ,
+        recursor.level_params[0],
+    ) && is_derived_nat_succ_rule(
+        export,
+        succ_rule.rhs,
+        inductive,
+        zero,
+        succ,
+        recursor.name,
+        recursor.level_params[0],
+    )
+}
+
+fn is_derived_nat_zero_rule(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: zero_minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: succ_minor,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_nat_motive_type(export, *motive, inductive, motive_level)
+        && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+        && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
+        && is_bvar(export, *result, 1)
+}
+
+fn is_derived_nat_succ_rule(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    zero: NameId,
+    succ: NameId,
+    recursor_name: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: zero_minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: succ_minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: value,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_nat_motive_type(export, *motive, inductive, motive_level)
+        || !is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+        || !is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
+        || !is_empty_constant(export, *value, inductive)
+    {
+        return false;
+    }
+
+    let Some(Expr::App {
+        fun: succ_step,
+        arg: recursive_call,
+    }) = export.exprs.get(*result)
+    else {
+        return false;
+    };
+    if !is_bvar_application(export, *succ_step, 1, 0) {
+        return false;
+    }
+    let Some(Expr::App { fun, arg: value_arg }) = export.exprs.get(*recursive_call) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun,
+        arg: succ_minor_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun,
+        arg: zero_minor_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: motive_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_unary_polymorphic_constant(export, *head, recursor_name, motive_level)
+        && is_bvar(export, *motive_arg, 3)
+        && is_bvar(export, *zero_minor_arg, 2)
+        && is_bvar(export, *succ_minor_arg, 1)
+        && is_bvar(export, *value_arg, 0)
+}
+
 /// G10-001: a closed, safe, two-constructor enum. This admits no constructor
 /// fields and therefore needs neither positivity search nor recursive
 /// occurrences. Exported recursor equations are checked against a derived
@@ -420,6 +807,9 @@ fn check_binary_enum(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
+    if !name_is_root_str(export, inductive.name, "Bool") {
+        return Err(Verdict::Unknown);
+    }
     if inductive.num_params != 0
         || inductive.num_indices != 0
         || inductive.num_nested != 0
