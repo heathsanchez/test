@@ -11,8 +11,8 @@
   "obstruction": "The first PProd declaration is outside the separate exact And and Prod classifiers.",
   "expected": "ACCEPT",
   "observed": "UNKNOWN",
-  "least_capability": "UNDECIDED: frozen for the G14 replication experiment; no shared parameterized-inductive abstraction has been promoted.",
-  "falsifier": "Must be specified before implementation.",
+  "least_capability": "A separate exact PProd classifier which derives the already-observed two-parameter constructor/recursor/rule spine while admitting only Sort u, Sort v parameters and the exact computed Sort (max (max (succ 0) u) v) result.",
+  "falsifier": "Reject the hypothesis if exact PProd does not ACCEPT, if any malformed claim in the recognized PProd envelope avoids REJECT, if broader dependent/indexed/recursive/nested/unsafe shapes cease to be UNKNOWN, or if any tutorial 001-040 behavior differs from sealed G13.",
   "protected_suite": [
     "all G0-G13 tests",
     "exact tutorial prefix 001-040",

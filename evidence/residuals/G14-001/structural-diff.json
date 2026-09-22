@@ -1,0 +1,70 @@
+{
+  "schema": "metatron-kernel-structural-diff-v1",
+  "baselines": [
+    {
+      "residual": "G12-001",
+      "fixture_sha256": "d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1",
+      "name": "And",
+      "type_level_params": [],
+      "constructor_level_params": [],
+      "recursor_level_params": ["motive"],
+      "parameter_sorts": ["Sort 0", "Sort 0"],
+      "result_sort": "Sort 0"
+    },
+    {
+      "residual": "G13-001",
+      "fixture_sha256": "a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d",
+      "name": "Prod",
+      "type_level_params": ["u", "v"],
+      "constructor_level_params": ["u", "v"],
+      "recursor_level_params": ["motive", "u", "v"],
+      "parameter_sorts": ["Sort (succ u)", "Sort (succ v)"],
+      "result_sort": "Sort (max (succ u) (succ v))"
+    }
+  ],
+  "candidate": {
+    "residual": "G14-001",
+    "fixture_sha256": "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a",
+    "name": "PProd",
+    "type_level_params": ["u", "v"],
+    "constructor_level_params": ["u", "v"],
+    "recursor_level_params": ["motive", "u", "v"],
+    "parameter_sorts": ["Sort u", "Sort v"],
+    "result_sort": "Sort (max (max (succ 0) u) v)"
+  },
+  "shared_exact_shape": {
+    "num_types": 1,
+    "num_constructors": 1,
+    "num_recursors": 1,
+    "num_parameters": 2,
+    "num_indices": 0,
+    "num_nested": 0,
+    "num_fields": 2,
+    "num_motives": 1,
+    "num_minors": 1,
+    "recursive": false,
+    "reflexive": false,
+    "unsafe": false,
+    "constructor_field_law": ["first parameter", "second parameter"],
+    "constructor_result_law": "inductive applied to parameters in declaration order",
+    "recursor_law": "one motive, one constructor minor, target applied to motive",
+    "rule_law": "minor applied to the two constructor fields"
+  },
+  "observed_delta_041_from_prod": [
+    "first parameter inhabits Sort u rather than Sort (succ u)",
+    "second parameter inhabits Sort v rather than Sort (succ v)",
+    "result inhabits Sort (max (max (succ 0) u) v) rather than Sort (max (succ u) (succ v))"
+  ],
+  "unchanged_from_prod": [
+    "two ordered universe parameters",
+    "ordered constant universe instances [u,v]",
+    "ordered recursor universe parameters [motive,u,v]",
+    "constructor, recursor, minor and rule application spines",
+    "ownership, counts and safety metadata"
+  ],
+  "extraction": {
+    "method": "Arena 3.1 NDJSON name/level/expression tables resolved by ID and the inductive record projected mechanically",
+    "source_fields": ["types", "ctors", "recs", "rules"],
+    "interpretation_status": "fixture-specific replication hypothesis; no shared parameterized-inductive abstraction inferred"
+  }
+}
