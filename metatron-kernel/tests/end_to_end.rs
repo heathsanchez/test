@@ -991,3 +991,153 @@ fn punit_law_does_not_authorize_a_renamed_family() {
     assert_ne!(bytes, renamed);
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
+
+
+fn sealed_pre_g17_verdict(bytes: &str) -> Option<Verdict> {
+    let Ok(oracle) = std::env::var("METATRON_G17_ORACLE") else {
+        return None;
+    };
+    let mut child = Command::new(oracle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("sealed pre-G17 oracle must start");
+    child
+        .stdin
+        .take()
+        .expect("sealed pre-G17 oracle stdin")
+        .write_all(bytes.as_bytes())
+        .expect("sealed pre-G17 oracle input");
+    let exit = child.wait().expect("sealed pre-G17 oracle must finish");
+    Some(match exit.code() {
+        Some(0) => Verdict::Accept,
+        Some(1) => Verdict::Reject,
+        Some(2) => Verdict::Unknown,
+        code => panic!("sealed pre-G17 oracle returned unexpected exit code {code:?}"),
+    })
+}
+
+fn run_g17_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G17-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    if let Some(oracle) = sealed_pre_g17_verdict(&bytes) {
+        assert_eq!(
+            oracle,
+            Verdict::Unknown,
+            "G17 authority was already present at the sealed G16 boundary",
+        );
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
+#[test]
+fn g17_001_exact_eq_authority_is_accepted() {
+    assert_eq!(run_g17_perturbations(&[]), Verdict::Accept);
+}
+
+#[test]
+fn eq_index_constructor_recursor_and_k_metadata_are_derived_not_trusted() {
+    let cases: &[(&str, &str)] = &[
+        (
+            "\"name\":1,\"numIndices\":1,\"numNested\":0,\"numParams\":2",
+            "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":2",
+        ),
+        (
+            "\"name\":1,\"numIndices\":1,\"numNested\":0,\"numParams\":2",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0,\"numParams\":1",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":1,\"induct\":1,\"isUnsafe\":false",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":10,\"isUnsafe\":false",
+        ),
+        (
+            "\"numFields\":0,\"numParams\":2,\"type\":12",
+            "\"numFields\":1,\"numParams\":2,\"type\":12",
+        ),
+        (
+            "\"numFields\":0,\"numParams\":2,\"type\":12",
+            "\"numFields\":0,\"numParams\":1,\"type\":12",
+        ),
+        (
+            "\"k\":true,\"levelParams\":[11,2]",
+            "\"k\":false,\"levelParams\":[11,2]",
+        ),
+        (
+            "\"levelParams\":[11,2],\"name\":10",
+            "\"levelParams\":[2,11],\"name\":10",
+        ),
+        (
+            "\"numIndices\":1,\"numMinors\":1,\"numMotives\":1,\"numParams\":2",
+            "\"numIndices\":0,\"numMinors\":1,\"numMotives\":1,\"numParams\":2",
+        ),
+        (
+            "\"numIndices\":1,\"numMinors\":1,\"numMotives\":1,\"numParams\":2",
+            "\"numIndices\":1,\"numMinors\":0,\"numMotives\":1,\"numParams\":2",
+        ),
+        (
+            "\"ctor\":9,\"nfields\":0,\"rhs\":41",
+            "\"ctor\":1,\"nfields\":0,\"rhs\":41",
+        ),
+        (
+            "\"ctor\":9,\"nfields\":0,\"rhs\":41",
+            "\"ctor\":9,\"nfields\":1,\"rhs\":41",
+        ),
+        (
+            "\"ctor\":9,\"nfields\":0,\"rhs\":41",
+            "\"ctor\":9,\"nfields\":0,\"rhs\":40",
+        ),
+        ("\"type\":37}],\"types\"", "\"type\":36}],\"types\""),
+    ];
+    for (from, to) in cases {
+        assert_eq!(run_g17_perturbations(&[(*from, *to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn eq_broader_semantic_dimensions_remain_unknown() {
+    let cases = [
+        (
+            "\"ctors\":[9],\"isRec\":false",
+            "\"ctors\":[9],\"isRec\":true",
+        ),
+        (
+            "\"isRec\":false,\"isReflexive\":false",
+            "\"isRec\":false,\"isReflexive\":true",
+        ),
+        (
+            "\"numIndices\":1,\"numNested\":0",
+            "\"numIndices\":1,\"numNested\":1",
+        ),
+        (
+            "\"types\":[{\"all\":[1],\"ctors\":[9],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[1],\"ctors\":[9],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+    ];
+    for (from, to) in cases {
+        assert_eq!(run_g17_perturbations(&[(from, to)]), Verdict::Unknown);
+    }
+}
+
+#[test]
+fn eq_law_does_not_authorize_a_renamed_indexed_family() {
+    let bytes = include_str!("../evidence/residuals/G17-001/fixture.ndjson");
+    let renamed = bytes.replacen("\"str\":\"Eq\"", "\"str\":\"Eq2\"", 1);
+    assert_ne!(bytes, renamed);
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+}
