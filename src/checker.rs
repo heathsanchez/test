@@ -241,6 +241,12 @@ fn check_inductive(
         return check_exact_nat(export, environment, block, limits, delta_policy);
     }
 
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "RBTree")
+    {
+        return check_exact_rbtree(export, environment, block, limits, delta_policy);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -798,6 +804,386 @@ fn is_derived_nat_succ_rule(
         && is_bvar(export, *value_arg, 0)
 }
 
+/// G19-001: exact recursive indexed RBTree. This is a name-sealed composition
+/// of already-earned parameter, index, recursion, and staged opaque-signature
+/// laws. It is deliberately not a generic recursive-indexed inductive engine.
+fn check_exact_rbtree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_nested != 0 || inductive.is_reflexive || inductive.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.num_params != 1 || inductive.num_indices != 2 || !inductive.is_recursive {
+        return Err(Verdict::Reject);
+    }
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !is_exact_rbtree_type(export, inductive.ty, *level) {
+        return Err(Verdict::Reject);
+    }
+
+    let [leaf, red, black] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if leaf.is_unsafe || red.is_unsafe || black.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, red.name, black.name]
+        || !valid_rbtree_constructor_metadata(
+            export,
+            inductive.name,
+            *level,
+            leaf,
+            0,
+            0,
+            "leaf",
+        )
+        || !valid_rbtree_constructor_metadata(
+            export,
+            inductive.name,
+            *level,
+            red,
+            1,
+            4,
+            "red",
+        )
+        || !valid_rbtree_constructor_metadata(
+            export,
+            inductive.name,
+            *level,
+            black,
+            2,
+            6,
+            "black",
+        )
+        || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
+        || !is_derived_rbtree_red_type(export, red.ty, inductive.name, *level)
+        || !is_derived_rbtree_black_type(export, black.ty, inductive.name, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if !valid_rbtree_recursor_metadata(
+        export,
+        inductive.name,
+        *level,
+        [leaf.name, red.name, black.name],
+        recursor,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote(
+        export,
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in [leaf, red, black] {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn valid_rbtree_constructor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructor: &Constructor,
+    index: u64,
+    fields: u64,
+    suffix: &str,
+) -> bool {
+    constructor.index == index
+        && constructor.inductive == inductive
+        && constructor.level_params == [level]
+        && constructor.num_fields == fields
+        && constructor.num_params == 1
+        && name_is_child_str(export, constructor.name, inductive, suffix)
+}
+
+fn is_exact_rbtree_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some(Expr::Pi {
+        domain: carrier,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: color,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: height,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_root_empty_constant_named(export, *color, "Color")
+        && is_root_empty_constant_named(export, *height, "N")
+        && is_sort_succ_parameter(export, *result, level)
+}
+
+fn rbtree_application_parts(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let Expr::App {
+        fun,
+        arg: height,
+    } = export.exprs.get(expression)?
+    else {
+        return None;
+    };
+    let Expr::App { fun, arg: color } = export.exprs.get(*fun)? else {
+        return None;
+    };
+    let Expr::App {
+        fun: head,
+        arg: carrier,
+    } = export.exprs.get(*fun)?
+    else {
+        return None;
+    };
+    is_unary_polymorphic_constant(export, *head, inductive, level)
+        .then_some((*carrier, *color, *height))
+}
+
+fn is_root_empty_constant_named(
+    export: &ResolvedExport,
+    expression: ExprId,
+    root: &str,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, root)
+    )
+}
+
+fn is_child_empty_constant_named(
+    export: &ResolvedExport,
+    expression: ExprId,
+    root: &str,
+    child: &str,
+) -> bool {
+    let Some(Expr::Const { name, levels }) = export.exprs.get(expression) else {
+        return false;
+    };
+    if !levels.is_empty() {
+        return false;
+    }
+    matches!(
+        export.names.get(*name),
+        Some(Name::Str { prefix, value })
+            if value == child && name_is_root_str(export, *prefix, root)
+    )
+}
+
+fn is_named_succ_bvar(
+    export: &ResolvedExport,
+    expression: ExprId,
+    root: &str,
+    child: &str,
+    argument: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_child_empty_constant_named(export, *fun, root, child)
+                && is_bvar(export, *arg, argument)
+    )
+}
+
+fn is_derived_rbtree_leaf_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: carrier,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    let Some((result_carrier, result_color, result_height)) =
+        rbtree_application_parts(export, *result, inductive, level)
+    else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_bvar(export, result_carrier, 0)
+        && is_child_empty_constant_named(export, result_color, "Color", "b")
+        && is_child_empty_constant_named(export, result_height, "N", "zero")
+}
+
+fn is_derived_rbtree_red_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some(Expr::Pi { domain: carrier, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: right,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height)), Some((result_carrier, result_color, result_height))) = (
+        rbtree_application_parts(export, *left, inductive, level),
+        rbtree_application_parts(export, *right, inductive, level),
+        rbtree_application_parts(export, *result, inductive, level),
+    ) else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_root_empty_constant_named(export, *height, "N")
+        && is_bvar(export, left_carrier, 1)
+        && is_child_empty_constant_named(export, left_color, "Color", "b")
+        && is_bvar(export, left_height, 0)
+        && is_bvar(export, *value, 2)
+        && is_bvar(export, right_carrier, 3)
+        && is_child_empty_constant_named(export, right_color, "Color", "b")
+        && is_bvar(export, right_height, 2)
+        && is_bvar(export, result_carrier, 4)
+        && is_child_empty_constant_named(export, result_color, "Color", "r")
+        && is_bvar(export, result_height, 3)
+}
+
+fn is_derived_rbtree_black_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some(Expr::Pi { domain: carrier, body }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: first_color, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: second_color, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: right,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height)), Some((result_carrier, result_color, result_height))) = (
+        rbtree_application_parts(export, *left, inductive, level),
+        rbtree_application_parts(export, *right, inductive, level),
+        rbtree_application_parts(export, *result, inductive, level),
+    ) else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_root_empty_constant_named(export, *first_color, "Color")
+        && is_root_empty_constant_named(export, *second_color, "Color")
+        && is_root_empty_constant_named(export, *height, "N")
+        && is_bvar(export, left_carrier, 3)
+        && is_bvar(export, left_color, 2)
+        && is_bvar(export, left_height, 0)
+        && is_bvar(export, *value, 4)
+        && is_bvar(export, right_carrier, 5)
+        && is_bvar(export, right_color, 3)
+        && is_bvar(export, right_height, 2)
+        && is_bvar(export, result_carrier, 6)
+        && is_child_empty_constant_named(export, result_color, "Color", "b")
+        && is_named_succ_bvar(export, result_height, "N", "succ", 3)
+}
+
+fn valid_rbtree_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructors: [NameId; 3],
+    recursor: &Recursor,
+) -> bool {
+    recursor.all == [inductive]
+        && !recursor.k
+        && recursor.level_params.len() == 2
+        && recursor.level_params[1] == level
+        && recursor.level_params[0] != level
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == 1
+        && recursor.num_indices == 2
+        && recursor.num_motives == 1
+        && recursor.num_minors == 3
+        && matches!(
+            recursor.rules.as_slice(),
+            [leaf_rule, red_rule, black_rule]
+                if leaf_rule.constructor == constructors[0]
+                    && leaf_rule.num_fields == 0
+                    && red_rule.constructor == constructors[1]
+                    && red_rule.num_fields == 4
+                    && black_rule.constructor == constructors[2]
+                    && black_rule.num_fields == 6
+        )
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
 /// G10-001: a closed, safe, two-constructor enum. This admits no constructor
 /// fields and therefore needs neither positivity search nor recursive
 /// occurrences. Exported recursor equations are checked against a derived
@@ -812,7 +1198,9 @@ fn check_binary_enum(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if !name_is_root_str(export, inductive.name, "Bool") {
+    if !name_is_root_str(export, inductive.name, "Bool")
+        && !name_is_root_str(export, inductive.name, "Color")
+    {
         return Err(Verdict::Unknown);
     }
     if inductive.num_params != 0
