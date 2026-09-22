@@ -56,6 +56,7 @@ theorem clearMultiples_hits
           rw [clearMultiples]
           rw [if_neg (by omega : ¬ n < m)]
           have hlt : m < m + p := by omega
+          simp only [Nat.zero_mul, Nat.add_zero]
           rw [clearMultiples_below fuel n p (m + p)
             (clearBitIfSet bits m) m hlt]
           rw [clearBitIfSet_testBit]
