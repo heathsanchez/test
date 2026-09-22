@@ -470,6 +470,10 @@ def level_is_zero(
 ) -> bool | None:
     if depth > 32:
         return None
+    # lean4export reserves level index 0 for Level.zero and does not need an
+    # explicit IL record for it.
+    if lid == 0:
+        return True
     row = levels.get(lid)
     if row is None:
         return None
