@@ -1,4 +1,4 @@
-name: ACC Transport Atlas Connector V1
+name: ACC Transport Atlas Fiber V1
 
 on:
   push:
@@ -75,16 +75,16 @@ jobs:
           (root/'selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
           ids=[x['challenge_id'] for x in rows]
           for shard in range(4): (root/f'shard_{shard}.json').write_text(json.dumps(ids[shard::4],indent=2)+'\n')
-          print('TRANSPORT_ATLAS_TARGETS',json.dumps(rows,sort_keys=True))
+          print('TRANSPORT_FIBER_TARGETS',json.dumps(rows,sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: acc-transport-atlas-freeze
+          name: acc-transport-fiber-freeze
           path: acc_competitive/transport_atlas_freeze/
           retention-days: 30
       - uses: actions/upload-artifact@v4
         with:
-          name: acc-transport-atlas-state
+          name: acc-transport-fiber-atlas-state
           path: /tmp/atlas/
           retention-days: 1
 
@@ -103,37 +103,36 @@ jobs:
           ref: acc-competitive-residual-v1
       - uses: actions/download-artifact@v4
         with:
-          name: acc-transport-atlas-freeze
+          name: acc-transport-fiber-freeze
           path: /tmp/freeze
       - uses: actions/download-artifact@v4
         with:
-          name: acc-transport-atlas-state
+          name: acc-transport-fiber-atlas-state
           path: /tmp/atlas
       - name: Fetch pinned official verifier
         run: |
           set -euo pipefail
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
-      - name: Search exact radius-5 connectors into Proof Atlas
+      - name: Search six-context exact depth-6 fibers into Proof Atlas
         run: |
           set -euo pipefail
-          mkdir -p "acc_competitive/transport_atlas_${{ matrix.shard }}"
-          python3 acc_competitive/transport_atlas_connector_v1.py \
+          mkdir -p "acc_competitive/transport_fiber_${{ matrix.shard }}"
+          python3 acc_competitive/transport_atlas_fiber_depth6_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
-            --snapshot-ac "$(find /tmp/freeze -name snapshot_ac.json | head -1)" \
-            --snapshot-stable "$(find /tmp/freeze -name snapshot_stable.json | head -1)" \
+            --rows "$(find /tmp/freeze -name selected.json | head -1)" \
             --target-ids-file "$(find /tmp/freeze -name 'shard_${{ matrix.shard }}.json' | head -1)" \
-            --out-dir "acc_competitive/transport_atlas_${{ matrix.shard }}" \
-            --connector-depth 5 --node-cap 250000 \
-            | tee "acc_competitive/transport_atlas_${{ matrix.shard }}.log"
+            --out-dir "acc_competitive/transport_fiber_${{ matrix.shard }}" \
+            --depth 6 \
+            | tee "acc_competitive/transport_fiber_${{ matrix.shard }}.log"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: acc-transport-atlas-shard-${{ matrix.shard }}
+          name: acc-transport-fiber-shard-${{ matrix.shard }}
           path: |
-            acc_competitive/transport_atlas_${{ matrix.shard }}/
-            acc_competitive/transport_atlas_${{ matrix.shard }}.log
+            acc_competitive/transport_fiber_${{ matrix.shard }}/
+            acc_competitive/transport_fiber_${{ matrix.shard }}.log
           retention-days: 90
           if-no-files-found: warn
 
@@ -148,16 +147,16 @@ jobs:
           ref: acc-competitive-residual-v1
       - uses: actions/download-artifact@v4
         with:
-          pattern: acc-transport-atlas-shard-*
-          path: acc_competitive/transport_atlas_downloads
+          pattern: acc-transport-fiber-shard-*
+          path: acc_competitive/transport_fiber_downloads
           merge-multiple: false
-      - name: Pool pinned-verified connector results
+      - name: Pool pinned-verified fiber results
         run: |
           set -euo pipefail
-          mkdir -p acc_competitive/transport_atlas_pool
+          mkdir -p acc_competitive/transport_fiber_pool
           python3 - <<'PY'
           import json,pathlib
-          root=pathlib.Path('acc_competitive/transport_atlas_downloads'); rows=[]; best={}
+          root=pathlib.Path('acc_competitive/transport_fiber_downloads'); rows=[]; best={}
           for p in root.rglob('results.json'): rows.extend(json.loads(p.read_text()))
           for p in root.rglob('pending_submission.txt'):
               for line in p.read_text().splitlines():
@@ -167,19 +166,20 @@ jobs:
                   except Exception: continue
                   if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
           rows.sort(key=lambda x:x['challenge_id'])
-          out=pathlib.Path('acc_competitive/transport_atlas_pool')
+          out=pathlib.Path('acc_competitive/transport_fiber_pool')
           (out/'results.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
           (out/'pending_submission.txt').write_text('\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
           report={'targets':len(rows),'winning_targets':sum(bool(r.get('strict_win')) for r in rows),
                   'ac_wins':sum(bool(r.get('ac_strict_win')) for r in rows),
                   'stable_wins':sum(bool(r.get('stable_strict_win')) for r in rows),
-                  'exact_radius_exhausted':sum(r.get('obstruction')=='exact_radius_exhausted' for r in rows),
-                  'node_cap_hits':sum(r.get('obstruction')=='node_cap' for r in rows),'pending_rows':len(best)}
+                  'fiber_depth6_exhausted':sum(r.get('obstruction')=='fiber_depth6_exhausted' for r in rows),
+                  'noncompetitive_hits':sum(r.get('obstruction')=='noncompetitive_depth6_hit' for r in rows),
+                  'pending_rows':len(best)}
           (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
-          print('TRANSPORT_ATLAS_POOL',json.dumps(report,sort_keys=True))
+          print('TRANSPORT_FIBER_POOL',json.dumps(report,sort_keys=True))
           PY
       - uses: actions/upload-artifact@v4
         with:
-          name: acc-transport-atlas-pool
-          path: acc_competitive/transport_atlas_pool/
+          name: acc-transport-fiber-pool
+          path: acc_competitive/transport_fiber_pool/
           retention-days: 90
