@@ -1,0 +1,67 @@
+name: LKC Permanent V7 Sparse Ryser Screen
+
+on:
+  push:
+    branches: [lkc-permanent-ryser-v7]
+    paths:
+      - 'experiments/lkc_permanent/ryser_v7_probe.py'
+      - '.github/workflows/lkc-permanent-ryser-v7.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V5 and Ryser probe
+        run: |
+          python3 experiments/lkc_permanent/full_v5.py
+          python3 experiments/lkc_permanent/ryser_v7_probe.py
+          sha256sum experiments/lkc_permanent/generated/Submission_v5.lean             experiments/lkc_permanent/generated/Submission_v7_ryser_probe.lean
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem permanent
+      - name: Compare one seed per scored dimension
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/permanent-v7-screen"; mkdir -p "$root"
+          inputs=(25769803777 51539607553 68719476737)
+          for who in v5 v7; do
+            if [ "$who" = v5 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_permanent/generated/Submission_v5.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_permanent/generated/Submission_v7_ryser_probe.lean"
+            fi
+            python3 bench/benchmark.py diagnostic --problem permanent --submission "$sub"               --metric wall-time --repetitions 1 --timeout 900 --memory-mb 8192               --inputs "${inputs[@]}" --output "$root/$who"
+          done
+      - name: Verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("permanent-v7-screen")
+          a=json.loads((r/"v5/diagnostic.json").read_text())["totals"]["candidate"]
+          b=json.loads((r/"v7/diagnostic.json").read_text())["totals"]["candidate"]
+          out={"v5":a,"v7_ryser":b,"ratio":b/a,"improvement_pct":100*(1-b/a),
+               "consequence":"PROVE_RYSER" if b<a else "REJECT"}
+          (r/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: permanent-v7-ryser-screen
+          path: permanent-v7-screen/
