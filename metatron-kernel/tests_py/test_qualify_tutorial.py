@@ -77,6 +77,21 @@ class TutorialInputTests(unittest.TestCase):
             self.assertEqual(case.expected_exit_code, 1)
             self.assertEqual(case.sha256, sha256)
 
+    def test_production_manifest_pins_g21_constructor_corridor(self):
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 53)
+        expected = (
+            ("050", Path("bad/050_inductWrongCtorParams.ndjson"), "20214ec1a31221884548d3e91b689b9569fd7588af2fb0e219754b683041ac10"),
+            ("051", Path("bad/051_inductWrongCtorResParams.ndjson"), "5506566449cc2f3c83f417007bf15a7a0101c458c450d77a23cfd4c2423910c4"),
+            ("052", Path("bad/052_inductWrongCtorResLevel.ndjson"), "3f29bd3a753caa056cc45c20cd8aeb734bc44cfc6b3828a6c6ec855737f596f3"),
+            ("053", Path("bad/053_inductInIndex.ndjson"), "8dc9a9997862a5f25b76520f5d69a146664ad9f0364dd350732a7f76e4190763"),
+        )
+        for offset, (number, relative_path, sha256) in enumerate(expected, start=49):
+            case = TUTORIAL_MANIFEST[offset]
+            self.assertEqual(case.number, number)
+            self.assertEqual(case.relative_path, relative_path)
+            self.assertEqual(case.expected_exit_code, 1)
+            self.assertEqual(case.sha256, sha256)
+
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
         payload = b'{"kind":"test"}\n'
         manifest = (
