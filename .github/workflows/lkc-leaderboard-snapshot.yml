@@ -46,6 +46,16 @@ jobs:
             head -c 2000 "lkc-frontier/$name.json"; echo
           done
           exit 0
+      - name: Fetch my competition/team state
+        run: |
+          set +e
+          for suffix in "me" "submissions/mine?limit=100"; do
+            name=$(echo "$suffix" | tr '/?=&' '_____')
+            code=$(curl -sS -o "lkc-frontier/$name.json" -w '%{http_code}'               "$BASE/$suffix"               -H "Authorization: Bearer $SAIR_API_KEY"               -H "Accept: application/json")
+            echo "$suffix -> $code"
+            cat "lkc-frontier/$name.json"; echo
+          done
+          exit 0
       - uses: actions/upload-artifact@v4
         with:
           name: lkc-readonly-frontier-snapshot
