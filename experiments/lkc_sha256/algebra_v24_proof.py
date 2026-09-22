@@ -127,7 +127,7 @@ theorem roundFast_eq_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
   rw [chFast_eq s.e s.f s.g hs.e hs.g]
   rw [majFast_eq s.a s.b s.c]
   simp only [add32, mask32_eq_mod]
-  simp only [Nat.add_mod]
+  simp (maxSteps := 1000000) only [Nat.add_mod]
   rw [bigSigma1Fast_mod_eq s.e]
   rw [bigSigma0Fast_mod_eq s.a]
   simp only [Nat.add_assoc]
@@ -138,7 +138,7 @@ theorem Window.nextFast_eq_nextWord (w : Window) (hw : ValidWindow w) :
     w.nextFast = w.nextWord := by
   unfold Window.nextFast Window.nextWord
   simp only [add32, mask32_eq_mod]
-  simp only [Nat.add_mod]
+  simp (maxSteps := 1000000) only [Nat.add_mod]
   rw [smallSigma1Fast_mod_eq w.x14 hw.x14]
   rw [smallSigma0Fast_mod_eq w.x1 hw.x1]
   simp only [Nat.add_assoc]
