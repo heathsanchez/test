@@ -15,7 +15,7 @@ permissions:
 
 concurrency:
   group: lka-g23q-obligation-core-v0-${{ github.ref }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   equivalence:
