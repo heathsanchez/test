@@ -1677,32 +1677,6 @@ fn peel_rbtree_rule_prefix(
         .then_some(*body)
 }
 
-fn is_rbtree_recursive_call(
-    export: &ResolvedExport,
-    expression: ExprId,
-    recursor: NameId,
-    motive_level: NameId,
-    level: NameId,
-    prefix: [u64; 5],
-    color: ExprId,
-    height: u64,
-    tree: u64,
-) -> bool {
-    let Some(arguments) =
-        rbtree_recursor_application_args(export, expression, recursor, motive_level, level)
-    else {
-        return false;
-    };
-    arguments.len() == 8
-        && prefix
-            .into_iter()
-            .zip(arguments[..5].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
-        && arguments[5] == color
-        && is_bvar(export, arguments[6], height)
-        && is_bvar(export, arguments[7], tree)
-}
-
 fn is_derived_rbtree_leaf_rule(
     export: &ResolvedExport,
     expression: ExprId,
