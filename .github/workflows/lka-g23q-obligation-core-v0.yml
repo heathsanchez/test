@@ -1,0 +1,144 @@
+name: LKA G23Q Obligation Core v0
+
+on:
+  push:
+    branches: [lka-g23q-obligation-core-v0]
+    paths:
+      - ".github/workflows/lka-g23q-obligation-core-v0.yml"
+      - "metatron-kernel/src/**"
+      - "metatron-kernel/tests/**"
+      - "metatron-kernel/tests_py/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g23q-obligation-core-v0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  equivalence:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      G23_SHA: 7975697a23091ee72abbfe6e68042f0e079f8738
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify candidate quality
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+          lines="$(wc -l < src/checker.rs)"
+          echo "CHECKER_LINES=$lines"
+          test "$lines" -lt 4703
+
+      - name: Build exact G23 oracle and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g23-oracle "$G23_SHA"
+          cargo build --release --locked \
+            --manifest-path /tmp/g23-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch pinned Arena
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate pinned tutorials
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Prove zero-authority full-corpus equivalence
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          python - <<'PY'
+          import json, pathlib, subprocess
+          root=pathlib.Path("/tmp/lean-kernel-tutorial")
+          oracle=pathlib.Path("/tmp/g23-oracle/metatron-kernel/target/release/metatron-kernel").resolve()
+          candidate=pathlib.Path("target/release/metatron-kernel").resolve()
+          rows=[]
+          for n in range(1,142):
+              matches=list(root.glob(f"*/{n:03d}_*.ndjson"))
+              assert len(matches)==1,(n,matches)
+              path=matches[0]
+              def run(binary):
+                  with path.open("rb") as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              before=run(oracle); after=run(candidate)
+              rows.append({"case":n,"file":path.name,"oracle":before,"candidate":after})
+          changed=[r for r in rows if r["oracle"]!=r["candidate"]]
+          assert changed == [], changed
+          out={
+            "schema":"lka-g23q-full-equivalence-v0",
+            "oracle_sha":"7975697a23091ee72abbfe6e68042f0e079f8738",
+            "candidate_sha":"${{ github.sha }}",
+            "equal":len(rows),
+            "changed":changed,
+          }
+          pathlib.Path("evidence-out/full-equivalence.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Write representation attestation
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          p=pathlib.Path("src/checker.rs")
+          oracle=subprocess.check_output(
+              ["git","show","7975697a23091ee72abbfe6e68042f0e079f8738:metatron-kernel/src/checker.rs"],
+              text=True,
+          )
+          candidate=p.read_text()
+          out={
+            "schema":"lka-g23q-obligation-core-attestation-v0",
+            "candidate_sha":os.environ["GITHUB_SHA"],
+            "oracle_sha":os.environ["G23_SHA"],
+            "authority_gain":"none",
+            "oracle_checker_lines":len(oracle.splitlines()),
+            "candidate_checker_lines":len(candidate.splitlines()),
+            "oracle_checker_sha256":hashlib.sha256(oracle.encode()).hexdigest(),
+            "candidate_checker_sha256":hashlib.sha256(candidate.encode()).hexdigest(),
+          }
+          pathlib.Path("evidence-out/attestation.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lka-g23q-obligation-core-v0-${{ github.sha }}
+          path: metatron-kernel/evidence-out
+          if-no-files-found: error
