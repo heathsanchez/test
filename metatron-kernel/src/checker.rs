@@ -1536,12 +1536,7 @@ fn check_exact_pprod(
     };
     if first_level == second_level
         || constructor.level_params != inductive.level_params
-        || !is_exact_pprod_parameter_telescope(
-            export,
-            inductive.ty,
-            *first_level,
-            *second_level,
-        )
+        || !is_exact_pprod_parameter_telescope(export, inductive.ty, *first_level, *second_level)
         || inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
         || constructor.index != 0
