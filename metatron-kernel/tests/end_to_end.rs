@@ -602,7 +602,6 @@ fn g13_candidate_preserves_the_sealed_g12_behavior_vector() {
     }
 }
 
-
 fn run_g14_perturbations(replacements: &[(&str, &str)]) -> Verdict {
     let mut bytes = include_str!("../evidence/residuals/G14-001/fixture.ndjson").to_owned();
     for (from, to) in replacements {
@@ -630,14 +629,8 @@ fn pprod_sort_telescope_and_result_level_are_derived_not_trusted() {
         )],
         &[("{\"ie\":0,\"sort\":1}", "{\"ie\":0,\"sort\":2}")],
         &[("{\"ie\":1,\"sort\":2}", "{\"ie\":1,\"sort\":1}")],
-        &[(
-            "{\"il\":4,\"max\":[3,1]}",
-            "{\"il\":4,\"max\":[3,2]}",
-        )],
-        &[(
-            "{\"il\":5,\"max\":[4,2]}",
-            "{\"il\":5,\"max\":[4,1]}",
-        )],
+        &[("{\"il\":4,\"max\":[3,1]}", "{\"il\":4,\"max\":[3,2]}")],
+        &[("{\"il\":5,\"max\":[4,2]}", "{\"il\":5,\"max\":[4,1]}")],
         &[(
             "\"levelParams\":[2,3],\"name\":6",
             "\"levelParams\":[3,2],\"name\":6",
