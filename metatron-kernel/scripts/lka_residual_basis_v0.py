@@ -1733,6 +1733,23 @@ def main() -> int:
         pairs[k] for k in range(len(pairs))
         if (semantic_uncovered_mask >> k) & 1
     ]
+    semantic_residual_degree: Counter[int] = Counter()
+    for i, j in semantic_uncovered_pairs:
+        semantic_residual_degree[cases[i].number] += 1
+        semantic_residual_degree[cases[j].number] += 1
+    semantic_hot_cases = [
+        {
+            "case": number,
+            "degree": degree,
+            "expected": next(c.expected for c in cases if c.number == number),
+            "actual": next(c.actual for c in cases if c.number == number),
+            "file": next(c.path.name for c in cases if c.number == number),
+        }
+        for number, degree in sorted(
+            semantic_residual_degree.items(),
+            key=lambda item: (-item[1], item[0]),
+        )
+    ]
 
     full_mask = (1 << len(pairs)) - 1 if pairs else 0
     covered_mask = 0
@@ -1822,6 +1839,7 @@ def main() -> int:
                 [cases[i].number, cases[j].number]
                 for i, j in semantic_uncovered_pairs[:40]
             ],
+            "hot_cases": semantic_hot_cases[:30],
         },
         "exact_basis_size": None if real_basis is None else len(real_basis),
         "exact_basis": real_basis,
