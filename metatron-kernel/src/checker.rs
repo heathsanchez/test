@@ -1316,7 +1316,11 @@ fn is_rbtree_red_minor_type(
     red: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Pi {
+        domain: height,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
@@ -1414,7 +1418,11 @@ fn is_rbtree_black_minor_type(
     else {
         return false;
     };
-    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: height,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
@@ -1507,7 +1515,11 @@ fn is_derived_rbtree_recursor_type(
     else {
         return false;
     };
-    let Some(Expr::Pi { domain: motive, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1597,6 +1609,9 @@ fn rbtree_recursor_prefix_domains(
         body,
     } = export.exprs.get(*body)?
     else {
+        return None;
+    };
+    let Expr::Pi { domain: leaf, body } = export.exprs.get(*body)? else {
         return None;
     };
     let Expr::Pi { domain: leaf, body } = export.exprs.get(*body)? else {
@@ -1710,7 +1725,11 @@ fn is_derived_rbtree_red_rule(
     let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Lam { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Lam {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Lam {
@@ -1809,7 +1828,11 @@ fn is_derived_rbtree_black_rule(
     let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Lam { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Lam {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Lam {
