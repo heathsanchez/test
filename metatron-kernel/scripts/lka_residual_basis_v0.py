@@ -1716,6 +1716,24 @@ def main() -> int:
     real_edges = dedupe_edges(candidate_edges(cases, pairs, feature_names))
     real_basis = exact_min_cover(len(pairs), real_edges)
 
+    semantic_feature_names = sorted(
+        name for name in feature_names
+        if name.startswith("raw:semantic:")
+    )
+    semantic_edges = dedupe_edges(
+        candidate_edges(cases, pairs, semantic_feature_names)
+    )
+    semantic_basis = exact_min_cover(len(pairs), semantic_edges)
+    semantic_full_mask = (1 << len(pairs)) - 1 if pairs else 0
+    semantic_covered_mask = 0
+    for bits in semantic_edges.values():
+        semantic_covered_mask |= bits
+    semantic_uncovered_mask = semantic_full_mask & ~semantic_covered_mask
+    semantic_uncovered_pairs = [
+        pairs[k] for k in range(len(pairs))
+        if (semantic_uncovered_mask >> k) & 1
+    ]
+
     full_mask = (1 << len(pairs)) - 1 if pairs else 0
     covered_mask = 0
     for bits in real_edges.values():
@@ -1794,6 +1812,17 @@ def main() -> int:
             for i, j in uncovered_pairs[:40]
         ],
         "top_candidate_coverage": coverage_ranking[:20],
+        "semantic_only": {
+            "candidate_observations": len(semantic_feature_names),
+            "basis_size": None if semantic_basis is None else len(semantic_basis),
+            "basis": semantic_basis,
+            "separable_residual_pairs": len(pairs) - len(semantic_uncovered_pairs),
+            "unseparated_residual_pairs": len(semantic_uncovered_pairs),
+            "first_unseparated_pairs": [
+                [cases[i].number, cases[j].number]
+                for i, j in semantic_uncovered_pairs[:40]
+            ],
+        },
         "exact_basis_size": None if real_basis is None else len(real_basis),
         "exact_basis": real_basis,
         "blind_prediction_basis_ids": prediction["basis"],
