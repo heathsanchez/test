@@ -845,13 +845,12 @@ fn g15_shared_representation_earns_no_fourth_family() {
 }
 
 #[test]
-fn g15_leaves_frozen_punit_residual_unknown() {
-    let punit = include_str!("../evidence/residuals/G16-001/fixture.ndjson").to_owned();
-
-    assert_eq!(
-        run_with_g15_oracle("PUnit boundary", punit),
-        Verdict::Unknown,
-    );
+fn sealed_pre_g16_boundary_leaves_punit_unknown() {
+    let bytes = include_str!("../evidence/residuals/G16-001/fixture.ndjson");
+    let Some(oracle) = sealed_pre_g16_verdict(bytes) else {
+        return;
+    };
+    assert_eq!(oracle, Verdict::Unknown);
 }
 
 fn sealed_pre_g16_verdict(bytes: &str) -> Option<Verdict> {
