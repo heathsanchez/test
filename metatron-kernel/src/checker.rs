@@ -153,6 +153,30 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // LKA-EPI-001: an explicit declaration-level dimension that no retained
+    // inductive capability understands is epistemically outside the current
+    // language. Decline before a narrower closed-inductive validator can turn
+    // that unsupported neighbor into a false REJECT.
+    //
+    // This gate grants no authority: every affected block previously reached a
+    // retained handler, while the repaired outcome is always UNKNOWN. Malformed
+    // claims inside the retained nonrecursive/nonindexed envelopes still reach
+    // those handlers and remain eligible for REJECT.
+    if block.types.iter().any(|inductive| {
+        inductive.num_indices != 0
+            || inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+    }) || block
+        .constructors
+        .iter()
+        .any(|constructor| constructor.is_unsafe)
+        || block.recursors.iter().any(|recursor| recursor.is_unsafe)
+    {
+        return Err(Verdict::Unknown);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
