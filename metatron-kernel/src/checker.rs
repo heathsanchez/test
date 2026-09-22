@@ -153,6 +153,47 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G16-001 is deliberately routed by its earned name before constructor
+    // cardinality dispatch. This lets missing/extra constructors remain
+    // malformed claims inside the PUnit envelope (REJECT), while broader
+    // indexed/recursive/nested/unsafe neighbors remain unsupported (UNKNOWN).
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "PUnit")
+    {
+        if inductive.num_params != 0
+            || inductive.num_indices != 0
+            || inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+        {
+            return Err(Verdict::Unknown);
+        }
+        let [constructor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if constructor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if recursor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [level] = inductive.level_params.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        return ExactBinaryProductDerivation {
+            inductive,
+            constructor,
+            recursor,
+            constructor_suffix: "unit",
+            law: BinaryProductSortLaw::PUnit { level: *level },
+        }
+        .validate_and_promote(export, environment, limits, delta_policy);
+    }
+
     // LKA-EPI-001: an explicit declaration-level dimension that no retained
     // inductive capability understands is epistemically outside the current
     // language. Decline before a narrower closed-inductive validator can turn
@@ -603,19 +644,21 @@ fn is_bvar_applied_to_bvar(
     )
 }
 
-/// G15-001's closed internal quotient. The enum is deliberately sealed to
-/// the three independently qualified families, so sharing the derivation
-/// skeleton cannot recognize a fourth external declaration family.
+/// G15-001's closed internal quotient, extended by G16-001's independently
+/// earned nullary law. External recognition remains name-sealed: adding this
+/// variant cannot authorize any unrelated fourth product family.
 #[derive(Clone, Copy)]
 enum BinaryProductSortLaw {
     And,
     Prod { first: NameId, second: NameId },
     PProd { first: NameId, second: NameId },
+    PUnit { level: NameId },
 }
 
 impl BinaryProductSortLaw {
     fn parameter_sort(self, export: &ResolvedExport, expression: ExprId, first: bool) -> bool {
         match self {
+            Self::PUnit { .. } => false,
             Self::And => is_prop_sort(export, expression),
             Self::Prod {
                 first: first_level,
@@ -638,6 +681,7 @@ impl BinaryProductSortLaw {
 
     fn result_sort(self, export: &ResolvedExport, expression: ExprId) -> bool {
         match self {
+            Self::PUnit { level } => is_sort_parameter(export, expression, level),
             Self::And => is_prop_sort(export, expression),
             Self::Prod { first, second } => {
                 is_sort_max_succ_parameters(export, expression, first, second)
@@ -650,6 +694,9 @@ impl BinaryProductSortLaw {
 
     fn constant(self, export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
         match self {
+            Self::PUnit { level } => {
+                is_unary_polymorphic_constant(export, expression, name, level)
+            }
             Self::And => is_empty_constant(export, expression, name),
             Self::Prod { first, second } | Self::PProd { first, second } => {
                 is_polymorphic_constant(export, expression, name, first, second)
@@ -663,6 +710,9 @@ impl BinaryProductSortLaw {
         constructor: &Constructor,
     ) -> bool {
         match self {
+            Self::PUnit { level } => {
+                inductive.level_params == [level] && constructor.level_params == [level]
+            }
             Self::And => inductive.level_params.is_empty() && constructor.level_params.is_empty(),
             Self::Prod { first, second } | Self::PProd { first, second } => {
                 first != second
@@ -674,10 +724,48 @@ impl BinaryProductSortLaw {
 
     fn recursor_levels(self, inductive_level_params: &[NameId], recursor: &Recursor) -> bool {
         match self {
+            Self::PUnit { .. } => {
+                recursor.level_params.len() == 2
+                    && recursor.level_params[1] == inductive_level_params[0]
+            }
             Self::And => recursor.level_params.len() == 1,
             Self::Prod { .. } | Self::PProd { .. } => {
                 recursor.level_params.len() == 3
                     && &recursor.level_params[1..] == inductive_level_params
+            }
+        }
+    }
+
+    fn num_params(self) -> u64 {
+        match self {
+            Self::PUnit { .. } => 0,
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => 2,
+        }
+    }
+
+    fn num_fields(self) -> u64 {
+        self.num_params()
+    }
+
+    fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
+        match self {
+            Self::PUnit { .. } => self.result_sort(export, expression),
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
+                is_exact_binary_product_parameter_telescope(export, expression, self)
+            }
+        }
+    }
+
+    fn validates_constructor(
+        self,
+        export: &ResolvedExport,
+        expression: ExprId,
+        inductive: NameId,
+    ) -> bool {
+        match self {
+            Self::PUnit { .. } => self.constant(export, expression, inductive),
+            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
+                is_derived_binary_product_constructor_type(export, expression, inductive, self)
             }
         }
     }
@@ -702,24 +790,23 @@ impl ExactBinaryProductDerivation<'_> {
         if !self
             .law
             .declaration_levels(self.inductive, self.constructor)
-            || !is_exact_binary_product_parameter_telescope(export, self.inductive.ty, self.law)
+            || !self.law.validates_type(export, self.inductive.ty)
             || self.inductive.all != [self.inductive.name]
             || self.inductive.constructors != [self.constructor.name]
             || self.constructor.index != 0
             || self.constructor.inductive != self.inductive.name
-            || self.constructor.num_fields != 2
-            || self.constructor.num_params != 2
+            || self.constructor.num_fields != self.law.num_fields()
+            || self.constructor.num_params != self.law.num_params()
             || !name_is_child_str(
                 export,
                 self.constructor.name,
                 self.inductive.name,
                 self.constructor_suffix,
             )
-            || !is_derived_binary_product_constructor_type(
+            || !self.law.validates_constructor(
                 export,
                 self.constructor.ty,
                 self.inductive.name,
-                self.law,
             )
         {
             return Err(Verdict::Reject);
@@ -743,26 +830,55 @@ impl ExactBinaryProductDerivation<'_> {
             delta_policy,
         )?;
 
-        if !valid_binary_product_recursor_metadata(
-            export,
-            self.inductive.name,
-            &self.inductive.level_params,
-            self.constructor.name,
-            self.recursor,
-            self.law,
-        ) || !is_derived_binary_product_recursor_type(
-            export,
-            self.inductive.name,
-            self.constructor.name,
-            self.recursor,
-            self.law,
-        ) || !is_derived_binary_product_rule(
-            export,
-            self.inductive.name,
-            self.constructor.name,
-            self.recursor,
-            self.law,
-        ) {
+        let valid_recursor = match self.law {
+            BinaryProductSortLaw::PUnit { .. } => {
+                valid_punit_recursor_metadata(
+                    export,
+                    self.inductive.name,
+                    &self.inductive.level_params,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                ) && is_derived_punit_recursor_type(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                ) && is_derived_punit_rule(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                )
+            }
+            BinaryProductSortLaw::And
+            | BinaryProductSortLaw::Prod { .. }
+            | BinaryProductSortLaw::PProd { .. } => {
+                valid_binary_product_recursor_metadata(
+                    export,
+                    self.inductive.name,
+                    &self.inductive.level_params,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                ) && is_derived_binary_product_recursor_type(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                ) && is_derived_binary_product_rule(
+                    export,
+                    self.inductive.name,
+                    self.constructor.name,
+                    self.recursor,
+                    self.law,
+                )
+            }
+        };
+        if !valid_recursor {
             return Err(Verdict::Reject);
         }
         derivation.promote(
@@ -1159,6 +1275,128 @@ fn is_binary_product_constructor_application(
         && is_bvar(export, *second_parameter, 3)
         && is_bvar(export, *left, 1)
         && is_bvar(export, *right, 0)
+}
+
+fn is_unary_polymorphic_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    level_parameter: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if *name == constant
+                && matches!(levels.as_slice(), [level]
+                    if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == level_parameter))
+    )
+}
+
+fn valid_punit_recursor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    inductive_level_params: &[NameId],
+    constructor: NameId,
+    recursor: &Recursor,
+    law: BinaryProductSortLaw,
+) -> bool {
+    recursor.all == [inductive]
+        && !recursor.k
+        && law.recursor_levels(inductive_level_params, recursor)
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == 0
+        && recursor.num_indices == 0
+        && recursor.num_motives == 1
+        && recursor.num_minors == 1
+        && matches!(recursor.rules.as_slice(), [rule]
+            if rule.constructor == constructor && rule.num_fields == 0)
+        && name_is_child_str(export, recursor.name, inductive, "rec")
+}
+
+fn is_derived_punit_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::Pi { domain: motive, body }) = export.exprs.get(recursor.ty) else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: minor,
+        body,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
+        && is_punit_minor_type(export, *minor, constructor, law)
+        && law.constant(export, *target, inductive)
+        && is_bvar_application(export, *result, 2, 0)
+}
+
+fn is_derived_punit_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(rule.rhs) else {
+        return false;
+    };
+    let Some(Expr::Lam {
+        domain: minor,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
+        && is_punit_minor_type(export, *minor, constructor, law)
+        && is_bvar(export, *result, 0)
+}
+
+fn is_punit_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: argument,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    law.constant(export, *argument, inductive)
+        && is_sort_parameter(export, *result, motive_level)
+}
+
+fn is_punit_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, 0) && law.constant(export, *arg, constructor)
+    )
 }
 
 /// G13-001's name-specific frontier. G15 shares only its already-qualified
