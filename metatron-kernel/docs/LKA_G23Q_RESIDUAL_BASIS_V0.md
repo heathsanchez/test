@@ -88,6 +88,15 @@ These two probes are not named after tutorial cases and may not inspect expected
 verdicts. They are introduced because all previous observations leave exactly
 the projection-policy and Rule-K residual classes unresolved.
 
+Information-budget refinement:
+
+- exact minimum-cover length is meaningful only if one candidate cannot encode a
+  large fingerprint vector;
+- the rewrite-basis search therefore admits only candidate observations with
+  at most four distinct outcomes across the frozen suffix;
+- high-cardinality raw vectors (for example a full expression-tag count vector)
+  remain valid diagnostic evidence but cannot count as one primitive law.
+
 Forbidden:
 
 - tutorial filename;
