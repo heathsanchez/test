@@ -1,0 +1,68 @@
+{
+  "schema": "metatron-structural-diff-v1",
+  "id": "G16-001",
+  "baseline": {
+    "family": "G15 shared And/Prod/PProd architecture",
+    "sealed_sha": "c70e7a033b3660d3705f6566027f2b75e36cda2e"
+  },
+  "residual": {
+    "family": "PUnit",
+    "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891"
+  },
+  "preserved": [
+    "single safe nonrecursive nonindexed nonnested inductive",
+    "single safe constructor",
+    "single safe recursor",
+    "one motive and one minor",
+    "one constructor-owned recursor rule",
+    "derived signatures validated in dependency order",
+    "opaque signature promotion only"
+  ],
+  "changed": [
+    {
+      "dimension": "universe_arity",
+      "from": "0 for And or 2 for Prod/PProd",
+      "to": "1"
+    },
+    {
+      "dimension": "term_parameter_count",
+      "from": "2",
+      "to": "0"
+    },
+    {
+      "dimension": "constructor_field_count",
+      "from": "2",
+      "to": "0"
+    },
+    {
+      "dimension": "result_sort_law",
+      "from": "family-specific Prop/Type/Sort binary law",
+      "to": "Sort u"
+    },
+    {
+      "dimension": "constructor_suffix",
+      "from": "intro/mk",
+      "to": "unit"
+    },
+    {
+      "dimension": "recursor_level_count",
+      "from": "1 or 3",
+      "to": "2 [motive,u]"
+    },
+    {
+      "dimension": "minor_shape",
+      "from": "two field binders then motive constructor-application",
+      "to": "motive PUnit.unit"
+    },
+    {
+      "dimension": "rule_shape",
+      "from": "motive/minor plus field binders",
+      "to": "motive/minor then minor"
+    }
+  ],
+  "hypothesis_delta": [
+    "nullary_singleton_constructor_shape",
+    "single_level_sort_polymorphism"
+  ],
+  "architecture_promotion_authorized": false
+}
