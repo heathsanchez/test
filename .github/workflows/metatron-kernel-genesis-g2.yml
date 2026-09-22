@@ -324,7 +324,7 @@ jobs:
             'qualification':json.loads((root/'qualification.json').read_text()),
             'tutorial_qualification':json.loads((root/'tutorial-qualification.json').read_text()),
             'tutorial_differential':json.loads((root/'tutorial-differential.json').read_text()),
-            'supplemental':json.loads((root/'g21-supplemental.json').read_text()),
+            'supplemental':json.loads((root/'g22-supplemental.json').read_text()),
             'retired_instructions':json.loads((root/'instructions.json').read_text()),
           }
           (root/'attestation.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
