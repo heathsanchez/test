@@ -32,7 +32,7 @@ jobs:
           gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
           unzip -q /tmp/atlas.zip -d /tmp/atlas
 
-      - name: Freeze 32 high-value short-regime targets
+      - name: Freeze fresh transport-slack targets
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/official_freeze
@@ -40,21 +40,62 @@ jobs:
           import urllib.request,json,pathlib
           B='https://server-9527.sair.foundation'
           H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
-          req=urllib.request.Request(B+'/api/acc/discoveries/snapshot?problem=ac',headers=H)
-          with urllib.request.urlopen(req,timeout=60) as r:obj=json.loads(r.read().decode())
-          d=obj.get('data',obj);items=d['items']
-          def cid(x): return x.get('problemId') or x.get('challengeId')
-          rows=[x for x in items if cid(x) and x.get('status')=='solved' and x.get('kTeams')==1
-                and isinstance(x.get('currentBestLength'),int)
-                and 300 <= x['currentBestLength'] <= 2500]
-          rows.sort(key=lambda x:(-x['currentBestLength'],cid(x)))
-          rows=rows[:32]
-          pathlib.Path('acc_competitive/official_freeze/snapshot_ac.json').write_text(json.dumps(obj,indent=2,sort_keys=True)+'\n')
-          ids=[cid(x) for x in rows]
+          def fetch(problem):
+              req=urllib.request.Request(B+f'/api/acc/discoveries/snapshot?problem={problem}',headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def items(obj):
+              d=obj.get('data',obj)
+              xs=d['items']
+              if xs:
+                  print('SNAPSHOT_FIELDS', sorted(xs[0].keys()))
+              return xs
+          def cid(x):
+              return x.get('problemId') or x.get('challengeId')
+
+          ac=fetch('ac'); stable=fetch('stable-ac')
+          ac_items=items(ac); stable_items=items(stable)
+          smap={cid(x):x for x in stable_items if cid(x)}
+          attempted=set(json.loads(pathlib.Path('acc_competitive/competitive_attempted_seed_v1.json').read_text()))
+          wins=set(json.loads(pathlib.Path('acc_competitive/competitive_wins_seed_v1.json').read_text()))
+
+          rows=[]
+          for a in ac_items:
+              aid=cid(a)
+              if not aid or not aid.startswith('ac-') or aid in attempted or aid in wins:
+                  continue
+              sid='sac-'+aid[3:]
+              s=smap.get(sid)
+              if s is None or a.get('status')!='solved' or s.get('status')!='solved':
+                  continue
+              ab=a.get('currentBestLength'); sb=s.get('currentBestLength')
+              if not isinstance(ab,int) or not isinstance(sb,int):
+                  continue
+              slack=sb-ab-2
+              if slack <= 0:
+                  continue
+              rows.append({
+                  'challenge_id':aid,
+                  'stable_challenge_id':sid,
+                  'ac_best':ab,
+                  'stable_best':sb,
+                  'transport_slack':slack,
+                  'source_bound_exclusive':sb-2,
+                  'ac_kTeams':a.get('kTeams'),
+                  'stable_kTeams':s.get('kTeams'),
+              })
+
+          rows.sort(key=lambda x:(-x['transport_slack'],x['ac_best'],x['challenge_id']))
+          rows=rows[:12]
+          if not rows:
+              raise SystemExit('No fresh positive transport-slack targets')
+          pathlib.Path('acc_competitive/official_freeze/snapshot_ac.json').write_text(json.dumps(ac,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('acc_competitive/official_freeze/snapshot_stable.json').write_text(json.dumps(stable,indent=2,sort_keys=True)+'\n')
+          ids=[x['challenge_id'] for x in rows]
           for shard in range(4):
               pathlib.Path(f'acc_competitive/official_freeze/shard_{shard}.json').write_text(json.dumps(ids[shard::4],indent=2)+'\n')
           pathlib.Path('acc_competitive/official_freeze/selected.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
-          print('OFFICIAL_TARGETS',[(cid(x),x['currentBestLength']) for x in rows])
+          print('TRANSPORT_SLACK_TARGETS',json.dumps(rows,sort_keys=True))
           PY
 
       - uses: actions/upload-artifact@v4
@@ -93,17 +134,18 @@ jobs:
         run: |
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
-      - name: Search direct official-move cost
+      - name: Search transport-aware official-move cost
         run: |
           set -o pipefail
           python3 acc_competitive/official_bestfirst_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
             --snapshot-ac "$(find /tmp/freeze -name snapshot_ac.json | head -1)" \
+            --snapshot-stable "$(find /tmp/freeze -name snapshot_stable.json | head -1)" \
             --target-ids-file "$(find /tmp/freeze -name 'shard_${{ matrix.shard }}.json' | head -1)" \
             --out-dir "acc_competitive/official_${{ matrix.shard }}" \
             --node-cap 250000 \
-            --time-cap 900 \
+            --time-cap 600 \
             --depth-weight 0.15 \
             --extra-total 40 \
             | tee "acc_competitive/official_${{ matrix.shard }}.log"
@@ -131,7 +173,7 @@ jobs:
           pattern: acc-official-*
           path: acc_competitive/official_downloads
           merge-multiple: false
-      - name: Pool official-cost wins
+      - name: Pool pinned-verified transport wins
         run: |
           mkdir -p acc_competitive/official_pool
           python3 - <<'PY'
@@ -146,7 +188,9 @@ jobs:
                   if cid not in best or len(m)<len(best[cid]):best[cid]=m
           pathlib.Path('acc_competitive/official_pool/pending_submission.txt').write_text(
               '\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
-          rep={'pending_rows':len(best),'ac_rows':sum(cid.startswith('ac-') for cid in best)}
+          rep={'pending_rows':len(best),
+               'ac_rows':sum(cid.startswith('ac-') for cid in best),
+               'stable_rows':sum(cid.startswith('sac-') for cid in best)}
           pathlib.Path('acc_competitive/official_pool/report.json').write_text(json.dumps(rep,indent=2,sort_keys=True)+'\n')
           print('OFFICIAL_POOL',json.dumps(rep,sort_keys=True))
           PY
