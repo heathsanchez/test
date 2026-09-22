@@ -30,8 +30,8 @@ class TutorialInputTests(unittest.TestCase):
         )
 
     def test_production_manifest_pins_nat_as_case_044(self):
-        self.assertEqual(len(TUTORIAL_MANIFEST), 44)
-        case = TUTORIAL_MANIFEST[-1]
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 44)
+        case = TUTORIAL_MANIFEST[43]
         self.assertEqual(case.number, "044")
         self.assertEqual(case.relative_path, Path("good/044_natDef.ndjson"))
         self.assertEqual(case.expected_exit_code, 0)
@@ -49,6 +49,17 @@ class TutorialInputTests(unittest.TestCase):
         self.assertEqual(
             case.sha256,
             "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+        )
+
+    def test_production_manifest_pins_rbtree_as_case_045(self):
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 45)
+        case = TUTORIAL_MANIFEST[44]
+        self.assertEqual(case.number, "045")
+        self.assertEqual(case.relative_path, Path("good/045_rbTreeDef.ndjson"))
+        self.assertEqual(case.expected_exit_code, 0)
+        self.assertEqual(
+            case.sha256,
+            "d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79",
         )
 
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
