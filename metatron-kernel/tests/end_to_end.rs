@@ -854,7 +854,6 @@ fn g15_leaves_frozen_punit_residual_unknown() {
     );
 }
 
-
 fn sealed_pre_g16_verdict(bytes: &str) -> Option<Verdict> {
     let Ok(oracle) = std::env::var("METATRON_G16_ORACLE") else {
         return None;
