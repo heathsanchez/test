@@ -53,7 +53,7 @@ jobs:
           def cid(x):
               return x.get('problemId') or x.get('challengeId')
 
-          ac=fetch('ac'); stable=fetch('stable-ac')
+          ac=fetch('ac'); stable=fetch('stable_ac')
           ac_items=items(ac); stable_items=items(stable)
           smap={cid(x):x for x in stable_items if cid(x)}
           attempted=set(json.loads(pathlib.Path('acc_competitive/competitive_attempted_seed_v1.json').read_text()))
