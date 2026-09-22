@@ -57,8 +57,6 @@ def permanentRyser (dimension seed : Nat) : Nat :=
 
 def impl (n : Nat) : Nat :=
   permanentRyser (permanentDimension n) (permanentSeed n)
-
-end Submission
 '''
 # Correct a deliberately simple source transformation: rowsProduct needs the subset mask.
 core=core.replace(
