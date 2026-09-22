@@ -10,7 +10,7 @@
   },
   "obstruction": "The exact local recursive N (zero/succ) is the first recursive inductive outside the retained G17 authority.",
   "expected": "ACCEPT",
-  "observed": "REJECT",
+  "observed": "ACCEPT",
   "least_capability": "Exact N requires a name-sealed recursive constructor/recursor law plus the existing staged opaque-signature promotion transaction; no general recursive-inductive engine is introduced.",
   "falsifier": "Sealed G17 must REJECT the exact valid Nat fixture; G18 must ACCEPT it. Malformed claims inside the named N envelope reject; parameterized, indexed, reflexive, unsafe, nested, and renamed neighbors remain UNKNOWN; tutorials 001-043 stay equal to sealed G17.",
   "protected_suite": [
@@ -19,5 +19,20 @@
     "tutorial 044 is REJECT at sealed G17 and ACCEPT only after G18",
     "no general recursive-inductive authority is inferred"
   ],
-  "decision": "open"
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "bb7809104681852b46d71c688814f24692965b1b",
+    "oracle_sha": "3a4bb85a06f6434bca27f72e82dc682570123c99",
+    "run_id": 35704232366,
+    "job_id": 106669198325,
+    "artifact_id": 10682964232,
+    "artifact_digest": "sha256:f3f7ae1d4878848b7c00ffffd414e2a5e68410629d6576d4f2cc11f7c32c781b",
+    "tutorial_differential": {
+      "equal": 43,
+      "earned_delta": 1,
+      "mismatch": 0,
+      "oracle_exit": 1,
+      "candidate_exit": 0
+    }
+  }
 }

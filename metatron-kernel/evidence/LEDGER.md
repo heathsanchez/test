@@ -513,3 +513,36 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   refined to IdealLean and whole-checker verification is not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+## G18-001 — Exact recursive `N` law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G17 head
+  `3a4bb85a06f6434bca27f72e82dc682570123c99`, which returns `REJECT`
+  on the valid tutorial 044 Nat declaration.
+- Exact fixture: tutorial 044 `good/044_natDef.ndjson`, SHA-256
+  `95d33f871f126e234740e05d9291a1cedcc6a2d01522aedc3122b25aab17ab95`.
+- Least capability: one name-sealed recursive `N` law deriving `N : Type`,
+  `N.zero`, `N.succ : N → N`, the exact two-minor recursor, induction
+  hypothesis position, and both exported recursor rules before reusing the
+  existing staged opaque-signature promotion transaction.
+- No general recursive-inductive engine, positivity search, iota evaluator,
+  arbitrary recursion, mutual recursion, indexed recursion, nested recursion,
+  or unsafe authority was added.
+- Falsifiers passed: recursion flag, result sort, constructor indices,
+  constructor field/type claims, recursor K bit, minor count, rule ownership,
+  rule field counts/bodies, and recursor type perturbations reject.
+  Parameterized, indexed, reflexive, unsafe, nested, and renamed Nat neighbours
+  remain `UNKNOWN`.
+- Exact oracle differential: tutorials 001–043 are equal to sealed G17;
+  tutorial 044 is the sole earned `REJECT → ACCEPT` repair; zero mismatches.
+- External qualification: candidate
+  `bb7809104681852b46d71c688814f24692965b1b`, run `35704232366`, job
+  `106669198325`, artifact `10682964232`, digest
+  `sha256:f3f7ae1d4878848b7c00ffffd414e2a5e68410629d6576d4f2cc11f7c32c781b`.
+  The six-case contract, all 44 tutorial cases, and 54 end-to-end tests passed.
+- Formal status: generic staged opaque-promotion validity/opacity warrants still
+  apply to the installation transaction, but the exact Rust recursive Nat law
+  and its recursive-shape validation are not refined to IdealLean; whole-checker
+  verification is not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+
