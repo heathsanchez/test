@@ -1,0 +1,46 @@
+{
+  "schema": "metatron-structural-diff-v1",
+  "id": "G14-001",
+  "baseline": {
+    "id": "G13-001",
+    "family": "Prod",
+    "fixture_sha256": "a74e83890dce34014ef7dc8f1f6e7baf56d481df2a776d886462c789c529741d"
+  },
+  "residual": {
+    "family": "PProd",
+    "fixture_sha256": "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a"
+  },
+  "preserved": [
+    "two ordered universe parameters u,v",
+    "two ordered type parameters",
+    "one safe nonrecursive nonindexed nonnested constructor with two direct fields",
+    "constructor level parameter order [u,v]",
+    "one safe recursor with level order [motive,u,v]",
+    "two recursor parameters, zero indices, one motive, one minor",
+    "one rule owned by the sole constructor with two fields",
+    "same constructor/recursor de Bruijn application spine",
+    "opaque-signature-only promotion boundary"
+  ],
+  "changed": [
+    {
+      "dimension": "first_parameter_sort",
+      "from": "Sort (succ u)",
+      "to": "Sort u"
+    },
+    {
+      "dimension": "second_parameter_sort",
+      "from": "Sort (succ v)",
+      "to": "Sort v"
+    },
+    {
+      "dimension": "computed_result_sort",
+      "from": "Sort (max (succ u) (succ v))",
+      "to": "Sort (max (max (succ 0) u) v)"
+    }
+  ],
+  "hypothesis_delta": [
+    "sort_polymorphic_parameter_and_result_levels"
+  ],
+  "extra_structural_degree_observed": false,
+  "architecture_promotion_authorized": false
+}
