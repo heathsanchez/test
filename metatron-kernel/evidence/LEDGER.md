@@ -480,11 +480,38 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Formal status: no new theorem is claimed. This change removes unwarranted
   conclusive authority rather than adding semantic authority.
 
-## G16-001 — Frozen `PUnit` stress residual
+## G16-001 — Exact `PUnit` nullary/singleton law
 
-- Status: OPEN as the next exact residual; deliberately untouched by G15.
-- Exact fixture: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
-  `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`.
-- Current retained G15 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
-- Role: an independent nullary/singleton stress test for any abstraction
-  retained by G15, not evidence permitted to broaden G15 in advance.
+- Status: RETAINED at candidate head
+  `fe6c65c9d75ac3fd52db7e9da46c1573952ee705`, qualified by run
+  `35705569467`, job `106673530654`, artifact `10684216502`, digest
+  `sha256:ed6f8311c1bfb3cf50b682c2068f6a16969eb044949d5c96e856cf310aa27469`.
+- Oracle boundary: retained LKA-EPI-001 head
+  `c70e7a033b3660d3705f6566027f2b75e36cda2e`.
+- Exact obstruction: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
+  `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`,
+  is `UNKNOWN` at the oracle and must ACCEPT.
+- Retained law: one exact PUnit nullary/singleton descriptor—one universe
+  parameter, zero term parameters, one nullary constructor, one motive, one
+  minor and one zero-field recursor rule—reuses the retained closed derivation
+  and opaque-signature promotion machinery.
+- Exact differential: tutorials 001–041 remain identical; tutorial 042 is the
+  sole earned tutorial delta: **41 equal, 1 earned delta, 0 mismatches**.
+  Tutorials 001–042 therefore have **42 matched, 0 incorrect**.
+- Consequence closure: tutorial 068 `punitRec` also changes
+  `UNKNOWN → ACCEPT` with no separate capability. Its acceptance follows
+  because the exact PUnit recursor signature installed by G16 is now available
+  to the ordinary checker. Full future replay 042–141 changed exactly cases
+  042 and 068 and no others.
+- Falsifiers: malformed claims inside the exact PUnit envelope reject;
+  indexed, recursive, nested, unsafe and broader forms remain UNKNOWN.
+  Eq, recursive inductives, projections, literals, proof irrelevance, eta and
+  Quot remain outside authority.
+- Formal status: no new theorem was introduced. Existing portable
+  opaque-signature environment-validity promotion remains the semantic warrant
+  once exact PUnit signatures are independently derived. Rust refinement and
+  whole-checker verification are not claimed.
+- Performance: no retired-instruction promotion; same-cohort hardware-counter
+  evidence remains unavailable.
+
+

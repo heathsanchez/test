@@ -3,20 +3,83 @@
   "id": "G16-001",
   "authority": {
     "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
-    "candidate_baseline": "G15 retained shared representation after exact oracle equivalence",
+    "candidate_baseline": "retained LKA-EPI-001 head c70e7a033b3660d3705f6566027f2b75e36cda2e",
     "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
     "tutorial_ordinal": 42,
     "upstream_path": "tutorial output good/042_pUnitType.ndjson"
   },
   "obstruction": "The universe-polymorphic nullary singleton PUnit is outside all exact retained inductive classifiers.",
   "expected": "ACCEPT",
-  "observed": "UNKNOWN",
-  "least_capability": "UNDECIDED: tutorial 042 is now the next exact residual and must determine the nullary/singleton delta before implementation.",
-  "falsifier": "Must be derived RED-first from the exact PUnit declaration without broadening the retained G15 engine in advance.",
+  "observed": "ACCEPT",
+  "least_capability": "Add one exact PUnit nullary/singleton law to the retained closed derivation machinery: one universe parameter, zero term parameters, one nullary constructor, and independently derived one-motive/one-minor/zero-field recursor metadata/rule. Reuse opaque signature promotion; do not add indices, recursion, iota, eta, projections, or generic inductive authority.",
+  "falsifier": "Exact PUnit must ACCEPT; malformed claims inside the recognized PUnit envelope must REJECT; indexed/recursive/nested/unsafe or broader forms remain UNKNOWN; tutorials 001-041 remain identical to the retained epistemic oracle; Eq/recursion/projection/literal/proof-irrelevance/eta/Quot frontiers gain no ACCEPT.",
   "protected_suite": [
-    "all G0-G14 tests",
-    "exact tutorial prefix 001-041",
-    "tutorial 042 remains UNKNOWN at the sealed G15 boundary"
+    "all retained G0-G15 and LKA-EPI-001 tests",
+    "exact tutorial prefix 001-041 identical to c70e7a033b3660d3705f6566027f2b75e36cda2e",
+    "exact PUnit tutorial 042 is the sole earned tutorial delta",
+    "Eq 043 and later independent semantic frontiers remain outside authority"
   ],
-  "decision": "open"
+  "decision": "retained",
+  "implementation": {
+    "commit": "862b6fe6997836834e70e420044acb84ef2b8882",
+    "final_source_head": "a509c61c5e101622846c9866a4519516ce25f2d5",
+    "representation": "PUnit law consumed by retained ExactBinaryProductDerivation with PUnit-specific nullary recursor validation"
+  },
+  "causal_result": {
+    "direct_earned_case": 42,
+    "derived_consequence_cases": [
+      68
+    ],
+    "future_changed_cases": [
+      42,
+      68
+    ],
+    "interpretation": "Tutorial 068 punitRec closes from the newly installed PUnit type/constructor/recursor signatures; it is a downstream consequence, not a separately promoted capability."
+  },
+  "formal_warrant": {
+    "status": "no new theorem introduced; existing opaque-signature environment-validity promotion law remains the portable semantic warrant once exact PUnit signatures are independently derived",
+    "rust_refinement": false,
+    "whole_checker_verification": false
+  },
+  "qualification": {
+    "candidate_sha": "fe6c65c9d75ac3fd52db7e9da46c1573952ee705",
+    "run_id": 35705569467,
+    "job_id": 106673530654,
+    "artifact_id": 10684216502,
+    "artifact_digest": "sha256:ed6f8311c1bfb3cf50b682c2068f6a16969eb044949d5c96e856cf310aa27469",
+    "tutorial": {
+      "matched": 42,
+      "incorrect": 0
+    },
+    "differential": {
+      "oracle_sha": "c70e7a033b3660d3705f6566027f2b75e36cda2e",
+      "equal": 41,
+      "earned_delta": 1,
+      "mismatch": 0
+    },
+    "future_audit": {
+      "oracle_correct": 11,
+      "candidate_correct": 13,
+      "changed_cases": [
+        42,
+        68
+      ],
+      "new_accepts": [
+        42,
+        68
+      ],
+      "transitions": {
+        "0->0": 6,
+        "1->1": 6,
+        "2->0": 2,
+        "2->2": 68,
+        "3->3": 18
+      }
+    },
+    "result": "success"
+  },
+  "performance": {
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "promotion_eligible": false
+  }
 }
