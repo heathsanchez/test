@@ -1154,30 +1154,23 @@ fn is_nat_motive_type(
     )
 }
 
+
 fn is_nat_succ_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     succ: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: value,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: induction_hypothesis,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [value, induction_hypothesis] = domains.as_slice() else {
         return false;
     };
     let Some(Expr::App {
         fun: motive,
         arg: succ_value,
-    }) = export.exprs.get(*result)
+    }) = export.exprs.get(result)
     else {
         return false;
     };
@@ -1195,6 +1188,7 @@ fn is_nat_succ_minor_type(
         && is_bvar(export, *succ_arg, 1)
 }
 
+
 fn is_derived_nat_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -1202,39 +1196,17 @@ fn is_derived_nat_recursor_type(
     succ: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 4) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: zero_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: succ_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive, zero_minor, succ_minor, target] = domains.as_slice() else {
         return false;
     };
     is_nat_motive_type(export, *motive, inductive, recursor.level_params[0])
         && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
         && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_applied_to_bvar(export, *result, 3, 0)
+        && is_bvar_applied_to_bvar(export, result, 3, 0)
 }
 
 fn are_derived_nat_rules(
@@ -1265,6 +1237,7 @@ fn are_derived_nat_rules(
     )
 }
 
+
 fn is_derived_nat_zero_rule(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1273,32 +1246,18 @@ fn is_derived_nat_zero_rule(
     succ: NameId,
     motive_level: NameId,
 ) -> bool {
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = lam_spine(export, expression, 3) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: zero_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: succ_minor,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive, zero_minor, succ_minor] = domains.as_slice() else {
         return false;
     };
     is_nat_motive_type(export, *motive, inductive, motive_level)
         && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
         && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
-        && is_bvar(export, *result, 1)
+        && is_bvar(export, result, 1)
 }
+
 
 fn is_derived_nat_succ_rule(
     export: &ResolvedExport,
@@ -1309,32 +1268,10 @@ fn is_derived_nat_succ_rule(
     recursor_name: NameId,
     motive_level: NameId,
 ) -> bool {
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = lam_spine(export, expression, 4) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: zero_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: succ_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: value,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive, zero_minor, succ_minor, value] = domains.as_slice() else {
         return false;
     };
     if !is_nat_motive_type(export, *motive, inductive, motive_level)
@@ -1344,55 +1281,25 @@ fn is_derived_nat_succ_rule(
     {
         return false;
     }
-
     let Some(Expr::App {
         fun: succ_step,
         arg: recursive_call,
-    }) = export.exprs.get(*result)
+    }) = export.exprs.get(result)
     else {
         return false;
     };
     if !is_bvar_application(export, *succ_step, 1, 0) {
         return false;
     }
-    let Some(Expr::App {
-        fun,
-        arg: value_arg,
-    }) = export.exprs.get(*recursive_call)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: succ_minor_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: zero_minor_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: motive_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_unary_polymorphic_constant(export, *head, recursor_name, motive_level)
-        && is_bvar(export, *motive_arg, 3)
-        && is_bvar(export, *zero_minor_arg, 2)
-        && is_bvar(export, *succ_minor_arg, 1)
-        && is_bvar(export, *value_arg, 0)
+    let (head, arguments) = application_spine(export, *recursive_call);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, recursor_name, motive_level)
+        && [3, 2, 1, 0]
+            .into_iter()
+            .zip(arguments)
+            .all(|(expected, actual)| is_bvar(export, actual, expected))
 }
 
-/// G19-001: exact recursive indexed RBTree. This is a name-sealed composition
-/// of already-earned parameter, index, recursion, and staged opaque-signature
-/// laws. It is deliberately not a generic recursive-indexed inductive engine.
 fn check_exact_rbtree(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2885,29 +2792,23 @@ fn is_binary_bvar_application(
         && is_bvar(export, *arg, second)
 }
 
+
 fn is_exact_binary_product_parameter_telescope(
     export: &ResolvedExport,
     expression: ExprId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second] = domains.as_slice() else {
         return false;
     };
     law.parameter_sort(export, *first, true)
         && law.parameter_sort(export, *second, false)
-        && law.result_sort(export, *result)
+        && law.result_sort(export, result)
 }
+
 
 fn is_derived_binary_product_constructor_type(
     export: &ResolvedExport,
@@ -2915,35 +2816,17 @@ fn is_derived_binary_product_constructor_type(
     inductive: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second, left, right] = domains.as_slice() else {
         return false;
     };
     law.parameter_sort(export, *first, true)
         && law.parameter_sort(export, *second, false)
         && is_bvar(export, *left, 1)
         && is_bvar(export, *right, 1)
-        && is_binary_product_constant_application(export, *result, inductive, 3, 2, law)
+        && is_binary_product_constant_application(export, result, inductive, 3, 2, law)
 }
 
 fn valid_binary_product_recursor_metadata(
@@ -2966,6 +2849,7 @@ fn valid_binary_product_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
+
 fn is_derived_binary_product_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -2973,39 +2857,10 @@ fn is_derived_binary_product_recursor_type(
     recursor: &Recursor,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second, motive, minor, target] = domains.as_slice() else {
         return false;
     };
     law.parameter_sort(export, *first, true)
@@ -3013,8 +2868,9 @@ fn is_derived_binary_product_recursor_type(
         && is_binary_product_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_binary_product_minor_type(export, *minor, constructor, law)
         && is_binary_product_constant_application(export, *target, inductive, 3, 2, law)
-        && is_bvar_application(export, *result, 2, 0)
+        && is_bvar_application(export, result, 2, 0)
 }
+
 
 fn is_binary_product_motive_type(
     export: &ResolvedExport,
@@ -3023,16 +2879,16 @@ fn is_binary_product_motive_type(
     motive_level: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: argument,
-        body: result,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [argument] = domains.as_slice() else {
         return false;
     };
     is_binary_product_constant_application(export, *argument, inductive, 1, 0, law)
-        && is_sort_parameter(export, *result, motive_level)
+        && is_sort_parameter(export, result, motive_level)
 }
+
 
 fn is_binary_product_minor_type(
     export: &ResolvedExport,
@@ -3040,20 +2896,16 @@ fn is_binary_product_minor_type(
     constructor: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(expression) else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [left, right] = domains.as_slice() else {
         return false;
     };
     let Some(Expr::App {
         fun: motive,
         arg: constructed,
-    }) = export.exprs.get(*result)
+    }) = export.exprs.get(result)
     else {
         return false;
     };
@@ -3062,6 +2914,7 @@ fn is_binary_product_minor_type(
         && is_bvar(export, *motive, 2)
         && is_binary_product_constructor_application(export, *constructed, constructor, law)
 }
+
 
 fn is_derived_binary_product_rule(
     export: &ResolvedExport,
@@ -3073,42 +2926,10 @@ fn is_derived_binary_product_rule(
     let [rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: first,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second, motive, minor, left, right] = domains.as_slice() else {
         return false;
     };
     law.parameter_sort(export, *first, true)
@@ -3117,8 +2938,9 @@ fn is_derived_binary_product_rule(
         && is_binary_product_minor_type(export, *minor, constructor, law)
         && is_bvar(export, *left, 3)
         && is_bvar(export, *right, 3)
-        && is_binary_bvar_application(export, *result, 2, 1, 0)
+        && is_binary_bvar_application(export, result, 2, 1, 0)
 }
+
 
 fn is_binary_product_constant_application(
     export: &ResolvedExport,
@@ -3128,20 +2950,13 @@ fn is_binary_product_constant_application(
     second: u64,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    law.constant(export, *head, constant)
-        && is_bvar(export, *first_arg, first)
-        && is_bvar(export, *arg, second)
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [first_arg, second_arg]
+        if law.constant(export, head, constant)
+            && is_bvar(export, *first_arg, first)
+            && is_bvar(export, *second_arg, second))
 }
+
 
 fn is_binary_product_constructor_application(
     export: &ResolvedExport,
@@ -3149,31 +2964,13 @@ fn is_binary_product_constructor_application(
     constructor: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: second_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    law.constant(export, *head, constructor)
-        && is_bvar(export, *first_parameter, 4)
-        && is_bvar(export, *second_parameter, 3)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 0)
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [first_parameter, second_parameter, left, right]
+        if law.constant(export, head, constructor)
+            && is_bvar(export, *first_parameter, 4)
+            && is_bvar(export, *second_parameter, 3)
+            && is_bvar(export, *left, 1)
+            && is_bvar(export, *right, 0))
 }
 
 fn is_unary_polymorphic_constant(
@@ -3212,6 +3009,7 @@ fn valid_punit_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
+
 fn is_derived_punit_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -3219,32 +3017,18 @@ fn is_derived_punit_recursor_type(
     recursor: &Recursor,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 3) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive, minor, target] = domains.as_slice() else {
         return false;
     };
     is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_punit_minor_type(export, *minor, constructor, law)
         && law.constant(export, *target, inductive)
-        && is_bvar_application(export, *result, 2, 0)
+        && is_bvar_application(export, result, 2, 0)
 }
+
 
 fn is_derived_punit_rule(
     export: &ResolvedExport,
@@ -3256,24 +3040,17 @@ fn is_derived_punit_rule(
     let [rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 2) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: minor,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive, minor] = domains.as_slice() else {
         return false;
     };
     is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_punit_minor_type(export, *minor, constructor, law)
-        && is_bvar(export, *result, 0)
+        && is_bvar(export, result, 0)
 }
+
 
 fn is_punit_motive_type(
     export: &ResolvedExport,
@@ -3282,14 +3059,13 @@ fn is_punit_motive_type(
     motive_level: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: argument,
-        body: result,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
         return false;
     };
-    law.constant(export, *argument, inductive) && is_sort_parameter(export, *result, motive_level)
+    let [argument] = domains.as_slice() else {
+        return false;
+    };
+    law.constant(export, *argument, inductive) && is_sort_parameter(export, result, motive_level)
 }
 
 fn is_punit_minor_type(
@@ -3305,33 +3081,20 @@ fn is_punit_minor_type(
     )
 }
 
+
 fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: parameter,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: index,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, parameter, index] = domains.as_slice() else {
         return false;
     };
     is_sort_parameter(export, *carrier, level)
         && is_bvar(export, *parameter, 0)
         && is_bvar(export, *index, 1)
-        && is_prop_sort(export, *result)
+        && is_prop_sort(export, result)
 }
+
 
 fn is_derived_eq_constructor_type(
     export: &ResolvedExport,
@@ -3339,18 +3102,10 @@ fn is_derived_eq_constructor_type(
     inductive: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: parameter,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, parameter] = domains.as_slice() else {
         return false;
     };
     let BinaryProductSortLaw::Eq { level } = law else {
@@ -3358,8 +3113,9 @@ fn is_derived_eq_constructor_type(
     };
     is_sort_parameter(export, *carrier, level)
         && is_bvar(export, *parameter, 0)
-        && is_eq_application(export, *result, inductive, law, 1, 0, 0)
+        && is_eq_application(export, result, inductive, law, 1, 0, 0)
 }
+
 
 fn is_eq_application(
     export: &ResolvedExport,
@@ -3370,32 +3126,14 @@ fn is_eq_application(
     parameter: u64,
     index: u64,
 ) -> bool {
-    let Some(Expr::App {
-        fun,
-        arg: index_arg,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: parameter_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: carrier_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    law.constant(export, *head, inductive)
-        && is_bvar(export, *carrier_arg, carrier)
-        && is_bvar(export, *parameter_arg, parameter)
-        && is_bvar(export, *index_arg, index)
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [carrier_arg, parameter_arg, index_arg]
+        if law.constant(export, head, inductive)
+            && is_bvar(export, *carrier_arg, carrier)
+            && is_bvar(export, *parameter_arg, parameter)
+            && is_bvar(export, *index_arg, index))
 }
+
 
 fn is_eq_constructor_application(
     export: &ResolvedExport,
@@ -3405,23 +3143,11 @@ fn is_eq_constructor_application(
     carrier: u64,
     parameter: u64,
 ) -> bool {
-    let Some(Expr::App {
-        fun,
-        arg: parameter_arg,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: carrier_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    law.constant(export, *head, constructor)
-        && is_bvar(export, *carrier_arg, carrier)
-        && is_bvar(export, *parameter_arg, parameter)
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [carrier_arg, parameter_arg]
+        if law.constant(export, head, constructor)
+            && is_bvar(export, *carrier_arg, carrier)
+            && is_bvar(export, *parameter_arg, parameter))
 }
 
 fn valid_eq_recursor_metadata(
@@ -3445,6 +3171,7 @@ fn valid_eq_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
+
 fn is_eq_motive_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -3452,23 +3179,15 @@ fn is_eq_motive_type(
     motive_level: NameId,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: index,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: proof,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [index, proof] = domains.as_slice() else {
         return false;
     };
     is_bvar(export, *index, 1)
         && is_eq_application(export, *proof, inductive, law, 2, 1, 0)
-        && is_sort_parameter(export, *result, motive_level)
+        && is_sort_parameter(export, result, motive_level)
 }
 
 fn is_eq_minor_type(
@@ -3488,6 +3207,7 @@ fn is_eq_minor_type(
         && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
 }
 
+
 fn is_derived_eq_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -3495,46 +3215,10 @@ fn is_derived_eq_recursor_type(
     recursor: &Recursor,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 6) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: parameter,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: index,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: proof,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, parameter, motive, minor, index, proof] = domains.as_slice() else {
         return false;
     };
     let BinaryProductSortLaw::Eq { level } = law else {
@@ -3546,8 +3230,9 @@ fn is_derived_eq_recursor_type(
         && is_eq_minor_type(export, *minor, constructor, law)
         && is_bvar(export, *index, 3)
         && is_eq_application(export, *proof, inductive, law, 4, 3, 0)
-        && is_binary_bvar_application(export, *result, 3, 1, 0)
+        && is_binary_bvar_application(export, result, 3, 1, 0)
 }
+
 
 fn is_derived_eq_rule(
     export: &ResolvedExport,
@@ -3559,32 +3244,10 @@ fn is_derived_eq_rule(
     let [rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 4) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: parameter,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: minor,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, parameter, motive, minor] = domains.as_slice() else {
         return false;
     };
     let BinaryProductSortLaw::Eq { level } = law else {
@@ -3594,11 +3257,9 @@ fn is_derived_eq_rule(
         && is_bvar(export, *parameter, 0)
         && is_eq_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_eq_minor_type(export, *minor, constructor, law)
-        && is_bvar(export, *result, 0)
+        && is_bvar(export, result, 0)
 }
 
-/// G13-001's name-specific frontier. G15 shares only its already-qualified
-/// derivation skeleton; this envelope and its Type-level law remain separate.
 fn check_exact_prod(
     export: &ResolvedExport,
     environment: &Environment,
