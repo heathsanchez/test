@@ -800,88 +800,6 @@ fn check_exact_and(
     .validate_and_promote(export, environment, limits, delta_policy)
 }
 
-fn is_exact_and_parameter_telescope(export: &ResolvedExport, expression: ExprId) -> bool {
-    is_exact_binary_product_parameter_telescope(export, expression, BinaryProductSortLaw::And)
-}
-
-fn is_derived_and_constructor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-) -> bool {
-    is_derived_binary_product_constructor_type(
-        export,
-        expression,
-        inductive,
-        BinaryProductSortLaw::And,
-    )
-}
-
-fn valid_and_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> bool {
-    valid_binary_product_recursor_metadata(
-        export,
-        inductive,
-        &[],
-        constructor,
-        recursor,
-        BinaryProductSortLaw::And,
-    )
-}
-
-fn is_derived_and_recursor_type(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> bool {
-    is_derived_binary_product_recursor_type(
-        export,
-        inductive,
-        constructor,
-        recursor,
-        BinaryProductSortLaw::And,
-    )
-}
-
-fn is_and_motive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    recursor: &Recursor,
-) -> bool {
-    is_binary_product_motive_type(
-        export,
-        expression,
-        inductive,
-        recursor.level_params[0],
-        BinaryProductSortLaw::And,
-    )
-}
-
-fn is_and_minor_type(export: &ResolvedExport, expression: ExprId, constructor: NameId) -> bool {
-    is_binary_product_minor_type(export, expression, constructor, BinaryProductSortLaw::And)
-}
-
-fn is_derived_and_rule(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> bool {
-    is_derived_binary_product_rule(
-        export,
-        inductive,
-        constructor,
-        recursor,
-        BinaryProductSortLaw::And,
-    )
-}
-
 fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
     matches!(
         export.exprs.get(expression),
@@ -891,23 +809,6 @@ fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
 
 fn is_bvar(export: &ResolvedExport, expression: ExprId, expected: u64) -> bool {
     matches!(export.exprs.get(expression), Some(Expr::BVar(index)) if *index == expected)
-}
-
-fn is_binary_constant_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constant: NameId,
-    first: u64,
-    second: u64,
-) -> bool {
-    is_binary_product_constant_application(
-        export,
-        expression,
-        constant,
-        first,
-        second,
-        BinaryProductSortLaw::And,
-    )
 }
 
 fn is_bvar_application(
@@ -1870,10 +1771,12 @@ mod tests {
     use std::io::Cursor;
 
     use super::{
-        Limits, check_export, check_export_with_policy, check_inductive, is_and_minor_type,
-        is_and_motive_type, is_binary_constant_application, is_bvar_application,
-        is_derived_and_constructor_type, is_derived_and_recursor_type, is_derived_and_rule,
-        is_exact_and_parameter_telescope, is_prop_sort, valid_and_recursor_metadata,
+        BinaryProductSortLaw, Limits, check_export, check_export_with_policy, check_inductive,
+        is_binary_product_constant_application, is_binary_product_minor_type,
+        is_binary_product_motive_type, is_bvar_application,
+        is_derived_binary_product_constructor_type, is_derived_binary_product_recursor_type,
+        is_derived_binary_product_rule, is_exact_binary_product_parameter_telescope, is_prop_sort,
+        valid_binary_product_recursor_metadata,
     };
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
@@ -1991,17 +1894,24 @@ mod tests {
         let constructor = &block.constructors[0];
         let recursor = &block.recursors[0];
 
-        assert!(is_exact_and_parameter_telescope(&export, inductive.ty));
-        assert!(is_derived_and_constructor_type(
+        assert!(is_exact_binary_product_parameter_telescope(
+            &export,
+            inductive.ty,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_derived_binary_product_constructor_type(
             &export,
             constructor.ty,
             inductive.name,
+            BinaryProductSortLaw::And,
         ));
-        assert!(valid_and_recursor_metadata(
+        assert!(valid_binary_product_recursor_metadata(
             &export,
             inductive.name,
+            &inductive.level_params,
             constructor.name,
             recursor,
+            BinaryProductSortLaw::And,
         ));
         let Expr::Pi {
             domain: first,
@@ -2040,32 +1950,41 @@ mod tests {
         };
         assert!(is_prop_sort(&export, *first));
         assert!(is_prop_sort(&export, *second));
-        assert!(is_and_motive_type(
+        assert!(is_binary_product_motive_type(
             &export,
             *motive,
             inductive.name,
-            recursor,
+            recursor.level_params[0],
+            BinaryProductSortLaw::And,
         ));
-        assert!(is_and_minor_type(&export, *minor, constructor.name));
-        assert!(is_binary_constant_application(
+        assert!(is_binary_product_minor_type(
+            &export,
+            *minor,
+            constructor.name,
+            BinaryProductSortLaw::And,
+        ));
+        assert!(is_binary_product_constant_application(
             &export,
             *target,
             inductive.name,
             3,
             2,
+            BinaryProductSortLaw::And,
         ));
         assert!(is_bvar_application(&export, *result, 2, 0));
-        assert!(is_derived_and_recursor_type(
+        assert!(is_derived_binary_product_recursor_type(
             &export,
             inductive.name,
             constructor.name,
             recursor,
+            BinaryProductSortLaw::And,
         ));
-        assert!(is_derived_and_rule(
+        assert!(is_derived_binary_product_rule(
             &export,
             inductive.name,
             constructor.name,
             recursor,
+            BinaryProductSortLaw::And,
         ));
     }
 }
