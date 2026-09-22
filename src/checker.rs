@@ -1503,7 +1503,6 @@ fn valid_rbtree_constructor_metadata(
         && name_is_child_str(export, constructor.name, inductive, suffix)
 }
 
-
 fn is_exact_rbtree_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 3) else {
         return false;
@@ -1582,7 +1581,6 @@ fn is_named_succ_bvar(
     )
 }
 
-
 fn is_derived_rbtree_leaf_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1605,7 +1603,6 @@ fn is_derived_rbtree_leaf_type(
         && is_child_empty_constant_named(export, result_color, "Color", "b")
         && is_child_empty_constant_named(export, result_height, "N", "zero")
 }
-
 
 fn is_derived_rbtree_red_type(
     export: &ResolvedExport,
@@ -1645,7 +1642,6 @@ fn is_derived_rbtree_red_type(
         && is_bvar(export, result_height, 3)
 }
 
-
 fn is_derived_rbtree_black_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1655,7 +1651,15 @@ fn is_derived_rbtree_black_type(
     let Some((domains, result)) = pi_spine(export, expression, 7) else {
         return false;
     };
-    let [carrier, first_color, second_color, height, left, value, right] = domains.as_slice()
+    let [
+        carrier,
+        first_color,
+        second_color,
+        height,
+        left,
+        value,
+        right,
+    ] = domains.as_slice()
     else {
         return false;
     };
@@ -1795,7 +1799,6 @@ fn rbtree_recursor_application_args(
     is_polymorphic_constant(export, head, recursor, motive_level, level).then_some(arguments)
 }
 
-
 fn is_rbtree_motive_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1839,7 +1842,6 @@ fn is_rbtree_leaf_minor_type(
         && arguments.len() == 1
         && is_bvar(export, arguments[0], 1)
 }
-
 
 fn is_rbtree_red_minor_type(
     export: &ResolvedExport,
@@ -1905,7 +1907,6 @@ fn is_rbtree_red_minor_type(
             .all(|(expected, actual)| is_bvar(export, *actual, expected))
 }
 
-
 fn is_rbtree_black_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1916,8 +1917,16 @@ fn is_rbtree_black_minor_type(
     let Some((domains, result)) = pi_spine(export, expression, 8) else {
         return false;
     };
-    let [first_color, second_color, height, left, value, right, left_ih, right_ih] =
-        domains.as_slice()
+    let [
+        first_color,
+        second_color,
+        height,
+        left,
+        value,
+        right,
+        left_ih,
+        right_ih,
+    ] = domains.as_slice()
     else {
         return false;
     };
@@ -1974,7 +1983,6 @@ fn is_rbtree_black_minor_type(
             .all(|(expected, actual)| is_bvar(export, *actual, expected))
 }
 
-
 fn is_derived_rbtree_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -1985,8 +1993,16 @@ fn is_derived_rbtree_recursor_type(
     let Some((domains, result)) = pi_spine(export, recursor.ty, 8) else {
         return false;
     };
-    let [carrier, motive, leaf_minor, red_minor, black_minor, color, height, target] =
-        domains.as_slice()
+    let [
+        carrier,
+        motive,
+        leaf_minor,
+        red_minor,
+        black_minor,
+        color,
+        height,
+        target,
+    ] = domains.as_slice()
     else {
         return false;
     };
@@ -2016,7 +2032,6 @@ fn is_derived_rbtree_recursor_type(
         && is_bvar(export, result_tree, 0)
 }
 
-
 fn rbtree_recursor_prefix_domains(
     export: &ResolvedExport,
     expression: ExprId,
@@ -2027,7 +2042,6 @@ fn rbtree_recursor_prefix_domains(
     };
     Some((*carrier, *motive, *leaf, *red, *black))
 }
-
 
 fn peel_rbtree_rule_prefix(
     export: &ResolvedExport,
@@ -2057,7 +2071,6 @@ fn is_derived_rbtree_leaf_rule(
     };
     is_bvar(export, result, 2)
 }
-
 
 fn is_derived_rbtree_red_rule(
     export: &ResolvedExport,
@@ -2137,7 +2150,6 @@ fn is_derived_rbtree_red_rule(
         && is_bvar(export, right_call[6], 3)
         && is_bvar(export, right_call[7], 0)
 }
-
 
 fn is_derived_rbtree_black_rule(
     export: &ResolvedExport,
