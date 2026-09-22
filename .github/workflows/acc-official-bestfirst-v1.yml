@@ -114,7 +114,7 @@ jobs:
           set -euo pipefail
           git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
-      - name: Search exact radius-4 connectors into Proof Atlas
+      - name: Search exact radius-5 connectors into Proof Atlas
         run: |
           set -euo pipefail
           mkdir -p "acc_competitive/transport_atlas_${{ matrix.shard }}"
@@ -125,7 +125,7 @@ jobs:
             --snapshot-stable "$(find /tmp/freeze -name snapshot_stable.json | head -1)" \
             --target-ids-file "$(find /tmp/freeze -name 'shard_${{ matrix.shard }}.json' | head -1)" \
             --out-dir "acc_competitive/transport_atlas_${{ matrix.shard }}" \
-            --connector-depth 4 --node-cap 250000 \
+            --connector-depth 5 --node-cap 250000 \
             | tee "acc_competitive/transport_atlas_${{ matrix.shard }}.log"
       - uses: actions/upload-artifact@v4
         if: always()
