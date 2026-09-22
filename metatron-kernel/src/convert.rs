@@ -59,10 +59,10 @@ pub(crate) fn convert_with_policy_at_depth(
     crate::diagnostics::conversion();
 
     let mut remaining = budget;
-    let mut work = vec![(left.clone(), right.clone(), initial_depth)];
+    let mut work = vec![(left.clone(), right.clone(), initial_depth, false)];
     let mut visited = HashSet::new();
 
-    while let Some((left, right, depth)) = work.pop() {
+    while let Some((left, right, depth, epistemically_open)) = work.pop() {
         if left == right {
             continue;
         }
@@ -70,7 +70,12 @@ pub(crate) fn convert_with_policy_at_depth(
             return Judgment::unknown("conversion-budget-exhausted");
         }
         remaining -= 1;
-        if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+        if !visited.insert((
+            checker.authority(),
+            left.clone(),
+            right.clone(),
+            epistemically_open,
+        )) {
             continue;
         }
 
@@ -94,8 +99,13 @@ pub(crate) fn convert_with_policy_at_depth(
                     body: right_body,
                 },
             ) => {
-                work.push((*left_body, *right_body, depth.saturating_add(1)));
-                work.push((*left_domain, *right_domain, depth));
+                work.push((
+                    *left_body,
+                    *right_body,
+                    depth.saturating_add(1),
+                    epistemically_open,
+                ));
+                work.push((*left_domain, *right_domain, depth, epistemically_open));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
                 let machine = checker.machine();
@@ -106,7 +116,15 @@ pub(crate) fn convert_with_policy_at_depth(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(cheap_left, cheap_right, remaining, depth, &mut work) {
+                match compare_values(
+                    checker,
+                    cheap_left,
+                    cheap_right,
+                    remaining,
+                    depth,
+                    epistemically_open,
+                    &mut work,
+                ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
@@ -118,7 +136,15 @@ pub(crate) fn convert_with_policy_at_depth(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        match compare_values(full_left, full_right, remaining, depth, &mut work) {
+                        match compare_values(
+                            checker,
+                            full_left,
+                            full_right,
+                            remaining,
+                            depth,
+                            epistemically_open,
+                            &mut work,
+                        ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
                                 return Judgment::Refuted { obstruction };
@@ -154,7 +180,7 @@ pub(crate) fn convert_with_policy_at_depth(
                 } else {
                     return Judgment::refuted("rigid-type-constructor-mismatch");
                 };
-                work.push((exposed, other, depth));
+                work.push((exposed, other, depth, epistemically_open));
             }
             (TypeValue::Sort(_), TypeValue::Pi { .. })
             | (TypeValue::Pi { .. }, TypeValue::Sort(_)) => {
@@ -177,11 +203,13 @@ pub(crate) fn test_conversion_calls() -> u64 {
 }
 
 fn compare_values(
+    checker: &TypeChecker<'_>,
     left: &Value,
     right: &Value,
     budget: usize,
     depth: usize,
-    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    epistemically_open: bool,
+    work: &mut Vec<(TypeValue, TypeValue, usize, bool)>,
 ) -> Judgment<()> {
     match (left, right) {
         (Value::Sort(left), Value::Sort(right)) => {
@@ -189,6 +217,7 @@ fn compare_values(
                 TypeValue::Sort(left.clone()),
                 TypeValue::Sort(right.clone()),
                 depth,
+                epistemically_open,
             ));
         }
         (
@@ -218,32 +247,61 @@ fn compare_values(
                 TypeValue::Term(left_body.under_free(free)),
                 TypeValue::Term(right_body.under_free(free)),
                 depth.saturating_add(1),
+                epistemically_open,
             ));
             work.push((
                 TypeValue::Term(left_domain.clone()),
                 TypeValue::Term(right_domain.clone()),
                 depth,
+                epistemically_open,
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
             match compare_neutral_heads(left, right, budget) {
                 Judgment::Proven { .. } => {}
+                Judgment::Refuted { .. } if epistemically_open => {
+                    return Judgment::unknown("unearned-inductive-conversion");
+                }
                 other => return other,
             }
             if left.spine.len() != right.spine.len() {
                 return Judgment::refuted("neutral-spine-length");
             }
+            let child_open =
+                epistemically_open || same_opaque_inductive_head(checker, left, right);
             work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
                 (
                     TypeValue::Term(left.clone()),
                     TypeValue::Term(right.clone()),
                     depth,
+                    child_open,
                 )
             }));
+        }
+        _ if epistemically_open => {
+            return Judgment::unknown("unearned-inductive-conversion");
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+fn same_opaque_inductive_head(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+) -> bool {
+    match (&left.head, &right.head) {
+        (
+            NeutralHead::Const {
+                name: left_name, ..
+            },
+            NeutralHead::Const {
+                name: right_name, ..
+            },
+        ) if left_name == right_name => checker.has_unearned_inductive_semantics(*left_name),
+        _ => false,
+    }
 }
 
 fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judgment<()> {
