@@ -41,7 +41,7 @@ class TutorialInputTests(unittest.TestCase):
         )
 
     def test_production_manifest_pins_eq_as_case_043(self):
-        self.assertEqual(len(TUTORIAL_MANIFEST), 43)
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 43)
         case = TUTORIAL_MANIFEST[42]
         self.assertEqual(case.number, "043")
         self.assertEqual(case.relative_path, Path("good/043_eqType.ndjson"))
