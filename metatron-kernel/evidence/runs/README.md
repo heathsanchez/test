@@ -31,6 +31,7 @@ IDs after qualification.
 | `bb7809104681852b46d71c688814f24692965b1b` | `35704232366` / `106669198325` | `10682964232`, digest `f3f7ae1d...781b` | 6 contract + 44 tutorial matched; G17 oracle 43 equal, 1 earned REJECT→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `60fde2527b7a57c14487b7930d6083451dd01aeb` | `35707420135` / `106679605077` | `10684434897`, digest `1b69b0ef...e86a` | 6 contract + 45 tutorial matched; G18 oracle 44 equal, 1 earned UNKNOWN→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `97ae436b2af00d563a5460d01d3839d97304b5b0` | `35761375025` / `106859961966` | `10710223928`, digest `e2101190...556b` | 6 contract + 49 tutorial matched; G19 oracle 46 equal, 3 earned UNKNOWN→REJECT deltas, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
+| `1423040508c602c628f92e845d4ccc3796f165ba` | `35763602005` / `106867429092` | `10711556671`, digest `d80d8c82...2209` | 6 contract + 53 tutorial matched; G20 oracle 49 equal, 4 earned UNKNOWN→REJECT deltas, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 
 The successful run is available at
 <https://github.com/heathsanchez/test/actions/runs/35620658852>. Its correctness
@@ -77,3 +78,9 @@ The G20 run is available at
 048 is an equal `REJECT` control. Tutorials 001–045 remain unchanged. The
 diagnostic suffix atlas moves the first mismatch to tutorial 050. No
 retired-instruction promotion is claimed.
+
+The G21 run is available at
+<https://github.com/heathsanchez/test/actions/runs/35763602005>. Tutorials 050–053
+are the four earned `UNKNOWN → REJECT` deltas against sealed G20; tutorials
+001–049 remain unchanged and conversion-sensitive tutorial 055 remains outside
+G21 authority. The suffix atlas moves the first mismatch to tutorial 054.

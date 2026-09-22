@@ -609,3 +609,30 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   inductive arity checking are not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+## G21-001 — Rejection-only constructor-result coherence law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G20 head
+  `80c99cfdce1e9a5349ef4b300f506c92677dc6ce`.
+- Exact malformed corridor: tutorials 050–053. Sealed G20 returns `UNKNOWN`
+  on all four.
+- Least capability: on the otherwise unrecognized single-constructor frontier,
+  validate only hard constructor-result invariants: owner/index metadata,
+  declared universe order, parameter reuse/order, result arity, and absence
+  of recursive occurrences inside indices. Parameter domain types are
+  deliberately not compared, preserving conversion-sensitive tutorial 055.
+- This is rejection-only: it cannot install or accept any declaration.
+- Exact oracle differential through tutorial 053: 49 equal, four earned
+  `UNKNOWN → REJECT` deltas (050–053), zero mismatches.
+- External qualification: candidate
+  `1423040508c602c628f92e845d4ccc3796f165ba`, run `35763602005`, job
+  `106867429092`, artifact `10711556671`, digest
+  `sha256:d80d8c82fe6838bbc9fab662a9281fd017c39d7ae51021badc9de5193ea92209`.
+  All 53 tutorial cases and 61 end-to-end tests passed.
+- Diagnostic suffix atlas improves to 25/96 matches; the first remaining
+  mismatch moves to tutorial 054 (`indNeg`).
+- Formal status: rejection-only structural law; no new promotion theorem is
+  required. General positivity/completeness and conversion-sensitive
+  constructor-domain validation are not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+
