@@ -25,8 +25,20 @@ fn run_residual(name: &str) -> Verdict {
 
 fn run_with_g15_oracle(family: &str, bytes: String) -> Verdict {
     let candidate = metatron_kernel::run(Cursor::new(bytes.as_bytes()));
-    let Ok(oracle) = std::env::var("METATRON_G15_ORACLE") else {
+    let Some(oracle_verdict) = sealed_g15_verdict(&bytes) else {
         return candidate;
+    };
+
+    assert_eq!(
+        candidate, oracle_verdict,
+        "G15 changed the sealed {family} observable verdict vector"
+    );
+    candidate
+}
+
+fn sealed_g15_verdict(bytes: &str) -> Option<Verdict> {
+    let Ok(oracle) = std::env::var("METATRON_G15_ORACLE") else {
+        return None;
     };
 
     let mut child = Command::new(oracle)
@@ -48,11 +60,7 @@ fn run_with_g15_oracle(family: &str, bytes: String) -> Verdict {
         Some(2) => Verdict::Unknown,
         code => panic!("sealed G15 oracle returned unexpected exit code {code:?}"),
     };
-    assert_eq!(
-        candidate, oracle_verdict,
-        "G15 changed the sealed {family} observable verdict vector"
-    );
-    candidate
+    Some(oracle_verdict)
 }
 
 #[test]
@@ -829,12 +837,131 @@ fn g15_shared_representation_earns_no_fourth_family() {
     );
 }
 
+fn run_g16_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G16-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    if let Some(oracle) = sealed_g15_verdict(&bytes) {
+        assert_eq!(
+            oracle,
+            Verdict::Unknown,
+            "G16 authority was already present in the sealed G15 oracle",
+        );
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
 #[test]
-fn g15_leaves_frozen_punit_residual_unknown() {
-    let punit = include_str!("../evidence/residuals/G16-001/fixture.ndjson").to_owned();
+fn g16_001_exact_punit_authority_is_accepted() {
+    assert_eq!(run_g16_perturbations(&[]), Verdict::Accept);
+}
+
+#[test]
+fn punit_sort_constructor_recursor_and_rule_are_derived_not_trusted() {
+    const CONSTRUCTOR: &str = "{\"cidx\":0,\"induct\":1,\"isUnsafe\":false,\"levelParams\":[2],\"name\":3,\"numFields\":0,\"numParams\":0,\"type\":1}";
+    let missing_constructor = "\"ctors\":[],\"recs\"";
+    let extra_constructor = format!("\"ctors\":[{CONSTRUCTOR},{CONSTRUCTOR}],\"recs\"");
+    let cases = [
+        (
+            "\"levelParams\":[2],\"name\":1",
+            "\"levelParams\":[5],\"name\":1",
+        ),
+        ("{\"ie\":0,\"sort\":1}", "{\"ie\":0,\"sort\":2}"),
+        (
+            "\"ctors\":[{\"cidx\":0,\"induct\":1,\"isUnsafe\":false,\"levelParams\":[2],\"name\":3,\"numFields\":0,\"numParams\":0,\"type\":1}],\"recs\"",
+            missing_constructor,
+        ),
+        (
+            "\"ctors\":[{\"cidx\":0,\"induct\":1,\"isUnsafe\":false,\"levelParams\":[2],\"name\":3,\"numFields\":0,\"numParams\":0,\"type\":1}],\"recs\"",
+            extra_constructor.as_str(),
+        ),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":1,\"induct\":1"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":0,\"induct\":4"),
+        (
+            "\"numFields\":0,\"numParams\":0,\"type\":1",
+            "\"numFields\":1,\"numParams\":0,\"type\":1",
+        ),
+        (
+            "\"levelParams\":[5,2],\"name\":4",
+            "\"levelParams\":[2,5],\"name\":4",
+        ),
+        (
+            "\"numMinors\":1,\"numMotives\":1",
+            "\"numMinors\":0,\"numMotives\":1",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":1,\"nfields\":0,\"rhs\":13",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":3,\"nfields\":1,\"rhs\":13",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":3,\"nfields\":0,\"rhs\":12",
+        ),
+        ("\"type\":11}],\"types\"", "\"type\":10}],\"types\""),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g16_perturbations(&[(from, to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn punit_broader_neighbors_preserve_unknown() {
+    let cases = [
+        (
+            "indexed",
+            "\"name\":1,\"numIndices\":0,\"numNested\":0",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0",
+        ),
+        (
+            "recursive",
+            "\"ctors\":[3],\"isRec\":false",
+            "\"ctors\":[3],\"isRec\":true",
+        ),
+        (
+            "unsafe type",
+            "\"types\":[{\"all\":[1],\"ctors\":[3],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[1],\"ctors\":[3],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        (
+            "unsafe constructor",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "unsafe recursor",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+        (
+            "nested",
+            "\"numIndices\":0,\"numNested\":0",
+            "\"numIndices\":0,\"numNested\":1",
+        ),
+    ];
+
+    for (label, from, to) in cases {
+        assert_eq!(
+            run_g16_perturbations(&[(from, to)]),
+            Verdict::Unknown,
+            "PUnit broader-neighbor boundary failed for {label}",
+        );
+    }
+}
+
+#[test]
+fn g16_punit_law_does_not_authorize_a_renamed_family() {
+    let punit = include_str!("../evidence/residuals/G16-001/fixture.ndjson");
+    let renamed = punit.replacen("\"str\":\"PUnit\"", "\"str\":\"PUnit2\"", 1);
 
     assert_eq!(
-        run_with_g15_oracle("PUnit boundary", punit),
+        run_with_g15_oracle("renamed PUnit family", renamed),
         Verdict::Unknown,
     );
 }
