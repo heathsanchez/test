@@ -1397,3 +1397,16 @@ fn g21_does_not_preempt_conversion_sensitive_constructor_parameters() {
     let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
     assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
 }
+
+
+#[test]
+fn g22_definite_negative_recursive_field_is_rejected() {
+    let bytes = include_str!("../evidence/residuals/G22-001/054_indNeg.ndjson");
+    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Reject);
+}
+
+#[test]
+fn g22_preserves_conversion_sensitive_constructor_control() {
+    let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
+    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
+}
