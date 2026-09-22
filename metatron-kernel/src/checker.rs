@@ -910,12 +910,7 @@ fn check_exact_eq(
         || constructor.level_params != [*level]
         || !name_is_child_str(export, constructor.name, inductive.name, "refl")
         || !is_exact_eq_type(export, inductive.ty, *level)
-        || !is_derived_eq_constructor_type(
-            export,
-            constructor.ty,
-            inductive.name,
-            *level,
-        )
+        || !is_derived_eq_constructor_type(export, constructor.ty, inductive.name, *level)
     {
         return Err(Verdict::Reject);
     }
@@ -934,25 +929,10 @@ fn check_exact_eq(
         delta_policy,
     )?;
 
-    if !valid_eq_recursor_metadata(
-        export,
-        inductive.name,
-        constructor.name,
-        *level,
-        recursor,
-    ) || !is_derived_eq_recursor_type(
-        export,
-        inductive.name,
-        constructor.name,
-        *level,
-        recursor,
-    ) || !is_derived_eq_rule(
-        export,
-        inductive.name,
-        constructor.name,
-        *level,
-        recursor,
-    ) {
+    if !valid_eq_recursor_metadata(export, inductive.name, constructor.name, *level, recursor)
+        || !is_derived_eq_recursor_type(export, inductive.name, constructor.name, *level, recursor)
+        || !is_derived_eq_rule(export, inductive.name, constructor.name, *level, recursor)
+    {
         return Err(Verdict::Reject);
     }
 
@@ -1097,13 +1077,7 @@ fn is_derived_eq_recursor_type(
 
     is_sort_parameter(export, *alpha, level)
         && is_bvar(export, *parameter, 0)
-        && is_eq_motive_type(
-            export,
-            *motive,
-            inductive,
-            level,
-            recursor.level_params[0],
-        )
+        && is_eq_motive_type(export, *motive, inductive, level, recursor.level_params[0])
         && is_eq_minor_type(export, *minor, constructor, level)
         && is_bvar(export, *index, 3)
         && is_eq_application(export, *major, inductive, level, 4, 3, 0)
