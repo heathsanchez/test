@@ -267,8 +267,7 @@ fn compare_values(
             if left.spine.len() != right.spine.len() {
                 return Judgment::refuted("neutral-spine-length");
             }
-            let child_open =
-                epistemically_open || same_opaque_inductive_head(checker, left, right);
+            let child_open = epistemically_open || same_opaque_inductive_head(checker, left, right);
             work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
                 (
                     TypeValue::Term(left.clone()),
@@ -286,11 +285,7 @@ fn compare_values(
     Judgment::proven((), "rigid-value-comparison")
 }
 
-fn same_opaque_inductive_head(
-    checker: &TypeChecker<'_>,
-    left: &Neutral,
-    right: &Neutral,
-) -> bool {
+fn same_opaque_inductive_head(checker: &TypeChecker<'_>, left: &Neutral, right: &Neutral) -> bool {
     match (&left.head, &right.head) {
         (
             NeutralHead::Const {
