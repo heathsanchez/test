@@ -449,11 +449,35 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Retired instructions remain `UNKNOWN`: hosted PMU unavailable and there is
   no same-cohort control measurement.
 
-## G16-001 — Frozen `PUnit` stress residual
+## G16-001 — Exact nullary/singleton `PUnit` law
 
-- Status: OPEN as the next exact residual; deliberately untouched by G15.
+- Status: RETAINED and externally qualified.
+- Frozen baseline: retained G15 head
+  `f45b49a6989c09317635c790615ca63c617c84c7`, which returns `UNKNOWN`
+  on exact tutorial 042.
 - Exact fixture: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
   `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`.
-- Current retained G15 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
-- Role: an independent nullary/singleton stress test for any abstraction
-  retained by G15, not evidence permitted to broaden G15 in advance.
+- Least capability: one name-sealed `PUnit` law supplying a single universe
+  parameter, zero term parameters/indices/fields, one nullary constructor,
+  one motive/minor/rule recursor, and the level-polymorphic `Sort u` result
+  law to the retained G15 `ExactBinaryProductDerivation` skeleton.
+- No fourth independent derivation pipeline was introduced. Opaque promotion
+  is reused unchanged; no iota, projections, eta, positivity, recursive,
+  indexed, nested, unsafe, or general inductive authority is added.
+- Falsifiers passed: wrong universe/result sort, missing/extra constructor,
+  constructor owner/index/field perturbations, recursor level/minor/type/rule
+  perturbations, and fabricated rule claims reject. Indexed, recursive,
+  unsafe, and nested PUnit neighbors remain `UNKNOWN`; a renamed family also
+  remains `UNKNOWN`.
+- Exact oracle differential: tutorials 001–041 are equal to frozen G15;
+  tutorial 042 is the sole earned delta, `UNKNOWN → ACCEPT`; zero mismatches.
+- External qualification: candidate
+  `865548098d16588db5aef79b9e094746933497d9`, run `35686513640`, job
+  `106614391496`, artifact `10676299174`, digest
+  `sha256:fbb4091c6674b6dfb5c6ff919a4219d531890a035e07d90f2fac7ef36ae05106`.
+  The six-case contract and all 42 tutorial cases passed.
+- Formal status: the existing generic opaque-promotion theorem still warrants
+  the promotion transaction, but the exact Rust PUnit classifier/law is not
+  refined to IdealLean and whole-checker verification is not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`: hosted
+  `perf instructions:u` was unavailable, so no performance promotion is made.
