@@ -25,6 +25,7 @@ jobs:
       G15_SHA: f45b49a6989c09317635c790615ca63c617c84c7
       G16_SHA: 7b57cc7834b2f7eee34e762fbc23009cd65d6be7
       G17_SHA: 3a4bb85a06f6434bca27f72e82dc682570123c99
+      G18_SHA: ce4c2f50ab649e60ee09a19c50f04c7769c5ad19
     steps:
       - uses: actions/checkout@v4
 
@@ -94,51 +95,54 @@ jobs:
           git fetch --depth 1 origin "$G15_SHA"
           git fetch --depth 1 origin "$G16_SHA"
           git fetch --depth 1 origin "$G17_SHA"
+          git fetch --depth 1 origin "$G18_SHA"
           git worktree add --detach /tmp/metatron-g15-oracle "$G15_SHA"
           git worktree add --detach /tmp/metatron-g16-oracle "$G16_SHA"
           git worktree add --detach /tmp/metatron-g17-oracle "$G17_SHA"
+          git worktree add --detach /tmp/metatron-g18-oracle "$G18_SHA"
           cargo build --release --locked \
             --manifest-path /tmp/metatron-g15-oracle/metatron-kernel/Cargo.toml
           cargo build --release --locked \
             --manifest-path /tmp/metatron-g16-oracle/metatron-kernel/Cargo.toml
           cargo build --release --locked \
             --manifest-path /tmp/metatron-g17-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g18-oracle/metatron-kernel/Cargo.toml
           METATRON_G15_ORACLE=/tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
           METATRON_G16_ORACLE=/tmp/metatron-g16-oracle/metatron-kernel/target/release/metatron-kernel \
           METATRON_G17_ORACLE=/tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
             cargo test --release --test end_to_end
           set +e
-          target/release/metatron-kernel < evidence/residuals/G18-001/fixture.ndjson
-          CANDIDATE_NAT=$?
-          /tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
-            < evidence/residuals/G18-001/fixture.ndjson
-          ORACLE_NAT=$?
+          target/release/metatron-kernel < evidence/residuals/G19-001/fixture.ndjson
+          CANDIDATE_RBTREE=$?
+          /tmp/metatron-g18-oracle/metatron-kernel/target/release/metatron-kernel \
+            < evidence/residuals/G19-001/fixture.ndjson
+          ORACLE_RBTREE=$?
           set -e
-          test "$CANDIDATE_NAT" = 0
-          test "$ORACLE_NAT" = 1
+          test "$CANDIDATE_RBTREE" = 0
+          test "$ORACLE_RBTREE" = 2
           python scripts/qualify_tutorial.py \
             --checker target/release/metatron-kernel \
             --tutorial-output /tmp/lean-kernel-tutorial \
             --candidate-sha "$GITHUB_SHA" \
             --arena-sha "$ARENA_SHA" \
             --output evidence-out/tutorial-qualification.json \
-            --oracle /tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
-            --oracle-sha "$G17_SHA" \
-            --earned-case 044 \
-            --earned-oracle-exit 1 \
+            --oracle /tmp/metatron-g18-oracle/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$G18_SHA" \
+            --earned-case 045 \
             --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
-          assert q['counts']=={'incorrect':0,'matched':44}, q
-          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
+          assert q['counts']=={'incorrect':0,'matched':45}, q
+          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
           d=json.load(open('evidence-out/tutorial-differential.json'))
           assert d['qualified'] is True, d
-          assert d['counts']=={'earned_delta':1,'equal':43,'mismatch':0}, d
+          assert d['counts']=={'earned_delta':1,'equal':44,'mismatch':0}, d
           assert d['mode']=='earned_delta', d
-          assert d['earned_case']=='044', d
-          assert d['oracle_sha']=='3a4bb85a06f6434bca27f72e82dc682570123c99', d
+          assert d['earned_case']=='045', d
+          assert d['oracle_sha']=='ce4c2f50ab649e60ee09a19c50f04c7769c5ad19', d
           PY
 
       - name: Attempt same-cohort retired-instruction measurement
