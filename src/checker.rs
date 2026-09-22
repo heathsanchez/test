@@ -1355,13 +1355,21 @@ fn is_rbtree_red_minor_type(
         return false;
     };
 
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
-    let (Some((left_ih_color, left_ih_height, left_ih_tree)), Some((right_ih_color, right_ih_height, right_ih_tree)), Some((result_color, result_height, result_tree))) = (
+    let (
+        Some((left_ih_color, left_ih_height, left_ih_tree)),
+        Some((right_ih_color, right_ih_height, right_ih_tree)),
+        Some((result_color, result_height, result_tree)),
+    ) = (
         motive_application_parts(export, *left_ih, 5),
         motive_application_parts(export, *right_ih, 6),
         motive_application_parts(export, *result, 7),
@@ -1601,11 +1609,8 @@ fn rbtree_recursor_prefix_domains(
     else {
         return None;
     };
-    let Expr::Pi { domain: motive, body } = export.exprs.get(*body)? else {
-        return None;
-    };
     let Expr::Pi {
-        domain: leaf,
+        domain: motive,
         body,
     } = export.exprs.get(*body)?
     else {
@@ -1620,10 +1625,7 @@ fn rbtree_recursor_prefix_domains(
     let Expr::Pi { domain: red, body } = export.exprs.get(*body)? else {
         return None;
     };
-    let Expr::Pi {
-        domain: black, ..
-    } = export.exprs.get(*body)?
-    else {
+    let Expr::Pi { domain: black, .. } = export.exprs.get(*body)? else {
         return None;
     };
     Some((*carrier, *motive, *leaf, *red, *black))
@@ -1856,14 +1858,22 @@ fn is_derived_rbtree_black_rule(
     if !is_bvar(export, head, 6) || arguments.len() != 8 {
         return false;
     }
-    let Some(left_call) =
-        rbtree_recursor_application_args(export, arguments[6], recursor.name, recursor.level_params[0], level)
-    else {
+    let Some(left_call) = rbtree_recursor_application_args(
+        export,
+        arguments[6],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
         return false;
     };
-    let Some(right_call) =
-        rbtree_recursor_application_args(export, arguments[7], recursor.name, recursor.level_params[0], level)
-    else {
+    let Some(right_call) = rbtree_recursor_application_args(
+        export,
+        arguments[7],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
         return false;
     };
     is_root_empty_constant_named(export, *first_color, "Color")
