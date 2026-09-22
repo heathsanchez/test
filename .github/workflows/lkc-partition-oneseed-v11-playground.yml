@@ -32,7 +32,7 @@ jobs:
 
           jq -n \
             --arg problemId "partition" \
-            --arg name "partition-frontier-v11-one-seed" \
+            --arg name "partition-frontier-v11-one-seed-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
             --rawfile source experiments/lkc_partition/generated/Submission_v11.lean \
             '{problemId:$problemId,name:$name,files:{"Submission.lean":$source}}' \
             > save-request.json
