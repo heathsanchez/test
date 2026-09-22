@@ -95,6 +95,7 @@ theorem impl_correct : ∀ n, impl n = primeCountSpec n := by
   · rw [if_pos hsmall]
     exact Nat.primeCounting_eq_zero_iff.mpr (by omega)
   · rw [if_neg hsmall]
+    have hn2 : 2 ≤ n := Nat.le_of_not_gt hsmall
     have hdecomp := Nat.mod_add_div n 2
     rcases n.mod_two_eq_zero_or_one with heven | hodd
     · rw [if_pos heven, countOddStructural_eq]
@@ -103,11 +104,13 @@ theorem impl_correct : ∀ n, impl n = primeCountSpec n := by
     · rw [if_neg (by omega : n % 2 ≠ 0), countOddStructural_eq]
       have harg : 2 * (n / 2) + 2 = n + 1 := by omega
       rw [harg, primeCounting_succ_step n]
+      have he : Even (n + 1) := by
+        rw [Nat.even_iff]
+        omega
       have hnp : ¬ Nat.Prime (n + 1) := by
         intro hp
-        rcases hp.eq_two_or_odd with htwo | hpodd
-        · omega
-        · omega
+        have htwo : n + 1 = 2 := hp.even_iff.mp he
+        omega
       simp [hnp]
 '''
 
