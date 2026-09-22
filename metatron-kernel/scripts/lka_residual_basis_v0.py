@@ -917,10 +917,14 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     rule_k_reflexive: list[str] = []
 
     roots: list[int] = []
+    declaration_types: list[int] = []
     for row in records:
         for tag in ("def", "thm", "axiom"):
             d = row.get(tag)
             if isinstance(d, dict):
+                ty = d.get("type")
+                if isinstance(ty, int):
+                    declaration_types.append(ty)
                 for field in ("type", "value"):
                     v = d.get(field)
                     if isinstance(v, int):
@@ -1058,6 +1062,73 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     for root in roots:
         walk(root, ())
 
+    eta_results: list[str] = []
+    equality_owners = set(k_recursor_owner.values())
+
+    def constructor_owner(expression: int) -> int | None:
+        head, _args = app_spine(exprs, expression)
+        row = exprs.get(head, {})
+        const = row.get("const")
+        if isinstance(const, dict) and isinstance(const.get("name"), int):
+            return ctor_owner_by_name.get(int(const["name"]))
+        return None
+
+    def is_bvar_expr(expression: int) -> bool:
+        return isinstance(exprs.get(expression, {}).get("bvar"), int)
+
+    for ty in declaration_types:
+        _domains, result = pi_domains(exprs, ty)
+        head, args = app_spine(exprs, result)
+        hrow = exprs.get(head, {})
+        hconst = hrow.get("const")
+        if (
+            not isinstance(hconst, dict)
+            or not isinstance(hconst.get("name"), int)
+            or int(hconst["name"]) not in equality_owners
+            or len(args) < 3
+        ):
+            continue
+
+        carrier, left, right = args[-3], args[-2], args[-1]
+        carrier_head, _carrier_args = app_spine(exprs, carrier)
+        crow = exprs.get(carrier_head, {})
+        cconst = crow.get("const")
+        if not isinstance(cconst, dict) or not isinstance(cconst.get("name"), int):
+            continue
+        owner = int(cconst["name"])
+        t = type_by_name.get(owner)
+        ctors = ctor_by_owner.get(owner, [])
+        if t is None:
+            continue
+
+        left_ctor = constructor_owner(left)
+        right_ctor = constructor_owner(right)
+        eta_shape = (
+            (is_bvar_expr(left) and is_bvar_expr(right))
+            or (is_bvar_expr(left) and right_ctor == owner)
+            or (is_bvar_expr(right) and left_ctor == owner)
+        )
+        if not eta_shape:
+            continue
+
+        if (
+            len(ctors) == 1
+            and int(t.get("numIndices", 0)) == 0
+            and int(t.get("numNested", 0)) == 0
+            and not bool(t.get("isRec"))
+            and not bool(t.get("isReflexive"))
+        ):
+            eta_results.append("allow")
+        else:
+            eta_results.append("deny")
+
+    if not eta_results:
+        inductive_eta_scalar = "not_applicable"
+    elif any(result == "deny" for result in eta_results):
+        inductive_eta_scalar = "deny"
+    else:
+        inductive_eta_scalar = "allow"
+
     if not recursor_reduction_results:
         recursor_reduction_scalar = "not_applicable"
     elif any(result == "deny" for result in recursor_reduction_results):
@@ -1088,6 +1159,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semantic:field_universe_admissibility": field_universe_admissibility(
             records, exprs, levels
         ),
+        "semantic:inductive_eta_admissibility": inductive_eta_scalar,
         "semantic:recursor_reduction_admissibility": recursor_reduction_scalar,
         "semantic:projection_admissibility_scalar": projection_scalar,
         "semantic:projection_source_coherence": sorted(projection_sources),
