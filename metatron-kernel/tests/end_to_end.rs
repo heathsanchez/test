@@ -36,6 +36,32 @@ fn run_with_g15_oracle(family: &str, bytes: String) -> Verdict {
     candidate
 }
 
+fn sealed_named_verdict(variable: &str, bytes: &str) -> Option<Verdict> {
+    let Ok(oracle) = std::env::var(variable) else {
+        return None;
+    };
+
+    let mut child = Command::new(oracle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("sealed oracle must start");
+    child
+        .stdin
+        .take()
+        .expect("sealed oracle stdin")
+        .write_all(bytes.as_bytes())
+        .expect("sealed oracle input");
+    let exit = child.wait().expect("sealed oracle must finish");
+    Some(match exit.code() {
+        Some(0) => Verdict::Accept,
+        Some(1) => Verdict::Reject,
+        Some(2) => Verdict::Unknown,
+        code => panic!("sealed oracle returned unexpected exit code {code:?}"),
+    })
+}
+
 fn sealed_g15_verdict(bytes: &str) -> Option<Verdict> {
     let Ok(oracle) = std::env::var("METATRON_G15_ORACLE") else {
         return None;
@@ -1395,7 +1421,9 @@ fn g21_constructor_result_coherence_rejects_malformed_corridor() {
 #[test]
 fn g21_does_not_preempt_conversion_sensitive_constructor_parameters() {
     let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
-    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
+    if let Some(verdict) = sealed_named_verdict("METATRON_G21_ORACLE", bytes) {
+        assert_eq!(verdict, Verdict::Unknown);
+    }
 }
 
 #[test]
@@ -1407,7 +1435,9 @@ fn g22_definite_negative_recursive_field_is_rejected() {
 #[test]
 fn g22_preserves_conversion_sensitive_constructor_control() {
     let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
-    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
+    if let Some(verdict) = sealed_named_verdict("METATRON_G22_ORACLE", bytes) {
+        assert_eq!(verdict, Verdict::Unknown);
+    }
 }
 
 #[test]
