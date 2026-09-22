@@ -1317,3 +1317,50 @@ fn rbtree_broader_neighbors_remain_unknown() {
         );
     }
 }
+
+
+#[test]
+fn rbtree_recursor_type_and_rules_are_derived_not_trusted() {
+    let rb = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
+    let cases = [
+        (
+            "recursor type",
+            "\"type\":178}],\"types\"",
+            "\"type\":177}],\"types\"",
+        ),
+        (
+            "leaf rule rhs",
+            "\"ctor\":28,\"nfields\":0,\"rhs\":183",
+            "\"ctor\":28,\"nfields\":0,\"rhs\":182",
+        ),
+        (
+            "red rule rhs",
+            "\"ctor\":29,\"nfields\":4,\"rhs\":212",
+            "\"ctor\":29,\"nfields\":4,\"rhs\":211",
+        ),
+        (
+            "black rule rhs",
+            "\"ctor\":30,\"nfields\":6,\"rhs\":247",
+            "\"ctor\":30,\"nfields\":6,\"rhs\":246",
+        ),
+        (
+            "recursor K",
+            "\"k\":false,\"levelParams\":[35,5]",
+            "\"k\":true,\"levelParams\":[35,5]",
+        ),
+        (
+            "minor count",
+            "\"numIndices\":2,\"numMinors\":3,\"numMotives\":1,\"numParams\":1",
+            "\"numIndices\":2,\"numMinors\":2,\"numMotives\":1,\"numParams\":1",
+        ),
+    ];
+    for (label, from, to) in cases {
+        assert!(rb.contains(from), "missing G19 falsifier source for {label}");
+        let changed = rb.replacen(from, to, 1);
+        assert_eq!(
+            metatron_kernel::run(Cursor::new(changed)),
+            Verdict::Reject,
+            "RBTree derived recursor/rule check failed for {label}",
+        );
+    }
+}
