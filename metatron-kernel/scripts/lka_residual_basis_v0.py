@@ -1191,6 +1191,20 @@ def main() -> int:
         if len({canonical(c.features.get(name)) for c in cases}) > 1
     ]
 
+    # Minimum-basis cardinality is meaningful only when one "candidate" cannot
+    # smuggle an arbitrarily rich vector. Restrict the rewrite search to
+    # low-bandwidth observations: at most four distinct outcomes on the frozen
+    # suffix. High-cardinality vectors remain available in the archived scout
+    # run, but cannot count as one primitive law here.
+    feature_cardinality = {
+        name: len({canonical(c.features.get(name)) for c in cases})
+        for name in feature_names
+    }
+    feature_names = [
+        name for name in feature_names
+        if feature_cardinality[name] <= 4
+    ]
+
     public, hidden = build_public_hidden(cases, feature_names)
     prediction = solve_public(public)
 
@@ -1246,6 +1260,7 @@ def main() -> int:
         "current_unknown": sum(c.actual == 2 for c in cases),
         "current_error": sum(c.actual == 3 for c in cases),
         "candidate_observations": len(feature_names),
+        "candidate_outcome_cap": 4,
         "residual_pairs": len(pairs),
         "exact_basis_size": None if real_basis is None else len(real_basis),
         "exact_basis": real_basis,
