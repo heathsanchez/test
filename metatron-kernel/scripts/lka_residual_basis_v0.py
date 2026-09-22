@@ -776,6 +776,219 @@ def expression_whnf_prop_status(
     return "unknown"
 
 
+def canonical_name_paths(records: list[dict[str, Any]]) -> dict[int, tuple[Any, ...] | None]:
+    raw: dict[int, tuple[str, int, Any]] = {0: ("root", 0, None)}
+    for row in records:
+        idx = row.get("in")
+        if not isinstance(idx, int):
+            continue
+        s = row.get("str")
+        n = row.get("num")
+        if isinstance(s, dict) and isinstance(s.get("pre"), int):
+            raw[int(idx)] = ("str", int(s["pre"]), s.get("str"))
+        elif isinstance(n, dict) and isinstance(n.get("pre"), int):
+            raw[int(idx)] = ("num", int(n["pre"]), n.get("i"))
+
+    memo: dict[int, tuple[Any, ...] | None] = {0: ()}
+
+    def go(idx: int, seen: set[int]) -> tuple[Any, ...] | None:
+        if idx in memo:
+            return memo[idx]
+        if idx in seen or idx not in raw:
+            return None
+        kind, pre, value = raw[idx]
+        parent = go(pre, seen | {idx})
+        if parent is None:
+            return None
+        if kind == "str" and isinstance(value, str):
+            result = parent + (("str", value),)
+        elif kind == "num" and isinstance(value, int):
+            result = parent + (("num", int(value)),)
+        else:
+            return None
+        memo[idx] = result
+        return result
+
+    for idx in raw:
+        go(idx, set())
+    return memo
+
+
+def semantic_name_authority_status(records: list[dict[str, Any]]) -> str:
+    names = canonical_name_paths(records)
+    declared: list[tuple[str, int, tuple[Any, ...] | None]] = []
+    inductives: list[tuple[int, dict[str, Any], list[dict[str, Any]], list[dict[str, Any]]]] = []
+
+    for row in records:
+        for tag in ("axiom", "def", "thm"):
+            d = row.get(tag)
+            if isinstance(d, dict) and isinstance(d.get("name"), int):
+                nid = int(d["name"])
+                declared.append((tag, nid, names.get(nid)))
+        block = row.get("inductive")
+        if not isinstance(block, dict):
+            continue
+        types = [x for x in block.get("types", []) if isinstance(x, dict)]
+        ctors = [x for x in block.get("ctors", []) if isinstance(x, dict)]
+        recs = [x for x in block.get("recs", []) if isinstance(x, dict)]
+        for t in types:
+            if not isinstance(t.get("name"), int):
+                continue
+            owner = int(t["name"])
+            declared.append(("inductive", owner, names.get(owner)))
+            owner_ctors = [x for x in ctors if x.get("induct") == owner]
+            owner_recs = [
+                x for x in recs
+                if isinstance(x.get("all"), list) and owner in x.get("all", [])
+            ]
+            inductives.append((owner, t, owner_ctors, owner_recs))
+        for ctor in ctors:
+            if isinstance(ctor.get("name"), int):
+                nid = int(ctor["name"])
+                declared.append(("constructor", nid, names.get(nid)))
+        for rec in recs:
+            if isinstance(rec.get("name"), int):
+                nid = int(rec["name"])
+                declared.append(("recursor", nid, names.get(nid)))
+
+    if not declared:
+        return "not_applicable"
+    if any(path is None for _kind, _nid, path in declared):
+        return "unknown"
+
+    seen: dict[tuple[Any, ...], tuple[str, int]] = {}
+    for kind, nid, path in declared:
+        assert path is not None
+        if path in seen and seen[path][1] != nid:
+            return "deny"
+        seen[path] = (kind, nid)
+
+    for owner, _t, _ctors, recs in inductives:
+        owner_path = names.get(owner)
+        if owner_path is None:
+            return "unknown"
+        expected_rec = owner_path + (("str", "rec"),)
+        if len(recs) != 1:
+            # This probe does not decide families with absent/multiple recursor
+            # metadata; other obligations own that boundary.
+            continue
+        rec_name = recs[0].get("name")
+        if not isinstance(rec_name, int):
+            return "deny"
+        actual = names.get(int(rec_name))
+        if actual is None:
+            return "unknown"
+        if actual != expected_rec:
+            return "deny"
+
+    return "allow"
+
+
+def semantic_recursor_metadata_status(records: list[dict[str, Any]]) -> str:
+    names = canonical_name_paths(records)
+    blocks = [row["inductive"] for row in records if isinstance(row.get("inductive"), dict)]
+    if not blocks:
+        return "not_applicable"
+    saw = False
+    for block in blocks:
+        types = [x for x in block.get("types", []) if isinstance(x, dict)]
+        ctors = [x for x in block.get("ctors", []) if isinstance(x, dict)]
+        recs = [x for x in block.get("recs", []) if isinstance(x, dict)]
+        if len(types) != 1:
+            return "unknown"
+        t = types[0]
+        owner = t.get("name")
+        if not isinstance(owner, int):
+            return "deny"
+        owner_ctors = [c for c in ctors if c.get("induct") == owner]
+        if not recs:
+            return "unknown"
+        for rec in recs:
+            saw = True
+            if (
+                rec.get("all") != [owner]
+                or bool(rec.get("isUnsafe"))
+                or int(rec.get("numParams", -1)) != int(t.get("numParams", 0))
+                or int(rec.get("numIndices", -1)) != int(t.get("numIndices", 0))
+                or int(rec.get("numMotives", -1)) != 1
+                or int(rec.get("numMinors", -1)) != len(owner_ctors)
+            ):
+                return "deny"
+            rules = rec.get("rules", [])
+            if not isinstance(rules, list) or len(rules) != len(owner_ctors):
+                return "deny"
+            ctor_names = {
+                int(c["name"]): c
+                for c in owner_ctors
+                if isinstance(c.get("name"), int)
+            }
+            for rule in rules:
+                if not isinstance(rule, dict) or rule.get("ctor") not in ctor_names:
+                    return "deny"
+                ctor = ctor_names[int(rule["ctor"])]
+                if int(rule.get("nfields", -1)) != int(ctor.get("numFields", 0)):
+                    return "deny"
+            rname = rec.get("name")
+            owner_path = names.get(int(owner))
+            actual_path = names.get(int(rname)) if isinstance(rname, int) else None
+            if owner_path is None or actual_path is None:
+                return "unknown"
+            if actual_path != owner_path + (("str", "rec"),):
+                return "deny"
+    return "allow" if saw else "not_applicable"
+
+
+def semantic_positivity_status(
+    records: list[dict[str, Any]],
+    exprs: dict[int, dict[str, Any]],
+) -> str:
+    blocks = [row["inductive"] for row in records if isinstance(row.get("inductive"), dict)]
+    if not blocks:
+        return "not_applicable"
+    saw_field = False
+    saw_unknown = False
+    for block in blocks:
+        types = {
+            int(t["name"]): t
+            for t in block.get("types", [])
+            if isinstance(t, dict) and isinstance(t.get("name"), int)
+        }
+        for ctor in block.get("ctors", []):
+            if not isinstance(ctor, dict):
+                continue
+            owner = ctor.get("induct")
+            ty = ctor.get("type")
+            if not isinstance(owner, int) or owner not in types or not isinstance(ty, int):
+                saw_unknown = True
+                continue
+            domains, result = pi_domains(exprs, ty)
+            p = int(ctor.get("numParams", 0))
+            f = int(ctor.get("numFields", 0))
+            if len(domains) < p + f:
+                saw_unknown = True
+                continue
+            for field in domains[p:p+f]:
+                saw_field = True
+                if negative_self_occurrence(exprs, field, owner):
+                    return "deny"
+
+            ind = types[owner]
+            head, args = app_spine(exprs, result)
+            hrow = exprs.get(head, {})
+            hconst = hrow.get("const")
+            if not isinstance(hconst, dict) or hconst.get("name") != owner:
+                saw_unknown = True
+                continue
+            nparams = int(ind.get("numParams", 0))
+            for arg in args[nparams:]:
+                if contains_const(exprs, arg, owner):
+                    return "deny"
+
+    if saw_unknown:
+        return "unknown"
+    return "allow" if saw_field else "not_applicable"
+
+
 def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     exprs = expr_refs(records)
     levels = level_refs(records)
@@ -1273,6 +1486,9 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         projection_scalar = "allow"
 
     return {
+        "semantic:name_authority": semantic_name_authority_status(records),
+        "semantic:recursor_metadata_admissibility": semantic_recursor_metadata_status(records),
+        "semantic:positivity_admissibility": semantic_positivity_status(records, exprs),
         "semantic:field_universe_admissibility": field_universe_admissibility(
             records, exprs, levels
         ),
