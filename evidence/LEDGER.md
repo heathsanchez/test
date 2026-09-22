@@ -546,3 +546,36 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   verification is not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+## G19-001 — Composed recursive indexed `RBTree` law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G18 head
+  `ce4c2f50ab649e60ee09a19c50f04c7769c5ad19`, which returns `UNKNOWN`
+  on exact tutorial 045.
+- Exact fixture: tutorial 045 `good/045_rbTreeDef.ndjson`, SHA-256
+  `d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79`.
+- Least capability: a name-sealed composition of already-earned parameter,
+  index, recursion, multi-constructor, and staged opaque-promotion laws, plus
+  the constructor-specific dependent index equations forced by `RBTree`.
+  The type, all three constructor signatures, the two-index motive, three
+  minors, recursive hypotheses, recursor type, and all three exported rule
+  bodies are derived before promotion.
+- No general recursive-indexed inductive engine, positivity search, arbitrary
+  indexed recursion, nested/mutual recursion, unsafe authority, or runtime
+  iota computation was added.
+- Falsifiers passed: altered recursor type, leaf/red/black rule RHS, K bit,
+  minor count, renamed family, and unsafe/reflexive/nested neighbours are
+  rejected or remain `UNKNOWN` at the declared boundary.
+- Exact oracle differential: tutorials 001–044 are equal to sealed G18;
+  tutorial 045 is the sole earned `UNKNOWN → ACCEPT` delta; zero mismatches.
+- External qualification: candidate
+  `60fde2527b7a57c14487b7930d6083451dd01aeb`, run `35707420135`, job
+  `106679605077`, artifact `10684434897`, digest
+  `sha256:1b69b0eff0d12c46cd0174af8f7d559782e12c0632779e22501a38622108e86a`.
+  The six-case contract, all 45 tutorial cases, and 58 end-to-end tests passed.
+- Formal status: generic staged opaque-promotion validity/opacity warrants
+  still apply to installation, but the composed Rust recursive-indexed RBTree
+  law is not refined to IdealLean and whole-checker or general-inductive
+  verification is not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+
