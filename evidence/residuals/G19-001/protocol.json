@@ -1,0 +1,23 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G19-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "ce4c2f50ab649e60ee09a19c50f04c7769c5ad19",
+    "fixture_sha256": "d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79",
+    "tutorial_ordinal": 45,
+    "upstream_path": "tutorial output good/045_rbTreeDef.ndjson"
+  },
+  "obstruction": "RBTree is the first exact declaration combining a universe parameter, two indices, recursion, three constructors, dependent result indices, and recursive hypotheses.",
+  "expected": "ACCEPT",
+  "observed": "UNMEASURED_RED",
+  "least_capability": "UNDECIDED RED hypothesis: RBTree should be expressible by composing already-earned parameter/index/recursive signature laws plus constructor-specific index equations, while reusing staged opaque-signature promotion.",
+  "falsifier": "Exact RBTree must accept; renamed, unsafe, reflexive, and nested variants remain UNKNOWN; no general recursive-indexed inductive engine is inferred.",
+  "protected_suite": [
+    "all G0-G18 tests",
+    "exact tutorial prefix 001-044",
+    "tutorial 045 measured against sealed G18 before implementation",
+    "broader unsafe/reflexive/nested RBTree neighbours remain UNKNOWN"
+  ],
+  "decision": "open"
+}

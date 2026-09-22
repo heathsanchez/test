@@ -1266,3 +1266,52 @@ fn g18_nat_law_does_not_authorize_a_renamed_family() {
     let renamed = nat.replacen("\"str\":\"N\"", "\"str\":\"N2\"", 1);
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
+
+
+#[test]
+fn g19_001_exact_rbtree_authority_is_accepted() {
+    let bytes = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(bytes)),
+        Verdict::Accept,
+        "exact recursive indexed RBTree must be derived rather than left residual",
+    );
+}
+
+#[test]
+fn g19_rbtree_does_not_authorize_a_renamed_family() {
+    let rb = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
+    let renamed = rb.replacen("\"str\":\"RBTree\"", "\"str\":\"RBTree2\"", 1);
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+}
+
+#[test]
+fn rbtree_broader_neighbors_remain_unknown() {
+    let rb = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
+    let cases = [
+        (
+            "unsafe type",
+            "\"isRec\":true,\"isReflexive\":false,\"isUnsafe\":false,\"levelParams\":[5],\"name\":26",
+            "\"isRec\":true,\"isReflexive\":false,\"isUnsafe\":true,\"levelParams\":[5],\"name\":26",
+        ),
+        (
+            "reflexive",
+            "\"isRec\":true,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"isRec\":true,\"isReflexive\":true,\"isUnsafe\":false",
+        ),
+        (
+            "nested",
+            "\"numIndices\":2,\"numNested\":0,\"numParams\":1",
+            "\"numIndices\":2,\"numNested\":1,\"numParams\":1",
+        ),
+    ];
+    for (label, from, to) in cases {
+        assert!(rb.contains(from), "missing G19 perturbation source for {label}");
+        let changed = rb.replacen(from, to, 1);
+        assert_eq!(
+            metatron_kernel::run(Cursor::new(changed)),
+            Verdict::Unknown,
+            "RBTree broader-neighbor boundary failed for {label}",
+        );
+    }
+}
