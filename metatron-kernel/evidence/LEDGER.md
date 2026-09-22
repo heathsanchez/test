@@ -390,11 +390,42 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   signatures, four type judgments and thirteen conversions. Retired
   instructions remain unqualified without a same-cohort control.
 
-## G14-001 — `PProd` replication residual
+## G14-001 — Exact `PProd` replication
 
-- Status: OPEN; deliberately not implemented or abstracted.
+- Status: RETAINED as replication evidence at exact candidate head
+  `5e13a597b0d6d36872677d3c5fd468121c665845`, qualified by run
+  `35674131223`, job `106576909676`, artifact `10672266424`, digest
+  `sha256:0a536e48158594435bdda290e736fa4ba90a00652e1bb6176137f040f0f3e6bd`.
 - Exact obstruction: tutorial 041 `good/041_pprodType.ndjson`, SHA-256
   `9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a`,
-  expects ACCEPT and the G13 candidate returns `UNKNOWN`.
-- Boundary: tutorial 041 is frozen as the replication test for the apparent
-  G12/G13 composition law. No shared abstraction is promoted before that test.
+  expects ACCEPT while the externally sealed G13 checker
+  `6b50ae9d3a5543528ca815b69b423978dee0ab08` returns `UNKNOWN`.
+- Preregistered hypothesis: relative to exact `Prod`, the only new structural
+  degree of freedom is Sort-polymorphic parameter/result levels:
+  `Sort u`, `Sort v`, and `Sort (max 1 u v)`.
+- Result: hypothesis replicated. The candidate and sealed G13 oracle are
+  identical on tutorials 001–040; tutorial 041 is the sole earned delta:
+  **40 equal, 1 earned delta, 0 mismatches**. The complete tutorial prefix is
+  **41 matched, 0 incorrect**.
+- Retained capability: a separate exact `PProd` classifier validates the
+  two ordered universes, Sort-polymorphic parameter telescope, computed result
+  sort, constructor, recursor, motive, minor, rule, ownership and counts, then
+  reuses the unchanged opaque-signature promotion transaction.
+- Falsifiers: wrong universe count/order, parameter sort, result sort,
+  constructor/result spine, recursor/motive/minor/rule, owner or counts reject.
+  Indexed, recursive, unsafe, nested, dependent and broader parameterized
+  neighbors remain `UNKNOWN`.
+- Explicit exclusions: no shared And/Prod/PProd classifier was promoted; no
+  generic parameterized-inductive engine, iota, projections, eta or general
+  positivity was added. G14 is replication evidence, not architectural
+  promotion.
+- Formal warrant:
+  `IdealLean.PProdSortPromotion.promote_preserves_environment_validity`
+  proves that after validation of the exact Sort-polymorphic telescope and
+  derived opaque signatures, environment validity is preserved. This is a
+  semantic warrant, not Rust refinement or whole-checker verification.
+- Performance: `perf instructions:u` was unavailable on the qualification
+  runner; no same-cohort control exists. Status remains
+  `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`; no performance promotion is
+  claimed.
+

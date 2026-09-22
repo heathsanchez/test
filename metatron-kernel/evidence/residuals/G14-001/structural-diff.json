@@ -42,5 +42,20 @@
     "sort_polymorphic_parameter_and_result_levels"
   ],
   "extra_structural_degree_observed": false,
-  "architecture_promotion_authorized": false
+  "architecture_promotion_authorized": false,
+  "replication_result": "confirmed",
+  "qualification": {
+    "candidate_sha": "5e13a597b0d6d36872677d3c5fd468121c665845",
+    "run_id": 35674131223,
+    "tutorial": {
+      "matched": 41,
+      "incorrect": 0
+    },
+    "differential": {
+      "oracle_sha": "6b50ae9d3a5543528ca815b69b423978dee0ab08",
+      "equal": 40,
+      "earned_delta": 1,
+      "mismatch": 0
+    }
+  }
 }

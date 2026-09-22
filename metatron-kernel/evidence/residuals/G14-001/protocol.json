@@ -10,7 +10,7 @@
   },
   "obstruction": "The first PProd declaration is outside the separate exact And and Prod classifiers.",
   "expected": "ACCEPT",
-  "observed": "UNKNOWN",
+  "observed": "ACCEPT",
   "preregistered_hypothesis": {
     "proposed_delta": [
       "sort_polymorphic_parameter_and_result_levels"
@@ -34,5 +34,48 @@
     "general_positivity": false,
     "generic_parameterized_inductives": false
   },
-  "decision": "preregistered"
+  "decision": "retained_replication_evidence",
+  "replication_result": {
+    "replicated": true,
+    "observed_delta": [
+      "sort_polymorphic_parameter_and_result_levels"
+    ],
+    "extra_structural_degree_observed": false,
+    "differential": {
+      "oracle_sha": "6b50ae9d3a5543528ca815b69b423978dee0ab08",
+      "equal": 40,
+      "earned_delta": 1,
+      "mismatch": 0
+    }
+  },
+  "formal_warrant": {
+    "theorem": "IdealLean.PProdSortPromotion.promote_preserves_environment_validity",
+    "status": "semantic exact-PProd Sort-polymorphic opaque-promotion warrant",
+    "rust_refinement": false,
+    "whole_checker_verification": false
+  },
+  "performance": {
+    "metric": "perf instructions:u",
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "measurement_status": "unavailable",
+    "promotion_eligible": false,
+    "performance_decision": "unknown_without_same-cohort-control"
+  },
+  "external_evidence": {
+    "candidate_sha": "5e13a597b0d6d36872677d3c5fd468121c665845",
+    "run_id": 35674131223,
+    "job_id": 106576909676,
+    "artifact_id": 10672266424,
+    "artifact_digest": "sha256:0a536e48158594435bdda290e736fa4ba90a00652e1bb6176137f040f0f3e6bd",
+    "tutorial": {
+      "matched": 41,
+      "incorrect": 0
+    },
+    "differential": {
+      "equal": 40,
+      "earned_delta": 1,
+      "mismatch": 0
+    },
+    "result": "success"
+  }
 }
