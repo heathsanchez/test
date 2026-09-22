@@ -1,0 +1,58 @@
+name: LKC Polydisc V5 Normal-Only Census
+
+on:
+  push:
+    branches: [lkc-polydisc-modular-v5]
+    paths:
+      - 'experiments/lkc_polydisc/normal_only_v5_probe.py'
+      - '.github/workflows/lkc-polydisc-v5-normal-only.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V3 and diagnostic V5
+        run: |
+          python3 experiments/lkc_polydisc/shift_v3.py
+          python3 experiments/lkc_polydisc/normal_only_v5_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem polydisc
+      - name: Compare representative scales
+        shell: bash
+        run: |
+          set -u
+          root="$GITHUB_WORKSPACE/polydisc-v5-census"; mkdir -p "$root"
+          inputs=(19337098 9225987 6476047012455 10487306645701 5042242704654352709 4530401864863699852)
+          for who in v3 v5; do
+            if [ "$who" = v3 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v3.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v5_normal_only_probe.lean"
+            fi
+            python3 bench/benchmark.py diagnostic --problem polydisc --submission "$sub" \
+              --metric wall-time --repetitions 1 --timeout 900 --memory-mb 4096 \
+              --inputs "${inputs[@]}" --output "$root/$who" || true
+          done
+          find "$root" -name diagnostic.json -print -exec cat {} \;
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polydisc-v5-normal-only-census
+          path: polydisc-v5-census/
