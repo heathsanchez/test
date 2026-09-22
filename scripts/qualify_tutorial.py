@@ -166,7 +166,7 @@ def build_differential_summary(
     manifest: Sequence[TutorialCase],
     oracle_results: Sequence[CaseResult],
     candidate_results: Sequence[CaseResult],
-    earned_case: str,
+    earned_case: str | None,
     earned_oracle_exit: int,
     earned_candidate_exit: int,
 ) -> dict:
@@ -175,7 +175,7 @@ def build_differential_summary(
     expected_numbers = {case.number for case in manifest}
     if set(oracle) != expected_numbers or set(candidate) != expected_numbers:
         raise ValueError("differential results must cover the declared manifest exactly")
-    if earned_case not in expected_numbers:
+    if earned_case is not None and earned_case not in expected_numbers:
         raise ValueError(f"earned case {earned_case} is not in the declared manifest")
 
     counts = {"equal": 0, "earned_delta": 0, "mismatch": 0}
@@ -183,7 +183,7 @@ def build_differential_summary(
     for case in manifest:
         oracle_exit = oracle[case.number]
         candidate_exit = candidate[case.number]
-        if case.number == earned_case:
+        if earned_case is not None and case.number == earned_case:
             status = (
                 "earned_delta"
                 if oracle_exit == earned_oracle_exit
@@ -204,12 +204,16 @@ def build_differential_summary(
             }
         )
 
-    qualified = counts["mismatch"] == 0 and counts["earned_delta"] == 1
+    exact_equivalence = earned_case is None
+    qualified = counts["mismatch"] == 0 and counts["earned_delta"] == (
+        0 if exact_equivalence else 1
+    )
     return {
         "candidate_sha": candidate_sha,
         "cases": cases,
         "counts": counts,
         "earned_case": earned_case,
+        "mode": "exact_equivalence" if exact_equivalence else "earned_delta",
         "oracle_sha": oracle_sha,
         "outcome": "passed" if qualified else "failed",
         "qualified": qualified,
@@ -228,6 +232,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--oracle-sha")
     parser.add_argument("--differential-output", type=Path)
     parser.add_argument("--earned-case")
+    parser.add_argument("--require-equivalence", action="store_true")
     parser.add_argument("--earned-oracle-exit", type=int, default=2)
     parser.add_argument("--earned-candidate-exit", type=int, default=0)
     return parser.parse_args()
@@ -253,9 +258,13 @@ def main() -> int:
 
     differential_qualified = True
     if args.oracle:
-        if not args.oracle_sha or not args.earned_case or not args.differential_output:
+        if not args.oracle_sha or not args.differential_output:
             raise ValueError(
-                "--oracle requires --oracle-sha, --earned-case, and --differential-output"
+                "--oracle requires --oracle-sha and --differential-output"
+            )
+        if args.require_equivalence == bool(args.earned_case):
+            raise ValueError(
+                "--oracle requires exactly one of --require-equivalence or --earned-case"
             )
         oracle = args.oracle.resolve()
         oracle_results = tuple(run_case(oracle, tutorial_output, case) for case in suite)

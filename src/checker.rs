@@ -579,6 +579,191 @@ fn is_bvar_applied_to_bvar(
     )
 }
 
+/// G15-001's closed internal quotient. The enum is deliberately sealed to
+/// the three independently qualified families, so sharing the derivation
+/// skeleton cannot recognize a fourth external declaration family.
+#[derive(Clone, Copy)]
+enum BinaryProductSortLaw {
+    And,
+    Prod { first: NameId, second: NameId },
+    PProd { first: NameId, second: NameId },
+}
+
+impl BinaryProductSortLaw {
+    fn parameter_sort(self, export: &ResolvedExport, expression: ExprId, first: bool) -> bool {
+        match self {
+            Self::And => is_prop_sort(export, expression),
+            Self::Prod {
+                first: first_level,
+                second: second_level,
+            } => is_sort_succ_parameter(
+                export,
+                expression,
+                if first { first_level } else { second_level },
+            ),
+            Self::PProd {
+                first: first_level,
+                second: second_level,
+            } => is_sort_parameter(
+                export,
+                expression,
+                if first { first_level } else { second_level },
+            ),
+        }
+    }
+
+    fn result_sort(self, export: &ResolvedExport, expression: ExprId) -> bool {
+        match self {
+            Self::And => is_prop_sort(export, expression),
+            Self::Prod { first, second } => {
+                is_sort_max_succ_parameters(export, expression, first, second)
+            }
+            Self::PProd { first, second } => {
+                is_sort_max_one_parameters(export, expression, first, second)
+            }
+        }
+    }
+
+    fn constant(self, export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
+        match self {
+            Self::And => is_empty_constant(export, expression, name),
+            Self::Prod { first, second } | Self::PProd { first, second } => {
+                is_polymorphic_constant(export, expression, name, first, second)
+            }
+        }
+    }
+
+    fn declaration_levels(
+        self,
+        inductive: &crate::syntax::InductiveType,
+        constructor: &Constructor,
+    ) -> bool {
+        match self {
+            Self::And => {
+                inductive.level_params.is_empty() && constructor.level_params.is_empty()
+            }
+            Self::Prod { first, second } | Self::PProd { first, second } => {
+                first != second
+                    && inductive.level_params == [first, second]
+                    && constructor.level_params == inductive.level_params
+            }
+        }
+    }
+
+    fn recursor_levels(
+        self,
+        inductive_level_params: &[NameId],
+        recursor: &Recursor,
+    ) -> bool {
+        match self {
+            Self::And => recursor.level_params.len() == 1,
+            Self::Prod { .. } | Self::PProd { .. } => {
+                recursor.level_params.len() == 3
+                    && &recursor.level_params[1..] == inductive_level_params
+            }
+        }
+    }
+}
+
+struct ExactBinaryProductDerivation<'a> {
+    inductive: &'a crate::syntax::InductiveType,
+    constructor: &'a Constructor,
+    recursor: &'a Recursor,
+    constructor_suffix: &'static str,
+    law: BinaryProductSortLaw,
+}
+
+impl ExactBinaryProductDerivation<'_> {
+    fn validate_and_promote(
+        &self,
+        export: &ResolvedExport,
+        environment: &Environment,
+        limits: Limits,
+        delta_policy: DeltaPolicy,
+    ) -> Result<Environment, Verdict> {
+        if !self.law.declaration_levels(self.inductive, self.constructor)
+            || !is_exact_binary_product_parameter_telescope(
+                export,
+                self.inductive.ty,
+                self.law,
+            )
+            || self.inductive.all != [self.inductive.name]
+            || self.inductive.constructors != [self.constructor.name]
+            || self.constructor.index != 0
+            || self.constructor.inductive != self.inductive.name
+            || self.constructor.num_fields != 2
+            || self.constructor.num_params != 2
+            || !name_is_child_str(
+                export,
+                self.constructor.name,
+                self.inductive.name,
+                self.constructor_suffix,
+            )
+            || !is_derived_binary_product_constructor_type(
+                export,
+                self.constructor.ty,
+                self.inductive.name,
+                self.law,
+            )
+        {
+            return Err(Verdict::Reject);
+        }
+
+        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+        let derived_type = if self.inductive.level_params.is_empty() {
+            derived_type(self.inductive.name, self.inductive.ty)
+        } else {
+            derived_polymorphic_type(
+                self.inductive.name,
+                &self.inductive.level_params,
+                self.inductive.ty,
+            )
+        };
+        derivation.promote(
+            export,
+            derived_type,
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        derivation.promote(
+            export,
+            derived_constructor(self.constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+
+        if !valid_binary_product_recursor_metadata(
+            export,
+            self.inductive.name,
+            &self.inductive.level_params,
+            self.constructor.name,
+            self.recursor,
+            self.law,
+        ) || !is_derived_binary_product_recursor_type(
+            export,
+            self.inductive.name,
+            self.constructor.name,
+            self.recursor,
+            self.law,
+        ) || !is_derived_binary_product_rule(
+            export,
+            self.inductive.name,
+            self.constructor.name,
+            self.recursor,
+            self.law,
+        ) {
+            return Err(Verdict::Reject);
+        }
+        derivation.promote(
+            export,
+            derived_recursor(self.recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        Ok(derivation.finish())
+    }
+}
+
 /// G12-001's complete external frontier: the built-in-shaped `And` declaration
 /// with two Prop parameters and one field for each parameter. This is a named
 /// classifier, not a general parameterized-inductive rule. The shared
@@ -618,64 +803,18 @@ fn check_exact_and(
         return Err(Verdict::Unknown);
     }
 
-    if !is_exact_and_parameter_telescope(export, inductive.ty)
-        || inductive.all != [inductive.name]
-        || inductive.constructors != [constructor.name]
-        || constructor.index != 0
-        || constructor.inductive != inductive.name
-        || constructor.num_fields != 2
-        || constructor.num_params != 2
-        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
-        || !is_derived_and_constructor_type(export, constructor.ty, inductive.name)
-    {
-        return Err(Verdict::Reject);
+    ExactBinaryProductDerivation {
+        inductive,
+        constructor,
+        recursor,
+        constructor_suffix: "intro",
+        law: BinaryProductSortLaw::And,
     }
-
-    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
-        export,
-        derived_type(inductive.name, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(constructor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-
-    if !valid_and_recursor_metadata(export, inductive.name, constructor.name, recursor)
-        || !is_derived_and_recursor_type(export, inductive.name, constructor.name, recursor)
-        || !is_derived_and_rule(export, inductive.name, constructor.name, recursor)
-    {
-        return Err(Verdict::Reject);
-    }
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    Ok(derivation.finish())
+    .validate_and_promote(export, environment, limits, delta_policy)
 }
 
 fn is_exact_and_parameter_telescope(export: &ResolvedExport, expression: ExprId) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_prop_sort(export, *first) && is_prop_sort(export, *second) && is_prop_sort(export, *result)
+    is_exact_binary_product_parameter_telescope(export, expression, BinaryProductSortLaw::And)
 }
 
 fn is_derived_and_constructor_type(
@@ -683,35 +822,12 @@ fn is_derived_and_constructor_type(
     expression: ExprId,
     inductive: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_prop_sort(export, *first)
-        && is_prop_sort(export, *second)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 1)
-        && is_binary_constant_application(export, *result, inductive, 3, 2)
+    is_derived_binary_product_constructor_type(
+        export,
+        expression,
+        inductive,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn valid_and_recursor_metadata(
@@ -720,16 +836,14 @@ fn valid_and_recursor_metadata(
     constructor: NameId,
     recursor: &Recursor,
 ) -> bool {
-    recursor.all == [inductive]
-        && !recursor.k
-        && recursor.level_params.len() == 1
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 2
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
-        && name_is_child_str(export, recursor.name, inductive, "rec")
+    valid_binary_product_recursor_metadata(
+        export,
+        inductive,
+        &[],
+        constructor,
+        recursor,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_derived_and_recursor_type(
@@ -738,47 +852,13 @@ fn is_derived_and_recursor_type(
     constructor: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_prop_sort(export, *first)
-        && is_prop_sort(export, *second)
-        && is_and_motive_type(export, *motive, inductive, recursor)
-        && is_and_minor_type(export, *minor, constructor)
-        && is_binary_constant_application(export, *target, inductive, 3, 2)
-        && is_bvar_application(export, *result, 2, 0)
+    is_derived_binary_product_recursor_type(
+        export,
+        inductive,
+        constructor,
+        recursor,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_and_motive_type(
@@ -787,45 +867,22 @@ fn is_and_motive_type(
     inductive: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: argument,
-        body: result,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    is_binary_constant_application(export, *argument, inductive, 1, 0)
-        && matches!(
-            export.exprs.get(*result),
-            Some(Expr::Sort(level)) if matches!(
-                export.levels.get(*level),
-                Some(Level::Param(name)) if name == &recursor.level_params[0]
-            )
-        )
+    is_binary_product_motive_type(
+        export,
+        expression,
+        inductive,
+        recursor.level_params[0],
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_and_minor_type(export: &ResolvedExport, expression: ExprId, constructor: NameId) -> bool {
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: motive,
-        arg: constructed,
-    }) = export.exprs.get(*result)
-    else {
-        return false;
-    };
-    is_bvar(export, *left, 2)
-        && is_bvar(export, *right, 2)
-        && is_bvar(export, *motive, 2)
-        && is_and_constructor_application(export, *constructed, constructor)
+    is_binary_product_minor_type(
+        export,
+        expression,
+        constructor,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_derived_and_rule(
@@ -834,54 +891,13 @@ fn is_derived_and_rule(
     constructor: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: first,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_prop_sort(export, *first)
-        && is_prop_sort(export, *second)
-        && is_and_motive_type(export, *motive, inductive, recursor)
-        && is_and_minor_type(export, *minor, constructor)
-        && is_bvar(export, *left, 3)
-        && is_bvar(export, *right, 3)
-        && is_binary_bvar_application(export, *result, 2, 1, 0)
+    is_derived_binary_product_rule(
+        export,
+        inductive,
+        constructor,
+        recursor,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
@@ -902,51 +918,14 @@ fn is_binary_constant_application(
     first: u64,
     second: u64,
 ) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *head, constant)
-        && is_bvar(export, *first_arg, first)
-        && is_bvar(export, *arg, second)
-}
-
-fn is_and_constructor_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-) -> bool {
-    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: second_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *head, constructor)
-        && is_bvar(export, *first_parameter, 4)
-        && is_bvar(export, *second_parameter, 3)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 0)
+    is_binary_product_constant_application(
+        export,
+        expression,
+        constant,
+        first,
+        second,
+        BinaryProductSortLaw::And,
+    )
 }
 
 fn is_bvar_application(
@@ -984,124 +963,10 @@ fn is_binary_bvar_application(
         && is_bvar(export, *arg, second)
 }
 
-/// G13-001's deliberately separate classifier. It recognizes only Lean's
-/// exact two-universe `Prod` envelope and reuses the already-warranted opaque
-/// promotion transaction. It is intentionally not a parameterized-inductive
-/// abstraction shared with G12.
-fn check_exact_prod(
-    export: &ResolvedExport,
-    environment: &Environment,
-    block: &InductiveBlock,
-    limits: Limits,
-    delta_policy: DeltaPolicy,
-) -> Result<Environment, Verdict> {
-    let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || constructor.is_unsafe
-    {
-        return Err(Verdict::Unknown);
-    }
-    let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-    if prod_has_dependent_parameter_neighbor(export, inductive.ty) {
-        return Err(Verdict::Unknown);
-    }
-    let [first_level, second_level] = inductive.level_params.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if first_level == second_level
-        || constructor.level_params != inductive.level_params
-        || !is_exact_prod_parameter_telescope(export, inductive.ty, *first_level, *second_level)
-        || inductive.all != [inductive.name]
-        || inductive.constructors != [constructor.name]
-        || constructor.index != 0
-        || constructor.inductive != inductive.name
-        || constructor.num_fields != 2
-        || constructor.num_params != 2
-        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
-        || !is_derived_prod_constructor_type(
-            export,
-            constructor.ty,
-            inductive.name,
-            *first_level,
-            *second_level,
-        )
-    {
-        return Err(Verdict::Reject);
-    }
-
-    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
-        export,
-        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(constructor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-
-    if !valid_prod_recursor_metadata(export, inductive, constructor.name, recursor)
-        || !is_derived_prod_recursor_type(
-            export,
-            inductive.name,
-            constructor.name,
-            *first_level,
-            *second_level,
-            recursor,
-        )
-        || !is_derived_prod_rule(
-            export,
-            inductive.name,
-            constructor.name,
-            *first_level,
-            *second_level,
-            recursor,
-        )
-    {
-        return Err(Verdict::Reject);
-    }
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    Ok(derivation.finish())
-}
-
-fn prod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
-    let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
-        return false;
-    };
-    matches!(
-        export.exprs.get(*body),
-        Some(Expr::Pi { domain, .. }) if matches!(export.exprs.get(*domain), Some(Expr::Pi { .. }))
-    )
-}
-
-fn is_exact_prod_parameter_telescope(
+fn is_exact_binary_product_parameter_telescope(
     export: &ResolvedExport,
     expression: ExprId,
-    first_level: NameId,
-    second_level: NameId,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let Some(Expr::Pi {
         domain: first,
@@ -1117,17 +982,16 @@ fn is_exact_prod_parameter_telescope(
     else {
         return false;
     };
-    is_sort_succ_parameter(export, *first, first_level)
-        && is_sort_succ_parameter(export, *second, second_level)
-        && is_sort_max_succ_parameters(export, *result, first_level, second_level)
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && law.result_sort(export, *result)
 }
 
-fn is_derived_prod_constructor_type(
+fn is_derived_binary_product_constructor_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
-    first_level: NameId,
-    second_level: NameId,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let Some(Expr::Pi {
         domain: first,
@@ -1153,47 +1017,39 @@ fn is_derived_prod_constructor_type(
     else {
         return false;
     };
-    is_sort_succ_parameter(export, *first, first_level)
-        && is_sort_succ_parameter(export, *second, second_level)
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
         && is_bvar(export, *left, 1)
         && is_bvar(export, *right, 1)
-        && is_binary_polymorphic_constant_application(
-            export,
-            *result,
-            inductive,
-            first_level,
-            second_level,
-            3,
-            2,
-        )
+        && is_binary_product_constant_application(export, *result, inductive, 3, 2, law)
 }
 
-fn valid_prod_recursor_metadata(
+fn valid_binary_product_recursor_metadata(
     export: &ResolvedExport,
-    inductive: &crate::syntax::InductiveType,
+    inductive: NameId,
+    inductive_level_params: &[NameId],
     constructor: NameId,
     recursor: &Recursor,
+    law: BinaryProductSortLaw,
 ) -> bool {
-    recursor.all == [inductive.name]
+    recursor.all == [inductive]
         && !recursor.k
-        && recursor.level_params.len() == 3
+        && law.recursor_levels(inductive_level_params, recursor)
         && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.level_params[1..] == inductive.level_params
         && recursor.num_params == 2
         && recursor.num_indices == 0
         && recursor.num_motives == 1
         && recursor.num_minors == 1
         && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
-        && name_is_child_str(export, recursor.name, inductive.name, "rec")
+        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
-fn is_derived_prod_recursor_type(
+fn is_derived_binary_product_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
     constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
     recursor: &Recursor,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let Some(Expr::Pi {
         domain: first,
@@ -1230,36 +1086,26 @@ fn is_derived_prod_recursor_type(
     else {
         return false;
     };
-    is_sort_succ_parameter(export, *first, first_level)
-        && is_sort_succ_parameter(export, *second, second_level)
-        && is_prod_motive_type(
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && is_binary_product_motive_type(
             export,
             *motive,
             inductive,
-            first_level,
-            second_level,
             recursor.level_params[0],
+            law,
         )
-        && is_prod_minor_type(export, *minor, constructor, first_level, second_level)
-        && is_binary_polymorphic_constant_application(
-            export,
-            *target,
-            inductive,
-            first_level,
-            second_level,
-            3,
-            2,
-        )
+        && is_binary_product_minor_type(export, *minor, constructor, law)
+        && is_binary_product_constant_application(export, *target, inductive, 3, 2, law)
         && is_bvar_application(export, *result, 2, 0)
 }
 
-fn is_prod_motive_type(
+fn is_binary_product_motive_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
-    first_level: NameId,
-    second_level: NameId,
     motive_level: NameId,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let Some(Expr::Pi {
         domain: argument,
@@ -1268,23 +1114,15 @@ fn is_prod_motive_type(
     else {
         return false;
     };
-    is_binary_polymorphic_constant_application(
-        export,
-        *argument,
-        inductive,
-        first_level,
-        second_level,
-        1,
-        0,
-    ) && is_sort_parameter(export, *result, motive_level)
+    is_binary_product_constant_application(export, *argument, inductive, 1, 0, law)
+        && is_sort_parameter(export, *result, motive_level)
 }
 
-fn is_prod_minor_type(
+fn is_binary_product_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
     constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(expression) else {
         return false;
@@ -1306,22 +1144,15 @@ fn is_prod_minor_type(
     is_bvar(export, *left, 2)
         && is_bvar(export, *right, 2)
         && is_bvar(export, *motive, 2)
-        && is_prod_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            first_level,
-            second_level,
-        )
+        && is_binary_product_constructor_application(export, *constructed, constructor, law)
 }
 
-fn is_derived_prod_rule(
+fn is_derived_binary_product_rule(
     export: &ResolvedExport,
     inductive: NameId,
     constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
     recursor: &Recursor,
+    law: BinaryProductSortLaw,
 ) -> bool {
     let [rule] = recursor.rules.as_slice() else {
         return false;
@@ -1364,20 +1195,135 @@ fn is_derived_prod_rule(
     else {
         return false;
     };
-    is_sort_succ_parameter(export, *first, first_level)
-        && is_sort_succ_parameter(export, *second, second_level)
-        && is_prod_motive_type(
+    law.parameter_sort(export, *first, true)
+        && law.parameter_sort(export, *second, false)
+        && is_binary_product_motive_type(
             export,
             *motive,
             inductive,
-            first_level,
-            second_level,
             recursor.level_params[0],
+            law,
         )
-        && is_prod_minor_type(export, *minor, constructor, first_level, second_level)
+        && is_binary_product_minor_type(export, *minor, constructor, law)
         && is_bvar(export, *left, 3)
         && is_bvar(export, *right, 3)
         && is_binary_bvar_application(export, *result, 2, 1, 0)
+}
+
+fn is_binary_product_constant_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    first: u64,
+    second: u64,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    law.constant(export, *head, constant)
+        && is_bvar(export, *first_arg, first)
+        && is_bvar(export, *arg, second)
+}
+
+fn is_binary_product_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun,
+        arg: second_parameter,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_parameter,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    law.constant(export, *head, constructor)
+        && is_bvar(export, *first_parameter, 4)
+        && is_bvar(export, *second_parameter, 3)
+        && is_bvar(export, *left, 1)
+        && is_bvar(export, *right, 0)
+}
+
+/// G13-001's name-specific frontier. G15 shares only its already-qualified
+/// derivation skeleton; this envelope and its Type-level law remain separate.
+fn check_exact_prod(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if prod_has_dependent_parameter_neighbor(export, inductive.ty) {
+        return Err(Verdict::Unknown);
+    }
+    let [first_level, second_level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    ExactBinaryProductDerivation {
+        inductive,
+        constructor,
+        recursor,
+        constructor_suffix: "mk",
+        law: BinaryProductSortLaw::Prod {
+            first: *first_level,
+            second: *second_level,
+        },
+    }
+    .validate_and_promote(export, environment, limits, delta_policy)
+}
+
+fn prod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
+        return false;
+    };
+    matches!(
+        export.exprs.get(*body),
+        Some(Expr::Pi { domain, .. }) if matches!(export.exprs.get(*domain), Some(Expr::Pi { .. }))
+    )
 }
 
 fn is_sort_parameter(export: &ResolvedExport, expression: ExprId, parameter: NameId) -> bool {
@@ -1416,31 +1362,6 @@ fn level_is_succ_parameter(export: &ResolvedExport, level: LevelId, parameter: N
     )
 }
 
-#[allow(clippy::too_many_arguments)]
-fn is_binary_polymorphic_constant_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constant: NameId,
-    first_level: NameId,
-    second_level: NameId,
-    first_argument: u64,
-    second_argument: u64,
-) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_polymorphic_constant(export, *head, constant, first_level, second_level)
-        && is_bvar(export, *first_arg, first_argument)
-        && is_bvar(export, *arg, second_argument)
-}
-
 fn is_polymorphic_constant(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1458,44 +1379,8 @@ fn is_polymorphic_constant(
     )
 }
 
-fn is_prod_constructor_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
-) -> bool {
-    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: second_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_polymorphic_constant(export, *head, constructor, first_level, second_level)
-        && is_bvar(export, *first_parameter, 4)
-        && is_bvar(export, *second_parameter, 3)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 0)
-}
-
-/// G14-001's separate replication classifier. It admits only Lean's exact
-/// two-universe `PProd` envelope. The family-specific derivation is kept
-/// distinct from G12 and G13; only the already-qualified opaque-signature
-/// promotion transaction and polymorphic-constant representation are reused.
+/// G14-001's name-specific frontier. G15 shares only its already-qualified
+/// derivation skeleton; this envelope and its Sort-level law remain separate.
 fn check_exact_pprod(
     export: &ResolvedExport,
     environment: &Environment,
@@ -1533,68 +1418,17 @@ fn check_exact_pprod(
     let [first_level, second_level] = inductive.level_params.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if first_level == second_level
-        || constructor.level_params != inductive.level_params
-        || !is_exact_pprod_parameter_telescope(export, inductive.ty, *first_level, *second_level)
-        || inductive.all != [inductive.name]
-        || inductive.constructors != [constructor.name]
-        || constructor.index != 0
-        || constructor.inductive != inductive.name
-        || constructor.num_fields != 2
-        || constructor.num_params != 2
-        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
-        || !is_derived_pprod_constructor_type(
-            export,
-            constructor.ty,
-            inductive.name,
-            *first_level,
-            *second_level,
-        )
-    {
-        return Err(Verdict::Reject);
+    ExactBinaryProductDerivation {
+        inductive,
+        constructor,
+        recursor,
+        constructor_suffix: "mk",
+        law: BinaryProductSortLaw::PProd {
+            first: *first_level,
+            second: *second_level,
+        },
     }
-
-    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
-        export,
-        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(constructor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-
-    if !valid_pprod_recursor_metadata(export, inductive, constructor.name, recursor)
-        || !is_derived_pprod_recursor_type(
-            export,
-            inductive.name,
-            constructor.name,
-            *first_level,
-            *second_level,
-            recursor,
-        )
-        || !is_derived_pprod_rule(
-            export,
-            inductive.name,
-            constructor.name,
-            *first_level,
-            *second_level,
-            recursor,
-        )
-    {
-        return Err(Verdict::Reject);
-    }
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    Ok(derivation.finish())
+    .validate_and_promote(export, environment, limits, delta_policy)
 }
 
 fn pprod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
@@ -1636,289 +1470,6 @@ fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprI
     })
 }
 
-fn is_exact_pprod_parameter_telescope(
-    export: &ResolvedExport,
-    expression: ExprId,
-    first_level: NameId,
-    second_level: NameId,
-) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_sort_parameter(export, *first, first_level)
-        && is_sort_parameter(export, *second, second_level)
-        && is_sort_max_one_parameters(export, *result, first_level, second_level)
-}
-
-fn is_derived_pprod_constructor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    first_level: NameId,
-    second_level: NameId,
-) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_sort_parameter(export, *first, first_level)
-        && is_sort_parameter(export, *second, second_level)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 1)
-        && is_binary_polymorphic_constant_application(
-            export,
-            *result,
-            inductive,
-            first_level,
-            second_level,
-            3,
-            2,
-        )
-}
-
-fn valid_pprod_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: &crate::syntax::InductiveType,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> bool {
-    recursor.all == [inductive.name]
-        && !recursor.k
-        && recursor.level_params.len() == 3
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.level_params[1..] == inductive.level_params
-        && recursor.num_params == 2
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
-        && name_is_child_str(export, recursor.name, inductive.name, "rec")
-}
-
-fn is_derived_pprod_recursor_type(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
-    recursor: &Recursor,
-) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_sort_parameter(export, *first, first_level)
-        && is_sort_parameter(export, *second, second_level)
-        && is_pprod_motive_type(
-            export,
-            *motive,
-            inductive,
-            first_level,
-            second_level,
-            recursor.level_params[0],
-        )
-        && is_pprod_minor_type(export, *minor, constructor, first_level, second_level)
-        && is_binary_polymorphic_constant_application(
-            export,
-            *target,
-            inductive,
-            first_level,
-            second_level,
-            3,
-            2,
-        )
-        && is_bvar_application(export, *result, 2, 0)
-}
-
-fn is_pprod_motive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    first_level: NameId,
-    second_level: NameId,
-    motive_level: NameId,
-) -> bool {
-    let Some(Expr::Pi {
-        domain: argument,
-        body: result,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    is_binary_polymorphic_constant_application(
-        export,
-        *argument,
-        inductive,
-        first_level,
-        second_level,
-        1,
-        0,
-    ) && is_sort_parameter(export, *result, motive_level)
-}
-
-fn is_pprod_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
-) -> bool {
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: motive,
-        arg: constructed,
-    }) = export.exprs.get(*result)
-    else {
-        return false;
-    };
-    is_bvar(export, *left, 2)
-        && is_bvar(export, *right, 2)
-        && is_bvar(export, *motive, 2)
-        && is_pprod_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            first_level,
-            second_level,
-        )
-}
-
-fn is_derived_pprod_rule(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
-    recursor: &Recursor,
-) -> bool {
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: first,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_sort_parameter(export, *first, first_level)
-        && is_sort_parameter(export, *second, second_level)
-        && is_pprod_motive_type(
-            export,
-            *motive,
-            inductive,
-            first_level,
-            second_level,
-            recursor.level_params[0],
-        )
-        && is_pprod_minor_type(export, *minor, constructor, first_level, second_level)
-        && is_bvar(export, *left, 3)
-        && is_bvar(export, *right, 3)
-        && is_binary_bvar_application(export, *result, 2, 1, 0)
-}
-
 fn is_sort_max_one_parameters(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1944,40 +1495,6 @@ fn level_is_one(export: &ResolvedExport, level: LevelId) -> bool {
         export.levels.get(level),
         Some(Level::Succ(inner)) if matches!(export.levels.get(*inner), Some(Level::Zero))
     )
-}
-
-fn is_pprod_constructor_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-    first_level: NameId,
-    second_level: NameId,
-) -> bool {
-    let Some(Expr::App { fun, arg: right }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App { fun, arg: left }) = export.exprs.get(*fun) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun,
-        arg: second_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_parameter,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_polymorphic_constant(export, *head, constructor, first_level, second_level)
-        && is_bvar(export, *first_parameter, 4)
-        && is_bvar(export, *second_parameter, 3)
-        && is_bvar(export, *left, 1)
-        && is_bvar(export, *right, 0)
 }
 
 /// G11-001's exact `TwoBool` promotion boundary. This deliberately names the
