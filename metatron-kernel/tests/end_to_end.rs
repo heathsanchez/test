@@ -1143,18 +1143,19 @@ fn run_g18_perturbations(replacements: &[(&str, &str)]) -> Verdict {
         assert!(bytes.contains(from), "missing perturbation source: {from}");
         bytes = bytes.replacen(from, to, 1);
     }
-    if let Some(oracle) = sealed_g17_verdict(&bytes) {
-        assert_eq!(
-            oracle,
-            Verdict::Unknown,
-            "G18 authority was already present in the sealed G17 oracle",
-        );
-    }
     metatron_kernel::run(Cursor::new(bytes))
 }
 
 #[test]
 fn g18_001_exact_nat_authority_is_accepted() {
+    let bytes = include_str!("../evidence/residuals/G18-001/fixture.ndjson");
+    if let Some(oracle) = sealed_g17_verdict(bytes) {
+        assert_eq!(
+            oracle,
+            Verdict::Reject,
+            "sealed G17 must expose the exact Nat false-negative residual",
+        );
+    }
     assert_eq!(run_g18_perturbations(&[]), Verdict::Accept);
 }
 

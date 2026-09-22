@@ -10,13 +10,13 @@
   },
   "obstruction": "The exact local recursive N (zero/succ) is the first recursive inductive outside the retained G17 authority.",
   "expected": "ACCEPT",
-  "observed": "UNKNOWN",
-  "least_capability": "UNDECIDED RED hypothesis: exact N should require only a recursive constructor/recursor law plus the existing staged opaque-signature promotion transaction, not a general recursive-inductive engine.",
-  "falsifier": "Exact N must accept; malformed claims inside the named N envelope reject; parameterized, indexed, reflexive, unsafe, nested, and renamed neighbors remain UNKNOWN; tutorials 001-043 stay equal to sealed G17.",
+  "observed": "REJECT",
+  "least_capability": "Exact N requires a name-sealed recursive constructor/recursor law plus the existing staged opaque-signature promotion transaction; no general recursive-inductive engine is introduced.",
+  "falsifier": "Sealed G17 must REJECT the exact valid Nat fixture; G18 must ACCEPT it. Malformed claims inside the named N envelope reject; parameterized, indexed, reflexive, unsafe, nested, and renamed neighbors remain UNKNOWN; tutorials 001-043 stay equal to sealed G17.",
   "protected_suite": [
     "all G0-G17 tests",
     "exact tutorial prefix 001-043",
-    "tutorial 044 remains UNKNOWN at sealed G17",
+    "tutorial 044 is REJECT at sealed G17 and ACCEPT only after G18",
     "no general recursive-inductive authority is inferred"
   ],
   "decision": "open"

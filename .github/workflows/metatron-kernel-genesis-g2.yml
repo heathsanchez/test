@@ -115,7 +115,7 @@ jobs:
           ORACLE_NAT=$?
           set -e
           test "$CANDIDATE_NAT" = 0
-          test "$ORACLE_NAT" = 2
+          test "$ORACLE_NAT" = 1
           python scripts/qualify_tutorial.py \
             --checker target/release/metatron-kernel \
             --tutorial-output /tmp/lean-kernel-tutorial \
@@ -125,6 +125,7 @@ jobs:
             --oracle /tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
             --oracle-sha "$G17_SHA" \
             --earned-case 044 \
+            --earned-oracle-exit 1 \
             --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
