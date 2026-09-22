@@ -28,6 +28,55 @@ theorem clearBitIfSet_testBit (bits i j : Nat) :
       simp [hb']
     · simp [hji]
 
+
+theorem clearMultiples_below
+    (fuel n p m bits j : Nat) (hj : j < m) :
+    (clearMultiples fuel n p m bits).testBit j = bits.testBit j := by
+  induction fuel generalizing m bits with
+  | zero =>
+      rfl
+  | succ fuel ih =>
+      rw [clearMultiples]
+      by_cases hnm : n < m
+      · rw [if_pos hnm]
+      · rw [if_neg hnm]
+        rw [ih (m + p) (clearBitIfSet bits m) (by omega)]
+        rw [clearBitIfSet_testBit]
+        simp [Nat.ne_of_lt hj]
+
+theorem clearMultiples_hits
+    (fuel n p m bits k : Nat)
+    (hp : 0 < p) (hf : k < fuel) (hi : m + k * p ≤ n) :
+    (clearMultiples fuel n p m bits).testBit (m + k * p) = false := by
+  induction k generalizing fuel m bits with
+  | zero =>
+      cases fuel with
+      | zero => omega
+      | succ fuel =>
+          rw [clearMultiples]
+          rw [if_neg (by omega : ¬ n < m)]
+          have hlt : m < m + p := by omega
+          rw [clearMultiples_below fuel n p (m + p)
+            (clearBitIfSet bits m) m hlt]
+          rw [clearBitIfSet_testBit]
+          simp
+  | succ k ih =>
+      cases fuel with
+      | zero => omega
+      | succ fuel =>
+          rw [clearMultiples]
+          have hmle : m ≤ n := by
+            have := hi
+            omega
+          rw [if_neg (by omega : ¬ n < m)]
+          have ht : m + (k + 1) * p = (m + p) + k * p := by
+            simp [Nat.succ_mul, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+          rw [ht]
+          apply ih fuel (m + p) (clearBitIfSet bits m)
+          · omega
+          · rw [← ht]
+            exact hi
+
 theorem initialPrimeBits_testBit (n i : Nat) :
     ((((1 <<< (n + 1)) - 1) ^^^ 3).testBit i) =
       ((decide (i < n + 1)) ^^ ((3 : Nat).testBit i)) := by
