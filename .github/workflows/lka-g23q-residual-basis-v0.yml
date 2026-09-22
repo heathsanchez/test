@@ -103,6 +103,15 @@ jobs:
           python scripts/lka_residual_basis_v0.py \
             --tutorial-output /tmp/lean-kernel-tutorial \
             --checker target/release/metatron-kernel \
+            --diagnostic-checker target/diagnostics/release/metatron-kernel \
+            --lineage G15=/tmp/metatron-G15/metatron-kernel/target/release/metatron-kernel \
+            --lineage G16=/tmp/metatron-G16/metatron-kernel/target/release/metatron-kernel \
+            --lineage G17=/tmp/metatron-G17/metatron-kernel/target/release/metatron-kernel \
+            --lineage G18=/tmp/metatron-G18/metatron-kernel/target/release/metatron-kernel \
+            --lineage G19=/tmp/metatron-G19/metatron-kernel/target/release/metatron-kernel \
+            --lineage G20=/tmp/metatron-G20/metatron-kernel/target/release/metatron-kernel \
+            --lineage G21=/tmp/metatron-G21/metatron-kernel/target/release/metatron-kernel \
+            --lineage G22=/tmp/metatron-G22/metatron-kernel/target/release/metatron-kernel \
             --output-dir basis-out \
             --start 56 \
             --end 141 | tee basis-out.log
