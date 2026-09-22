@@ -11,7 +11,7 @@ namespace Submission
 array of already-computed partition values. This is an operational probe; the
 universal bridge to partAux is proved only if the representation wins. -/
 def pentagonalRow (k : Nat) : Nat → Nat → Array Int → Int → Int
-  | 0, _, _, _, acc => acc
+  | 0, _, _, acc => acc
   | fuel + 1, j, vals, acc =>
       let g1 := j * (3 * j - 1) / 2
       if k < g1 then acc
