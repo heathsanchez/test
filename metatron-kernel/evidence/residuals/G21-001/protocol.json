@@ -1,0 +1,49 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G21-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "80c99cfdce1e9a5349ef4b300f506c92677dc6ce",
+    "tutorial_ordinals": [
+      50,
+      51,
+      52,
+      53
+    ],
+    "fixtures": [
+      {
+        "path": "bad/050_inductWrongCtorParams.ndjson",
+        "sha256": "20214ec1a31221884548d3e91b689b9569fd7588af2fb0e219754b683041ac10"
+      },
+      {
+        "path": "bad/051_inductWrongCtorResParams.ndjson",
+        "sha256": "5506566449cc2f3c83f417007bf15a7a0101c458c450d77a23cfd4c2423910c4"
+      },
+      {
+        "path": "bad/052_inductWrongCtorResLevel.ndjson",
+        "sha256": "3f29bd3a753caa056cc45c20cd8aeb734bc44cfc6b3828a6c6ec855737f596f3"
+      },
+      {
+        "path": "bad/053_inductInIndex.ndjson",
+        "sha256": "8dc9a9997862a5f25b76520f5d69a146664ad9f0364dd350732a7f76e4190763"
+      }
+    ],
+    "conversion_control": {
+      "path": "good/055_reduceCtorParam.mk.ndjson",
+      "sha256": "16d146c5ef39743b6a95f21043a43b890e22d72792fd9436e37396765124a7a2"
+    }
+  },
+  "obstruction": "The next malformed corridor violates hard constructor-result coherence: declared parameters are not reused in order, universe parameters are permuted in the result head, or the inductive occurs recursively inside an index.",
+  "expected": "REJECT",
+  "observed": "UNKNOWN",
+  "least_capability": "A rejection-only constructor-result spine law on the unrecognized single-constructor frontier. It checks owner/index metadata, declared universe order, parameter reuse/order, result arity, and recursive occurrence inside indices, while deliberately not comparing parameter domain types.",
+  "falsifier": "Any tutorial 001-049 changes; the valid conversion-sensitive tutorial 055 control becomes REJECT; any of 050-053 remains non-REJECT; or G21 grants any new ACCEPT authority.",
+  "protected_suite": [
+    "all G0-G20 tests and falsifiers",
+    "exact tutorial prefix 001-049",
+    "tutorial 055 conversion-sensitive constructor parameter control remains UNKNOWN",
+    "recognized named-family broader neighbours bypass G21",
+    "G21 grants no new ACCEPT authority"
+  ],
+  "decision": "open"
+}

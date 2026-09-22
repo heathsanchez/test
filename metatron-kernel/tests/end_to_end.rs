@@ -1378,3 +1378,23 @@ fn g20_inductive_arity_law_rejects_first_malformed_corridor() {
         assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Reject);
     }
 }
+
+
+#[test]
+fn g21_constructor_result_coherence_rejects_malformed_corridor() {
+    let cases = [
+        include_str!("../evidence/residuals/G21-001/050_inductWrongCtorParams.ndjson"),
+        include_str!("../evidence/residuals/G21-001/051_inductWrongCtorResParams.ndjson"),
+        include_str!("../evidence/residuals/G21-001/052_inductWrongCtorResLevel.ndjson"),
+        include_str!("../evidence/residuals/G21-001/053_inductInIndex.ndjson"),
+    ];
+    for bytes in cases {
+        assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Reject);
+    }
+}
+
+#[test]
+fn g21_does_not_preempt_conversion_sensitive_constructor_parameters() {
+    let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
+    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
+}
