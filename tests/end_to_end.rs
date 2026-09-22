@@ -1379,7 +1379,6 @@ fn g20_inductive_arity_law_rejects_first_malformed_corridor() {
     }
 }
 
-
 #[test]
 fn g21_constructor_result_coherence_rejects_malformed_corridor() {
     let cases = [
