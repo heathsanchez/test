@@ -639,9 +639,7 @@ impl BinaryProductSortLaw {
         constructor: &Constructor,
     ) -> bool {
         match self {
-            Self::And => {
-                inductive.level_params.is_empty() && constructor.level_params.is_empty()
-            }
+            Self::And => inductive.level_params.is_empty() && constructor.level_params.is_empty(),
             Self::Prod { first, second } | Self::PProd { first, second } => {
                 first != second
                     && inductive.level_params == [first, second]
@@ -650,11 +648,7 @@ impl BinaryProductSortLaw {
         }
     }
 
-    fn recursor_levels(
-        self,
-        inductive_level_params: &[NameId],
-        recursor: &Recursor,
-    ) -> bool {
+    fn recursor_levels(self, inductive_level_params: &[NameId], recursor: &Recursor) -> bool {
         match self {
             Self::And => recursor.level_params.len() == 1,
             Self::Prod { .. } | Self::PProd { .. } => {
@@ -681,12 +675,10 @@ impl ExactBinaryProductDerivation<'_> {
         limits: Limits,
         delta_policy: DeltaPolicy,
     ) -> Result<Environment, Verdict> {
-        if !self.law.declaration_levels(self.inductive, self.constructor)
-            || !is_exact_binary_product_parameter_telescope(
-                export,
-                self.inductive.ty,
-                self.law,
-            )
+        if !self
+            .law
+            .declaration_levels(self.inductive, self.constructor)
+            || !is_exact_binary_product_parameter_telescope(export, self.inductive.ty, self.law)
             || self.inductive.all != [self.inductive.name]
             || self.inductive.constructors != [self.constructor.name]
             || self.constructor.index != 0
@@ -719,12 +711,7 @@ impl ExactBinaryProductDerivation<'_> {
                 self.inductive.ty,
             )
         };
-        derivation.promote(
-            export,
-            derived_type,
-            limits.judgment_steps,
-            delta_policy,
-        )?;
+        derivation.promote(export, derived_type, limits.judgment_steps, delta_policy)?;
         derivation.promote(
             export,
             derived_constructor(self.constructor),
@@ -877,12 +864,7 @@ fn is_and_motive_type(
 }
 
 fn is_and_minor_type(export: &ResolvedExport, expression: ExprId, constructor: NameId) -> bool {
-    is_binary_product_minor_type(
-        export,
-        expression,
-        constructor,
-        BinaryProductSortLaw::And,
-    )
+    is_binary_product_minor_type(export, expression, constructor, BinaryProductSortLaw::And)
 }
 
 fn is_derived_and_rule(
@@ -1088,13 +1070,7 @@ fn is_derived_binary_product_recursor_type(
     };
     law.parameter_sort(export, *first, true)
         && law.parameter_sort(export, *second, false)
-        && is_binary_product_motive_type(
-            export,
-            *motive,
-            inductive,
-            recursor.level_params[0],
-            law,
-        )
+        && is_binary_product_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_binary_product_minor_type(export, *minor, constructor, law)
         && is_binary_product_constant_application(export, *target, inductive, 3, 2, law)
         && is_bvar_application(export, *result, 2, 0)
@@ -1197,13 +1173,7 @@ fn is_derived_binary_product_rule(
     };
     law.parameter_sort(export, *first, true)
         && law.parameter_sort(export, *second, false)
-        && is_binary_product_motive_type(
-            export,
-            *motive,
-            inductive,
-            recursor.level_params[0],
-            law,
-        )
+        && is_binary_product_motive_type(export, *motive, inductive, recursor.level_params[0], law)
         && is_binary_product_minor_type(export, *minor, constructor, law)
         && is_bvar(export, *left, 3)
         && is_bvar(export, *right, 3)
