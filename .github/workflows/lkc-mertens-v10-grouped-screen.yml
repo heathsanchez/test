@@ -37,6 +37,11 @@ jobs:
           python3 benchmark.py setup --problem mertens
           git -C .cache/upstream fetch origin "$RULES_COMMIT"
           git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Compile candidate directly
+        run: |
+          cp experiments/lkc_mertens/generated/Submission_v10_grouped_probe.lean bench/.cache/upstream/evaluation/problems/mertens/Submission_v10.lean
+          cd bench/.cache/upstream/evaluation/problems/mertens
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 Submission_v10.lean
       - name: Compare
         run: |
           set -euo pipefail
