@@ -1110,3 +1110,159 @@ fn g17_eq_law_does_not_authorize_a_renamed_family() {
     let renamed = eq.replacen("\"str\":\"Eq\"", "\"str\":\"Eq2\"", 1);
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
+
+
+fn sealed_g17_verdict(bytes: &str) -> Option<Verdict> {
+    let Ok(oracle) = std::env::var("METATRON_G17_ORACLE") else {
+        return None;
+    };
+
+    let mut child = Command::new(oracle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn()
+        .expect("spawn sealed G17 oracle");
+    child
+        .stdin
+        .as_mut()
+        .expect("G17 oracle stdin")
+        .write_all(bytes.as_bytes())
+        .expect("write G17 oracle input");
+    let status = child.wait().expect("wait for G17 oracle");
+    Some(match status.code() {
+        Some(0) => Verdict::Accept,
+        Some(1) => Verdict::Reject,
+        Some(2) => Verdict::Unknown,
+        code => panic!("sealed G17 oracle returned unexpected exit code {code:?}"),
+    })
+}
+
+fn run_g18_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G18-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    if let Some(oracle) = sealed_g17_verdict(&bytes) {
+        assert_eq!(
+            oracle,
+            Verdict::Unknown,
+            "G18 authority was already present in the sealed G17 oracle",
+        );
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
+#[test]
+fn g18_001_exact_nat_authority_is_accepted() {
+    assert_eq!(run_g18_perturbations(&[]), Verdict::Accept);
+}
+
+#[test]
+fn nat_recursive_constructor_recursor_and_rules_are_derived_not_trusted() {
+    let cases = [
+        (
+            "\"ctors\":[2,3],\"isRec\":true",
+            "\"ctors\":[2,3],\"isRec\":false",
+        ),
+        ("{\"ie\":0,\"sort\":1}", "{\"ie\":0,\"sort\":0}"),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":1,\"induct\":1,\"isUnsafe\":false",
+        ),
+        (
+            "\"cidx\":1,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":2,\"induct\":1,\"isUnsafe\":false",
+        ),
+        (
+            "\"name\":3,\"numFields\":1,\"numParams\":0,\"type\":2",
+            "\"name\":3,\"numFields\":0,\"numParams\":0,\"type\":2",
+        ),
+        (
+            "\"name\":3,\"numFields\":1,\"numParams\":0,\"type\":2",
+            "\"name\":3,\"numFields\":1,\"numParams\":0,\"type\":1",
+        ),
+        (
+            "\"k\":false,\"levelParams\":[10]",
+            "\"k\":true,\"levelParams\":[10]",
+        ),
+        (
+            "\"numIndices\":0,\"numMinors\":2,\"numMotives\":1,\"numParams\":0",
+            "\"numIndices\":0,\"numMinors\":1,\"numMotives\":1,\"numParams\":0",
+        ),
+        (
+            "\"ctor\":2,\"nfields\":0,\"rhs\":24",
+            "\"ctor\":3,\"nfields\":0,\"rhs\":24",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":1,\"rhs\":35",
+            "\"ctor\":3,\"nfields\":0,\"rhs\":35",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":1,\"rhs\":35",
+            "\"ctor\":3,\"nfields\":1,\"rhs\":34",
+        ),
+        ("\"type\":21}],\"types\"", "\"type\":20}],\"types\""),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g18_perturbations(&[(from, to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn nat_broader_neighbors_preserve_unknown() {
+    let cases = [
+        (
+            "parameterized",
+            "\"numNested\":0,\"numParams\":0,\"type\":0",
+            "\"numNested\":0,\"numParams\":1,\"type\":0",
+        ),
+        (
+            "indexed",
+            "\"name\":1,\"numIndices\":0,\"numNested\":0",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0",
+        ),
+        (
+            "reflexive",
+            "\"isRec\":true,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"isRec\":true,\"isReflexive\":true,\"isUnsafe\":false",
+        ),
+        (
+            "unsafe type",
+            "\"isReflexive\":false,\"isUnsafe\":false,\"levelParams\":[]",
+            "\"isReflexive\":false,\"isUnsafe\":true,\"levelParams\":[]",
+        ),
+        (
+            "unsafe constructor",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "unsafe recursor",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+        (
+            "nested",
+            "\"numIndices\":0,\"numNested\":0",
+            "\"numIndices\":0,\"numNested\":1",
+        ),
+    ];
+
+    for (label, from, to) in cases {
+        assert_eq!(
+            run_g18_perturbations(&[(from, to)]),
+            Verdict::Unknown,
+            "Nat broader-neighbor boundary failed for {label}",
+        );
+    }
+}
+
+#[test]
+fn g18_nat_law_does_not_authorize_a_renamed_family() {
+    let nat = include_str!("../evidence/residuals/G18-001/fixture.ndjson");
+    let renamed = nat.replacen("\"str\":\"N\"", "\"str\":\"N2\"", 1);
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+}
