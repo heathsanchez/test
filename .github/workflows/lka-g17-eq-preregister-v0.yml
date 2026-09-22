@@ -1,0 +1,94 @@
+name: LKA G17 Eq Preregistration
+
+on:
+  push:
+    branches: [lka-g17-eq-preregister-v0]
+    paths:
+      - ".github/workflows/lka-g17-eq-preregister-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  capture:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      G16_SHA: a9cda043b49afcb25d91621a1f9ff9368ad88457
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Enforce read-only preregistration boundary
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$G16_SHA" "$GITHUB_SHA" -- \
+            metatron-kernel/src \
+            metatron-kernel/formal \
+            metatron-kernel/evidence \
+            metatron-kernel/Cargo.toml \
+            metatron-kernel/Cargo.lock
+
+      - name: Fetch pinned Arena
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate exact tutorial 043 fixture
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+          FILE=/tmp/lean-kernel-tutorial/good/043_eqType.ndjson
+          test -f "$FILE"
+          echo "EQ43_SHA256=$(sha256sum "$FILE" | cut -d' ' -f1)"
+          echo "EQ43_BEGIN"
+          cat "$FILE"
+          echo "EQ43_END"
+
+      - name: Structural delta summary
+        run: |
+          python - <<'PY'
+          import json, pathlib
+          root=pathlib.Path("/tmp/lean-kernel-tutorial/good")
+          for n in (42,43):
+              p=next(root.glob(f"{n:03d}_*.ndjson"))
+              rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+              ind=[r["inductive"] for r in rows if "inductive" in r]
+              assert len(ind)==1
+              b=ind[0]
+              t=b["types"][0]
+              c=b["ctors"][0]
+              r=b["recs"][0]
+              print(json.dumps({
+                "case":n,
+                "file":p.name,
+                "types":len(b["types"]),
+                "ctors":len(b["ctors"]),
+                "type_level_params":len(t["levelParams"]),
+                "num_params":t["numParams"],
+                "num_indices":t["numIndices"],
+                "is_rec":t["isRec"],
+                "is_reflexive":t["isReflexive"],
+                "ctor_fields":c["numFields"],
+                "ctor_params":c["numParams"],
+                "rec_level_params":len(r["levelParams"]),
+                "rec_num_params":r["numParams"],
+                "rec_num_indices":r["numIndices"],
+                "rec_num_motives":r["numMotives"],
+                "rec_num_minors":r["numMinors"],
+                "rec_k":r["k"],
+                "rule_fields":[x["nfields"] for x in r["rules"]],
+              },sort_keys=True))
+          PY
