@@ -94,7 +94,7 @@ class ResidualBasisTests(unittest.TestCase):
         levels = mod.level_refs(records)
         self.assertEqual(
             mod.field_universe_admissibility(records, exprs, levels),
-            "not_applicable",
+            "proven",
         )
 
     def test_field_universe_same_level_type_is_refuted(self):
