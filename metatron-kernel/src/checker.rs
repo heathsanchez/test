@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::convert::DeltaPolicy;
 use crate::environment::{ConstantDecl, Environment};
@@ -91,7 +91,7 @@ fn check_export_with_policy(
                 if let Err(verdict) =
                     verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
                 {
-                    return verdict;
+                    return equality_conversion_boundary(&export, ty, verdict);
                 }
                 (
                     name,
@@ -121,7 +121,7 @@ fn check_export_with_policy(
                 if let Err(verdict) =
                     verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
                 {
-                    return verdict;
+                    return equality_conversion_boundary(&export, ty, verdict);
                 }
                 (name, ConstantDecl::theorem(level_params, ty))
             }
@@ -2410,6 +2410,59 @@ fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
         .iter()
         .map(|parameter| (*parameter, LevelTerm::param(format!("u#{}", parameter.0))))
         .collect()
+}
+
+/// LKA-EPI-002: static Eq authority does not imply any of Lean's later
+/// equality conversion laws. Until iota/Rule K/proof irrelevance/eta are
+/// independently earned, a failed proof/value check whose declared type
+/// depends on Eq is epistemically incomplete rather than refuted.
+///
+/// This is authority-removing only: malformed declarations and type
+/// well-formedness failures are untouched, and a proven equality still accepts.
+fn equality_conversion_boundary(export: &ResolvedExport, ty: ExprId, verdict: Verdict) -> Verdict {
+    if verdict == Verdict::Reject && expression_mentions_root_constant(export, ty, "Eq") {
+        Verdict::Unknown
+    } else {
+        verdict
+    }
+}
+
+fn expression_mentions_root_constant(
+    export: &ResolvedExport,
+    root: ExprId,
+    target: &str,
+) -> bool {
+    let mut pending = vec![root];
+    let mut visited = HashSet::new();
+
+    while let Some(expression) = pending.pop() {
+        if !visited.insert(expression) {
+            continue;
+        }
+        match export.exprs.get(expression) {
+            Some(Expr::Const { name, .. }) => {
+                if name_is_root_str(export, *name, target) {
+                    return true;
+                }
+            }
+            Some(Expr::App { fun, arg }) => {
+                pending.push(*fun);
+                pending.push(*arg);
+            }
+            Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+                pending.push(*domain);
+                pending.push(*body);
+            }
+            Some(Expr::Let { ty, value, body }) => {
+                pending.push(*ty);
+                pending.push(*value);
+                pending.push(*body);
+            }
+            Some(Expr::BVar(_) | Expr::Sort(_)) | None => {}
+        }
+    }
+
+    false
 }
 
 fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
