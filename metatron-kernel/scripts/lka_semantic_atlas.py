@@ -233,7 +233,7 @@ def derive_dimensions(
         dims.add("quotient_family")
     if "proj" in lower_filename:
         dims.add("projection")
-    if "eta" in lower_filename:
+    if "eta" in lower_filename and "beta" not in lower_filename:
         dims.add("eta")
     if "proofirrelevance" in lower_filename:
         dims.add("proof_irrelevance")
