@@ -1,0 +1,55 @@
+name: LKC Public Leaderboard Census V1
+
+on:
+  push:
+    branches: [lkc-leaderboard-census-v1]
+    paths:
+      - '.github/workflows/lkc-leaderboard-census-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - uses: actions/checkout@v4
+      - name: Query public competition and leaderboard routes
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p census
+          endpoints=(
+            ""
+            "/leaderboard"
+            "/leaderboards"
+            "/leaderboard?problemId=partition"
+            "/leaderboard?problemId=permanent"
+            "/problems/partition/leaderboard"
+            "/problems/permanent/leaderboard"
+          )
+          i=0
+          for suffix in "${endpoints[@]}"; do
+            i=$((i+1))
+            code=$(curl -sS -o "census/$i.json" -w '%{http_code}'               "$BASE$suffix"               -H "Authorization: Bearer $SAIR_API_KEY"               -H "Accept: application/json"               -H "User-Agent: curl/8.5.0" || true)
+            printf '%s %s %s\n' "$i" "$code" "$suffix" | tee -a census/index.txt
+            python3 - <<PY
+import json, pathlib
+p=pathlib.Path("census/$i.json")
+try:
+    d=json.loads(p.read_text())
+    print(json.dumps(d,indent=2)[:12000])
+except Exception:
+    print(p.read_text()[:2000])
+PY
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: lkc-public-leaderboard-census-v1
+          path: census/
