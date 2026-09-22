@@ -30,6 +30,7 @@ IDs after qualification.
 | `ebc901d24688d2aa672c38e4fd80e20d6a0e5b15` | `35687371672` / `106616975935` | `10676794003`, digest `dc5a59be...89d2` | 6 contract + 43 tutorial matched; G16 oracle 42 equal, 1 earned delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `bb7809104681852b46d71c688814f24692965b1b` | `35704232366` / `106669198325` | `10682964232`, digest `f3f7ae1d...781b` | 6 contract + 44 tutorial matched; G17 oracle 43 equal, 1 earned REJECT→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `60fde2527b7a57c14487b7930d6083451dd01aeb` | `35707420135` / `106679605077` | `10684434897`, digest `1b69b0ef...e86a` | 6 contract + 45 tutorial matched; G18 oracle 44 equal, 1 earned UNKNOWN→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
+| `97ae436b2af00d563a5460d01d3839d97304b5b0` | `35761375025` / `106859961966` | `10710223928`, digest `e2101190...556b` | 6 contract + 49 tutorial matched; G19 oracle 46 equal, 3 earned UNKNOWN→REJECT deltas, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 
 The successful run is available at
 <https://github.com/heathsanchez/test/actions/runs/35620658852>. Its correctness
@@ -68,4 +69,11 @@ The G19 run is available at
 is the sole earned oracle delta: sealed G18 returns `UNKNOWN`, while the composed
 RBTree law returns `ACCEPT`; tutorials 001–044 are equal, full recursor/rule
 falsifiers pass, and broader RBTree neighbours remain outside authority. No
+retired-instruction promotion is claimed.
+
+The G20 run is available at
+<https://github.com/heathsanchez/test/actions/runs/35761375025>. Tutorials 046,
+047, and 049 are the three earned `UNKNOWN → REJECT` deltas against sealed G19;
+048 is an equal `REJECT` control. Tutorials 001–045 remain unchanged. The
+diagnostic suffix atlas moves the first mismatch to tutorial 050. No
 retired-instruction promotion is claimed.
