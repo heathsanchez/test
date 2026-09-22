@@ -26,7 +26,7 @@ class TutorialInputTests(unittest.TestCase):
         self.assertEqual(case.expected_exit_code, 0)
         self.assertEqual(
             case.sha256,
-            "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+            "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
         )
 
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
