@@ -84,6 +84,13 @@ impl ClosedNonrecursiveDerivation {
 
     /// Commit the derivation. Until this value is returned, all stages remain
     /// local and the caller's persistent environment is unchanged.
+    /// Read-only access to the staged authority for conversion-sensitive
+    /// signature derivation. This exposes no commit path and does not enlarge
+    /// the trusted boundary.
+    pub(crate) fn environment(&self) -> &Environment {
+        &self.staged
+    }
+
     pub(crate) fn finish(self) -> Environment {
         self.staged
     }
