@@ -1317,7 +1317,6 @@ fn rbtree_broader_neighbors_remain_unknown() {
         );
     }
 }
-
 #[test]
 fn rbtree_recursor_type_and_rules_are_derived_not_trusted() {
     let rb = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
