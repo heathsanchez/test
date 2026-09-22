@@ -3,7 +3,7 @@
   "id": "G14-001",
   "authority": {
     "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
-    "candidate_baseline": "G13 exact Prod candidate",
+    "candidate_baseline": "externally sealed G13 exact Prod evidence head 6b50ae9d3a5543528ca815b69b423978dee0ab08",
     "fixture_sha256": "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a",
     "tutorial_ordinal": 41,
     "upstream_path": "tutorial output good/041_pprodType.ndjson"
@@ -11,13 +11,28 @@
   "obstruction": "The first PProd declaration is outside the separate exact And and Prod classifiers.",
   "expected": "ACCEPT",
   "observed": "UNKNOWN",
-  "least_capability": "UNDECIDED: frozen for the G14 replication experiment; no shared parameterized-inductive abstraction has been promoted.",
-  "falsifier": "Must be specified before implementation.",
+  "preregistered_hypothesis": {
+    "proposed_delta": [
+      "sort_polymorphic_parameter_and_result_levels"
+    ],
+    "statement": "PProd preserves the G13 two-universe/two-parameter constructor-recursor spine while replacing Type-valued parameter/result levels with Sort-polymorphic levels: Sort u, Sort v, Sort (max 1 u v)."
+  },
+  "least_capability": "A separate exact PProd classifier may validate only the PProd-specific Sort-polymorphic parameter telescope and computed result sort, while reusing already-warranted low-level universe/application checks and the unchanged opaque-signature promotion transaction. No shared parameterized-inductive abstraction is promoted in G14.",
+  "falsifier": "Reject the replication hypothesis if exact PProd requires any additional structural degree of freedom beyond its Sort-polymorphic parameter/result level law. The candidate must REJECT malformed claims inside the recognized PProd envelope (wrong universe count/order, parameter sort, computed result sort, constructor/result spine, recursor/motive/minor/rule, owner or counts), preserve UNKNOWN for indexed, recursive, unsafe, nested, dependent or broader neighbors, and remain behaviorally identical to sealed G13 on tutorials 001-040.",
   "protected_suite": [
     "all G0-G13 tests",
     "exact tutorial prefix 001-040",
+    "sealed G13 executable ablation oracle at 6b50ae9d3a5543528ca815b69b423978dee0ab08",
     "sealed G12 differential oracle",
     "unsupported broader inductives remain UNKNOWN"
   ],
-  "decision": "open"
+  "promotion_boundary": {
+    "shared_abstraction_promoted": false,
+    "iota": false,
+    "projections": false,
+    "eta": false,
+    "general_positivity": false,
+    "generic_parameterized_inductives": false
+  },
+  "decision": "preregistered"
 }
