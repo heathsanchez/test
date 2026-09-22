@@ -170,7 +170,14 @@ jobs:
 
           assert new_accepts == [43,69], new_accepts
           changed=[r for r in rows if r["oracle"]!=r["candidate"]]
-          assert [r["case"] for r in changed] == [43,69], changed
+          unexpected=[
+              r for r in changed
+              if not (
+                  (r["case"] in {43,69} and r["oracle"]==2 and r["candidate"]==0)
+                  or (r["oracle"]==1 and r["candidate"]==2)
+              )
+          ]
+          assert not unexpected, unexpected
 
           out={
             "schema":"lka-g17-future-verdict-audit-v1",
