@@ -22,7 +22,7 @@ theorem clearBitIfSet_testBit (bits i j : Nat) :
     grind
   · have hb' : bits.testBit i = false := by
       cases h : bits.testBit i <;> simp_all
-    simp only [hb', if_neg]
+    simp only [hb']
     by_cases hji : j = i
     · subst j
       simp [hb']
@@ -53,7 +53,7 @@ theorem initialPrimeBits_between (n i : Nat)
       have h3 : (3 : Nat).testBit i = false := by
         have hlt4 : 3 < 2 ^ i := by
           have : 4 ≤ 2 ^ i := by
-            exact Nat.pow_le_pow_right (by decide) h2
+            exact Nat.pow_le_pow_right (by trivial : 0 < 2) h2
           omega
         exact Nat.testBit_lt_two_pow hlt4
       simp [h2, h3]
