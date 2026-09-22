@@ -69,6 +69,25 @@ Allowed families:
 Behavioral diagnostics are observations only. The diagnostic build must return
 the same verdict as the normal G23 binary on every case or the experiment fails.
 
+The first blind runs may refine the frozen candidate language only by adding a
+generic semantic obligation that is forced by an otherwise unseparated residual
+class. The first such refinement adds exactly two obligation families:
+
+11. propositional projection admissibility:
+    - whether the projected field lives in Prop under the concrete structure
+      universe instance;
+    - whether a dependency-relevant data field creates the projection barrier;
+    - the resulting allow / deny / unknown obligation outcome;
+12. Rule-K major-premise compatibility:
+    - whether a k-enabled recursor is applied to a bound major premise whose
+      equality endpoints are reflexive at the current structural witness.
+      This is a discovery witness only; an admitted checker law must use kernel
+      definitional equality rather than literal expression identity.
+
+These two probes are not named after tutorial cases and may not inspect expected
+verdicts. They are introduced because all previous observations leave exactly
+the projection-policy and Rule-K residual classes unresolved.
+
 Forbidden:
 
 - tutorial filename;
