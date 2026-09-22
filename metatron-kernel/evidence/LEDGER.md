@@ -449,6 +449,37 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Retired instructions remain `UNKNOWN`: hosted PMU unavailable and there is
   no same-cohort control measurement.
 
+## LKA-EPI-001 — Unearned-dimension epistemic boundary
+
+- Status: RETAINED as a zero-authority boundary repair.
+- Sealed oracle: `f45b49a6989c09317635c790615ca63c617c84c7`.
+- Obstruction: older narrow inductive handlers could return `REJECT` after an
+  export entered an explicit semantic dimension that the checker had never
+  earned, especially recursion, indices, nesting, reflexivity, or unsafe
+  inductive metadata.
+- Retained law: an explicitly unearned inductive dimension returns `UNKNOWN`
+  before narrower family validation. `REJECT` is reserved for malformed
+  claims inside an already recognized authority envelope.
+- Authority gained: none. The repair introduces no new `ACCEPT` path.
+- Protected equivalence: tutorials 001–041 remain 41 equal, 0 deltas,
+  0 mismatches against sealed G15.
+- Full future audit, tutorials 042–141: the only changed verdict direction was
+  `REJECT → UNKNOWN`, on cases 44, 45, 70, 71, 80, 82, 95, 117, 118, 121,
+  and 122. There were zero new ACCEPTs.
+- Causal correction: cases 117 and 118 had previously matched their expected
+  REJECT only because an unsupported recursive dependency was rejected before
+  the malformed target was reached. They are deliberately demoted to UNKNOWN
+  until a future positivity/reflexivity capability earns the rejection for the
+  correct reason.
+- Consequence: conclusive wrong verdicts on future good cases fall from ten to
+  one; the remaining conclusive mismatch is tutorial 107,
+  `proofIrrelevanceUnderBinder`.
+- Qualification: run `35703899500`, job `106668096525`, artifact
+  `10683386887`, digest
+  `sha256:4b412eabd05ba3713ae5f0965890fa015ff959b32abfa03608e9707474f810f2`.
+- Formal status: no new theorem is claimed. This change removes unwarranted
+  conclusive authority rather than adding semantic authority.
+
 ## G16-001 — Frozen `PUnit` stress residual
 
 - Status: OPEN as the next exact residual; deliberately untouched by G15.

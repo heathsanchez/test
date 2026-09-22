@@ -1,0 +1,62 @@
+{
+  "schema": "lka-epistemic-boundary-v0",
+  "id": "LKA-EPI-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "sealed_oracle": "f45b49a6989c09317635c790615ca63c617c84c7",
+    "protected_tutorial_prefix": "001-041"
+  },
+  "obstruction": "Older narrow inductive handlers can emit REJECT when an export reaches an explicit semantic dimension outside retained authority, especially recursion, indices, nesting, reflexivity, or unsafe inductive metadata.",
+  "law": "If an inductive declaration explicitly enters a semantic dimension for which no retained capability exists, return UNKNOWN before narrower family validation. REJECT remains reserved for malformed claims inside a recognized authority envelope.",
+  "authority_gain": "none",
+  "implementation_commit": "a67efc1abf6f0a091002e47da85ab7ec97560145",
+  "falsifier": "Reject this repair if any tutorial 001-041 verdict changes, any new ACCEPT appears in tutorials 042-141, or any future changed verdict is not REJECT->UNKNOWN.",
+  "causal_interpretation": {
+    "coincidental_correctness": [
+      117,
+      118
+    ],
+    "explanation": "Cases 117 and 118 previously matched expected REJECT only because an unsupported recursive dependency was rejected first. The repair deliberately demotes those coincidental verdicts to UNKNOWN until a positivity/reflexivity law can earn their rejection for the correct reason."
+  },
+  "qualification": {
+    "candidate_sha": "3dab1028df46a45f186f5d612a9f2c7594f9f787",
+    "run_id": 35703899500,
+    "job_id": 106668096525,
+    "artifact_id": 10683386887,
+    "artifact_digest": "sha256:4b412eabd05ba3713ae5f0965890fa015ff959b32abfa03608e9707474f810f2",
+    "protected_differential": {
+      "equal": 41,
+      "earned_delta": 0,
+      "mismatch": 0
+    },
+    "future_transitions": {
+      "0->0": 6,
+      "1->1": 6,
+      "1->2": 11,
+      "2->2": 59,
+      "3->3": 18
+    },
+    "new_accepts": [],
+    "changed_cases": [
+      44,
+      45,
+      70,
+      71,
+      80,
+      82,
+      95,
+      117,
+      118,
+      121,
+      122
+    ],
+    "conclusive_wrong_good_cases_before": 10,
+    "conclusive_wrong_good_cases_after": 1
+  },
+  "formal_status": "No new semantic theorem. This removes unwarranted conclusive authority rather than adding semantic authority.",
+  "performance": {
+    "status": "not_a_performance_mechanism",
+    "promotion_eligible": false
+  },
+  "decision": "retained"
+}
