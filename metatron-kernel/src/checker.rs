@@ -449,26 +449,22 @@ fn check_conversion_lifted_unary_recursive(
         let constructor_result_frame = parameter_frame.clone().extend_free(field);
         verdict_boundary(checker.convert(
             &TypeValue::Term(checker.closure(*constructor_field, parameter_frame.clone())),
-            &TypeValue::Term(checker.closure(
-                *constructor_result,
-                constructor_result_frame,
-            )),
+            &TypeValue::Term(checker.closure(*constructor_result, constructor_result_frame)),
             limits.judgment_steps,
         ))?;
 
         let recursor_minor_frame = parameter_frame.clone().extend_free(motive);
         verdict_boundary(checker.convert(
             &TypeValue::Term(checker.closure(*constructor_field, parameter_frame.clone())),
-            &TypeValue::Term(checker.closure(
-                recursor_minor_field,
-                recursor_minor_frame,
-            )),
+            &TypeValue::Term(checker.closure(recursor_minor_field, recursor_minor_frame)),
             limits.judgment_steps,
         ))?;
 
         let rule_field_frame = parameter_frame.extend_free(motive).extend_free(minor);
         verdict_boundary(checker.convert(
-            &TypeValue::Term(checker.closure(*constructor_field, EnvFrame::empty().extend_free(alpha))),
+            &TypeValue::Term(
+                checker.closure(*constructor_field, EnvFrame::empty().extend_free(alpha)),
+            ),
             &TypeValue::Term(checker.closure(rule_field, rule_field_frame)),
             limits.judgment_steps,
         ))?;
@@ -551,7 +547,7 @@ fn unary_recursive_minor_field(
     };
     (is_bvar(export, *motive, 2)
         && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 3, 1))
-        .then_some(*field)
+    .then_some(*field)
 }
 
 fn validate_conversion_lifted_unary_recursor_shape(
@@ -654,12 +650,8 @@ fn validate_conversion_lifted_unary_rule_shape(
         return None;
     }
     let (head, arguments) = application_spine(export, *recursive_call);
-    if !is_unary_polymorphic_constant(
-        export,
-        head,
-        recursor.name,
-        recursor.level_params[0],
-    ) || arguments.len() != 4
+    if !is_unary_polymorphic_constant(export, head, recursor.name, recursor.level_params[0])
+        || arguments.len() != 4
         || !is_bvar(export, arguments[0], 3)
         || !is_bvar(export, arguments[1], 2)
         || !is_bvar(export, arguments[2], 1)
