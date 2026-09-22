@@ -19,6 +19,8 @@ jobs:
       ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: dtolnay/rust-toolchain@stable
 
