@@ -21,7 +21,6 @@ jobs:
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
-
       - name: Generate V23 and V24
         run: |
           python3 experiments/lkc_sha256/algebra_v20.py
@@ -29,37 +28,32 @@ jobs:
           python3 experiments/lkc_sha256/algebra_v24_probe.py
           sha256sum experiments/lkc_sha256/generated/Submission_v23_runtime.lean
           sha256sum experiments/lkc_sha256/generated/Submission_algebra_v24_probe.lean
-
       - name: Install elan
         run: |
           curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-
       - name: Checkout pinned benchmark
         run: |
           git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
           git -C bench checkout "$BENCH_COMMIT"
-
       - uses: actions/cache/restore@v4
         with:
           path: |
             ~/.elan/toolchains
             bench/.cache
           key: lkc-sha-v24-screen-lean4331-d8ea5fc
-
       - name: Setup exact SHA environment
         working-directory: bench
         run: |
           python3 benchmark.py setup --problem sha256
           git -C .cache/upstream fetch origin "$RULES_COMMIT"
           git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
-
-      - name: Compare representative scored scales
+      - name: Comparable screen on completed scored scales
         run: |
           set -euo pipefail
           ROOT="$GITHUB_WORKSPACE/sha-v24-screen"
           mkdir -p "$ROOT"
-          INPUTS=(17179869185 137438953473 2199023255553)
+          INPUTS=(17179869185 137438953473)
           for who in v23 v24; do
             if [ "$who" = v23 ]; then
               sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v23_runtime.lean"
@@ -68,7 +62,23 @@ jobs:
             fi
             python3 bench/benchmark.py diagnostic               --problem sha256 --submission "$sub"               --metric wall-time --repetitions 3 --timeout 900 --memory-mb 4096               --inputs "${INPUTS[@]}" --output "$ROOT/$who"
           done
-
+      - name: Large-scale resource separator
+        shell: bash
+        run: |
+          set +e
+          ROOT="$GITHUB_WORKSPACE/sha-v24-screen/large"
+          mkdir -p "$ROOT"
+          input=2199023255553
+          for who in v23 v24; do
+            if [ "$who" = v23 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v23_runtime.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v24_probe.lean"
+            fi
+            python3 bench/benchmark.py diagnostic               --problem sha256 --submission "$sub"               --metric wall-time --repetitions 1 --timeout 900 --memory-mb 4096               --inputs "$input" --output "$ROOT/$who"
+            echo $? > "$ROOT/$who.exit"
+          done
+          exit 0
       - name: Verdict
         run: |
           python3 - <<'PY'
@@ -77,17 +87,21 @@ jobs:
           root=Path("sha-v24-screen")
           a=json.loads((root/"v23/diagnostic.json").read_text())["totals"]["candidate"]
           b=json.loads((root/"v24/diagnostic.json").read_text())["totals"]["candidate"]
+          v23_exit=int((root/"large/v23.exit").read_text())
+          v24_exit=int((root/"large/v24.exit").read_text())
           out={
             "baseline_v23":a,
             "candidate_v24":b,
             "ratio":b/a,
             "improvement_pct":100*(1-b/a),
+            "large_v23_exit":v23_exit,
+            "large_v24_exit":v24_exit,
+            "resource_dominance": v23_exit != 0 and v24_exit == 0,
             "consequence":"PROVE" if b<a else "REJECT"
           }
           (root/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
           print(json.dumps(out,indent=2))
           PY
-
       - uses: actions/upload-artifact@v4
         if: always()
         with:
