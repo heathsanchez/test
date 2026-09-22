@@ -1,12 +1,14 @@
 import importlib.util
 import tempfile
 import unittest
+import sys
 from pathlib import Path
 
 
 MODULE = Path(__file__).resolve().parents[1] / "scripts" / "lka_residual_basis_v0.py"
 spec = importlib.util.spec_from_file_location("lka_residual_basis_v0", MODULE)
 mod = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = mod
 assert spec.loader is not None
 spec.loader.exec_module(mod)
 
