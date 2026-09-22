@@ -48,7 +48,10 @@ theorem mod32_add {a b c d : Nat}
     (h₁ : Mod32Eq a b) (h₂ : Mod32Eq c d) :
     Mod32Eq (a + c) (b + d) := by
   unfold Mod32Eq at *
-  rw [Nat.add_mod, Nat.add_mod, h₁, h₂]
+  calc
+    (a + c) % 2^32 = (a % 2^32 + c % 2^32) % 2^32 := Nat.add_mod _ _ _
+    _ = (b % 2^32 + d % 2^32) % 2^32 := by rw [h₁, h₂]
+    _ = (b + d) % 2^32 := (Nat.add_mod _ _ _).symm
 
 theorem mod32_mask_right (x : Nat) : Mod32Eq x (x &&& w32) := by
   unfold Mod32Eq
@@ -250,20 +253,50 @@ theorem roundFast_eq_shadow
     mask_eq_of_mod32
       (mod32_add (mod32_refl s.d) (t1_mod32 s k w hs))
   change
-    ⟨(t1Raw s k w + t2Raw s) &&& w32, s.a, s.b, s.c,
-      (s.d + t1Raw s k w) &&& w32, s.e, s.f, s.g⟩ =
-    ⟨(t1SpecFlat s k w + t2SpecFlat s) &&& w32, s.a, s.b, s.c,
-      (s.d + t1SpecFlat s k w) &&& w32, s.e, s.f, s.g⟩
+    Digest.mk
+      ((t1Raw s k w + t2Raw s) &&& w32) s.a s.b s.c
+      ((s.d + t1Raw s k w) &&& w32) s.e s.f s.g =
+    Digest.mk
+      ((t1SpecFlat s k w + t2SpecFlat s) &&& w32) s.a s.b s.c
+      ((s.d + t1SpecFlat s k w) &&& w32) s.e s.f s.g
   rw [ha, he]
+
+def t1Nested (s : Digest) (k w : Nat) : Nat :=
+  add32 s.h (add32 (bigSigma1 s.e)
+    (add32 (ch s.e s.f s.g) (add32 k w)))
+
+def t2Nested (s : Digest) : Nat :=
+  add32 (bigSigma0 s.a) (maj s.a s.b s.c)
+
+theorem t1Spec_mask_eq_nested (s : Digest) (k w : Nat) :
+    (t1SpecFlat s k w &&& w32) = t1Nested s k w := by
+  unfold t1SpecFlat t1Nested
+  exact mask5_eq_nested s.h (bigSigma1 s.e) (ch s.e s.f s.g) k w
+
+theorem t2Spec_mask_eq_nested (s : Digest) :
+    (t2SpecFlat s &&& w32) = t2Nested s := by
+  rfl
 
 theorem roundShadow_eq_round (s : Digest) (k w : Nat) :
     roundShadow s k w = round s k w := by
-  unfold roundShadow t1SpecFlat t2SpecFlat round
-  rw [mask_add_mask]
-  rw [mask5_eq_nested s.h (bigSigma1 s.e) (ch s.e s.f s.g) k w]
-  rw [mask_add_right_mask]
-  rw [mask5_eq_nested s.h (bigSigma1 s.e) (ch s.e s.f s.g) k w]
-  rfl
+  have ha :
+      (t1SpecFlat s k w + t2SpecFlat s) &&& w32 =
+        add32 (t1Nested s k w) (t2Nested s) := by
+    rw [mask_add_mask, t1Spec_mask_eq_nested, t2Spec_mask_eq_nested]
+    rfl
+  have he :
+      (s.d + t1SpecFlat s k w) &&& w32 =
+        add32 s.d (t1Nested s k w) := by
+    rw [mask_add_right_mask, t1Spec_mask_eq_nested]
+    rfl
+  change
+    Digest.mk
+      ((t1SpecFlat s k w + t2SpecFlat s) &&& w32) s.a s.b s.c
+      ((s.d + t1SpecFlat s k w) &&& w32) s.e s.f s.g =
+    Digest.mk
+      (add32 (t1Nested s k w) (t2Nested s)) s.a s.b s.c
+      (add32 s.d (t1Nested s k w)) s.e s.f s.g
+  rw [ha, he]
 
 theorem roundFast_eq_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
     roundFast s k w = round s k w :=
