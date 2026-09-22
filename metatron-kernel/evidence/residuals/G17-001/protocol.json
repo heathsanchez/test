@@ -1,0 +1,34 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G17-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "1bed97925590cc4f2aa7aa10e01d21cc8db295ca",
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+    "tutorial_ordinal": 43,
+    "upstream_path": "tutorial output good/043_eqType.ndjson",
+    "freeze_run_id": 35705895254
+  },
+  "obstruction": "Eq is the first nonrecursive indexed inductive outside the retained nonindexed inductive authority.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "preregistered_hypothesis": {
+    "proposed_delta": [
+      "one_dependent_index",
+      "dependent_constructor_result",
+      "indexed_recursor_signature",
+      "rule_k_metadata_only"
+    ],
+    "statement": "Tutorial 043 should require static authority for the exact Eq declaration: two parameters (α,a), one dependent index a', refl returning Eq a a, and the derived indexed recursor whose metadata has k=true. It should not require Rule K reduction semantics."
+  },
+  "least_capability": "Add a name-sealed exact Eq declaration law that derives and validates its parameter/index telescope, refl constructor, recursor signature and exported rule, then reuses opaque signature promotion. Do not implement Eq.rec reduction, Rule K conversion, recursive inductives, positivity, projections, eta, or generic indexed inductives.",
+  "falsifier": "Reject G17 if accepting tutorial 043 requires Rule K computation or a generic indexed-inductive mechanism; if malformed Eq metadata/telescope/constructor/recursor/rule claims fail to REJECT; if broader recursive/reflexive/nested/unsafe or unrelated indexed families gain authority; or if tutorials 001-042 change.",
+  "protected_suite": [
+    "all retained G0-G16 and LKA-EPI-001 tests",
+    "exact tutorial prefix 001-042",
+    "sealed G16 exact-head oracle 1bed97925590cc4f2aa7aa10e01d21cc8db295ca",
+    "tutorial 044 Nat remains UNKNOWN",
+    "Rule K computation remains unimplemented"
+  ],
+  "decision": "preregistered"
+}
