@@ -402,6 +402,360 @@ def aggregate_inductive_features(
     }
 
 
+
+def collect_bvars(exprs: dict[int, dict[str, Any]], start: int, limit: int = 4096) -> set[int]:
+    stack = [start]
+    seen: set[int] = set()
+    out: set[int] = set()
+    while stack and len(seen) < limit:
+        eid = stack.pop()
+        if eid in seen:
+            continue
+        seen.add(eid)
+        row = exprs.get(eid, {})
+        if isinstance(row.get("bvar"), int):
+            out.add(int(row["bvar"]))
+        for key in ("app", "lam", "forallE", "letE"):
+            node = row.get(key)
+            if not isinstance(node, dict):
+                continue
+            for field in ("fn", "arg", "type", "body", "value"):
+                value = node.get(field)
+                if isinstance(value, int):
+                    stack.append(value)
+    return out
+
+
+def expr_fingerprint(exprs: dict[int, dict[str, Any]], eid: int, depth: int = 0) -> Any:
+    if depth > 64:
+        return ("deep",)
+    row = exprs.get(eid, {})
+    if "bvar" in row:
+        return ("bvar", row["bvar"])
+    if "sort" in row:
+        return ("sort", row["sort"])
+    if isinstance(row.get("const"), dict):
+        return ("const", row["const"].get("name"), tuple(row["const"].get("us", [])))
+    if isinstance(row.get("app"), dict):
+        return ("app",
+            expr_fingerprint(exprs, int(row["app"]["fn"]), depth + 1),
+            expr_fingerprint(exprs, int(row["app"]["arg"]), depth + 1))
+    for key in ("lam", "forallE"):
+        node = row.get(key)
+        if isinstance(node, dict) and isinstance(node.get("type"), int) and isinstance(node.get("body"), int):
+            return (key,
+                expr_fingerprint(exprs, int(node["type"]), depth + 1),
+                expr_fingerprint(exprs, int(node["body"]), depth + 1))
+    node = row.get("letE")
+    if isinstance(node, dict):
+        vals=[]
+        for field in ("type","value","body"):
+            v=node.get(field)
+            vals.append(expr_fingerprint(exprs,int(v),depth+1) if isinstance(v,int) else None)
+        return ("letE",*vals)
+    if isinstance(row.get("proj"), dict):
+        p=row["proj"]
+        return ("proj",p.get("typeName"),p.get("idx"),
+            expr_fingerprint(exprs,int(p["struct"]),depth+1) if isinstance(p.get("struct"),int) else None)
+    if "natVal" in row:
+        return ("natVal",row["natVal"])
+    return ("unknown", tuple(sorted(k for k in row if k != "ie")))
+
+
+def level_is_zero(
+    levels: dict[int, dict[str, Any]],
+    lid: int,
+    subst: dict[int, int],
+    depth: int = 0,
+) -> bool | None:
+    if depth > 32:
+        return None
+    row = levels.get(lid)
+    if row is None:
+        return None
+    tag = level_tag(row)
+    if tag == "zero":
+        return True
+    if tag == "succ":
+        return False
+    if tag == "param":
+        name = row.get("param")
+        if isinstance(name, int) and name in subst:
+            return level_is_zero(levels, subst[name], subst, depth + 1)
+        return None
+    if tag == "max":
+        body = row.get("max")
+        if isinstance(body, list) and len(body) == 2 and all(isinstance(x, int) for x in body):
+            a = level_is_zero(levels, int(body[0]), subst, depth + 1)
+            b = level_is_zero(levels, int(body[1]), subst, depth + 1)
+            if a is None or b is None:
+                return None
+            return a and b
+        if isinstance(body, dict):
+            a, b = body.get("a"), body.get("b")
+            if isinstance(a, int) and isinstance(b, int):
+                za = level_is_zero(levels, a, subst, depth + 1)
+                zb = level_is_zero(levels, b, subst, depth + 1)
+                if za is None or zb is None:
+                    return None
+                return za and zb
+    if tag == "imax":
+        body = row.get("imax")
+        if isinstance(body, list) and len(body) == 2 and all(isinstance(x, int) for x in body):
+            return level_is_zero(levels, int(body[1]), subst, depth + 1)
+        if isinstance(body, dict) and isinstance(body.get("b"), int):
+            return level_is_zero(levels, int(body["b"]), subst, depth + 1)
+    return None
+
+
+def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
+    exprs = expr_refs(records)
+    levels = level_refs(records)
+    blocks = [row["inductive"] for row in records if isinstance(row.get("inductive"), dict)]
+
+    type_by_name: dict[int, dict[str, Any]] = {}
+    ctor_by_owner: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    k_recursor_owner: dict[int, int] = {}
+    for block in blocks:
+        types = [x for x in block.get("types", []) if isinstance(x, dict)]
+        ctors = [x for x in block.get("ctors", []) if isinstance(x, dict)]
+        recs = [x for x in block.get("recs", []) if isinstance(x, dict)]
+        for t in types:
+            if isinstance(t.get("name"), int):
+                type_by_name[int(t["name"])] = t
+        for ctor in ctors:
+            if isinstance(ctor.get("induct"), int):
+                ctor_by_owner[int(ctor["induct"])].append(ctor)
+        for rec in recs:
+            if bool(rec.get("k")) and isinstance(rec.get("name"), int):
+                all_types = rec.get("all")
+                if isinstance(all_types, list) and len(all_types) == 1 and isinstance(all_types[0], int):
+                    k_recursor_owner[int(rec["name"])] = int(all_types[0])
+
+    def result_sort_is_prop(type_name: int, const_levels: list[int]) -> bool | None:
+        t = type_by_name.get(type_name)
+        if t is None or not isinstance(t.get("type"), int):
+            return None
+        binders = int(t.get("numParams", 0)) + int(t.get("numIndices", 0))
+        domains, result = pi_domains(exprs, int(t["type"]))
+        if len(domains) < binders:
+            return None
+        row = exprs.get(result, {})
+        lid = row.get("sort")
+        if not isinstance(lid, int):
+            return None
+        lparams = t.get("levelParams", [])
+        if not isinstance(lparams, list) or len(lparams) != len(const_levels):
+            return None
+        subst = {
+            int(name): int(actual)
+            for name, actual in zip(lparams, const_levels)
+            if isinstance(name, int) and isinstance(actual, int)
+        }
+        return level_is_zero(levels, lid, subst)
+
+    def field_sort_is_prop(field: int, universe_instance: list[int]) -> bool | None:
+        head, _args = app_spine(exprs, field)
+        row = exprs.get(head, {})
+        const = row.get("const")
+        if isinstance(const, dict) and isinstance(const.get("name"), int):
+            us = const.get("us", [])
+            if isinstance(us, list):
+                return result_sort_is_prop(int(const["name"]), [int(x) for x in us if isinstance(x, int)])
+        # A field directly declared as a proposition expression is itself a type
+        # whose head inductive result sort should have been handled above.
+        return None
+
+    projection_results: list[str] = []
+    projection_target_prop: list[str] = []
+    projection_barrier: list[str] = []
+
+    proj_rows = [
+        (eid, row["proj"])
+        for eid, row in exprs.items()
+        if isinstance(row.get("proj"), dict)
+    ]
+    for _eid, proj in proj_rows:
+        type_name = proj.get("typeName")
+        idx = proj.get("idx")
+        if not isinstance(type_name, int) or not isinstance(idx, int):
+            projection_results.append("unknown")
+            projection_target_prop.append("unknown")
+            projection_barrier.append("unknown")
+            continue
+        t = type_by_name.get(type_name)
+        ctors = ctor_by_owner.get(type_name, [])
+        if t is None or len(ctors) != 1:
+            projection_results.append("unknown")
+            projection_target_prop.append("unknown")
+            projection_barrier.append("unknown")
+            continue
+        ctor = ctors[0]
+        if not isinstance(ctor.get("type"), int):
+            projection_results.append("unknown")
+            projection_target_prop.append("unknown")
+            projection_barrier.append("unknown")
+            continue
+
+        # Recover a concrete universe instance from any occurrence of the
+        # projected structure type in this export. Prefer fully concrete levels.
+        instances: list[list[int]] = []
+        for row in exprs.values():
+            const = row.get("const")
+            if isinstance(const, dict) and const.get("name") == type_name and isinstance(const.get("us"), list):
+                us = [int(x) for x in const["us"] if isinstance(x, int)]
+                if len(us) == len(t.get("levelParams", [])):
+                    instances.append(us)
+        instance = None
+        for us in instances:
+            if all(level_is_zero(levels, u, {}) is not None for u in us):
+                instance = us
+                break
+        if instance is None and instances:
+            instance = instances[0]
+        if instance is None:
+            projection_results.append("unknown")
+            projection_target_prop.append("unknown")
+            projection_barrier.append("unknown")
+            continue
+
+        domains, _result = pi_domains(exprs, int(ctor["type"]))
+        nparams = int(ctor.get("numParams", 0))
+        nfields = int(ctor.get("numFields", 0))
+        fields = domains[nparams:nparams + nfields]
+        if idx < 0 or idx >= len(fields):
+            projection_results.append("deny")
+            projection_target_prop.append("unknown")
+            projection_barrier.append("unknown")
+            continue
+
+        field_is_prop = [field_sort_is_prop(field, instance) for field in fields]
+        deps: list[set[int]] = []
+        for j, field in enumerate(fields):
+            refs = collect_bvars(exprs, field)
+            dep = {
+                j - 1 - b
+                for b in refs
+                if 0 <= b < j
+            }
+            deps.append(dep)
+
+        target_prop = field_is_prop[idx]
+        barrier = False
+        barrier_unknown = False
+        for later in range(0, idx + 1):
+            for earlier in deps[later]:
+                if earlier < 0 or earlier >= len(field_is_prop):
+                    continue
+                prop = field_is_prop[earlier]
+                if prop is False:
+                    barrier = True
+                elif prop is None:
+                    barrier_unknown = True
+        if target_prop is True and not barrier and not barrier_unknown:
+            allowed = "allow"
+        elif target_prop is False or barrier:
+            allowed = "deny"
+        else:
+            allowed = "unknown"
+        projection_results.append(allowed)
+        projection_target_prop.append(
+            "prop" if target_prop is True else "data" if target_prop is False else "unknown"
+        )
+        projection_barrier.append(
+            "barrier" if barrier else "unknown" if barrier_unknown else "clear"
+        )
+
+    # Rule-K probe: when a k-enabled recursor is fully applied to a bound major
+    # premise whose owner-inductive application has two final endpoint
+    # arguments, record whether those endpoints are structurally identical.
+    # This is a discovery witness only; any admitted kernel law must replace
+    # structural identity by definitional equality.
+    rule_k_reflexive: list[str] = []
+
+    roots: list[int] = []
+    for row in records:
+        for tag in ("def", "thm", "axiom"):
+            d = row.get(tag)
+            if isinstance(d, dict):
+                for field in ("type", "value"):
+                    v = d.get(field)
+                    if isinstance(v, int):
+                        roots.append(v)
+
+    seen_ctx: set[tuple[int, tuple[int, ...]]] = set()
+    def walk(eid: int, ctx: tuple[int, ...]) -> None:
+        key = (eid, ctx)
+        if key in seen_ctx:
+            return
+        seen_ctx.add(key)
+        row = exprs.get(eid, {})
+        head, args = app_spine(exprs, eid)
+        hrow = exprs.get(head, {})
+        const = hrow.get("const")
+        if isinstance(const, dict) and isinstance(const.get("name"), int):
+            owner = k_recursor_owner.get(int(const["name"]))
+            if owner is not None and args:
+                major = args[-1]
+                mrow = exprs.get(major, {})
+                bvar = mrow.get("bvar")
+                if isinstance(bvar, int) and bvar < len(ctx):
+                    major_ty = ctx[bvar]
+                    mhead, margs = app_spine(exprs, major_ty)
+                    mhrow = exprs.get(mhead, {})
+                    mconst = mhrow.get("const")
+                    if isinstance(mconst, dict) and mconst.get("name") == owner and len(margs) >= 2:
+                        left, right = margs[-2], margs[-1]
+                        same = expr_fingerprint(exprs, left) == expr_fingerprint(exprs, right)
+                        rule_k_reflexive.append("reflexive" if same else "nonreflexive")
+
+        node = row.get("forallE")
+        if isinstance(node, dict):
+            ty, body = node.get("type"), node.get("body")
+            if isinstance(ty, int):
+                walk(ty, ctx)
+            if isinstance(body, int) and isinstance(ty, int):
+                walk(body, (ty,) + ctx)
+            return
+        node = row.get("lam")
+        if isinstance(node, dict):
+            ty, body = node.get("type"), node.get("body")
+            if isinstance(ty, int):
+                walk(ty, ctx)
+            if isinstance(body, int) and isinstance(ty, int):
+                walk(body, (ty,) + ctx)
+            return
+        node = row.get("letE")
+        if isinstance(node, dict):
+            ty, val, body = node.get("type"), node.get("value"), node.get("body")
+            if isinstance(ty, int):
+                walk(ty, ctx)
+            if isinstance(val, int):
+                walk(val, ctx)
+            if isinstance(body, int) and isinstance(ty, int):
+                walk(body, (ty,) + ctx)
+            return
+        node = row.get("app")
+        if isinstance(node, dict):
+            for field in ("fn", "arg"):
+                v = node.get(field)
+                if isinstance(v, int):
+                    walk(v, ctx)
+        node = row.get("proj")
+        if isinstance(node, dict) and isinstance(node.get("struct"), int):
+            walk(int(node["struct"]), ctx)
+
+    for root in roots:
+        walk(root, ())
+
+    return {
+        "semantic:projection_admissibility": sorted(projection_results),
+        "semantic:projection_target_sort": sorted(projection_target_prop),
+        "semantic:projection_dependency_barrier": sorted(projection_barrier),
+        "semantic:rule_k_major_reflexivity": sorted(rule_k_reflexive),
+    }
+
+
 def generic_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     exprs = expr_refs(records)
     levels = level_refs(records)
@@ -487,6 +841,7 @@ def generic_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "same_name_multi_kind_count": same_name_multi_kind,
     }
     features.update(aggregate_inductive_features(records, exprs, levels))
+    features.update(semantic_probe_features(records))
     return features
 
 
