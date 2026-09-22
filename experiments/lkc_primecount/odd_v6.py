@@ -105,7 +105,7 @@ theorem impl_correct : ∀ n, impl n = primeCountSpec n := by
       have harg : 2 * (n / 2) + 2 = n + 1 := by omega
       rw [harg, primeCounting_succ_step n]
       have he : Even (n + 1) := by
-        rw [Nat.even_iff]
+        refine ⟨n / 2 + 1, ?_⟩
         omega
       have hnp : ¬ Nat.Prime (n + 1) := by
         intro hp
