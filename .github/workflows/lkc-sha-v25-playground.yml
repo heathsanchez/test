@@ -1,0 +1,93 @@
+name: SHA V25 SAIR Playground PMU
+
+on:
+  push:
+    branches: [lkc-sha-v24-interaction-v25]
+    paths:
+      - '.github/workflows/lkc-sha-v25-playground.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate exact proved V25 source
+        run: |
+          set -euo pipefail
+          python3 experiments/lkc_sha256/algebra_v25_interaction.py
+          sha256sum experiments/lkc_sha256/generated/Submission_algebra_v25_interaction.lean | tee v25.sha256
+      - name: Save V25 solution and run PMU playground
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg problemId "sha256" \
+            --arg name "sha-v25-interaction-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}" \
+            --rawfile source experiments/lkc_sha256/generated/Submission_algebra_v25_interaction.lean \
+            '{problemId:$problemId,name:$name,files:{"Submission.lean":$source}}' \
+            > save-request.json
+          save_code=$(curl -sS -o save-response.json -w '%{http_code}' \
+            -X POST "$BASE/playground/solutions" \
+            -H "Authorization: Bearer $SAIR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -H "User-Agent: curl/8.5.0" \
+            --data-binary @save-request.json)
+          echo "save_http=$save_code"; cat save-response.json
+          test "$save_code" -ge 200; test "$save_code" -lt 300
+          solution_id=$(jq -er '.data.solutionId' save-response.json)
+          revision=$(jq -er '.data.revision' save-response.json)
+          idem=$(python3 - <<'PY'
+          import uuid
+          print(uuid.uuid4())
+          PY
+          )
+          jq -n --arg solutionId "$solution_id" --argjson revision "$revision" \
+            --arg idempotencyKey "$idem" \
+            '{solutionId:$solutionId,revision:$revision,idempotencyKey:$idempotencyKey}' \
+            > run-request.json
+          run_code=$(curl -sS -o run-response.json -w '%{http_code}' \
+            -X POST "$BASE/playground/runs" \
+            -H "Authorization: Bearer $SAIR_API_KEY" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json" \
+            -H "User-Agent: curl/8.5.0" \
+            --data-binary @run-request.json)
+          echo "run_http=$run_code"; cat run-response.json
+          test "$run_code" -ge 200; test "$run_code" -lt 300
+          run_id=$(jq -er '.data.runId' run-response.json)
+          echo "$run_id" > run-id.txt
+          for i in $(seq 1 480); do
+            curl -fsS "$BASE/playground/runs/$run_id" \
+              -H "Authorization: Bearer $SAIR_API_KEY" \
+              -H "Accept: application/json" \
+              -H "User-Agent: curl/8.5.0" > run-status.json
+            status=$(jq -r '.data.status' run-status.json)
+            echo "poll=$i status=$status"
+            if [ "$status" = "done" ] || [ "$status" = "failed" ] || [ "$status" = "cancelled" ]; then break; fi
+            sleep 5
+          done
+          cat run-status.json
+          jq -e '.data.status == "done"' run-status.json >/dev/null
+          jq '{runId:.data.runId,solutionId:.data.solutionId,solutionRevision:.data.solutionRevision,
+               problemId:.data.problemId,verdict:.data.verdict,finalConclusion:.data.finalConclusion,
+               metrics:.data.metrics}' run-status.json > sha-v25-pmu.json
+          cat sha-v25-pmu.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-v25-sair-pmu
+          path: |
+            v25.sha256
+            save-response.json
+            run-response.json
+            run-id.txt
+            run-status.json
+            sha-v25-pmu.json
