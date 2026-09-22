@@ -100,14 +100,14 @@ theorem mask4_eq_nested (a b c d : Nat) :
       add32 (add32 a b) (add32 c d) := by
   simp only [add32, mask32_eq_mod]
   simp only [Nat.mod_add_mod, Nat.add_mod_mod]
-  simp [Nat.add_assoc]
+  simp (maxSteps := 1000000) [Nat.add_assoc]
 
 theorem mask5_eq_nested (a b c d e : Nat) :
     (a + b + c + d + e) &&& w32 =
       add32 a (add32 b (add32 c (add32 d e))) := by
   simp only [add32, mask32_eq_mod]
   simp only [Nat.add_mod_mod]
-  simp [Nat.add_assoc]
+  simp (maxSteps := 1000000) [Nat.add_assoc]
 '''
 
 a=v23.index("structure ValidDigest")
@@ -130,7 +130,7 @@ theorem roundFast_eq_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
   simp only [Nat.add_mod]
   rw [bigSigma1Fast_mod_eq s.e]
   rw [bigSigma0Fast_mod_eq s.a]
-  simp [Nat.add_assoc]
+  simp (maxSteps := 1000000) [Nat.add_assoc]
 '''
 
 next_proof=r'''
@@ -141,7 +141,7 @@ theorem Window.nextFast_eq_nextWord (w : Window) (hw : ValidWindow w) :
   simp only [Nat.add_mod]
   rw [smallSigma1Fast_mod_eq w.x14 hw.x14]
   rw [smallSigma0Fast_mod_eq w.x1 hw.x1]
-  simp [Nat.add_assoc]
+  simp (maxSteps := 1000000) [Nat.add_assoc]
 '''
 
 text=prefix+bridge+pre_round+round_proof+pre_next+next_proof+post_next+"\nend Submission\n"
