@@ -1503,32 +1503,18 @@ fn valid_rbtree_constructor_metadata(
         && name_is_child_str(export, constructor.name, inductive, suffix)
 }
 
+
 fn is_exact_rbtree_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: color,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: height,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, color, height] = domains.as_slice() else {
         return false;
     };
     is_sort_succ_parameter(export, *carrier, level)
         && is_root_empty_constant_named(export, *color, "Color")
         && is_root_empty_constant_named(export, *height, "N")
-        && is_sort_succ_parameter(export, *result, level)
+        && is_sort_succ_parameter(export, result, level)
 }
 
 fn rbtree_application_parts(
@@ -1596,21 +1582,21 @@ fn is_named_succ_bvar(
     )
 }
 
+
 fn is_derived_rbtree_leaf_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body: result,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [carrier] = domains.as_slice() else {
         return false;
     };
     let Some((result_carrier, result_color, result_height)) =
-        rbtree_application_parts(export, *result, inductive, level)
+        rbtree_application_parts(export, result, inductive, level)
     else {
         return false;
     };
@@ -1620,41 +1606,17 @@ fn is_derived_rbtree_leaf_type(
         && is_child_empty_constant_named(export, result_height, "N", "zero")
 }
 
+
 fn is_derived_rbtree_red_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: height,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: value,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [carrier, height, left, value, right] = domains.as_slice() else {
         return false;
     };
     let (
@@ -1664,7 +1626,7 @@ fn is_derived_rbtree_red_type(
     ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-        rbtree_application_parts(export, *result, inductive, level),
+        rbtree_application_parts(export, result, inductive, level),
     )
     else {
         return false;
@@ -1683,54 +1645,17 @@ fn is_derived_rbtree_red_type(
         && is_bvar(export, result_height, 3)
 }
 
+
 fn is_derived_rbtree_black_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: carrier,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 7) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: first_color,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second_color,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: height,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: value,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: right,
-        body: result,
-    }) = export.exprs.get(*body)
+    let [carrier, first_color, second_color, height, left, value, right] = domains.as_slice()
     else {
         return false;
     };
@@ -1741,7 +1666,7 @@ fn is_derived_rbtree_black_type(
     ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
-        rbtree_application_parts(export, *result, inductive, level),
+        rbtree_application_parts(export, result, inductive, level),
     )
     else {
         return false;
@@ -1801,6 +1726,40 @@ fn application_spine(export: &ResolvedExport, expression: ExprId) -> (ExprId, Ve
     }
     arguments.reverse();
     (head, arguments)
+}
+
+fn pi_spine(
+    export: &ResolvedExport,
+    expression: ExprId,
+    count: usize,
+) -> Option<(Vec<ExprId>, ExprId)> {
+    let mut current = expression;
+    let mut domains = Vec::with_capacity(count);
+    for _ in 0..count {
+        let Expr::Pi { domain, body } = export.exprs.get(current)? else {
+            return None;
+        };
+        domains.push(*domain);
+        current = *body;
+    }
+    Some((domains, current))
+}
+
+fn lam_spine(
+    export: &ResolvedExport,
+    expression: ExprId,
+    count: usize,
+) -> Option<(Vec<ExprId>, ExprId)> {
+    let mut current = expression;
+    let mut domains = Vec::with_capacity(count);
+    for _ in 0..count {
+        let Expr::Lam { domain, body } = export.exprs.get(current)? else {
+            return None;
+        };
+        domains.push(*domain);
+        current = *body;
+    }
+    Some((domains, current))
 }
 
 fn motive_application_parts(
