@@ -1,0 +1,75 @@
+name: LKC Polydisc V6 PRS Trim-Once Screen
+
+on:
+  push:
+    branches: [lkc-polydisc-prs-trim-v6]
+    paths:
+      - 'experiments/lkc_polydisc/prs_trim_v6_probe.py'
+      - '.github/workflows/lkc-polydisc-v6-prs-trim-screen.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate
+        run: |
+          python3 experiments/lkc_polydisc/shift_v3.py
+          python3 experiments/lkc_polydisc/prs_trim_v6_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem polydisc
+      - name: Compile probe
+        run: |
+          cp experiments/lkc_polydisc/generated/Submission_v6_prs_trim_probe.lean bench/.cache/upstream/evaluation/problems/polydisc/V6.lean
+          cd bench/.cache/upstream/evaluation/problems/polydisc
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V6.lean
+      - name: Compare
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/polydisc-v6-screen"; mkdir -p "$root"
+          inputs=(19337098 9225987 6476047012455 10487306645701 5042242704654352709 4530401864863699852)
+          for who in v3 v6; do
+            if [ "$who" = v3 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v3.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_polydisc/generated/Submission_v6_prs_trim_probe.lean"
+            fi
+            python3 bench/benchmark.py diagnostic --problem polydisc --submission "$sub" \
+              --metric wall-time --repetitions 1 --timeout 900 --memory-mb 4096 \
+              --inputs "${inputs[@]}" --output "$root/$who"
+          done
+      - name: Verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("polydisc-v6-screen")
+          a=json.loads((r/"v3/diagnostic.json").read_text())["totals"]["candidate"]
+          b=json.loads((r/"v6/diagnostic.json").read_text())["totals"]["candidate"]
+          out={"baseline_v3":a,"candidate_v6":b,"ratio":b/a,
+               "improvement_pct":100*(1-b/a),
+               "consequence":"PROVE_TRIM_ONCE" if b<a else "REJECT"}
+          print(json.dumps(out,indent=2))
+          (r/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: polydisc-v6-prs-trim-screen
+          path: polydisc-v6-screen/
