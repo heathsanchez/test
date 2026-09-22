@@ -51,7 +51,7 @@ theorem alive_self_iff_prime (p : Nat) (hp2 : 2 ≤ p) :
     exact Or.inl hp
 
 theorem alive_stop_iff_prime
-    (n p i : Nat) (hp2 : 2 ≤ p)
+    (n p i : Nat) (_hp2 : 2 ≤ p)
     (hi2 : 2 ≤ i) (hin : i ≤ n)
     (hstop : n < p * p) :
     AliveAt p i ↔ Nat.Prime i := by
