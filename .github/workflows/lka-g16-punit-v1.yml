@@ -76,6 +76,8 @@ jobs:
           cd /tmp/lean-kernel-arena/tutorial
           lake clean
           OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+          cd "$GITHUB_WORKSPACE/metatron-kernel/formal"
+          lake build
 
       - name: Qualify PUnit as sole earned delta
         working-directory: metatron-kernel
