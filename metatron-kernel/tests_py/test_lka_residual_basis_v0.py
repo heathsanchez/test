@@ -59,6 +59,74 @@ class ResidualBasisTests(unittest.TestCase):
         self.assertIn("secret_semantic_name", mod.canonical(hidden))
         self.assertEqual(public["commitment"], mod.digest(hidden))
 
+    def test_symbolic_universe_order(self):
+        zero = ("zero",)
+        u = ("param", 7)
+        self.assertTrue(mod.level_lt_term(zero, ("succ", zero)))
+        self.assertTrue(mod.level_lt_term(u, ("succ", u)))
+        self.assertFalse(mod.level_lt_term(u, u))
+
+    def test_field_universe_prop_is_impredicative(self):
+        records = [
+            {"ie": 1, "sort": 0},
+            {"ie": 2, "sort": 3},
+            {"ie": 3, "sort": 0},
+            {"ie": 4, "const": {"name": 10, "us": []}},
+            {"ie": 5, "forallE": {"type": 2, "body": 4}},
+            {"il": 3, "succ": 0},
+            {
+                "inductive": {
+                    "types": [{
+                        "name": 10, "type": 1, "numParams": 0, "numIndices": 0,
+                        "levelParams": [], "ctors": [11], "all": [10],
+                        "numNested": 0, "isRec": False, "isUnsafe": False,
+                        "isReflexive": False
+                    }],
+                    "ctors": [{
+                        "name": 11, "type": 5, "numParams": 0, "numFields": 1,
+                        "levelParams": [], "induct": 10, "cidx": 0, "isUnsafe": False
+                    }],
+                    "recs": []
+                }
+            },
+        ]
+        exprs = mod.expr_refs(records)
+        levels = mod.level_refs(records)
+        self.assertEqual(
+            mod.field_universe_admissibility(records, exprs, levels),
+            "not_applicable",
+        )
+
+    def test_field_universe_same_level_type_is_refuted(self):
+        records = [
+            {"ie": 1, "sort": 3},
+            {"ie": 2, "sort": 3},
+            {"ie": 4, "const": {"name": 10, "us": []}},
+            {"ie": 5, "forallE": {"type": 2, "body": 4}},
+            {"il": 3, "succ": 0},
+            {
+                "inductive": {
+                    "types": [{
+                        "name": 10, "type": 1, "numParams": 0, "numIndices": 0,
+                        "levelParams": [], "ctors": [11], "all": [10],
+                        "numNested": 0, "isRec": False, "isUnsafe": False,
+                        "isReflexive": False
+                    }],
+                    "ctors": [{
+                        "name": 11, "type": 5, "numParams": 0, "numFields": 1,
+                        "levelParams": [], "induct": 10, "cidx": 0, "isUnsafe": False
+                    }],
+                    "recs": []
+                }
+            },
+        ]
+        exprs = mod.expr_refs(records)
+        levels = mod.level_refs(records)
+        self.assertEqual(
+            mod.field_universe_admissibility(records, exprs, levels),
+            "refuted",
+        )
+
     def test_sham_preserves_current_class_marginals(self):
         dummy = Path("/tmp/x")
         cases = [
