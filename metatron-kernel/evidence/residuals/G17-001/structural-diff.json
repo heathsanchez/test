@@ -1,0 +1,43 @@
+{
+  "schema": "metatron-structural-diff-v1",
+  "id": "G17-001",
+  "residual": {
+    "family": "Eq",
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc"
+  },
+  "observed": {
+    "type": {
+      "level_params": 1,
+      "num_params": 2,
+      "num_indices": 1,
+      "num_nested": 0,
+      "is_recursive": false,
+      "is_reflexive": false,
+      "is_unsafe": false,
+      "constructors": 1
+    },
+    "constructor": {
+      "level_params": 1,
+      "num_params": 2,
+      "num_fields": 0,
+      "index": 0,
+      "is_unsafe": false
+    },
+    "recursor": {
+      "level_params": 2,
+      "num_params": 2,
+      "num_indices": 1,
+      "num_motives": 1,
+      "num_minors": 1,
+      "k": true,
+      "rules": 1,
+      "rule_fields": 0
+    }
+  },
+  "semantic_separation": {
+    "static_declaration_authority": "G17 target",
+    "rule_k_reduction": "deferred to tutorial 099",
+    "recursive_inductives": "deferred to tutorial 044 and later"
+  },
+  "architecture_promotion_authorized": false
+}
