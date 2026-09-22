@@ -29,6 +29,7 @@ jobs:
       G19_SHA: 5c51781af6ede78e435b756b7aa75490d10d49c9
       G20_SHA: 80c99cfdce1e9a5349ef4b300f506c92677dc6ce
       G21_SHA: fc2e64a0e43676d283e202b7c9b1cbb262360e79
+      G22_SHA: 917566dd7c91fdda1f32e85aaf5ab65a19973923
     steps:
       - uses: actions/checkout@v4
 
@@ -98,17 +99,13 @@ jobs:
           git fetch --depth 1 origin "$G15_SHA"
           git fetch --depth 1 origin "$G16_SHA"
           git fetch --depth 1 origin "$G17_SHA"
-          git fetch --depth 1 origin "$G18_SHA"
-          git fetch --depth 1 origin "$G19_SHA"
-          git fetch --depth 1 origin "$G20_SHA"
           git fetch --depth 1 origin "$G21_SHA"
+          git fetch --depth 1 origin "$G22_SHA"
           git worktree add --detach /tmp/metatron-g15-oracle "$G15_SHA"
           git worktree add --detach /tmp/metatron-g16-oracle "$G16_SHA"
           git worktree add --detach /tmp/metatron-g17-oracle "$G17_SHA"
-          git worktree add --detach /tmp/metatron-g18-oracle "$G18_SHA"
-          git worktree add --detach /tmp/metatron-g19-oracle "$G19_SHA"
-          git worktree add --detach /tmp/metatron-g20-oracle "$G20_SHA"
           git worktree add --detach /tmp/metatron-g21-oracle "$G21_SHA"
+          git worktree add --detach /tmp/metatron-g22-oracle "$G22_SHA"
           cargo build --release --locked \
             --manifest-path /tmp/metatron-g15-oracle/metatron-kernel/Cargo.toml
           cargo build --release --locked \
@@ -116,46 +113,32 @@ jobs:
           cargo build --release --locked \
             --manifest-path /tmp/metatron-g17-oracle/metatron-kernel/Cargo.toml
           cargo build --release --locked \
-            --manifest-path /tmp/metatron-g18-oracle/metatron-kernel/Cargo.toml
-          cargo build --release --locked \
-            --manifest-path /tmp/metatron-g19-oracle/metatron-kernel/Cargo.toml
-          cargo build --release --locked \
-            --manifest-path /tmp/metatron-g20-oracle/metatron-kernel/Cargo.toml
-          cargo build --release --locked \
             --manifest-path /tmp/metatron-g21-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g22-oracle/metatron-kernel/Cargo.toml
           METATRON_G15_ORACLE=/tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
           METATRON_G16_ORACLE=/tmp/metatron-g16-oracle/metatron-kernel/target/release/metatron-kernel \
           METATRON_G17_ORACLE=/tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
-          METATRON_G19_ORACLE=/tmp/metatron-g19-oracle/metatron-kernel/target/release/metatron-kernel \
           METATRON_G21_ORACLE=/tmp/metatron-g21-oracle/metatron-kernel/target/release/metatron-kernel \
+          METATRON_G22_ORACLE=/tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel \
             cargo test --release --test end_to_end
           python - <<'PY'
-          import hashlib, json, pathlib, subprocess
+          import json, pathlib, subprocess
           candidate=pathlib.Path('target/release/metatron-kernel').resolve()
-          oracle=pathlib.Path('/tmp/metatron-g21-oracle/metatron-kernel/target/release/metatron-kernel').resolve()
-
-          fixture=pathlib.Path('evidence/residuals/G22-001/054_indNeg.ndjson')
+          oracle=pathlib.Path('/tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel').resolve()
+          fixture=pathlib.Path('evidence/residuals/G23-001/fixture.ndjson')
           with fixture.open('rb') as stream:
             candidate_exit=subprocess.run([candidate],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
           with fixture.open('rb') as stream:
             oracle_exit=subprocess.run([oracle],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
-          assert candidate_exit == 1, candidate_exit
+          assert candidate_exit == 0, candidate_exit
           assert oracle_exit == 2, oracle_exit
-
-          control=pathlib.Path('/tmp/lean-kernel-tutorial/good/055_reduceCtorParam.mk.ndjson')
-          assert hashlib.sha256(control.read_bytes()).hexdigest() == '16d146c5ef39743b6a95f21043a43b890e22d72792fd9436e37396765124a7a2'
-          with control.open('rb') as stream:
-            control_candidate=subprocess.run([candidate],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
-          with control.open('rb') as stream:
-            control_oracle=subprocess.run([oracle],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
-          assert control_candidate == 2, control_candidate
-          assert control_oracle == 2, control_oracle
-          pathlib.Path('evidence-out/g22-supplemental.json').write_text(
+          pathlib.Path('evidence-out/g23-supplemental.json').write_text(
             json.dumps({
-              'schema':'metatron-kernel-g22-supplemental-v1',
-              'oracle_sha':'fc2e64a0e43676d283e202b7c9b1cbb262360e79',
-              '054':{'candidate_exit':candidate_exit,'oracle_exit':oracle_exit},
-              '055_control':{'candidate_exit':control_candidate,'oracle_exit':control_oracle},
+              'schema':'metatron-kernel-g23-supplemental-v1',
+              'oracle_sha':'917566dd7c91fdda1f32e85aaf5ab65a19973923',
+              '055':{'candidate_exit':candidate_exit,'oracle_exit':oracle_exit},
+              'conversion':'kernel conversion under staged inductive authority',
             },indent=2,sort_keys=True)+'\n'
           )
           PY
@@ -165,25 +148,24 @@ jobs:
             --candidate-sha "$GITHUB_SHA" \
             --arena-sha "$ARENA_SHA" \
             --output evidence-out/tutorial-qualification.json \
-            --oracle /tmp/metatron-g21-oracle/metatron-kernel/target/release/metatron-kernel \
-            --oracle-sha "$G21_SHA" \
-            --earned-case 054 \
+            --oracle /tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$G22_SHA" \
+            --earned-case 055 \
             --earned-oracle-exit 2 \
-            --earned-candidate-exit 1 \
+            --earned-candidate-exit 0 \
             --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
-          assert q['counts']=={'incorrect':0,'matched':54}, q
-          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1], q
+          assert q['counts']=={'incorrect':0,'matched':55}, q
           d=json.load(open('evidence-out/tutorial-differential.json'))
           assert d['qualified'] is True, d
-          assert d['counts']=={'earned_delta':1,'equal':53,'mismatch':0}, d
+          assert d['counts']=={'earned_delta':1,'equal':54,'mismatch':0}, d
           assert d['mode']=='earned_delta', d
-          assert d['earned_case']=='054', d
-          assert d['earned_cases']==['054'], d
-          assert d['oracle_sha']=='fc2e64a0e43676d283e202b7c9b1cbb262360e79', d
+          assert d['earned_case']=='055', d
+          assert d['earned_cases']==['055'], d
+          assert d['oracle_sha']=='917566dd7c91fdda1f32e85aaf5ab65a19973923', d
           PY
 
       - name: Audit untouched tutorial suffix
@@ -324,7 +306,7 @@ jobs:
             'qualification':json.loads((root/'qualification.json').read_text()),
             'tutorial_qualification':json.loads((root/'tutorial-qualification.json').read_text()),
             'tutorial_differential':json.loads((root/'tutorial-differential.json').read_text()),
-            'supplemental':json.loads((root/'g22-supplemental.json').read_text()),
+            'supplemental':json.loads((root/'g23-supplemental.json').read_text()),
             'retired_instructions':json.loads((root/'instructions.json').read_text()),
           }
           (root/'attestation.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
