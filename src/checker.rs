@@ -291,8 +291,144 @@ fn check_single_constructor_inductive(
         check_exact_prod(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "PProd") {
         check_exact_pprod(export, environment, block, limits, delta_policy)
-    } else {
+    } else if name_is_root_str(export, inductive.name, "TwoBool") {
         check_twobool_structure(export, environment, block, limits, delta_policy)
+    } else {
+        check_unrecognized_single_constructor_coherence(export, block)
+    }
+}
+
+/// G21-001 is a rejection-only constructor-result law for the otherwise
+/// unrecognized single-constructor frontier. It does not compare constructor
+/// parameter domains, because those may require conversion (tutorial 055).
+/// Instead it checks only hard structural invariants of the constructor result:
+/// owner/index metadata, declared universe order, parameter reuse/order, and
+/// absence of the inductive itself inside an index.
+fn check_unrecognized_single_constructor_coherence(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    // Preserve unsupported semantic envelopes rather than strengthening them
+    // merely because they are unfamiliar.
+    if inductive.is_unsafe
+        || inductive.is_reflexive
+        || inductive.num_nested != 0
+        || constructor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if constructor_result_is_definitely_malformed(export, inductive, constructor) {
+        Err(Verdict::Reject)
+    } else {
+        Err(Verdict::Unknown)
+    }
+}
+
+fn constructor_result_is_definitely_malformed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    if constructor.inductive != inductive.name
+        || constructor.index != 0
+        || constructor.num_params != inductive.num_params
+        || constructor.level_params != inductive.level_params
+    {
+        return true;
+    }
+
+    let Some(num_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return true;
+    };
+    let mut result = constructor.ty;
+    for _ in 0..num_binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(result) else {
+            return true;
+        };
+        result = *body;
+    }
+
+    let (head, arguments) = application_spine(export, result);
+    if !inductive_constant_uses_declared_levels(
+        export,
+        head,
+        inductive.name,
+        &inductive.level_params,
+    ) {
+        return true;
+    }
+
+    let Some(expected_arguments) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return true;
+    };
+    let Ok(expected_arguments) = usize::try_from(expected_arguments) else {
+        return true;
+    };
+    if arguments.len() != expected_arguments {
+        return true;
+    }
+
+    let Ok(num_params) = usize::try_from(inductive.num_params) else {
+        return true;
+    };
+    for parameter in 0..num_params {
+        let parameter = parameter as u64;
+        let expected_bvar = constructor.num_fields + inductive.num_params - 1 - parameter;
+        if !is_bvar(export, arguments[parameter as usize], expected_bvar) {
+            return true;
+        }
+    }
+
+    arguments[num_params..]
+        .iter()
+        .any(|argument| expression_contains_constant(export, *argument, inductive.name))
+}
+
+fn inductive_constant_uses_declared_levels(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level_params: &[NameId],
+) -> bool {
+    let Some(Expr::Const { name, levels }) = export.exprs.get(expression) else {
+        return false;
+    };
+    *name == inductive
+        && levels.len() == level_params.len()
+        && levels.iter().zip(level_params).all(|(level, expected)| {
+            matches!(export.levels.get(*level), Some(Level::Param(name)) if name == expected)
+        })
+}
+
+fn expression_contains_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    target: NameId,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Const { name, .. }) => *name == target,
+        Some(Expr::App { fun, arg }) => {
+            expression_contains_constant(export, *fun, target)
+                || expression_contains_constant(export, *arg, target)
+        }
+        Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+            expression_contains_constant(export, *domain, target)
+                || expression_contains_constant(export, *body, target)
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_contains_constant(export, *ty, target)
+                || expression_contains_constant(export, *value, target)
+                || expression_contains_constant(export, *body, target)
+        }
+        Some(Expr::BVar(_) | Expr::Sort(_)) | None => false,
     }
 }
 
