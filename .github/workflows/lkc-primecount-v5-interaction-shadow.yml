@@ -1,0 +1,39 @@
+name: LKC Primecount V5 Interaction Shadow Dev
+
+on:
+  push:
+    branches: [lkc-primecount-v5-interaction-v1]
+    paths:
+      - 'experiments/lkc_primecount/v5_interaction_shadow_dev.py'
+      - '.github/workflows/lkc-primecount-v5-interaction-shadow.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  proof-dev:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate interaction shadow bank
+        run: python3 experiments/lkc_primecount/v5_interaction_shadow_dev.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup Primecount
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem primecount
+      - name: Compile least-factor shadow bank
+        run: |
+          cp experiments/lkc_primecount/generated/Submission_v5_interaction_shadow_dev.lean bench/.cache/upstream/evaluation/problems/primecount/InteractionShadow.lean
+          cd bench/.cache/upstream/evaluation/problems/primecount
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 InteractionShadow.lean
