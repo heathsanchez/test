@@ -29,6 +29,7 @@ IDs after qualification.
 | `865548098d16588db5aef79b9e094746933497d9` | `35686513640` / `106614391496` | `10676299174`, digest `fbb4091c...5106` | 6 contract + 42 tutorial matched; G15 oracle 41 equal, 1 earned delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `ebc901d24688d2aa672c38e4fd80e20d6a0e5b15` | `35687371672` / `106616975935` | `10676794003`, digest `dc5a59be...89d2` | 6 contract + 43 tutorial matched; G16 oracle 42 equal, 1 earned delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 | `bb7809104681852b46d71c688814f24692965b1b` | `35704232366` / `106669198325` | `10682964232`, digest `f3f7ae1d...781b` | 6 contract + 44 tutorial matched; G17 oracle 43 equal, 1 earned REJECT→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
+| `60fde2527b7a57c14487b7930d6083451dd01aeb` | `35707420135` / `106679605077` | `10684434897`, digest `1b69b0ef...e86a` | 6 contract + 45 tutorial matched; G18 oracle 44 equal, 1 earned UNKNOWN→ACCEPT delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 
 The successful run is available at
 <https://github.com/heathsanchez/test/actions/runs/35620658852>. Its correctness
@@ -61,3 +62,10 @@ is the sole earned oracle delta: sealed G17 returns `REJECT` on the valid Nat
 fixture, while G18 returns `ACCEPT`; tutorials 001–043 are equal and the
 malformed/broader Nat falsifiers preserve the required REJECT/UNKNOWN boundaries.
 No retired-instruction promotion is claimed.
+
+The G19 run is available at
+<https://github.com/heathsanchez/test/actions/runs/35707420135>. Exact tutorial 045
+is the sole earned oracle delta: sealed G18 returns `UNKNOWN`, while the composed
+RBTree law returns `ACCEPT`; tutorials 001–044 are equal, full recursor/rule
+falsifiers pass, and broader RBTree neighbours remain outside authority. No
+retired-instruction promotion is claimed.
