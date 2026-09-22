@@ -1154,7 +1154,6 @@ fn is_nat_motive_type(
     )
 }
 
-
 fn is_nat_succ_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1187,7 +1186,6 @@ fn is_nat_succ_minor_type(
         && is_empty_constant(export, *succ_head, succ)
         && is_bvar(export, *succ_arg, 1)
 }
-
 
 fn is_derived_nat_recursor_type(
     export: &ResolvedExport,
@@ -1237,7 +1235,6 @@ fn are_derived_nat_rules(
     )
 }
 
-
 fn is_derived_nat_zero_rule(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1257,7 +1254,6 @@ fn is_derived_nat_zero_rule(
         && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
         && is_bvar(export, result, 1)
 }
-
 
 fn is_derived_nat_succ_rule(
     export: &ResolvedExport,
@@ -2792,7 +2788,6 @@ fn is_binary_bvar_application(
         && is_bvar(export, *arg, second)
 }
 
-
 fn is_exact_binary_product_parameter_telescope(
     export: &ResolvedExport,
     expression: ExprId,
@@ -2808,7 +2803,6 @@ fn is_exact_binary_product_parameter_telescope(
         && law.parameter_sort(export, *second, false)
         && law.result_sort(export, result)
 }
-
 
 fn is_derived_binary_product_constructor_type(
     export: &ResolvedExport,
@@ -2849,7 +2843,6 @@ fn valid_binary_product_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
-
 fn is_derived_binary_product_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -2871,7 +2864,6 @@ fn is_derived_binary_product_recursor_type(
         && is_bvar_application(export, result, 2, 0)
 }
 
-
 fn is_binary_product_motive_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -2888,7 +2880,6 @@ fn is_binary_product_motive_type(
     is_binary_product_constant_application(export, *argument, inductive, 1, 0, law)
         && is_sort_parameter(export, result, motive_level)
 }
-
 
 fn is_binary_product_minor_type(
     export: &ResolvedExport,
@@ -2915,7 +2906,6 @@ fn is_binary_product_minor_type(
         && is_binary_product_constructor_application(export, *constructed, constructor, law)
 }
 
-
 fn is_derived_binary_product_rule(
     export: &ResolvedExport,
     inductive: NameId,
@@ -2941,7 +2931,6 @@ fn is_derived_binary_product_rule(
         && is_binary_bvar_application(export, result, 2, 1, 0)
 }
 
-
 fn is_binary_product_constant_application(
     export: &ResolvedExport,
     expression: ExprId,
@@ -2956,7 +2945,6 @@ fn is_binary_product_constant_application(
             && is_bvar(export, *first_arg, first)
             && is_bvar(export, *second_arg, second))
 }
-
 
 fn is_binary_product_constructor_application(
     export: &ResolvedExport,
@@ -3009,7 +2997,6 @@ fn valid_punit_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
-
 fn is_derived_punit_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -3028,7 +3015,6 @@ fn is_derived_punit_recursor_type(
         && law.constant(export, *target, inductive)
         && is_bvar_application(export, result, 2, 0)
 }
-
 
 fn is_derived_punit_rule(
     export: &ResolvedExport,
@@ -3050,7 +3036,6 @@ fn is_derived_punit_rule(
         && is_punit_minor_type(export, *minor, constructor, law)
         && is_bvar(export, result, 0)
 }
-
 
 fn is_punit_motive_type(
     export: &ResolvedExport,
@@ -3081,7 +3066,6 @@ fn is_punit_minor_type(
     )
 }
 
-
 fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 3) else {
         return false;
@@ -3094,7 +3078,6 @@ fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) 
         && is_bvar(export, *index, 1)
         && is_prop_sort(export, result)
 }
-
 
 fn is_derived_eq_constructor_type(
     export: &ResolvedExport,
@@ -3116,7 +3099,6 @@ fn is_derived_eq_constructor_type(
         && is_eq_application(export, result, inductive, law, 1, 0, 0)
 }
 
-
 fn is_eq_application(
     export: &ResolvedExport,
     expression: ExprId,
@@ -3133,7 +3115,6 @@ fn is_eq_application(
             && is_bvar(export, *parameter_arg, parameter)
             && is_bvar(export, *index_arg, index))
 }
-
 
 fn is_eq_constructor_application(
     export: &ResolvedExport,
@@ -3171,7 +3152,6 @@ fn valid_eq_recursor_metadata(
         && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
-
 fn is_eq_motive_type(
     export: &ResolvedExport,
     expression: ExprId,
@@ -3207,7 +3187,6 @@ fn is_eq_minor_type(
         && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
 }
 
-
 fn is_derived_eq_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -3232,7 +3211,6 @@ fn is_derived_eq_recursor_type(
         && is_eq_application(export, *proof, inductive, law, 4, 3, 0)
         && is_binary_bvar_application(export, result, 3, 1, 0)
 }
-
 
 fn is_derived_eq_rule(
     export: &ResolvedExport,
