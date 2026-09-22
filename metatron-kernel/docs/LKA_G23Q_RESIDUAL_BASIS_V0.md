@@ -55,6 +55,19 @@ Allowed families:
    - raw value;
    - zero / positive test for integers;
    - list length / emptiness / deduplicated set.
+9. behavioral observations from already-sealed checker generations:
+   - per-generation verdicts on the same untouched suffix case;
+   - anonymous verdict-lineage vector;
+   - change / conclusive / UNKNOWN / ERROR counts across lineage.
+10. deterministic feature-gated G23 operation observations:
+   - declarations visited;
+   - staged inductive signatures;
+   - type judgments;
+   - kernel conversions;
+   - the anonymous operation-count vector and conversion/type-judgment pressure pair.
+
+Behavioral diagnostics are observations only. The diagnostic build must return
+the same verdict as the normal G23 binary on every case or the experiment fails.
 
 Forbidden:
 
