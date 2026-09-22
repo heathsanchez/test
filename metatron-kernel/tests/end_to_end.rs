@@ -992,7 +992,6 @@ fn punit_law_does_not_authorize_a_renamed_family() {
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
 
-
 fn sealed_pre_g17_verdict(bytes: &str) -> Option<Verdict> {
     let Ok(oracle) = std::env::var("METATRON_G17_ORACLE") else {
         return None;
