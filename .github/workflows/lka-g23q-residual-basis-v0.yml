@@ -1,0 +1,139 @@
+name: LKA G23Q Residual Basis v0
+
+on:
+  push:
+    branches: [lka-g23q-residual-basis-v0]
+    paths:
+      - ".github/workflows/lka-g23q-residual-basis-v0.yml"
+      - "metatron-kernel/scripts/lka_residual_basis_v0.py"
+      - "metatron-kernel/tests_py/test_lka_residual_basis_v0.py"
+      - "metatron-kernel/docs/LKA_G23Q_RESIDUAL_BASIS_V0.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g23q-residual-basis-v0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  basis:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      G23_SHA: 7975697a23091ee72abbfe6e68042f0e079f8738
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Enforce zero-authority branch
+        run: |
+          set -euo pipefail
+          git cat-file -e "$G23_SHA^{commit}"
+          git diff --exit-code "$G23_SHA" "$GITHUB_SHA" -- \
+            metatron-kernel/src \
+            metatron-kernel/formal \
+            metatron-kernel/evidence \
+            metatron-kernel/Cargo.toml \
+            metatron-kernel/Cargo.lock
+          cd metatron-kernel
+          python -m unittest tests_py/test_lka_residual_basis_v0.py -v
+
+      - name: Build byte-identical G23 checker
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo build --release --locked
+          git diff --exit-code "$G23_SHA" "$GITHUB_SHA" -- src Cargo.toml Cargo.lock
+
+      - name: Fetch pinned Arena
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate tutorials
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Compile blind residual basis
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          rm -rf basis-out
+          python scripts/lka_residual_basis_v0.py \
+            --tutorial-output /tmp/lean-kernel-tutorial \
+            --checker target/release/metatron-kernel \
+            --output-dir basis-out \
+            --start 56 \
+            --end 141 | tee basis-out.log
+
+          python - <<'PY'
+          import json, pathlib
+          s=json.load(open("basis-out/summary.json"))
+          p=json.load(open("basis-out/prediction.json"))
+          pub=json.load(open("basis-out/public.json"))
+          hid=json.load(open("basis-out/hidden.json"))
+          assert s["authority"].startswith("read-only")
+          assert s["blind_commitment_ok"] is True, s
+          assert p["basis"] is not None, p
+          assert s["exact_basis"] is not None, s
+          assert s["exact_basis_size"] == p["basis_size"], (s,p)
+          assert s["residual_pairs"] > 0, s
+          assert s["first_mismatch"]["number"] == 58, s
+          assert pub["commitment"], pub
+          assert hid["feature_names"], hid
+          # This experiment is discovery-only. A sham win is allowed and is
+          # evidence against using the present grammar as a rewrite basis.
+          print("RESIDUAL_BASIS_SUMMARY", json.dumps(s, sort_keys=True))
+          PY
+
+      - name: Write attestation
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib, json, os, pathlib
+          root=pathlib.Path("basis-out")
+          files={}
+          for p in sorted(root.glob("*.json")):
+              files[p.name]=hashlib.sha256(p.read_bytes()).hexdigest()
+          summary=json.load(open(root/"summary.json"))
+          att={
+            "schema":"lka-g23q-residual-basis-attestation-v0",
+            "candidate_sha":os.environ["GITHUB_SHA"],
+            "g23_sha":os.environ["G23_SHA"],
+            "arena_sha":os.environ["ARENA_SHA"],
+            "zero_authority":True,
+            "summary":summary,
+            "files":files,
+          }
+          (root/"attestation.json").write_text(json.dumps(att,indent=2,sort_keys=True)+"\n")
+          PY
+
+      - name: Upload discovery evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g23q-residual-basis-v0-${{ github.sha }}
+          path: |
+            metatron-kernel/basis-out
+            metatron-kernel/basis-out.log
+          if-no-files-found: error
