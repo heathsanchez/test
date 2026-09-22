@@ -512,6 +512,189 @@ def level_is_zero(
     return None
 
 
+def level_term(
+    levels: dict[int, dict[str, Any]],
+    lid: int,
+    depth: int = 0,
+) -> tuple[Any, ...] | None:
+    if depth > 32:
+        return None
+    if lid == 0:
+        return ("zero",)
+    row = levels.get(lid)
+    if row is None:
+        return None
+    tag = level_tag(row)
+    if tag == "param":
+        name = row.get("param")
+        return ("param", int(name)) if isinstance(name, int) else None
+    if tag == "succ":
+        child = row.get("succ")
+        if not isinstance(child, int):
+            return None
+        term = level_term(levels, child, depth + 1)
+        return ("succ", term) if term is not None else None
+    if tag in {"max", "imax"}:
+        node = row.get(tag)
+        if isinstance(node, list) and len(node) == 2:
+            left, right = node
+        elif isinstance(node, dict):
+            left, right = node.get("a"), node.get("b")
+        else:
+            return None
+        if not isinstance(left, int) or not isinstance(right, int):
+            return None
+        a = level_term(levels, left, depth + 1)
+        b = level_term(levels, right, depth + 1)
+        if a is None or b is None:
+            return None
+        return (tag, a, b)
+    if tag == "zero":
+        return ("zero",)
+    return None
+
+
+def level_leq_term(left: tuple[Any, ...], right: tuple[Any, ...]) -> bool | None:
+    if left == right:
+        return True
+    if left == ("zero",):
+        return True
+    if right and right[0] == "succ":
+        inner = right[1]
+        if left == inner:
+            return True
+        return level_leq_term(left, inner)
+    if right and right[0] in {"max", "imax"}:
+        a = level_leq_term(left, right[1])
+        b = level_leq_term(left, right[2])
+        if a is True or b is True:
+            return True
+        if a is False and b is False:
+            return False
+    if left and left[0] == "succ" and right and right[0] == "succ":
+        return level_leq_term(left[1], right[1])
+    if left and left[0] == "param" and right and right[0] == "param":
+        return left == right
+    return None
+
+
+def level_lt_term(left: tuple[Any, ...], right: tuple[Any, ...]) -> bool | None:
+    if left == right:
+        return False
+    if right and right[0] == "succ":
+        # u < succ v iff u <= v for the conservative symbolic cases handled here.
+        return level_leq_term(left, right[1])
+    if right and right[0] in {"max", "imax"}:
+        a = level_lt_term(left, right[1])
+        b = level_lt_term(left, right[2])
+        if a is True or b is True:
+            return True
+    if left == ("zero",):
+        z = level_is_zero_term(right)
+        return None if z is None else not z
+    return None
+
+
+def level_is_zero_term(term: tuple[Any, ...]) -> bool | None:
+    if term == ("zero",):
+        return True
+    if term and term[0] == "succ":
+        return False
+    if term and term[0] == "max":
+        a = level_is_zero_term(term[1])
+        b = level_is_zero_term(term[2])
+        if a is None or b is None:
+            return None
+        return a and b
+    if term and term[0] == "imax":
+        return level_is_zero_term(term[2])
+    return None
+
+
+def field_universe_admissibility(
+    records: list[dict[str, Any]],
+    exprs: dict[int, dict[str, Any]],
+    levels: dict[int, dict[str, Any]],
+) -> str:
+    blocks = [row["inductive"] for row in records if isinstance(row.get("inductive"), dict)]
+    if not blocks:
+        return "not_applicable"
+
+    saw_direct_sort_field = False
+    saw_unknown = False
+
+    for block in blocks:
+        types = {
+            int(t["name"]): t
+            for t in block.get("types", [])
+            if isinstance(t, dict) and isinstance(t.get("name"), int)
+        }
+        for ctor in block.get("ctors", []):
+            if not isinstance(ctor, dict):
+                continue
+            owner = ctor.get("induct")
+            ty = ctor.get("type")
+            if not isinstance(owner, int) or not isinstance(ty, int) or owner not in types:
+                continue
+            ind = types[owner]
+            ind_ty = ind.get("type")
+            if not isinstance(ind_ty, int):
+                saw_unknown = True
+                continue
+
+            ind_binders = int(ind.get("numParams", 0)) + int(ind.get("numIndices", 0))
+            ind_domains, ind_result = pi_domains(exprs, ind_ty)
+            if len(ind_domains) < ind_binders:
+                saw_unknown = True
+                continue
+            ind_row = exprs.get(ind_result, {})
+            ind_lid = ind_row.get("sort")
+            if not isinstance(ind_lid, int):
+                saw_unknown = True
+                continue
+            ind_level = level_term(levels, ind_lid)
+            if ind_level is None:
+                saw_unknown = True
+                continue
+
+            # Lean's Prop is impredicative: constructor field universes do not
+            # impose the ordinary strict universe bound in this corridor.
+            if level_is_zero_term(ind_level) is True:
+                continue
+
+            domains, _result = pi_domains(exprs, ty)
+            nparams = int(ctor.get("numParams", 0))
+            nfields = int(ctor.get("numFields", 0))
+            if len(domains) < nparams + nfields:
+                saw_unknown = True
+                continue
+
+            for field in domains[nparams:nparams + nfields]:
+                row = exprs.get(field, {})
+                field_lid = row.get("sort")
+                if not isinstance(field_lid, int):
+                    # This probe deliberately handles only fields whose domain is
+                    # itself a Sort. Other field types belong to later semantic
+                    # obligations and remain UNKNOWN here.
+                    continue
+                saw_direct_sort_field = True
+                field_level = level_term(levels, field_lid)
+                if field_level is None:
+                    saw_unknown = True
+                    continue
+                admissible = level_lt_term(field_level, ind_level)
+                if admissible is False:
+                    return "refuted"
+                if admissible is None:
+                    saw_unknown = True
+
+    if saw_unknown:
+        return "unknown"
+    if saw_direct_sort_field:
+        return "proven"
+    return "not_applicable"
+
+
 def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     exprs = expr_refs(records)
     levels = level_refs(records)
@@ -777,6 +960,9 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         walk(root, ())
 
     return {
+        "semantic:field_universe_admissibility": field_universe_admissibility(
+            records, exprs, levels
+        ),
         "semantic:projection_admissibility": sorted(projection_results),
         "semantic:projection_target_sort": sorted(projection_target_prop),
         "semantic:projection_dependency_barrier": sorted(projection_barrier),
