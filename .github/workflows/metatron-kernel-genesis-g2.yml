@@ -145,6 +145,60 @@ jobs:
           assert d['oracle_sha']=='ce4c2f50ab649e60ee09a19c50f04c7769c5ad19', d
           PY
 
+      - name: Audit untouched tutorial suffix
+        working-directory: metatron-kernel
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root = pathlib.Path('/tmp/lean-kernel-tutorial')
+          checker = pathlib.Path('target/release/metatron-kernel').resolve()
+          rows = []
+          for expected_dir, expected_exit in [('good', 0), ('bad', 1)]:
+              for path in sorted((root / expected_dir).glob('*.ndjson')):
+                  try:
+                      number = int(path.name.split('_', 1)[0])
+                  except ValueError:
+                      continue
+                  if number < 46:
+                      continue
+                  with path.open('rb') as stream:
+                      run = subprocess.run(
+                          [str(checker)],
+                          stdin=stream,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      )
+                  rows.append({
+                      'number': number,
+                      'input': f'{expected_dir}/{path.name}',
+                      'expected_exit': expected_exit,
+                      'actual_exit': run.returncode,
+                      'matched': run.returncode == expected_exit,
+                  })
+          rows.sort(key=lambda row: row['number'])
+          first = next((row for row in rows if not row['matched']), None)
+          out = {
+              'schema': 'metatron-kernel-tutorial-suffix-atlas-v1',
+              'candidate_sha': os.environ['GITHUB_SHA'],
+              'start_case': 46,
+              'count': len(rows),
+              'matched': sum(row['matched'] for row in rows),
+              'first_mismatch': first,
+              'rows': rows,
+              'authority': 'diagnostic-only; cannot grant or revoke semantic authority',
+          }
+          pathlib.Path('evidence-out/tutorial-suffix-atlas.json').write_text(
+              json.dumps(out, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'count': out['count'],
+              'matched': out['matched'],
+              'first_mismatch': out['first_mismatch'],
+          }, sort_keys=True))
+          PY
+
       - name: Attempt same-cohort retired-instruction measurement
         working-directory: metatron-kernel
         run: |
