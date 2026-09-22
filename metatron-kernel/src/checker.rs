@@ -1619,9 +1619,6 @@ fn rbtree_recursor_prefix_domains(
     let Expr::Pi { domain: leaf, body } = export.exprs.get(*body)? else {
         return None;
     };
-    let Expr::Pi { domain: leaf, body } = export.exprs.get(*body)? else {
-        return None;
-    };
     let Expr::Pi { domain: red, body } = export.exprs.get(*body)? else {
         return None;
     };
@@ -1649,6 +1646,9 @@ fn peel_rbtree_rule_prefix(
         body,
     } = export.exprs.get(*body)?
     else {
+        return None;
+    };
+    let Expr::Lam { domain: leaf, body } = export.exprs.get(*body)? else {
         return None;
     };
     let Expr::Lam { domain: red, body } = export.exprs.get(*body)? else {
