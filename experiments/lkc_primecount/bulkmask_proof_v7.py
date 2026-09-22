@@ -35,20 +35,30 @@ theorem progressionMask_eq_sum
     (n p start : Nat) (hp : 0 < p) (hs : start <= n) :
     progressionMask n p start =
       ∑ q ∈ Finset.range ((n-start)/p+1), (1 <<< (start + q*p)) := by
-  unfold progressionMask
-  simp only [hp.ne', false_or, show !(n < start) by omega, Bool.false_eq_true, if_false]
+  simp [progressionMask, hp.ne', Nat.not_lt.mpr hs]
   let count := (n-start)/p+1
-  have hgeom := Nat.geomSum_eq (two_le_two_pow_of_pos p hp) count
-  simp only [Nat.one_shiftLeft, Nat.shiftLeft_eq]
   change
-    (((2^(p*count)-1)/(2^p-1)) * 2^start) =
-      ∑ q ∈ Finset.range count, 2^(start+q*p)
-  rw [← hgeom]
-  rw [Finset.sum_mul]
+    ((((1 <<< (p*count))-1)/((1 <<< p)-1)) <<< start) =
+      ∑ q ∈ Finset.range count, (1 <<< (start+q*p))
+  simp only [Nat.one_shiftLeft, Nat.shiftLeft_eq]
+  have hx : 1 <= 2^p := by
+    exact Nat.one_le_pow _ _ (by decide)
+  have htwo : 2 <= 2^p := two_le_two_pow_of_pos p hp
+  have hden : 0 < 2^p - 1 := by omega
+  have hgeom :
+      (∑ q ∈ Finset.range count, (2^p)^q) * (2^p - 1) =
+        (2^p)^count - 1 :=
+    geom_sum_mul_of_one_le hx count
+  have hdiv :
+      ((2^(p*count)-1)/(2^p-1)) =
+        ∑ q ∈ Finset.range count, (2^p)^q := by
+    rw [pow_mul]
+    rw [← hgeom]
+    exact Nat.mul_div_right _ hden
+  rw [hdiv, Finset.sum_mul]
   apply Finset.sum_congr rfl
   intro q hq
-  rw [pow_mul]
-  rw [← pow_add]
+  rw [pow_mul, ← pow_add]
   congr 1
   omega
 
