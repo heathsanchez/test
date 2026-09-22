@@ -1,0 +1,120 @@
+name: LKA Semantic Atlas v0
+
+on:
+  push:
+    branches: [lka-semantic-atlas-v0]
+    paths:
+      - ".github/workflows/lka-semantic-atlas-v0.yml"
+      - "metatron-kernel/scripts/lka_semantic_atlas.py"
+      - "metatron-kernel/tests_py/test_lka_semantic_atlas.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-semantic-atlas-v0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      G15_SHA: f45b49a6989c09317635c790615ca63c617c84c7
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Enforce read-only authority boundary
+        run: |
+          set -euo pipefail
+          git cat-file -e "$G15_SHA^{commit}"
+          git diff --exit-code "$G15_SHA" "$GITHUB_SHA" -- \
+            metatron-kernel/src \
+            metatron-kernel/formal \
+            metatron-kernel/evidence \
+            metatron-kernel/Cargo.toml \
+            metatron-kernel/Cargo.lock
+          cd metatron-kernel
+          python -m unittest tests_py/test_lka_semantic_atlas.py -v
+
+      - name: Build sealed G15 checker
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo build --release --locked
+
+      - name: Fetch pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate tutorials 001-141
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Build read-only structural atlas
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p atlas-out
+          python scripts/lka_semantic_atlas.py \
+            --tutorial-output /tmp/lean-kernel-tutorial \
+            --checker target/release/metatron-kernel \
+            --start 1 \
+            --end 141 \
+            --sealed-end 41 \
+            --report-start 42 \
+            --json-output atlas-out/lka-semantic-atlas-v0.json \
+            --markdown-output atlas-out/lka-semantic-atlas-v0.md
+
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          a=json.load(open("atlas-out/lka-semantic-atlas-v0.json"))
+          print("SUMMARY", json.dumps(a["summary"], sort_keys=True))
+          print("FIRST_OCCURRENCE_FRONTIER")
+          for item in a["frontier"]:
+              print(f'{item["first_case"]:03d} {item["dimension"]}')
+          unresolved=[r for r in a["cases"] if r["g15_status"] != "already_matches"]
+          print("FIRST_UNRESOLVED")
+          for r in unresolved[:30]:
+              print(
+                  f'{r["number"]:03d} expected={r["expected_exit"]} '
+                  f'g15={r["g15_exit"]} status={r["g15_status"]} '
+                  f'new={",".join(r["new_dimensions_vs_sealed"])} '
+                  f'path={r["path"]}'
+              )
+          groups=defaultdict(list)
+          for r in unresolved:
+              groups[tuple(r["structural"]["dimensions"])].append(r["number"])
+          print("UNRESOLVED_CLUSTERS", len(groups))
+          for dims, cases in sorted(groups.items(), key=lambda kv: kv[1][0])[:30]:
+              print(f'{cases[0]:03d} cases={cases} dims={",".join(dims)}')
+          PY
+
+      - name: Upload atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-semantic-atlas-v0-${{ github.sha }}
+          path: metatron-kernel/atlas-out
+          if-no-files-found: error
