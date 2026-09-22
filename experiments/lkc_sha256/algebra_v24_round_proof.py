@@ -71,31 +71,32 @@ theorem roundFast_eq_round (s : Digest) (k w : Nat) (hs : ValidDigest s) :
             (add32 (bigSigma1 s.e)
               (add32 (ch s.e s.f s.g) (add32 k w))))
           (add32 (bigSigma0 s.a) (maj s.a s.b s.c)) := by
-    unfold add32
     rw [mask_add_reduced raw1 raw2, h1, h2]
+    rfl
   have he :
       (s.d + raw1) &&& w32 =
         add32 s.d
           (add32 s.h
             (add32 (bigSigma1 s.e)
-              (add32 (ch s.e s.f s.g) (add32 k w))) ) := by
-    unfold add32
+              (add32 (ch s.e s.f s.g) (add32 k w)))) := by
     rw [mask_add_reduced s.d raw1, h1]
     rw [and_mask32_eq_self s.d hs.d]
+    rfl
   change
-    ⟨(raw1 + raw2) &&& w32, s.a, s.b, s.c,
-      (s.d + raw1) &&& w32, s.e, s.f, s.g⟩ =
-    ⟨add32
+    Digest.mk ((raw1 + raw2) &&& w32) s.a s.b s.c
+      ((s.d + raw1) &&& w32) s.e s.f s.g =
+    Digest.mk
+      (add32
         (add32 s.h
           (add32 (bigSigma1 s.e)
             (add32 (ch s.e s.f s.g) (add32 k w))))
-        (add32 (bigSigma0 s.a) (maj s.a s.b s.c)),
-      s.a, s.b, s.c,
-      add32 s.d
+        (add32 (bigSigma0 s.a) (maj s.a s.b s.c)))
+      s.a s.b s.c
+      (add32 s.d
         (add32 s.h
           (add32 (bigSigma1 s.e)
-            (add32 (ch s.e s.f s.g) (add32 k w)))),
-      s.e, s.f, s.g⟩
+            (add32 (ch s.e s.f s.g) (add32 k w)))))
+      s.e s.f s.g
   rw [ha, he]
 '''
 if old_theorem not in src:
