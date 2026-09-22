@@ -127,6 +127,43 @@ class ResidualBasisTests(unittest.TestCase):
             "refuted",
         )
 
+    def test_proof_irrelevance_prop_and_type_boundary(self):
+        records = [
+            {"ie": 1, "sort": 0},
+            {"il": 2, "succ": 0},
+            {"ie": 2, "sort": 2},
+        ]
+        exprs = mod.expr_refs(records)
+        levels = mod.level_refs(records)
+        self.assertEqual(
+            mod.expression_whnf_prop_status(records, exprs, levels, 1, set()),
+            "prop",
+        )
+        self.assertEqual(
+            mod.expression_whnf_prop_status(records, exprs, levels, 2, set()),
+            "nonprop",
+        )
+
+    def test_proof_irrelevance_sees_identity_reduced_prop(self):
+        records = [
+            {"ie": 1, "sort": 0},
+            {"ie": 2, "bvar": 0},
+            {"ie": 3, "lam": {"type": 1, "body": 2}},
+            {"def": {"name": 20, "type": 1, "value": 3}},
+            {"ie": 4, "const": {"name": 20, "us": []}},
+            {"ie": 5, "app": {"fn": 4, "arg": 1}},
+        ]
+        exprs = mod.expr_refs(records)
+        levels = mod.level_refs(records)
+        identity_like = mod.identity_like_definition_names(records, exprs)
+        self.assertIn(20, identity_like)
+        self.assertEqual(
+            mod.expression_whnf_prop_status(
+                records, exprs, levels, 5, identity_like
+            ),
+            "prop",
+        )
+
     def test_sham_preserves_current_class_marginals(self):
         dummy = Path("/tmp/x")
         cases = [
