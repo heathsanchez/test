@@ -659,9 +659,7 @@ impl BinaryProductSortLaw {
 
     fn constant(self, export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
         match self {
-            Self::PUnit { level } => {
-                is_unary_polymorphic_constant(export, expression, name, level)
-            }
+            Self::PUnit { level } => is_unary_polymorphic_constant(export, expression, name, level),
             Self::And => is_empty_constant(export, expression, name),
             Self::Prod { first, second } | Self::PProd { first, second } => {
                 is_polymorphic_constant(export, expression, name, first, second)
@@ -1324,7 +1322,11 @@ fn is_derived_punit_recursor_type(
     recursor: &Recursor,
     law: BinaryProductSortLaw,
 ) -> bool {
-    let Some(Expr::Pi { domain: motive, body }) = export.exprs.get(recursor.ty) else {
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(recursor.ty)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1358,7 +1360,11 @@ fn is_derived_punit_rule(
     let [rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(rule.rhs) else {
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(rule.rhs)
+    else {
         return false;
     };
     let Some(Expr::Lam {
@@ -1388,8 +1394,7 @@ fn is_punit_motive_type(
     else {
         return false;
     };
-    law.constant(export, *argument, inductive)
-        && is_sort_parameter(export, *result, motive_level)
+    law.constant(export, *argument, inductive) && is_sort_parameter(export, *result, motive_level)
 }
 
 fn is_punit_minor_type(
