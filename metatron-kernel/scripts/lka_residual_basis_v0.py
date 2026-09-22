@@ -1400,6 +1400,27 @@ def main() -> int:
     real_edges = dedupe_edges(candidate_edges(cases, pairs, feature_names))
     real_basis = exact_min_cover(len(pairs), real_edges)
 
+    full_mask = (1 << len(pairs)) - 1 if pairs else 0
+    covered_mask = 0
+    for bits in real_edges.values():
+        covered_mask |= bits
+    uncovered_mask = full_mask & ~covered_mask
+    uncovered_pairs = [
+        pairs[k] for k in range(len(pairs))
+        if (uncovered_mask >> k) & 1
+    ]
+    coverage_ranking = sorted(
+        (
+            {
+                "candidate": name,
+                "coverage": bits.bit_count(),
+                "outcomes": feature_cardinality.get(name),
+            }
+            for name, bits in real_edges.items()
+        ),
+        key=lambda row: (-row["coverage"], row["candidate"]),
+    )
+
     train_idx = [i for i, c in enumerate(cases) if c.number % 5 != 0]
     hold_idx = [i for i, c in enumerate(cases) if c.number % 5 == 0]
     train_pairs = discordant_pairs(cases, train_idx)
@@ -1450,6 +1471,13 @@ def main() -> int:
         "candidate_observations": len(feature_names),
         "candidate_outcome_cap": 4,
         "residual_pairs": len(pairs),
+        "separable_residual_pairs": len(pairs) - len(uncovered_pairs),
+        "unseparated_residual_pairs": len(uncovered_pairs),
+        "first_unseparated_pairs": [
+            [cases[i].number, cases[j].number]
+            for i, j in uncovered_pairs[:40]
+        ],
+        "top_candidate_coverage": coverage_ranking[:20],
         "exact_basis_size": None if real_basis is None else len(real_basis),
         "exact_basis": real_basis,
         "blind_prediction_basis_ids": prediction["basis"],
