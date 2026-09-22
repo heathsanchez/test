@@ -1,0 +1,38 @@
+{
+  "schema": "lka-epistemic-boundary-v1",
+  "id": "LKA-EPI-002",
+  "authority": {
+    "baseline": "1bed97925590cc4f2aa7aa10e01d21cc8db295ca",
+    "discovery_context": "G17 static Eq promotion",
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799"
+  },
+  "obstruction": "Static Eq signature authority initially caused later proofs requiring unearned iota, proof irrelevance, or eta to change from UNKNOWN to REJECT because rigid conversion forgot that it had entered an opaque inductive semantic boundary.",
+  "law": "Opaque signature authority does not imply conversion authority. When conversion descends into the argument spine of the same opaque inductive constant, an otherwise rigid unexplained term mismatch remains UNKNOWN until the needed computation/extensionality law is earned. Universe disagreement and distinct outer rigid constructors remain refutable.",
+  "authority_gain": "none",
+  "implementation": [
+    "tag installed constants by provenance: inductive type, constructor, recursor versus ordinary declarations",
+    "carry an epistemically-open bit through relational conversion",
+    "open that bit only beneath the same opaque inductive head",
+    "demote unexplained rigid term mismatch under that boundary to UNKNOWN"
+  ],
+  "falsifier": "Any protected tutorial changes incorrectly; any new ACCEPT arises from the firewall; universe mismatches or distinct outer rigid type constructors cease to be refutable; or G17 produces a future verdict delta outside {043,069}.",
+  "qualification": {
+    "candidate_sha": "3f52deff8b94ad425e5510a6fb5fea28bf64da14",
+    "run_id": 35707534912,
+    "job_id": 106679971177,
+    "artifact_id": 10685271171,
+    "artifact_digest": "sha256:c542872543acd4e27fb51ed555075b10951e2268ae72ef3b011e992edcc20a13",
+    "result": "success",
+    "future_changed_cases": [
+      43,
+      69
+    ],
+    "new_accepts": [
+      43,
+      69
+    ],
+    "note": "Without this boundary, static Eq promotion also produced unwarranted UNKNOWN->REJECT changes in later iota/proof-irrelevance/eta cases."
+  },
+  "formal_status": "No new positive semantic theorem; this is an authority-separation invariant.",
+  "decision": "retained"
+}

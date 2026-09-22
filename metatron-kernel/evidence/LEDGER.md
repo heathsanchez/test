@@ -515,3 +515,58 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   G12–G14 promotion theorems remain the semantic warrants. Rust refinement and
   whole-checker verification remain unclaimed.
 - Performance: not qualified and not used for promotion.
+
+## G17-001 — Exact indexed `Eq` static authority
+
+- Status: RETAINED as the first indexed/dependent inductive capability.
+- Baseline oracle: `1bed97925590cc4f2aa7aa10e01d21cc8db295ca`, sealed G16.
+- Exact residual: tutorial 043, `good/043_eqType.ndjson`, SHA-256
+  `d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc`,
+  was `UNKNOWN`.
+- Retained law: exact root `Eq` has two parameters (`α : Sort u`, `a : α`),
+  one dependent index `a' : α`, one nullary `refl` constructor returning
+  `Eq a a`, and one indexed recursor whose validated metadata has `k=true`.
+  Type, constructor, recursor and exported rule are independently derived before
+  opaque signature promotion.
+- Rule K **computation is not implemented** by G17. The `k=true` bit is
+  validated metadata only.
+- Direct earned delta: tutorial 043 changes `UNKNOWN → ACCEPT`; tutorials
+  001–042 are 42 equal, 0 mismatches against sealed G16.
+- Consequence closure: tutorial 069, `eqRec`, also changes
+  `UNKNOWN → ACCEPT` for free. Across 042–141, the complete observable delta
+  is exactly `{043, 069}`.
+- Future audit: oracle correct = 13, candidate correct = 15; transitions:
+  8 `ACCEPT→ACCEPT`, 6 `REJECT→REJECT`, 2 `UNKNOWN→ACCEPT`,
+  66 `UNKNOWN→UNKNOWN`, 18 `ERROR→ERROR`.
+- Qualification: run `35707534912`, job `106679971177`, artifact
+  `10685271171`, digest
+  `sha256:c542872543acd4e27fb51ed555075b10951e2268ae72ef3b011e992edcc20a13`.
+  Qualified head `3f52deff8b94ad425e5510a6fb5fea28bf64da14`; current branch head
+  `2ba7b474d3c9a3a56f6fb71322d60afad3460a15` has an identical tree.
+- Protected suite: 103 Rust tests, 14 Python tests, Clippy, formatting, ledger,
+  and unchanged IdealLean all passed.
+- Formal status: no new theorem claimed; exact indexed-shape validation reuses
+  existing opaque-signature promotion. Rust refinement and whole-checker
+  verification remain unclaimed.
+
+## LKA-EPI-002 — Opaque signature ≠ conversion authority
+
+- Status: RETAINED as a zero-positive-authority conversion firewall discovered
+  during G17.
+- Obstruction: simply installing static Eq signatures initially made later
+  iota/proof-irrelevance/eta tests become conclusive `REJECT`, even though
+  those conversion laws had never been earned.
+- Retained law: when conversion has entered the argument spine of the **same
+  opaque inductive constant**, an otherwise rigid unexplained term mismatch is
+  `UNKNOWN` until a computation/extensionality law warrants a conclusion.
+  Universe disagreement and distinct outer rigid constructors remain
+  refutable.
+- Mechanism: installed constants retain provenance (inductive type,
+  constructor, recursor); relational conversion carries an epistemically-open
+  bit only beneath matching opaque inductive heads.
+- Authority gained: none. This firewall creates no ACCEPT path.
+- Causal result: with the firewall, G17's entire future delta collapses from a
+  broad set of accidental REJECTs to exactly the lawful Eq consequence cone
+  `{043, 069}`.
+- Qualification is the same externally sealed G17 run `35707534912`.
+

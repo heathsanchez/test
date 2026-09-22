@@ -11,7 +11,7 @@
   },
   "obstruction": "Eq is the first nonrecursive indexed inductive outside the retained nonindexed inductive authority.",
   "expected": "ACCEPT",
-  "observed": "UNKNOWN",
+  "observed": "ACCEPT",
   "preregistered_hypothesis": {
     "proposed_delta": [
       "one_dependent_index",
@@ -21,8 +21,8 @@
     ],
     "statement": "Tutorial 043 should require static authority for the exact Eq declaration: two parameters (α,a), one dependent index a', refl returning Eq a a, and the derived indexed recursor whose metadata has k=true. It should not require Rule K reduction semantics."
   },
-  "least_capability": "Add a name-sealed exact Eq declaration law that derives and validates its parameter/index telescope, refl constructor, recursor signature and exported rule, then reuses opaque signature promotion. Do not implement Eq.rec reduction, Rule K conversion, recursive inductives, positivity, projections, eta, or generic indexed inductives.",
-  "falsifier": "Reject G17 if accepting tutorial 043 requires Rule K computation or a generic indexed-inductive mechanism; if malformed Eq metadata/telescope/constructor/recursor/rule claims fail to REJECT; if broader recursive/reflexive/nested/unsafe or unrelated indexed families gain authority; or if tutorials 001-042 change.",
+  "least_capability": "A name-sealed exact Eq declaration law derives and validates α : Sort u, parameter a : α, one dependent index a' : α, refl : Eq a a, and the indexed recursor/rule with k=true metadata; it then reuses opaque signature promotion. Rule K computation remains unimplemented.",
+  "falsifier": "Malformed claims inside the exact Eq envelope must REJECT; renamed or recursive/reflexive/nested/unsafe neighbors remain UNKNOWN; tutorials 001-042 stay oracle-equivalent; Rule K computation, recursion, proof irrelevance, eta, literals, projections and Quot remain outside authority; the future ACCEPT cone is exactly {043,069}.",
   "protected_suite": [
     "all retained G0-G16 and LKA-EPI-001 tests",
     "exact tutorial prefix 001-042",
@@ -30,5 +30,52 @@
     "tutorial 044 Nat remains UNKNOWN",
     "Rule K computation remains unimplemented"
   ],
-  "decision": "preregistered"
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "3f52deff8b94ad425e5510a6fb5fea28bf64da14",
+    "tree_equivalent_branch_head": "2ba7b474d3c9a3a56f6fb71322d60afad3460a15",
+    "run_id": 35707534912,
+    "job_id": 106679971177,
+    "artifact_id": 10685271171,
+    "artifact_digest": "sha256:c542872543acd4e27fb51ed555075b10951e2268ae72ef3b011e992edcc20a13",
+    "tutorial_prefix": {
+      "matched": 43,
+      "incorrect": 0
+    },
+    "differential": {
+      "oracle_sha": "1bed97925590cc4f2aa7aa10e01d21cc8db295ca",
+      "equal": 42,
+      "earned_delta": 1,
+      "mismatch": 0
+    },
+    "future_consequence_audit": {
+      "new_accepts": [
+        43,
+        69
+      ],
+      "changed_cases": [
+        43,
+        69
+      ],
+      "oracle_correct": 13,
+      "candidate_correct": 15,
+      "transitions": {
+        "0->0": 8,
+        "1->1": 6,
+        "2->0": 2,
+        "2->2": 66,
+        "3->3": 18
+      }
+    },
+    "retained_suite": {
+      "rust_tests": 103,
+      "python_tests": 14,
+      "clippy": "passed",
+      "formatting": "passed",
+      "ledger": "passed",
+      "ideal_lean": "passed"
+    },
+    "result": "success"
+  },
+  "formal_status": "No new semantic theorem is claimed: exact Eq/index/refl/recursor validation feeds the existing opaque-signature promotion warrant. Rule K reduction is explicitly not part of G17; Rust refinement and whole-checker verification remain unclaimed."
 }
