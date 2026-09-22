@@ -52,6 +52,9 @@ The proof term is never stored in the installed declaration. Only a
 - `ProdUniversePromotion.promote_preserves_environment_validity`: the same
   promotion law remains valid after validating the exact two-universe `Prod`
   telescope, its computed result level, and signatures at those levels.
+- `PProdSortPromotion.promote_preserves_environment_validity`: the same
+  promotion law remains valid for the exact `PProd` telescope with parameters
+  in `Sort u` and `Sort v` and result in `Sort (max (max 1 u) v)`.
 
 ## Non-goals
 
@@ -65,7 +68,9 @@ the Rust checker or of any whole checker. In particular, the parameterized
 promotion theorem is a portable environment law, not a Rust-refinement claim.
 The `ProdUniversePromotion.Level` vocabulary contains only the level forms
 forced by tutorial 040 and likewise does not constitute a general universe
-framework.
+framework. `PProdSortPromotion.Level` separately contains only the forms
+forced by tutorial 041; no shared Sort-polymorphic inductive abstraction is
+claimed.
 
 ## Build
 
