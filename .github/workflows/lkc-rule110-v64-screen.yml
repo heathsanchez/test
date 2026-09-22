@@ -1,0 +1,76 @@
+name: LKC Rule110 V64 Scored Screen
+
+on:
+  push:
+    branches: [lkc-flash2-rule110-v64]
+    paths:
+      - 'experiments/lkc_rule110/flash_v64_probe.py'
+      - '.github/workflows/lkc-rule110-v64-screen.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V60 and V64
+        run: |
+          python3 experiments/lkc_rule110/payload_mask_v51.py
+          python3 experiments/lkc_rule110/init_bias_v52.py
+          python3 experiments/lkc_rule110/mod_gather_v54.py
+          python3 experiments/lkc_rule110/maskless_bstep_v58.py
+          python3 experiments/lkc_rule110/fix_v58_chain.py
+          python3 experiments/lkc_rule110/ast_fusion_v60.py
+          python3 experiments/lkc_rule110/flash_v64_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem ca-rule110
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Compare scored shapes
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/rule110-v64-screen"; mkdir -p "$root"
+          inputs=(8589934593 8589934594 17179869185 17179869186 34359738369 34359738370)
+          for who in v60 v64; do
+            if [ "$who" = v60 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v60.lean"
+            else
+              sub="$GITHUB_WORKSPACE/experiments/lkc_rule110/generated/Submission_v64_probe.lean"
+            fi
+            python3 bench/benchmark.py diagnostic --problem ca-rule110 --submission "$sub"               --metric wall-time --repetitions 3 --timeout 300 --memory-mb 4096               --inputs "${inputs[@]}" --output "$root/$who"
+          done
+      - name: Verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("rule110-v64-screen")
+          a=json.loads((r/"v60/diagnostic.json").read_text())["totals"]["candidate"]
+          b=json.loads((r/"v64/diagnostic.json").read_text())["totals"]["candidate"]
+          out={"baseline_v60":a,"candidate_v64":b,"ratio":b/a,
+               "improvement_pct":100*(1-b/a),
+               "consequence":"PROVE" if b<a else "REJECT"}
+          (r/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rule110-v64-scored-screen
+          path: rule110-v64-screen/
