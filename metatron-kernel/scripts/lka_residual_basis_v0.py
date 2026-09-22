@@ -697,6 +697,85 @@ def field_universe_admissibility(
     return "not_applicable"
 
 
+def peel_lambda_final_bvar(
+    exprs: dict[int, dict[str, Any]],
+    start: int,
+    limit: int = 32,
+) -> tuple[int, int | None]:
+    current = start
+    depth = 0
+    for _ in range(limit):
+        row = exprs.get(current, {})
+        node = row.get("lam")
+        if not isinstance(node, dict) or not isinstance(node.get("body"), int):
+            bvar = row.get("bvar")
+            return depth, int(bvar) if isinstance(bvar, int) else None
+        depth += 1
+        current = int(node["body"])
+    return depth, None
+
+
+def identity_like_definition_names(
+    records: list[dict[str, Any]],
+    exprs: dict[int, dict[str, Any]],
+) -> set[int]:
+    names: set[int] = set()
+    for row in records:
+        d = row.get("def")
+        if not isinstance(d, dict):
+            continue
+        name, value = d.get("name"), d.get("value")
+        if not isinstance(name, int) or not isinstance(value, int):
+            continue
+        depth, final_bvar = peel_lambda_final_bvar(exprs, value)
+        # Any lambda tower that returns its most recently introduced argument
+        # is observationally identity-like for a fully applied final argument.
+        if depth > 0 and final_bvar == 0:
+            names.add(int(name))
+    return names
+
+
+def expression_whnf_prop_status(
+    records: list[dict[str, Any]],
+    exprs: dict[int, dict[str, Any]],
+    levels: dict[int, dict[str, Any]],
+    expression: int,
+    identity_like: set[int],
+    depth: int = 0,
+) -> str:
+    if depth > 16:
+        return "unknown"
+    row = exprs.get(expression, {})
+    lid = row.get("sort")
+    if isinstance(lid, int):
+        zero = level_is_zero(levels, lid, {})
+        if zero is True:
+            return "prop"
+        if zero is False:
+            return "nonprop"
+        return "unknown"
+
+    head, args = app_spine(exprs, expression)
+    hrow = exprs.get(head, {})
+    const = hrow.get("const")
+    if (
+        isinstance(const, dict)
+        and isinstance(const.get("name"), int)
+        and int(const["name"]) in identity_like
+        and args
+    ):
+        return expression_whnf_prop_status(
+            records, exprs, levels, args[-1], identity_like, depth + 1
+        )
+
+    node = row.get("letE")
+    if isinstance(node, dict) and isinstance(node.get("body"), int):
+        return expression_whnf_prop_status(
+            records, exprs, levels, int(node["body"]), identity_like, depth + 1
+        )
+    return "unknown"
+
+
 def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     exprs = expr_refs(records)
     levels = level_refs(records)
@@ -1063,7 +1142,9 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         walk(root, ())
 
     eta_results: list[str] = []
+    proof_irrelevance_results: list[str] = []
     equality_owners = set(k_recursor_owner.values())
+    identity_like = identity_like_definition_names(records, exprs)
 
     def constructor_owner(expression: int) -> int | None:
         head, _args = app_spine(exprs, expression)
@@ -1077,7 +1158,19 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         return isinstance(exprs.get(expression, {}).get("bvar"), int)
 
     for ty in declaration_types:
-        _domains, result = pi_domains(exprs, ty)
+        context: tuple[int, ...] = ()
+        result = ty
+        for _ in range(128):
+            row = exprs.get(result, {})
+            node = row.get("forallE")
+            if not isinstance(node, dict):
+                break
+            domain, body = node.get("type"), node.get("body")
+            if not isinstance(domain, int) or not isinstance(body, int):
+                break
+            context = (int(domain),) + context
+            result = int(body)
+
         head, args = app_spine(exprs, result)
         hrow = exprs.get(head, {})
         hconst = hrow.get("const")
@@ -1090,6 +1183,21 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
             continue
 
         carrier, left, right = args[-3], args[-2], args[-1]
+
+        carrier_row = exprs.get(carrier, {})
+        carrier_bvar = carrier_row.get("bvar")
+        if isinstance(carrier_bvar, int) and carrier_bvar < len(context):
+            binder_type = context[int(carrier_bvar)]
+            prop_status = expression_whnf_prop_status(
+                records, exprs, levels, binder_type, identity_like
+            )
+            if prop_status == "prop":
+                proof_irrelevance_results.append("allow")
+            elif prop_status == "nonprop":
+                proof_irrelevance_results.append("deny")
+            else:
+                proof_irrelevance_results.append("unknown")
+
         carrier_head, _carrier_args = app_spine(exprs, carrier)
         crow = exprs.get(carrier_head, {})
         cconst = crow.get("const")
@@ -1121,6 +1229,15 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
             eta_results.append("allow")
         else:
             eta_results.append("deny")
+
+    if not proof_irrelevance_results:
+        proof_irrelevance_scalar = "not_applicable"
+    elif any(result == "deny" for result in proof_irrelevance_results):
+        proof_irrelevance_scalar = "deny"
+    elif any(result == "unknown" for result in proof_irrelevance_results):
+        proof_irrelevance_scalar = "unknown"
+    else:
+        proof_irrelevance_scalar = "allow"
 
     if not eta_results:
         inductive_eta_scalar = "not_applicable"
@@ -1159,6 +1276,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semantic:field_universe_admissibility": field_universe_admissibility(
             records, exprs, levels
         ),
+        "semantic:proof_irrelevance_applicability": proof_irrelevance_scalar,
         "semantic:inductive_eta_admissibility": inductive_eta_scalar,
         "semantic:recursor_reduction_admissibility": recursor_reduction_scalar,
         "semantic:projection_admissibility_scalar": projection_scalar,
