@@ -1,0 +1,74 @@
+{
+  "schema": "lka-structural-diff-v1",
+  "id": "G17-001",
+  "baseline": {
+    "family": "PUnit",
+    "tutorial": 42,
+    "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891"
+  },
+  "residual": {
+    "family": "Eq",
+    "tutorial": 43,
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc"
+  },
+  "preserved": [
+    "one safe nonrecursive nonreflexive nonnested inductive type",
+    "one constructor",
+    "zero constructor fields",
+    "one recursor",
+    "one motive",
+    "one minor",
+    "one zero-field recursor rule",
+    "one inductive universe parameter",
+    "opaque-signature promotion boundary"
+  ],
+  "changed": [
+    {
+      "dimension": "term_parameters",
+      "from": 0,
+      "to": 2,
+      "interpretation": "α : Sort u and a : α"
+    },
+    {
+      "dimension": "indices",
+      "from": 0,
+      "to": 1,
+      "interpretation": "a' : α"
+    },
+    {
+      "dimension": "constructor_result",
+      "from": "PUnit.{u}",
+      "to": "Eq α a a",
+      "interpretation": "constructor fixes the index to parameter a"
+    },
+    {
+      "dimension": "recursor_num_params",
+      "from": 0,
+      "to": 2
+    },
+    {
+      "dimension": "recursor_num_indices",
+      "from": 0,
+      "to": 1
+    },
+    {
+      "dimension": "recursor_k",
+      "from": false,
+      "to": true
+    },
+    {
+      "dimension": "recursor_motive",
+      "from": "PUnit -> Sort w",
+      "to": "(a' : α) -> Eq α a a' -> Sort w"
+    }
+  ],
+  "not_yet_authorized": [
+    "generic indexed inductives",
+    "recursive inductives",
+    "positivity",
+    "iota reduction",
+    "Rule K reduction",
+    "projections",
+    "eta"
+  ]
+}

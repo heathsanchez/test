@@ -1,0 +1,37 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G17-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "sealed G16 exact-head a9cda043b49afcb25d91621a1f9ff9368ad88457",
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+    "tutorial_ordinal": 43,
+    "upstream_path": "tutorial output good/043_eqType.ndjson"
+  },
+  "obstruction": "Eq is the first safe nonrecursive retained-corpus inductive with an explicit index and dependent constructor result.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "preregistered_hypothesis": {
+    "proposed_delta": [
+      "one_dependent_index_telescope",
+      "constructor_result_index_fixed_by_parameter",
+      "indexed_recursor_motive_minor_rule_shape",
+      "recursor_k_metadata"
+    ],
+    "statement": "Exact Eq should require a new indexed/dependent derivation coordinate on top of already-earned sort/parameter/constructor/opaque-promotion machinery; it should not require recursion, iota reduction, Rule-K reduction, or a generic indexed-inductive engine."
+  },
+  "least_capability": "Recognize only exact safe nonrecursive Eq: one Sort-polymorphic type parameter α, one value parameter a : α, one index a' : α, a nullary refl constructor whose result fixes the index to a, and the independently derived indexed recursor/motive/minor/rule with k=true metadata. Reuse opaque signature promotion.",
+  "predicted_consequence": {
+    "case": 69,
+    "name": "eqRec",
+    "claim": "If exact Eq signatures are installed correctly, tutorial 069 should become checkable without a separate semantic capability. This is a prediction, not an acceptance condition for G17 promotion."
+  },
+  "falsifier": "Reject the hypothesis if exact Eq needs recursion or computation authority, if malformed index/result/recursor/K metadata gains authority, if broader indexed families are accepted, if tutorial 044 recursion gains ACCEPT, or if any protected 001-042 verdict changes.",
+  "protected_suite": [
+    "all retained G0-G16 and LKA-EPI-001 tests",
+    "exact tutorial prefix 001-042",
+    "tutorial 044 recursive inductive remains outside authority",
+    "Rule K reduction remains unimplemented"
+  ],
+  "decision": "preregistered"
+}

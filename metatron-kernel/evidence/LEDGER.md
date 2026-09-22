@@ -515,3 +515,24 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   evidence remains unavailable.
 
 
+## G17-001 — Frozen exact `Eq` indexed/dependent residual
+
+- Status: PREREGISTERED; no Eq capability implemented.
+- Sealed predecessor: G16 exact-head
+  `a9cda043b49afcb25d91621a1f9ff9368ad88457`.
+- Exact fixture: tutorial 043 `good/043_eqType.ndjson`, SHA-256
+  `d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc`.
+- Current verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
+- Mechanical delta from PUnit: two term parameters (`α : Sort u`, `a : α`),
+  one dependent index (`a' : α`), a nullary `refl` constructor whose result
+  fixes the index to `a`, indexed recursor motive/minor/rule shape, and
+  `k=true` recursor metadata.
+- Preregistered hypothesis: these indexed/dependent coordinates are the least
+  new semantic law required. G17 must not add recursion, positivity, iota,
+  Rule-K reduction or generic indexed-inductive authority.
+- Prediction: if the derived Eq signatures are correct, tutorial 069
+  `eqRec` should close as a downstream consequence with no second capability.
+- Falsifier: malformed index/result/recursor/K claims must reject inside the
+  recognized Eq envelope; broader indexed forms remain UNKNOWN; tutorial 044
+  recursion remains outside authority; tutorials 001–042 remain invariant.
+
