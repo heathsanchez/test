@@ -17,7 +17,7 @@ def AliveAt (p i : Nat) : Prop :=
 
 def SieveInv (n p bits : Nat) : Prop :=
   ∀ i, 2 ≤ i → i ≤ n →
-    bits.testBit i = decide (AliveAt p i)
+    (bits.testBit i = true ↔ AliveAt p i)
 
 theorem minFac_two_le_of_two_le (i : Nat) (hi : 2 ≤ i) :
     2 ≤ i.minFac := by
@@ -26,11 +26,11 @@ theorem minFac_two_le_of_two_le (i : Nat) (hi : 2 ≤ i) :
 
 theorem initialPrimeBits_alive
     (n i : Nat) (hi2 : 2 ≤ i) (hin : i ≤ n) :
-    ((((1 <<< (n + 1)) - 1) ^^^ 3).testBit i) =
-      decide (AliveAt 2 i) := by
+    ((((1 <<< (n + 1)) - 1) ^^^ 3).testBit i = true ↔
+      AliveAt 2 i) := by
   rw [initialPrimeBits_between n i hin]
   have hmf : 2 ≤ i.minFac := minFac_two_le_of_two_le i hi2
-  simp [AliveAt, hi2, hmf]
+  simp [hi2, AliveAt, hmf]
 
 theorem initial_sieve_inv (n : Nat) :
     SieveInv n 2 (((1 <<< (n + 1)) - 1) ^^^ 3) := by
@@ -72,7 +72,7 @@ theorem alive_stop_iff_prime
     exact Or.inl hip
 
 theorem alive_step_of_not_prime
-    (p i : Nat) (hp2 : 2 ≤ p) (hi2 : 2 ≤ i)
+    (p i : Nat) (_hp2 : 2 ≤ p) (hi2 : 2 ≤ i)
     (hp : ¬ Nat.Prime p) :
     AliveAt p i ↔ AliveAt (p + 1) i := by
   constructor
@@ -98,9 +98,13 @@ theorem sieve_inv_step_of_not_prime
     (hinv : SieveInv n p bits) :
     SieveInv n (p + 1) bits := by
   intro i hi2 hin
-  rw [hinv i hi2 hin]
-  have hiff := alive_step_of_not_prime p i hp2 hi2 hp
-  exact congrArg decide (propext hiff)
+  constructor
+  · intro hbit
+    exact (alive_step_of_not_prime p i hp2 hi2 hp).1
+      ((hinv i hi2 hin).1 hbit)
+  · intro halive
+    exact (hinv i hi2 hin).2
+      ((alive_step_of_not_prime p i hp2 hi2 hp).2 halive)
 '''
 
 p=OUT/"Submission_v5_invariant_dev.lean"
