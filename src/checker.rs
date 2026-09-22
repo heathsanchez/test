@@ -325,13 +325,74 @@ fn check_unrecognized_single_constructor_coherence(
         return Err(Verdict::Unknown);
     }
 
-    if constructor_result_is_definitely_malformed(export, inductive, constructor) {
+    if constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    {
         Err(Verdict::Reject)
     } else {
         Err(Verdict::Unknown)
     }
 }
 
+fn expression_has_definite_negative_occurrence(
+    export: &ResolvedExport,
+    expression: ExprId,
+    target: NameId,
+    positive: bool,
+) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::Const { name, .. }) => *name == target && !positive,
+        Some(Expr::App { fun, arg }) => {
+            expression_has_definite_negative_occurrence(export, *fun, target, positive)
+                || expression_has_definite_negative_occurrence(export, *arg, target, positive)
+        }
+        Some(Expr::Pi { domain, body }) => {
+            expression_has_definite_negative_occurrence(export, *domain, target, !positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::Lam { domain, body }) => {
+            expression_has_definite_negative_occurrence(export, *domain, target, positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_has_definite_negative_occurrence(export, *ty, target, positive)
+                || expression_has_definite_negative_occurrence(export, *value, target, positive)
+                || expression_has_definite_negative_occurrence(export, *body, target, positive)
+        }
+        Some(Expr::BVar(_) | Expr::Sort(_)) | None => false,
+    }
+}
+
+fn constructor_has_definite_negative_recursive_field(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    let Some(total_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return false;
+    };
+    let mut expression = constructor.ty;
+    for binder in 0..total_binders {
+        let Some(Expr::Pi { domain, body }) = export.exprs.get(expression) else {
+            return false;
+        };
+        if binder >= constructor.num_params
+            && expression_has_definite_negative_occurrence(
+                export,
+                *domain,
+                inductive.name,
+                true,
+            )
+        {
+            return true;
+        }
+        expression = *body;
+    }
+    false
+}
+
+/// G21-001 result-spine coherence; G22-001 adds only a definite-negative
+/// field rejection above. Neither law grants positive inductive authority.
 fn constructor_result_is_definitely_malformed(
     export: &ResolvedExport,
     inductive: &crate::syntax::InductiveType,
