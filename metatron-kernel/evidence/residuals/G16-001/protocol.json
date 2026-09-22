@@ -3,7 +3,7 @@
   "id": "G16-001",
   "authority": {
     "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
-    "candidate_baseline": "G14 exact PProd candidate before G15 abstraction",
+    "candidate_baseline": "G15 retained shared representation after exact oracle equivalence",
     "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
     "tutorial_ordinal": 42,
     "upstream_path": "tutorial output good/042_pUnitType.ndjson"
@@ -11,12 +11,12 @@
   "obstruction": "The universe-polymorphic nullary singleton PUnit is outside all exact retained inductive classifiers.",
   "expected": "ACCEPT",
   "observed": "UNKNOWN",
-  "least_capability": "UNDECIDED: frozen as the independent nullary/singleton stress test after the G15 abstraction experiment.",
-  "falsifier": "Must be specified only after G15 establishes or rejects the common And/Prod/PProd internal derivation law.",
+  "least_capability": "UNDECIDED: tutorial 042 is now the next exact residual and must determine the nullary/singleton delta before implementation.",
+  "falsifier": "Must be derived RED-first from the exact PUnit declaration without broadening the retained G15 engine in advance.",
   "protected_suite": [
     "all G0-G14 tests",
     "exact tutorial prefix 001-041",
-    "tutorial 042 remains UNKNOWN before its own experiment"
+    "tutorial 042 remains UNKNOWN at the sealed G15 boundary"
   ],
   "decision": "open"
 }

@@ -25,8 +25,15 @@ IDs after qualification.
 | Candidate | Run / job | Artifact | Correctness | Instructions |
 | --- | --- | --- | --- | --- |
 | `47aff936001f88204f2bf05a9fad9abe4eda9a9c` | `35620658852` / `106402590918` | `10648885370`, digest `c100e632...9176` | 6 matched; 0 incomplete, incorrect, or error | `UNKNOWN`: PMU unavailable; no same-cohort control |
+| `8a204d7727eb686139997cf299b93d75db9adf8c` | `35677667353` / `106587470554` | `10673617458`, digest `e8528357...8b0f` | 6 contract + 41 tutorial matched; G14 oracle 41 equal, 0 delta, 0 mismatch | `UNKNOWN`: PMU unavailable; no same-cohort control |
 
 The successful run is available at
 <https://github.com/heathsanchez/test/actions/runs/35620658852>. Its correctness
 attestation is retained. Its performance record is deliberately not eligible
 for promotion.
+
+The G15 run is available at
+<https://github.com/heathsanchez/test/actions/runs/35677667353>. It additionally
+replayed every G12-G14 exact/perturbed vector against sealed head `d128565e...`
+and protected tutorial 042 as `UNKNOWN` in both arms. No retired-instruction
+promotion is claimed.

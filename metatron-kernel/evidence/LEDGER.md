@@ -421,21 +421,39 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G15-001 — Replicated-law promotion experiment
 
-- Status: OPEN; no refactor implemented.
+- Status: RETAINED as a zero-authority representation quotient.
 - Obstruction: the independently earned And, Prod and PProd handlers now
   repeat a common two-parameter, one-constructor, one-recursor derivation
   spine after their distinct telescope/result-sort classifiers.
-- Proposed experiment: quotient only that shared internal derivation law while
-  retaining the three exact external envelopes and every `UNKNOWN` boundary.
-- Acceptance requires exact behavioral equivalence across all sealed tutorials
-  and falsifiers, smaller duplicated semantic surface, no recognized-language
-  increase, and removal ablation restoring the pre-promotion implementation.
+- Retained representation: the private `BinaryProductSortLaw` has exactly
+  `And`, `Prod` and `PProd` variants. One `ExactBinaryProductDerivation`
+  validates the common parameter telescope, constructor spine,
+  motive/minor/rule skeleton, ownership/counts and opaque promotion. External
+  name dispatch and unsupported-neighbor checks remain family-specific.
+- The independently earned laws remain distinct: And uses Prop parameters and
+  result; Prod uses `Type u`, `Type v`, `Type (max u v)`; PProd uses `Sort u`,
+  `Sort v`, `Sort (max 1 u v)`.
+- Causal ablation: sealed head `d128565e8de681a48cf962f77641696219d76a22`
+  is the executable pre-quotient oracle. Exact-head run `35677667353`, job
+  `106587470554`, produced 41 equal tutorial verdicts, zero deltas and zero
+  mismatches. All G12-G14 exact and perturbation inputs were replayed directly
+  against both binaries. A renamed fourth family and tutorial 042 remained
+  `UNKNOWN` in both.
+- Duplicated surface decreased: `checker.rs` fell from 2584 to 1990 lines.
+- Formal status: no new semantic theorem was added or claimed. Existing
+  G12-G14 family-specific environment-validity promotion theorems remain the
+  semantic warrants. The Rust quotient is externally qualified, not formally
+  refined to IdealLean and not whole-checker verification.
+- Artifact `10673617458`, digest
+  `sha256:e852835781b78936f34902228850d5c6d0c6f0aafadf37326712bdf4bb268b0f`.
+- Retired instructions remain `UNKNOWN`: hosted PMU unavailable and there is
+  no same-cohort control measurement.
 
 ## G16-001 — Frozen `PUnit` stress residual
 
-- Status: OPEN and deliberately untouched until G15 resolves.
+- Status: OPEN as the next exact residual; deliberately untouched by G15.
 - Exact fixture: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
   `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`.
-- Current G14 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
+- Current retained G15 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
 - Role: an independent nullary/singleton stress test for any abstraction
   retained by G15, not evidence permitted to broaden G15 in advance.
