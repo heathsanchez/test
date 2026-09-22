@@ -92,6 +92,17 @@ class TutorialInputTests(unittest.TestCase):
             self.assertEqual(case.expected_exit_code, 1)
             self.assertEqual(case.sha256, sha256)
 
+    def test_production_manifest_pins_indneg_as_case_054(self):
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 54)
+        case = TUTORIAL_MANIFEST[53]
+        self.assertEqual(case.number, "054")
+        self.assertEqual(case.relative_path, Path("bad/054_indNeg.ndjson"))
+        self.assertEqual(case.expected_exit_code, 1)
+        self.assertEqual(
+            case.sha256,
+            "89592d2e05e7ea518cf550eb18b99d1172b63b96b90abf1454b7102300eda843",
+        )
+
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
         payload = b'{"kind":"test"}\n'
         manifest = (

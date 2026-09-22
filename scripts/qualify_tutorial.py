@@ -77,6 +77,7 @@ TUTORIAL_MANIFEST = (
     TutorialCase("051", Path("bad/051_inductWrongCtorResParams.ndjson"), 1, "5506566449cc2f3c83f417007bf15a7a0101c458c450d77a23cfd4c2423910c4"),
     TutorialCase("052", Path("bad/052_inductWrongCtorResLevel.ndjson"), 1, "3f29bd3a753caa056cc45c20cd8aeb734bc44cfc6b3828a6c6ec855737f596f3"),
     TutorialCase("053", Path("bad/053_inductInIndex.ndjson"), 1, "8dc9a9997862a5f25b76520f5d69a146664ad9f0364dd350732a7f76e4190763"),
+    TutorialCase("054", Path("bad/054_indNeg.ndjson"), 1, "89592d2e05e7ea518cf550eb18b99d1172b63b96b90abf1454b7102300eda843"),
 )
 
 
