@@ -657,11 +657,6 @@ def field_universe_admissibility(
                 saw_unknown = True
                 continue
 
-            # Lean's Prop is impredicative: constructor field universes do not
-            # impose the ordinary strict universe bound in this corridor.
-            if level_is_zero_term(ind_level) is True:
-                continue
-
             domains, _result = pi_domains(exprs, ty)
             nparams = int(ctor.get("numParams", 0))
             nfields = int(ctor.get("numFields", 0))
@@ -669,6 +664,7 @@ def field_universe_admissibility(
                 saw_unknown = True
                 continue
 
+            prop_result = level_is_zero_term(ind_level) is True
             for field in domains[nparams:nparams + nfields]:
                 row = exprs.get(field, {})
                 field_lid = row.get("sort")
@@ -678,6 +674,12 @@ def field_universe_admissibility(
                     # obligations and remain UNKNOWN here.
                     continue
                 saw_direct_sort_field = True
+
+                # Lean's Prop is impredicative: a constructor field may itself
+                # range over an arbitrary universe.
+                if prop_result:
+                    continue
+
                 field_level = level_term(levels, field_lid)
                 if field_level is None:
                     saw_unknown = True
