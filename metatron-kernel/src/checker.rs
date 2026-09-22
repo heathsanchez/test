@@ -2427,11 +2427,7 @@ fn equality_conversion_boundary(export: &ResolvedExport, ty: ExprId, verdict: Ve
     }
 }
 
-fn expression_mentions_root_constant(
-    export: &ResolvedExport,
-    root: ExprId,
-    target: &str,
-) -> bool {
+fn expression_mentions_root_constant(export: &ResolvedExport, root: ExprId, target: &str) -> bool {
     let mut pending = vec![root];
     let mut visited = HashSet::new();
 
