@@ -1,0 +1,205 @@
+name: LKA G17 Eq v0
+
+on:
+  push:
+    branches: [lka-g17-eq-v0]
+    paths:
+      - ".github/workflows/lka-g17-eq-v0.yml"
+      - "metatron-kernel/src/**"
+      - "metatron-kernel/tests/**"
+      - "metatron-kernel/tests_py/**"
+      - "metatron-kernel/evidence/**"
+      - "metatron-kernel/formal/**"
+      - "metatron-kernel/scripts/qualify_tutorial.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: lka-g17-eq-v0-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      PRE_G17_SHA: 5d62338a6595401588ddb73cd2ef505a56059e69
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      EQ043_SHA256: d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify source and retained evidence
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build sealed pre-G17 oracle and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/metatron-pre-g17 "$PRE_G17_SHA"
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-pre-g17/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path metatron-kernel/Cargo.toml
+          METATRON_G17_ORACLE=/tmp/metatron-pre-g17/metatron-kernel/target/release/metatron-kernel \
+            cargo test --release --manifest-path metatron-kernel/Cargo.toml --test end_to_end
+
+      - name: Fetch pinned Arena contract
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate pinned tutorials and verify Eq fixture
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+          EQ_FILE="$(find /tmp/lean-kernel-tutorial -type f -name '043_*.ndjson')"
+          test -n "$EQ_FILE"
+          test "$(sha256sum "$EQ_FILE" | cut -d' ' -f1)" = "$EQ043_SHA256"
+          cmp "$EQ_FILE" "$GITHUB_WORKSPACE/metatron-kernel/evidence/residuals/G17-001/fixture.ndjson"
+          cd "$GITHUB_WORKSPACE/metatron-kernel/formal"
+          lake build
+
+      - name: Qualify tutorials 001-043 with one earned delta
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          python scripts/qualify_tutorial.py \
+            --checker target/release/metatron-kernel \
+            --tutorial-output /tmp/lean-kernel-tutorial \
+            --candidate-sha "$GITHUB_SHA" \
+            --arena-sha "$ARENA_SHA" \
+            --output evidence-out/tutorial-qualification.json \
+            --oracle /tmp/metatron-pre-g17/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$PRE_G17_SHA" \
+            --earned-case 043 \
+            --differential-output evidence-out/tutorial-differential.json
+          python - <<'PY'
+          import json
+          q=json.load(open("evidence-out/tutorial-qualification.json"))
+          d=json.load(open("evidence-out/tutorial-differential.json"))
+          assert q["qualified"] is True, q
+          assert q["counts"] == {"incorrect":0,"matched":43}, q
+          assert d["qualified"] is True, d
+          assert d["counts"] == {"earned_delta":1,"equal":42,"mismatch":0}, d
+          assert d["earned_case"] == "043", d
+          assert d["oracle_sha"] == "5d62338a6595401588ddb73cd2ef505a56059e69", d
+          PY
+
+      - name: Protect G17 semantic separation
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, subprocess
+          root=pathlib.Path("/tmp/lean-kernel-tutorial")
+          candidate=pathlib.Path("target/release/metatron-kernel").resolve()
+          oracle=pathlib.Path("/tmp/metatron-pre-g17/metatron-kernel/target/release/metatron-kernel").resolve()
+
+          def case(n):
+              ms=list(root.glob(f"*/{n:03d}_*.ndjson"))
+              assert len(ms)==1,(n,ms)
+              return ms[0]
+          def run(bin,path):
+              with path.open("rb") as f:
+                  return subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+
+          checks={}
+          for n in (43,44,69,99):
+              p=case(n)
+              checks[n]={"oracle":run(oracle,p),"candidate":run(candidate,p),"path":p.name}
+
+          assert checks[43] == {"oracle":2,"candidate":0,"path":"043_eqType.ndjson"}, checks
+          assert checks[44]["candidate"] == 2, checks
+          assert checks[69]["oracle"] == 2, checks
+          assert checks[69]["candidate"] == 0, checks
+          assert checks[99]["candidate"] == 2, checks
+
+          out={"schema":"lka-g17-separation-v0","checks":checks}
+          pathlib.Path("evidence-out/g17-separation.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Audit future closure
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, subprocess
+          from collections import Counter
+          root=pathlib.Path("/tmp/lean-kernel-tutorial")
+          candidate=pathlib.Path("target/release/metatron-kernel").resolve()
+          oracle=pathlib.Path("/tmp/metatron-pre-g17/metatron-kernel/target/release/metatron-kernel").resolve()
+
+          def case(n):
+              ms=list(root.glob(f"*/{n:03d}_*.ndjson"))
+              assert len(ms)==1,(n,ms)
+              return ms[0]
+          def run(bin,path):
+              with path.open("rb") as f:
+                  return subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+
+          rows=[]
+          transitions=Counter()
+          bad=[]
+          for n in range(43,142):
+              p=case(n)
+              expected=0 if p.parent.name=="good" else 1
+              before=run(oracle,p)
+              after=run(candidate,p)
+              transitions[(before,after)]+=1
+              row={"case":n,"expected":expected,"oracle":before,"candidate":after,"path":p.name}
+              rows.append(row)
+              if before != after and after in (0,1) and after != expected:
+                  bad.append(row)
+
+          assert not bad, bad
+          changed=[r for r in rows if r["oracle"]!=r["candidate"]]
+          assert any(r["case"]==43 and r["oracle"]==2 and r["candidate"]==0 for r in changed), changed
+          assert any(r["case"]==69 and r["oracle"]==2 and r["candidate"]==0 for r in changed), changed
+
+          out={
+            "schema":"lka-g17-future-closure-v0",
+            "changed":changed,
+            "transitions":{f"{a}->{b}":v for (a,b),v in sorted(transitions.items())},
+            "bad_deltas":bad,
+          }
+          pathlib.Path("evidence-out/g17-future-closure.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload exact-run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g17-eq-v0-${{ github.sha }}
+          path: metatron-kernel/evidence-out
+          if-no-files-found: error
