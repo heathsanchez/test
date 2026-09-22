@@ -853,3 +853,143 @@ fn g15_leaves_frozen_punit_residual_unknown() {
         Verdict::Unknown,
     );
 }
+
+
+fn sealed_pre_g16_verdict(bytes: &str) -> Option<Verdict> {
+    let Ok(oracle) = std::env::var("METATRON_G16_ORACLE") else {
+        return None;
+    };
+    let mut child = Command::new(oracle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("sealed pre-G16 oracle must start");
+    child
+        .stdin
+        .take()
+        .expect("sealed pre-G16 oracle stdin")
+        .write_all(bytes.as_bytes())
+        .expect("sealed pre-G16 oracle input");
+    let exit = child.wait().expect("sealed pre-G16 oracle must finish");
+    Some(match exit.code() {
+        Some(0) => Verdict::Accept,
+        Some(1) => Verdict::Reject,
+        Some(2) => Verdict::Unknown,
+        code => panic!("sealed pre-G16 oracle returned unexpected exit code {code:?}"),
+    })
+}
+
+fn run_g16_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G16-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    if let Some(oracle) = sealed_pre_g16_verdict(&bytes) {
+        assert_eq!(
+            oracle,
+            Verdict::Unknown,
+            "G16 authority was already present at the sealed pre-G16 boundary",
+        );
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
+#[test]
+fn g16_001_exact_punit_authority_is_accepted() {
+    assert_eq!(run_g16_perturbations(&[]), Verdict::Accept);
+}
+
+#[test]
+fn punit_sort_constructor_recursor_and_rule_are_derived_not_trusted() {
+    let cases: &[(&str, &str)] = &[
+        (
+            "\"levelParams\":[2],\"name\":1",
+            "\"levelParams\":[5],\"name\":1",
+        ),
+        ("{\"ie\":0,\"sort\":1}", "{\"ie\":0,\"sort\":2}"),
+        ("\"all\":[1],\"ctors\":[3]", "\"all\":[1],\"ctors\":[]"),
+        ("\"all\":[1],\"ctors\":[3]", "\"all\":[1],\"ctors\":[3,3]"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":1,\"induct\":1"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":0,\"induct\":4"),
+        (
+            "\"numFields\":0,\"numParams\":0,\"type\":1",
+            "\"numFields\":1,\"numParams\":0,\"type\":1",
+        ),
+        (
+            "\"numFields\":0,\"numParams\":0,\"type\":1",
+            "\"numFields\":0,\"numParams\":1,\"type\":1",
+        ),
+        (
+            "\"levelParams\":[5,2],\"name\":4",
+            "\"levelParams\":[2,5],\"name\":4",
+        ),
+        (
+            "\"numMinors\":1,\"numMotives\":1",
+            "\"numMinors\":0,\"numMotives\":1",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":1,\"nfields\":0,\"rhs\":13",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":3,\"nfields\":1,\"rhs\":13",
+        ),
+        (
+            "\"ctor\":3,\"nfields\":0,\"rhs\":13",
+            "\"ctor\":3,\"nfields\":0,\"rhs\":12",
+        ),
+        ("\"type\":11}],\"types\"", "\"type\":10}],\"types\""),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g16_perturbations(&[(*from, *to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn punit_broader_neighbors_preserve_unknown() {
+    let cases = [
+        (
+            "\"name\":1,\"numIndices\":0,\"numNested\":0",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0",
+        ),
+        (
+            "\"ctors\":[3],\"isRec\":false",
+            "\"ctors\":[3],\"isRec\":true",
+        ),
+        (
+            "\"isRec\":false,\"isReflexive\":false",
+            "\"isRec\":false,\"isReflexive\":true",
+        ),
+        (
+            "\"numIndices\":0,\"numNested\":0",
+            "\"numIndices\":0,\"numNested\":1",
+        ),
+        (
+            "\"types\":[{\"all\":[1],\"ctors\":[3],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[1],\"ctors\":[3],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+    ];
+    for (from, to) in cases {
+        assert_eq!(run_g16_perturbations(&[(from, to)]), Verdict::Unknown);
+    }
+}
+
+#[test]
+fn punit_law_does_not_authorize_a_renamed_family() {
+    let bytes = include_str!("../evidence/residuals/G16-001/fixture.ndjson");
+    let renamed = bytes.replacen("\"str\":\"PUnit\"", "\"str\":\"PUnit2\"", 1);
+    assert_ne!(bytes, renamed);
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+}
