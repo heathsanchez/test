@@ -1267,7 +1267,6 @@ fn g18_nat_law_does_not_authorize_a_renamed_family() {
     assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
 }
 
-
 #[test]
 fn g19_001_exact_rbtree_authority_is_accepted() {
     let bytes = include_str!("../evidence/residuals/G19-001/fixture.ndjson");
@@ -1306,7 +1305,10 @@ fn rbtree_broader_neighbors_remain_unknown() {
         ),
     ];
     for (label, from, to) in cases {
-        assert!(rb.contains(from), "missing G19 perturbation source for {label}");
+        assert!(
+            rb.contains(from),
+            "missing G19 perturbation source for {label}"
+        );
         let changed = rb.replacen(from, to, 1);
         assert_eq!(
             metatron_kernel::run(Cursor::new(changed)),
