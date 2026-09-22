@@ -1,0 +1,814 @@
+#!/usr/bin/env python3
+from __future__ import annotations
+
+import argparse
+import hashlib
+import json
+import subprocess
+from collections import Counter, defaultdict
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Iterable
+
+
+EXPR_TAGS = {"bvar", "sort", "const", "app", "lam", "forallE", "letE"}
+LEVEL_TAGS = {"zero", "succ", "max", "imax", "param"}
+DECL_TAGS = {"axiom", "def", "thm", "inductive"}
+META_KEYS = {"meta", "in", "il", "ie"}
+
+
+def canonical(value: Any) -> str:
+    return json.dumps(value, sort_keys=True, separators=(",", ":"))
+
+
+def digest(value: Any) -> str:
+    return hashlib.sha256(canonical(value).encode()).hexdigest()
+
+
+@dataclass(frozen=True)
+class Case:
+    number: int
+    path: Path
+    expected: int
+    actual: int
+    features: dict[str, Any]
+
+
+def load_records(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line_no, line in enumerate(path.read_text().splitlines(), 1):
+        if not line.strip():
+            continue
+        value = json.loads(line)
+        if not isinstance(value, dict):
+            raise ValueError(f"{path}:{line_no}: expected object")
+        rows.append(value)
+    return rows
+
+
+def run_checker(checker: Path, path: Path) -> int:
+    with path.open("rb") as stream:
+        return subprocess.run(
+            [str(checker.resolve())],
+            stdin=stream,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            check=False,
+        ).returncode
+
+
+def numbered_cases(root: Path, start: int, end: int) -> list[tuple[int, Path, int]]:
+    out: list[tuple[int, Path, int]] = []
+    for n in range(start, end + 1):
+        matches = sorted(root.glob(f"*/{n:03d}_*.ndjson"))
+        if len(matches) != 1:
+            raise ValueError(f"case {n:03d}: expected one file, found {len(matches)}")
+        path = matches[0]
+        if path.parent.name == "good":
+            expected = 0
+        elif path.parent.name == "bad":
+            expected = 1
+        else:
+            raise ValueError(path)
+        out.append((n, path, expected))
+    return out
+
+
+def expr_tag(record: dict[str, Any]) -> str | None:
+    if "ie" not in record:
+        return None
+    keys = [k for k in record if k != "ie"]
+    if len(keys) == 1:
+        return keys[0]
+    return "multi:" + ",".join(sorted(keys))
+
+
+def level_tag(record: dict[str, Any]) -> str | None:
+    if "il" not in record:
+        return None
+    keys = [k for k in record if k != "il"]
+    if len(keys) == 1:
+        return keys[0]
+    return "multi:" + ",".join(sorted(keys))
+
+
+def expr_refs(records: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    table: dict[int, dict[str, Any]] = {}
+    for row in records:
+        if isinstance(row.get("ie"), int):
+            table[int(row["ie"])] = row
+    return table
+
+
+def level_refs(records: list[dict[str, Any]]) -> dict[int, dict[str, Any]]:
+    table: dict[int, dict[str, Any]] = {}
+    for row in records:
+        if isinstance(row.get("il"), int):
+            table[int(row["il"])] = row
+    return table
+
+
+def name_depths(records: list[dict[str, Any]]) -> Counter[int]:
+    parents: dict[int, int | None] = {0: None}
+    for row in records:
+        if not isinstance(row.get("in"), int):
+            continue
+        idx = int(row["in"])
+        if isinstance(row.get("str"), dict):
+            pre = row["str"].get("pre")
+            parents[idx] = int(pre) if isinstance(pre, int) else None
+        elif isinstance(row.get("num"), dict):
+            pre = row["num"].get("pre")
+            parents[idx] = int(pre) if isinstance(pre, int) else None
+
+    depths: Counter[int] = Counter()
+    for idx in parents:
+        seen: set[int] = set()
+        cur: int | None = idx
+        depth = 0
+        while cur is not None and cur != 0 and cur not in seen:
+            seen.add(cur)
+            cur = parents.get(cur)
+            depth += 1
+        depths[depth] += 1
+    return depths
+
+
+def expr_outer(table: dict[int, dict[str, Any]], eid: int) -> str:
+    row = table.get(eid, {})
+    tag = expr_tag(row)
+    return tag or "missing"
+
+
+def level_shape(levels: dict[int, dict[str, Any]], lid: int, depth: int = 0) -> str:
+    if depth > 12:
+        return "deep"
+    row = levels.get(lid)
+    if row is None:
+        return "missing"
+    tag = level_tag(row)
+    if tag == "param":
+        return "param"
+    if tag == "zero":
+        return "zero"
+    if tag == "succ":
+        child = row.get("succ")
+        return f"succ({level_shape(levels, int(child), depth + 1)})" if isinstance(child, int) else "succ(?)"
+    if tag in {"max", "imax"}:
+        body = row.get(tag)
+        if isinstance(body, dict):
+            a, b = body.get("a"), body.get("b")
+            if isinstance(a, int) and isinstance(b, int):
+                return f"{tag}({level_shape(levels,a,depth+1)},{level_shape(levels,b,depth+1)})"
+        return f"{tag}(?)"
+    return tag or "unknown"
+
+
+def pi_domains(exprs: dict[int, dict[str, Any]], start: int, limit: int = 64) -> tuple[list[int], int]:
+    domains: list[int] = []
+    current = start
+    for _ in range(limit):
+        row = exprs.get(current)
+        if row is None or "forallE" not in row or not isinstance(row["forallE"], dict):
+            return domains, current
+        node = row["forallE"]
+        domain, body = node.get("type"), node.get("body")
+        if not isinstance(domain, int) or not isinstance(body, int):
+            return domains, current
+        domains.append(domain)
+        current = body
+    return domains, current
+
+
+def app_spine(exprs: dict[int, dict[str, Any]], start: int, limit: int = 128) -> tuple[int, list[int]]:
+    args: list[int] = []
+    current = start
+    for _ in range(limit):
+        row = exprs.get(current)
+        if row is None or "app" not in row or not isinstance(row["app"], dict):
+            break
+        node = row["app"]
+        fun, arg = node.get("fn"), node.get("arg")
+        if not isinstance(fun, int) or not isinstance(arg, int):
+            break
+        args.append(arg)
+        current = fun
+    args.reverse()
+    return current, args
+
+
+def contains_const(exprs: dict[int, dict[str, Any]], start: int, target: int, limit: int = 4096) -> bool:
+    stack = [start]
+    seen: set[int] = set()
+    while stack and len(seen) < limit:
+        eid = stack.pop()
+        if eid in seen:
+            continue
+        seen.add(eid)
+        row = exprs.get(eid, {})
+        if isinstance(row.get("const"), dict) and row["const"].get("name") == target:
+            return True
+        for key in ("app", "lam", "forallE", "letE"):
+            node = row.get(key)
+            if not isinstance(node, dict):
+                continue
+            for field in ("fn", "arg", "type", "body", "value"):
+                value = node.get(field)
+                if isinstance(value, int):
+                    stack.append(value)
+    return False
+
+
+def negative_self_occurrence(exprs: dict[int, dict[str, Any]], start: int, target: int) -> bool:
+    stack = [(start, True)]
+    seen: set[tuple[int, bool]] = set()
+    while stack:
+        eid, positive = stack.pop()
+        if (eid, positive) in seen:
+            continue
+        seen.add((eid, positive))
+        row = exprs.get(eid, {})
+        const = row.get("const")
+        if isinstance(const, dict) and const.get("name") == target and not positive:
+            return True
+        app = row.get("app")
+        if isinstance(app, dict):
+            for field in ("fn", "arg"):
+                v = app.get(field)
+                if isinstance(v, int):
+                    stack.append((v, positive))
+        pi = row.get("forallE")
+        if isinstance(pi, dict):
+            d, b = pi.get("type"), pi.get("body")
+            if isinstance(d, int):
+                stack.append((d, not positive))
+            if isinstance(b, int):
+                stack.append((b, positive))
+        for key in ("lam", "letE"):
+            node = row.get(key)
+            if not isinstance(node, dict):
+                continue
+            for field in ("type", "body", "value"):
+                v = node.get(field)
+                if isinstance(v, int):
+                    stack.append((v, positive))
+    return False
+
+
+def aggregate_inductive_features(
+    records: list[dict[str, Any]],
+    exprs: dict[int, dict[str, Any]],
+    levels: dict[int, dict[str, Any]],
+) -> dict[str, Any]:
+    blocks = [row["inductive"] for row in records if isinstance(row.get("inductive"), dict)]
+    if not blocks:
+        return {"has_inductive": False}
+
+    all_types: list[dict[str, Any]] = []
+    all_ctors: list[dict[str, Any]] = []
+    all_recs: list[dict[str, Any]] = []
+    for b in blocks:
+        all_types.extend(x for x in b.get("types", []) if isinstance(x, dict))
+        all_ctors.extend(x for x in b.get("ctors", []) if isinstance(x, dict))
+        all_recs.extend(x for x in b.get("recs", []) if isinstance(x, dict))
+
+    type_names = {int(t["name"]) for t in all_types if isinstance(t.get("name"), int)}
+    ctor_field_sort_shapes: list[str] = []
+    ctor_field_outer_tags: list[str] = []
+    ctor_negative_self = False
+    ctor_self_any = False
+    ctor_result_head_self = 0
+    ctor_result_arg_counts: list[int] = []
+
+    for c in all_ctors:
+        ty = c.get("type")
+        owner = c.get("induct")
+        if not isinstance(ty, int):
+            continue
+        domains, result = pi_domains(exprs, ty)
+        num_params = int(c.get("numParams", 0))
+        num_fields = int(c.get("numFields", 0))
+        field_domains = domains[num_params:num_params + num_fields]
+        for field in field_domains:
+            ctor_field_outer_tags.append(expr_outer(exprs, field))
+            row = exprs.get(field, {})
+            if isinstance(row.get("sort"), int):
+                ctor_field_sort_shapes.append(level_shape(levels, int(row["sort"])))
+            if isinstance(owner, int):
+                ctor_negative_self = ctor_negative_self or negative_self_occurrence(exprs, field, owner)
+                ctor_self_any = ctor_self_any or contains_const(exprs, field, owner)
+
+        if isinstance(owner, int):
+            head, args = app_spine(exprs, result)
+            hrow = exprs.get(head, {})
+            const = hrow.get("const")
+            if isinstance(const, dict) and const.get("name") == owner:
+                ctor_result_head_self += 1
+                ctor_result_arg_counts.append(len(args))
+
+    rec_rule_fields: list[int] = []
+    for r in all_recs:
+        for rule in r.get("rules", []) if isinstance(r.get("rules"), list) else []:
+            if isinstance(rule, dict):
+                rec_rule_fields.append(int(rule.get("nfields", 0)))
+
+    type_result_outer: list[str] = []
+    type_result_sort_shapes: list[str] = []
+    for t in all_types:
+        ty = t.get("type")
+        if not isinstance(ty, int):
+            continue
+        binders = int(t.get("numParams", 0)) + int(t.get("numIndices", 0))
+        domains, result = pi_domains(exprs, ty)
+        if len(domains) >= binders:
+            row = exprs.get(result, {})
+            type_result_outer.append(expr_outer(exprs, result))
+            if isinstance(row.get("sort"), int):
+                type_result_sort_shapes.append(level_shape(levels, int(row["sort"])))
+
+    return {
+        "has_inductive": True,
+        "inductive_block_count": len(blocks),
+        "type_count": len(all_types),
+        "ctor_count": len(all_ctors),
+        "recursor_count": len(all_recs),
+        "type_num_params": sorted(int(t.get("numParams", 0)) for t in all_types),
+        "type_num_indices": sorted(int(t.get("numIndices", 0)) for t in all_types),
+        "type_num_nested": sorted(int(t.get("numNested", 0)) for t in all_types),
+        "type_recursive": sorted(bool(t.get("isRec")) for t in all_types),
+        "type_reflexive": sorted(bool(t.get("isReflexive")) for t in all_types),
+        "type_unsafe": sorted(bool(t.get("isUnsafe")) for t in all_types),
+        "type_level_arity": sorted(len(t.get("levelParams", [])) for t in all_types),
+        "type_result_outer": sorted(type_result_outer),
+        "type_result_sort_shapes": sorted(type_result_sort_shapes),
+        "ctor_num_params": sorted(int(c.get("numParams", 0)) for c in all_ctors),
+        "ctor_num_fields": sorted(int(c.get("numFields", 0)) for c in all_ctors),
+        "ctor_level_arity": sorted(len(c.get("levelParams", [])) for c in all_ctors),
+        "ctor_unsafe": sorted(bool(c.get("isUnsafe")) for c in all_ctors),
+        "ctor_field_outer_tags": sorted(ctor_field_outer_tags),
+        "ctor_field_sort_shapes": sorted(ctor_field_sort_shapes),
+        "ctor_negative_self": ctor_negative_self,
+        "ctor_self_any": ctor_self_any,
+        "ctor_result_head_self_count": ctor_result_head_self,
+        "ctor_result_arg_counts": sorted(ctor_result_arg_counts),
+        "rec_num_params": sorted(int(r.get("numParams", 0)) for r in all_recs),
+        "rec_num_indices": sorted(int(r.get("numIndices", 0)) for r in all_recs),
+        "rec_num_motives": sorted(int(r.get("numMotives", 0)) for r in all_recs),
+        "rec_num_minors": sorted(int(r.get("numMinors", 0)) for r in all_recs),
+        "rec_k": sorted(bool(r.get("k")) for r in all_recs),
+        "rec_level_arity": sorted(len(r.get("levelParams", [])) for r in all_recs),
+        "rec_unsafe": sorted(bool(r.get("isUnsafe")) for r in all_recs),
+        "rec_rule_count": sorted(
+            len(r.get("rules", [])) if isinstance(r.get("rules"), list) else 0 for r in all_recs
+        ),
+        "rec_rule_fields": sorted(rec_rule_fields),
+        "distinct_type_name_count": len(type_names),
+    }
+
+
+def generic_features(records: list[dict[str, Any]]) -> dict[str, Any]:
+    exprs = expr_refs(records)
+    levels = level_refs(records)
+
+    expr_counts: Counter[str] = Counter()
+    level_counts: Counter[str] = Counter()
+    decl_counts: Counter[str] = Counter()
+    top_unknown: Counter[str] = Counter()
+    bvars: list[int] = []
+    const_level_arities: list[int] = []
+    def_safety: Counter[str] = Counter()
+    def_hints: Counter[str] = Counter()
+    decl_names: list[int] = []
+    decl_name_kinds: dict[int, set[str]] = defaultdict(set)
+
+    max_pi = max_app = max_lam = 0
+
+    for row in records:
+        et = expr_tag(row)
+        if et is not None:
+            expr_counts[et] += 1
+        lt = level_tag(row)
+        if lt is not None:
+            level_counts[lt] += 1
+        for tag in DECL_TAGS:
+            if tag in row:
+                decl_counts[tag] += 1
+                value = row[tag]
+                if isinstance(value, dict) and isinstance(value.get("name"), int):
+                    name = int(value["name"])
+                    decl_names.append(name)
+                    decl_name_kinds[name].add(tag)
+                if tag in {"def", "thm"} and isinstance(value, dict):
+                    if isinstance(value.get("safety"), str):
+                        def_safety[value["safety"]] += 1
+                    if isinstance(value.get("hints"), str):
+                        def_hints[value["hints"]] += 1
+        if not any(k in row for k in META_KEYS | DECL_TAGS):
+            for key in row:
+                top_unknown[key] += 1
+        if isinstance(row.get("bvar"), int):
+            bvars.append(int(row["bvar"]))
+        if isinstance(row.get("const"), dict):
+            us = row["const"].get("us", [])
+            if isinstance(us, list):
+                const_level_arities.append(len(us))
+
+    for eid in exprs:
+        pi, _ = pi_domains(exprs, eid)
+        max_pi = max(max_pi, len(pi))
+        _, apps = app_spine(exprs, eid)
+        max_app = max(max_app, len(apps))
+        cur = eid
+        depth = 0
+        while True:
+            row = exprs.get(cur, {})
+            node = row.get("lam")
+            if not isinstance(node, dict) or not isinstance(node.get("body"), int):
+                break
+            depth += 1
+            cur = int(node["body"])
+        max_lam = max(max_lam, depth)
+
+    same_name_multi_kind = sum(1 for kinds in decl_name_kinds.values() if len(kinds) > 1)
+    duplicate_decl_name_count = len(decl_names) - len(set(decl_names))
+
+    features: dict[str, Any] = {
+        "record_count": len(records),
+        "expr_tag_counts": sorted(expr_counts.items()),
+        "level_tag_counts": sorted(level_counts.items()),
+        "decl_tag_counts": sorted(decl_counts.items()),
+        "unknown_top_tag_counts": sorted(top_unknown.items()),
+        "name_depth_histogram": sorted(name_depths(records).items()),
+        "expr_max_pi_chain": max_pi,
+        "expr_max_app_spine": max_app,
+        "expr_max_lam_chain": max_lam,
+        "bvar_max": max(bvars) if bvars else -1,
+        "bvar_distinct": len(set(bvars)),
+        "const_level_arities": sorted(const_level_arities),
+        "def_safety_counts": sorted(def_safety.items()),
+        "def_hints_counts": sorted(def_hints.items()),
+        "duplicate_decl_name_count": duplicate_decl_name_count,
+        "same_name_multi_kind_count": same_name_multi_kind,
+    }
+    features.update(aggregate_inductive_features(records, exprs, levels))
+    return features
+
+
+def atomic_observations(features: dict[str, Any]) -> dict[str, Any]:
+    out: dict[str, Any] = {}
+    for key, value in features.items():
+        out[f"raw:{key}"] = value
+        if isinstance(value, bool):
+            continue
+        if isinstance(value, int):
+            out[f"zero:{key}"] = value == 0
+            out[f"positive:{key}"] = value > 0
+        if isinstance(value, list):
+            out[f"len:{key}"] = len(value)
+            out[f"empty:{key}"] = len(value) == 0
+            if value and all(isinstance(x, (int, bool, str)) for x in value):
+                out[f"set:{key}"] = sorted(set(value), key=lambda x: str(x))
+    return out
+
+
+def build_cases(root: Path, checker: Path, start: int, end: int) -> list[Case]:
+    out: list[Case] = []
+    for n, path, expected in numbered_cases(root, start, end):
+        records = load_records(path)
+        out.append(
+            Case(
+                number=n,
+                path=path,
+                expected=expected,
+                actual=run_checker(checker, path),
+                features=atomic_observations(generic_features(records)),
+            )
+        )
+    return out
+
+
+def discordant_pairs(cases: list[Case], indices: Iterable[int] | None = None) -> list[tuple[int, int]]:
+    use = list(range(len(cases))) if indices is None else list(indices)
+    pairs: list[tuple[int, int]] = []
+    for pos, i in enumerate(use):
+        for j in use[pos + 1:]:
+            if cases[i].actual == cases[j].actual and cases[i].expected != cases[j].expected:
+                pairs.append((i, j))
+    return pairs
+
+
+def candidate_edges(
+    cases: list[Case],
+    pairs: list[tuple[int, int]],
+    feature_names: list[str],
+) -> dict[str, int]:
+    edges: dict[str, int] = {}
+    for name in feature_names:
+        bits = 0
+        for k, (i, j) in enumerate(pairs):
+            if cases[i].features.get(name) != cases[j].features.get(name):
+                bits |= 1 << k
+        if bits:
+            edges[name] = bits
+    return edges
+
+
+def dedupe_edges(edges: dict[str, int]) -> dict[str, int]:
+    best: dict[int, str] = {}
+    for name, bits in sorted(edges.items()):
+        best.setdefault(bits, name)
+    return {name: bits for bits, name in best.items()}
+
+
+def exact_min_cover(universe_size: int, edges: dict[str, int]) -> list[str] | None:
+    if universe_size == 0:
+        return []
+    full = (1 << universe_size) - 1
+    if not edges:
+        return None
+    union = 0
+    for bits in edges.values():
+        union |= bits
+    if union != full:
+        return None
+
+    items_to_candidates: list[list[str]] = [[] for _ in range(universe_size)]
+    for name, bits in edges.items():
+        for i in range(universe_size):
+            if bits >> i & 1:
+                items_to_candidates[i].append(name)
+    for bucket in items_to_candidates:
+        bucket.sort()
+
+    best: list[str] | None = None
+
+    def dfs(covered: int, chosen: list[str], available: set[str]) -> None:
+        nonlocal best
+        if covered == full:
+            if best is None or (len(chosen), chosen) < (len(best), best):
+                best = chosen.copy()
+            return
+        if best is not None and len(chosen) >= len(best):
+            return
+
+        uncovered = full ^ (full & covered)
+        remaining_edges = [edges[n] & uncovered for n in available]
+        max_gain = max((x.bit_count() for x in remaining_edges), default=0)
+        if max_gain == 0:
+            return
+        lower = (uncovered.bit_count() + max_gain - 1) // max_gain
+        if best is not None and len(chosen) + lower >= len(best):
+            return
+
+        candidates_for_item: list[str] | None = None
+        target_item = -1
+        for i in range(universe_size):
+            if not (uncovered >> i) & 1:
+                continue
+            opts = [n for n in items_to_candidates[i] if n in available]
+            if not opts:
+                return
+            if candidates_for_item is None or len(opts) < len(candidates_for_item):
+                candidates_for_item = opts
+                target_item = i
+        assert target_item >= 0 and candidates_for_item is not None
+
+        ranked = sorted(
+            candidates_for_item,
+            key=lambda n: (-(edges[n] & uncovered).bit_count(), n),
+        )
+        for name in ranked:
+            gain = edges[name] & uncovered
+            if not gain:
+                continue
+            new_available = {
+                n for n in available
+                if n > name or n not in ranked
+            }
+            dfs(covered | edges[name], chosen + [name], new_available)
+
+    dfs(0, [], set(edges))
+    return best
+
+
+def basis_covers_pairs(
+    cases: list[Case],
+    pairs: list[tuple[int, int]],
+    basis: list[str],
+) -> tuple[int, list[tuple[int, int]]]:
+    missed: list[tuple[int, int]] = []
+    for i, j in pairs:
+        if not any(cases[i].features.get(name) != cases[j].features.get(name) for name in basis):
+            missed.append((i, j))
+    return len(pairs) - len(missed), missed
+
+
+def stable_case_id(case: Case) -> str:
+    return "s_" + hashlib.sha256(f"case:{case.number}".encode()).hexdigest()[:12]
+
+
+def stable_feature_id(name: str) -> str:
+    return "g_" + hashlib.sha256(f"feature:{name}".encode()).hexdigest()[:12]
+
+
+def build_public_hidden(cases: list[Case], feature_names: list[str]) -> tuple[dict[str, Any], dict[str, Any]]:
+    feature_ids = {name: stable_feature_id(name) for name in feature_names}
+    public = {
+        "schema": "lka-residual-basis-public-v0",
+        "states": [
+            {
+                "id": stable_case_id(case),
+                "current": case.actual,
+                "target": case.expected,
+                "observations": {
+                    feature_ids[name]: case.features.get(name)
+                    for name in feature_names
+                },
+            }
+            for case in cases
+        ],
+        "candidate_ids": sorted(feature_ids.values()),
+    }
+    hidden = {
+        "schema": "lka-residual-basis-hidden-v0",
+        "case_numbers": {stable_case_id(case): case.number for case in cases},
+        "feature_names": {feature_ids[name]: name for name in feature_names},
+    }
+    public["commitment"] = digest(hidden)
+    return public, hidden
+
+
+def solve_public(public: dict[str, Any]) -> dict[str, Any]:
+    states = public["states"]
+    pairs: list[tuple[int, int]] = []
+    for i in range(len(states)):
+        for j in range(i + 1, len(states)):
+            if states[i]["current"] == states[j]["current"] and states[i]["target"] != states[j]["target"]:
+                pairs.append((i, j))
+
+    edges: dict[str, int] = {}
+    for gid in public["candidate_ids"]:
+        bits = 0
+        for k, (i, j) in enumerate(pairs):
+            if states[i]["observations"].get(gid) != states[j]["observations"].get(gid):
+                bits |= 1 << k
+        if bits:
+            edges[gid] = bits
+    edges = dedupe_edges(edges)
+    basis = exact_min_cover(len(pairs), edges)
+    return {
+        "schema": "lka-residual-basis-prediction-v0",
+        "public_digest": digest(public),
+        "residual_pairs": len(pairs),
+        "candidate_edges": len(edges),
+        "basis": basis,
+        "basis_size": None if basis is None else len(basis),
+        "covered": 0 if basis is None else len(pairs),
+    }
+
+
+def deterministic_sham(cases: list[Case], feature_names: list[str]) -> list[Case]:
+    by_current: dict[int, list[int]] = defaultdict(list)
+    for i, case in enumerate(cases):
+        by_current[case.actual].append(i)
+
+    shams = [
+        Case(c.number, c.path, c.expected, c.actual, dict(c.features))
+        for c in cases
+    ]
+    for name in feature_names:
+        for actual, indices in sorted(by_current.items()):
+            if len(indices) <= 1:
+                continue
+            offset = int(hashlib.sha256(f"{name}:{actual}".encode()).hexdigest()[:8], 16) % len(indices)
+            if offset == 0:
+                offset = 1
+            values = [cases[i].features.get(name) for i in indices]
+            rotated = values[offset:] + values[:offset]
+            for i, value in zip(indices, rotated):
+                shams[i].features[name] = value
+    return shams
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--tutorial-output", required=True, type=Path)
+    parser.add_argument("--checker", required=True, type=Path)
+    parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--start", type=int, default=56)
+    parser.add_argument("--end", type=int, default=141)
+    args = parser.parse_args()
+
+    cases = build_cases(args.tutorial_output, args.checker, args.start, args.end)
+    feature_names = sorted(set.intersection(*(set(c.features) for c in cases)))
+    # Drop globally constant observations: they cannot separate anything.
+    feature_names = [
+        name for name in feature_names
+        if len({canonical(c.features.get(name)) for c in cases}) > 1
+    ]
+
+    public, hidden = build_public_hidden(cases, feature_names)
+    prediction = solve_public(public)
+
+    pairs = discordant_pairs(cases)
+    real_edges = dedupe_edges(candidate_edges(cases, pairs, feature_names))
+    real_basis = exact_min_cover(len(pairs), real_edges)
+
+    train_idx = [i for i, c in enumerate(cases) if c.number % 5 != 0]
+    hold_idx = [i for i, c in enumerate(cases) if c.number % 5 == 0]
+    train_pairs = discordant_pairs(cases, train_idx)
+    hold_pairs = discordant_pairs(cases, hold_idx)
+    train_edges = dedupe_edges(candidate_edges(cases, train_pairs, feature_names))
+    train_basis = exact_min_cover(len(train_pairs), train_edges)
+    real_hold_covered, real_hold_missed = (
+        (0, hold_pairs) if train_basis is None
+        else basis_covers_pairs(cases, hold_pairs, train_basis)
+    )
+
+    sham_cases = deterministic_sham(cases, feature_names)
+    sham_train_edges = dedupe_edges(candidate_edges(sham_cases, train_pairs, feature_names))
+    sham_basis = exact_min_cover(len(train_pairs), sham_train_edges)
+    sham_hold_covered, sham_hold_missed = (
+        (0, hold_pairs) if sham_basis is None
+        else basis_covers_pairs(sham_cases, hold_pairs, sham_basis)
+    )
+
+    reveal_ok = hidden["schema"] == "lka-residual-basis-hidden-v0" and digest(hidden) == public["commitment"]
+    predicted_names = None
+    if prediction["basis"] is not None:
+        predicted_names = [hidden["feature_names"][gid] for gid in prediction["basis"]]
+
+    summary = {
+        "schema": "lka-residual-basis-v0",
+        "authority": "read-only discovery; cannot grant or revoke checker semantics",
+        "case_range": [args.start, args.end],
+        "case_count": len(cases),
+        "current_correct": sum(c.actual == c.expected for c in cases),
+        "current_incorrect": sum(c.actual not in (2, 3) and c.actual != c.expected for c in cases),
+        "current_unknown": sum(c.actual == 2 for c in cases),
+        "current_error": sum(c.actual == 3 for c in cases),
+        "candidate_observations": len(feature_names),
+        "residual_pairs": len(pairs),
+        "exact_basis_size": None if real_basis is None else len(real_basis),
+        "exact_basis": real_basis,
+        "blind_prediction_basis_ids": prediction["basis"],
+        "blind_reveal_basis": predicted_names,
+        "blind_commitment_ok": reveal_ok,
+        "heldout": {
+            "split": "case_number_mod_5_equals_0",
+            "train_cases": len(train_idx),
+            "heldout_cases": len(hold_idx),
+            "train_residual_pairs": len(train_pairs),
+            "heldout_residual_pairs": len(hold_pairs),
+            "real_basis_size": None if train_basis is None else len(train_basis),
+            "real_basis": train_basis,
+            "real_heldout_covered": real_hold_covered,
+            "real_heldout_total": len(hold_pairs),
+            "real_heldout_missed": [
+                [cases[i].number, cases[j].number] for i, j in real_hold_missed
+            ],
+            "sham_basis_size": None if sham_basis is None else len(sham_basis),
+            "sham_heldout_covered": sham_hold_covered,
+            "sham_heldout_total": len(hold_pairs),
+            "sham_heldout_missed": [
+                [cases[i].number, cases[j].number] for i, j in sham_hold_missed
+            ],
+        },
+        "first_mismatch": next(
+            (
+                {
+                    "number": c.number,
+                    "expected": c.expected,
+                    "actual": c.actual,
+                    "file": c.path.name,
+                }
+                for c in cases if c.actual != c.expected
+            ),
+            None,
+        ),
+    }
+
+    out = args.output_dir
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "public.json").write_text(json.dumps(public, indent=2, sort_keys=True) + "\n")
+    (out / "hidden.json").write_text(json.dumps(hidden, indent=2, sort_keys=True) + "\n")
+    (out / "prediction.json").write_text(json.dumps(prediction, indent=2, sort_keys=True) + "\n")
+    (out / "summary.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+    (out / "cases.json").write_text(json.dumps([
+        {
+            "number": c.number,
+            "file": c.path.name,
+            "expected": c.expected,
+            "actual": c.actual,
+            "case_id": stable_case_id(c),
+        }
+        for c in cases
+    ], indent=2, sort_keys=True) + "\n")
+
+    print("LKA_RESIDUAL_BASIS_V0")
+    print(json.dumps(summary, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
