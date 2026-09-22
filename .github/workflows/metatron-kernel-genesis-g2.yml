@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 30
     env:
       ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
-      G14_SHA: d128565e8de681a48cf962f77641696219d76a22
+      G15_SHA: f45b49a6989c09317635c790615ca63c617c84c7
     steps:
       - uses: actions/checkout@v4
 
@@ -89,20 +89,20 @@ jobs:
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
-          git fetch --depth 1 origin "$G14_SHA"
-          git worktree add --detach /tmp/metatron-g14-oracle "$G14_SHA"
+          git fetch --depth 1 origin "$G15_SHA"
+          git worktree add --detach /tmp/metatron-g15-oracle "$G15_SHA"
           cargo build --release --locked \
-            --manifest-path /tmp/metatron-g14-oracle/metatron-kernel/Cargo.toml
-          METATRON_G15_ORACLE=/tmp/metatron-g14-oracle/metatron-kernel/target/release/metatron-kernel \
+            --manifest-path /tmp/metatron-g15-oracle/metatron-kernel/Cargo.toml
+          METATRON_G15_ORACLE=/tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
             cargo test --release --test end_to_end
           set +e
           target/release/metatron-kernel < evidence/residuals/G16-001/fixture.ndjson
           CANDIDATE_PUNIT=$?
-          /tmp/metatron-g14-oracle/metatron-kernel/target/release/metatron-kernel \
+          /tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
             < evidence/residuals/G16-001/fixture.ndjson
           ORACLE_PUNIT=$?
           set -e
-          test "$CANDIDATE_PUNIT" = 2
+          test "$CANDIDATE_PUNIT" = 0
           test "$ORACLE_PUNIT" = 2
           python scripts/qualify_tutorial.py \
             --checker target/release/metatron-kernel \
@@ -110,21 +110,22 @@ jobs:
             --candidate-sha "$GITHUB_SHA" \
             --arena-sha "$ARENA_SHA" \
             --output evidence-out/tutorial-qualification.json \
-            --oracle /tmp/metatron-g14-oracle/metatron-kernel/target/release/metatron-kernel \
-            --oracle-sha "$G14_SHA" \
-            --require-equivalence \
+            --oracle /tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$G15_SHA" \
+            --earned-case 042 \
             --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
           q=json.load(open('evidence-out/tutorial-qualification.json'))
           assert q['qualified'] is True, q
-          assert q['counts']=={'incorrect':0,'matched':41}, q
-          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
+          assert q['counts']=={'incorrect':0,'matched':42}, q
+          assert q['expected_exit_codes']==[0,1,0,0,0,0,0,0,1,1,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], q
           d=json.load(open('evidence-out/tutorial-differential.json'))
           assert d['qualified'] is True, d
-          assert d['counts']=={'earned_delta':0,'equal':41,'mismatch':0}, d
-          assert d['mode']=='exact_equivalence', d
-          assert d['oracle_sha']=='d128565e8de681a48cf962f77641696219d76a22', d
+          assert d['counts']=={'earned_delta':1,'equal':41,'mismatch':0}, d
+          assert d['mode']=='earned_delta', d
+          assert d['earned_case']=='042', d
+          assert d['oracle_sha']=='f45b49a6989c09317635c790615ca63c617c84c7', d
           PY
 
       - name: Attempt same-cohort retired-instruction measurement
