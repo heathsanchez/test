@@ -601,3 +601,178 @@ fn g13_candidate_preserves_the_sealed_g12_behavior_vector() {
         );
     }
 }
+
+
+fn run_g14_perturbations(replacements: &[(&str, &str)]) -> Verdict {
+    let mut bytes = include_str!("../evidence/residuals/G14-001/fixture.ndjson").to_owned();
+    for (from, to) in replacements {
+        assert!(bytes.contains(from), "missing perturbation source: {from}");
+        bytes = bytes.replacen(from, to, 1);
+    }
+    metatron_kernel::run(Cursor::new(bytes))
+}
+
+#[test]
+fn g14_001_exact_pprod_replication_is_accepted() {
+    assert_eq!(run_residual("G14-001"), Verdict::Accept);
+}
+
+#[test]
+fn pprod_sort_telescope_and_result_level_are_derived_not_trusted() {
+    let cases: &[&[(&str, &str)]] = &[
+        &[(
+            "\"levelParams\":[2,3],\"name\":1",
+            "\"levelParams\":[2],\"name\":1",
+        )],
+        &[(
+            "\"levelParams\":[2,3],\"name\":1",
+            "\"levelParams\":[3,2],\"name\":1",
+        )],
+        &[("{\"ie\":0,\"sort\":1}", "{\"ie\":0,\"sort\":2}")],
+        &[("{\"ie\":1,\"sort\":2}", "{\"ie\":1,\"sort\":1}")],
+        &[(
+            "{\"il\":4,\"max\":[3,1]}",
+            "{\"il\":4,\"max\":[3,2]}",
+        )],
+        &[(
+            "{\"il\":5,\"max\":[4,2]}",
+            "{\"il\":5,\"max\":[4,1]}",
+        )],
+        &[(
+            "\"levelParams\":[2,3],\"name\":6",
+            "\"levelParams\":[3,2],\"name\":6",
+        )],
+        &[(
+            "\"levelParams\":[10,2,3],\"name\":9",
+            "\"levelParams\":[10,3,2],\"name\":9",
+        )],
+        &[("\"us\":[1,2]},\"ie\":6", "\"us\":[2,1]},\"ie\":6")],
+        &[("\"us\":[1,2]},\"ie\":20", "\"us\":[2,1]},\"ie\":20")],
+    ];
+
+    for replacements in cases {
+        assert_eq!(run_g14_perturbations(replacements), Verdict::Reject);
+    }
+}
+
+#[test]
+fn pprod_constructor_recursor_rule_and_metadata_are_derived_not_trusted() {
+    let cases: &[(&str, &str)] = &[
+        ("\"types\":[{\"all\":[1]", "\"types\":[{\"all\":[]"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":1,\"induct\":1"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":0,\"induct\":6"),
+        (
+            "\"app\":{\"arg\":7,\"fn\":6},\"ie\":8",
+            "\"app\":{\"arg\":9,\"fn\":6},\"ie\":8",
+        ),
+        (
+            "\"app\":{\"arg\":9,\"fn\":8},\"ie\":10",
+            "\"app\":{\"arg\":7,\"fn\":8},\"ie\":10",
+        ),
+        (
+            "\"numFields\":2,\"numParams\":2,\"type\":14",
+            "\"numFields\":1,\"numParams\":2,\"type\":14",
+        ),
+        (
+            "\"numMinors\":1,\"numMotives\":1",
+            "\"numMinors\":0,\"numMotives\":1",
+        ),
+        ("\"numParams\":2,\"rules\"", "\"numParams\":1,\"rules\""),
+        (
+            "\"ctor\":6,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":1,\"nfields\":2,\"rhs\":42",
+        ),
+        (
+            "\"ctor\":6,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":6,\"nfields\":1,\"rhs\":42",
+        ),
+        (
+            "\"ctor\":6,\"nfields\":2,\"rhs\":42",
+            "\"ctor\":6,\"nfields\":2,\"rhs\":41",
+        ),
+        ("\"name\":9,\"numIndices\":0", "\"name\":6,\"numIndices\":0"),
+        ("\"type\":34}],\"types\"", "\"type\":33}],\"types\""),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g14_perturbations(&[(*from, *to)]), Verdict::Reject);
+    }
+}
+
+#[test]
+fn pprod_broader_neighbors_preserve_unknown() {
+    let cases = [
+        (
+            "\"name\":1,\"numIndices\":0,\"numNested\":0",
+            "\"name\":1,\"numIndices\":1,\"numNested\":0",
+        ),
+        (
+            "\"ctors\":[6],\"isRec\":false",
+            "\"ctors\":[6],\"isRec\":true",
+        ),
+        (
+            "\"types\":[{\"all\":[1],\"ctors\":[6],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":false",
+            "\"types\":[{\"all\":[1],\"ctors\":[6],\"isRec\":false,\"isReflexive\":false,\"isUnsafe\":true",
+        ),
+        (
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":false",
+            "\"cidx\":0,\"induct\":1,\"isUnsafe\":true",
+        ),
+        (
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":false",
+            "\"recs\":[{\"all\":[1],\"isUnsafe\":true",
+        ),
+        (
+            "\"numIndices\":0,\"numNested\":0",
+            "\"numIndices\":0,\"numNested\":1",
+        ),
+        (
+            "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":2",
+            "\"name\":1,\"numIndices\":0,\"numNested\":0,\"numParams\":3",
+        ),
+        (
+            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":1},\"ie\":3",
+            "\"forallE\":{\"binderInfo\":\"default\",\"body\":2,\"name\":5,\"type\":19},\"ie\":3",
+        ),
+    ];
+
+    for (from, to) in cases {
+        assert_eq!(run_g14_perturbations(&[(from, to)]), Verdict::Unknown);
+    }
+}
+
+#[test]
+fn g14_candidate_preserves_the_sealed_g13_behavior_vector() {
+    let exact_prod = include_str!("../evidence/residuals/G13-001/fixture.ndjson");
+    let exact_and = include_str!("../evidence/residuals/G12-001/fixture.ndjson");
+    let cases = [
+        ("Prod exact", exact_prod.to_owned(), Verdict::Accept),
+        (
+            "Prod malformed result",
+            exact_prod.replacen(
+                "\"app\":{\"arg\":9,\"fn\":8},\"ie\":10",
+                "\"app\":{\"arg\":7,\"fn\":8},\"ie\":10",
+                1,
+            ),
+            Verdict::Reject,
+        ),
+        (
+            "Prod indexed neighbor",
+            exact_prod.replacen(
+                "\"name\":1,\"numIndices\":0,\"numNested\":0",
+                "\"name\":1,\"numIndices\":1,\"numNested\":0",
+                1,
+            ),
+            Verdict::Unknown,
+        ),
+        ("And exact", exact_and.to_owned(), Verdict::Accept),
+    ];
+
+    for (label, bytes, sealed_verdict) in cases {
+        assert_eq!(
+            metatron_kernel::run(Cursor::new(bytes)),
+            sealed_verdict,
+            "G13 differential mismatch for {label}",
+        );
+    }
+}
