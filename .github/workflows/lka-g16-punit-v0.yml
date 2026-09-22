@@ -82,7 +82,7 @@ jobs:
           cd "$GITHUB_WORKSPACE/metatron-kernel/formal"
           lake build
 
-      - name: Protect tutorials 001-041
+      - name: Qualify tutorials 001-042 with one earned delta
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
@@ -92,19 +92,20 @@ jobs:
             --tutorial-output /tmp/lean-kernel-tutorial \
             --candidate-sha "$GITHUB_SHA" \
             --arena-sha "$ARENA_SHA" \
-            --output evidence-out/protected-qualification.json \
+            --output evidence-out/tutorial-qualification.json \
             --oracle /tmp/metatron-pre-g16/metatron-kernel/target/release/metatron-kernel \
             --oracle-sha "$PRE_G16_SHA" \
-            --require-equivalence \
-            --differential-output evidence-out/protected-differential.json
+            --earned-case 042 \
+            --differential-output evidence-out/tutorial-differential.json
           python - <<'PY'
           import json
-          q=json.load(open("evidence-out/protected-qualification.json"))
-          d=json.load(open("evidence-out/protected-differential.json"))
+          q=json.load(open("evidence-out/tutorial-qualification.json"))
+          d=json.load(open("evidence-out/tutorial-differential.json"))
           assert q["qualified"] is True, q
-          assert q["counts"] == {"incorrect":0,"matched":41}, q
+          assert q["counts"] == {"incorrect":0,"matched":42}, q
           assert d["qualified"] is True, d
-          assert d["counts"] == {"earned_delta":0,"equal":41,"mismatch":0}, d
+          assert d["counts"] == {"earned_delta":1,"equal":41,"mismatch":0}, d
+          assert d["earned_case"] == "042", d
           assert d["oracle_sha"] == "c70e7a033b3660d3705f6566027f2b75e36cda2e", d
           PY
 
