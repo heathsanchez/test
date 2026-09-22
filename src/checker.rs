@@ -377,12 +377,7 @@ fn constructor_has_definite_negative_recursive_field(
             return false;
         };
         if binder >= constructor.num_params
-            && expression_has_definite_negative_occurrence(
-                export,
-                *domain,
-                inductive.name,
-                true,
-            )
+            && expression_has_definite_negative_occurrence(export, *domain, inductive.name, true)
         {
             return true;
         }
