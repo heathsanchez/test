@@ -1409,3 +1409,32 @@ fn g22_preserves_conversion_sensitive_constructor_control() {
     let bytes = include_str!("../evidence/residuals/G21-001/055_reduceCtorParam_control.ndjson");
     assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
 }
+
+
+#[test]
+fn g23_001_conversion_lifted_unary_recursive_authority_is_accepted() {
+    let bytes = include_str!("../evidence/residuals/G23-001/fixture.ndjson");
+    assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Accept);
+}
+
+#[test]
+fn g23_conversion_is_required_not_syntactic_parameter_matching() {
+    let bytes = include_str!("../evidence/residuals/G23-001/fixture.ndjson");
+    let malformed = bytes.replacen(
+        "{\"app\":{\"arg\":7,\"fn\":14},\"ie\":15}",
+        "{\"app\":{\"arg\":13,\"fn\":14},\"ie\":15}",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(malformed)), Verdict::Reject);
+}
+
+#[test]
+fn g23_does_not_authorize_a_renamed_family() {
+    let bytes = include_str!("../evidence/residuals/G23-001/fixture.ndjson");
+    let renamed = bytes.replacen(
+        "\"str\":\"reduceCtorParam\"",
+        "\"str\":\"reduceCtorParam2\"",
+        1,
+    );
+    assert_eq!(metatron_kernel::run(Cursor::new(renamed)), Verdict::Unknown);
+}
