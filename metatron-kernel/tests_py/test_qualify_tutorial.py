@@ -5,6 +5,7 @@ from pathlib import Path
 
 from scripts.qualify_tutorial import (
     CaseResult,
+    TUTORIAL_MANIFEST,
     TutorialCase,
     build_differential_summary,
     build_summary,
@@ -17,6 +18,17 @@ ARENA = "b" * 40
 
 
 class TutorialInputTests(unittest.TestCase):
+    def test_production_manifest_pins_punit_as_case_042(self):
+        self.assertEqual(len(TUTORIAL_MANIFEST), 42)
+        case = TUTORIAL_MANIFEST[-1]
+        self.assertEqual(case.number, "042")
+        self.assertEqual(case.relative_path, Path("good/042_pUnitType.ndjson"))
+        self.assertEqual(case.expected_exit_code, 0)
+        self.assertEqual(
+            case.sha256,
+            "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+        )
+
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
         payload = b'{"kind":"test"}\n'
         manifest = (
