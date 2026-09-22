@@ -966,7 +966,6 @@ fn g16_punit_law_does_not_authorize_a_renamed_family() {
     );
 }
 
-
 fn sealed_g16_verdict(bytes: &str) -> Option<Verdict> {
     let Ok(oracle) = std::env::var("METATRON_G16_ORACLE") else {
         return None;
@@ -1017,26 +1016,14 @@ fn g17_001_exact_eq_authority_is_accepted() {
 #[test]
 fn eq_index_constructor_recursor_and_rule_are_derived_not_trusted() {
     let cases = [
-        (
-            "\"numParams\":2,\"type\":6",
-            "\"numParams\":1,\"type\":6",
-        ),
+        ("\"numParams\":2,\"type\":6", "\"numParams\":1,\"type\":6"),
         (
             "\"name\":1,\"numIndices\":1,\"numNested\":0",
             "\"name\":1,\"numIndices\":0,\"numNested\":0",
         ),
-        (
-            "{\"ie\":3,\"sort\":0}",
-            "{\"ie\":3,\"sort\":1}",
-        ),
-        (
-            "\"cidx\":0,\"induct\":1",
-            "\"cidx\":1,\"induct\":1",
-        ),
-        (
-            "\"cidx\":0,\"induct\":1",
-            "\"cidx\":0,\"induct\":9",
-        ),
+        ("{\"ie\":3,\"sort\":0}", "{\"ie\":3,\"sort\":1}"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":1,\"induct\":1"),
+        ("\"cidx\":0,\"induct\":1", "\"cidx\":0,\"induct\":9"),
         (
             "\"numFields\":0,\"numParams\":2,\"type\":12",
             "\"numFields\":1,\"numParams\":2,\"type\":12",
@@ -1065,10 +1052,7 @@ fn eq_index_constructor_recursor_and_rule_are_derived_not_trusted() {
             "\"ctor\":9,\"nfields\":0,\"rhs\":41",
             "\"ctor\":9,\"nfields\":0,\"rhs\":40",
         ),
-        (
-            "\"type\":37}],\"types\"",
-            "\"type\":36}],\"types\"",
-        ),
+        ("\"type\":37}],\"types\"", "\"type\":36}],\"types\""),
     ];
 
     for (from, to) in cases {
