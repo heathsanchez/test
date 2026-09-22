@@ -479,6 +479,9 @@ def main() -> int:
     print("FRONTIER")
     for item in atlas["frontier"]:
         print(f"{item['first_case']:03d}\t{item['dimension']}")
+    for status in ("already_matches", "mismatch", "unknown", "error"):
+        nums = [row["number"] for row in atlas["cases"] if row["g15_status"] == status]
+        print(f"STATUS_CASES {status} {nums}")
     return 0
 
 
