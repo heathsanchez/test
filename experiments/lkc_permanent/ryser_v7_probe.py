@@ -53,7 +53,7 @@ def permanentRyser (dimension seed : Nat) : Nat :=
   else if dimension = 2 then 2
   else
     let total := ryserLoop (1 <<< dimension) dimension seed 0 0
-    Int.toNat (if bitParity dimension dimension false then -total else total)
+    Int.toNat (if dimension % 2 = 1 then -total else total)
 
 def impl (n : Nat) : Nat :=
   permanentRyser (permanentDimension n) (permanentSeed n)
