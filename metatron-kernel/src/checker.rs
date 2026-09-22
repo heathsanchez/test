@@ -1450,11 +1450,7 @@ fn is_punit_minor_type(
     )
 }
 
-fn is_exact_eq_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    level: NameId,
-) -> bool {
+fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some(Expr::Pi {
         domain: carrier,
         body,
