@@ -32,12 +32,13 @@
   "obstruction": "The first malformed-inductive corridor is not rejected by the sealed G19 kernel: non-sort arities, duplicate universe parameters, and declared parameter counts exceeding the arity telescope fall through to UNKNOWN.",
   "expected": "REJECT",
   "observed": "UNKNOWN",
-  "least_capability": "A rejection-only arity law: unique universe parameters and exactly numParams + numIndices Pi binders ending in Sort. It grants no ACCEPT authority.",
-  "falsifier": "Any previously accepted tutorial 001-045 changes; any well-formed unsupported inductive is promoted or rejected solely because it is unsupported; or any of tutorials 046-049 remains non-REJECT.",
+  "least_capability": "A rejection-only arity law scoped to the zero-constructor frontier: unique universe parameters and exactly numParams + numIndices Pi binders ending in Sort. It grants no ACCEPT authority and does not alter unsupported named-family neighbours.",
+  "falsifier": "Any previously accepted tutorial 001-045 changes; any protected named-family UNKNOWN neighbour becomes REJECT; any well-formed unsupported empty inductive is promoted; or any of tutorials 046-049 remains non-REJECT.",
   "protected_suite": [
     "all G0-G19 tests and falsifiers",
     "exact tutorial prefix 001-045",
-    "unsupported well-formed inductives remain UNKNOWN",
+    "protected named-family broader neighbours remain UNKNOWN",
+    "well-formed unsupported empty inductives remain UNKNOWN",
     "G20 grants no new ACCEPT authority"
   ],
   "decision": "open"

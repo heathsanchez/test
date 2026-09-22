@@ -173,18 +173,6 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
-    // G20-001 is a rejection-only law. It grants no positive inductive
-    // authority: every declared parameter/index must correspond to exactly one
-    // arity binder, the telescope must end in a sort, and universe parameters
-    // must be unique. Malformed declarations are therefore refuted before any
-    // family-specific acceptance logic runs.
-    if block
-        .types
-        .iter()
-        .any(|inductive| !inductive_arity_metadata_is_well_formed(export, inductive))
-    {
-        return Err(Verdict::Reject);
-    }
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader
@@ -323,6 +311,15 @@ fn check_empty_inductive(
     };
     if !block.constructors.is_empty() {
         return Err(Verdict::Unknown);
+    }
+
+    // G20-001 is deliberately scoped to the zero-constructor frontier. It is
+    // rejection-only and therefore cannot grant new inductive authority.
+    // Within this frontier, malformed arity metadata is decidable: declared
+    // parameters/indices must correspond to the exact Pi telescope ending in
+    // Sort, and universe parameters must be unique.
+    if !inductive_arity_metadata_is_well_formed(export, inductive) {
+        return Err(Verdict::Reject);
     }
 
     // This is the G9 family discriminator, not a general empty inductive
