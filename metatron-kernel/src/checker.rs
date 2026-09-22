@@ -478,25 +478,10 @@ fn check_exact_nat(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    if !valid_nat_recursor_metadata(
-        export,
-        inductive.name,
-        zero.name,
-        succ.name,
-        recursor,
-    ) || !is_derived_nat_recursor_type(
-        export,
-        inductive.name,
-        zero.name,
-        succ.name,
-        recursor,
-    ) || !are_derived_nat_rules(
-        export,
-        inductive.name,
-        zero.name,
-        succ.name,
-        recursor,
-    ) {
+    if !valid_nat_recursor_metadata(export, inductive.name, zero.name, succ.name, recursor)
+        || !is_derived_nat_recursor_type(export, inductive.name, zero.name, succ.name, recursor)
+        || !are_derived_nat_rules(export, inductive.name, zero.name, succ.name, recursor)
+    {
         return Err(Verdict::Reject);
     }
 
@@ -583,7 +568,11 @@ fn is_nat_succ_minor_type(
     inductive: NameId,
     succ: NameId,
 ) -> bool {
-    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Pi {
+        domain: value,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -621,7 +610,11 @@ fn is_derived_nat_recursor_type(
     succ: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi { domain: motive, body }) = export.exprs.get(recursor.ty) else {
+    let Some(Expr::Pi {
+        domain: motive,
+        body,
+    }) = export.exprs.get(recursor.ty)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -688,7 +681,11 @@ fn is_derived_nat_zero_rule(
     succ: NameId,
     motive_level: NameId,
 ) -> bool {
-    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
     let Some(Expr::Lam {
@@ -720,7 +717,11 @@ fn is_derived_nat_succ_rule(
     recursor_name: NameId,
     motive_level: NameId,
 ) -> bool {
-    let Some(Expr::Lam { domain: motive, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Lam {
+        domain: motive,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
     let Some(Expr::Lam {
@@ -762,7 +763,11 @@ fn is_derived_nat_succ_rule(
     if !is_bvar_application(export, *succ_step, 1, 0) {
         return false;
     }
-    let Some(Expr::App { fun, arg: value_arg }) = export.exprs.get(*recursive_call) else {
+    let Some(Expr::App {
+        fun,
+        arg: value_arg,
+    }) = export.exprs.get(*recursive_call)
+    else {
         return false;
     };
     let Some(Expr::App {
