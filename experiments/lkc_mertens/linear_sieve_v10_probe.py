@@ -17,7 +17,7 @@ def linInner (n i : Nat) : Nat → Nat → LinState → LinState
   | 0, _, st => st
   | fuel + 1, j, st =>
       if j < st.primes.size then
-        let p := st.primes.get! j
+        let p := st.primes.getD j 0
         let ip := i * p
         if n < ip then st
         else
@@ -26,7 +26,7 @@ def linInner (n i : Nat) : Nat → Nat → LinState → LinState
           if i % p = 0 then
             { st1 with mu := st1.mu.set! ip 0 }
           else
-            let mui := st1.mu.get! i
+            let mui := st1.mu.getD i 0
             let st2 : LinState :=
               { st1 with mu := st1.mu.set! ip (-mui) }
             linInner n i fuel (j + 1) st2
@@ -38,7 +38,7 @@ def linOuter (n : Nat) : Nat → Nat → LinState → LinState
       if n < i then st
       else
         let st1 :=
-          if st.composite.get! i then st
+          if st.composite.getD i false then st
           else
             { st with
               primes := st.primes.push i
@@ -58,7 +58,7 @@ def linMu (n : Nat) : Array Int :=
 
 def sumMu : Nat → Nat → Array Int → Int
   | 0, _, _ => 0
-  | fuel + 1, i, mu => mu.get! i + sumMu fuel (i + 1) mu
+  | fuel + 1, i, mu => mu.getD i 0 + sumMu fuel (i + 1) mu
 
 def impl (n : Nat) : Int :=
   if n = 0 then 0 else sumMu n 1 (linMu n)
