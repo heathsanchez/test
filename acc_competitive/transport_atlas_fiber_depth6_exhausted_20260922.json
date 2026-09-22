@@ -1,0 +1,32 @@
+{
+  "version": "transport-atlas-fiber-depth6-exhausted-20260922",
+  "qualified_run": "https://github.com/heathsanchez/test/actions/runs/35730011220",
+  "qualified_branch_head": "dee453b07c5dd7316effc22ae4d713692275fbf9",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "atlas_states": 433272,
+  "contexts": ["S6:xy", "S6:yx", "S7:xy", "S7:yx", "S7:quad-cycle", "S8:quad-cycle"],
+  "exact_depth": 6,
+  "claim": "For every listed frozen positive-transport-slack AC target, the exact-length six-context quotient layer at depth 6 has zero intersection with the 433272-state Proof Atlas projection. Therefore this six-context exact-depth-6 connector mechanism cannot produce a candidate for any listed target against this Atlas snapshot.",
+  "reuse_rule": "Do not repeat the exact-depth-6 six-context fiber connector on these targets against the same 433272-state Proof Atlas. A future retry requires a changed Atlas, changed target state, or a qualitatively different connector/search representation.",
+  "artifacts": {
+    "freeze": {"id": 10704705881, "digest": "sha256:ab4e1a99b02fbc8cf6ed7c31bcba399369e5079d03342e635b8361bc973309bd"},
+    "shard_0": {"id": 10705830138, "digest": "sha256:5f6ccd77abc86b96e90b001b4db8559c0868c150f30af71c2e29a0ceb6d3959d"},
+    "shard_1": {"id": 10704676449, "digest": "sha256:f0eae42e033d40078e51455bdf0faa17841c0e8b18525be44fee43d26708ca54"},
+    "shard_2": {"id": 10704876235, "digest": "sha256:24ac6ab20c5fff098ecb1b6e8318f13e6485e50dfaf434ccb97ce1522e9fff0d"},
+    "shard_3": {"id": 10705476097, "digest": "sha256:49ea84ecaafdd231364c8ae18f6d028cb6836f6ae72f3704e3390757882cc804"}
+  },
+  "targets": [
+    {"challenge_id":"ac-05720","ac_best":139,"stable_best":384,"transport_slack":243,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-02809","ac_best":182,"stable_best":391,"transport_slack":207,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-09398","ac_best":129,"stable_best":263,"transport_slack":132,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-06547","ac_best":131,"stable_best":257,"transport_slack":124,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-01097","ac_best":339,"stable_best":464,"transport_slack":123,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-07381","ac_best":315,"stable_best":420,"transport_slack":103,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-08248","ac_best":115,"stable_best":218,"transport_slack":101,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-03268","ac_best":283,"stable_best":375,"transport_slack":90,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-01312","ac_best":355,"stable_best":446,"transport_slack":89,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-00850","ac_best":334,"stable_best":424,"transport_slack":88,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-01149","ac_best":398,"stable_best":483,"transport_slack":83,"terminal_quotient_signatures":0},
+    {"challenge_id":"ac-05333","ac_best":164,"stable_best":248,"transport_slack":82,"terminal_quotient_signatures":0}
+  ]
+}
