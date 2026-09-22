@@ -35,7 +35,7 @@
   },
   "obstruction": "The next malformed corridor violates hard constructor-result coherence: declared parameters are not reused in order, universe parameters are permuted in the result head, or the inductive occurs recursively inside an index.",
   "expected": "REJECT",
-  "observed": "UNKNOWN",
+  "observed": "REJECT",
   "least_capability": "A rejection-only constructor-result spine law on the unrecognized single-constructor frontier. It checks owner/index metadata, declared universe order, parameter reuse/order, result arity, and recursive occurrence inside indices, while deliberately not comparing parameter domain types.",
   "falsifier": "Any tutorial 001-049 changes; the valid conversion-sensitive tutorial 055 control becomes REJECT; any of 050-053 remains non-REJECT; or G21 grants any new ACCEPT authority.",
   "protected_suite": [
@@ -45,5 +45,28 @@
     "recognized named-family broader neighbours bypass G21",
     "G21 grants no new ACCEPT authority"
   ],
-  "decision": "open"
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "1423040508c602c628f92e845d4ccc3796f165ba",
+    "oracle_sha": "80c99cfdce1e9a5349ef4b300f506c92677dc6ce",
+    "run_id": 35763602005,
+    "job_id": 106867429092,
+    "artifact_id": 10711556671,
+    "artifact_digest": "sha256:d80d8c82fe6838bbc9fab662a9281fd017c39d7ae51021badc9de5193ea92209",
+    "tutorial_differential": {
+      "equal": 49,
+      "earned_delta": 4,
+      "earned_cases": [
+        "050",
+        "051",
+        "052",
+        "053"
+      ],
+      "mismatch": 0
+    },
+    "suffix_atlas": {
+      "matched": 25,
+      "first_mismatch": 54
+    }
+  }
 }
