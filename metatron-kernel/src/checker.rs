@@ -1206,13 +1206,7 @@ fn is_derived_eq_rule(
 
     is_sort_parameter(export, *alpha, level)
         && is_bvar(export, *parameter, 0)
-        && is_eq_motive_type(
-            export,
-            *motive,
-            inductive,
-            level,
-            recursor.level_params[0],
-        )
+        && is_eq_motive_type(export, *motive, inductive, level, recursor.level_params[0])
         && is_eq_minor_type(export, *minor, constructor, level)
         && is_bvar(export, *result, 0)
 }
