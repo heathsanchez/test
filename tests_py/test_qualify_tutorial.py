@@ -103,6 +103,17 @@ class TutorialInputTests(unittest.TestCase):
             "89592d2e05e7ea518cf550eb18b99d1172b63b96b90abf1454b7102300eda843",
         )
 
+    def test_production_manifest_pins_reduce_ctor_param_as_case_055(self):
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 55)
+        case = TUTORIAL_MANIFEST[54]
+        self.assertEqual(case.number, "055")
+        self.assertEqual(case.relative_path, Path("good/055_reduceCtorParam.mk.ndjson"))
+        self.assertEqual(case.expected_exit_code, 0)
+        self.assertEqual(
+            case.sha256,
+            "16d146c5ef39743b6a95f21043a43b890e22d72792fd9436e37396765124a7a2",
+        )
+
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
         payload = b'{"kind":"test"}\n'
         manifest = (
