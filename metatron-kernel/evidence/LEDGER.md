@@ -579,3 +579,33 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   verification is not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+## G20-001 — Rejection-only empty-inductive arity law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G19 head
+  `5c51781af6ede78e435b756b7aa75490d10d49c9`.
+- Exact malformed corridor: tutorials 046–049. Sealed G19 returns `UNKNOWN`
+  on 046, 047, and 049, while 048 is already `REJECT`.
+- Least capability: inside the zero-constructor frontier only, universe
+  parameters must be unique and the inductive arity must contain exactly
+  `numParams + numIndices` Pi binders ending in `Sort`. This is
+  rejection-only: it cannot install or accept any declaration.
+- The first global version was causally rejected because it changed nine
+  protected broader-neighbour verdicts from `UNKNOWN` to `REJECT`. Scoping
+  the same law to the existing empty-inductive frontier restores every sealed
+  G0–G19 boundary while retaining the desired malformed rejections.
+- Exact oracle differential through tutorial 049: 46 equal, three earned
+  `UNKNOWN → REJECT` deltas (046, 047, 049), and zero mismatches. Tutorial
+  048 remains equal `REJECT`.
+- External qualification: candidate
+  `97ae436b2af00d563a5460d01d3839d97304b5b0`, run `35761375025`, job
+  `106859961966`, artifact `10710223928`, digest
+  `sha256:e210119080a776841d2df5bf563625ed6b2ee87c1768f8e52d532c98058f556b`.
+  All 49 tutorial cases and 59 end-to-end tests passed.
+- Diagnostic suffix atlas improved from 17/96 to 20/96 matches; the first
+  remaining mismatch moves from tutorial 046 to tutorial 050.
+- Formal status: no new promotion theorem is required because the law is
+  rejection-only. Rust-to-IdealLean refinement and completeness of general
+  inductive arity checking are not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+

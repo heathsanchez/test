@@ -31,7 +31,7 @@
   },
   "obstruction": "The first malformed-inductive corridor is not rejected by the sealed G19 kernel: non-sort arities, duplicate universe parameters, and declared parameter counts exceeding the arity telescope fall through to UNKNOWN.",
   "expected": "REJECT",
-  "observed": "UNKNOWN",
+  "observed": "REJECT",
   "least_capability": "A rejection-only arity law scoped to the zero-constructor frontier: unique universe parameters and exactly numParams + numIndices Pi binders ending in Sort. It grants no ACCEPT authority and does not alter unsupported named-family neighbours.",
   "falsifier": "Any previously accepted tutorial 001-045 changes; any protected named-family UNKNOWN neighbour becomes REJECT; any well-formed unsupported empty inductive is promoted; or any of tutorials 046-049 remains non-REJECT.",
   "protected_suite": [
@@ -41,5 +41,28 @@
     "well-formed unsupported empty inductives remain UNKNOWN",
     "G20 grants no new ACCEPT authority"
   ],
-  "decision": "open"
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "97ae436b2af00d563a5460d01d3839d97304b5b0",
+    "oracle_sha": "5c51781af6ede78e435b756b7aa75490d10d49c9",
+    "run_id": 35761375025,
+    "job_id": 106859961966,
+    "artifact_id": 10710223928,
+    "artifact_digest": "sha256:e210119080a776841d2df5bf563625ed6b2ee87c1768f8e52d532c98058f556b",
+    "tutorial_differential": {
+      "equal": 46,
+      "earned_delta": 3,
+      "earned_cases": [
+        "046",
+        "047",
+        "049"
+      ],
+      "mismatch": 0
+    },
+    "suffix_atlas": {
+      "matched": 20,
+      "count": 96,
+      "first_mismatch": 50
+    }
+  }
 }
