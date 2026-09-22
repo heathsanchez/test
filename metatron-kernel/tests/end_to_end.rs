@@ -163,6 +163,21 @@ fn g10_001_derived_binary_enum_authority_is_accepted() {
 }
 
 #[test]
+fn declared_recursive_binary_enum_is_unknown_before_closed_enum_validation() {
+    let bytes = include_str!("../evidence/residuals/G10-001/fixture.ndjson");
+    let perturbed = bytes.replacen(
+        "\"ctors\":[2,3],\"isRec\":false",
+        "\"ctors\":[2,3],\"isRec\":true",
+        1,
+    );
+    assert_ne!(bytes, perturbed, "recursive perturbation source must exist");
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(perturbed)),
+        Verdict::Unknown
+    );
+}
+
+#[test]
 fn binary_enum_constructor_index_is_checked_not_trusted() {
     let bytes = include_str!("../evidence/residuals/G10-001/fixture.ndjson");
     let perturbed = bytes.replacen("\"cidx\":0", "\"cidx\":1", 1);
