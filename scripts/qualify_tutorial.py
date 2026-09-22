@@ -67,6 +67,7 @@ TUTORIAL_MANIFEST = (
     TutorialCase("041", Path("good/041_pprodType.ndjson"), 0, "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a"),
     TutorialCase("042", Path("good/042_pUnitType.ndjson"), 0, "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891"),
     TutorialCase("043", Path("good/043_eqType.ndjson"), 0, "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc"),
+    TutorialCase("044", Path("good/044_natDef.ndjson"), 0, "95d33f871f126e234740e05d9291a1cedcc6a2d01522aedc3122b25aab17ab95"),
 )
 
 
