@@ -839,9 +839,23 @@ def main() -> int:
     if prediction["basis"] is not None:
         predicted_names = [hidden["feature_names"][gid] for gid in prediction["basis"]]
 
+    if real_basis is None:
+        verdict = "INSUFFICIENT_GRAMMAR"
+    elif hold_pairs and real_hold_covered < sham_hold_covered:
+        verdict = "NEGATIVE_SHAM_DOMINATES"
+    elif real_hold_covered == len(hold_pairs) and (
+        sham_hold_covered < len(hold_pairs)
+        or sham_basis is None
+        or train_basis is not None and len(train_basis) <= len(sham_basis)
+    ):
+        verdict = "BOUNDED_POSITIVE"
+    else:
+        verdict = "BOUNDED_INCONCLUSIVE"
+
     summary = {
         "schema": "lka-residual-basis-v0",
         "authority": "read-only discovery; cannot grant or revoke checker semantics",
+        "verdict": verdict,
         "case_range": [args.start, args.end],
         "case_count": len(cases),
         "current_correct": sum(c.actual == c.expected for c in cases),
