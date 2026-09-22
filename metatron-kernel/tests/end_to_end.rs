@@ -1366,7 +1366,6 @@ fn rbtree_recursor_type_and_rules_are_derived_not_trusted() {
     }
 }
 
-
 #[test]
 fn g20_inductive_arity_law_rejects_first_malformed_corridor() {
     let cases = [
