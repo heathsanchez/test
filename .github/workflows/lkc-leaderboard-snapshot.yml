@@ -1,0 +1,53 @@
+name: LKC Read-only Competition Snapshot
+
+on:
+  push:
+    branches: [lkc-leaderboard-snapshot-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-24.04
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+      BASE: https://api.sair.foundation/api/public/v1/competitions/lean-kernel-challenge
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch competition detail and discover ranking surface
+        run: |
+          set -euo pipefail
+          mkdir -p lkc-frontier
+          curl -fsS "$BASE"             -H "Authorization: Bearer $SAIR_API_KEY"             -H "Accept: application/json" > lkc-frontier/detail.json
+          jq . lkc-frontier/detail.json
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path("lkc-frontier/detail.json").read_text())
+          def walk(x,path=()):
+              if isinstance(x,dict):
+                  for k,v in x.items():
+                      if any(s in k.lower() for s in ("leader","rank","standing","score","problem","publication","capabil")) :
+                          print(".".join(path+(k,)), repr(v)[:1000])
+                      walk(v,path+(k,))
+              elif isinstance(x,list):
+                  for i,v in enumerate(x): walk(v,path+(str(i),))
+          walk(d)
+          PY
+      - name: Probe documented-style read-only leaderboard endpoints
+        run: |
+          set +e
+          for suffix in             "leaderboard?limit=100"             "leaderboard/me"             "standings?limit=100"             "problems"             "results?limit=100"; do
+            name=$(echo "$suffix" | tr '/?=&' '_____')
+            code=$(curl -sS -o "lkc-frontier/$name.json" -w '%{http_code}'               "$BASE/$suffix"               -H "Authorization: Bearer $SAIR_API_KEY"               -H "Accept: application/json")
+            echo "$suffix -> $code"
+            head -c 2000 "lkc-frontier/$name.json"; echo
+          done
+          exit 0
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lkc-readonly-frontier-snapshot
+          path: lkc-frontier/
+          if-no-files-found: error
