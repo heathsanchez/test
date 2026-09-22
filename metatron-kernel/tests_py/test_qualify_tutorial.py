@@ -19,14 +19,25 @@ ARENA = "b" * 40
 
 class TutorialInputTests(unittest.TestCase):
     def test_production_manifest_pins_punit_as_case_042(self):
-        self.assertEqual(len(TUTORIAL_MANIFEST), 42)
-        case = TUTORIAL_MANIFEST[-1]
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 42)
+        case = TUTORIAL_MANIFEST[41]
         self.assertEqual(case.number, "042")
         self.assertEqual(case.relative_path, Path("good/042_pUnitType.ndjson"))
         self.assertEqual(case.expected_exit_code, 0)
         self.assertEqual(
             case.sha256,
             "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
+        )
+
+    def test_production_manifest_pins_eq_as_case_043(self):
+        self.assertEqual(len(TUTORIAL_MANIFEST), 43)
+        case = TUTORIAL_MANIFEST[42]
+        self.assertEqual(case.number, "043")
+        self.assertEqual(case.relative_path, Path("good/043_eqType.ndjson"))
+        self.assertEqual(case.expected_exit_code, 0)
+        self.assertEqual(
+            case.sha256,
+            "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
         )
 
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
