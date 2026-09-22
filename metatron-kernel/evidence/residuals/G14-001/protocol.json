@@ -15,9 +15,9 @@
   "falsifier": "Reject the hypothesis if exact PProd does not ACCEPT, if any malformed claim in the recognized PProd envelope avoids REJECT, if broader dependent/indexed/recursive/nested/unsafe shapes cease to be UNKNOWN, or if any tutorial 001-040 behavior differs from sealed G13.",
   "protected_suite": [
     "all G0-G13 tests",
-    "exact tutorial prefix 001-040",
-    "sealed G12 differential oracle",
+    "exact tutorial prefix 001-041",
+    "G13/G14 differential equality on 001-040 and sole earned delta on 041",
     "unsupported broader inductives remain UNKNOWN"
   ],
-  "decision": "open"
+  "decision": "retained"
 }
