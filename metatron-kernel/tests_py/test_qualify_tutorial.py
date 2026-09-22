@@ -29,6 +29,17 @@ class TutorialInputTests(unittest.TestCase):
             "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
         )
 
+    def test_production_manifest_pins_nat_as_case_044(self):
+        self.assertEqual(len(TUTORIAL_MANIFEST), 44)
+        case = TUTORIAL_MANIFEST[-1]
+        self.assertEqual(case.number, "044")
+        self.assertEqual(case.relative_path, Path("good/044_natDef.ndjson"))
+        self.assertEqual(case.expected_exit_code, 0)
+        self.assertEqual(
+            case.sha256,
+            "95d33f871f126e234740e05d9291a1cedcc6a2d01522aedc3122b25aab17ab95",
+        )
+
     def test_production_manifest_pins_eq_as_case_043(self):
         self.assertEqual(len(TUTORIAL_MANIFEST), 43)
         case = TUTORIAL_MANIFEST[42]
