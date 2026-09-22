@@ -57,6 +57,42 @@ def run_checker(checker: Path, path: Path) -> int:
         ).returncode
 
 
+def run_diagnostic_checker(checker: Path, path: Path) -> tuple[int, dict[str, int]]:
+    env = dict(__import__("os").environ)
+    env["METATRON_KERNEL_DIAGNOSTICS"] = "1"
+    with path.open("rb") as stream:
+        run = subprocess.run(
+            [str(checker.resolve())],
+            stdin=stream,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.PIPE,
+            env=env,
+            check=False,
+            text=False,
+        )
+    text = run.stderr.decode(errors="replace").strip().splitlines()
+    payload: dict[str, int] = {}
+    for line in reversed(text):
+        try:
+            value = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(value, dict) and all(
+            isinstance(value.get(k), int)
+            for k in ("declarations", "inductive_signatures", "type_judgments", "conversions")
+        ):
+            payload = {k: int(value[k]) for k in value}
+            break
+    if not payload:
+        payload = {
+            "declarations": -1,
+            "inductive_signatures": -1,
+            "type_judgments": -1,
+            "conversions": -1,
+        }
+    return run.returncode, payload
+
+
 def numbered_cases(root: Path, start: int, end: int) -> list[tuple[int, Path, int]]:
     out: list[tuple[int, Path, int]] = []
     for n in range(start, end + 1):
@@ -471,17 +507,60 @@ def atomic_observations(features: dict[str, Any]) -> dict[str, Any]:
     return out
 
 
-def build_cases(root: Path, checker: Path, start: int, end: int) -> list[Case]:
+def build_cases(
+    root: Path,
+    checker: Path,
+    start: int,
+    end: int,
+    lineage: list[tuple[str, Path]],
+    diagnostic_checker: Path | None,
+) -> list[Case]:
     out: list[Case] = []
     for n, path, expected in numbered_cases(root, start, end):
         records = load_records(path)
+        actual = run_checker(checker, path)
+        features = atomic_observations(generic_features(records))
+
+        lineage_vector: list[int] = []
+        for label, binary in lineage:
+            verdict = run_checker(binary, path)
+            features[f"behavior:lineage:{label}"] = verdict
+            lineage_vector.append(verdict)
+        if lineage_vector:
+            features["behavior:lineage_vector"] = lineage_vector
+            features["behavior:lineage_change_count"] = sum(
+                a != b for a, b in zip(lineage_vector, lineage_vector[1:])
+            )
+            features["behavior:lineage_conclusive_count"] = sum(v in (0, 1) for v in lineage_vector)
+            features["behavior:lineage_unknown_count"] = sum(v == 2 for v in lineage_vector)
+            features["behavior:lineage_error_count"] = sum(v == 3 for v in lineage_vector)
+
+        if diagnostic_checker is not None:
+            diag_verdict, operations = run_diagnostic_checker(diagnostic_checker, path)
+            if diag_verdict != actual:
+                raise ValueError(
+                    f"diagnostic verdict drift on {path}: normal={actual}, diagnostic={diag_verdict}"
+                )
+            for key, value in sorted(operations.items()):
+                features[f"behavior:diag:{key}"] = value
+            features["behavior:diag:vector"] = [
+                operations["declarations"],
+                operations["inductive_signatures"],
+                operations["type_judgments"],
+                operations["conversions"],
+            ]
+            features["behavior:diag:conversion_pressure"] = (
+                operations["conversions"],
+                operations["type_judgments"],
+            )
+
         out.append(
             Case(
                 number=n,
                 path=path,
                 expected=expected,
-                actual=run_checker(checker, path),
-                features=atomic_observations(generic_features(records)),
+                actual=actual,
+                features=features,
             )
         )
     return out
@@ -697,9 +776,31 @@ def main() -> int:
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--start", type=int, default=56)
     parser.add_argument("--end", type=int, default=141)
+    parser.add_argument(
+        "--lineage",
+        action="append",
+        default=[],
+        metavar="LABEL=PATH",
+        help="sealed semantic observation binary; may be repeated",
+    )
+    parser.add_argument("--diagnostic-checker", type=Path)
     args = parser.parse_args()
 
-    cases = build_cases(args.tutorial_output, args.checker, args.start, args.end)
+    lineage: list[tuple[str, Path]] = []
+    for item in args.lineage:
+        if "=" not in item:
+            raise ValueError(f"bad --lineage value {item!r}")
+        label, raw_path = item.split("=", 1)
+        lineage.append((label, Path(raw_path)))
+
+    cases = build_cases(
+        args.tutorial_output,
+        args.checker,
+        args.start,
+        args.end,
+        lineage,
+        args.diagnostic_checker,
+    )
     feature_names = sorted(set.intersection(*(set(c.features) for c in cases)))
     # Drop globally constant observations: they cannot separate anything.
     feature_names = [
