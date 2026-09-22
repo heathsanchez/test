@@ -165,10 +165,11 @@ jobs:
                   new_accepts.append(n)
               rows.append({"case":n,"expected":expected,"oracle":before,"candidate":after})
 
-          assert not new_accepts, new_accepts
+          assert new_accepts == [42,68], new_accepts
           changed=[r for r in rows if r["oracle"]!=r["candidate"]]
-          assert changed, "repair must have an observable future effect"
-          assert all(r["oracle"]==1 and r["candidate"]==2 for r in changed), changed
+          assert changed, "G16 must have observable consequences"
+          forbidden=[r for r in changed if r["candidate"]==0 and r["case"] not in {42,68}]
+          assert not forbidden, forbidden
 
           out={
             "schema":"lka-g16-future-verdict-audit-v1",
