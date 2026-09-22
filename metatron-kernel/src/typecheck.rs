@@ -372,6 +372,12 @@ impl<'a> TypeChecker<'a> {
         self.environment.authority()
     }
 
+    pub(crate) fn has_unearned_inductive_semantics(&self, name: NameId) -> bool {
+        self.environment
+            .get(name)
+            .is_some_and(|declaration| declaration.has_unearned_inductive_semantics())
+    }
+
     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
         let mut entries: Vec<_> = self
             .level_substitution
