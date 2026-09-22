@@ -838,33 +838,9 @@ fn check_exact_rbtree(
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [leaf.name, red.name, black.name]
-        || !valid_rbtree_constructor_metadata(
-            export,
-            inductive.name,
-            *level,
-            leaf,
-            0,
-            0,
-            "leaf",
-        )
-        || !valid_rbtree_constructor_metadata(
-            export,
-            inductive.name,
-            *level,
-            red,
-            1,
-            4,
-            "red",
-        )
-        || !valid_rbtree_constructor_metadata(
-            export,
-            inductive.name,
-            *level,
-            black,
-            2,
-            6,
-            "black",
-        )
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, leaf, 0, 0, "leaf")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
         || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
         || !is_derived_rbtree_red_type(export, red.ty, inductive.name, *level)
         || !is_derived_rbtree_black_type(export, black.ty, inductive.name, *level)
@@ -963,11 +939,7 @@ fn rbtree_application_parts(
     inductive: NameId,
     level: NameId,
 ) -> Option<(ExprId, ExprId, ExprId)> {
-    let Expr::App {
-        fun,
-        arg: height,
-    } = export.exprs.get(expression)?
-    else {
+    let Expr::App { fun, arg: height } = export.exprs.get(expression)? else {
         return None;
     };
     let Expr::App { fun, arg: color } = export.exprs.get(*fun)? else {
@@ -984,11 +956,7 @@ fn rbtree_application_parts(
         .then_some((*carrier, *color, *height))
 }
 
-fn is_root_empty_constant_named(
-    export: &ResolvedExport,
-    expression: ExprId,
-    root: &str,
-) -> bool {
+fn is_root_empty_constant_named(export: &ResolvedExport, expression: ExprId, root: &str) -> bool {
     matches!(
         export.exprs.get(expression),
         Some(Expr::Const { name, levels })
@@ -1060,16 +1028,28 @@ fn is_derived_rbtree_red_type(
     inductive: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi { domain: carrier, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Pi {
+        domain: carrier,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: height,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1079,11 +1059,16 @@ fn is_derived_rbtree_red_type(
     else {
         return false;
     };
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height)), Some((result_carrier, result_color, result_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+        Some((result_carrier, result_color, result_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
         rbtree_application_parts(export, *result, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
     is_sort_succ_parameter(export, *carrier, level)
@@ -1106,22 +1091,42 @@ fn is_derived_rbtree_black_type(
     inductive: NameId,
     level: NameId,
 ) -> bool {
-    let Some(Expr::Pi { domain: carrier, body }) = export.exprs.get(expression) else {
+    let Some(Expr::Pi {
+        domain: carrier,
+        body,
+    }) = export.exprs.get(expression)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: first_color, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: first_color,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: second_color, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: second_color,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
-    let Some(Expr::Pi { domain: height, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: height,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi { domain: left, body }) = export.exprs.get(*body) else {
         return false;
     };
-    let Some(Expr::Pi { domain: value, body }) = export.exprs.get(*body) else {
+    let Some(Expr::Pi {
+        domain: value,
+        body,
+    }) = export.exprs.get(*body)
+    else {
         return false;
     };
     let Some(Expr::Pi {
@@ -1131,11 +1136,16 @@ fn is_derived_rbtree_black_type(
     else {
         return false;
     };
-    let (Some((left_carrier, left_color, left_height)), Some((right_carrier, right_color, right_height)), Some((result_carrier, result_color, result_height))) = (
+    let (
+        Some((left_carrier, left_color, left_height)),
+        Some((right_carrier, right_color, right_height)),
+        Some((result_carrier, result_color, result_height)),
+    ) = (
         rbtree_application_parts(export, *left, inductive, level),
         rbtree_application_parts(export, *right, inductive, level),
         rbtree_application_parts(export, *result, inductive, level),
-    ) else {
+    )
+    else {
         return false;
     };
     is_sort_succ_parameter(export, *carrier, level)
