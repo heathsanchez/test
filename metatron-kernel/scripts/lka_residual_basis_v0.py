@@ -705,6 +705,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     type_by_name: dict[int, dict[str, Any]] = {}
     ctor_by_owner: dict[int, list[dict[str, Any]]] = defaultdict(list)
     ctor_owner_by_name: dict[int, int] = {}
+    recursor_by_name: dict[int, tuple[int, dict[str, Any]]] = {}
     k_recursor_owner: dict[int, int] = {}
     for block in blocks:
         types = [x for x in block.get("types", []) if isinstance(x, dict)]
@@ -720,10 +721,13 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
                 if isinstance(ctor.get("name"), int):
                     ctor_owner_by_name[int(ctor["name"])] = owner
         for rec in recs:
-            if bool(rec.get("k")) and isinstance(rec.get("name"), int):
+            if isinstance(rec.get("name"), int):
                 all_types = rec.get("all")
                 if isinstance(all_types, list) and len(all_types) == 1 and isinstance(all_types[0], int):
-                    k_recursor_owner[int(rec["name"])] = int(all_types[0])
+                    owner = int(all_types[0])
+                    recursor_by_name[int(rec["name"])] = (owner, rec)
+                    if bool(rec.get("k")):
+                        k_recursor_owner[int(rec["name"])] = owner
 
     def result_sort_is_prop(
         type_name: int,
@@ -889,6 +893,21 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         )
 
     projection_source_by_eid: dict[int, str] = {}
+    recursor_reduction_results: list[str] = []
+
+    def owner_is_unit_like(owner: int) -> bool:
+        t = type_by_name.get(owner)
+        ctors = ctor_by_owner.get(owner, [])
+        if t is None or len(ctors) != 1:
+            return False
+        ctor = ctors[0]
+        return (
+            int(t.get("numIndices", 0)) == 0
+            and int(t.get("numNested", 0)) == 0
+            and not bool(t.get("isRec"))
+            and not bool(t.get("isReflexive"))
+            and int(ctor.get("numFields", 0)) == 0
+        )
 
     # Rule-K probe: when a k-enabled recursor is fully applied to a bound major
     # premise whose owner-inductive application has two final endpoint
@@ -949,6 +968,42 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         hrow = exprs.get(head, {})
         const = hrow.get("const")
         if isinstance(const, dict) and isinstance(const.get("name"), int):
+            rec_info = recursor_by_name.get(int(const["name"]))
+            if rec_info is not None:
+                owner, rec = rec_info
+                required = (
+                    int(rec.get("numParams", 0))
+                    + int(rec.get("numMotives", 0))
+                    + int(rec.get("numMinors", 0))
+                    + int(rec.get("numIndices", 0))
+                    + 1
+                )
+                if len(args) >= required:
+                    major = args[-1]
+                    mhead, _margs = app_spine(exprs, major)
+                    mhrow = exprs.get(mhead, {})
+                    mconst = mhrow.get("const")
+                    ctor_owner = (
+                        ctor_owner_by_name.get(int(mconst["name"]))
+                        if isinstance(mconst, dict) and isinstance(mconst.get("name"), int)
+                        else None
+                    )
+                    if ctor_owner == owner:
+                        recursor_reduction_results.append("allow")
+                    else:
+                        mrow = exprs.get(major, {})
+                        if isinstance(mrow.get("bvar"), int):
+                            if owner_is_unit_like(owner):
+                                recursor_reduction_results.append("allow")
+                            elif bool(rec.get("k")):
+                                # Rule-K on a non-constructor major is a separate
+                                # low-bandwidth law already probed below.
+                                recursor_reduction_results.append("unknown")
+                            else:
+                                recursor_reduction_results.append("deny")
+                        else:
+                            recursor_reduction_results.append("unknown")
+
             owner = k_recursor_owner.get(int(const["name"]))
             if owner is not None and args:
                 major = args[-1]
@@ -1003,6 +1058,15 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     for root in roots:
         walk(root, ())
 
+    if not recursor_reduction_results:
+        recursor_reduction_scalar = "not_applicable"
+    elif any(result == "deny" for result in recursor_reduction_results):
+        recursor_reduction_scalar = "deny"
+    elif any(result == "unknown" for result in recursor_reduction_results):
+        recursor_reduction_scalar = "unknown"
+    else:
+        recursor_reduction_scalar = "allow"
+
     projection_sources = [
         projection_source_by_eid.get(eid, "unknown")
         for eid, _proj in proj_rows
@@ -1024,6 +1088,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semantic:field_universe_admissibility": field_universe_admissibility(
             records, exprs, levels
         ),
+        "semantic:recursor_reduction_admissibility": recursor_reduction_scalar,
         "semantic:projection_admissibility_scalar": projection_scalar,
         "semantic:projection_source_coherence": sorted(projection_sources),
         "semantic:projection_admissibility": sorted(projection_results),
