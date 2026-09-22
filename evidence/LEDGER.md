@@ -392,9 +392,48 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 
 ## G14-001 — `PProd` replication residual
 
-- Status: OPEN; deliberately not implemented or abstracted.
+- Status: RETAINED locally at implementation commit
+  `ce19e8c9c4c5908c59cdf01996e3842fef9c38c4`; exact-head external seal
+  pending.
 - Exact obstruction: tutorial 041 `good/041_pprodType.ndjson`, SHA-256
   `9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a`,
-  expects ACCEPT and the G13 candidate returns `UNKNOWN`.
-- Boundary: tutorial 041 is frozen as the replication test for the apparent
-  G12/G13 composition law. No shared abstraction is promoted before that test.
+  expects ACCEPT and sealed G13 `6b50ae9d...` returns `UNKNOWN`.
+- Retained capability: a separate exact `PProd` classifier validates
+  parameters in `Sort u` and `Sort v`, result sort `max 1 u v`, ordered
+  universe instances, constructor and recursor signatures, and the rule. It
+  reuses only the existing opaque-signature promotion transaction.
+- Causal differential: G13 and G14 agree on tutorials 001–040; tutorial 041
+  is the sole delta, from `UNKNOWN` to `ACCEPT`—40 equal, one earned delta,
+  zero mismatches.
+- Falsifiers: malformed Sort levels, universes, result level, constructor
+  spine, recursor motive/minor/rule, ownership and counts reject. Dependent,
+  indexed, recursive, nested, unsafe and broader shapes remain `UNKNOWN`.
+- Formal warrant: `IdealLean.PProdSortPromotion.
+  promote_preserves_environment_validity` proves the existing parameterized
+  opaque-promotion law remains valid after the exact PProd Sort telescope and
+  computed-sort obligations are validated. It is not Rust refinement.
+- No generic parameterized-inductive abstraction was introduced during G14.
+- Diagnostic counts are three promoted signatures, four type judgments and
+  thirteen conversions. Callgrind is unavailable; retired instructions remain
+  unqualified.
+
+## G15-001 — Replicated-law promotion experiment
+
+- Status: OPEN; no refactor implemented.
+- Obstruction: the independently earned And, Prod and PProd handlers now
+  repeat a common two-parameter, one-constructor, one-recursor derivation
+  spine after their distinct telescope/result-sort classifiers.
+- Proposed experiment: quotient only that shared internal derivation law while
+  retaining the three exact external envelopes and every `UNKNOWN` boundary.
+- Acceptance requires exact behavioral equivalence across all sealed tutorials
+  and falsifiers, smaller duplicated semantic surface, no recognized-language
+  increase, and removal ablation restoring the pre-promotion implementation.
+
+## G16-001 — Frozen `PUnit` stress residual
+
+- Status: OPEN and deliberately untouched until G15 resolves.
+- Exact fixture: tutorial 042 `good/042_pUnitType.ndjson`, SHA-256
+  `acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891`.
+- Current G14 verdict: `UNKNOWN`; expected Arena verdict: `ACCEPT`.
+- Role: an independent nullary/singleton stress test for any abstraction
+  retained by G15, not evidence permitted to broaden G15 in advance.

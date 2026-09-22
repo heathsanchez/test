@@ -1,0 +1,27 @@
+{
+  "schema": "metatron-diagnostic-baseline-v1",
+  "candidate_local_sha": "ce19e8c9c4c5908c59cdf01996e3842fef9c38c4",
+  "cohort": [
+    "evidence/residuals/G14-001/fixture.ndjson"
+  ],
+  "build": "cargo build --release --locked --features diagnostics",
+  "operation_counts": {
+    "G14-001": {
+      "exit": 0,
+      "declarations": 2,
+      "inductive_signatures": 3,
+      "type_judgments": 4,
+      "conversions": 13
+    }
+  },
+  "callgrind": {
+    "status": "UNAVAILABLE_LOCAL_VALGRIND_NOT_INSTALLED"
+  },
+  "retired_instructions": {
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "candidate": null,
+    "control": null,
+    "promotion_eligible": false
+  },
+  "interpretation": "Diagnostic operation counts only. They are not the official Arena retired-instruction metric and authorize no performance promotion."
+}

@@ -1,0 +1,22 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G16-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "G14 exact PProd candidate before G15 abstraction",
+    "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
+    "tutorial_ordinal": 42,
+    "upstream_path": "tutorial output good/042_pUnitType.ndjson"
+  },
+  "obstruction": "The universe-polymorphic nullary singleton PUnit is outside all exact retained inductive classifiers.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "UNDECIDED: frozen as the independent nullary/singleton stress test after the G15 abstraction experiment.",
+  "falsifier": "Must be specified only after G15 establishes or rejects the common And/Prod/PProd internal derivation law.",
+  "protected_suite": [
+    "all G0-G14 tests",
+    "exact tutorial prefix 001-041",
+    "tutorial 042 remains UNKNOWN before its own experiment"
+  ],
+  "decision": "open"
+}
