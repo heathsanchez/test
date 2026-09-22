@@ -1,7 +1,8 @@
 use std::fs::File;
 use std::io::BufReader;
-use std::io::Cursor;
+use std::io::{Cursor, Write};
 use std::path::PathBuf;
+use std::process::{Command, Stdio};
 
 use metatron_kernel::verdict::Verdict;
 
@@ -20,6 +21,38 @@ fn run_residual(name: &str) -> Verdict {
         .join(name)
         .join("fixture.ndjson");
     metatron_kernel::run(BufReader::new(File::open(path).unwrap()))
+}
+
+fn run_with_g15_oracle(family: &str, bytes: String) -> Verdict {
+    let candidate = metatron_kernel::run(Cursor::new(bytes.as_bytes()));
+    let Ok(oracle) = std::env::var("METATRON_G15_ORACLE") else {
+        return candidate;
+    };
+
+    let mut child = Command::new(oracle)
+        .stdin(Stdio::piped())
+        .stdout(Stdio::null())
+        .stderr(Stdio::inherit())
+        .spawn()
+        .expect("sealed G15 oracle must start");
+    child
+        .stdin
+        .take()
+        .expect("sealed G15 oracle stdin")
+        .write_all(bytes.as_bytes())
+        .expect("sealed G15 oracle input");
+    let exit = child.wait().expect("sealed G15 oracle must finish");
+    let oracle_verdict = match exit.code() {
+        Some(0) => Verdict::Accept,
+        Some(1) => Verdict::Reject,
+        Some(2) => Verdict::Unknown,
+        code => panic!("sealed G15 oracle returned unexpected exit code {code:?}"),
+    };
+    assert_eq!(
+        candidate, oracle_verdict,
+        "G15 changed the sealed {family} observable verdict vector"
+    );
+    candidate
 }
 
 #[test]
@@ -320,12 +353,12 @@ fn run_g12_perturbations(replacements: &[(&str, &str)]) -> Verdict {
         assert!(bytes.contains(from), "missing perturbation source: {from}");
         bytes = bytes.replacen(from, to, 1);
     }
-    metatron_kernel::run(Cursor::new(bytes))
+    run_with_g15_oracle("G12", bytes)
 }
 
 #[test]
 fn g12_001_exact_and_authority_is_accepted() {
-    assert_eq!(run_residual("G12-001"), Verdict::Accept);
+    assert_eq!(run_g12_perturbations(&[]), Verdict::Accept);
 }
 
 #[test]
@@ -443,12 +476,12 @@ fn run_g13_perturbations(replacements: &[(&str, &str)]) -> Verdict {
         assert!(bytes.contains(from), "missing perturbation source: {from}");
         bytes = bytes.replacen(from, to, 1);
     }
-    metatron_kernel::run(Cursor::new(bytes))
+    run_with_g15_oracle("G13", bytes)
 }
 
 #[test]
 fn g13_001_exact_prod_authority_is_accepted() {
-    assert_eq!(run_residual("G13-001"), Verdict::Accept);
+    assert_eq!(run_g13_perturbations(&[]), Verdict::Accept);
 }
 
 #[test]
@@ -608,12 +641,12 @@ fn run_g14_perturbations(replacements: &[(&str, &str)]) -> Verdict {
         assert!(bytes.contains(from), "missing perturbation source: {from}");
         bytes = bytes.replacen(from, to, 1);
     }
-    metatron_kernel::run(Cursor::new(bytes))
+    run_with_g15_oracle("G14", bytes)
 }
 
 #[test]
 fn g14_001_exact_pprod_authority_is_accepted() {
-    assert_eq!(run_residual("G14-001"), Verdict::Accept);
+    assert_eq!(run_g14_perturbations(&[]), Verdict::Accept);
 }
 
 #[test]
@@ -783,4 +816,25 @@ fn g14_candidate_preserves_the_sealed_g13_behavior_vector() {
             "G13 differential mismatch for {label}",
         );
     }
+}
+
+#[test]
+fn g15_shared_representation_earns_no_fourth_family() {
+    let pprod = include_str!("../evidence/residuals/G14-001/fixture.ndjson");
+    let renamed = pprod.replacen("\"str\":\"PProd\"", "\"str\":\"PProd2\"", 1);
+
+    assert_eq!(
+        run_with_g15_oracle("renamed fourth family", renamed),
+        Verdict::Unknown,
+    );
+}
+
+#[test]
+fn g15_leaves_frozen_punit_residual_unknown() {
+    let punit = include_str!("../evidence/residuals/G16-001/fixture.ndjson").to_owned();
+
+    assert_eq!(
+        run_with_g15_oracle("PUnit boundary", punit),
+        Verdict::Unknown,
+    );
 }

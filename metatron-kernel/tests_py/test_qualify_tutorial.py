@@ -92,6 +92,38 @@ class TutorialSummaryTests(unittest.TestCase):
 
 
 class DifferentialSummaryTests(unittest.TestCase):
+    def test_zero_authority_refactor_requires_exact_oracle_equivalence(self):
+        manifest = (
+            TutorialCase("039", Path("good/039_andType.ndjson"), 0, "3" * 64),
+            TutorialCase("040", Path("good/040_prodType.ndjson"), 0, "4" * 64),
+            TutorialCase("041", Path("good/041_pprodType.ndjson"), 0, "5" * 64),
+        )
+        try:
+            summary = build_differential_summary(
+                oracle_sha="b" * 40,
+                candidate_sha="c" * 40,
+                manifest=manifest,
+                oracle_results=(
+                    CaseResult("039", 0),
+                    CaseResult("040", 0),
+                    CaseResult("041", 0),
+                ),
+                candidate_results=(
+                    CaseResult("039", 0),
+                    CaseResult("040", 0),
+                    CaseResult("041", 0),
+                ),
+                earned_case=None,
+                earned_oracle_exit=2,
+                earned_candidate_exit=0,
+            )
+        except ValueError as error:
+            self.fail(f"zero-delta qualification is unsupported: {error}")
+
+        self.assertTrue(summary["qualified"])
+        self.assertEqual(summary["counts"], {"equal": 3, "earned_delta": 0, "mismatch": 0})
+        self.assertEqual(summary["mode"], "exact_equivalence")
+
     def test_only_declared_earned_case_may_differ_from_sealed_oracle(self):
         manifest = (
             TutorialCase("039", Path("good/039_andType.ndjson"), 0, "3" * 64),
