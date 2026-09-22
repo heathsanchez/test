@@ -1763,14 +1763,22 @@ fn is_derived_rbtree_red_rule(
     if !is_bvar(export, head, 5) || arguments.len() != 6 {
         return false;
     }
-    let Some(left_call) =
-        rbtree_recursor_application_args(export, arguments[4], recursor.name, recursor.level_params[0], level)
-    else {
+    let Some(left_call) = rbtree_recursor_application_args(
+        export,
+        arguments[4],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
         return false;
     };
-    let Some(right_call) =
-        rbtree_recursor_application_args(export, arguments[5], recursor.name, recursor.level_params[0], level)
-    else {
+    let Some(right_call) = rbtree_recursor_application_args(
+        export,
+        arguments[5],
+        recursor.name,
+        recursor.level_params[0],
+        level,
+    ) else {
         return false;
     };
     is_root_empty_constant_named(export, *height, "N")
