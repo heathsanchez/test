@@ -1,0 +1,71 @@
+name: LKC Fib Public FastPair Screen
+
+on:
+  push:
+    branches: [lkc-fib-public-fastpair-screen-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+  API: https://api.sair.foundation/api/public/v1
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V2
+        run: python3 experiments/lkc_fib/bitwise_v2.py
+      - name: Fetch hash-verified public fast-pair package
+        run: |
+          set -euo pipefail
+          curl -fsS             "$API/contributor-network/items?competitionId=lean-kernel-challenge&kind=lean-kernel-package&publicCode=LKC01-000003&limit=1"             -H "Authorization: Bearer $SAIR_API_KEY" > item.json
+          url=$(jq -er '.data.items[0].downloadUrl' item.json)
+          expected=$(jq -er '.data.items[0].packageSha256' item.json)
+          curl -fsS "https://api.sair.foundation$url"             -H "Authorization: Bearer $SAIR_API_KEY" > public-fastpair.lean
+          actual=$(sha256sum public-fastpair.lean | awk '{print $1}')
+          echo "expected=$expected actual=$actual"
+          test "$actual" = "$expected"
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem fib
+      - name: Compare
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/fib-public-screen"; mkdir -p "$root"
+          inputs=(5000 10000 20000 40000 80000 150000)
+          for who in v2 public; do
+            if [ "$who" = v2 ]; then
+              sub="$GITHUB_WORKSPACE/experiments/lkc_fib/generated/Submission_v2.lean"
+            else
+              sub="$GITHUB_WORKSPACE/public-fastpair.lean"
+            fi
+            python3 bench/benchmark.py diagnostic --problem fib --submission "$sub"               --metric wall-time --repetitions 3 --timeout 600 --memory-mb 4096               --inputs "${inputs[@]}" --output "$root/$who"
+          done
+      - name: Verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("fib-public-screen")
+          a=json.loads((r/"v2/diagnostic.json").read_text())["totals"]["candidate"]
+          b=json.loads((r/"public/diagnostic.json").read_text())["totals"]["candidate"]
+          out={"v2":a,"public_fastpair":b,"ratio":b/a,"improvement_pct":100*(1-b/a)}
+          (r/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: fib-public-fastpair-screen
+          path: fib-public-screen/
