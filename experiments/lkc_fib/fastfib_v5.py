@@ -12,7 +12,7 @@ def impl (n : Nat) : Nat := Nat.fastFib n
 
 theorem impl_correct : ∀ n, impl n = Nat.fib n := by
   intro n
-  exact Nat.fast_fib_eq n
+  exact Nat.fastFib_eq n
 
 end Submission
 '''
