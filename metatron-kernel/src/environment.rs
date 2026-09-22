@@ -6,12 +6,23 @@ use std::rc::Rc;
 use crate::id::{ExprId, NameId};
 use crate::machine::{AuthorityId, DefinitionBody};
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum ConstantKind {
+    Axiom,
+    Definition,
+    Theorem,
+    InductiveType,
+    Constructor,
+    Recursor,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
     pub level_params: Vec<NameId>,
     pub ty: ExprId,
     pub value: Option<ExprId>,
     pub preferred_for_reduction: bool,
+    pub kind: ConstantKind,
 }
 
 impl ConstantDecl {
@@ -21,6 +32,7 @@ impl ConstantDecl {
             ty,
             value: None,
             preferred_for_reduction: false,
+            kind: ConstantKind::Axiom,
         }
     }
 
@@ -35,6 +47,7 @@ impl ConstantDecl {
             ty,
             value: Some(value),
             preferred_for_reduction,
+            kind: ConstantKind::Definition,
         }
     }
 
@@ -46,24 +59,50 @@ impl ConstantDecl {
             ty,
             value: None,
             preferred_for_reduction: false,
+            kind: ConstantKind::Theorem,
         }
     }
 
     /// A checked inductive type contributes only its signature at runtime.
     pub fn inductive_type(level_params: Vec<NameId>, ty: ExprId) -> Self {
-        Self::theorem(level_params, ty)
+        Self {
+            level_params,
+            ty,
+            value: None,
+            preferred_for_reduction: false,
+            kind: ConstantKind::InductiveType,
+        }
     }
 
     /// A validated constructor is executable only as a rigid constant until
     /// a separately qualified iota rule is installed.
     pub fn constructor(level_params: Vec<NameId>, ty: ExprId) -> Self {
-        Self::theorem(level_params, ty)
+        Self {
+            level_params,
+            ty,
+            value: None,
+            preferred_for_reduction: false,
+            kind: ConstantKind::Constructor,
+        }
     }
 
     /// A checked recursor is opaque: its reduction rules require a separately
     /// qualified iota mechanism and are not definition bodies.
     pub fn recursor(level_params: Vec<NameId>, ty: ExprId) -> Self {
-        Self::theorem(level_params, ty)
+        Self {
+            level_params,
+            ty,
+            value: None,
+            preferred_for_reduction: false,
+            kind: ConstantKind::Recursor,
+        }
+    }
+
+    pub fn has_unearned_inductive_semantics(&self) -> bool {
+        matches!(
+            self.kind,
+            ConstantKind::InductiveType | ConstantKind::Constructor | ConstantKind::Recursor
+        )
     }
 }
 
