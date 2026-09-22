@@ -69,6 +69,10 @@ TUTORIAL_MANIFEST = (
     TutorialCase("043", Path("good/043_eqType.ndjson"), 0, "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc"),
     TutorialCase("044", Path("good/044_natDef.ndjson"), 0, "95d33f871f126e234740e05d9291a1cedcc6a2d01522aedc3122b25aab17ab95"),
     TutorialCase("045", Path("good/045_rbTreeDef.ndjson"), 0, "d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79"),
+    TutorialCase("046", Path("bad/046_inductBadNonSort.ndjson"), 1, "372f6a167433b45749fa38f14ad3a2e8ca4e0dae8762812c0b9f288e9f68499f"),
+    TutorialCase("047", Path("bad/047_inductBadNonSort2.ndjson"), 1, "95836e7bee5fbd00d1d16d88cea2defa8dfb2387fc0e400d200b59715716a0d9"),
+    TutorialCase("048", Path("bad/048_inductLevelParam.ndjson"), 1, "732e2fc946ab308a819366bc5395865a69235098e1a401ec1a059d05d89ef06e"),
+    TutorialCase("049", Path("bad/049_inductTooFewParams.ndjson"), 1, "5d54c2cc017f35b26744f8b5ca4438bdddd8f254f3023948a542b70e5da72827"),
 )
 
 
@@ -170,7 +174,7 @@ def build_differential_summary(
     manifest: Sequence[TutorialCase],
     oracle_results: Sequence[CaseResult],
     candidate_results: Sequence[CaseResult],
-    earned_case: str | None,
+    earned_case: str | Sequence[str] | None,
     earned_oracle_exit: int,
     earned_candidate_exit: int,
 ) -> dict:
@@ -179,15 +183,26 @@ def build_differential_summary(
     expected_numbers = {case.number for case in manifest}
     if set(oracle) != expected_numbers or set(candidate) != expected_numbers:
         raise ValueError("differential results must cover the declared manifest exactly")
-    if earned_case is not None and earned_case not in expected_numbers:
-        raise ValueError(f"earned case {earned_case} is not in the declared manifest")
+
+    if earned_case is None:
+        earned_cases: tuple[str, ...] = ()
+    elif isinstance(earned_case, str):
+        earned_cases = (earned_case,)
+    else:
+        earned_cases = tuple(earned_case)
+    if len(set(earned_cases)) != len(earned_cases):
+        raise ValueError("earned cases must be unique")
+    missing_earned = sorted(set(earned_cases) - expected_numbers)
+    if missing_earned:
+        raise ValueError(f"earned case {missing_earned[0]} is not in the declared manifest")
+    earned_case_set = set(earned_cases)
 
     counts = {"equal": 0, "earned_delta": 0, "mismatch": 0}
     cases = []
     for case in manifest:
         oracle_exit = oracle[case.number]
         candidate_exit = candidate[case.number]
-        if earned_case is not None and case.number == earned_case:
+        if case.number in earned_case_set:
             status = (
                 "earned_delta"
                 if oracle_exit == earned_oracle_exit
@@ -208,16 +223,19 @@ def build_differential_summary(
             }
         )
 
-    exact_equivalence = earned_case is None
-    qualified = counts["mismatch"] == 0 and counts["earned_delta"] == (
-        0 if exact_equivalence else 1
-    )
+    exact_equivalence = not earned_cases
+    qualified = counts["mismatch"] == 0 and counts["earned_delta"] == len(earned_cases)
     return {
         "candidate_sha": candidate_sha,
         "cases": cases,
         "counts": counts,
-        "earned_case": earned_case,
-        "mode": "exact_equivalence" if exact_equivalence else "earned_delta",
+        "earned_case": earned_cases[0] if len(earned_cases) == 1 else None,
+        "earned_cases": list(earned_cases),
+        "mode": (
+            "exact_equivalence"
+            if exact_equivalence
+            else "earned_delta" if len(earned_cases) == 1 else "earned_deltas"
+        ),
         "oracle_sha": oracle_sha,
         "outcome": "passed" if qualified else "failed",
         "qualified": qualified,
@@ -235,7 +253,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--oracle", type=Path)
     parser.add_argument("--oracle-sha")
     parser.add_argument("--differential-output", type=Path)
-    parser.add_argument("--earned-case")
+    parser.add_argument("--earned-case", action="append")
     parser.add_argument("--require-equivalence", action="store_true")
     parser.add_argument("--earned-oracle-exit", type=int, default=2)
     parser.add_argument("--earned-candidate-exit", type=int, default=0)

@@ -62,6 +62,21 @@ class TutorialInputTests(unittest.TestCase):
             "d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79",
         )
 
+    def test_production_manifest_pins_g20_malformed_corridor(self):
+        self.assertGreaterEqual(len(TUTORIAL_MANIFEST), 49)
+        expected = (
+            ("046", Path("bad/046_inductBadNonSort.ndjson"), "372f6a167433b45749fa38f14ad3a2e8ca4e0dae8762812c0b9f288e9f68499f"),
+            ("047", Path("bad/047_inductBadNonSort2.ndjson"), "95836e7bee5fbd00d1d16d88cea2defa8dfb2387fc0e400d200b59715716a0d9"),
+            ("048", Path("bad/048_inductLevelParam.ndjson"), "732e2fc946ab308a819366bc5395865a69235098e1a401ec1a059d05d89ef06e"),
+            ("049", Path("bad/049_inductTooFewParams.ndjson"), "5d54c2cc017f35b26744f8b5ca4438bdddd8f254f3023948a542b70e5da72827"),
+        )
+        for offset, (number, relative_path, sha256) in enumerate(expected, start=45):
+            case = TUTORIAL_MANIFEST[offset]
+            self.assertEqual(case.number, number)
+            self.assertEqual(case.relative_path, relative_path)
+            self.assertEqual(case.expected_exit_code, 1)
+            self.assertEqual(case.sha256, sha256)
+
     def test_declared_suite_rejects_filename_drift_even_when_number_and_bytes_match(self):
         payload = b'{"kind":"test"}\n'
         manifest = (
@@ -187,6 +202,39 @@ class DifferentialSummaryTests(unittest.TestCase):
 
         self.assertTrue(summary["qualified"])
         self.assertEqual(summary["counts"], {"equal": 1, "earned_delta": 1, "mismatch": 0})
+
+    def test_multiple_declared_earned_cases_may_differ(self):
+        manifest = (
+            TutorialCase("046", Path("bad/046.ndjson"), 1, "6" * 64),
+            TutorialCase("047", Path("bad/047.ndjson"), 1, "7" * 64),
+            TutorialCase("048", Path("bad/048.ndjson"), 1, "8" * 64),
+            TutorialCase("049", Path("bad/049.ndjson"), 1, "9" * 64),
+        )
+        summary = build_differential_summary(
+            oracle_sha="b" * 40,
+            candidate_sha="c" * 40,
+            manifest=manifest,
+            oracle_results=(
+                CaseResult("046", 2),
+                CaseResult("047", 2),
+                CaseResult("048", 1),
+                CaseResult("049", 2),
+            ),
+            candidate_results=(
+                CaseResult("046", 1),
+                CaseResult("047", 1),
+                CaseResult("048", 1),
+                CaseResult("049", 1),
+            ),
+            earned_case=("046", "047", "049"),
+            earned_oracle_exit=2,
+            earned_candidate_exit=1,
+        )
+
+        self.assertTrue(summary["qualified"])
+        self.assertEqual(summary["counts"], {"equal": 1, "earned_delta": 3, "mismatch": 0})
+        self.assertEqual(summary["mode"], "earned_deltas")
+        self.assertEqual(summary["earned_cases"], ["046", "047", "049"])
 
     def test_difference_outside_earned_case_fails(self):
         manifest = (
