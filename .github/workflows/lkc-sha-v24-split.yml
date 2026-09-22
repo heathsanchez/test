@@ -1,0 +1,80 @@
+name: LKC SHA V24 Split Tournament
+
+on:
+  push:
+    branches: [lkc-sha-v24-split-v1]
+    paths:
+      - 'experiments/lkc_sha256/algebra_v24_split.py'
+      - '.github/workflows/lkc-sha-v24-split.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+  RULES_COMMIT: 940f0a2ead23ef70ab1387edabb347e629111edd
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate candidates
+        run: |
+          python3 experiments/lkc_sha256/algebra_v20.py
+          cp experiments/lkc_sha256/generated/Submission_algebra_v20.lean experiments/lkc_sha256/generated/Submission_v23_runtime.lean
+          python3 experiments/lkc_sha256/algebra_v24_split.py
+          sha256sum experiments/lkc_sha256/generated/Submission_v23_runtime.lean             experiments/lkc_sha256/generated/Submission_v24_round_only.lean             experiments/lkc_sha256/generated/Submission_v24_sigma_only.lean             experiments/lkc_sha256/generated/Submission_v24_combined.lean
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem sha256
+          git -C .cache/upstream fetch origin "$RULES_COMMIT"
+          git -C .cache/upstream diff --exit-code eb5e8850cdec9acf52d615529f9d1d64894e44b9 "$RULES_COMMIT" -- evaluation problems
+      - name: Four-way comparable screen
+        run: |
+          set -euo pipefail
+          root="$GITHUB_WORKSPACE/sha-v24-split"; mkdir -p "$root"
+          inputs=(17179869185 137438953473)
+          for who in v23 round sigma combined; do
+            case "$who" in
+              v23) sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v23_runtime.lean" ;;
+              round) sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v24_round_only.lean" ;;
+              sigma) sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v24_sigma_only.lean" ;;
+              combined) sub="$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_v24_combined.lean" ;;
+            esac
+            python3 bench/benchmark.py diagnostic --problem sha256 --submission "$sub"               --metric wall-time --repetitions 3 --timeout 900 --memory-mb 4096               --inputs "${inputs[@]}" --output "$root/$who"
+          done
+      - name: Verdict
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=Path("sha-v24-split")
+          vals={}
+          for who in ("v23","round","sigma","combined"):
+              vals[who]=json.loads((r/who/"diagnostic.json").read_text())["totals"]["candidate"]
+          base=vals["v23"]
+          out={"totals":vals,"relative":{
+              who:{"ratio":v/base,"improvement_pct":100*(1-v/base)}
+              for who,v in vals.items() if who!="v23"
+          }}
+          winner=min((v,k) for k,v in vals.items() if k!="v23")[1]
+          out["winner"]=winner
+          out["consequence"]="PROVE_"+winner.upper() if vals[winner] < base else "REJECT_ALL"
+          (r/"verdict.json").write_text(json.dumps(out,indent=2)+"\n")
+          print(json.dumps(out,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-v24-split-tournament
+          path: sha-v24-split/
