@@ -402,4 +402,87 @@ theorem promote_preserves_environment_validity
     validated.parameterized priorValid
 
 end ProdUniversePromotion
+
+/-! ## Exact \`PProd\` Sort-polymorphic promotion
+
+G14 records only the level law independently forced by tutorial 041:
+parameters in \`Sort u\` and \`Sort v\`, an inductive result in
+\`Sort (max 1 u v)\`, and a separate motive universe. This vocabulary is an
+independent replication layer; it does not merge the G12/G13 classifiers or
+claim a generic parameterized-inductive architecture. -/
+
+namespace PProdSortPromotion
+
+/-- The symbolic level forms used by the exact \`PProd\` replication case. -/
+inductive Level where
+  | zero
+  | first
+  | second
+  | motive
+  | succ : Level → Level
+  | max : Level → Level → Level
+  deriving DecidableEq, Repr
+
+def firstParameterSort : Level := .first
+def secondParameterSort : Level := .second
+def computedResultSort : Level := .max (.max (.succ .zero) .first) .second
+
+/-- The exact two-universe PProd telescope. The ordinary term-parameter
+telescope stays in the G12 vocabulary already used by opaque promotion. -/
+structure Telescope where
+  firstUniverse : DeclName
+  secondUniverse : DeclName
+  motiveUniverse : DeclName
+  parameters : ParameterizedInductivePromotion.Telescope
+  deriving DecidableEq, Repr
+
+/-- PProd validation keeps its Sort-level obligation separate from the
+pre-existing parameter telescope and sequential opaque-signature validation. -/
+structure Validated
+    (SortTelescopeValid : Environment → Telescope → Prop)
+    (TelescopeValid : Environment →
+      ParameterizedInductivePromotion.Telescope → Prop)
+    (SignatureAtComputedSorts : Telescope → Environment →
+      InductivePromotion.Signature → Prop)
+    (prior : Environment) (telescope : Telescope)
+    (signatures : List InductivePromotion.Signature)
+    (next : Environment) : Prop where
+  sortTelescopeValid : SortTelescopeValid prior telescope
+  parameterized : ParameterizedInductivePromotion.Validated
+    TelescopeValid
+    (fun _ environment signature =>
+      SignatureAtComputedSorts telescope environment signature)
+    prior telescope.parameters signatures next
+
+/-- Once the exact PProd Sort telescope and its derived opaque signatures have
+been validated, the existing G12 promotion law preserves environment validity.
+This is a semantic promotion warrant only, not a Rust refinement theorem. -/
+theorem promote_preserves_environment_validity
+    (EnvironmentValid : Environment → Prop)
+    (SortTelescopeValid : Environment → Telescope → Prop)
+    (TelescopeValid : Environment →
+      ParameterizedInductivePromotion.Telescope → Prop)
+    (SignatureAtComputedSorts : Telescope → Environment →
+      InductivePromotion.Signature → Prop)
+    (extendValid : ∀ environment signature,
+      EnvironmentValid environment →
+      SortTelescopeValid prior telescope →
+      TelescopeValid prior telescope.parameters →
+      SignatureAtComputedSorts telescope environment signature →
+      EnvironmentValid
+        (environment ++ [InductivePromotion.installedDeclaration signature]))
+    (validated : Validated SortTelescopeValid TelescopeValid
+      SignatureAtComputedSorts prior telescope signatures next)
+    (priorValid : EnvironmentValid prior) :
+    EnvironmentValid next := by
+  apply ParameterizedInductivePromotion.promote_preserves_environment_validity
+    EnvironmentValid TelescopeValid
+    (fun _ environment signature =>
+      SignatureAtComputedSorts telescope environment signature)
+    (fun environment signature environmentValid telescopeValid signatureValid =>
+      extendValid environment signature environmentValid
+        validated.sortTelescopeValid telescopeValid signatureValid)
+    validated.parameterized priorValid
+
+end PProdSortPromotion
 end IdealLean
