@@ -53,7 +53,6 @@ theorem clearMultiples_preserves_prime
     apply clearMultiples_below
     exact lt_mul_of_one_lt_right (by omega : 0 < p) (by omega : 1 < p)
   · apply clearMultiples_preserves_not_dvd
-    · omega
     · exact dvd_mul_right p p
     · intro hd
       have heq : p = i :=
@@ -81,9 +80,7 @@ theorem prime_clear_step_inv
       exact Or.inl hip
     · intro _
       exact hafter
-  · have hmfprime : Nat.Prime i.minFac :=
-      Nat.minFac_prime (by omega : i ≠ 1)
-    by_cases hlt : i.minFac < p
+  · by_cases hlt : i.minFac < p
     · have hbefore_false : bits.testBit i = false := by
         cases hbit : bits.testBit i with
         | false => rfl
@@ -128,6 +125,8 @@ theorem prime_clear_step_inv
             (by omega) hkfuel hsumle
         constructor
         · intro htrue
+          exfalso
+          rw [hk] at htrue
           rw [hhit] at htrue
           contradiction
         · intro halive
@@ -138,7 +137,7 @@ theorem prime_clear_step_inv
         have hpres :=
           clearMultiples_preserves_not_dvd
             (n + 1) n p (p * p) bits i
-            (by omega) (dvd_mul_right p p) hnotdvd
+            (dvd_mul_right p p) hnotdvd
         have hbefore : bits.testBit i = true :=
           (hinv i hi2 hin).2 (Or.inr hle)
         have hafter :
