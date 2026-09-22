@@ -1,0 +1,108 @@
+name: LKA G17 Eq Freeze
+
+on:
+  push:
+    branches: [lka-g17-eq-v0]
+    paths:
+      - ".github/workflows/lka-g17-eq-freeze.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  freeze:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      G16_SHA: 5d62338a6595401588ddb73cd2ef505a56059e69
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Enforce untouched G16 authority
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$G16_SHA" "$GITHUB_SHA" -- \
+            metatron-kernel/src \
+            metatron-kernel/formal \
+            metatron-kernel/evidence \
+            metatron-kernel/Cargo.toml \
+            metatron-kernel/Cargo.lock
+
+      - name: Build sealed G16 checker
+        working-directory: metatron-kernel
+        run: cargo build --release --locked
+
+      - name: Fetch pinned Arena
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate and freeze tutorial 043
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+          FILE="$(find /tmp/lean-kernel-tutorial -type f -name '043_*.ndjson')"
+          test -n "$FILE"
+          test "$(printf '%s\n' "$FILE" | wc -l)" = 1
+          echo "EQ043_PATH=$FILE"
+          echo "EQ043_SHA256=$(sha256sum "$FILE" | cut -d' ' -f1)"
+          echo "EQ043_BYTES=$(wc -c < "$FILE")"
+          echo "EQ043_BEGIN"
+          cat "$FILE"
+          echo "EQ043_END"
+
+          set +e
+          "$GITHUB_WORKSPACE/metatron-kernel/target/release/metatron-kernel" < "$FILE"
+          VERDICT=$?
+          set -e
+          echo "EQ043_G16_EXIT=$VERDICT"
+          test "$VERDICT" = 2
+
+          python - "$FILE" <<'PY'
+          import json,sys
+          p=sys.argv[1]
+          rows=[json.loads(x) for x in open(p) if x.strip()]
+          ind=[r["inductive"] for r in rows if "inductive" in r]
+          assert len(ind)==1
+          b=ind[0]
+          print("EQ043_STRUCTURAL="+json.dumps({
+            "types":[{
+              "levelParams":len(t["levelParams"]),
+              "numParams":t["numParams"],
+              "numIndices":t["numIndices"],
+              "numNested":t["numNested"],
+              "isRec":t["isRec"],
+              "isReflexive":t["isReflexive"],
+              "isUnsafe":t["isUnsafe"],
+              "ctors":len(t["ctors"])
+            } for t in b["types"]],
+            "ctors":[{
+              "levelParams":len(c["levelParams"]),
+              "numParams":c["numParams"],
+              "numFields":c["numFields"],
+              "cidx":c["cidx"],
+              "isUnsafe":c["isUnsafe"]
+            } for c in b["ctors"]],
+            "recs":[{
+              "levelParams":len(r["levelParams"]),
+              "numParams":r["numParams"],
+              "numIndices":r["numIndices"],
+              "numMotives":r["numMotives"],
+              "numMinors":r["numMinors"],
+              "k":r["k"],
+              "rules":[{"nfields":x["nfields"]} for x in r["rules"]]
+            } for r in b["recs"]]
+          },sort_keys=True))
+          PY
