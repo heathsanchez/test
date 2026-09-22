@@ -532,7 +532,11 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
                 if isinstance(all_types, list) and len(all_types) == 1 and isinstance(all_types[0], int):
                     k_recursor_owner[int(rec["name"])] = int(all_types[0])
 
-    def result_sort_is_prop(type_name: int, const_levels: list[int]) -> bool | None:
+    def result_sort_is_prop(
+        type_name: int,
+        const_levels: list[int],
+        ambient_subst: dict[int, int] | None = None,
+    ) -> bool | None:
         t = type_by_name.get(type_name)
         if t is None or not isinstance(t.get("type"), int):
             return None
@@ -547,21 +551,35 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         lparams = t.get("levelParams", [])
         if not isinstance(lparams, list) or len(lparams) != len(const_levels):
             return None
-        subst = {
+        subst = dict(ambient_subst or {})
+        subst.update({
             int(name): int(actual)
             for name, actual in zip(lparams, const_levels)
             if isinstance(name, int) and isinstance(actual, int)
-        }
+        })
         return level_is_zero(levels, lid, subst)
 
-    def field_sort_is_prop(field: int, universe_instance: list[int]) -> bool | None:
+    def field_sort_is_prop(
+        field: int,
+        universe_instance: list[int],
+        owner_level_params: list[int],
+    ) -> bool | None:
         head, _args = app_spine(exprs, field)
         row = exprs.get(head, {})
         const = row.get("const")
         if isinstance(const, dict) and isinstance(const.get("name"), int):
             us = const.get("us", [])
             if isinstance(us, list):
-                return result_sort_is_prop(int(const["name"]), [int(x) for x in us if isinstance(x, int)])
+                ambient = {
+                    int(name): int(actual)
+                    for name, actual in zip(owner_level_params, universe_instance)
+                    if isinstance(name, int) and isinstance(actual, int)
+                }
+                return result_sort_is_prop(
+                    int(const["name"]),
+                    [int(x) for x in us if isinstance(x, int)],
+                    ambient,
+                )
         # A field directly declared as a proposition expression is itself a type
         # whose head inductive result sort should have been handled above.
         return None
@@ -629,7 +647,13 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
             projection_barrier.append("unknown")
             continue
 
-        field_is_prop = [field_sort_is_prop(field, instance) for field in fields]
+        owner_level_params = [
+            int(x) for x in t.get("levelParams", []) if isinstance(x, int)
+        ]
+        field_is_prop = [
+            field_sort_is_prop(field, instance, owner_level_params)
+            for field in fields
+        ]
         deps: list[set[int]] = []
         for j, field in enumerate(fields):
             refs = collect_bvars(exprs, field)
