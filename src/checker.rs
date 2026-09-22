@@ -146,6 +146,26 @@ fn check_export_with_policy(
     Verdict::Accept
 }
 
+fn inductive_arity_metadata_is_well_formed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+) -> bool {
+    if has_duplicate_parameter(&inductive.level_params) {
+        return false;
+    }
+    let Some(binders) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return false;
+    };
+    let mut expression = inductive.ty;
+    for _ in 0..binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
+            return false;
+        };
+        expression = *body;
+    }
+    matches!(export.exprs.get(expression), Some(Expr::Sort(_)))
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -153,6 +173,18 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G20-001 is a rejection-only law. It grants no positive inductive
+    // authority: every declared parameter/index must correspond to exactly one
+    // arity binder, the telescope must end in a sort, and universe parameters
+    // must be unique. Malformed declarations are therefore refuted before any
+    // family-specific acceptance logic runs.
+    if block
+        .types
+        .iter()
+        .any(|inductive| !inductive_arity_metadata_is_well_formed(export, inductive))
+    {
+        return Err(Verdict::Reject);
+    }
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader

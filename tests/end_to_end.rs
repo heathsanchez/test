@@ -1365,3 +1365,17 @@ fn rbtree_recursor_type_and_rules_are_derived_not_trusted() {
         );
     }
 }
+
+
+#[test]
+fn g20_inductive_arity_law_rejects_first_malformed_corridor() {
+    let cases = [
+        include_str!("../evidence/residuals/G20-001/046_inductBadNonSort.ndjson"),
+        include_str!("../evidence/residuals/G20-001/047_inductBadNonSort2.ndjson"),
+        include_str!("../evidence/residuals/G20-001/048_inductLevelParam.ndjson"),
+        include_str!("../evidence/residuals/G20-001/049_inductTooFewParams.ndjson"),
+    ];
+    for bytes in cases {
+        assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Reject);
+    }
+}
