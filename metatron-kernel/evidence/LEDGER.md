@@ -481,3 +481,35 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   refined to IdealLean and whole-checker verification is not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`: hosted
   `perf instructions:u` was unavailable, so no performance promotion is made.
+
+## G17-001 — Exact indexed non-recursive `Eq` law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G16 head
+  `7b57cc7834b2f7eee34e762fbc23009cd65d6be7`, which returns `UNKNOWN`
+  on exact tutorial 043.
+- Exact fixture: tutorial 043 `good/043_eqType.ndjson`, SHA-256
+  `d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc`.
+- Least capability: one name-sealed `Eq` law adds exactly one index to the
+  retained single-constructor derivation/promotion skeleton: one universe
+  parameter, two parameters, one index, zero constructor fields, `Prop`
+  result, `Eq.refl`, and the exact K-enabled motive/minor/rule recursor.
+- No general indexed-inductive engine was added. Opaque signature promotion is
+  reused unchanged; no iota, recursive, nested, unsafe, mutual, or arbitrary
+  indexed authority is granted.
+- Falsifiers passed: parameter/index counts, result sort, constructor
+  owner/index/field count, recursor K bit, levels, index count, rule
+  owner/field/body, and recursor type perturbations reject. Recursive,
+  reflexive, unsafe, nested, and renamed Eq neighbours remain `UNKNOWN`.
+- Exact oracle differential: tutorials 001–042 are equal to frozen G16;
+  tutorial 043 is the sole earned `UNKNOWN → ACCEPT` delta; zero mismatches.
+- External qualification: candidate
+  `ebc901d24688d2aa672c38e4fd80e20d6a0e5b15`, run `35687371672`, job
+  `106616975935`, artifact `10676794003`, digest
+  `sha256:dc5a59be2174b604161e50ca855e0ecb9579e18ca77c76e128e976cf1da289d2`.
+  The six-case contract, all 43 tutorial cases, and 50 end-to-end tests passed.
+- Formal status: existing opaque-promotion validity/opacity warrants still
+  apply to the staged transaction, but the exact Rust Eq/index law is not
+  refined to IdealLean and whole-checker verification is not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+
