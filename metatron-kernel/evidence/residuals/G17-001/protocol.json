@@ -1,0 +1,23 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G17-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "7b57cc7834b2f7eee34e762fbc23009cd65d6be7",
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+    "tutorial_ordinal": 43,
+    "upstream_path": "tutorial output good/043_eqType.ndjson"
+  },
+  "obstruction": "Equality is the first indexed non-recursive inductive and lies outside the retained G16 law set.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "UNDECIDED RED hypothesis: one exact Eq index law should extend the retained single-constructor derivation/promotion architecture without granting general indexed-inductive authority.",
+  "falsifier": "Exact Eq must accept; malformed claims inside the named Eq envelope must reject; recursive, reflexive, unsafe, nested, and renamed neighbors must remain UNKNOWN; tutorials 001-042 must remain equal to sealed G16.",
+  "protected_suite": [
+    "all G0-G16 tests",
+    "exact tutorial prefix 001-042",
+    "tutorial 043 remains UNKNOWN at sealed G16",
+    "broader indexed/recursive authority is not inferred"
+  ],
+  "decision": "open"
+}
