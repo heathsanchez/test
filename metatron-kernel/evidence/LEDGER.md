@@ -636,3 +636,28 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   constructor-domain validation are not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+## G22-001 — Definite-negative recursive-field rejection law
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G21 head
+  `fc2e64a0e43676d283e202b7c9b1cbb262360e79`.
+- Exact residual: tutorial 054 `indNeg`. Sealed G21 returns `UNKNOWN`.
+- Least capability: a rejection-only polarity walk over constructor field
+  domains. Pi-domain traversal flips polarity; the inductive constant is
+  rejected only when it occurs in a definitely negative position.
+- The law deliberately does not attempt general positivity proof, does not
+  unfold arbitrary reducible constants, and grants no ACCEPT authority.
+- Tutorial 055 is an explicit control and remains `UNKNOWN` in both arms.
+- Exact oracle differential through tutorial 054: 53 equal, one earned
+  `UNKNOWN → REJECT` delta, zero mismatches.
+- External qualification: candidate
+  `cc5063c372f72be4bbd8caffa25f5770b055462b`, run `35765424875`, job
+  `106873615908`, artifact `10711439094`, digest
+  `sha256:d7a17f265897ab3afb8e58134a70038addfb9b26d0803ccc8193d33a30db87f6`.
+  All 54 tutorial cases and 63 end-to-end tests passed.
+- Diagnostic suffix atlas: 27/96 matches; first remaining mismatch is tutorial
+  055, the conversion-sensitive valid constructor-parameter case.
+- Formal status: rejection-only structural polarity law; no promotion theorem
+  is required. General positivity completeness is not claimed.
+- Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
+
