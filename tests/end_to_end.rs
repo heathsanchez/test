@@ -1410,7 +1410,6 @@ fn g22_preserves_conversion_sensitive_constructor_control() {
     assert_eq!(metatron_kernel::run(Cursor::new(bytes)), Verdict::Unknown);
 }
 
-
 #[test]
 fn g23_001_conversion_lifted_unary_recursive_authority_is_accepted() {
     let bytes = include_str!("../evidence/residuals/G23-001/fixture.ndjson");
@@ -1425,7 +1424,10 @@ fn g23_conversion_is_required_not_syntactic_parameter_matching() {
         "{\"app\":{\"arg\":13,\"fn\":14},\"ie\":15}",
         1,
     );
-    assert_eq!(metatron_kernel::run(Cursor::new(malformed)), Verdict::Reject);
+    assert_eq!(
+        metatron_kernel::run(Cursor::new(malformed)),
+        Verdict::Reject
+    );
 }
 
 #[test]
