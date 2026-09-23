@@ -676,6 +676,10 @@ fn check_inductive(
         return check_exact_rbtree(export, environment, block, limits, delta_policy);
     }
 
+    if exact_closed_binary_tree_candidate(export, block) {
+        return check_exact_closed_binary_tree(export, environment, block, limits, delta_policy);
+    }
+
     if exact_closed_reflexive_tree_candidate(export, block) {
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
     }
@@ -4715,6 +4719,251 @@ fn reflexive_tree_recursor_obligations(
         };
         is_empty_constant(export, *ih_domain, domain)
             && reflexive_tree_recursor_call(export, *recursive_call, recursor.name, *motive_level)
+    });
+
+    leaf_ok && node_ok
+}
+
+/// Residual-generated closed binary-tree law.
+///
+/// This is deliberately structural rather than name-sealed: one safe closed
+/// Type-valued recursive inductive, a nullary leaf, a binary node whose two
+/// fields are direct recursive occurrences, and one canonical recursor with
+/// the exact derived motive/minor/rule equations.  It grants no authority to
+/// parameterized, indexed, reflexive, nested, unsafe, or differently-shaped
+/// recursive families.
+fn exact_closed_binary_tree_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, node.name]
+    {
+        return false;
+    }
+
+    let type_level_ok = matches!(
+        export.exprs.get(inductive.ty),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    if !type_level_ok
+        || leaf.index != 0
+        || leaf.inductive != inductive.name
+        || leaf.is_unsafe
+        || !leaf.level_params.is_empty()
+        || leaf.num_params != 0
+        || leaf.num_fields != 0
+        || !is_empty_constant(export, leaf.ty, inductive.name)
+        || node.index != 1
+        || node.inductive != inductive.name
+        || node.is_unsafe
+        || !node.level_params.is_empty()
+        || node.num_params != 0
+        || node.num_fields != 2
+        || !binary_tree_node_type(export, node.ty, inductive.name)
+        || recursor.is_unsafe
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.len() == 1,
+        )
+    {
+        return false;
+    }
+
+    binary_tree_recursor_obligations(export, inductive.name, leaf.name, node.name, recursor)
+}
+
+fn check_exact_closed_binary_tree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_closed_binary_tree_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(node),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn binary_tree_node_type(export: &ResolvedExport, expression: ExprId, inductive: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(
+        domains.as_slice(),
+        [left, right]
+            if is_empty_constant(export, *left, inductive)
+                && is_empty_constant(export, *right, inductive)
+                && is_empty_constant(export, result, inductive)
+    )
+}
+
+fn binary_tree_node_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    node: NameId,
+    left: u64,
+    right: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(
+        arguments.as_slice(),
+        [left_arg, right_arg]
+            if is_empty_constant(export, head, node)
+                && is_bvar(export, *left_arg, left)
+                && is_bvar(export, *right_arg, right)
+    )
+}
+
+fn binary_tree_node_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    node: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [left, right, left_ih, right_ih] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *left, inductive)
+        && is_empty_constant(export, *right, inductive)
+        && is_bvar_application(export, *left_ih, 3, 1)
+        && is_bvar_application(export, *right_ih, 4, 1)
+        && matches!(
+            export.exprs.get(result),
+            Some(Expr::App { fun: motive, arg })
+                if is_bvar(export, *motive, 5)
+                    && binary_tree_node_application(export, *arg, node, 3, 2)
+        )
+}
+
+fn binary_tree_recursor_call(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: NameId,
+    motive_level: NameId,
+    target: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, recursor, motive_level)
+        && are_bvars(export, &arguments, &[4, 3, 2, target])
+}
+
+fn binary_tree_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    leaf: NameId,
+    node: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return false;
+    };
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive)
+                    && is_sort_parameter(export, *body, *motive_level)
+        )
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, leaf_minor, node_minor, target] = type_domains.as_slice() else {
+        return false;
+    };
+    let type_ok = motive_ok(*motive)
+        && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+        && binary_tree_node_minor(export, *node_minor, inductive, node)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_application(export, type_result, 3, 0);
+    if !type_ok {
+        return false;
+    }
+
+    let [leaf_rule, node_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let leaf_ok = lam_spine(export, leaf_rule.rhs, 3).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor] = domains.as_slice() else {
+            return false;
+        };
+        motive_ok(*motive)
+            && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            && binary_tree_node_minor(export, *node_minor, inductive, node)
+            && is_bvar(export, result, 1)
+    });
+
+    let node_ok = lam_spine(export, node_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor, left, right] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            || !binary_tree_node_minor(export, *node_minor, inductive, node)
+            || !is_empty_constant(export, *left, inductive)
+            || !is_empty_constant(export, *right, inductive)
+        {
+            return false;
+        }
+
+        let (minor_head, arguments) = application_spine(export, result);
+        let [left_arg, right_arg, left_call, right_call] = arguments.as_slice() else {
+            return false;
+        };
+        is_bvar(export, minor_head, 2)
+            && is_bvar(export, *left_arg, 1)
+            && is_bvar(export, *right_arg, 0)
+            && binary_tree_recursor_call(export, *left_call, recursor.name, *motive_level, 1)
+            && binary_tree_recursor_call(export, *right_call, recursor.name, *motive_level, 0)
     });
 
     leaf_ok && node_ok
