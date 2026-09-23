@@ -10,7 +10,7 @@ use std::collections::{HashMap, HashSet};
 use crate::id::{ExprId, NameId};
 use crate::level::{LevelTerm, instantiate_level};
 use crate::parser::ResolvedExport;
-use crate::syntax::{Declaration, Expr, Name};
+use crate::syntax::{Declaration, Expr, Level, Name};
 use crate::verdict::Verdict;
 
 #[derive(Clone, Copy)]
@@ -31,6 +31,10 @@ const CAPABILITIES: &[VerifiedCapability] = &[
     VerifiedCapability {
         id: "projection.prop-dependent-safety.v0",
         apply: prop_projection_safety,
+    },
+    VerifiedCapability {
+        id: "inductive.binary-enum-k-coherence.v0",
+        apply: binary_enum_k_coherence,
     },
 ];
 
@@ -116,6 +120,98 @@ fn recursor_name_coherence(export: &ResolvedExport) -> Option<Verdict> {
                 return Some(Verdict::Reject);
             }
         }
+    }
+    None
+}
+
+/// Negative-only coherence law for a closed binary enum recursor.
+///
+/// This grants no positive inductive authority.  It applies only to a safe,
+/// closed Type-level family with exactly two safe nullary constructors and one
+/// otherwise shape-coherent recursor.  Such a recursor cannot advertise
+/// \`k=true\`: the K optimization is not valid for a type with two distinct
+/// constructors.  Broader parameterized, indexed, recursive, reflexive,
+/// unsafe, field-bearing, universe-polymorphic, or differently-shaped families
+/// remain outside this capability and therefore UNKNOWN.
+fn binary_enum_k_coherence(export: &ResolvedExport) -> Option<Verdict> {
+    for declaration in &export.declarations {
+        let Declaration::Inductive(block) = declaration else {
+            continue;
+        };
+        let ([inductive], [first, second], [recursor]) = (
+            block.types.as_slice(),
+            block.constructors.as_slice(),
+            block.recursors.as_slice(),
+        ) else {
+            continue;
+        };
+
+        if !recursor.k
+            || inductive.num_params != 0
+            || inductive.num_indices != 0
+            || inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+            || !inductive.level_params.is_empty()
+            || inductive.all != [inductive.name]
+            || inductive.constructors != [first.name, second.name]
+        {
+            continue;
+        }
+
+        let type_is_closed_type = matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(
+                    export.levels.get(*level),
+                    Some(Level::Succ(base))
+                        if matches!(export.levels.get(*base), Some(Level::Zero))
+                )
+        );
+        if !type_is_closed_type {
+            continue;
+        }
+
+        let constructor_ok = |constructor: &crate::syntax::Constructor, index: u64| {
+            constructor.index == index
+                && constructor.inductive == inductive.name
+                && !constructor.is_unsafe
+                && constructor.level_params.is_empty()
+                && constructor.num_params == 0
+                && constructor.num_fields == 0
+                && matches!(
+                    export.exprs.get(constructor.ty),
+                    Some(Expr::Const { name, levels })
+                        if *name == inductive.name && levels.is_empty()
+                )
+        };
+        if !constructor_ok(first, 0) || !constructor_ok(second, 1) {
+            continue;
+        }
+
+        let canonical_name = matches!(
+            export.names.get(recursor.name),
+            Some(Name::Str { prefix, value })
+                if *prefix == inductive.name && value == "rec"
+        );
+        if !canonical_name
+            || recursor.is_unsafe
+            || recursor.all != [inductive.name]
+            || recursor.level_params.len() != 1
+            || recursor.num_params != 0
+            || recursor.num_indices != 0
+            || recursor.num_motives != 1
+            || recursor.num_minors != 2
+            || recursor.rules.len() != 2
+            || recursor.rules[0].constructor != first.name
+            || recursor.rules[1].constructor != second.name
+            || recursor.rules.iter().any(|rule| rule.num_fields != 0)
+        {
+            continue;
+        }
+
+        return Some(Verdict::Reject);
     }
     None
 }
