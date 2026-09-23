@@ -126,7 +126,8 @@ jobs:
           for k in ['simple_generic_candidate','closed_nonrecursive_candidate',
                     'param_nonrecursive_candidate','indexed_nonrecursive_candidate']:
             candidates[k]=[
-              r['test'] for r in rows
+              {'test':r['test'],'expected':r['expected'],'blocks':r['blocks']}
+              for r in rows
               if r['blocks'] and all(f[k] for f in r['blocks'])
             ]
           print(json.dumps({
