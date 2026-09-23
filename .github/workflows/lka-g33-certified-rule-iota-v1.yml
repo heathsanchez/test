@@ -77,12 +77,24 @@ jobs:
           oracle=pathlib.Path('/tmp/g32-oracle/metatron-kernel/target/release/metatron-kernel')
           candidate=pathlib.Path('target/release/metatron-kernel').resolve()
 
-          def run(binary,path):
+          def run(binary,path,quiet=True):
               with path.open('rb') as f:
-                  return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  return subprocess.run(
+                      [str(binary)],
+                      stdin=f,
+                      stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE,
+                      text=False,
+                  )
 
-          assert run(oracle,src)==2
-          assert run(candidate,src)==0
+          oracle_result=run(oracle,src)
+          candidate_result=run(candidate,src)
+          print('G33_EXACT_ORACLE_EXIT',oracle_result.returncode)
+          print('G33_EXACT_CANDIDATE_EXIT',candidate_result.returncode)
+          print('G33_EXACT_CANDIDATE_STDOUT',candidate_result.stdout.decode(errors='replace'))
+          print('G33_EXACT_CANDIDATE_STDERR',candidate_result.stderr.decode(errors='replace'))
+          assert oracle_result.returncode==2
+          assert candidate_result.returncode==0
           base=[json.loads(x) for x in src.read_text().splitlines() if x.strip()]
 
           def structural(label,mut):
@@ -94,7 +106,8 @@ jobs:
                   p=pathlib.Path(f.name)
                   for row in rows:
                       f.write(json.dumps(row,separators=(',',':'))+'\n')
-              code=run(candidate,p); p.unlink()
+              result=run(candidate,p); p.unlink()
+              code=result.returncode
               assert code != 0, (label,code)
               print(label,code)
 
