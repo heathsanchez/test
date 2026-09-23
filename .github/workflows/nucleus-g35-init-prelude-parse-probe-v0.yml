@@ -36,6 +36,13 @@ jobs:
           cd /tmp/arena
           nix develop -c ./lka.py build-test init-prelude
 
+      - name: Capture failing record neighborhood
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/init-prelude-parse-probe
+          sed -n '1378,1390p' /tmp/arena/_build/tests/init-prelude.ndjson \
+            | tee metatron-kernel/evidence-out/init-prelude-parse-probe/lines-1378-1390.ndjson
+
       - name: Build parse/resolve diagnostic only
         run: |
           set -euo pipefail
