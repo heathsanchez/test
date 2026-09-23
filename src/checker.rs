@@ -2105,6 +2105,12 @@ fn are_derived_rbtree_rules(
 /// fields and therefore needs neither positivity search nor recursive
 /// occurrences. Exported recursor equations are checked against a derived
 /// de Bruijn shape but are not installed as runtime iota rules.
+#[derive(Clone, Copy)]
+enum BinaryEnumSortLaw {
+    Type,
+    Prop,
+}
+
 fn check_binary_enum(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2115,19 +2121,33 @@ fn check_binary_enum(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if !name_is_root_str(export, inductive.name, "Bool")
-        && !name_is_root_str(export, inductive.name, "Color")
+
+    // Existing Type-level authority remains name-sealed to Bool/Color. G25
+    // adds one independently earned Prop-level family, BoolProp, while sharing
+    // the internal binary-enum derivation below.
+    let sort_law = if name_is_root_str(export, inductive.name, "BoolProp") {
+        if !is_prop_sort(export, inductive.ty) {
+            return Err(Verdict::Reject);
+        }
+        BinaryEnumSortLaw::Prop
+    } else if name_is_root_str(export, inductive.name, "Bool")
+        || name_is_root_str(export, inductive.name, "Color")
     {
-        return Err(Verdict::Unknown);
-    }
-    if inductive.num_params != 0
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || !matches!(
+        if !matches!(
             export.exprs.get(inductive.ty),
             Some(Expr::Sort(level))
                 if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
-        )
+        ) {
+            return Err(Verdict::Unknown);
+        }
+        BinaryEnumSortLaw::Type
+    } else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
     {
         return Err(Verdict::Unknown);
     }
@@ -2176,15 +2196,24 @@ fn check_binary_enum(
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
+    let levels_ok = match sort_law {
+        BinaryEnumSortLaw::Type => recursor.level_params.len() == 1,
+        BinaryEnumSortLaw::Prop => recursor.level_params.is_empty(),
+    };
     if !recursor_metadata_admissible(
         export,
         inductive,
         &block.constructors,
         recursor,
         false,
-        !recursor.is_unsafe && recursor.level_params.len() == 1,
-    ) || !binary_enum_recursor_obligations(export, inductive.name, &constructor_names, recursor)
-    {
+        !recursor.is_unsafe && levels_ok,
+    ) || !binary_enum_recursor_obligations(
+        export,
+        inductive.name,
+        &constructor_names,
+        recursor,
+        sort_law,
+    ) {
         return Err(Verdict::Reject);
     }
     derivation.promote(
@@ -2196,11 +2225,26 @@ fn check_binary_enum(
     Ok(derivation.finish())
 }
 
+fn binary_enum_motive_sort_ok(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: &Recursor,
+    sort_law: BinaryEnumSortLaw,
+) -> bool {
+    match sort_law {
+        BinaryEnumSortLaw::Prop => is_prop_sort(export, expression),
+        BinaryEnumSortLaw::Type => recursor.level_params.first().is_some_and(|motive_level| {
+            is_sort_parameter(export, expression, *motive_level)
+        }),
+    }
+}
+
 fn binary_enum_recursor_obligations(
     export: &ResolvedExport,
     inductive: NameId,
     constructors: &[NameId],
     recursor: &Recursor,
+    sort_law: BinaryEnumSortLaw,
 ) -> bool {
     let [first, second] = constructors else {
         return false;
@@ -2216,13 +2260,7 @@ fn binary_enum_recursor_obligations(
                 domain: motive_arg,
                 body: motive_sort,
             }) if is_empty_constant(export, *motive_arg, inductive)
-                && matches!(
-                    export.exprs.get(*motive_sort),
-                    Some(Expr::Sort(level)) if matches!(
-                        export.levels.get(*level),
-                        Some(Level::Param(name)) if name == &recursor.level_params[0]
-                    )
-                )
+                && binary_enum_motive_sort_ok(export, *motive_sort, recursor, sort_law)
         ) && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
             && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
             && is_empty_constant(export, *target, inductive)
@@ -2234,11 +2272,21 @@ fn binary_enum_recursor_obligations(
             let [motive, first_minor, second_minor] = domains.as_slice() else {
                 return false;
             };
-            matches!(
+            let motive_ok = matches!(
                 export.exprs.get(*motive),
-                Some(Expr::Pi { domain: motive_arg, .. })
-                    if is_empty_constant(export, *motive_arg, inductive)
-            ) && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
+                Some(Expr::Pi {
+                    domain: motive_arg,
+                    body: motive_sort,
+                }) if is_empty_constant(export, *motive_arg, inductive)
+                    && match sort_law {
+                        BinaryEnumSortLaw::Prop => is_prop_sort(export, *motive_sort),
+                        // Preserve the previously qualified Type-enum rule
+                        // boundary: the recursor type fixes its universe.
+                        BinaryEnumSortLaw::Type => true,
+                    }
+            );
+            motive_ok
+                && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
                 && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
                 && is_bvar(export, result, 1 - index as u64)
         })
@@ -3529,6 +3577,65 @@ mod tests {
         ] {
             assert!(environment.get(name).is_none());
         }
+    }
+
+    #[test]
+    fn g25_boolprop_reconstructs_prop_only_binary_recursor() {
+        let bytes = include_bytes!("../evidence/residuals/G25-001/072_boolPropRec.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+
+        assert_eq!(
+            check_export(export.clone(), Limits::default()),
+            Verdict::Accept
+        );
+
+        let block = export
+            .declarations
+            .iter()
+            .find_map(|declaration| match declaration {
+                Declaration::Inductive(block)
+                    if name_is_root_str(&export, block.types[0].name, "BoolProp") =>
+                {
+                    Some(block.clone())
+                }
+                _ => None,
+            })
+            .unwrap();
+
+        let mut wrong_metadata = block.clone();
+        wrong_metadata.recursors[0].num_motives = 0;
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &Environment::empty(),
+                &wrong_metadata,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+
+        let mut illicit_large_elim_metadata = block;
+        illicit_large_elim_metadata.recursors[0]
+            .level_params
+            .push(NameId(5));
+        assert!(matches!(
+            check_inductive(
+                &export,
+                &Environment::empty(),
+                &illicit_large_elim_metadata,
+                Limits::default(),
+                DeltaPolicy::GuardedSemanticFallback,
+            ),
+            Err(Verdict::Reject)
+        ));
+    }
+
+    #[test]
+    fn g25_does_not_claim_bogus_recursor_residual() {
+        let bytes = include_bytes!("../evidence/residuals/G25-001/073_BogusRecursor.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        assert_eq!(check_export(export, Limits::default()), Verdict::Unknown);
     }
 
     #[test]
