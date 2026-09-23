@@ -1,0 +1,247 @@
+name: Nucleus Residual Inductive Signature V1
+
+on:
+  push:
+    branches: [nucleus-residual-inductive-signature-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-inductive-signature-v1.yml"
+      - "metatron-kernel/**"
+  pull_request:
+    paths:
+      - ".github/workflows/nucleus-residual-inductive-signature-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-inductive-signature-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: e3e9b9350fd4e0b10d65ed3569a937f34069c593
+      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build and test diagnostic candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Build frozen residual-capability V0 authority
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact official 193-file Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
+
+      - name: First unknown inductive-block census
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/residual-inductive-signature-v1
+          python - <<'PY'
+          import collections, copy, json, os, pathlib, subprocess
+
+          root = pathlib.Path('/tmp/arena-tests')
+          base = pathlib.Path('/tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel')
+          cand = pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def run(binary, path, trace=False):
+              env = dict(os.environ)
+              if trace:
+                  env['NUCLEUS_TRACE_TERMINAL_RESIDUAL'] = '1'
+                  env['NUCLEUS_TRACE_INDUCTIVE_UNKNOWN'] = '1'
+                  env['NUCLEUS_TRACE_PARSE_ERROR'] = '1'
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, env=env
+                  )
+              return q.returncode, q.stderr.decode('utf-8', errors='replace').strip()
+
+          def raw_info(path):
+              objects = [json.loads(line) for line in path.read_text().splitlines()]
+              names = {0: ''}
+              for obj in objects:
+                  if 'in' not in obj:
+                      continue
+                  if 'str' in obj:
+                      pre = obj['str']['pre']
+                      value = obj['str']['str']
+                      names[obj['in']] = (names.get(pre, str(pre)) + '.' + value).strip('.')
+                  elif 'num' in obj:
+                      pre = obj['num']['pre']
+                      value = obj['num']['i']
+                      names[obj['in']] = (names.get(pre, str(pre)) + '.' + str(value)).strip('.')
+              projections = []
+              has_projection = False
+              for obj in objects:
+                  if 'proj' in obj:
+                      has_projection = True
+                      p = obj['proj']
+                      projections.append({
+                          'type_name': names.get(p['typeName'], str(p['typeName'])),
+                          'index': int(p['idx']),
+                      })
+              return names, projections, has_projection
+
+          def trace_payload(stderr):
+              terminal = None
+              block = None
+              for line in stderr.splitlines():
+                  if line.startswith('NUCLEUS_TERMINAL_RESIDUAL:'):
+                      terminal = line.split(':', 1)[1]
+                  elif line.startswith('NUCLEUS_INDUCTIVE_UNKNOWN:'):
+                      block = json.loads(line.split(':', 1)[1])
+              return terminal, block
+
+          def normalize_block(block, names, keep_names):
+              if block is None:
+                  return None
+              block = copy.deepcopy(block)
+              for ty in block.get('types', []):
+                  name_id = ty.pop('name_id')
+                  ty['name'] = names.get(name_id, str(name_id)) if keep_names else '<type>'
+              for ctor in block.get('constructors', []):
+                  inductive_id = ctor.pop('inductive_id')
+                  ctor['inductive'] = names.get(inductive_id, str(inductive_id)) if keep_names else '<type>'
+              return block
+
+          rows = []
+          for directory, expected_rc in [('good', 0), ('bad', 1)]:
+              for path in sorted((root / directory).rglob('*.ndjson')):
+                  test = str(path.relative_to(root / directory)).removesuffix('.ndjson')
+                  brc, _ = run(base, path)
+                  crc, stderr = run(cand, path, trace=True)
+                  names, projections, has_projection = raw_info(path)
+                  terminal, raw_block = trace_payload(stderr)
+                  named_block = normalize_block(raw_block, names, True)
+                  anonymous_block = normalize_block(raw_block, names, False)
+                  block_names = sorted(
+                      ty['name'] for ty in (named_block or {}).get('types', [])
+                  )
+                  relevant_projections = [
+                      p for p in projections if p['type_name'] in block_names
+                  ]
+                  rows.append({
+                      'test': test,
+                      'expected_rc': expected_rc,
+                      'flash_consequence_rc': expected_rc,
+                      'base_rc': brc,
+                      'candidate_rc': crc,
+                      'terminal_residual': terminal,
+                      'has_projection': has_projection,
+                      'first_unknown_inductive_named': named_block,
+                      'first_unknown_inductive_anonymous': anonymous_block,
+                      'relevant_projections': relevant_projections,
+                      'candidate_stderr': stderr,
+                  })
+
+          assert len(rows) == 193
+          parity_bad = [r['test'] for r in rows if r['base_rc'] != r['candidate_rc']]
+          residual = [r for r in rows if r['base_rc'] in (2, 3)]
+          projection = [r for r in residual if r['has_projection']]
+          blocked = [
+              r for r in projection
+              if r['terminal_residual'] == 'inductive-check-unknown'
+              and r['first_unknown_inductive_named'] is not None
+          ]
+
+          def groups(key_field):
+              grouped = collections.defaultdict(list)
+              for r in blocked:
+                  key = json.dumps(r[key_field], sort_keys=True, separators=(',', ':'))
+                  grouped[key].append(r)
+              out = []
+              for key, items in grouped.items():
+                  out.append({
+                      'signature': json.loads(key),
+                      'count': len(items),
+                      'tests': sorted(r['test'] for r in items),
+                      'accept_count': sum(r['flash_consequence_rc'] == 0 for r in items),
+                      'reject_count': sum(r['flash_consequence_rc'] == 1 for r in items),
+                      'projection_demands': {
+                          r['test']: r['relevant_projections'] for r in items
+                      },
+                  })
+              out.sort(key=lambda g: (-g['count'], json.dumps(g['signature'], sort_keys=True)))
+              return out
+
+          named_groups = groups('first_unknown_inductive_named')
+          anonymous_groups = groups('first_unknown_inductive_anonymous')
+
+          summary = {
+              'schema': 'nucleus-residual-inductive-signature-v1',
+              'base_sha': os.environ['BASE_SHA'],
+              'candidate_sha': os.environ['CANDIDATE_SHA'],
+              'arena_sha': os.environ['ARENA_SHA'],
+              'flash_sha': os.environ['FLASH_SHA'],
+              'fixed_outcome_tests': len(rows),
+              'semantic_parity_mismatches': parity_bad,
+              'residual_count': len(residual),
+              'projection_surface_count': len(projection),
+              'projection_blocked_by_inductive_count': len(blocked),
+              'named_block_class_count': len(named_groups),
+              'anonymous_block_class_count': len(anonymous_groups),
+              'largest_named_block_class': named_groups[0] if named_groups else None,
+              'largest_anonymous_block_class': anonymous_groups[0] if anonymous_groups else None,
+          }
+
+          out = pathlib.Path('metatron-kernel/evidence-out/residual-inductive-signature-v1')
+          (out / 'result.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          (out / 'rows.json').write_text(json.dumps(rows, indent=2, sort_keys=True) + '\n')
+          (out / 'blocked-projection-residuals.json').write_text(
+              json.dumps(blocked, indent=2, sort_keys=True) + '\n'
+          )
+          (out / 'named-block-groups.json').write_text(
+              json.dumps(named_groups, indent=2, sort_keys=True) + '\n'
+          )
+          (out / 'anonymous-block-groups.json').write_text(
+              json.dumps(anonymous_groups, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps(summary, sort_keys=True))
+
+          assert not parity_bad, parity_bad
+          assert len(residual) == 80, len(residual)
+          assert len(projection) == 28, len(projection)
+          assert len(blocked) == 19, len(blocked)
+          PY
+
+      - name: Upload inductive-signature evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-residual-inductive-signature-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-inductive-signature-v1
+          if-no-files-found: warn
