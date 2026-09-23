@@ -164,6 +164,25 @@ class ResidualBasisTests(unittest.TestCase):
             "prop",
         )
 
+    def test_iota_major_shape_is_low_bandwidth(self):
+        self.assertEqual(mod.summarize_iota_major_shapes([]), "not_applicable")
+        self.assertEqual(
+            mod.summarize_iota_major_shapes(["constructor", "constructor"]),
+            "constructor",
+        )
+        self.assertEqual(
+            mod.summarize_iota_major_shapes(["variable", "variable"]),
+            "variable",
+        )
+        self.assertEqual(
+            mod.summarize_iota_major_shapes(["constructor", "variable"]),
+            "mixed",
+        )
+        self.assertEqual(
+            mod.summarize_iota_major_shapes(["other"]),
+            "mixed",
+        )
+
     def test_sham_preserves_current_class_marginals(self):
         dummy = Path("/tmp/x")
         cases = [
