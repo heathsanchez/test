@@ -697,3 +697,42 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   not refined to IdealLean and whole-checker verification is not claimed.
 - Performance remains unknown for promotion: hosted retired-instruction
   measurement was unavailable and no same-cohort performance claim is made.
+
+
+## G24-001 — Manifest constructor-field universe admissibility
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G23Q head
+  `58b08a1b0fc3622a480ec2d72953ba77fdc86265`, which returns `UNKNOWN`
+  on tutorials 058–061.
+- Certified residual corridor:
+  - 058 `PredWithTypeField`: valid Prop with a `Type` field.
+  - 059 `TypeWithTypeField`: valid `Type 1` with a `Type` field.
+  - 060 `TypeWithTypeFieldPoly`: valid universe-polymorphic
+    `Type (u+1)` with a `Type u` field.
+  - 061 `typeWithTooHighTypeField`: invalid `Type` whose `Type` field
+    lives one universe too high.
+- Least capability: within the safe zero-parameter, zero-index, nonrecursive,
+  nonreflexive, nonnested, one-constructor/one-manifest-Sort-field envelope,
+  derive field-universe admissibility from the existing universe algebra.
+  `Prop` keeps its impredicative exception; otherwise the inferred sort of
+  the field domain must be at most the inductive result sort. The corresponding
+  one-motive/one-minor recursor and rule are structurally derived, then the
+  existing staged opaque-promotion transaction is reused.
+- Global reclosure against the exact G23Q oracle across tutorials 001–141:
+  four and only four deltas, all earned — 058/059/060
+  `UNKNOWN → ACCEPT`, 061 `UNKNOWN → REJECT`; zero mismatches.
+  Counts: 4 earned deltas, 73 equal-correct, 64 equal-residual.
+- Prior committed corpus replay at qualification time: 39/39 status-equivalent
+  to G23Q. The exact four corridor fixtures are now retained separately under
+  `evidence/residuals/G24-001/`.
+- Qualification implementation `447632bbcc7724d17b63361326273ac4498dd07b`;
+  qualification head `7439d79d7450d4d52fe1a9e05baf45d508ab8516`;
+  run `35846178771`, job `107132797052`, artifact `10744010491`,
+  digest
+  `sha256:0068e41e35118b997dc3f136a6bf7b21bee4cc28e92912d3fb90839ca5132e88`.
+- The first remaining tutorial residual jumps from 061 to 072:
+  `good/072_boolPropRec.ndjson`.
+- Scope remains bounded: this is not a general inductive universe checker,
+  arbitrary constructor telescope rule, positivity engine, or unrestricted
+  recursor synthesis law.
