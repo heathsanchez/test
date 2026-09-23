@@ -410,9 +410,6 @@ fn projection_is_definitely_invalid(
     }
 
     let (head, arguments) = application_spine(export, structure_ty);
-    if !arguments.is_empty() {
-        return false;
-    }
     let Some(Expr::Const {
         name,
         levels: actual_levels,
@@ -422,6 +419,9 @@ fn projection_is_definitely_invalid(
     };
     if *name != type_name {
         return true;
+    }
+    if !arguments.is_empty() {
+        return false;
     }
     if actual_levels.len() != target.level_params.len() {
         return false;
