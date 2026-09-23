@@ -2417,7 +2417,7 @@ impl BinaryProductSortLaw {
                     && is_bvar(export, *parameter, 0)
                     && is_bvar(export, *index, 1)
                     && is_prop_sort(export, result)
-            },
+            }
             Self::And | Self::Prod { .. } | Self::PProd { .. } => {
                 is_exact_binary_product_parameter_telescope(export, expression, self)
             }
@@ -2442,7 +2442,7 @@ impl BinaryProductSortLaw {
                 is_sort_parameter(export, *carrier, level)
                     && is_bvar(export, *parameter, 0)
                     && is_eq_application(export, result, inductive, self, 1, 0, 0)
-            },
+            }
             Self::And | Self::Prod { .. } | Self::PProd { .. } => {
                 is_derived_binary_product_constructor_type(export, expression, inductive, self)
             }
