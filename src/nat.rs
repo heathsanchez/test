@@ -73,7 +73,7 @@ impl BigNat {
     }
 
     pub fn sub_trunc(&self, other: &Self) -> Self {
-        if self.cmp(other) == Ordering::Less {
+        if self.compare(other) == Ordering::Less {
             return Self::zero();
         }
         let mut out = Vec::with_capacity(self.0.len());
@@ -94,7 +94,7 @@ impl BigNat {
         value
     }
 
-    pub fn cmp(&self, other: &Self) -> Ordering {
+    pub fn compare(&self, other: &Self) -> Ordering {
         match self.0.len().cmp(&other.0.len()) {
             Ordering::Equal => self.0.iter().rev().cmp(other.0.iter().rev()),
             order => order,
@@ -117,7 +117,7 @@ mod tests {
     fn parses_beyond_u64_and_steps_exactly() {
         let n = BigNat::parse_decimal("18446744073709551616").unwrap();
         let p = n.pred().unwrap();
-        assert_eq!(p.cmp(&n), Ordering::Less);
+        assert_eq!(p.compare(&n), Ordering::Less);
         assert_eq!(p.add(&BigNat::parse_decimal("1").unwrap()), n);
     }
 
