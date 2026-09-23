@@ -2585,25 +2585,25 @@ impl ExactBinaryProductDerivation<'_> {
                                 && is_binary_bvar_application(export, result, 3, 1, 0))
                     });
                 let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
-                    if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
-                        matches!(domains.as_slice(), [carrier, parameter, motive, minor]
-                            if is_sort_parameter(export, *carrier, level)
-                                && is_bvar(export, *parameter, 0)
-                                && is_eq_motive_type(
-                                    export,
-                                    *motive,
-                                    self.inductive.name,
-                                    self.recursor.level_params[0],
-                                    self.law,
-                                )
-                                && is_eq_minor_type(
-                                    export,
-                                    *minor,
-                                    self.constructor.name,
-                                    self.law,
-                                )
-                                && is_bvar(export, result, 0))
-                    }));
+                if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+                    matches!(domains.as_slice(), [carrier, parameter, motive, minor]
+                        if is_sort_parameter(export, *carrier, level)
+                            && is_bvar(export, *parameter, 0)
+                            && is_eq_motive_type(
+                                export,
+                                *motive,
+                                self.inductive.name,
+                                self.recursor.level_params[0],
+                                self.law,
+                            )
+                            && is_eq_minor_type(
+                                export,
+                                *minor,
+                                self.constructor.name,
+                                self.law,
+                            )
+                            && is_bvar(export, result, 0))
+                }));
                 self.law.validates_recursor_metadata(
                     export,
                     self.inductive,
