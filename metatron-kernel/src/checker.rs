@@ -277,19 +277,19 @@ fn check_inductive(
             || inductive.is_reflexive
             || inductive.is_unsafe
         {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         let [constructor] = block.constructors.as_slice() else {
             return Err(Verdict::Reject);
         };
         if constructor.is_unsafe {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         let [recursor] = block.recursors.as_slice() else {
             return Err(Verdict::Reject);
         };
         if recursor.is_unsafe {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         let [level] = inductive.level_params.as_slice() else {
             return Err(Verdict::Reject);
@@ -315,7 +315,7 @@ fn check_inductive(
             || inductive.is_reflexive
             || inductive.is_unsafe
         {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         if inductive.num_params != 2 || inductive.num_indices != 1 {
             return Err(Verdict::Reject);
@@ -324,13 +324,13 @@ fn check_inductive(
             return Err(Verdict::Reject);
         };
         if constructor.is_unsafe {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         let [recursor] = block.recursors.as_slice() else {
             return Err(Verdict::Reject);
         };
         if recursor.is_unsafe {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         let [level] = inductive.level_params.as_slice() else {
             return Err(Verdict::Reject);
@@ -368,7 +368,7 @@ fn check_inductive(
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
-        _ => Err(Verdict::Unknown),
+        _ => Err(traced_unknown_at(line!())),
     }
 }
 
@@ -380,7 +380,7 @@ fn check_single_constructor_inductive(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if name_is_root_str(export, inductive.name, "SortElimProp2") {
         check_exact_sort_elim_prop2(export, environment, block, limits, delta_policy)
@@ -447,7 +447,7 @@ fn check_exact_ofnat(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_params != 2
         || inductive.num_indices != 0
@@ -458,7 +458,7 @@ fn check_exact_ofnat(
         || constructor.is_unsafe
         || recursor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let [carrier_level] = inductive.level_params.as_slice() else {
         return Err(Verdict::Reject);
@@ -719,7 +719,7 @@ fn check_exact_sort_elim_prop2(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.num_nested != 0
@@ -729,7 +729,7 @@ fn check_exact_sort_elim_prop2(
         || constructor.is_unsafe
         || recursor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     if inductive.num_params != 1
@@ -939,7 +939,7 @@ fn check_exact_sort_elim_prop(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.num_nested != 0
@@ -949,7 +949,7 @@ fn check_exact_sort_elim_prop(
         || constructor.is_unsafe
         || recursor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     if inductive.num_params != 1
@@ -1180,7 +1180,7 @@ fn check_exact_new_singleton(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.num_nested != 0
@@ -1190,7 +1190,7 @@ fn check_exact_new_singleton(
         || constructor.is_unsafe
         || recursor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     if inductive.num_params != 0
@@ -1334,7 +1334,7 @@ fn check_conversion_lifted_unary_recursive(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_params != 1
         || inductive.num_indices != 0
@@ -1345,7 +1345,7 @@ fn check_conversion_lifted_unary_recursive(
         || !inductive.level_params.is_empty()
         || !inductive_arity_metadata_is_well_formed(export, inductive)
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     let Some(Expr::Pi {
@@ -1363,7 +1363,7 @@ fn check_conversion_lifted_unary_recursive(
         return Err(Verdict::Reject);
     };
     if constructor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
@@ -1398,7 +1398,7 @@ fn check_conversion_lifted_unary_recursive(
         return Err(Verdict::Reject);
     };
     if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if !recursor_metadata_admissible(
         export,
@@ -1748,13 +1748,13 @@ fn check_unary_field_universe_inductive(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.all != [inductive.name]
@@ -1770,7 +1770,7 @@ fn check_unary_field_universe_inductive(
     }
 
     let Some(Expr::Sort(inductive_level_id)) = export.exprs.get(inductive.ty) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     let Some(Expr::Pi {
         domain: field_domain,
@@ -1780,7 +1780,7 @@ fn check_unary_field_universe_inductive(
         return Err(Verdict::Reject);
     };
     let Some(Expr::Sort(field_level_id)) = export.exprs.get(*field_domain) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     let substitution = parameter_substitution(&inductive.level_params);
@@ -1790,14 +1790,14 @@ fn check_unary_field_universe_inductive(
         &substitution,
         limits.judgment_steps,
     )
-    .map_err(|_| Verdict::Unknown)?;
+    .map_err(|_| traced_unknown_at(line!()))?;
     let field_level = crate::level::instantiate_level(
         &export.levels,
         *field_level_id,
         &substitution,
         limits.judgment_steps,
     )
-    .map_err(|_| Verdict::Unknown)?;
+    .map_err(|_| traced_unknown_at(line!()))?;
 
     let is_prop = matches!(inductive_level, crate::level::LevelTerm::Zero);
     if !is_prop {
@@ -1882,7 +1882,7 @@ fn check_exact_exists_family(
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     // Preserve broader envelopes as UNKNOWN.  Inside this exact named
@@ -1896,7 +1896,7 @@ fn check_exact_exists_family(
         || constructor.is_unsafe
         || recursor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     let [level] = inductive.level_params.as_slice() else {
@@ -2124,10 +2124,10 @@ fn check_unrecognized_single_constructor_coherence(
     block: &InductiveBlock,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     // Preserve unsupported semantic envelopes rather than strengthening them
@@ -2137,7 +2137,7 @@ fn check_unrecognized_single_constructor_coherence(
         || inductive.num_nested != 0
         || constructor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     if constructor_result_is_definitely_malformed(export, inductive, constructor)
@@ -2145,7 +2145,7 @@ fn check_unrecognized_single_constructor_coherence(
     {
         Err(Verdict::Reject)
     } else {
-        Err(Verdict::Unknown)
+        Err(traced_unknown_at(line!()))
     }
 }
 
@@ -2322,10 +2322,10 @@ fn check_empty_inductive(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if !block.constructors.is_empty() {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     // G20-001 is deliberately scoped to the zero-constructor frontier. It is
@@ -2351,7 +2351,7 @@ fn check_empty_inductive(
             )
         )
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     let exact_type_metadata = inductive.all == [inductive.name]
@@ -2446,7 +2446,7 @@ fn check_exact_list(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_params != 1
         || inductive.num_indices != 0
@@ -2455,7 +2455,7 @@ fn check_exact_list(
         || inductive.is_reflexive
         || inductive.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let [level] = inductive.level_params.as_slice() else {
         return Err(Verdict::Reject);
@@ -2476,7 +2476,7 @@ fn check_exact_list(
         return Err(Verdict::Reject);
     };
     if nil.is_unsafe || cons.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [nil.name, cons.name]
@@ -2502,7 +2502,7 @@ fn check_exact_list(
         return Err(Verdict::Reject);
     };
     if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let levels_ok = matches!(
         recursor.level_params.as_slice(),
@@ -2788,7 +2788,7 @@ fn check_exact_nat(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_params != 0
         || inductive.num_indices != 0
@@ -2796,7 +2796,7 @@ fn check_exact_nat(
         || inductive.is_reflexive
         || inductive.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if !inductive.is_recursive {
         return Err(Verdict::Reject);
@@ -2815,7 +2815,7 @@ fn check_exact_nat(
         return Err(Verdict::Reject);
     };
     if zero.is_unsafe || succ.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let constructor_names_ok = if name_is_root_str(export, inductive.name, "N") {
         (name_is_child_str(export, zero.name, inductive.name, "zero")
@@ -2855,7 +2855,7 @@ fn check_exact_nat(
         return Err(Verdict::Reject);
     };
     if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if !recursor_metadata_admissible(
         export,
@@ -2891,7 +2891,7 @@ fn check_exact_nat(
         )
         .then_some(ExprId(raw))
     }) else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     environment
         .install_nat_primitives(NatPrimitives {
@@ -3045,10 +3045,10 @@ fn check_exact_rbtree(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_nested != 0 || inductive.is_reflexive || inductive.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if inductive.num_params != 1 || inductive.num_indices != 2 || !inductive.is_recursive {
         return Err(Verdict::Reject);
@@ -3074,7 +3074,7 @@ fn check_exact_rbtree(
         return Err(Verdict::Reject);
     };
     if leaf.is_unsafe || red.is_unsafe || black.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let leaf_type_valid = pi_spine(export, leaf.ty, 1).is_some_and(|(domains, result)| {
         let [leaf_carrier] = domains.as_slice() else {
@@ -3105,7 +3105,7 @@ fn check_exact_rbtree(
         return Err(Verdict::Reject);
     };
     if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if !recursor_metadata_admissible(
         export,
@@ -3780,7 +3780,7 @@ fn check_binary_enum(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     // Existing Type-level authority remains name-sealed to Bool/Color. G25
@@ -3799,15 +3799,15 @@ fn check_binary_enum(
             Some(Expr::Sort(level))
                 if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
         ) {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         BinaryEnumSortLaw::Type
     } else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0 {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let constructor_names = block
         .constructors
@@ -3915,7 +3915,7 @@ fn check_binary_enum(
         if !name_is_child_str(export, *false_ctor, inductive.name, "false")
             || !name_is_child_str(export, *true_ctor, inductive.name, "true")
         {
-            return Err(Verdict::Unknown);
+            return Err(traced_unknown_at(line!()));
         }
         environment
             .install_bool_primitives(BoolPrimitives {
@@ -4506,10 +4506,10 @@ fn check_exact_binary_product_family(
     family: BinaryProductFamily,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
 
     if inductive.num_params != 2
@@ -4520,7 +4520,7 @@ fn check_exact_binary_product_family(
         || inductive.is_unsafe
         || constructor.is_unsafe
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     // And's already-qualified envelope treats any universe-polymorphic
@@ -4528,21 +4528,21 @@ fn check_exact_binary_product_family(
     if matches!(family, BinaryProductFamily::And)
         && (!inductive.level_params.is_empty() || !constructor.level_params.is_empty())
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
     if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
 
     let (constructor_suffix, law) = match family {
         BinaryProductFamily::And => ("intro", BinaryProductSortLaw::And),
         BinaryProductFamily::Prod => {
             if has_dependent_parameter_neighbor(export, inductive.ty) {
-                return Err(Verdict::Unknown);
+                return Err(traced_unknown_at(line!()));
             }
             let [first, second] = inductive.level_params.as_slice() else {
                 return Err(Verdict::Reject);
@@ -4559,7 +4559,7 @@ fn check_exact_binary_product_family(
             if has_dependent_parameter_neighbor(export, inductive.ty)
                 || pprod_has_dependent_field_neighbor(export, constructor.ty)
             {
-                return Err(Verdict::Unknown);
+                return Err(traced_unknown_at(line!()));
             }
             let [first, second] = inductive.level_params.as_slice() else {
                 return Err(Verdict::Reject);
@@ -4960,7 +4960,7 @@ fn check_twobool_structure(
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     };
     if inductive.num_params != 0
         || inductive.num_indices != 0
@@ -4976,13 +4976,13 @@ fn check_twobool_structure(
                 if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
         )
     {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     let [constructor] = block.constructors.as_slice() else {
         unreachable!("dispatched by constructor count");
     };
     if constructor.is_unsafe || !constructor.level_params.is_empty() {
-        return Err(Verdict::Unknown);
+        return Err(traced_unknown_at(line!()));
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
@@ -5211,6 +5211,13 @@ fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
         .collect()
 }
 
+fn traced_unknown_at(line: u32) -> Verdict {
+    if std::env::var_os("NUCLEUS_TRACE_CHECKER_UNKNOWN").is_some() {
+        eprintln!("NUCLEUS_CHECKER_UNKNOWN:{line}");
+    }
+    Verdict::Unknown
+}
+
 fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
@@ -5219,7 +5226,7 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
             if std::env::var_os("NUCLEUS_TRACE_TERMINAL_RESIDUAL").is_some() {
                 eprintln!("NUCLEUS_TERMINAL_RESIDUAL:{}", residual.0);
             }
-            Err(Verdict::Unknown)
+            Err(traced_unknown_at(line!()))
         }
     }
 }
