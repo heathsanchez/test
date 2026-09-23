@@ -404,7 +404,7 @@ fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
                 body: Box::new(TypeValue::Term(body.under_free(free))),
             })
         }
-        Value::Lam { .. } | Value::Neutral(_) => None,
+        Value::NatLit(_) | Value::Lam { .. } | Value::Neutral(_) => None,
     }
 }
 
