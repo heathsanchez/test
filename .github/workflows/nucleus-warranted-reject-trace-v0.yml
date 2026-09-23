@@ -1,0 +1,54 @@
+name: Nucleus Warranted Reject Trace v0
+on:
+  push:
+    branches: [nucleus-warranted-reject-trace-v0]
+    paths:
+      - "metatron-kernel/**"
+      - ".github/workflows/nucleus-warranted-reject-trace-v0.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo build --release --locked
+      - name: Fetch exact Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace eight false rejects
+        run: |
+          set -euo pipefail
+          for t in \
+            perf/args-before-unfold \
+            perf/discarded-argument-match \
+            perf/discarded-argument \
+            perf/folded-constant-first \
+            perf/folded-constant-last \
+            perf/identical-nesting \
+            perf/shared-subterm \
+            perf/unroll-versus-evaluate
+          do
+            echo "=== $t ==="
+            set +e
+            NUCLEUS_TRACE_VERDICT=1 metatron-kernel/target/release/metatron-kernel < "/tmp/tests/good/$t.ndjson" >/dev/null 2>"/tmp/trace.txt"
+            rc=$?
+            set -e
+            echo "rc=$rc"
+            grep 'NUCLEUS_TRACE_' /tmp/trace.txt | tail -n 10 || true
+          done
