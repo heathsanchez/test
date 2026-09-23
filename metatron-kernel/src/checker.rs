@@ -369,16 +369,12 @@ fn check_conversion_lifted_unary_recursive(
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            constructor,
-            0,
-            1,
-            1,
-            Some(&[]),
-            Some("mk"),
-        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || !constructor.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
         || constructor_result_is_definitely_malformed(export, inductive, constructor)
         || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
     {
@@ -1065,27 +1061,19 @@ fn check_exact_nat(
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [zero.name, succ.name]
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            zero,
-            0,
-            0,
-            0,
-            Some(&[]),
-            Some("zero"),
-        )
+        || zero.index != 0
+        || zero.inductive != inductive.name
+        || !zero.level_params.is_empty()
+        || zero.num_fields != 0
+        || zero.num_params != 0
+        || !name_is_child_str(export, zero.name, inductive.name, "zero")
         || !is_empty_constant(export, zero.ty, inductive.name)
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            succ,
-            1,
-            0,
-            1,
-            Some(&[]),
-            Some("succ"),
-        )
+        || succ.index != 1
+        || succ.inductive != inductive.name
+        || !succ.level_params.is_empty()
+        || succ.num_fields != 1
+        || succ.num_params != 0
+        || !name_is_child_str(export, succ.name, inductive.name, "succ")
         || !is_nat_succ_type(export, succ.ty, inductive.name)
     {
         return Err(Verdict::Reject);
@@ -1321,36 +1309,9 @@ fn check_exact_rbtree(
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [leaf.name, red.name, black.name]
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            leaf,
-            0,
-            1,
-            0,
-            Some(std::slice::from_ref(level)),
-            Some("leaf"),
-        )
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            red,
-            1,
-            1,
-            4,
-            Some(std::slice::from_ref(level)),
-            Some("red"),
-        )
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            black,
-            2,
-            1,
-            6,
-            Some(std::slice::from_ref(level)),
-            Some("black"),
-        )
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, leaf, 0, 0, "leaf")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
+        || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
         || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
         || !is_derived_rbtree_red_type(export, red.ty, inductive.name, *level)
         || !is_derived_rbtree_black_type(export, black.ty, inductive.name, *level)
@@ -1403,6 +1364,23 @@ fn check_exact_rbtree(
         delta_policy,
     )?;
     Ok(derivation.finish())
+}
+
+fn valid_rbtree_constructor_metadata(
+    export: &ResolvedExport,
+    inductive: NameId,
+    level: NameId,
+    constructor: &Constructor,
+    index: u64,
+    fields: u64,
+    suffix: &str,
+) -> bool {
+    constructor.index == index
+        && constructor.inductive == inductive
+        && constructor.level_params == [level]
+        && constructor.num_fields == fields
+        && constructor.num_params == 1
+        && name_is_child_str(export, constructor.name, inductive, suffix)
 }
 
 fn is_exact_rbtree_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
@@ -2158,17 +2136,12 @@ fn check_binary_enum(
     )?;
 
     for (index, constructor) in block.constructors.iter().enumerate() {
-        if constructor.is_unsafe
-            || !constructor_metadata_admissible(
-                export,
-                inductive.name,
-                constructor,
-                index as u64,
-                0,
-                0,
-                Some(&[]),
-                None,
-            )
+        if constructor.index != index as u64
+            || constructor.inductive != inductive.name
+            || constructor.is_unsafe
+            || !constructor.level_params.is_empty()
+            || constructor.num_fields != 0
+            || constructor.num_params != 0
             || !is_empty_constant(export, constructor.ty, inductive.name)
         {
             return Err(Verdict::Reject);
@@ -2344,26 +2317,6 @@ fn is_bvar_applied_to_constant(
 /// G15-001's closed internal quotient, extended by G16-001's independently
 /// earned nullary law. External recognition remains name-sealed: adding this
 /// variant cannot authorize any unrelated fourth product family.
-fn constructor_metadata_admissible(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: &Constructor,
-    index: u64,
-    num_params: u64,
-    num_fields: u64,
-    level_params: Option<&[NameId]>,
-    suffix: Option<&str>,
-) -> bool {
-    constructor.index == index
-        && constructor.inductive == inductive
-        && constructor.num_params == num_params
-        && constructor.num_fields == num_fields
-        && level_params.is_none_or(|levels| constructor.level_params == levels)
-        && suffix.is_none_or(|suffix| {
-            name_is_child_str(export, constructor.name, inductive, suffix)
-        })
-}
-
 fn recursor_metadata_admissible(
     export: &ResolvedExport,
     inductive: &crate::syntax::InductiveType,
@@ -2565,15 +2518,15 @@ impl ExactBinaryProductDerivation<'_> {
             || !self.law.validates_type(export, self.inductive.ty)
             || self.inductive.all != [self.inductive.name]
             || self.inductive.constructors != [self.constructor.name]
-            || !constructor_metadata_admissible(
+            || self.constructor.index != 0
+            || self.constructor.inductive != self.inductive.name
+            || self.constructor.num_fields != self.law.num_fields()
+            || self.constructor.num_params != self.law.num_params()
+            || !name_is_child_str(
                 export,
+                self.constructor.name,
                 self.inductive.name,
-                self.constructor,
-                0,
-                self.law.num_params(),
-                self.law.num_fields(),
-                None,
-                Some(self.constructor_suffix),
+                self.constructor_suffix,
             )
             || !self
                 .law
@@ -3375,16 +3328,11 @@ fn check_twobool_structure(
     }
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
-        || !constructor_metadata_admissible(
-            export,
-            inductive.name,
-            constructor,
-            0,
-            0,
-            2,
-            None,
-            Some("mk"),
-        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 2
+        || constructor.num_params != 0
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
     {
         return Err(Verdict::Reject);
     }
