@@ -7,7 +7,9 @@ use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
-use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule};
+use crate::machine::{
+    BoolPrimitives, NatBinaryOp, ProjectionSpec, RecursorReduction, RecursorRule,
+};
 use crate::parser::ResolvedExport;
 use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, Recursor};
 use crate::typecheck::{TypeChecker, TypeValue};
@@ -53,7 +55,7 @@ fn check_export_with_policy(
             return Verdict::Reject;
         }
 
-        let (name, established) = match declaration {
+        let (name, established, nat_binary_op) = match declaration {
             Declaration::Axiom {
                 name,
                 level_params,
@@ -69,7 +71,7 @@ fn check_export_with_policy(
                 if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
                     return verdict;
                 }
-                (name, ConstantDecl::axiom(level_params, ty))
+                (name, ConstantDecl::axiom(level_params, ty), None)
             }
             Declaration::Definition {
                 name,
@@ -94,9 +96,21 @@ fn check_export_with_policy(
                 {
                     return verdict;
                 }
+                let nat_binary_op = environment
+                    .nat_primitives()
+                    .and_then(|primitives| {
+                        classify_nat_binary_op(
+                            &export,
+                            name,
+                            &level_params,
+                            ty,
+                            primitives.type_name,
+                        )
+                    });
                 (
                     name,
                     ConstantDecl::definition(level_params, ty, value, preferred_for_reduction),
+                    nat_binary_op,
                 )
             }
             Declaration::Theorem {
@@ -124,7 +138,7 @@ fn check_export_with_policy(
                 {
                     return verdict;
                 }
-                (name, ConstantDecl::theorem(level_params, ty))
+                (name, ConstantDecl::theorem(level_params, ty), None)
             }
             Declaration::Inductive(block) => {
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
@@ -138,13 +152,55 @@ fn check_export_with_policy(
             Declaration::Unsupported { .. } => return Verdict::Unknown,
         };
 
-        let Ok(extended) = environment.extend(name, established) else {
+        let Ok(mut extended) = environment.extend(name, established) else {
             return Verdict::Reject;
         };
+        if let Some(op) = nat_binary_op {
+            let Ok(with_op) = extended.install_nat_binary_op(name, op) else {
+                return Verdict::Reject;
+            };
+            extended = with_op;
+        }
         environment = extended;
     }
 
     Verdict::Accept
+}
+
+fn classify_nat_binary_op(
+    export: &ResolvedExport,
+    name: NameId,
+    level_params: &[NameId],
+    ty: ExprId,
+    nat_name: NameId,
+) -> Option<NatBinaryOp> {
+    if !level_params.is_empty() {
+        return None;
+    }
+    let (domains, result) = pi_spine(export, ty, 2)?;
+    if domains.len() != 2
+        || !domains
+            .iter()
+            .all(|domain| is_empty_constant(export, *domain, nat_name))
+    {
+        return None;
+    }
+
+    if name_is_child_str(export, name, nat_name, "add")
+        && is_empty_constant(export, result, nat_name)
+    {
+        Some(NatBinaryOp::Add)
+    } else if name_is_child_str(export, name, nat_name, "sub")
+        && is_empty_constant(export, result, nat_name)
+    {
+        Some(NatBinaryOp::Sub)
+    } else if name_is_child_str(export, name, nat_name, "ble")
+        && is_root_empty_constant_named(export, result, "Bool")
+    {
+        Some(NatBinaryOp::Ble)
+    } else {
+        None
+    }
 }
 
 fn inductive_arity_metadata_is_well_formed(
@@ -3835,6 +3891,14 @@ fn check_binary_enum(
     // G31 installs executable iota authority only for the exact Bool family.
     // Color and BoolProp retain declaration authority without computation.
     if name_is_root_str(export, inductive.name, "Bool") {
+        let [false_ctor, true_ctor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if !name_is_child_str(export, false_ctor.name, inductive.name, "false")
+            || !name_is_child_str(export, true_ctor.name, inductive.name, "true")
+        {
+            return Err(Verdict::Reject);
+        }
         let rules = block
             .constructors
             .iter()
@@ -3858,6 +3922,12 @@ fn check_binary_enum(
         };
         environment
             .install_recursor_reduction(recursor.name, reduction)
+            .and_then(|environment| {
+                environment.install_bool_primitives(BoolPrimitives {
+                    false_ctor: false_ctor.name,
+                    true_ctor: true_ctor.name,
+                })
+            })
             .map_err(|_| Verdict::Reject)
     } else {
         Ok(environment)
