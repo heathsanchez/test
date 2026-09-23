@@ -3664,10 +3664,10 @@ mod tests {
     }
 
     #[test]
-    fn g25_does_not_claim_bogus_recursor_residual() {
+    fn g26_rejects_impossible_owned_recursor_metadata() {
         let bytes = include_bytes!("../evidence/residuals/G25-001/073_BogusRecursor.ndjson");
         let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
-        assert_eq!(check_export(export, Limits::default()), Verdict::Unknown);
+        assert_eq!(check_export(export, Limits::default()), Verdict::Reject);
     }
 
     #[test]
