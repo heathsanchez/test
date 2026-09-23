@@ -491,15 +491,9 @@ fn check_conversion_lifted_unary_recursive(
         ))?;
     }
 
-    derivation.promote(
+    derivation.promote_all(
         export,
-        derived_constructor(constructor),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
+        [derived_constructor(constructor), derived_recursor(recursor)],
         limits.judgment_steps,
         delta_policy,
     )?;
@@ -1105,27 +1099,14 @@ fn check_exact_nat(
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
+    derivation.promote_all(
         export,
-        derived_type(inductive.name, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(zero),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(succ),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(zero),
+            derived_constructor(succ),
+            derived_recursor(recursor),
+        ],
         limits.judgment_steps,
         delta_policy,
     )?;
@@ -1370,23 +1351,15 @@ fn check_exact_rbtree(
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
+    derivation.promote_all(
         export,
-        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    for constructor in [leaf, red, black] {
-        derivation.promote(
-            export,
-            derived_constructor(constructor),
-            limits.judgment_steps,
-            delta_policy,
-        )?;
-    }
-    derivation.promote(
-        export,
-        derived_recursor(recursor),
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(red),
+            derived_constructor(black),
+            derived_recursor(recursor),
+        ],
         limits.judgment_steps,
         delta_policy,
     )?;
@@ -2572,10 +2545,9 @@ impl ExactBinaryProductDerivation<'_> {
                 self.inductive.ty,
             )
         };
-        derivation.promote(export, derived_type, limits.judgment_steps, delta_policy)?;
-        derivation.promote(
+        derivation.promote_all(
             export,
-            derived_constructor(self.constructor),
+            [derived_type, derived_constructor(self.constructor)],
             limits.judgment_steps,
             delta_policy,
         )?;
@@ -3374,15 +3346,12 @@ fn check_twobool_structure(
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote(
+    derivation.promote_all(
         export,
-        derived_type(inductive.name, inductive.ty),
-        limits.judgment_steps,
-        delta_policy,
-    )?;
-    derivation.promote(
-        export,
-        derived_constructor(constructor),
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+        ],
         limits.judgment_steps,
         delta_policy,
     )?;
