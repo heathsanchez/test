@@ -254,6 +254,7 @@ impl Environment {
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: Rc::new(specs),
             nat_primitives: self.nat_primitives.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
