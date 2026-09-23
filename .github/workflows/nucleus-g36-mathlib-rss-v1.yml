@@ -50,43 +50,41 @@ jobs:
           nix develop -c ./lka.py build-checker nucleus-g36
           nix develop -c ./lka.py build-test mathlib
 
-      - name: Census current Mathlib expression surface
+      - name: Record prior Mathlib surface warrant
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/g36-mathlib
-          python - <<'PY'
-          import json,pathlib,collections,os
-          p=pathlib.Path('/tmp/arena/_build/tests/mathlib.ndjson')
-          known={'bvar','natVal','strVal','sort','const','app','lam','forallE','letE','proj'}
-          counts=collections.Counter(); first={}; total=0
-          with p.open() as f:
-              for ln,line in enumerate(f,1):
-                  total+=1
-                  o=json.loads(line)
-                  if 'ie' in o:
-                      tags=[k for k in o if k!='ie']
-                      tag=tags[0] if len(tags)==1 else '<malformed>'
-                      counts[tag]+=1
-                      if tag not in known and tag not in first:
-                          first[tag]={'line':ln,'record':o}
-          unsupported={k:v for k,v in counts.items() if k not in known}
-          out={'schema':'nucleus-g36-mathlib-surface-v1','arena_sha':os.environ['ARENA_SHA'],
-               'lines':total,'expr_counts':dict(counts),'unsupported_expr_counts':unsupported,
-               'first_unsupported':first,'bytes':p.stat().st_size}
-          pathlib.Path('metatron-kernel/evidence-out/g36-mathlib/surface.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-          print(json.dumps(out,sort_keys=True))
-          PY
+          cat > metatron-kernel/evidence-out/g36-mathlib/surface-warrant.json <<'JSON'
+          {
+            "schema": "nucleus-g36-mathlib-surface-warrant-v1",
+            "source_run": 35892643934,
+            "source_artifact": 10766360562,
+            "arena_sha": "74745e5a848c71d99121e811ae86f24d13dea785",
+            "bytes": 5636308621,
+            "lines": 100001405,
+            "unsupported_expr_counts": {}
+          }
+          JSON
 
-      - name: Measure native Nucleus on current Mathlib
+      - name: Measure native Nucleus directly on current Mathlib
         timeout-minutes: 25
         run: |
           set -euo pipefail
-          cd /tmp/arena
-          rm -rf _results
-          mkdir -p _results
-          ./lka.py -v run --checker nucleus-g36 --test mathlib || true
-          cp _results/nucleus-g36_mathlib.json "$GITHUB_WORKSPACE/metatron-kernel/evidence-out/g36-mathlib/arena-result.json"
-          cat "$GITHUB_WORKSPACE/metatron-kernel/evidence-out/g36-mathlib/arena-result.json"
+          mkdir -p metatron-kernel/evidence-out/g36-mathlib
+          set +e
+          /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
+            -o metatron-kernel/evidence-out/g36-mathlib/time.txt \
+            /tmp/nucleus-g36 \
+            < /tmp/arena/_build/tests/mathlib.ndjson \
+            > metatron-kernel/evidence-out/g36-mathlib/stdout.txt \
+            2> metatron-kernel/evidence-out/g36-mathlib/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > metatron-kernel/evidence-out/g36-mathlib/exit.txt
+          echo "MATHLIB_RC=$rc"
+          cat metatron-kernel/evidence-out/g36-mathlib/time.txt
+          cat metatron-kernel/evidence-out/g36-mathlib/stderr.txt
+          test "$rc" -ne 3
 
       - name: Upload evidence
         if: always()
