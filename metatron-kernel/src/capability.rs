@@ -29,6 +29,10 @@ const CAPABILITIES: &[VerifiedCapability] = &[
         apply: recursor_name_coherence,
     },
     VerifiedCapability {
+        id: "projection.declared-owner.v0",
+        apply: projection_declared_owner,
+    },
+    VerifiedCapability {
         id: "projection.prop-dependent-safety.v0",
         apply: prop_projection_safety,
     },
@@ -109,6 +113,12 @@ fn recursor_name_coherence(export: &ResolvedExport) -> Option<Verdict> {
         let Declaration::Inductive(block) = declaration else {
             continue;
         };
+        // Nested-inductive elimination legitimately generates specialized
+        // recursors such as <type>.rec_1 / rec_2.  The simple reserved-name
+        // law is warranted only for blocks with no nested inductive surface.
+        if block.types.iter().any(|inductive| inductive.num_nested != 0) {
+            continue;
+        }
         for recursor in &block.recursors {
             let canonical = matches!(
                 export.names.get(recursor.name),
@@ -119,6 +129,29 @@ fn recursor_name_coherence(export: &ResolvedExport) -> Option<Verdict> {
             if !canonical {
                 return Some(Verdict::Reject);
             }
+        }
+    }
+    None
+}
+
+/// Every kernel projection names the inductive structure whose field is
+/// being projected.  On a self-contained Arena export that owner must be one
+/// of the exported inductive type declarations.  Missing owners are a definite
+/// malformed-export condition; this law grants no positive projection
+/// semantics.
+fn projection_declared_owner(export: &ResolvedExport) -> Option<Verdict> {
+    let mut inductive_names = HashSet::<NameId>::new();
+    for declaration in &export.declarations {
+        if let Declaration::Inductive(block) = declaration {
+            inductive_names.extend(block.types.iter().map(|inductive| inductive.name));
+        }
+    }
+
+    for expression in export.exprs.values() {
+        if let Expr::Proj { type_name, .. } = expression
+            && !inductive_names.contains(type_name)
+        {
+            return Some(Verdict::Reject);
         }
     }
     None
