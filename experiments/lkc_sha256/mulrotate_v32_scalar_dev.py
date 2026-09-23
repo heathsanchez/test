@@ -5,6 +5,9 @@ ROOT=Path(__file__).resolve().parent
 OUT=ROOT/"generated"; OUT.mkdir(parents=True,exist_ok=True)
 runpy.run_path(str(ROOT/"mulrotate_scalar_v31_probe.py"))
 src=(OUT/"Submission_mulrotate_scalar_v31_probe.lean").read_text()
+_old_nil="| [], " + ", ".join([f"w{i}" for i in range(16)] + ["a","b","c","d","e","f","g","h"]) + " =>"
+_new_nil="| [], " + ", ".join(["_"]*16 + ["a","b","c","d","e","f","g","h"]) + " =>"
+src=src.replace(_old_nil,_new_nil,1)
 prefix=src.rsplit("\nend Submission",1)[0]
 
 wins=[f"w{i}" for i in range(16)]
@@ -29,8 +32,7 @@ theorem roundsScalarMul_eq_roundsFast_dev :
   | cons k ks ih =>
       intro {intro_names}
       simp only [roundsScalarMul, roundsFast]
-      simpa [Window.nextFast, Window.push, roundFast] using
-        (ih {nextargs})
+      simp [Window.nextFast, Window.push, roundFast, ih]
 
 end Submission
 '''
