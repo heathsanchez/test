@@ -2406,7 +2406,18 @@ impl BinaryProductSortLaw {
     fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
         match self {
             Self::PUnit { .. } => self.result_sort(export, expression),
-            Self::Eq { level } => is_exact_eq_type(export, expression, level),
+            Self::Eq { level } => {
+                let Some((domains, result)) = pi_spine(export, expression, 3) else {
+                    return false;
+                };
+                let [carrier, parameter, index] = domains.as_slice() else {
+                    return false;
+                };
+                is_sort_parameter(export, *carrier, level)
+                    && is_bvar(export, *parameter, 0)
+                    && is_bvar(export, *index, 1)
+                    && is_prop_sort(export, result)
+            },
             Self::And | Self::Prod { .. } | Self::PProd { .. } => {
                 is_exact_binary_product_parameter_telescope(export, expression, self)
             }
@@ -2421,7 +2432,17 @@ impl BinaryProductSortLaw {
     ) -> bool {
         match self {
             Self::PUnit { .. } => self.constant(export, expression, inductive),
-            Self::Eq { .. } => is_derived_eq_constructor_type(export, expression, inductive, self),
+            Self::Eq { level } => {
+                let Some((domains, result)) = pi_spine(export, expression, 2) else {
+                    return false;
+                };
+                let [carrier, parameter] = domains.as_slice() else {
+                    return false;
+                };
+                is_sort_parameter(export, *carrier, level)
+                    && is_bvar(export, *parameter, 0)
+                    && is_eq_application(export, result, inductive, self, 1, 0, 0)
+            },
             Self::And | Self::Prod { .. } | Self::PProd { .. } => {
                 is_derived_binary_product_constructor_type(export, expression, inductive, self)
             }
@@ -2949,39 +2970,6 @@ fn is_punit_minor_type(
         Some(Expr::App { fun, arg })
             if is_bvar(export, *fun, 0) && law.constant(export, *arg, constructor)
     )
-}
-
-fn is_exact_eq_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 3) else {
-        return false;
-    };
-    let [carrier, parameter, index] = domains.as_slice() else {
-        return false;
-    };
-    is_sort_parameter(export, *carrier, level)
-        && is_bvar(export, *parameter, 0)
-        && is_bvar(export, *index, 1)
-        && is_prop_sort(export, result)
-}
-
-fn is_derived_eq_constructor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 2) else {
-        return false;
-    };
-    let [carrier, parameter] = domains.as_slice() else {
-        return false;
-    };
-    let BinaryProductSortLaw::Eq { level } = law else {
-        return false;
-    };
-    is_sort_parameter(export, *carrier, level)
-        && is_bvar(export, *parameter, 0)
-        && is_eq_application(export, result, inductive, law, 1, 0, 0)
 }
 
 fn is_eq_application(
