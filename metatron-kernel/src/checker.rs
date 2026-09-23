@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 
 use crate::convert::DeltaPolicy;
 use crate::environment::{ConstantDecl, Environment, NatPrimitives};
@@ -38,6 +38,9 @@ fn check_export_with_policy(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
+    if !global_declaration_integrity(&export) {
+        return Verdict::Reject;
+    }
     let mut environment = Environment::empty();
 
     // Keep the resolved tables available while consuming declaration records.
@@ -157,6 +160,49 @@ fn check_export_with_policy(
     }
 
     Verdict::Accept
+}
+
+fn global_declaration_integrity(export: &ResolvedExport) -> bool {
+    let mut declared = HashSet::new();
+    for declaration in &export.declarations {
+        match declaration {
+            Declaration::Axiom { name, .. }
+            | Declaration::Definition { name, .. }
+            | Declaration::Theorem { name, .. } => {
+                if !declared.insert(*name) {
+                    return false;
+                }
+            }
+            Declaration::Inductive(block) => {
+                for ty in &block.types {
+                    if !declared.insert(ty.name) {
+                        return false;
+                    }
+                }
+                for ctor in &block.constructors {
+                    if !declared.insert(ctor.name) {
+                        return false;
+                    }
+                }
+                for recursor in &block.recursors {
+                    if !declared.insert(recursor.name) {
+                        return false;
+                    }
+                }
+                if let [inductive] = block.types.as_slice() {
+                    for recursor in &block.recursors {
+                        if recursor.all == [inductive.name]
+                            && !name_is_child_str(export, recursor.name, inductive.name, "rec")
+                        {
+                            return false;
+                        }
+                    }
+                }
+            }
+            Declaration::Unsupported { .. } => {}
+        }
+    }
+    true
 }
 
 fn classify_nat_binary_op(
