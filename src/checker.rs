@@ -1402,20 +1402,11 @@ fn rbtree_application_parts(
     inductive: NameId,
     level: NameId,
 ) -> Option<(ExprId, ExprId, ExprId)> {
-    let Expr::App { fun, arg: height } = export.exprs.get(expression)? else {
+    let (head, arguments) = application_spine(export, expression);
+    let [carrier, color, height] = arguments.as_slice() else {
         return None;
     };
-    let Expr::App { fun, arg: color } = export.exprs.get(*fun)? else {
-        return None;
-    };
-    let Expr::App {
-        fun: head,
-        arg: carrier,
-    } = export.exprs.get(*fun)?
-    else {
-        return None;
-    };
-    is_unary_polymorphic_constant(export, *head, inductive, level)
+    is_unary_polymorphic_constant(export, head, inductive, level)
         .then_some((*carrier, *color, *height))
 }
 
