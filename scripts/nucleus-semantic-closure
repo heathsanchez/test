@@ -20,14 +20,19 @@ else
   cat >"$tmp"
 fi
 
-# Nucleus owns only the positive authority it can already prove.  Any
-# non-accept result is not treated as a negative claim here: it is delegated
-# to the complete, separately qualified MathGraph/Flash checker.
+# Qualified verdict closure: Nucleus owns both ACCEPT and REJECT where it
+# produces a decided verdict. Only UNKNOWN/ERROR delegate to the pinned
+# complete fallback.
+set +e
 "$NUCLEUS" <"$tmp" >/dev/null 2>/dev/null
 nucleus_rc=$?
-if [ "$nucleus_rc" -eq 0 ]; then
-  exit 0
-fi
+set -e
+case "$nucleus_rc" in
+  0) exit 0 ;;
+  1) exit 1 ;;
+  2|3) ;;
+  *) exit "$nucleus_rc" ;;
+esac
 
 "$FLASH" "$FLASH_CONFIG" <"$tmp" >/dev/null 2>/dev/null
 flash_rc=$?
