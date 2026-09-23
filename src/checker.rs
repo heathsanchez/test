@@ -286,11 +286,32 @@ fn check_single_constructor_inductive(
         return Err(Verdict::Unknown);
     };
     if name_is_root_str(export, inductive.name, "And") {
-        check_exact_and(export, environment, block, limits, delta_policy)
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::And,
+        )
     } else if name_is_root_str(export, inductive.name, "Prod") {
-        check_exact_prod(export, environment, block, limits, delta_policy)
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::Prod,
+        )
     } else if name_is_root_str(export, inductive.name, "PProd") {
-        check_exact_pprod(export, environment, block, limits, delta_policy)
+        check_exact_binary_product_family(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+            BinaryProductFamily::PProd,
+        )
     } else if name_is_root_str(export, inductive.name, "TwoBool") {
         check_twobool_structure(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
@@ -2723,12 +2744,20 @@ impl ExactBinaryProductDerivation<'_> {
 /// with two Prop parameters and one field for each parameter. This is a named
 /// classifier, not a general parameterized-inductive rule. The shared
 /// promotion transaction is reused unchanged and installs no computation.
-fn check_exact_and(
+#[derive(Clone, Copy)]
+enum BinaryProductFamily {
+    And,
+    Prod,
+    PProd,
+}
+
+fn check_exact_binary_product_family(
     export: &ResolvedExport,
     environment: &Environment,
     block: &InductiveBlock,
     limits: Limits,
     delta_policy: DeltaPolicy,
+    family: BinaryProductFamily,
 ) -> Result<Environment, Verdict> {
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
@@ -2737,20 +2766,25 @@ fn check_exact_and(
         return Err(Verdict::Unknown);
     };
 
-    // These dimensions leave the exact And envelope. Their semantics remain
-    // unsupported rather than being guessed from this one declaration.
     if inductive.num_params != 2
         || inductive.num_indices != 0
         || inductive.num_nested != 0
         || inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
-        || !inductive.level_params.is_empty()
         || constructor.is_unsafe
-        || !constructor.level_params.is_empty()
     {
         return Err(Verdict::Unknown);
     }
+
+    // And's already-qualified envelope treats any universe-polymorphic
+    // neighbor as unsupported before recursor validation.
+    if matches!(family, BinaryProductFamily::And)
+        && (!inductive.level_params.is_empty() || !constructor.level_params.is_empty())
+    {
+        return Err(Verdict::Unknown);
+    }
+
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
@@ -2758,12 +2792,48 @@ fn check_exact_and(
         return Err(Verdict::Unknown);
     }
 
+    let (constructor_suffix, law) = match family {
+        BinaryProductFamily::And => ("intro", BinaryProductSortLaw::And),
+        BinaryProductFamily::Prod => {
+            if prod_has_dependent_parameter_neighbor(export, inductive.ty) {
+                return Err(Verdict::Unknown);
+            }
+            let [first, second] = inductive.level_params.as_slice() else {
+                return Err(Verdict::Reject);
+            };
+            (
+                "mk",
+                BinaryProductSortLaw::Prod {
+                    first: *first,
+                    second: *second,
+                },
+            )
+        }
+        BinaryProductFamily::PProd => {
+            if pprod_has_dependent_parameter_neighbor(export, inductive.ty)
+                || pprod_has_dependent_field_neighbor(export, constructor.ty)
+            {
+                return Err(Verdict::Unknown);
+            }
+            let [first, second] = inductive.level_params.as_slice() else {
+                return Err(Verdict::Reject);
+            };
+            (
+                "mk",
+                BinaryProductSortLaw::PProd {
+                    first: *first,
+                    second: *second,
+                },
+            )
+        }
+    };
+
     ExactBinaryProductDerivation {
         inductive,
         constructor,
         recursor,
-        constructor_suffix: "intro",
-        law: BinaryProductSortLaw::And,
+        constructor_suffix,
+        law,
     }
     .validate_and_promote(export, environment, limits, delta_policy)
 }
@@ -3202,54 +3272,6 @@ fn is_derived_eq_rule(
         && is_bvar(export, result, 0)
 }
 
-fn check_exact_prod(
-    export: &ResolvedExport,
-    environment: &Environment,
-    block: &InductiveBlock,
-    limits: Limits,
-    delta_policy: DeltaPolicy,
-) -> Result<Environment, Verdict> {
-    let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || constructor.is_unsafe
-    {
-        return Err(Verdict::Unknown);
-    }
-    let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-    if prod_has_dependent_parameter_neighbor(export, inductive.ty) {
-        return Err(Verdict::Unknown);
-    }
-    let [first_level, second_level] = inductive.level_params.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    ExactBinaryProductDerivation {
-        inductive,
-        constructor,
-        recursor,
-        constructor_suffix: "mk",
-        law: BinaryProductSortLaw::Prod {
-            first: *first_level,
-            second: *second_level,
-        },
-    }
-    .validate_and_promote(export, environment, limits, delta_policy)
-}
-
 fn prod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
         return false;
@@ -3315,56 +3337,6 @@ fn is_polymorphic_constant(
 
 /// G14-001's name-specific frontier. G15 shares only its already-qualified
 /// derivation skeleton; this envelope and its Sort-level law remain separate.
-fn check_exact_pprod(
-    export: &ResolvedExport,
-    environment: &Environment,
-    block: &InductiveBlock,
-    limits: Limits,
-    delta_policy: DeltaPolicy,
-) -> Result<Environment, Verdict> {
-    let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || constructor.is_unsafe
-    {
-        return Err(Verdict::Unknown);
-    }
-    let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-    if pprod_has_dependent_parameter_neighbor(export, inductive.ty)
-        || pprod_has_dependent_field_neighbor(export, constructor.ty)
-    {
-        return Err(Verdict::Unknown);
-    }
-    let [first_level, second_level] = inductive.level_params.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    ExactBinaryProductDerivation {
-        inductive,
-        constructor,
-        recursor,
-        constructor_suffix: "mk",
-        law: BinaryProductSortLaw::PProd {
-            first: *first_level,
-            second: *second_level,
-        },
-    }
-    .validate_and_promote(export, environment, limits, delta_policy)
-}
-
 fn pprod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
         return false;
