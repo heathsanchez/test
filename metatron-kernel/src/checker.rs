@@ -9,7 +9,7 @@ use crate::judgment::Judgment;
 use crate::level::LevelTerm;
 use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule};
 use crate::parser::ResolvedExport;
-use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, Recursor};
+use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor};
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{EnvFrame, FreeId};
 use crate::verdict::Verdict;
@@ -50,7 +50,8 @@ fn check_export_with_policy(
         let level_parameters = match &declaration {
             Declaration::Axiom { level_params, .. }
             | Declaration::Definition { level_params, .. }
-            | Declaration::Theorem { level_params, .. } => Some(level_params.as_slice()),
+            | Declaration::Theorem { level_params, .. }
+            | Declaration::Quot { level_params, .. } => Some(level_params.as_slice()),
             Declaration::Inductive(_) | Declaration::Unsupported { .. } => None,
         };
         if level_parameters.is_some_and(has_duplicate_parameter) {
@@ -130,6 +131,29 @@ fn check_export_with_policy(
                 }
                 (name, ConstantDecl::theorem(level_params, ty))
             }
+            Declaration::Quot {
+                name,
+                level_params,
+                ty,
+                kind,
+            } => {
+                match check_quot_declaration(
+                    &export,
+                    &environment,
+                    name,
+                    &level_params,
+                    ty,
+                    kind,
+                    limits,
+                    delta_policy,
+                ) {
+                    Ok(extended) => {
+                        environment = extended;
+                        continue;
+                    }
+                    Err(verdict) => return verdict,
+                }
+            }
             Declaration::Inductive(block) => {
                 match check_inductive(&export, &environment, &block, limits, delta_policy) {
                     Ok(extended) => {
@@ -171,6 +195,296 @@ fn check_export_with_policy(
     }
 
     Verdict::Accept
+}
+
+
+fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
+    match export.names.get(name) {
+        Some(Name::Str { prefix, value })
+            if value == suffix && name_is_root_str(export, *prefix, "Quot") =>
+        {
+            Some(*prefix)
+        }
+        _ => None,
+    }
+}
+
+fn quotient_child(export: &ResolvedExport, parent: NameId, suffix: &str) -> Option<NameId> {
+    export.names.iter_raw().find_map(|(raw, name)| match name {
+        Name::Str { prefix, value } if *prefix == parent && value == suffix => Some(NameId(raw)),
+        _ => None,
+    })
+}
+
+fn is_quot_relation_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    carrier: u64,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [left, right] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *left, carrier)
+        && is_bvar(export, *right, carrier + 1)
+        && is_prop_sort(export, result)
+}
+
+fn is_quot_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, quotient, level)
+        && are_bvars(export, &arguments, &[carrier, relation])
+}
+
+fn is_quot_mk_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    mk: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    value: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, mk, level)
+        && are_bvars(export, &arguments, &[carrier, relation, value])
+}
+
+fn is_quot_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [carrier, relation] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_sort_parameter(export, result, level)
+}
+
+fn is_quot_mk_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, relation, value] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_bvar(export, *value, 1)
+        && is_quot_application(export, result, quotient, level, 2, 1)
+}
+
+fn is_quot_function_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [domain] if is_bvar(export, *domain, 2))
+        && is_bvar(export, result, 1)
+}
+
+fn is_quot_lift_proof_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    value_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [left, right, related] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *left, 3)
+        || !is_bvar(export, *right, 4)
+        || !is_binary_bvar_application(export, *related, 4, 1, 0)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    let [carrier, lhs, rhs] = arguments.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Const { name, levels }) = export.exprs.get(head) else {
+        return false;
+    };
+    levels.len() == 1
+        && name_is_root_str(export, *name, "Eq")
+        && matches!(
+            export.levels.get(levels[0]),
+            Some(Level::Param(parameter)) if *parameter == value_level
+        )
+        && is_bvar(export, *carrier, 4)
+        && is_bvar_application(export, *lhs, 3, 2)
+        && is_bvar_application(export, *rhs, 3, 1)
+}
+
+fn is_quot_lift_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    quotient_level: NameId,
+    value_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [carrier, relation, value_type, function, proof, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, quotient_level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_sort_parameter(export, *value_type, value_level)
+        && is_quot_function_type(export, *function)
+        && is_quot_lift_proof_type(export, *proof, value_level)
+        && is_quot_application(export, *target, quotient, quotient_level, 4, 3)
+        && is_bvar(export, result, 3)
+}
+
+fn is_quot_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(
+        domains.as_slice(),
+        [target] if is_quot_application(export, *target, quotient, level, 1, 0)
+    ) && is_prop_sort(export, result)
+}
+
+fn is_quot_ind_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    mk: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [value] = domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::App { fun: motive, arg }) = export.exprs.get(result) else {
+        return false;
+    };
+    is_bvar(export, *value, 2)
+        && is_bvar(export, *motive, 1)
+        && is_quot_mk_application(export, *arg, mk, level, 3, 2, 0)
+}
+
+fn is_quot_ind_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    quotient: NameId,
+    mk: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_quot_relation_type(export, *relation, 0)
+        && is_quot_motive_type(export, *motive, quotient, level)
+        && is_quot_ind_minor_type(export, *minor, mk, level)
+        && is_quot_application(export, *target, quotient, level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn check_quot_declaration(
+    export: &ResolvedExport,
+    environment: &Environment,
+    name: NameId,
+    level_params: &[NameId],
+    ty: ExprId,
+    kind: QuotKind,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let exact = match kind {
+        QuotKind::Type => {
+            matches!(level_params, [level]
+                if name_is_root_str(export, name, "Quot")
+                    && is_quot_type(export, ty, *level))
+        }
+        QuotKind::Ctor => {
+            let Some(quotient) = quotient_parent(export, name, "mk") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [level]
+                if environment.get(quotient).is_some()
+                    && is_quot_mk_type(export, ty, quotient, *level))
+        }
+        QuotKind::Lift => {
+            let Some(quotient) = quotient_parent(export, name, "lift") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [quotient_level, value_level]
+                if quotient_level != value_level
+                    && environment.get(quotient).is_some()
+                    && is_quot_lift_type(
+                        export,
+                        ty,
+                        quotient,
+                        *quotient_level,
+                        *value_level,
+                    ))
+        }
+        QuotKind::Ind => {
+            let Some(quotient) = quotient_parent(export, name, "ind") else {
+                return Err(Verdict::Reject);
+            };
+            let Some(mk) = quotient_child(export, quotient, "mk") else {
+                return Err(Verdict::Reject);
+            };
+            matches!(level_params, [level]
+                if environment.get(quotient).is_some()
+                    && environment.get(mk).is_some()
+                    && is_quot_ind_type(export, ty, quotient, mk, *level))
+        }
+    };
+    if !exact {
+        return Err(Verdict::Reject);
+    }
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(level_params),
+    )
+    .with_delta_policy(delta_policy);
+    if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
+        return Err(verdict);
+    }
+    environment
+        .extend(name, ConstantDecl::theorem(level_params.to_vec(), ty))
+        .map_err(|_| Verdict::Reject)
 }
 
 fn inductive_arity_metadata_is_well_formed(

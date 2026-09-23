@@ -6,7 +6,7 @@ use serde_json::{Map, Value};
 
 use crate::id::{DuplicateId, ExprId, IdTable, LevelId, NameId};
 use crate::syntax::{
-    Constructor, Declaration, Expr, InductiveBlock, InductiveType, Level, Name, Recursor,
+    Constructor, Declaration, Expr, InductiveBlock, InductiveType, Level, Name, QuotKind, Recursor,
     RecursorRule,
 };
 
@@ -205,6 +205,10 @@ fn parse_record(export: &mut ParsedExport, value: Value, line: usize) -> Result<
         export.declarations.push(parse_theorem(value, line)?);
         return Ok(());
     }
+    if let Some(value) = object.get("quot") {
+        export.declarations.push(parse_quot(value, line)?);
+        return Ok(());
+    }
     if let Some(value) = object.get("inductive") {
         export.declarations.push(parse_inductive(value, line)?);
         return Ok(());
@@ -357,6 +361,25 @@ fn parse_axiom(value: &Value, line: usize) -> Result<Declaration, ParseError> {
             .map(NameId)
             .collect(),
         ty: ExprId(nested_number(value, "type", line)?),
+    })
+}
+
+fn parse_quot(value: &Value, line: usize) -> Result<Declaration, ParseError> {
+    let kind = match nested_string(value, "kind", line)? {
+        "type" => QuotKind::Type,
+        "ctor" => QuotKind::Ctor,
+        "lift" => QuotKind::Lift,
+        "ind" => QuotKind::Ind,
+        _ => return Err(malformed(line, "unknown quotient declaration kind")),
+    };
+    Ok(Declaration::Quot {
+        name: NameId(nested_number(value, "name", line)?),
+        level_params: nested_numbers(value, "levelParams", line)?
+            .into_iter()
+            .map(NameId)
+            .collect(),
+        ty: ExprId(nested_number(value, "type", line)?),
+        kind,
     })
 }
 
@@ -525,6 +548,12 @@ fn resolve_declaration(export: &ParsedExport, declaration: &Declaration) -> Resu
             ty,
             value,
         } => (*name, level_params, all, &[*ty, *value]),
+        Declaration::Quot {
+            name,
+            level_params,
+            ty,
+            ..
+        } => (*name, level_params, &[], std::slice::from_ref(ty)),
         Declaration::Inductive(block) => return resolve_inductive(export, block),
         Declaration::Unsupported { .. } => return Ok(()),
     };

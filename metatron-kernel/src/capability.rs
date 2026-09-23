@@ -57,7 +57,8 @@ fn declared_name_uniqueness(export: &ResolvedExport) -> Option<Verdict> {
         match declaration {
             Declaration::Axiom { name, .. }
             | Declaration::Definition { name, .. }
-            | Declaration::Theorem { name, .. } => {
+            | Declaration::Theorem { name, .. }
+            | Declaration::Quot { name, .. } => {
                 if let Some(verdict) = insert(*name) {
                     return Some(verdict);
                 }
