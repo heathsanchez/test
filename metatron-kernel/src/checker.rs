@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
-use crate::environment::{ConstantDecl, Environment, NatPrimitives};
+use crate::environment::{
+    BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives,
+};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
@@ -142,6 +144,28 @@ fn check_export_with_policy(
             return Verdict::Reject;
         };
         environment = extended;
+
+        // Lean's Nat-literal kernel extension gives exact native meaning to
+        // these standard root definitions.  Authority is installed only after
+        // the definition itself has passed ordinary Nucleus type checking and
+        // exact Nat authority is already present.
+        if let Some(nat) = environment.nat_primitives().cloned() {
+            let operation = if name_is_child_str(&export, name, nat.type_name, "add") {
+                Some(NatOperation::Add)
+            } else if name_is_child_str(&export, name, nat.type_name, "sub") {
+                Some(NatOperation::Sub)
+            } else if name_is_child_str(&export, name, nat.type_name, "ble") {
+                Some(NatOperation::Ble)
+            } else {
+                None
+            };
+            if let Some(operation) = operation {
+                let Ok(extended) = environment.install_nat_operation(name, operation) else {
+                    return Verdict::Reject;
+                };
+                environment = extended;
+            }
+        }
     }
 
     Verdict::Accept
@@ -2853,6 +2877,9 @@ fn check_exact_nat(
             zero: zero.name,
             succ: succ.name,
             recursor: recursor.name,
+            add: None,
+            sub: None,
+            ble: None,
         })
         .map_err(|_| Verdict::Reject)
 }
@@ -3856,8 +3883,22 @@ fn check_binary_enum(
             level_params: recursor.level_params.clone(),
             rules,
         };
-        environment
+        let environment = environment
             .install_recursor_reduction(recursor.name, reduction)
+            .map_err(|_| Verdict::Reject)?;
+        let [false_ctor, true_ctor] = constructor_names.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if !name_is_child_str(export, *false_ctor, inductive.name, "false")
+            || !name_is_child_str(export, *true_ctor, inductive.name, "true")
+        {
+            return Err(Verdict::Unknown);
+        }
+        environment
+            .install_bool_primitives(BoolPrimitives {
+                false_ctor: *false_ctor,
+                true_ctor: *true_ctor,
+            })
             .map_err(|_| Verdict::Reject)
     } else {
         Ok(environment)
