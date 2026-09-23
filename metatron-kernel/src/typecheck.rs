@@ -524,8 +524,7 @@ impl<'a> TypeChecker<'a> {
             EnvFrame::empty(),
             LevelSubstitution::new(substitutions),
         );
-        let proposition_type =
-            machine.expose(proposition_type, Transparency::Reducible, budget);
+        let proposition_type = machine.expose(proposition_type, Transparency::Reducible, budget);
         matches!(
             proposition_type.proven_value(),
             Some(Value::Sort(LevelTerm::Zero))
