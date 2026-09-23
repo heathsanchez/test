@@ -1,0 +1,70 @@
+name: Nucleus Binary Tree Shared Residual v1
+
+on:
+  push:
+    branches: [nucleus-binary-tree-shared-residual-v1]
+    paths:
+      - ".github/workflows/nucleus-binary-tree-shared-residual-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      AUTHORITY_SHA: d723576ded09be6c52fffb18403c23f10f5575e5
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace only the split pair
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/binary-tree-shared-residual-v1
+          python - <<'PY'
+          import json,os,pathlib,subprocess,re
+          root=pathlib.Path('/tmp/tests/good/perf')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          out=[]
+          for stem in ['repeated-subproblem','shared-subterm']:
+              p=root/(stem+'.ndjson')
+              env=dict(os.environ); env['NUCLEUS_TRACE_RESIDUAL']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              err=q.stderr.decode(errors='replace')
+              marks=re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)',err)
+              out.append({'test':'perf/'+stem,'rc':q.returncode,'terminal':marks[-1] if marks else None,'stderr':err})
+          assert out[0]['rc']==0,out
+          assert out[1]['rc'] in (2,3),out
+          pathlib.Path('evidence-out/binary-tree-shared-residual-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-binary-tree-shared-residual-${{ github.sha }}
+          path: metatron-kernel/evidence-out/binary-tree-shared-residual-v1
+          if-no-files-found: warn
