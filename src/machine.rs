@@ -431,13 +431,16 @@ impl<'a> Machine<'a> {
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
                         self.expose_internal(structure, transparency, budget, false);
-                    let Some(Value::Neutral(neutral)) = exposed_structure.proven_value() else {
+                    let Some(exposure) = exposed_structure.proven_value() else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
-                    let NeutralHead::Const { name, .. } = neutral.head else {
+                    let Value::Neutral(neutral) = &exposure.value else {
+                        return Judgment::unknown("projection-structure-stuck");
+                    };
+                    let NeutralHead::Const { name, .. } = &neutral.head else {
                         return Judgment::unknown("projection-structure-neutral");
                     };
-                    if name != spec.constructor {
+                    if *name != spec.constructor {
                         return Judgment::unknown("projection-constructor-mismatch");
                     }
                     let field_offset = spec.num_params + index;
