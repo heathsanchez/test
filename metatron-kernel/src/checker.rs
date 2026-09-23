@@ -166,6 +166,31 @@ fn inductive_arity_metadata_is_well_formed(
     matches!(export.exprs.get(expression), Some(Expr::Sort(_)))
 }
 
+fn owned_single_type_recursor_metadata_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [recursor]) = (block.types.as_slice(), block.recursors.as_slice()) else {
+        return false;
+    };
+    if inductive.is_unsafe
+        || recursor.is_unsafe
+        || recursor.all != [inductive.name]
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return false;
+    }
+
+    !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        recursor.k,
+        true,
+    )
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -173,6 +198,14 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G26-001: negative-only recursor coherence. A single safe inductive
+    // that explicitly owns a .rec declaration cannot advertise impossible
+    // motive/minor/rule cardinalities. This grants no positive family
+    // authority; well-formed but unsupported recursors remain UNKNOWN.
+    if owned_single_type_recursor_metadata_is_definitely_malformed(export, block) {
+        return Err(Verdict::Reject);
+    }
+
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader
