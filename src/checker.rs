@@ -1658,6 +1658,12 @@ fn is_rbtree_leaf_minor_type(
         && is_bvar(export, arguments[0], 1)
 }
 
+#[derive(Clone, Copy)]
+enum RbBranch {
+    Red,
+    Black,
+}
+
 fn is_rbtree_branch_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
