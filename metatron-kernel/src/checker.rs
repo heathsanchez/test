@@ -1313,8 +1313,20 @@ fn check_exact_rbtree(
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
         || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
-        || !is_derived_rbtree_red_type(export, red.ty, inductive.name, *level)
-        || !is_derived_rbtree_black_type(export, black.ty, inductive.name, *level)
+        || !is_derived_rbtree_branch_type(
+            export,
+            red.ty,
+            inductive.name,
+            *level,
+            RbBranch::Red,
+        )
+        || !is_derived_rbtree_branch_type(
+            export,
+            black.ty,
+            inductive.name,
+            *level,
+            RbBranch::Black,
+        )
     {
         return Err(Verdict::Reject);
     }
@@ -1484,91 +1496,80 @@ fn is_derived_rbtree_leaf_type(
         && is_child_empty_constant_named(export, result_height, "N", "zero")
 }
 
-fn is_derived_rbtree_red_type(
+fn is_derived_rbtree_branch_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     level: NameId,
+    branch: RbBranch,
 ) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+    let branch_index = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 1,
+    };
+    let extra_colors = 2 * branch_index;
+    let arity = 5 + extra_colors;
+    let Some((domains, result)) = pi_spine(export, expression, arity) else {
         return false;
     };
-    let [carrier, height, left, value, right] = domains.as_slice() else {
-        return false;
-    };
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-        Some((result_carrier, result_color, result_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-        rbtree_application_parts(export, result, inductive, level),
-    )
-    else {
-        return false;
-    };
-    is_sort_succ_parameter(export, *carrier, level)
-        && is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 1)
-        && is_child_empty_constant_named(export, left_color, "Color", "b")
-        && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 2)
-        && is_bvar(export, right_carrier, 3)
-        && is_child_empty_constant_named(export, right_color, "Color", "b")
-        && is_bvar(export, right_height, 2)
-        && is_bvar(export, result_carrier, 4)
-        && is_child_empty_constant_named(export, result_color, "Color", "r")
-        && is_bvar(export, result_height, 3)
-}
 
-fn is_derived_rbtree_black_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    level: NameId,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 7) else {
-        return false;
-    };
-    let [
-        carrier,
-        first_color,
-        second_color,
-        height,
-        left,
-        value,
-        right,
-    ] = domains.as_slice()
-    else {
-        return false;
-    };
+    let carrier = domains[0];
+    let height = domains[1 + extra_colors];
+    let left = domains[2 + extra_colors];
+    let value = domains[3 + extra_colors];
+    let right = domains[4 + extra_colors];
+
     let (
         Some((left_carrier, left_color, left_height)),
         Some((right_carrier, right_color, right_height)),
         Some((result_carrier, result_color, result_height)),
     ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
         rbtree_application_parts(export, result, inductive, level),
     )
     else {
         return false;
     };
-    is_sort_succ_parameter(export, *carrier, level)
-        && is_root_empty_constant_named(export, *first_color, "Color")
-        && is_root_empty_constant_named(export, *second_color, "Color")
-        && is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 3)
-        && is_bvar(export, left_color, 2)
+
+    let prefix_colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[1], "Color")
+                && is_root_empty_constant_named(export, domains[2], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => {
+            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
+        }
+    };
+    let result_index_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, result_color, "Color", "r")
+                && is_bvar(export, result_height, 3)
+        }
+        RbBranch::Black => {
+            is_child_empty_constant_named(export, result_color, "Color", "b")
+                && is_named_succ_bvar(export, result_height, "N", "succ", 3)
+        }
+    };
+
+    is_sort_succ_parameter(export, carrier, level)
+        && prefix_colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 1 + 2 * branch_index as u64)
+        && child_colors_ok
         && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 4)
-        && is_bvar(export, right_carrier, 5)
-        && is_bvar(export, right_color, 3)
+        && is_bvar(export, value, 2 + 2 * branch_index as u64)
+        && is_bvar(export, right_carrier, 3 + 2 * branch_index as u64)
         && is_bvar(export, right_height, 2)
-        && is_bvar(export, result_carrier, 6)
-        && is_child_empty_constant_named(export, result_color, "Color", "b")
-        && is_named_succ_bvar(export, result_height, "N", "succ", 3)
+        && is_bvar(export, result_carrier, 4 + 2 * branch_index as u64)
+        && result_index_ok
 }
 
 fn application_spine(export: &ResolvedExport, expression: ExprId) -> (ExprId, Vec<ExprId>) {
