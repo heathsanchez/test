@@ -173,12 +173,7 @@ pub(crate) fn convert_with_policy_at_depth(
                             return Judgment::unknown("full-conversion-exposure");
                         };
                         match compare_values(
-                            checker,
-                            full_left,
-                            full_right,
-                            remaining,
-                            depth,
-                            &mut work,
+                            checker, full_left, full_right, remaining, depth, &mut work,
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
