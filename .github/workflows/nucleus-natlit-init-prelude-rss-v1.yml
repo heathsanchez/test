@@ -46,7 +46,7 @@ jobs:
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/natlit-init-prelude-rss
           set +e
-          /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
+          NUCLEUS_TRACE_PARSE_ERROR=1 /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
             -o metatron-kernel/evidence-out/natlit-init-prelude-rss/time.txt \
             metatron-kernel/target/release/metatron-kernel \
             < /tmp/tests/good/init-prelude.ndjson \
@@ -61,6 +61,7 @@ jobs:
           test "$rc" -ne 3
 
       - name: Upload evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: nucleus-natlit-init-prelude-rss-${{ github.sha }}
