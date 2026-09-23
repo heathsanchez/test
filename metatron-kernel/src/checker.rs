@@ -483,8 +483,7 @@ fn new_singleton_motive_type(
     let [target] = domains.as_slice() else {
         return false;
     };
-    is_empty_constant(export, *target, inductive)
-        && is_sort_parameter(export, result, motive_level)
+    is_empty_constant(export, *target, inductive) && is_sort_parameter(export, result, motive_level)
 }
 
 fn new_singleton_minor_type(
