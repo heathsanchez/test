@@ -264,6 +264,9 @@ impl<'a> Machine<'a> {
                 Expr::NatLit(_) => {
                     return Judgment::unknown("nat-literal-applied-as-function");
                 }
+                Expr::StrLit(_) => {
+                    return Judgment::unknown("string-literal-reduction-not-qualified");
+                }
                 Expr::Sort(level) if pending.is_empty() => {
                     let Some(level) = self.resolve_level(*level, &closure, budget) else {
                         return Judgment::unknown("unresolved-sort-level-during-reduction");
