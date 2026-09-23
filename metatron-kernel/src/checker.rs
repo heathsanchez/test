@@ -2548,7 +2548,7 @@ fn check_exact_nat(
     let environment = derivation.finish();
 
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
-
+}
 
 fn install_certified_recursor_reduction(
     environment: Environment,
