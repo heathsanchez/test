@@ -102,6 +102,26 @@ pub(crate) fn convert_with_policy_at_depth(
     delta_policy: DeltaPolicy,
     initial_depth: usize,
 ) -> Judgment<()> {
+    convert_with_policy_in_context(
+        checker,
+        left,
+        right,
+        budget,
+        delta_policy,
+        initial_depth,
+        &[],
+    )
+}
+
+pub(crate) fn convert_with_policy_in_context(
+    checker: &TypeChecker<'_>,
+    left: &TypeValue,
+    right: &TypeValue,
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    initial_depth: usize,
+    context: &[TypeValue],
+) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
     #[cfg(feature = "diagnostics")]
@@ -144,6 +164,12 @@ pub(crate) fn convert_with_policy_at_depth(
                 ));
                 continue;
             }
+        }
+
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && unit_like_free_pair(checker, left_term, right_term, context, remaining)
+        {
+            continue;
         }
 
         match (left, right) {
@@ -255,6 +281,40 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn unit_like_free_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    context: &[TypeValue],
+    budget: usize,
+) -> bool {
+    let machine = checker.machine();
+    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
+        (left.proven_value(), right.proven_value())
+    else {
+        return false;
+    };
+    let (NeutralHead::Free(left), NeutralHead::Free(right)) = (&left.head, &right.head) else {
+        return false;
+    };
+    if left == right || !left.spine.is_empty() || !right.spine.is_empty() {
+        return false;
+    }
+    let (Ok(left_index), Ok(right_index)) =
+        (usize::try_from(left.0), usize::try_from(right.0))
+    else {
+        return false;
+    };
+    let (Some(left_ty), Some(right_ty)) = (context.get(left_index), context.get(right_index)) else {
+        return false;
+    };
+    checker.unit_like_type_key(left_ty, budget)
+        .zip(checker.unit_like_type_key(right_ty, budget))
+        .is_some_and(|(left, right)| left == right)
 }
 
 fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> Option<Closure> {
