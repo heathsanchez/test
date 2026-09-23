@@ -312,9 +312,13 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
-                    if let Some(native) =
-                        self.try_native_nat_reduction(*name, levels, &mut pending, transparency, budget)
-                    {
+                    if let Some(native) = self.try_native_nat_reduction(
+                        *name,
+                        levels,
+                        &mut pending,
+                        transparency,
+                        budget,
+                    ) {
                         record_transition(
                             &mut transitions,
                             record_witnesses,
