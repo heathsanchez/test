@@ -124,6 +124,9 @@ mod tests {
     #[test]
     fn duplicate_declared_names_reject() {
         let export = export_with(vec![definition(1), definition(1)]);
-        assert_eq!(declared_name_uniqueness(&export), Some(crate::verdict::Verdict::Reject));
+        assert_eq!(
+            declared_name_uniqueness(&export),
+            Some(crate::verdict::Verdict::Reject)
+        );
     }
 }
