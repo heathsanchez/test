@@ -300,7 +300,7 @@ impl<'a> Machine<'a> {
         closure: &Closure,
         budget: usize,
     ) -> Option<crate::level::LevelTerm> {
-        instantiate_level(self.levels, level, &closure.levels.to_map(), budget).ok()
+        instantiate_level(self.levels, level, &closure.levels, budget).ok()
     }
 }
 
