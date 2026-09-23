@@ -224,11 +224,8 @@ impl<'a> Machine<'a> {
                             + 1;
                         if pending.len() >= required {
                             let offset = pending.len() - required;
-                            let arguments = pending[offset..]
-                                .iter()
-                                .rev()
-                                .cloned()
-                                .collect::<Vec<_>>();
+                            let arguments =
+                                pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
@@ -237,8 +234,7 @@ impl<'a> Machine<'a> {
                                     .iter()
                                     .enumerate()
                                     .find(|(_, rule)| rule.constructor == constructor)
-                                && constructor_arguments.len()
-                                    == rule.num_params + rule.num_fields
+                                && constructor_arguments.len() == rule.num_params + rule.num_fields
                             {
                                 let minor_index = reduction.num_params + 1 + rule_index;
                                 let minor = arguments[minor_index].clone();
