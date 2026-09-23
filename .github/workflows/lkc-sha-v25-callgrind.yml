@@ -38,11 +38,9 @@ jobs:
         if: always()
         run: |
           find "$GITHUB_WORKSPACE/cg" -maxdepth 5 -type f -printf '%p\n' | sort
-          prof=$(find "$GITHUB_WORKSPACE/cg" -type f \( -name 'callgrind.out*' -o -name '*.callgrind' \) | head -1)
-          if [ -n "$prof" ]; then
-            echo "PROFILE=$prof"
-            callgrind_annotate --inclusive=yes --threshold=0.5 "$prof" | head -220
-          fi
+          prof="$GITHUB_WORKSPACE/cg/candidate/callgrind-18860801433-1.out"
+          echo "PROFILE=$prof"
+          callgrind_annotate --inclusive=yes --threshold=0.2 "$prof" | head -260
       - uses: actions/upload-artifact@v4
         if: always()
         with:
