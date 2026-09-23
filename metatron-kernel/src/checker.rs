@@ -2023,12 +2023,8 @@ fn check_binary_enum(
         recursor,
         false,
         !recursor.is_unsafe && recursor.level_params.len() == 1,
-    ) || !binary_enum_recursor_obligations(
-        export,
-        inductive.name,
-        &constructor_names,
-        recursor,
-    ) {
+    ) || !binary_enum_recursor_obligations(export, inductive.name, &constructor_names, recursor)
+    {
         return Err(Verdict::Reject);
     }
     derivation.promote(
