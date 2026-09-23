@@ -316,6 +316,8 @@ fn check_single_constructor_inductive(
         check_twobool_structure(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
+    } else if unary_field_universe_candidate(export, block) {
+        check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
@@ -597,6 +599,272 @@ fn conversion_lifted_unary_shapes(
     }
 
     Some((*parameter, recursor_minor_field, *rule_field))
+}
+
+/// G24-001 candidate frontier: one manifest field, no parameters or indices.
+///
+/// This is deliberately structural and narrow. It recognizes the first
+/// untouched universe corridor without granting a general inductive engine:
+/// one safe, nonrecursive, nonreflexive, nonnested inductive; one `.mk`
+/// constructor with exactly one manifest Sort field; and one recursor.
+fn unary_field_universe_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    inductive.num_params == 0
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && constructor.num_params == 0
+        && constructor.num_fields == 1
+        && !constructor.is_unsafe
+        && !recursor.is_unsafe
+        && name_is_child_str(export, constructor.name, inductive.name, "mk")
+        && matches!(export.exprs.get(inductive.ty), Some(Expr::Sort(_)))
+        && matches!(
+            export.exprs.get(constructor.ty),
+            Some(Expr::Pi { domain, .. })
+                if matches!(export.exprs.get(*domain), Some(Expr::Sort(_)))
+        )
+}
+
+fn unary_field_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: &crate::syntax::InductiveType,
+    motive_level: Option<NameId>,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: target,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    inductive_constant_uses_declared_levels(
+        export,
+        *target,
+        inductive.name,
+        &inductive.level_params,
+    ) && match motive_level {
+        None => is_prop_sort(export, *result),
+        Some(level) => is_sort_parameter(export, *result, level),
+    }
+}
+
+fn unary_field_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: &Constructor,
+    field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 1
+        && inductive_constant_uses_declared_levels(
+            export,
+            head,
+            constructor.name,
+            &constructor.level_params,
+        )
+        && is_bvar(export, arguments[0], field)
+}
+
+fn unary_field_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    field_domain: ExprId,
+    constructor: &Constructor,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: field,
+        body: result,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if *field != field_domain {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(*result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && unary_field_constructor_application(export, *constructed, constructor, 0)
+}
+
+fn unary_field_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    field_domain: ExprId,
+    motive_level: Option<NameId>,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 3) else {
+        return false;
+    };
+    let [motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    if !unary_field_motive_type(export, *motive, inductive, motive_level)
+        || !unary_field_minor_type(export, *minor, field_domain, constructor)
+        || !inductive_constant_uses_declared_levels(
+            export,
+            *target,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, 3) else {
+        return false;
+    };
+    let [rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
+        return false;
+    };
+    unary_field_motive_type(export, *rule_motive, inductive, motive_level)
+        && unary_field_minor_type(export, *rule_minor, field_domain, constructor)
+        && *rule_field == field_domain
+        && is_bvar_application(export, rule_result, 1, 0)
+}
+
+fn check_unary_field_universe_inductive(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != inductive.level_params
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(Expr::Sort(inductive_level_id)) = export.exprs.get(inductive.ty) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some(Expr::Pi {
+        domain: field_domain,
+        ..
+    }) = export.exprs.get(constructor.ty)
+    else {
+        return Err(Verdict::Reject);
+    };
+    let Some(Expr::Sort(field_level_id)) = export.exprs.get(*field_domain) else {
+        return Err(Verdict::Unknown);
+    };
+
+    let substitution = parameter_substitution(&inductive.level_params);
+    let inductive_level = crate::level::instantiate_level(
+        &export.levels,
+        *inductive_level_id,
+        &substitution,
+        limits.judgment_steps,
+    )
+    .map_err(|_| Verdict::Unknown)?;
+    let field_level = crate::level::instantiate_level(
+        &export.levels,
+        *field_level_id,
+        &substitution,
+        limits.judgment_steps,
+    )
+    .map_err(|_| Verdict::Unknown)?;
+
+    let is_prop = matches!(inductive_level, crate::level::LevelTerm::Zero);
+    if !is_prop {
+        let field_type_level = crate::level::succ(field_level);
+        let upper = crate::level::max(field_type_level, inductive_level.clone());
+        verdict_boundary(crate::level::level_equal(
+            upper,
+            inductive_level.clone(),
+            limits.judgment_steps,
+        ))?;
+    }
+
+    let motive_level = if is_prop {
+        if !recursor.level_params.is_empty() {
+            return Err(Verdict::Reject);
+        }
+        None
+    } else {
+        let Some((first, rest)) = recursor.level_params.split_first() else {
+            return Err(Verdict::Reject);
+        };
+        if rest != inductive.level_params.as_slice() {
+            return Err(Verdict::Reject);
+        }
+        Some(*first)
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !unary_field_recursor_shape(
+        export,
+        inductive,
+        constructor,
+        recursor,
+        *field_domain,
+        motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote_all(
+        export,
+        [derived_inductive, derived_constructor(constructor)],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
 }
 
 /// G21-001 is a rejection-only constructor-result law for the otherwise
