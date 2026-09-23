@@ -1,4 +1,4 @@
-name: LKA G31 Constructor Iota Atlas v1
+name: LKA G31 Constructor Iota Qualification v1
 
 on:
   push:
@@ -16,7 +16,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  atlas:
+  qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
@@ -30,14 +30,15 @@ jobs:
       - uses: actions/setup-python@v5
         with: {python-version: "3.12"}
 
-      - name: Verify zero semantic change from G30
+      - name: Verify source and retained evidence
+        working-directory: metatron-kernel
         run: |
           set -euo pipefail
-          git diff --exit-code "$BASE_SHA" -- metatron-kernel/src
-          cd metatron-kernel
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
           cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
 
       - name: Build exact G30 oracle
         run: |
@@ -45,6 +46,39 @@ jobs:
           git worktree add --detach /tmp/g30-oracle "$BASE_SHA"
           cargo build --release --locked --manifest-path /tmp/g30-oracle/metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Exact G31 residual and branch-selection falsifiers
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess,tempfile
+          src=pathlib.Path('evidence/residuals/G31-001/078_boolRecEqns.ndjson')
+          assert hashlib.sha256(src.read_bytes()).hexdigest() == '77cb6eab3518ba916595ef8e1a58daaad404e25a293a409b01fa18d5252fc814'
+          oracle=pathlib.Path('/tmp/g30-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          def run(binary,path):
+              with path.open('rb') as f:
+                  return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+          assert run(oracle,src)==2
+          assert run(candidate,src)==0
+          base=[json.loads(x) for x in src.read_text().splitlines() if x.strip()]
+          def mutated(label, expr_id, old_arg, new_arg):
+              rows=json.loads(json.dumps(base))
+              row=next(r for r in rows if r.get('ie')==expr_id)
+              assert row['app']['arg']==old_arg, row
+              row['app']['arg']=new_arg
+              with tempfile.NamedTemporaryFile('w',suffix='.ndjson',delete=False) as f:
+                  p=pathlib.Path(f.name)
+                  for r in rows: f.write(json.dumps(r,separators=(',',':'))+'\n')
+              code=run(candidate,p); p.unlink()
+              assert code != 0, (label,code)
+              print(label,code)
+          # Make the false equation reduce the true branch while retaining
+          # falseVal as its claimed RHS, and vice versa.
+          mutated('false_selects_true',102,44,46)
+          mutated('true_selects_false',111,46,44)
+          PY
 
       - name: Build pinned Arena tutorial
         run: |
@@ -60,39 +94,76 @@ jobs:
           lake clean
           OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
 
-      - name: Capture exact 078 residual atlas
+      - name: Global tutorial reclosure
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
           mkdir -p evidence-out/g31
           python - <<'PY'
-          import hashlib,json,os,pathlib,subprocess
-          path=pathlib.Path('/tmp/lean-kernel-tutorial/good/078_boolRecEqns.ndjson')
-          raw=path.read_bytes()
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/lean-kernel-tutorial')
           oracle=pathlib.Path('/tmp/g30-oracle/metatron-kernel/target/release/metatron-kernel')
           candidate=pathlib.Path('target/release/metatron-kernel').resolve()
-          def run(binary):
-              with path.open('rb') as f:
-                  return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
-          a,b=run(oracle),run(candidate)
-          assert a.returncode==2 and b.returncode==2
-          rows=[json.loads(x) for x in raw.decode().splitlines() if x.strip()]
-          out={'schema':'metatron-kernel-g31-constructor-iota-atlas-v1',
-               'arena_sha':os.environ['ARENA_SHA'],'oracle_sha':os.environ['BASE_SHA'],
-               'candidate_sha':os.environ['GITHUB_SHA'],'fixture':'good/078_boolRecEqns.ndjson',
-               'expected_exit':0,'oracle_exit':a.returncode,'candidate_exit':b.returncode,
-               'sha256':hashlib.sha256(raw).hexdigest(),'line_count':len(rows)}
-          pathlib.Path('evidence-out/g31/078_boolRecEqns.ndjson').write_bytes(raw)
-          pathlib.Path('evidence-out/g31/atlas.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-          print('G31_ATLAS='+json.dumps(out,sort_keys=True))
-          print('----- BEGIN 078_boolRecEqns.ndjson -----')
-          print(raw.decode(),end='')
-          print('----- END 078_boolRecEqns.ndjson -----')
+          rows=[]
+          for expected_dir,expected_exit in [('good',0),('bad',1)]:
+              for path in sorted((root/expected_dir).glob('*.ndjson')):
+                  try: number=int(path.name.split('_',1)[0])
+                  except ValueError: continue
+                  def run(binary):
+                      with path.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(oracle),run(candidate)
+                  status=('earned_delta' if b==expected_exit and a!=expected_exit else 'mismatch') if a!=b else ('equal_correct' if b==expected_exit else 'equal_residual')
+                  rows.append({'number':number,'input':f'{expected_dir}/{path.name}','expected_exit':expected_exit,'oracle_exit':a,'candidate_exit':b,'status':status})
+          rows.sort(key=lambda r:r['number'])
+          changes=[r for r in rows if r['oracle_exit']!=r['candidate_exit']]
+          mismatches=[r for r in rows if r['status']=='mismatch']
+          by={r['number']:r for r in rows}
+          assert by[78]['oracle_exit']==2 and by[78]['candidate_exit']==0 and by[78]['status']=='earned_delta', by[78]
+          assert changes==[by[78]], changes
+          assert mismatches==[], mismatches
+          residuals=[r for r in rows if r['candidate_exit']!=r['expected_exit']]
+          out={'schema':'metatron-kernel-g31-constructor-iota-qualification-v1',
+               'arena_sha':os.environ['ARENA_SHA'],'oracle_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+               'changes':changes,'mismatches':mismatches,
+               'counts':{'earned_delta':sum(r['status']=='earned_delta' for r in rows),
+                         'equal_correct':sum(r['status']=='equal_correct' for r in rows),
+                         'equal_residual':sum(r['status']=='equal_residual' for r in rows),
+                         'mismatch':len(mismatches)},
+               'first_remaining_residual':residuals[0] if residuals else None}
+          pathlib.Path('evidence-out/g31/tutorial-reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
           PY
 
-      - name: Upload G31 atlas
+      - name: Replay committed corpus against G30
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          oracle=pathlib.Path('/tmp/g30-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set(); rows=[]
+          for path in paths:
+              rp=str(path)
+              if rp in seen: continue
+              seen.add(rp)
+              def run(binary):
+                  with path.open('rb') as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=run(oracle),run(candidate); rows.append({'path':rp,'oracle':a,'candidate':b})
+          diffs=[r for r in rows if r['oracle']!=r['candidate']]
+          expected='evidence/residuals/G31-001/078_boolRecEqns.ndjson'
+          assert diffs==[{'path':expected,'oracle':2,'candidate':0}], diffs
+          out={'schema':'metatron-kernel-g31-committed-differential-v1','count':len(rows),'diffs':diffs,'rows':rows}
+          pathlib.Path('evidence-out/g31/committed-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'count':len(rows),'diffs':diffs},sort_keys=True))
+          PY
+
+      - name: Upload G31 evidence
         uses: actions/upload-artifact@v4
         with:
-          name: lka-g31-constructor-iota-atlas-${{ github.sha }}
+          name: lka-g31-constructor-iota-${{ github.sha }}
           path: metatron-kernel/evidence-out/g31
           if-no-files-found: error
