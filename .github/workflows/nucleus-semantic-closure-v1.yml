@@ -29,8 +29,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
-      - uses: cachix/install-nix-action@v31
-
+ 
       - name: Verify and build Nucleus
         working-directory: metatron-kernel
         run: |
@@ -57,14 +56,17 @@ jobs:
           JSON
           cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
 
-      - name: Build exact Arena non-skip corpus
-        timeout-minutes: 90
+      - name: Fetch exact official 193-file Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
-          git -C /tmp/arena checkout -q "$ARENA_SHA"
-          cd /tmp/arena
-          nix develop -c ./lka.py build-test --skip-ci
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
 
       - name: Qualify 193-file fixed-outcome closure
         timeout-minutes: 20
@@ -74,7 +76,7 @@ jobs:
           python - <<'PY'
           import json, os, pathlib, subprocess, time
 
-          root=pathlib.Path('/tmp/arena/_build/tests')
+          root=pathlib.Path('/tmp/arena-tests')
           nucleus=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
           wrapper=pathlib.Path('metatron-kernel/scripts/nucleus-semantic-closure').resolve()
           flash=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
@@ -89,16 +91,12 @@ jobs:
           })
 
           rows=[]
-          for stats_path in sorted(root.rglob('*.stats.json')):
-              stats=json.loads(stats_path.read_text())
-              name=stats.get('name')
-              expected=stats.get('outcome')
-              if stats.get('skip-on-ci') or expected not in ('accept','reject') or name in excluded:
-                  continue
-              ndjson=stats_path.with_name(stats_path.name.replace('.stats.json','.ndjson'))
-              if not ndjson.exists():
-                  raise AssertionError(f'missing {ndjson}')
-              exp_rc=0 if expected=='accept' else 1
+          cases=[]
+          for outcome_dir,expected,exp_rc in [('good','accept',0),('bad','reject',1)]:
+              for ndjson in sorted((root/outcome_dir).rglob('*.ndjson')):
+                  name=str(ndjson.relative_to(root/outcome_dir)).removesuffix('.ndjson')
+                  cases.append((name,expected,exp_rc,ndjson))
+          for name,expected,exp_rc,ndjson in cases:
 
               def run(cmd):
                   with ndjson.open('rb') as f:
