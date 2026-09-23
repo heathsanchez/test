@@ -1,0 +1,42 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G26-001-P4",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "55d4ecea29bd1ed6e85226076d5c09bfb6f0a291",
+    "tutorial_ordinal": 73,
+    "fixture": "evidence/residuals/G25-001/073_BogusRecursor.ndjson"
+  },
+  "obstruction": "P4/G25 semantics return UNKNOWN on a safe closed nullary singleton Type whose supplied owned recursor has impossible motive/minor/rule metadata and is then used to prove False.",
+  "expected": "REJECT",
+  "observed": "UNKNOWN",
+  "least_capability": "Negative-only generated-recursor metadata coherence for the safe closed nullary singleton envelope. It grants no ACCEPT authority; coherent unsupported singleton recursors remain UNKNOWN.",
+  "protected_suite": [
+    "all retained G0-G25 semantic behavior",
+    "P4 performance architecture",
+    "tutorial 074 and broader singleton/parameterized/indexed/recursive families remain unsupported unless separately earned"
+  ],
+  "evidence": {
+    "qualified_sha": "1050eb75405d031f5015fb00dfe511e8ede351e5",
+    "run": 35854502937,
+    "job": 107159678755,
+    "artifact": 10746524422,
+    "artifact_digest": "sha256:27e31f8468ccda2ab2af6421936f5449edd1c8b364a5f5f5949a26cefbd9b69d",
+    "tutorial_counts": {
+      "earned_delta": 1,
+      "equal_correct": 78,
+      "equal_residual": 62,
+      "mismatch": 0
+    },
+    "committed_count": 45,
+    "first_remaining_residual": "good/074_existsRec.ndjson",
+    "performance_retention": {
+      "cases": 78,
+      "iterations": 200,
+      "p4_median_ns": 876006507,
+      "g26_median_ns": 869305852,
+      "g26_over_p4": 0.9923509072747104
+    }
+  },
+  "decision": "retained"
+}
