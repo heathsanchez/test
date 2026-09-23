@@ -2197,9 +2197,21 @@ fn check_exact_list(
         recursor,
         false,
         levels_ok,
-    ) || !list_recursor_type(export, inductive.name, nil.name, cons.name, *level, recursor)
-        || !list_recursor_rules(export, inductive.name, nil.name, cons.name, *level, recursor)
-    {
+    ) || !list_recursor_type(
+        export,
+        inductive.name,
+        nil.name,
+        cons.name,
+        *level,
+        recursor,
+    ) || !list_recursor_rules(
+        export,
+        inductive.name,
+        nil.name,
+        cons.name,
+        *level,
+        recursor,
+    ) {
         return Err(Verdict::Reject);
     }
 
@@ -2215,11 +2227,7 @@ fn check_exact_list(
         limits.judgment_steps,
         delta_policy,
     )?;
-    install_certified_recursor_reduction(
-        derivation.finish(),
-        &block.constructors,
-        recursor,
-    )
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
 fn list_application(
@@ -2788,11 +2796,7 @@ fn check_exact_rbtree(
         limits.judgment_steps,
         delta_policy,
     )?;
-    install_certified_recursor_reduction(
-        derivation.finish(),
-        &block.constructors,
-        recursor,
-    )
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
 fn valid_rbtree_constructor_metadata(
