@@ -1,0 +1,39 @@
+{
+  "status": "WARRANTED_NEGATIVE_FOR_DECLARED_BOUNDARY",
+  "challenge_id": "ac-02809",
+  "stable_challenge_id": "sac-02809",
+  "fresh_residual": {
+    "observed_at_utc": "2026-09-23T15:46:23Z",
+    "ac_best": 182,
+    "ac_kTeams": 1,
+    "stable_best": 391,
+    "stable_kTeams": 1,
+    "transport_cost": 2,
+    "transport_slack": 207,
+    "source_bound_exclusive": 389
+  },
+  "verification_boundary": {
+    "official_verifier": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "mechanism": "transport-orbit-atlas-connector-v2",
+    "connector_depth": 5,
+    "raw_atlas_states": 433272,
+    "orbit_classes": 251269,
+    "fiber_representatives": 433272,
+    "symmetry_group_size": 16,
+    "max_fiber_size": 16,
+    "node_cap": 250000
+  },
+  "evidence": {
+    "github_run": 35883995061,
+    "artifact_id": 10761467616,
+    "artifact_sha256": "36ea600601f479306d44371cdc34adb9de5694dc4f28ef4f743f9a68a6673a1f",
+    "states_checked": 132799,
+    "node_cap_hit": false,
+    "orbit_hits": 0,
+    "fiber_contacts": 0,
+    "verified_candidates": 0,
+    "submitted_rows": 0
+  },
+  "conclusion": "The untouched high-slack ac-02809 -> sac-02809 transport steal has no radius<=5 contact with the current 433,272-state Proof Atlas even after the qualified 16-symmetry cost-aware fiber closure. No candidate was produced and no submission was made.",
+  "no_repeat_boundary": "Do not rerun the same radius<=5 raw/orbit/cost-aware-fiber Atlas family on unchanged ac-02809 with the unchanged Atlas. Reopen only after a live-record change, material Atlas growth or shallower relevant suffixes, or a genuinely nonlocal reverse/bidirectional mechanism justified by this residual."
+}
