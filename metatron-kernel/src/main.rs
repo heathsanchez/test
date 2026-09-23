@@ -1,6 +1,6 @@
 use std::fs;
 use std::io::{self, BufReader, Cursor, Read};
-use std::panic::{catch_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -54,7 +54,8 @@ fn main() -> ExitCode {
 
     #[cfg(feature = "diagnostics")]
     if std::env::var_os("METATRON_KERNEL_DIAGNOSTICS").is_some() {
-        let run = metatron_kernel::run_with_diagnostics(BufReader::new(Cursor::new(bytes.as_slice())));
+        let run =
+            metatron_kernel::run_with_diagnostics(BufReader::new(Cursor::new(bytes.as_slice())));
         eprintln!(
             "{{\"declarations\":{},\"inductive_signatures\":{},\"type_judgments\":{},\"conversions\":{}}}",
             run.operations.declarations,
@@ -65,7 +66,8 @@ fn main() -> ExitCode {
         return match run.verdict {
             metatron_kernel::verdict::Verdict::Accept => ExitCode::from(0),
             metatron_kernel::verdict::Verdict::Reject => ExitCode::from(1),
-            metatron_kernel::verdict::Verdict::Unknown | metatron_kernel::verdict::Verdict::Error => {
+            metatron_kernel::verdict::Verdict::Unknown
+            | metatron_kernel::verdict::Verdict::Error => {
                 ExitCode::from(if complete_backstop(&bytes) { 0 } else { 1 })
             }
         };
