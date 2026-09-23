@@ -3488,6 +3488,130 @@ fn is_derived_twobool_rule(
         && is_empty_constant(export, *second, field_type)
         && is_bvar_application(export, result, 3, 1)
 }
+
+fn is_constructor_applied_to_two_bvars(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    is_empty_constant(export, *head, constructor)
+        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
+        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
+}
+
+fn is_bvar_applied_to_two_bvars(
+    export: &ResolvedExport,
+    expression: ExprId,
+    function: u64,
+    first: u64,
+    second: u64,
+) -> bool {
+    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: head,
+        arg: first_arg,
+    }) = export.exprs.get(*fun)
+    else {
+        return false;
+    };
+    matches!(export.exprs.get(*head), Some(Expr::BVar(index)) if *index == function)
+        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
+        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
+}
+
+fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
+}
+
+fn name_is_child_str(export: &ResolvedExport, name: NameId, prefix: NameId, value: &str) -> bool {
+    matches!(export.names.get(name), Some(Name::Str { prefix: actual_prefix, value: actual }) if *actual_prefix == prefix && actual == value)
+}
+
+fn first_constructor_domain_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let Expr::Pi { domain, .. } = export.exprs.get(expression)? else {
+        return None;
+    };
+    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
+        return None;
+    };
+    levels.is_empty().then_some(*name)
+}
+
+fn derived_type(name: NameId, ty: ExprId) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Type,
+        name,
+        level_params: Vec::new(),
+        ty,
+    }
+}
+
+fn derived_polymorphic_type(name: NameId, level_params: &[NameId], ty: ExprId) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Type,
+        name,
+        level_params: level_params.to_vec(),
+        ty,
+    }
+}
+
+fn derived_constructor(constructor: &Constructor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Constructor,
+        name: constructor.name,
+        level_params: constructor.level_params.clone(),
+        ty: constructor.ty,
+    }
+}
+
+fn derived_recursor(recursor: &Recursor) -> DerivedSignature {
+    DerivedSignature {
+        kind: OpaqueInductiveKind::Recursor,
+        name: recursor.name,
+        level_params: recursor.level_params.clone(),
+        ty: recursor.ty,
+    }
+}
+
+fn has_duplicate_parameter(parameters: &[NameId]) -> bool {
+    parameters
+        .iter()
+        .enumerate()
+        .any(|(index, parameter)| parameters[..index].contains(parameter))
+}
+
+fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
+    parameters
+        .iter()
+        .map(|parameter| (*parameter, LevelTerm::param(format!("u#{}", parameter.0))))
+        .collect()
+}
+
+fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
+    match judgment {
+        Judgment::Proven { .. } => Ok(()),
+        Judgment::Refuted { .. } => Err(Verdict::Reject),
+        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
