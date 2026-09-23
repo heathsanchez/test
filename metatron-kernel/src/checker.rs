@@ -402,18 +402,14 @@ fn check_conversion_lifted_unary_recursive(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    if recursor.all != [inductive.name]
-        || recursor.k
-        || recursor.level_params.len() != 1
-        || has_duplicate_parameter(&recursor.level_params)
-        || recursor.num_params != 1
-        || recursor.num_indices != 0
-        || recursor.num_motives != 1
-        || recursor.num_minors != 1
-        || !matches!(recursor.rules.as_slice(), [rule]
-            if rule.constructor == constructor.name && rule.num_fields == 1)
-        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
-    {
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == 1,
+    ) {
         return Err(Verdict::Reject);
     }
 
