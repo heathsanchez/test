@@ -76,6 +76,19 @@ pub struct NatPrimitives {
     pub recursor: NameId,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum NatBinaryOp {
+    Add,
+    Sub,
+    Ble,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BoolPrimitives {
+    pub false_ctor: NameId,
+    pub true_ctor: NameId,
+}
+
 #[derive(Clone, Debug)]
 pub struct Environment {
     authority: AuthorityId,
@@ -85,6 +98,8 @@ pub struct Environment {
     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
     projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
     nat_primitives: Option<NatPrimitives>,
+    nat_binary_ops: Rc<HashMap<NameId, NatBinaryOp>>,
+    bool_primitives: Option<BoolPrimitives>,
 }
 
 impl Environment {
@@ -97,6 +112,8 @@ impl Environment {
             recursor_reductions: Rc::new(HashMap::new()),
             projection_specs: Rc::new(HashMap::new()),
             nat_primitives: None,
+            nat_binary_ops: Rc::new(HashMap::new()),
+            bool_primitives: None,
         }
     }
 
@@ -142,6 +159,8 @@ impl Environment {
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
@@ -172,6 +191,8 @@ impl Environment {
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
@@ -203,6 +224,8 @@ impl Environment {
             recursor_reductions: Rc::new(reductions),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
@@ -240,6 +263,8 @@ impl Environment {
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: Rc::new(specs),
             nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
@@ -277,11 +302,82 @@ impl Environment {
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
             nat_primitives: Some(primitives),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: self.bool_primitives.clone(),
         })
     }
 
     pub fn nat_primitives(&self) -> Option<&NatPrimitives> {
         self.nat_primitives.as_ref()
+    }
+
+    pub fn install_nat_binary_op(
+        &self,
+        name: NameId,
+        op: NatBinaryOp,
+    ) -> Result<Self, EnvironmentError> {
+        if self.nat_primitives.is_none() || !self.constants.contains_key(&name) {
+            return Err(EnvironmentError::MissingConstant(name));
+        }
+        if self.nat_binary_ops.contains_key(&name) {
+            return Err(EnvironmentError::DuplicateReduction(name));
+        }
+        let mut ops = self.nat_binary_ops.as_ref().clone();
+        ops.insert(name, op);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: Rc::new(ops),
+            bool_primitives: self.bool_primitives.clone(),
+        })
+    }
+
+    pub fn nat_binary_ops(&self) -> HashMap<NameId, NatBinaryOp> {
+        self.nat_binary_ops.as_ref().clone()
+    }
+
+    pub fn install_bool_primitives(
+        &self,
+        primitives: BoolPrimitives,
+    ) -> Result<Self, EnvironmentError> {
+        if self.bool_primitives.is_some() {
+            return Err(EnvironmentError::DuplicateBoolPrimitives);
+        }
+        for name in [primitives.false_ctor, primitives.true_ctor] {
+            if !self.constants.contains_key(&name) {
+                return Err(EnvironmentError::MissingConstant(name));
+            }
+        }
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
+            nat_binary_ops: self.nat_binary_ops.clone(),
+            bool_primitives: Some(primitives),
+        })
+    }
+
+    pub fn bool_primitives(&self) -> Option<&BoolPrimitives> {
+        self.bool_primitives.as_ref()
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
@@ -301,6 +397,7 @@ pub enum EnvironmentError {
     MissingConstant(NameId),
     DuplicateReduction(NameId),
     DuplicateNatPrimitives,
+    DuplicateBoolPrimitives,
     AuthorityOverflow,
 }
 
@@ -321,6 +418,7 @@ impl fmt::Display for EnvironmentError {
                 )
             }
             Self::DuplicateNatPrimitives => write!(formatter, "duplicate Nat primitive authority"),
+            Self::DuplicateBoolPrimitives => write!(formatter, "duplicate Bool primitive authority"),
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
     }
