@@ -114,7 +114,6 @@ theorem proofState_next_eq_slowNext
 theorem valid_slowNext (k : Nat) (p : ProofState) (hp : ValidProofState p) :
     ValidProofState (p.slowNext k) := by
   unfold ValidProofState ProofState.slowNext
-  dsimp
   constructor
   · exact valid_advance p.window hp.1
   · exact valid_round p.digest k p.window.x0 hp.2
