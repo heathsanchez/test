@@ -476,10 +476,7 @@ impl<'a> TypeChecker<'a> {
         let exposed = self
             .machine()
             .expose(closure.clone(), Transparency::Reducible, budget);
-        matches!(
-            exposed.proven_value(),
-            Some(Value::Sort(LevelTerm::Zero))
-        )
+        matches!(exposed.proven_value(), Some(Value::Sort(LevelTerm::Zero)))
     }
 
     pub(crate) fn machine(&self) -> Machine<'_> {
