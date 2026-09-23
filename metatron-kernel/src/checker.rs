@@ -168,6 +168,7 @@ fn check_export_with_policy(
                         if verdict == Verdict::Unknown
                             && std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some()
                         {
+                            eprintln!("NUCLEUS_RESIDUAL:inductive-envelope");
                             if let Some(inductive) = block.types.first() {
                                 let max_fields = block
                                     .constructors
@@ -200,7 +201,12 @@ fn check_export_with_policy(
                     }
                 }
             }
-            Declaration::Unsupported { .. } => return Verdict::Unknown,
+            Declaration::Unsupported { .. } => {
+                if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                    eprintln!("NUCLEUS_RESIDUAL:unsupported-declaration");
+                }
+                return Verdict::Unknown;
+            }
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -6675,7 +6681,12 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
         Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Unknown { residual } => {
+            if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                eprintln!("NUCLEUS_RESIDUAL:{}", residual.0);
+            }
+            Err(Verdict::Unknown)
+        }
     }
 }
 
