@@ -336,7 +336,9 @@ fn check_single_constructor_inductive(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if name_is_root_str(export, inductive.name, "Exists") {
+    if name_is_root_str(export, inductive.name, "NewSingleton") {
+        check_exact_new_singleton(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "Exists") {
         check_exact_exists_family(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "And") {
         check_exact_binary_product_family(
@@ -374,6 +376,162 @@ fn check_single_constructor_inductive(
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
+}
+
+/// G28-001: exact nullary singleton Type plus its first qualified
+/// computation rule.  Recognition is name-sealed to `NewSingleton`; the
+/// executable rule is installed only after type, constructor, recursor, and
+/// exported rule shape have all been independently checked.
+fn check_exact_new_singleton(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_fields != 0
+        || constructor.num_params != 0
+        || !constructor.level_params.is_empty()
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !is_empty_constant(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !new_singleton_recursor_type(
+        export,
+        recursor.ty,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) || !new_singleton_recursor_rule(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation
+        .finish()
+        .install_singleton_recursor_reduction(recursor.name)
+        .map_err(|_| Verdict::Reject)
+}
+
+fn new_singleton_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *target, inductive)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn new_singleton_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+) -> bool {
+    is_bvar_applied_to_constant(export, expression, 0, constructor)
+}
+
+fn new_singleton_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    new_singleton_motive_type(export, *motive, inductive, motive_level)
+        && new_singleton_minor_type(export, *minor, constructor)
+        && is_empty_constant(export, *target, inductive)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn new_singleton_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
+        let [motive, minor] = domains.as_slice() else {
+            return false;
+        };
+        new_singleton_motive_type(export, *motive, inductive, motive_level)
+            && new_singleton_minor_type(export, *minor, constructor)
+            && is_bvar(export, result, 0)
+    })
 }
 
 /// G23-001: conversion-lifted one-parameter, one-field recursion.
