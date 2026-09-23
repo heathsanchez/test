@@ -577,12 +577,8 @@ fn conversion_lifted_unary_shapes(
     let [_parameter, rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
         return None;
     };
-    if !is_unary_recursive_motive_type(
-        export,
-        *rule_motive,
-        inductive,
-        recursor.level_params[0],
-    ) || unary_recursive_minor_field(export, *rule_minor, constructor).is_none()
+    if !is_unary_recursive_motive_type(export, *rule_motive, inductive, recursor.level_params[0])
+        || unary_recursive_minor_field(export, *rule_minor, constructor).is_none()
     {
         return None;
     }
