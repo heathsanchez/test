@@ -102,23 +102,91 @@ impl fmt::Display for LevelError {
 
 impl Error for LevelError {}
 
-pub fn instantiate_level(
+pub trait LevelSubstitutionLookup {
+    fn lookup_level(&self, name: NameId) -> Option<LevelTerm>;
+}
+
+impl LevelSubstitutionLookup for HashMap<NameId, LevelTerm> {
+    #[inline]
+    fn lookup_level(&self, name: NameId) -> Option<LevelTerm> {
+        self.get(&name).cloned()
+    }
+}
+
+const INLINE_LEVEL_VISIT_CAPACITY: usize = 8;
+
+struct LevelVisitSet {
+    inline: [Option<LevelId>; INLINE_LEVEL_VISIT_CAPACITY],
+    len: usize,
+    overflow: Option<HashSet<LevelId>>,
+}
+
+impl LevelVisitSet {
+    #[inline]
+    fn new() -> Self {
+        Self {
+            inline: [None; INLINE_LEVEL_VISIT_CAPACITY],
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn insert(&mut self, id: LevelId) -> bool {
+        if let Some(overflow) = self.overflow.as_mut() {
+            return overflow.insert(id);
+        }
+        if self.inline[..self.len].contains(&Some(id)) {
+            return false;
+        }
+        if self.len < INLINE_LEVEL_VISIT_CAPACITY {
+            self.inline[self.len] = Some(id);
+            self.len += 1;
+            return true;
+        }
+        let mut overflow = HashSet::with_capacity(INLINE_LEVEL_VISIT_CAPACITY * 2);
+        for slot in &self.inline[..self.len] {
+            overflow.insert(slot.expect("initialized inline level visit slot"));
+        }
+        let inserted = overflow.insert(id);
+        self.overflow = Some(overflow);
+        inserted
+    }
+
+    #[inline]
+    fn remove(&mut self, id: &LevelId) {
+        if let Some(overflow) = self.overflow.as_mut() {
+            overflow.remove(id);
+            return;
+        }
+        if let Some(index) = self.inline[..self.len]
+            .iter()
+            .position(|slot| *slot == Some(*id))
+        {
+            self.len -= 1;
+            self.inline[index] = self.inline[self.len];
+            self.inline[self.len] = None;
+        }
+    }
+}
+
+pub fn instantiate_level<S: LevelSubstitutionLookup + ?Sized>(
     levels: &IdTable<LevelId, Level>,
     root: LevelId,
-    substitution: &HashMap<NameId, LevelTerm>,
+    substitution: &S,
     budget: usize,
 ) -> Result<LevelTerm, LevelError> {
     let mut remaining = budget;
-    let mut visiting = HashSet::new();
+    let mut visiting = LevelVisitSet::new();
     instantiate(levels, root, substitution, &mut remaining, &mut visiting)
 }
 
-fn instantiate(
+fn instantiate<S: LevelSubstitutionLookup + ?Sized>(
     levels: &IdTable<LevelId, Level>,
     id: LevelId,
-    substitution: &HashMap<NameId, LevelTerm>,
+    substitution: &S,
     remaining: &mut usize,
-    visiting: &mut HashSet<LevelId>,
+    visiting: &mut LevelVisitSet,
 ) -> Result<LevelTerm, LevelError> {
     if *remaining == 0 {
         return Err(LevelError::BudgetExhausted);
@@ -144,8 +212,7 @@ fn instantiate(
             Ok(level_imax(left, right))
         }
         Level::Param(name) => substitution
-            .get(name)
-            .cloned()
+            .lookup_level(*name)
             .ok_or(LevelError::MissingSubstitution(*name)),
     };
     visiting.remove(&id);
