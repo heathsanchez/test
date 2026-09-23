@@ -968,18 +968,18 @@ fn check_generic_nonrecursive_type(
                 || constructor_result_is_definitely_malformed(export, inductive, c)
                 || constructor_has_definite_negative_recursive_field(export, inductive, c)
         })
-        || !recursor_metadata_admissible(
-            export,
-            inductive,
-            &block.constructors,
-            recursor,
-            false,
-            recursor.level_params.len() == inductive.level_params.len() + 1,
-        )
     {
         return Err(Verdict::Reject);
     }
-    if !generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor) {
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len() + 1,
+    ) || !generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor)
+    {
         return Err(Verdict::Unknown);
     }
 
