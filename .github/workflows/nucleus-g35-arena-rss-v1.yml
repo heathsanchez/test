@@ -1,0 +1,117 @@
+name: Nucleus G35 Arena RSS v1
+
+on:
+  push:
+    branches: [nucleus-g35-arena-rss-v1]
+    paths:
+      - ".github/workflows/nucleus-g35-arena-rss-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-g35-arena-rss-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      NUCLEUS_SHA: b8b580876facfb092c754fb5b1e47a4b22267ad0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build exact qualified Nucleus G35
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$NUCLEUS_SHA" HEAD
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-g35
+          sha256sum /tmp/nucleus-g35
+          stat -c 'binary_bytes=%s' /tmp/nucleus-g35
+
+      - name: Prepare exact current Arena
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cat > /tmp/arena/checkers/nucleus-g35.yaml <<'YAML'
+          description: |
+            Qualified Nucleus G35 simple-projection authority, exact source SHA.
+          version: "g35-b8b5808"
+          url: https://github.com/heathsanchez/test
+          rev: b8b580876facfb092c754fb5b1e47a4b22267ad0
+          build: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          run: ./metatron-kernel/target/release/metatron-kernel < $IN
+          YAML
+          cd /tmp/arena
+          nix develop -c ./lka.py build-checker nucleus-g35
+
+      - name: Build and measure leaderboard workloads
+        timeout-minutes: 210
+        run: |
+          set -euo pipefail
+          cd /tmp/arena
+          rm -rf _results
+          mkdir -p _results
+          for t in init-prelude init std mathlib cedar cslib con-leche; do
+            echo "=== BUILD $t ==="
+            nix develop -c ./lka.py build-test "$t"
+            echo "=== RUN $t ==="
+            nix develop -c ./lka.py -v run --checker nucleus-g35 --test "$t"
+          done
+
+      - name: Summarize exact Arena metrics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-rss-g35
+          python - <<'PY'
+          import json, os, pathlib
+          root=pathlib.Path('/tmp/arena/_results')
+          rows=[]
+          for p in sorted(root.glob('nucleus-g35_*.json')):
+              d=json.loads(p.read_text())
+              rows.append({k:d.get(k) for k in [
+                  'test','status','correctness','exit_code','wall_time',
+                  'cpu_time','max_rss','instructions','stderr'
+              ]})
+          binary=pathlib.Path('/tmp/nucleus-g35')
+          out={
+              'schema':'nucleus-g35-arena-rss-v1',
+              'candidate_sha':os.environ['NUCLEUS_SHA'],
+              'arena_sha':os.environ['ARENA_SHA'],
+              'binary_bytes':binary.stat().st_size if binary.exists() else None,
+              'rows':rows,
+              'max_rss_bytes':max((r.get('max_rss') or 0 for r in rows),default=0),
+              'wall_time_sum':sum((r.get('wall_time') or 0) for r in rows),
+              'accepted_wall_time_sum':sum((r.get('wall_time') or 0) for r in rows if r.get('status')=='accepted'),
+              'accepted_tests':[r['test'] for r in rows if r.get('status')=='accepted'],
+              'declined_tests':[r['test'] for r in rows if r.get('status')=='declined'],
+              'error_tests':[r['test'] for r in rows if r.get('status')=='error'],
+          }
+          dest=pathlib.Path('metatron-kernel/evidence-out/arena-rss-g35/result.json')
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Capture current public leaderboard reference
+        if: always()
+        run: |
+          set -euo pipefail
+          curl -fsSL https://arena.lean-lang.org/results.json \
+            -o metatron-kernel/evidence-out/arena-rss-g35/public-results.json || true
+
+      - name: Upload Arena RSS evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g35-arena-rss-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-rss-g35
+          if-no-files-found: warn
