@@ -1,0 +1,50 @@
+name: LKC SHA V25 Callgrind Attribution
+on:
+  push:
+    branches: [lkc-sha-v24-interaction-v25]
+    paths:
+      - '.github/workflows/lkc-sha-v25-callgrind.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  profile:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V25
+        run: python3 experiments/lkc_sha256/algebra_v25_interaction.py
+      - name: Install tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Callgrind H1
+        run: |
+          python3 bench/benchmark.py diagnostic --problem sha256 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v25_interaction.lean" \
+            --metric callgrind --repetitions 1 --timeout 900 --memory-mb 4096 \
+            --inputs "18860801433" --output "$GITHUB_WORKSPACE/cg"
+      - name: Locate and annotate profiles
+        if: always()
+        run: |
+          find "$GITHUB_WORKSPACE/cg" -maxdepth 5 -type f -printf '%p\n' | sort
+          prof=$(find "$GITHUB_WORKSPACE/cg" -type f \( -name 'callgrind.out*' -o -name '*.callgrind' \) | head -1)
+          if [ -n "$prof" ]; then
+            echo "PROFILE=$prof"
+            callgrind_annotate --inclusive=yes --threshold=0.5 "$prof" | head -220
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sha-v25-callgrind
+          path: cg
