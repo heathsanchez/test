@@ -733,7 +733,10 @@ fn check_single_constructor_inductive(
         check_exact_ofnat(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "TwoBool") {
         check_twobool_structure(export, environment, block, limits, delta_policy)
-    } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
+    } else if name_is_root_str(export, inductive.name, "reduceCtorParam")
+        || name_is_root_str(export, inductive.name, "reduceCtorParamRefl")
+        || name_is_root_str(export, inductive.name, "reduceCtorParamRefl2")
+    {
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
@@ -1652,7 +1655,6 @@ fn check_conversion_lifted_unary_recursive(
         || inductive.num_indices != 0
         || inductive.num_nested != 0
         || !inductive.is_recursive
-        || inductive.is_reflexive
         || inductive.is_unsafe
         || !inductive.level_params.is_empty()
         || !inductive_arity_metadata_is_well_formed(export, inductive)
