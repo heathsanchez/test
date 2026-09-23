@@ -479,6 +479,60 @@ impl<'a> TypeChecker<'a> {
         matches!(exposed.proven_value(), Some(Value::Sort(LevelTerm::Zero)))
     }
 
+    pub(crate) fn fixed_proof_function_type_key(
+        &self,
+        ty: &TypeValue,
+        budget: usize,
+    ) -> Option<(NameId, Vec<LevelTerm>)> {
+        let TypeValue::Term(closure) = ty else {
+            return None;
+        };
+        let machine = self.machine();
+        let exposed = machine.expose(closure.clone(), Transparency::Reducible, budget);
+        let Value::Pi { body, .. } = exposed.proven_value()? else {
+            return None;
+        };
+
+        // A distinguished free witness detects dependence on the function
+        // argument.  Only a closed/fixed proposition codomain is admitted.
+        let codomain = machine.expose(
+            body.under_free(FreeId(u64::MAX)),
+            Transparency::Reducible,
+            budget,
+        );
+        let Value::Neutral(neutral) = codomain.proven_value()? else {
+            return None;
+        };
+        if !neutral.spine.is_empty() {
+            return None;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return None;
+        };
+        let declaration = self.environment.get(*name)?;
+        if declaration.level_params.len() != levels.len() {
+            return None;
+        }
+        let substitutions = declaration
+            .level_params
+            .iter()
+            .copied()
+            .zip(levels.iter().cloned())
+            .collect::<Vec<_>>();
+        let proposition_type = Closure::with_levels(
+            declaration.ty,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitutions),
+        );
+        let proposition_type =
+            machine.expose(proposition_type, Transparency::Reducible, budget);
+        matches!(
+            proposition_type.proven_value(),
+            Some(Value::Sort(LevelTerm::Zero))
+        )
+        .then(|| (*name, levels.clone()))
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),
