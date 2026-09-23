@@ -3,6 +3,8 @@ use std::collections::HashSet;
 use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
+use crate::id::ExprId;
+use crate::syntax::Expr;
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{FreeId, Neutral, NeutralHead, Value};
 
@@ -121,6 +123,29 @@ pub(crate) fn convert_with_policy_at_depth(
             continue;
         }
 
+        // Residual-generated function eta capability.  This is deliberately
+        // syntactic and contraction-only: (fun x => f x) may contract to f
+        // exactly when the bound variable does not occur in f.  No unfolding,
+        // proof irrelevance, or structure eta authority is introduced here.
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right) {
+            if let Some(contracted) = eta_contract(checker, left_term, depth) {
+                work.push((
+                    TypeValue::Term(contracted),
+                    TypeValue::Term(right_term.clone()),
+                    depth,
+                ));
+                continue;
+            }
+            if let Some(contracted) = eta_contract(checker, right_term, depth) {
+                work.push((
+                    TypeValue::Term(left_term.clone()),
+                    TypeValue::Term(contracted),
+                    depth,
+                ));
+                continue;
+            }
+        }
+
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
                 match level_equal(left, right, remaining) {
@@ -230,6 +255,62 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn eta_contract(
+    checker: &TypeChecker<'_>,
+    closure: &crate::value::Closure,
+    depth: usize,
+) -> Option<crate::value::Closure> {
+    let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
+        return None;
+    };
+    let Expr::App { fun, arg } = checker.expression(*body)? else {
+        return None;
+    };
+    if !matches!(checker.expression(*arg), Some(Expr::BVar(0))) {
+        return None;
+    }
+    if expression_uses_bvar(checker, *fun, 0, 512) {
+        return None;
+    }
+    let free = fresh_local(depth)?;
+    Some(closure.sibling(*fun, closure.env.extend_free(free)))
+}
+
+fn expression_uses_bvar(
+    checker: &TypeChecker<'_>,
+    expression: ExprId,
+    target: u64,
+    budget: usize,
+) -> bool {
+    if budget == 0 {
+        return true;
+    }
+    let Some(expression) = checker.expression(expression) else {
+        return true;
+    };
+    let next = budget - 1;
+    match expression {
+        Expr::BVar(index) => *index == target,
+        Expr::NatLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+        Expr::App { fun, arg } => {
+            expression_uses_bvar(checker, *fun, target, next)
+                || expression_uses_bvar(checker, *arg, target, next)
+        }
+        Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
+            expression_uses_bvar(checker, *domain, target, next)
+                || expression_uses_bvar(checker, *body, target.saturating_add(1), next)
+        }
+        Expr::Let { ty, value, body } => {
+            expression_uses_bvar(checker, *ty, target, next)
+                || expression_uses_bvar(checker, *value, target, next)
+                || expression_uses_bvar(checker, *body, target.saturating_add(1), next)
+        }
+        Expr::Proj { structure, .. } => {
+            expression_uses_bvar(checker, *structure, target, next)
+        }
+    }
 }
 
 fn compare_values(
