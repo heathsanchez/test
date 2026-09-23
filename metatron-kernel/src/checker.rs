@@ -2711,32 +2711,19 @@ fn is_binary_product_constructor_application(
         && are_bvars(export, &arguments, &[4, 3, 1, 0])
 }
 
-fn constant_uses_level_parameters(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constant: NameId,
-    parameters: &[NameId],
-) -> bool {
-    let Some(Expr::Const { name, levels }) = export.exprs.get(expression) else {
-        return false;
-    };
-    *name == constant
-        && levels.len() == parameters.len()
-        && levels.iter().zip(parameters).all(|(level, parameter)| {
-            matches!(
-                export.levels.get(*level),
-                Some(Level::Param(name)) if name == parameter
-            )
-        })
-}
-
 fn is_unary_polymorphic_constant(
     export: &ResolvedExport,
     expression: ExprId,
     constant: NameId,
     level_parameter: NameId,
 ) -> bool {
-    constant_uses_level_parameters(export, expression, constant, &[level_parameter])
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if *name == constant
+                && matches!(levels.as_slice(), [level]
+                    if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == level_parameter))
+    )
 }
 
 fn is_punit_motive_type(
@@ -2870,17 +2857,18 @@ fn is_polymorphic_constant(
     first_level: NameId,
     second_level: NameId,
 ) -> bool {
-    constant_uses_level_parameters(
-        export,
-        expression,
-        constant,
-        &[first_level, second_level],
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if *name == constant
+                && matches!(levels.as_slice(), [first, second]
+                    if matches!(export.levels.get(*first), Some(Level::Param(name)) if *name == first_level)
+                        && matches!(export.levels.get(*second), Some(Level::Param(name)) if *name == second_level))
     )
 }
 
 /// G14-001's name-specific frontier. G15 shares only its already-qualified
 /// derivation skeleton; this envelope and its Sort-level law remain separate.
-
 fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some((domains, _)) = pi_spine(export, expression, 4) else {
         return false;
