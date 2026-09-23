@@ -661,3 +661,39 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
   is required. General positivity completeness is not claimed.
 - Performance remains `UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS`.
 
+
+
+## G23-001 — Conversion-lifted recursive constructor coherence
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G22 head
+  `917566dd7c91fdda1f32e85aaf5ab65a19973923`, which returns `UNKNOWN`
+  on tutorial 055 `good/055_reduceCtorParam.ndjson`.
+- Least capability: inside the exact name-sealed one-parameter, one-field
+  recursive family, validate constructor parameter coherence and recursive
+  field coherence by the kernel's existing definitional-equality relation
+  after staging the inductive type. This lifts the previously structural
+  constructor-coherence law through conversion rather than requiring literal
+  AST identity.
+- The recursor motive/minor/rule remain structurally derived before opaque
+  promotion. No general recursive-inductive engine, arbitrary positivity,
+  indexed/reflexive/nested recursion, projection, eta, Rule-K computation, or
+  unrestricted conversion authority is added.
+- Falsifiers and retained controls passed: all prior G0–G22 end-to-end tests,
+  exact tutorial prefix 001–054, malformed constructor/recursor controls, and
+  the G21/G22 coherence/negativity boundaries.
+- Exact oracle differential through tutorial 055: 54 equal, one earned
+  `UNKNOWN → ACCEPT` delta at 055, zero mismatches. Tutorial qualification is
+  55 matched, 0 incorrect.
+- External qualification: candidate
+  `7975697a23091ee72abbfe6e68042f0e079f8738`, run `35767458462`, job
+  `106880494500`, artifact `10713170335`, digest
+  `sha256:63ec11c759359046e0e2cb792a83c1a0528b42d975110f84c77fe5f3524e9055`.
+  The Rust release suite passed 66/66.
+- Diagnostic untouched suffix 046–141: 28/96 matched; first remaining
+  mismatch is tutorial 058 `PredWithTypeField`.
+- Formal status: existing staged opaque-promotion validity/opacity warrants
+  still apply to installation, but the exact Rust conversion-lifted family is
+  not refined to IdealLean and whole-checker verification is not claimed.
+- Performance remains unknown for promotion: hosted retired-instruction
+  measurement was unavailable and no same-cohort performance claim is made.
