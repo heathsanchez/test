@@ -1,0 +1,122 @@
+name: Nucleus Standalone Complete v1
+
+on:
+  push:
+    branches: [nucleus-standalone-complete-v1]
+    paths:
+      - ".github/workflows/nucleus-standalone-complete-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-standalone-complete-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      FAST_BASE_SHA: 20e8e98f6f1b86dcd437cb6f1e5ed3bd61a19302
+      STRLIT_SHA: 2e167eadf7134c4cb40ba7cf245d50c2bf647930
+      COMPLETE_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+
+      - name: Build standalone candidate and exact fast base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo build --release
+          cd ..
+          git worktree add --detach /tmp/base "$FAST_BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Prove standalone completeness and preserve fast-path accounting
+        working-directory: metatron-kernel
+        timeout-minutes: 30
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/standalone-complete-v1
+          python - <<'PY'
+          import json,pathlib,subprocess,os,time
+          root=pathlib.Path('/tmp/tests')
+          fast=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          complete=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              def rr(binary):
+                with p.open('rb') as f:
+                  t=time.perf_counter_ns()
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180)
+                  return q.returncode,time.perf_counter_ns()-t
+              frc,ft=rr(fast)
+              crc,ct=rr(complete)
+              rows.append({
+                'test':name,'expected':expected,
+                'fast_rc':frc,'standalone_rc':crc,
+                'fast_ns':ft,'standalone_ns':ct
+              })
+          assert len(rows)==193
+          wrong=[r for r in rows if r['standalone_rc']!=r['expected']]
+          undecided=[r for r in rows if r['standalone_rc'] not in (0,1)]
+          fast_false_accept=[r for r in rows if r['expected']==1 and r['fast_rc']==0]
+          fast_false_reject=[r for r in rows if r['expected']==0 and r['fast_rc']==1]
+          fast_residual=[r for r in rows if r['fast_rc'] in (2,3)]
+          assert not wrong,wrong
+          assert not undecided,undecided
+          assert not fast_false_accept,fast_false_accept
+          assert not fast_false_reject,fast_false_reject
+          assert len(fast_residual)==51,len(fast_residual)
+          summary={
+            'schema':'nucleus-standalone-complete-v1',
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'fast_base_sha':os.environ['FAST_BASE_SHA'],
+            'strlit_parent_sha':os.environ['STRLIT_SHA'],
+            'complete_library_sha':os.environ['COMPLETE_SHA'],
+            'fixed_outcome_tests':len(rows),
+            'standalone_accept':sum(r['standalone_rc']==0 for r in rows),
+            'standalone_reject':sum(r['standalone_rc']==1 for r in rows),
+            'standalone_undecided':len(undecided),
+            'standalone_wrong':wrong,
+            'fast_native_accept':sum(r['expected']==0 and r['fast_rc']==0 for r in rows),
+            'fast_native_reject':sum(r['expected']==1 and r['fast_rc']==1 for r in rows),
+            'fast_semantic_debt':len(fast_residual),
+            'fast_residual_tests':[r['test'] for r in fast_residual],
+            'binary_bytes':complete.stat().st_size,
+          }
+          dest=pathlib.Path('evidence-out/standalone-complete-v1')
+          (dest/'result.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          (dest/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,sort_keys=True))
+          PY
+          cp Cargo.lock evidence-out/standalone-complete-v1/Cargo.lock.generated
+
+      - name: Upload qualification evidence and resolved lock
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-standalone-complete-${{ github.sha }}
+          path: metatron-kernel/evidence-out/standalone-complete-v1
+          if-no-files-found: warn
