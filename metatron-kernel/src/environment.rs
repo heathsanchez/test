@@ -186,7 +186,11 @@ impl fmt::Display for EnvironmentError {
                 write!(formatter, "missing constant name {}", name.0)
             }
             Self::DuplicateReduction(name) => {
-                write!(formatter, "duplicate singleton recursor reduction {}", name.0)
+                write!(
+                    formatter,
+                    "duplicate singleton recursor reduction {}",
+                    name.0
+                )
             }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
