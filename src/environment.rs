@@ -253,7 +253,12 @@ impl Environment {
         if self.nat_primitives.is_some() {
             return Err(EnvironmentError::DuplicateNatPrimitives);
         }
-        for name in [primitives.type_name, primitives.zero, primitives.succ, primitives.recursor] {
+        for name in [
+            primitives.type_name,
+            primitives.zero,
+            primitives.succ,
+            primitives.recursor,
+        ] {
             if !self.constants.contains_key(&name) {
                 return Err(EnvironmentError::MissingConstant(name));
             }
