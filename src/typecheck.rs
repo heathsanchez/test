@@ -469,6 +469,19 @@ impl<'a> TypeChecker<'a> {
             .then(|| (*name, levels.clone()))
     }
 
+    pub(crate) fn type_value_is_prop_sort(&self, ty: &TypeValue, budget: usize) -> bool {
+        let TypeValue::Term(closure) = ty else {
+            return false;
+        };
+        let exposed = self
+            .machine()
+            .expose(closure.clone(), Transparency::Reducible, budget);
+        matches!(
+            exposed.proven_value(),
+            Some(Value::Sort(LevelTerm::Zero))
+        )
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),
