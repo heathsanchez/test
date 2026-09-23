@@ -1,0 +1,68 @@
+{
+  "schema": "acc-transport-residual-certificate-v1",
+  "target": {
+    "challenge_id": "ac-04546",
+    "stable_challenge_id": "sac-04546",
+    "ac_best": 108,
+    "stable_best": 121,
+    "transport_cost": 2,
+    "transport_slack": 11,
+    "source_bound_exclusive": 119,
+    "ac_kTeams": 1,
+    "stable_kTeams": 1
+  },
+  "official_verifier_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "proof_atlas": {
+    "states": 433272,
+    "projected_signatures": 428625
+  },
+  "evidence": {
+    "bestfirst": {
+      "run_id": 35856746270,
+      "nodes": 250000,
+      "visited": 1710555,
+      "frontier": 1905455,
+      "found": false,
+      "winning_targets": 0
+    },
+    "radius5_connector": {
+      "run_id": 35856841841,
+      "connector_depth": 5,
+      "nodes": 132377,
+      "visited": 132377,
+      "frontier": 0,
+      "node_cap_hit": false,
+      "found": false,
+      "winning_targets": 0
+    },
+    "depth6_fiber": {
+      "run_id": 35856914763,
+      "contexts": ["S6:xy", "S6:yx", "S7:xy", "S7:yx", "S7:quad-cycle", "S8:quad-cycle"],
+      "depth": 6,
+      "quotient_exact_length_layer_sizes": [1, 14, 146, 1404, 13073, 119725, 1086233],
+      "quotient_expanded": 134363,
+      "quotient_terminal_atlas_signatures": 0,
+      "exact_atlas_hits": 0,
+      "candidates": 0,
+      "fiber_depth6_exhausted": true
+    }
+  },
+  "post_search_live_authority": {
+    "run_id": 35846007411,
+    "job_id": 107168256776,
+    "utc": "2026-09-23T11:53:29.552969+00:00",
+    "live_state_sha256": "7c765f763b9be1cfd86ac88007b2bbfc1cfa2a568ded6a1889c64112c1ff97bf",
+    "quota": {"used": 0, "remaining": 40, "limit": 40},
+    "standing": {"unique": 0, "tied": 6, "lost": 106},
+    "ac": {"unsolved": 2672, "singleton_records": 4098},
+    "stable_ac": {"unsolved": 2673, "singleton_records": 4747},
+    "target_still_live": {"ac_best": 108, "stable_best": 121}
+  },
+  "result": "exhausted_against_current_atlas",
+  "reuse_rule": "Do not repeat the 250000-node official best-first, exact radius<=5 Atlas connector, or six-context exact-depth-6 fiber for ac-04546/sac-04546 while the live target remains 108/121 and the verified Proof Atlas remains 433272 states. Retry only after a material live-state change, material verified Atlas growth, or a qualitatively different reverse/bidirectional/nonlocal connector.",
+  "publication": {
+    "candidate": false,
+    "submitted": false,
+    "quota_consumed": 0
+  }
+}
