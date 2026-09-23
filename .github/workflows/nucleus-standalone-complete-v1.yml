@@ -121,3 +121,5 @@ jobs:
           name: nucleus-standalone-complete-${{ github.sha }}
           path: metatron-kernel/evidence-out/standalone-complete-v1
           if-no-files-found: warn
+
+# exact-lock qualification trigger
