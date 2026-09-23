@@ -201,7 +201,11 @@ impl<'a> Machine<'a> {
                             EnvBinding::Free(free) => {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
-                                record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                                record_transition(
+                                    &mut transitions,
+                                    record_witnesses,
+                                    TransitionWitness::Rigid,
+                                );
                                 return exposed(
                                     Value::Neutral(Neutral {
                                         head: NeutralHead::Free(free),
@@ -242,7 +246,11 @@ impl<'a> Machine<'a> {
                 }
                 Expr::Lam { domain, body } => {
                     if let Some(argument) = pending.pop() {
-                        record_transition(&mut transitions, record_witnesses, TransitionWitness::Beta);
+                        record_transition(
+                            &mut transitions,
+                            record_witnesses,
+                            TransitionWitness::Beta,
+                        );
                         visited.clear();
                         closure = closure.sibling(*body, closure.env.extend(argument));
                         continue;
@@ -274,7 +282,11 @@ impl<'a> Machine<'a> {
                         let _motive = pending.pop().expect("length checked");
                         let minor = pending.pop().expect("length checked");
                         let _target = pending.pop().expect("length checked");
-                        record_transition(&mut transitions, record_witnesses, TransitionWitness::SingletonRecursor);
+                        record_transition(
+                            &mut transitions,
+                            record_witnesses,
+                            TransitionWitness::SingletonRecursor,
+                        );
                         visited.clear();
                         closure = minor;
                         continue;
@@ -323,7 +335,11 @@ impl<'a> Machine<'a> {
                                     for argument in rule_arguments.iter().rev() {
                                         pending.push(argument.clone());
                                     }
-                                    record_transition(&mut transitions, record_witnesses, TransitionWitness::ConstructorRecursor);
+                                    record_transition(
+                                        &mut transitions,
+                                        record_witnesses,
+                                        TransitionWitness::ConstructorRecursor,
+                                    );
                                     visited.clear();
                                     closure = Closure::with_levels(
                                         rule.rhs,
@@ -348,7 +364,11 @@ impl<'a> Machine<'a> {
                             };
                             substitution.push((*parameter, level));
                         }
-                        record_transition(&mut transitions, record_witnesses, TransitionWitness::Delta);
+                        record_transition(
+                            &mut transitions,
+                            record_witnesses,
+                            TransitionWitness::Delta,
+                        );
                         closure = Closure::with_levels(
                             definition.value,
                             EnvFrame::empty(),
