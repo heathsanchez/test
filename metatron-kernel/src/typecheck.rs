@@ -161,6 +161,7 @@ impl<'a> TypeChecker<'a> {
                     "qualified-Nat-literal-type",
                 )
             }
+            Expr::StrLit(_) => Judgment::unknown("string-literal-type-not-qualified"),
             Expr::BVar(index) => {
                 let Some(offset) = usize::try_from(*index).ok() else {
                     return Judgment::refuted("unbound-bvar");
