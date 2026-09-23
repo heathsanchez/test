@@ -1,0 +1,70 @@
+name: Nucleus G34 RBTree Probe v0
+
+on:
+  push:
+    branches: [nucleus-g34-rbtree-probe-v0]
+    paths:
+      - ".github/workflows/nucleus-g34-rbtree-probe-v0.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build diagnostic candidate
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Build exact pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Trace exact 082 residual
+        run: |
+          set +e
+          metatron-kernel/target/release/metatron-kernel < /tmp/tutorial/good/082_RBTree.id_spec.ndjson >/tmp/stdout.txt 2>/tmp/stderr.txt
+          code=$?
+          echo "EXIT=$code"
+          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED|APP_PI)' /tmp/stderr.txt | tail -n 120
+          python - <<'PY'
+          import json
+          p='/tmp/tutorial/good/082_RBTree.id_spec.ndjson'
+          rows=[json.loads(x) for x in open(p) if x.strip()]
+          expr={r['ie']:r for r in rows if 'ie' in r}
+          names={r['in']:r for r in rows if 'in' in r}
+          seen=set()
+          def deps(i):
+              if i in seen or i not in expr:return
+              seen.add(i); r=expr[i]; print('NUCLEUS_TRACE_EXPR',json.dumps(r,sort_keys=True))
+              node=next((v for k,v in r.items() if k!='ie'),None)
+              if isinstance(node,dict):
+                  for k in ('fn','arg','type','body','value','struct'):
+                      v=node.get(k)
+                      if isinstance(v,int): deps(v)
+              elif isinstance(node,list):
+                  for v in node:
+                      if isinstance(v,int): deps(v)
+          for i in (404,637,638): deps(i)
+          for i in sorted(seen):
+              r=expr[i]
+              if 'const' in r:
+                  n=r['const']['name']
+                  print('NUCLEUS_TRACE_NAME',n,json.dumps(names.get(n),sort_keys=True))
+          PY
+          echo "RB_TREE_PROBE_EXIT=$code"
