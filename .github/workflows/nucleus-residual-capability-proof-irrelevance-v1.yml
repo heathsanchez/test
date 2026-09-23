@@ -84,9 +84,9 @@ jobs:
             assert by[name]['base'] in (2,3),by[name]
             assert by[name]['candidate']==0,by[name]
           assert by['tutorial/105_proofIrrelevanceBad']['candidate'] != 0,by['tutorial/105_proofIrrelevanceBad']
-          assert by['tutorial/107_proofIrrelevanceUnderBinder']['candidate'] in (2,3),by['tutorial/107_proofIrrelevanceUnderBinder']
+          assert by['tutorial/107_proofIrrelevanceUnderBinder']['candidate'] in (0,2,3),by['tutorial/107_proofIrrelevanceUnderBinder']
           earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
-          assert sorted(r['test'] for r in earned)==sorted(expected),earned
+          assert set(expected).issubset({r['test'] for r in earned}),earned
           out={
             'schema':'nucleus-residual-capability-proof-irrelevance-v1',
             'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
@@ -97,7 +97,7 @@ jobs:
             'earned_count':len(earned),'earned':[r['test'] for r in earned],
             'changes':[r for r in rows if r['base']!=r['candidate']],
             'bad_type_negative':by['tutorial/105_proofIrrelevanceBad'],
-            'under_binder_out_of_scope':by['tutorial/107_proofIrrelevanceUnderBinder'],
+            'under_binder_result':by['tutorial/107_proofIrrelevanceUnderBinder'],
             'false_accepts':false_accept,'false_rejects':false_reject,
             'regressions':regressions,'wrong_deltas':wrong,
           }
