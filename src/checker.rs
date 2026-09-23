@@ -2508,24 +2508,51 @@ impl ExactBinaryProductDerivation<'_> {
 
         let valid_recursor = match self.law {
             BinaryProductSortLaw::PUnit { .. } => {
+                let type_valid = pi_spine(export, self.recursor.ty, 3).is_some_and(
+                    |(domains, result)| {
+                        matches!(domains.as_slice(), [motive, minor, target]
+                            if is_punit_motive_type(
+                                export,
+                                *motive,
+                                self.inductive.name,
+                                self.recursor.level_params[0],
+                                self.law,
+                            )
+                                && is_punit_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && self.law.constant(export, *target, self.inductive.name)
+                                && is_bvar_application(export, result, 2, 0))
+                    },
+                );
+                let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
+                    if lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
+                        matches!(domains.as_slice(), [motive, minor]
+                            if is_punit_motive_type(
+                                export,
+                                *motive,
+                                self.inductive.name,
+                                self.recursor.level_params[0],
+                                self.law,
+                            )
+                                && is_punit_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && is_bvar(export, result, 0))
+                    }));
                 self.law.validates_recursor_metadata(
                     export,
                     self.inductive,
                     self.constructor,
                     self.recursor,
-                ) && is_derived_punit_recursor_type(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                ) && is_derived_punit_rule(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                )
+                ) && type_valid
+                    && rule_valid
             }
             BinaryProductSortLaw::Eq { .. } => {
                 self.law.validates_recursor_metadata(
@@ -2901,46 +2928,6 @@ fn is_unary_polymorphic_constant(
                 && matches!(levels.as_slice(), [level]
                     if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == level_parameter))
     )
-}
-
-fn is_derived_punit_recursor_type(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, recursor.ty, 3) else {
-        return false;
-    };
-    let [motive, minor, target] = domains.as_slice() else {
-        return false;
-    };
-    is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
-        && is_punit_minor_type(export, *minor, constructor, law)
-        && law.constant(export, *target, inductive)
-        && is_bvar_application(export, result, 2, 0)
-}
-
-fn is_derived_punit_rule(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some((domains, result)) = lam_spine(export, rule.rhs, 2) else {
-        return false;
-    };
-    let [motive, minor] = domains.as_slice() else {
-        return false;
-    };
-    is_punit_motive_type(export, *motive, inductive, recursor.level_params[0], law)
-        && is_punit_minor_type(export, *minor, constructor, law)
-        && is_bvar(export, result, 0)
 }
 
 fn is_punit_motive_type(
