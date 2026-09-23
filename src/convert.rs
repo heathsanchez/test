@@ -315,11 +315,7 @@ pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
 }
 
-fn bare_free_type(
-    checker: &TypeChecker<'_>,
-    ty: &TypeValue,
-    budget: usize,
-) -> Option<FreeId> {
+fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
     let TypeValue::Term(closure) = ty else {
         return None;
     };
