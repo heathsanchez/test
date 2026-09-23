@@ -1,0 +1,41 @@
+name: LKC SHA Straight V26 Runtime Probe
+on:
+  push:
+    branches: [lkc-sha-straight-v26]
+    paths:
+      - 'experiments/lkc_sha256/straight_v26_probe.py'
+      - '.github/workflows/lkc-sha-straight-v26-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        input: ["18860801433","138725260120","2199121876686"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate
+        run: |
+          python3 experiments/lkc_sha256/algebra_v25_interaction.py
+          python3 experiments/lkc_sha256/straight_v26_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: V25
+        run: |
+          python3 bench/benchmark.py diagnostic --problem sha256 --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v25_interaction.lean" --metric wall-time --repetitions 1 --timeout 300 --memory-mb 4096 --inputs "${{ matrix.input }}" --output "$GITHUB_WORKSPACE/v25-${{ matrix.input }}"
+      - name: V26
+        run: |
+          python3 bench/benchmark.py diagnostic --problem sha256 --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_straight_v26_probe.lean" --metric wall-time --repetitions 1 --timeout 300 --memory-mb 4096 --inputs "${{ matrix.input }}" --output "$GITHUB_WORKSPACE/v26-${{ matrix.input }}"
