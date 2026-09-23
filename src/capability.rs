@@ -9,7 +9,7 @@ use std::collections::HashSet;
 
 use crate::id::NameId;
 use crate::parser::ResolvedExport;
-use crate::syntax::Declaration;
+use crate::syntax::{Declaration, Name};
 use crate::verdict::Verdict;
 
 #[derive(Clone, Copy)]
@@ -18,10 +18,16 @@ struct VerifiedCapability {
     apply: fn(&ResolvedExport) -> Option<Verdict>,
 }
 
-const CAPABILITIES: &[VerifiedCapability] = &[VerifiedCapability {
-    id: "environment.declared-name-uniqueness.v0",
-    apply: declared_name_uniqueness,
-}];
+const CAPABILITIES: &[VerifiedCapability] = &[
+    VerifiedCapability {
+        id: "environment.declared-name-uniqueness.v0",
+        apply: declared_name_uniqueness,
+    },
+    VerifiedCapability {
+        id: "environment.recursor-name-coherence.v0",
+        apply: recursor_name_coherence,
+    },
+];
 
 pub(crate) fn execute(export: &ResolvedExport) -> Option<Verdict> {
     for capability in CAPABILITIES {
@@ -81,6 +87,29 @@ fn declared_name_uniqueness(export: &ResolvedExport) -> Option<Verdict> {
                 }
             }
             Declaration::Unsupported { .. } => {}
+        }
+    }
+    None
+}
+
+/// Every recursor owned by an exported inductive block has the reserved
+/// `<inductive>.rec` name.  This environment-level invariant is independent
+/// of whether Nucleus already supports the inductive family's semantics.
+fn recursor_name_coherence(export: &ResolvedExport) -> Option<Verdict> {
+    for declaration in &export.declarations {
+        let Declaration::Inductive(block) = declaration else {
+            continue;
+        };
+        for recursor in &block.recursors {
+            let canonical = matches!(
+                export.names.get(recursor.name),
+                Some(Name::Str { prefix, value })
+                    if value == "rec"
+                        && block.types.iter().any(|inductive| inductive.name == *prefix)
+            );
+            if !canonical {
+                return Some(Verdict::Reject);
+            }
         }
     }
     None
