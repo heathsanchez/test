@@ -279,7 +279,7 @@ fn parse_expr(
 ) -> Result<(), ParseError> {
     let id = ExprId(number(object, "ie", line)?);
     let tags = [
-        "bvar", "natVal", "sort", "const", "app", "lam", "forallE", "letE", "proj",
+        "bvar", "natVal", "strVal", "sort", "const", "app", "lam", "forallE", "letE", "proj",
     ]
     .into_iter()
     .filter(|key| object.contains_key(*key))
@@ -300,6 +300,13 @@ fn parse_expr(
             let value = crate::nat::BigNat::parse_decimal(text)
                 .ok_or_else(|| malformed(line, "natVal must be a canonical natural number"))?;
             Expr::NatLit(value)
+        }
+        "strVal" => {
+            let value = object
+                .get("strVal")
+                .and_then(Value::as_str)
+                .ok_or_else(|| malformed(line, "strVal must be a string"))?;
+            Expr::StrLit(value.to_owned())
         }
         "sort" => Expr::Sort(LevelId(number(object, "sort", line)?)),
         "const" => {
@@ -489,7 +496,7 @@ fn parse_inductive(value: &Value, line: usize) -> Result<Declaration, ParseError
 
 fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
     match expr {
-        Expr::BVar(_) | Expr::NatLit(_) => Ok(()),
+        Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) => Ok(()),
         Expr::Sort(level) => require_level(&export.levels, *level),
         Expr::Const { name, levels } => {
             require_name(&export.names, *name)?;
