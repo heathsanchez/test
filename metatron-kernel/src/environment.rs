@@ -67,6 +67,15 @@ impl ConstantDecl {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct NatPrimitives {
+    pub type_name: NameId,
+    pub type_expr: ExprId,
+    pub zero: NameId,
+    pub succ: NameId,
+    pub recursor: NameId,
+}
+
 #[derive(Clone, Debug)]
 pub struct Environment {
     authority: AuthorityId,
@@ -75,6 +84,7 @@ pub struct Environment {
     singleton_recursor_reductions: Rc<HashSet<NameId>>,
     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
     projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
+    nat_primitives: Option<NatPrimitives>,
 }
 
 impl Environment {
@@ -86,6 +96,7 @@ impl Environment {
             singleton_recursor_reductions: Rc::new(HashSet::new()),
             recursor_reductions: Rc::new(HashMap::new()),
             projection_specs: Rc::new(HashMap::new()),
+            nat_primitives: None,
         }
     }
 
@@ -130,6 +141,7 @@ impl Environment {
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
         })
     }
 
@@ -159,6 +171,7 @@ impl Environment {
             singleton_recursor_reductions: Rc::new(reductions),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
         })
     }
 
@@ -189,6 +202,7 @@ impl Environment {
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: Rc::new(reductions),
             projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
         })
     }
 
@@ -232,6 +246,38 @@ impl Environment {
         self.projection_specs.as_ref().clone()
     }
 
+    pub fn install_nat_primitives(
+        &self,
+        primitives: NatPrimitives,
+    ) -> Result<Self, EnvironmentError> {
+        if self.nat_primitives.is_some() {
+            return Err(EnvironmentError::DuplicateNatPrimitives);
+        }
+        for name in [primitives.type_name, primitives.zero, primitives.succ, primitives.recursor] {
+            if !self.constants.contains_key(&name) {
+                return Err(EnvironmentError::MissingConstant(name));
+            }
+        }
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
+            nat_primitives: Some(primitives),
+        })
+    }
+
+    pub fn nat_primitives(&self) -> Option<&NatPrimitives> {
+        self.nat_primitives.as_ref()
+    }
+
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
         self.definitions.clone()
     }
@@ -248,6 +294,7 @@ pub enum EnvironmentError {
     DuplicateConstant(NameId),
     MissingConstant(NameId),
     DuplicateReduction(NameId),
+    DuplicateNatPrimitives,
     AuthorityOverflow,
 }
 
@@ -267,6 +314,7 @@ impl fmt::Display for EnvironmentError {
                     name.0
                 )
             }
+            Self::DuplicateNatPrimitives => write!(formatter, "duplicate Nat primitive authority"),
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
     }
