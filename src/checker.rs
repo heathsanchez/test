@@ -7,7 +7,7 @@ use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
-use crate::machine::{RecursorReduction, RecursorRule};
+use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule};
 use crate::parser::ResolvedExport;
 use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, Recursor};
 use crate::typecheck::{TypeChecker, TypeValue};
@@ -4073,6 +4073,25 @@ impl ExactBinaryProductDerivation<'_> {
             delta_policy,
         )?;
         let environment = derivation.finish();
+        let environment = if matches!(
+            self.law,
+            BinaryProductSortLaw::And
+                | BinaryProductSortLaw::Prod { .. }
+                | BinaryProductSortLaw::PProd { .. }
+        ) {
+            environment
+                .install_projection_spec(
+                    self.inductive.name,
+                    ProjectionSpec {
+                        constructor: self.constructor.name,
+                        num_params: 2,
+                        field_param_indices: vec![0, 1],
+                    },
+                )
+                .map_err(|_| Verdict::Reject)?
+        } else {
+            environment
+        };
 
         // G32 reuses G31's already-qualified constructor-iota machine. Only
         // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
