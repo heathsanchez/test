@@ -1,0 +1,219 @@
+name: LKA G23Q Broad Equivalence v0
+
+on:
+  push:
+    branches: [lka-g23q-obligation-core-v1]
+    paths:
+      - ".github/workflows/lka-g23q-broad-equivalence-v0.yml"
+      - "metatron-kernel/src/**"
+      - "metatron-kernel/evidence/**/*.ndjson"
+      - "metatron-kernel/tests/fixtures/*.ndjson"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g23q-broad-equivalence-v0-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  differential:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      G23_SHA: 7975697a23091ee72abbfe6e68042f0e079f8738
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    defaults:
+      run:
+        working-directory: metatron-kernel
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify candidate quality
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build exact G23 oracle and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g23-oracle "$G23_SHA"
+          cargo build --release --locked \
+            --manifest-path /tmp/g23-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked
+
+      - name: Compare every committed NDJSON fixture
+        run: |
+          set -euo pipefail
+          mkdir -p broad-evidence
+          python - <<'PY'
+          import json, pathlib, subprocess
+
+          root = pathlib.Path(".")
+          oracle = pathlib.Path("/tmp/g23-oracle/metatron-kernel/target/release/metatron-kernel")
+          candidate = pathlib.Path("target/release/metatron-kernel").resolve()
+
+          fixtures = sorted(
+              p for p in root.rglob("*.ndjson")
+              if "target" not in p.parts and ".git" not in p.parts
+          )
+
+          rows=[]
+          for path in fixtures:
+              def run(binary):
+                  with path.open("rb") as f:
+                      return subprocess.run(
+                          [str(binary)],
+                          stdin=f,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      ).returncode
+              before=run(oracle)
+              after=run(candidate)
+              rows.append({
+                  "path": str(path),
+                  "oracle": before,
+                  "candidate": after,
+              })
+
+          changed=[row for row in rows if row["oracle"] != row["candidate"]]
+          out={
+              "schema":"lka-g23q-committed-ndjson-equivalence-v0",
+              "oracle_sha":"7975697a23091ee72abbfe6e68042f0e079f8738",
+              "candidate_sha": subprocess.check_output(
+                  ["git","rev-parse","HEAD"], text=True
+              ).strip(),
+              "count":len(rows),
+              "equal":len(rows)-len(changed),
+              "changed":changed,
+              "rows":rows,
+          }
+          pathlib.Path("broad-evidence/committed-ndjson.json").write_text(
+              json.dumps(out, indent=2, sort_keys=True)+"\n"
+          )
+          print(json.dumps({
+              "count":out["count"],
+              "equal":out["equal"],
+              "changed":out["changed"],
+          }, sort_keys=True))
+          assert len(fixtures) >= 39, len(fixtures)
+          assert changed == [], changed
+          PY
+
+      - name: Fetch pinned Arena
+        working-directory: /
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+
+      - name: Generate pinned tutorials
+        working-directory: /
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Compare full tutorial corpus
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, pathlib, subprocess
+          root=pathlib.Path("/tmp/lean-kernel-tutorial")
+          oracle=pathlib.Path("/tmp/g23-oracle/metatron-kernel/target/release/metatron-kernel")
+          candidate=pathlib.Path("target/release/metatron-kernel").resolve()
+          rows=[]
+          for n in range(1,142):
+              matches=list(root.glob(f"*/{n:03d}_*.ndjson"))
+              assert len(matches)==1,(n,matches)
+              path=matches[0]
+              def run(binary):
+                  with path.open("rb") as f:
+                      return subprocess.run(
+                          [str(binary)],
+                          stdin=f,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      ).returncode
+              before=run(oracle)
+              after=run(candidate)
+              rows.append({
+                  "case":n,
+                  "file":path.name,
+                  "oracle":before,
+                  "candidate":after,
+              })
+          changed=[row for row in rows if row["oracle"]!=row["candidate"]]
+          out={
+              "schema":"lka-g23q-tutorial-equivalence-v0",
+              "oracle_sha":"7975697a23091ee72abbfe6e68042f0e079f8738",
+              "candidate_sha":subprocess.check_output(
+                  ["git","rev-parse","HEAD"], text=True
+              ).strip(),
+              "count":len(rows),
+              "equal":len(rows)-len(changed),
+              "changed":changed,
+          }
+          pathlib.Path("broad-evidence/tutorials.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          assert changed == [], changed
+          PY
+
+      - name: Write broad attestation
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import hashlib,json,pathlib,subprocess
+          root=pathlib.Path("broad-evidence")
+          committed=json.load(open(root/"committed-ndjson.json"))
+          tutorials=json.load(open(root/"tutorials.json"))
+          checker=pathlib.Path("src/checker.rs")
+          out={
+              "schema":"lka-g23q-broad-equivalence-attestation-v0",
+              "oracle_sha":"7975697a23091ee72abbfe6e68042f0e079f8738",
+              "candidate_sha":subprocess.check_output(
+                  ["git","rev-parse","HEAD"],text=True
+              ).strip(),
+              "committed_ndjson_equal":committed["equal"],
+              "tutorial_equal":tutorials["equal"],
+              "total_equal":committed["equal"]+tutorials["equal"],
+              "checker_lines":len(checker.read_text().splitlines()),
+              "checker_sha256":hashlib.sha256(checker.read_bytes()).hexdigest(),
+              "zero_authority_claim":"differential representation qualification only",
+          }
+          (root/"attestation.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload broad equivalence evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g23q-broad-equivalence-${{ github.sha }}
+          path: metatron-kernel/broad-evidence
+          if-no-files-found: error
