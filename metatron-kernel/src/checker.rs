@@ -4466,13 +4466,7 @@ fn exact_closed_binary_tree_candidate(export: &ResolvedExport, block: &Inductive
         return false;
     }
 
-    binary_tree_recursor_obligations(
-        export,
-        inductive.name,
-        leaf.name,
-        node.name,
-        recursor,
-    )
+    binary_tree_recursor_obligations(export, inductive.name, leaf.name, node.name, recursor)
 }
 
 fn check_exact_closed_binary_tree(
@@ -4643,20 +4637,8 @@ fn binary_tree_recursor_obligations(
         is_bvar(export, minor_head, 2)
             && is_bvar(export, *left_arg, 1)
             && is_bvar(export, *right_arg, 0)
-            && binary_tree_recursor_call(
-                export,
-                *left_call,
-                recursor.name,
-                *motive_level,
-                1,
-            )
-            && binary_tree_recursor_call(
-                export,
-                *right_call,
-                recursor.name,
-                *motive_level,
-                0,
-            )
+            && binary_tree_recursor_call(export, *left_call, recursor.name, *motive_level, 1)
+            && binary_tree_recursor_call(export, *right_call, recursor.name, *motive_level, 0)
     });
 
     leaf_ok && node_ok
