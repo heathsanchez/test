@@ -140,6 +140,7 @@ fn check_export_with_policy(
                         if verdict == Verdict::Unknown
                             && std::env::var_os("NUCLEUS_TRACE_TERMINAL_RESIDUAL").is_some()
                         {
+                            trace_unknown_inductive_block(&export, &block);
                             eprintln!("NUCLEUS_TERMINAL_RESIDUAL:inductive-check-unknown");
                         }
                         return verdict;
@@ -183,6 +184,75 @@ fn check_export_with_policy(
     }
 
     Verdict::Accept
+}
+
+fn trace_name_role(export: &ResolvedExport, name: NameId, owner: Option<NameId>) -> String {
+    match export.names.get(name) {
+        Some(Name::Str { prefix, value }) if owner == Some(*prefix) => {
+            format!("child:{value}")
+        }
+        Some(Name::Num { prefix, .. }) if owner == Some(*prefix) => "child-num".to_owned(),
+        Some(Name::Str { prefix: NameId(0), .. }) | Some(Name::Num { prefix: NameId(0), .. }) => {
+            "root".to_owned()
+        }
+        Some(Name::Str { .. }) => "other-str".to_owned(),
+        Some(Name::Num { .. }) => "other-num".to_owned(),
+        None => "missing".to_owned(),
+    }
+}
+
+fn trace_unknown_inductive_block(export: &ResolvedExport, block: &InductiveBlock) {
+    if std::env::var_os("NUCLEUS_TRACE_TERMINAL_RESIDUAL").is_none() {
+        return;
+    }
+    eprintln!(
+        "NUCLEUS_INDUCTIVE_BLOCK:types={};ctors={};recs={}",
+        block.types.len(),
+        block.constructors.len(),
+        block.recursors.len()
+    );
+    for inductive in &block.types {
+        eprintln!(
+            "NUCLEUS_INDUCTIVE_TYPE:role={};all={};ctors={};levels={};params={};indices={};nested={};recursive={};reflexive={};unsafe={}",
+            trace_name_role(export, inductive.name, None),
+            inductive.all.len(),
+            inductive.constructors.len(),
+            inductive.level_params.len(),
+            inductive.num_params,
+            inductive.num_indices,
+            inductive.num_nested,
+            inductive.is_recursive,
+            inductive.is_reflexive,
+            inductive.is_unsafe
+        );
+    }
+    let owner = block.types.first().map(|inductive| inductive.name);
+    for constructor in &block.constructors {
+        eprintln!(
+            "NUCLEUS_INDUCTIVE_CTOR:role={};index={};levels={};params={};fields={};unsafe={}",
+            trace_name_role(export, constructor.name, owner),
+            constructor.index,
+            constructor.level_params.len(),
+            constructor.num_params,
+            constructor.num_fields,
+            constructor.is_unsafe
+        );
+    }
+    for recursor in &block.recursors {
+        eprintln!(
+            "NUCLEUS_INDUCTIVE_REC:role={};all={};levels={};params={};indices={};motives={};minors={};rules={};k={};unsafe={}",
+            trace_name_role(export, recursor.name, owner),
+            recursor.all.len(),
+            recursor.level_params.len(),
+            recursor.num_params,
+            recursor.num_indices,
+            recursor.num_motives,
+            recursor.num_minors,
+            recursor.rules.len(),
+            recursor.k,
+            recursor.is_unsafe
+        );
+    }
 }
 
 fn inductive_arity_metadata_is_well_formed(
