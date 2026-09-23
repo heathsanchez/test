@@ -84,12 +84,12 @@ jobs:
           changes=[r for r in rows if r['base']!=r['candidate']]
           mismatches=[r for r in rows if r['status']=='mismatch']
           by={r['number']:r for r in rows}
-          assert by[81]['base']==2 and by[81]['candidate']==2,by[81]
+          assert by[81]['base']==2 and by[81]['candidate']==0 and by[81]['status']=='earned_delta',by[81]
           assert by[82]['base']==2 and by[82]['candidate']==0 and by[82]['status']=='earned_delta',by[82]
-          assert changes==[by[82]],changes
+          assert changes==[by[81],by[82]],changes
           assert not mismatches,mismatches
           residual=[r for r in rows if r['candidate']!=r['expected']]
-          out={'schema':'nucleus-g34-rbtree-rule-reuse-v1','arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'changes':changes,'mismatches':mismatches,'counts':{'earned_delta':sum(r['status']=='earned_delta' for r in rows),'equal_correct':sum(r['status']=='equal_correct' for r in rows),'equal_residual':sum(r['status']=='equal_residual' for r in rows),'mismatch':len(mismatches)},'first_remaining_residual':residual[0]}
+          out={'schema':'nucleus-g34-recursive-rule-reuse-v1','arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'changes':changes,'mismatches':mismatches,'counts':{'earned_delta':sum(r['status']=='earned_delta' for r in rows),'equal_correct':sum(r['status']=='equal_correct' for r in rows),'equal_residual':sum(r['status']=='equal_residual' for r in rows),'mismatch':len(mismatches)},'first_remaining_residual':residual[0]}
           pathlib.Path('evidence-out/g34/reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
           print(json.dumps(out,sort_keys=True))
           PY
@@ -97,6 +97,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: nucleus-g34-rbtree-${{ github.sha }}
+          name: nucleus-g34-recursive-${{ github.sha }}
           path: metatron-kernel/evidence-out/g34
           if-no-files-found: warn
