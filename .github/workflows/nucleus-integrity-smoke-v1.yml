@@ -58,7 +58,7 @@ jobs:
           ]
           rows=[]
           for name,expected in cases:
-              d='bad' if name=='other/nat-lit-add-bad' else 'good'
+              d='bad'
               p=root/d/(name+'.ndjson')
               env=dict(__import__('os').environ)
               env['NUCLEUS_TRACE_PARSE_ERROR']='1'
