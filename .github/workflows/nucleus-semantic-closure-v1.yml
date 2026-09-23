@@ -18,10 +18,13 @@ concurrency:
 jobs:
   qualify:
     runs-on: ubuntu-24.04
-    timeout-minutes: 120
+    timeout-minutes: 45
     env:
-      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      ARENA_SNAPSHOT_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      ARENA_CURRENT_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
       FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+      TEST_TARBALL_ARTIFACT: "10712869614"
+      TEST_TARBALL_SHA256: a7721e50d4baf5c53989bb426013247b4e8bd9f291f0ce5558f7b3f04564a154
     steps:
       - uses: actions/checkout@v4
         with:
@@ -29,8 +32,8 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
- 
-      - name: Verify and build Nucleus
+
+      - name: Verify and build Nucleus closure
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
@@ -38,6 +41,8 @@ jobs:
           cargo clippy --all-targets -- -D warnings
           cargo test --release
           cargo build --release --locked
+          test -x target/release/metatron-kernel
+          test -x target/release/nucleus-semantic-closure
 
       - name: Build pinned MathGraph fallback
         run: |
@@ -61,98 +66,113 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$TEST_TARBALL_ARTIFACT/zip" > /tmp/test-tarball.zip
           mkdir -p /tmp/test-artifact /tmp/arena-tests
           unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          echo "$TEST_TARBALL_SHA256  /tmp/test-artifact/lean-arena-tests.tar.gz" | sha256sum -c -
           tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
           test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
-          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
 
-      - name: Qualify 193-file fixed-outcome closure
+      - name: Qualify Rust semantic closure
         timeout-minutes: 20
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/semantic-closure
           python - <<'PY'
-          import json, os, pathlib, subprocess, time
+          import json, os, pathlib, statistics, subprocess, time
 
           root=pathlib.Path('/tmp/arena-tests')
           nucleus=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
-          wrapper=pathlib.Path('metatron-kernel/scripts/nucleus-semantic-closure').resolve()
+          closure=pathlib.Path('metatron-kernel/target/release/nucleus-semantic-closure').resolve()
           flash=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
           config=pathlib.Path('/tmp/mathgraph/config.json')
-          excluded={'perf/magma-string-n4','perf/magma-string-pair-n9'}
 
           env=dict(os.environ)
           env.update({
-              'NUCLEUS_BIN':str(nucleus),
-              'FLASH_BIN':str(flash),
-              'FLASH_CONFIG':str(config),
+              'NUCLEUS_FLASH_BIN':str(flash),
+              'NUCLEUS_FLASH_CONFIG':str(config),
           })
 
-          rows=[]
           cases=[]
           for outcome_dir,expected,exp_rc in [('good','accept',0),('bad','reject',1)]:
               for ndjson in sorted((root/outcome_dir).rglob('*.ndjson')):
                   name=str(ndjson.relative_to(root/outcome_dir)).removesuffix('.ndjson')
                   cases.append((name,expected,exp_rc,ndjson))
+
+          def run_stdin(cmd, ndjson):
+              with ndjson.open('rb') as f:
+                  t=time.perf_counter_ns()
+                  p=subprocess.run(
+                      cmd, stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                      env=env, timeout=30
+                  )
+                  return p.returncode,time.perf_counter_ns()-t
+
+          def run_path(cmd, ndjson):
+              t=time.perf_counter_ns()
+              p=subprocess.run(
+                  [*cmd,str(ndjson)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                  env=env, timeout=30
+              )
+              return p.returncode,time.perf_counter_ns()-t
+
+          rows=[]
           for name,expected,exp_rc,ndjson in cases:
-
-              def run(cmd):
-                  with ndjson.open('rb') as f:
-                      t=time.perf_counter_ns()
-                      p=subprocess.run(cmd,stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=env)
-                      return p.returncode,time.perf_counter_ns()-t
-
-              nrc,nt=run([str(nucleus)])
-              frc,ft=run([str(flash),str(config)])
-              hrc,ht=run(['bash',str(wrapper),str(ndjson)])
-
-              # Arena's MathGraph integration maps all nonzero checker exits to reject.
+              nrc,nt=run_stdin([str(nucleus)],ndjson)
+              frc,ft=run_stdin([str(flash),str(config)],ndjson)
+              crc,ct=run_path([str(closure)],ndjson)
               fcanon=0 if frc==0 else 1
-              hcanon=0 if hrc==0 else 1
               rows.append({
                   'test':name,'expected':expected,'expected_rc':exp_rc,
-                  'nucleus_rc':nrc,'flash_raw_rc':frc,'flash_rc':fcanon,'hybrid_rc':hcanon,
-                  'nucleus_ns':nt,'flash_ns':ft,'hybrid_ns':ht,
+                  'nucleus_rc':nrc,'flash_raw_rc':frc,'flash_rc':fcanon,'closure_rc':crc,
+                  'nucleus_ns':nt,'flash_ns':ft,'closure_ns':ct,
               })
 
           assert len(rows)==193, len(rows)
           flash_bad=[r for r in rows if r['flash_rc']!=r['expected_rc']]
-          hybrid_bad=[r for r in rows if r['hybrid_rc']!=r['expected_rc']]
+          closure_bad=[r for r in rows if r['closure_rc']!=r['expected_rc']]
           false_accepts=[r for r in rows if r['expected_rc']==1 and r['nucleus_rc']==0]
           fast_accepts=[r for r in rows if r['expected_rc']==0 and r['nucleus_rc']==0]
-          fallback_rows=[r for r in rows if r['nucleus_rc']!=0]
+          fallback=[r for r in rows if r['nucleus_rc']!=0]
+
+          fast_ratios=[r['closure_ns']/r['nucleus_ns'] for r in fast_accepts]
+          all_flash=sum(r['flash_ns'] for r in rows)
+          all_closure=sum(r['closure_ns'] for r in rows)
 
           summary={
               'schema':'nucleus-semantic-closure-v1',
-              'arena_sha':os.environ['ARENA_SHA'],
+              'arena_snapshot_sha':os.environ['ARENA_SNAPSHOT_SHA'],
+              'arena_current_sha':os.environ['ARENA_CURRENT_SHA'],
+              'test_tarball_artifact':int(os.environ['TEST_TARBALL_ARTIFACT']),
+              'test_tarball_sha256':os.environ['TEST_TARBALL_SHA256'],
               'flash_sha':os.environ['FLASH_SHA'],
               'candidate_sha':os.environ['GITHUB_SHA'],
               'fixed_outcome_tests':len(rows),
-              'hybrid_correct':len(rows)-len(hybrid_bad),
-              'hybrid_incorrect':len(hybrid_bad),
+              'closure_correct':len(rows)-len(closure_bad),
+              'closure_incorrect':len(closure_bad),
               'flash_correct':len(rows)-len(flash_bad),
               'flash_incorrect':len(flash_bad),
               'nucleus_false_accepts':len(false_accepts),
               'nucleus_fast_accepts':len(fast_accepts),
-              'fallback_invocations':len(fallback_rows),
-              'excluded_uploaded_large_string_perf':sorted(excluded),
-              'hybrid_bad':hybrid_bad,
+              'fallback_invocations':len(fallback),
+              'fast_path_median_closure_over_nucleus':statistics.median(fast_ratios),
+              'serial_total_closure_over_flash':all_closure/all_flash,
+              'closure_bad':closure_bad,
               'flash_bad':flash_bad,
               'false_accepts':false_accepts,
               'fast_accept_tests':[r['test'] for r in fast_accepts],
-              'fallback_tests':[r['test'] for r in fallback_rows],
+              'fallback_tests':[r['test'] for r in fallback],
           }
-          out=pathlib.Path('metatron-kernel/evidence-out/semantic-closure/result.json')
-          out.write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('metatron-kernel/evidence-out/semantic-closure/result.json').write_text(
+              json.dumps(summary,indent=2,sort_keys=True)+'\n'
+          )
           pathlib.Path('metatron-kernel/evidence-out/semantic-closure/rows.json').write_text(
               json.dumps(rows,indent=2,sort_keys=True)+'\n'
           )
           print(json.dumps(summary,sort_keys=True))
           assert not flash_bad, flash_bad
           assert not false_accepts, false_accepts
-          assert not hybrid_bad, hybrid_bad
+          assert not closure_bad, closure_bad
           PY
 
       - name: Upload semantic closure evidence

@@ -1,0 +1,20 @@
+{
+  "schema": "nucleus-semantic-closure-prototype-result-v1",
+  "candidate_sha": "ab10ab3220331865fec2f969d1ef20717dbb0b78",
+  "run": 35861062007,
+  "job": 107181213333,
+  "artifact": 10750446581,
+  "artifact_digest": "sha256:0a19091613363b904170a23ce870f2360164dcdde636352361b3aafd94d9dfcf",
+  "arena_snapshot_sha": "ae76435a5fb439571a28e19d74cd1e2e3ab69667",
+  "tarball_sha256": "a7721e50d4baf5c53989bb426013247b4e8bd9f291f0ce5558f7b3f04564a154",
+  "flash_sha": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+  "measured": {
+    "fixed_outcome_tests": 193,
+    "hybrid_correct": 193,
+    "hybrid_incorrect": 0,
+    "nucleus_false_accepts": 0,
+    "nucleus_fast_accepts": 63,
+    "fallback_invocations": 130
+  },
+  "note": "Prototype used a shell/temp-file router. Correctness retained; performance overhead motivates the in-process Rust router."
+}

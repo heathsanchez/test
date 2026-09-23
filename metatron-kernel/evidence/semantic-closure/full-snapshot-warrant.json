@@ -1,0 +1,55 @@
+{
+  "schema": "nucleus-semantic-closure-full-snapshot-warrant-v1",
+  "source_results_sha256": "949e470205bb6b3944019f4eaf231705d57ad0173b3f03986d0208c76112d641",
+  "source_tarball_sha256": "a7721e50d4baf5c53989bb426013247b4e8bd9f291f0ce5558f7b3f04564a154",
+  "arena_snapshot_sha": "ae76435a5fb439571a28e19d74cd1e2e3ab69667",
+  "current_arena_sha": "74745e5a848c71d99121e811ae86f24d13dea785",
+  "current_delta_from_snapshot": [
+    "checkers/nanoclo.yaml"
+  ],
+  "snapshot_counts": {
+    "tests": 219,
+    "fixed_outcome": 201,
+    "either": 18
+  },
+  "mathgraph_snapshot": {
+    "sha": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+    "result_rows": 219,
+    "correctness": {
+      "correct": 201,
+      "either": 18,
+      "incorrect": 0
+    },
+    "statuses": {
+      "accepted": 139,
+      "rejected": 80
+    }
+  },
+  "measured_tarball": {
+    "fixed_outcome_tests": 193,
+    "good": 122,
+    "bad": 71,
+    "closure_correct": 193,
+    "closure_incorrect": 0,
+    "nucleus_false_accepts": 0
+  },
+  "omitted_fixed_tests": [
+    "cedar",
+    "con-leche",
+    "cslib",
+    "init",
+    "mathlib",
+    "perf/magma-string-n4",
+    "perf/magma-string-pair-n9",
+    "std"
+  ],
+  "omitted_fixed_outcome": "accept",
+  "derivation": [
+    "All 71 reject tests are present in the measured 193-file tarball and Nucleus produced zero false accepts on them.",
+    "All 122 tarball accept tests were correct under the composite.",
+    "The only eight fixed-outcome tests outside the tarball are accepts. If Nucleus accepts, the outcome is correct; otherwise the router delegates to pinned MathGraph, which accepted/correctly handled the full snapshot.",
+    "The 18 either tests permit either accept or reject. A Nucleus accept is permitted; any Nucleus non-accept delegates to pinned MathGraph.",
+    "Current Arena master changes only checkers/nanoclo.yaml from the snapshot, so the test boundary is unchanged."
+  ],
+  "conclusion": "Derived correctness warrant for all 219 current-snapshot tests. This is not a direct performance/resource qualification of the eight omitted large accept workloads, and the composite is not an independent Nucleus-only kernel while fallback_invocations remain nonzero."
+}
