@@ -417,8 +417,12 @@ impl fmt::Display for EnvironmentError {
             }
             Self::DuplicateNatPrimitives => write!(formatter, "duplicate Nat primitive authority"),
             Self::MissingNatPrimitives => write!(formatter, "missing Nat primitive authority"),
-            Self::DuplicateNatOperation(name) => write!(formatter, "duplicate Nat operation {}", name.0),
-            Self::DuplicateBoolPrimitives => write!(formatter, "duplicate Bool primitive authority"),
+            Self::DuplicateNatOperation(name) => {
+                write!(formatter, "duplicate Nat operation {}", name.0)
+            }
+            Self::DuplicateBoolPrimitives => {
+                write!(formatter, "duplicate Bool primitive authority")
+            }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
     }
