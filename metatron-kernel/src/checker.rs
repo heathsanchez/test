@@ -168,6 +168,23 @@ fn check_export_with_policy(
                         if verdict == Verdict::Unknown
                             && std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some()
                         {
+                            if let Some(inductive) = block.types.first() {
+                                eprintln!(
+                                    "NUCLEUS_INDUCTIVE_BLOCKER:name={}:types={}:ctors={}:recs={}:params={}:indices={}:nested={}:rec={}:reflexive={}:unsafe={}",
+                                    inductive.name.0,
+                                    block.types.len(),
+                                    block.constructors.len(),
+                                    block.recursors.len(),
+                                    inductive.num_params,
+                                    inductive.num_indices,
+                                    inductive.num_nested,
+                                    inductive.is_recursive,
+                                    inductive.is_reflexive,
+                                    inductive.is_unsafe,
+                                );
+                            } else {
+                                eprintln!("NUCLEUS_INDUCTIVE_BLOCKER:empty-block");
+                            }
                             eprintln!("NUCLEUS_RESIDUAL:inductive-envelope");
                         }
                         return verdict;
