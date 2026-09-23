@@ -969,7 +969,7 @@ fn check_generic_nonrecursive_type(
                 || constructor_has_definite_negative_recursive_field(export, inductive, c)
         })
     {
-        return Err(Verdict::Reject);
+        return Err(Verdict::Unknown);
     }
     if !recursor_metadata_admissible(
         export,
