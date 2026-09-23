@@ -10,6 +10,8 @@ diagnostics = []
 
 [dependencies]
 serde_json = "1"
+stumpalo = "=0.5.1"
+sokonanoda = { git = "https://github.com/metalogiclabs/mathgraph-lean-kernel", rev = "78c7502bac8a5ba000057b3f083bc0595ac65750" }
 
 [lib]
 name = "metatron_kernel"
