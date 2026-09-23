@@ -684,12 +684,153 @@ fn check_inductive(
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
     }
 
+    if generic_nonrecursive_type_candidate(export, block) {
+        return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
         2 => check_binary_enum(export, environment, block, limits, delta_policy),
         _ => Err(Verdict::Unknown),
     }
+}
+
+
+fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let [inductive] = block.types.as_slice() else { return false; };
+    if inductive.num_nested != 0 || inductive.num_indices != 0
+        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
+        || block.constructors.is_empty() || block.recursors.len() != 1
+        || block.constructors.iter().any(|c| c.is_unsafe) || block.recursors[0].is_unsafe {
+        return false;
+    }
+    let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
+    matches!(pi_spine(export, inductive.ty, p),
+        Some((_, result)) if matches!(export.exprs.get(result),
+            Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))))
+}
+
+fn expr_eq_with_bvar_shift(
+    export: &ResolvedExport, left: ExprId, right: ExprId, cutoff: u64, shift: u64,
+) -> bool {
+    match (export.exprs.get(left), export.exprs.get(right)) {
+        (Some(Expr::BVar(a)), Some(Expr::BVar(b))) =>
+            if *a >= cutoff { a.checked_add(shift) == Some(*b) } else { a == b },
+        (Some(Expr::NatLit(a)), Some(Expr::NatLit(b))) => a == b,
+        (Some(Expr::Sort(a)), Some(Expr::Sort(b))) => a == b,
+        (Some(Expr::Const{name:an,levels:al}),Some(Expr::Const{name:bn,levels:bl})) =>
+            an == bn && al == bl,
+        (Some(Expr::App{fun:af,arg:aa}),Some(Expr::App{fun:bf,arg:ba})) =>
+            expr_eq_with_bvar_shift(export,*af,*bf,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*aa,*ba,cutoff,shift),
+        (Some(Expr::Lam{domain:ad,body:ab}),Some(Expr::Lam{domain:bd,body:bb}))
+        | (Some(Expr::Pi{domain:ad,body:ab}),Some(Expr::Pi{domain:bd,body:bb})) =>
+            expr_eq_with_bvar_shift(export,*ad,*bd,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+        (Some(Expr::Let{ty:at,value:av,body:ab}),Some(Expr::Let{ty:bt,value:bv,body:bb})) =>
+            expr_eq_with_bvar_shift(export,*at,*bt,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*av,*bv,cutoff,shift)
+                && expr_eq_with_bvar_shift(export,*ab,*bb,cutoff.saturating_add(1),shift),
+        (Some(Expr::Proj{type_name:at,index:ai,structure:as_}),
+         Some(Expr::Proj{type_name:bt,index:bi,structure:bs})) =>
+            at == bt && ai == bi && expr_eq_with_bvar_shift(export,*as_,*bs,cutoff,shift),
+        _ => false,
+    }
+}
+
+fn generic_nonrecursive_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
+    let c = constructors.len();
+    let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
+    let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
+    if domains[..p] != ind_params[..] { return false; }
+
+    let motive=domains[p];
+    let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return false;};
+    let [motive_target]=motive_domains.as_slice() else{return false;};
+    let (mh,ma)=application_spine(export,*motive_target);
+    if ma.len()!=p || !is_declared_level_constant(export,mh,inductive.name,&inductive.level_params)
+       || !ma.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(p-1-i) as u64)){return false;}
+    let motive_level=match export.exprs.get(motive_sort){
+        Some(Expr::Sort(l))=>match export.levels.get(*l){Some(Level::Param(n))=>*n,_=>return false},
+        _=>return false
+    };
+    if recursor.level_params.first().copied()!=Some(motive_level)
+       || recursor.level_params.get(1..)!=Some(inductive.level_params.as_slice()){return false;}
+
+    for (j,ctor) in constructors.iter().enumerate(){
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
+        let Some((ctor_domains,_))=pi_spine(export,ctor.ty,p+f) else{return false;};
+        let Some((minor_fields,minor_result))=pi_spine(export,domains[p+1+j],f) else{return false;};
+        for (k,(cd,md)) in ctor_domains[p..].iter().zip(&minor_fields).enumerate(){
+            if !expr_eq_with_bvar_shift(export,*cd,*md,k as u64,(1+j) as u64){return false;}
+        }
+        let Some(Expr::App{fun:mm,arg:constructed})=export.exprs.get(minor_result) else{return false;};
+        if !is_bvar(export,*mm,(f+j) as u64){return false;}
+        let (ch,ca)=application_spine(export,*constructed);
+        if ca.len()!=p+f || !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params){return false;}
+        for i in 0..p{
+            if !is_bvar(export,ca[i],(f+j+1+(p-1-i)) as u64){return false;}
+        }
+        for k in 0..f{
+            if !is_bvar(export,ca[p+k],(f-1-k) as u64){return false;}
+        }
+    }
+
+    let target=domains[p+1+c];
+    let (th,ta)=application_spine(export,target);
+    if ta.len()!=p || !is_declared_level_constant(export,th,inductive.name,&inductive.level_params)
+       || !ta.iter().enumerate().all(|(i,a)|is_bvar(export,*a,(c+1+(p-1-i)) as u64))
+       || !is_bvar_application(export,result,(c+1) as u64,0){return false;}
+
+    if recursor.rules.len()!=c{return false;}
+    for (j,(ctor,rule)) in constructors.iter().zip(&recursor.rules).enumerate(){
+        let Ok(f)=usize::try_from(ctor.num_fields) else{return false;};
+        let Some((_,rr))=lam_spine(export,rule.rhs,p+1+c+f) else{return false;};
+        let (h,args)=application_spine(export,rr);
+        if !is_bvar(export,h,(f+(c-1-j)) as u64) || args.len()!=f
+           || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
+    }
+    true
+}
+
+fn check_generic_nonrecursive_type(
+    export:&ResolvedExport, environment:&Environment, block:&InductiveBlock,
+    limits:Limits, delta_policy:DeltaPolicy,
+)->Result<Environment,Verdict>{
+    let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
+    let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
+    if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
+    if !inductive_arity_metadata_is_well_formed(export,inductive)
+       || inductive.all != [inductive.name]
+       || inductive.constructors != block.constructors.iter().map(|c|c.name).collect::<Vec<_>>()
+       || has_duplicate_parameter(&inductive.level_params)
+       || block.constructors.iter().enumerate().any(|(i,c)|{
+            c.index!=i as u64 || c.inductive!=inductive.name
+            || c.num_params!=inductive.num_params || c.level_params!=inductive.level_params
+            || constructor_result_is_definitely_malformed(export,inductive,c)
+            || constructor_has_definite_negative_recursive_field(export,inductive,c)
+       })
+       || !recursor_metadata_admissible(export,inductive,&block.constructors,recursor,false,
+            recursor.level_params.len()==inductive.level_params.len()+1)
+       || !generic_nonrecursive_recursor_shape(export,inductive,&block.constructors,recursor)
+    {return Err(Verdict::Reject);}
+
+    let mut d=ClosedNonrecursiveDerivation::begin(environment);
+    let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
+        else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
+    d.promote(export,ty,limits.judgment_steps,delta_policy)?;
+    for c in &block.constructors{
+        d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
+    }
+    d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
+    Ok(d.finish())
 }
 
 fn check_single_constructor_inductive(
