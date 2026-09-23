@@ -125,6 +125,15 @@ impl LevelSubstitution {
     }
 }
 
+impl crate::level::LevelSubstitutionLookup for LevelSubstitution {
+    #[inline]
+    fn lookup_level(&self, name: NameId) -> Option<LevelTerm> {
+        self.0
+            .iter()
+            .find_map(|(candidate, level)| (*candidate == name).then(|| level.clone()))
+    }
+}
+
 impl Closure {
     pub fn new(expr: ExprId, env: EnvFrame) -> Self {
         Self {
