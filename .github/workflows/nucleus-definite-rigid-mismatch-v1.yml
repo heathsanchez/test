@@ -1,0 +1,83 @@
+name: Nucleus Definite Rigid Mismatch v1
+
+on:
+  push:
+    branches: [nucleus-definite-rigid-mismatch-v1]
+    paths:
+      - ".github/workflows/nucleus-definite-rigid-mismatch-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: 9e9b8e5c583696794d9b29ec42d5d57b31285749
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build candidate and base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Global reclosure
+        working-directory: metatron-kernel
+        run: |
+          mkdir -p evidence-out/definite-rigid-mismatch-v1
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,e in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              def rr(b):
+                with p.open('rb') as f:
+                  return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=rr(base),rr(cand); rows.append({'test':name,'expected':e,'base':a,'candidate':b})
+          assert len(rows)==193
+          false_accept=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_reject=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong=[r for r in rows if r['base'] in (2,3) and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          assert not false_accept,false_accept
+          assert not false_reject,false_reject
+          assert not regressions,regressions
+          assert not wrong,wrong
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          assert changes==[{'test':'tutorial/116_funEtaBad','expected':1,'base':2,'candidate':1}],changes
+          out={'schema':'nucleus-definite-rigid-mismatch-v1','base_sha':os.environ['BASE_SHA'],
+               'candidate_sha':os.environ['GITHUB_SHA'],'base_residual':49,'candidate_residual':48,
+               'changes':changes,'false_accepts':false_accept,'false_rejects':false_reject,
+               'regressions':regressions,'wrong_deltas':wrong}
+          pathlib.Path('evidence-out/definite-rigid-mismatch-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-definite-rigid-mismatch-${{ github.sha }}
+          path: metatron-kernel/evidence-out/definite-rigid-mismatch-v1
