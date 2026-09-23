@@ -85,6 +85,14 @@ pub struct BoolPrimitives {
     pub true_ctor: NameId,
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct QuotPrimitives {
+    pub type_name: NameId,
+    pub mk: NameId,
+    pub lift: NameId,
+    pub ind: NameId,
+}
+
 #[derive(Clone, Debug)]
 pub struct Environment {
     authority: AuthorityId,
@@ -95,6 +103,7 @@ pub struct Environment {
     projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
+    quot_primitives: Option<QuotPrimitives>,
 }
 
 impl Environment {
@@ -108,6 +117,7 @@ impl Environment {
             projection_specs: Rc::new(HashMap::new()),
             nat_primitives: None,
             bool_primitives: None,
+            quot_primitives: None,
         }
     }
 
@@ -154,6 +164,7 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -185,6 +196,7 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -217,6 +229,7 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -255,6 +268,7 @@ impl Environment {
             projection_specs: Rc::new(specs),
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -293,6 +307,7 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: Some(primitives),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -334,6 +349,7 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: Some(primitives),
             bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
@@ -363,11 +379,51 @@ impl Environment {
             projection_specs: self.projection_specs.clone(),
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: Some(primitives),
+            quot_primitives: self.quot_primitives.clone(),
         })
     }
 
     pub fn bool_primitives(&self) -> Option<&BoolPrimitives> {
         self.bool_primitives.as_ref()
+    }
+
+    pub fn install_quot_primitives(
+        &self,
+        primitives: QuotPrimitives,
+    ) -> Result<Self, EnvironmentError> {
+        if self.quot_primitives.is_some() {
+            return Err(EnvironmentError::DuplicateQuotPrimitives);
+        }
+        for name in [
+            primitives.type_name,
+            primitives.mk,
+            primitives.lift,
+            primitives.ind,
+        ] {
+            if !self.constants.contains_key(&name) {
+                return Err(EnvironmentError::MissingConstant(name));
+            }
+        }
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
+            bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: Some(primitives),
+        })
+    }
+
+    pub fn quot_primitives(&self) -> Option<&QuotPrimitives> {
+        self.quot_primitives.as_ref()
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
@@ -397,6 +453,7 @@ pub enum EnvironmentError {
     MissingNatPrimitives,
     DuplicateNatOperation(NameId),
     DuplicateBoolPrimitives,
+    DuplicateQuotPrimitives,
     AuthorityOverflow,
 }
 
@@ -423,6 +480,9 @@ impl fmt::Display for EnvironmentError {
             }
             Self::DuplicateBoolPrimitives => {
                 write!(formatter, "duplicate Bool primitive authority")
+            }
+            Self::DuplicateQuotPrimitives => {
+                write!(formatter, "duplicate Quot primitive authority")
             }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }

@@ -1,7 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
-use crate::environment::{BoolPrimitives, NatPrimitives};
+use crate::environment::{BoolPrimitives, NatPrimitives, QuotPrimitives};
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
 use crate::level::instantiate_level;
@@ -28,6 +28,7 @@ pub enum TransitionWitness {
     SingletonRecursor,
     ConstructorRecursor,
     NatExtension,
+    Quotient,
     Rigid,
 }
 
@@ -127,6 +128,7 @@ pub struct Machine<'a> {
     projection_specs: HashMap<NameId, ProjectionSpec>,
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
+    quot_primitives: Option<QuotPrimitives>,
 }
 
 impl<'a> Machine<'a> {
@@ -146,6 +148,7 @@ impl<'a> Machine<'a> {
             projection_specs: HashMap::new(),
             nat_primitives: None,
             bool_primitives: None,
+            quot_primitives: None,
         }
     }
 
@@ -174,6 +177,11 @@ impl<'a> Machine<'a> {
 
     pub fn with_bool_primitives(mut self, primitives: Option<BoolPrimitives>) -> Self {
         self.bool_primitives = primitives;
+        self
+    }
+
+    pub fn with_quot_primitives(mut self, primitives: Option<QuotPrimitives>) -> Self {
+        self.quot_primitives = primitives;
         self
     }
 
@@ -325,6 +333,17 @@ impl<'a> Machine<'a> {
                             TransitionWitness::NatExtension,
                         );
                         return exposed(native, transitions);
+                    }
+
+                    if let Some(next) = self.try_quot_reduction(*name, levels, &mut pending) {
+                        record_transition(
+                            &mut transitions,
+                            record_witnesses,
+                            TransitionWitness::Quotient,
+                        );
+                        visited.clear();
+                        closure = next;
+                        continue;
                     }
 
                     // G28: a separately qualified nullary-singleton recursor
@@ -494,6 +513,41 @@ impl<'a> Machine<'a> {
                 }
             }
         }
+    }
+
+    fn try_quot_reduction(
+        &self,
+        name: NameId,
+        levels: &[LevelId],
+        pending: &mut Vec<Closure>,
+    ) -> Option<Closure> {
+        let primitives = self.quot_primitives.as_ref()?;
+
+        let (required, target_index, function_index, level_arity) =
+            if name == primitives.lift {
+                (6usize, 5usize, 3usize, 2usize)
+            } else if name == primitives.ind {
+                (5usize, 4usize, 3usize, 1usize)
+            } else {
+                return None;
+            };
+        if levels.len() != level_arity || pending.len() < required {
+            return None;
+        }
+
+        let offset = pending.len() - required;
+        let arguments = pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
+        let target = arguments.get(target_index)?;
+        let (constructor, constructor_arguments) = self.constructor_application(target)?;
+        if constructor != primitives.mk || constructor_arguments.len() != 3 {
+            return None;
+        }
+
+        let function = arguments.get(function_index)?.clone();
+        let value = constructor_arguments[2].clone();
+        pending.truncate(offset);
+        pending.push(value);
+        Some(function)
     }
 
     fn try_native_nat_reduction(
