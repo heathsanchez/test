@@ -40,5 +40,9 @@ jobs:
           for name in init-prelude perf/grind-ring-5 perf/magma-list-deep-n21 perf/magma-list-deep-n36; do
             echo "=== $name ==="
             p="/tmp/tests/good/$name.ndjson"
-            NUCLEUS_TRACE_UNQUALIFIED_STRING=1 NUCLEUS_TRACE_RESIDUAL=1 NUCLEUS_TRACE_CAPABILITY=1 target/release/metatron-kernel < "$p" >/dev/null || true
+            set +e
+            NUCLEUS_TRACE_UNQUALIFIED_STRING=1 NUCLEUS_TRACE_RESIDUAL=1 NUCLEUS_TRACE_CAPABILITY=1 target/release/metatron-kernel < "$p" >/dev/null
+            rc=$?
+            set -e
+            echo "RC=$rc"
           done
