@@ -2553,25 +2553,64 @@ impl ExactBinaryProductDerivation<'_> {
                 ) && type_valid
                     && rule_valid
             }
-            BinaryProductSortLaw::Eq { .. } => {
+            BinaryProductSortLaw::Eq { level } => {
+                let type_valid =
+                    pi_spine(export, self.recursor.ty, 6).is_some_and(|(domains, result)| {
+                        matches!(domains.as_slice(), [carrier, parameter, motive, minor, index, proof]
+                            if is_sort_parameter(export, *carrier, level)
+                                && is_bvar(export, *parameter, 0)
+                                && is_eq_motive_type(
+                                    export,
+                                    *motive,
+                                    self.inductive.name,
+                                    self.recursor.level_params[0],
+                                    self.law,
+                                )
+                                && is_eq_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && is_bvar(export, *index, 3)
+                                && is_eq_application(
+                                    export,
+                                    *proof,
+                                    self.inductive.name,
+                                    self.law,
+                                    4,
+                                    3,
+                                    0,
+                                )
+                                && is_binary_bvar_application(export, result, 3, 1, 0))
+                    });
+                let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
+                    if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+                        matches!(domains.as_slice(), [carrier, parameter, motive, minor]
+                            if is_sort_parameter(export, *carrier, level)
+                                && is_bvar(export, *parameter, 0)
+                                && is_eq_motive_type(
+                                    export,
+                                    *motive,
+                                    self.inductive.name,
+                                    self.recursor.level_params[0],
+                                    self.law,
+                                )
+                                && is_eq_minor_type(
+                                    export,
+                                    *minor,
+                                    self.constructor.name,
+                                    self.law,
+                                )
+                                && is_bvar(export, result, 0))
+                    }));
                 self.law.validates_recursor_metadata(
                     export,
                     self.inductive,
                     self.constructor,
                     self.recursor,
-                ) && is_derived_eq_recursor_type(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                ) && is_derived_eq_rule(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                )
+                ) && type_valid
+                    && rule_valid
             }
             BinaryProductSortLaw::And
             | BinaryProductSortLaw::Prod { .. }
@@ -3023,57 +3062,6 @@ fn is_eq_minor_type(
     };
     is_bvar_application(export, *motive_at_parameter, 0, 1)
         && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
-}
-
-fn is_derived_eq_recursor_type(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, recursor.ty, 6) else {
-        return false;
-    };
-    let [carrier, parameter, motive, minor, index, proof] = domains.as_slice() else {
-        return false;
-    };
-    let BinaryProductSortLaw::Eq { level } = law else {
-        return false;
-    };
-    is_sort_parameter(export, *carrier, level)
-        && is_bvar(export, *parameter, 0)
-        && is_eq_motive_type(export, *motive, inductive, recursor.level_params[0], law)
-        && is_eq_minor_type(export, *minor, constructor, law)
-        && is_bvar(export, *index, 3)
-        && is_eq_application(export, *proof, inductive, law, 4, 3, 0)
-        && is_binary_bvar_application(export, result, 3, 1, 0)
-}
-
-fn is_derived_eq_rule(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some((domains, result)) = lam_spine(export, rule.rhs, 4) else {
-        return false;
-    };
-    let [carrier, parameter, motive, minor] = domains.as_slice() else {
-        return false;
-    };
-    let BinaryProductSortLaw::Eq { level } = law else {
-        return false;
-    };
-    is_sort_parameter(export, *carrier, level)
-        && is_bvar(export, *parameter, 0)
-        && is_eq_motive_type(export, *motive, inductive, recursor.level_params[0], law)
-        && is_eq_minor_type(export, *minor, constructor, law)
-        && is_bvar(export, result, 0)
 }
 
 fn has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
