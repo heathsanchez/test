@@ -1,0 +1,122 @@
+name: Nucleus Residual Class RBTree Iota v1
+
+on:
+  push:
+    branches: [nucleus-residual-class-rbtree-iota-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-class-rbtree-iota-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-class-rbtree-iota-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 70e7a09c79a92e49555c9c4da51b471ccfedc7e0
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Verify candidate and build exact base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Build pinned Flash
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$FLASH_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {"use_stdin":true,"nat_extension":true,"string_extension":true,"unpermitted_axiom_hard_error":false,"unsafe_permit_all_axioms":true,"num_threads":2}
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Global reclosure and class-collapse measurement
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/residual-class-rbtree-iota
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          flash=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
+          config=pathlib.Path('/tmp/mathgraph/config.json')
+          largest={
+            "perf/args-before-unfold","perf/folded-constant-first","perf/folded-constant-last",
+            "perf/irrelevance-before-evaluation","perf/repeated-subproblem","perf/shared-subterm",
+            "perf/unroll-versus-evaluate","tutorial/082_RBTree.id_spec","tutorial/122_rtreeRecReduction"
+          }
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              def rr(bin,args=[]):
+                with p.open('rb') as f:
+                  return subprocess.run([str(bin),*map(str,args)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a=rr(base); b=rr(cand); fr=rr(flash,[config]); fc=0 if fr==0 else 1
+              rows.append({'test':name,'expected':expected,'base':a,'candidate':b,'flash':fc,'largest_class':name in largest})
+          assert len(rows)==193
+          assert all(r['flash']==r['expected'] for r in rows)
+          false_accept=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_reject=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          assert not false_accept,false_accept
+          assert not false_reject,false_reject
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          regressions=[r for r in rows if r['base']==r['expected'] and r['candidate']!=r['expected']]
+          assert not regressions,regressions
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          largest_earned=[r for r in earned if r['largest_class']]
+          base_dec=sum(r['base']==r['expected'] for r in rows)
+          cand_dec=sum(r['candidate']==r['expected'] for r in rows)
+          base_fallback=sum(r['base'] in (2,3) for r in rows)
+          cand_fallback=sum(r['candidate'] in (2,3) for r in rows)
+          out={
+            'schema':'nucleus-residual-class-rbtree-iota-v1',
+            'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'flash_sha':os.environ['FLASH_SHA'],'fixed_outcome':193,
+            'base_native_decisions':base_dec,'candidate_native_decisions':cand_dec,
+            'base_fallback':base_fallback,'candidate_fallback':cand_fallback,
+            'earned_count':len(earned),'largest_class_earned_count':len(largest_earned),
+            'earned':[r['test'] for r in earned],
+            'largest_class_earned':[r['test'] for r in largest_earned],
+            'changes':changes,'regressions':regressions,
+            'false_accepts':false_accept,'false_rejects':false_reject,
+          }
+          pathlib.Path('evidence-out/residual-class-rbtree-iota/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-class-rbtree-iota-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-class-rbtree-iota
+          if-no-files-found: error
