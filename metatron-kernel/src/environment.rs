@@ -4,7 +4,7 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody, RecursorReduction};
+use crate::machine::{AuthorityId, DefinitionBody, ProjectionSpec, RecursorReduction};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
@@ -74,6 +74,7 @@ pub struct Environment {
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
     singleton_recursor_reductions: Rc<HashSet<NameId>>,
     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+    projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
 }
 
 impl Environment {
@@ -84,6 +85,7 @@ impl Environment {
             definitions: Rc::new(HashMap::new()),
             singleton_recursor_reductions: Rc::new(HashSet::new()),
             recursor_reductions: Rc::new(HashMap::new()),
+            projection_specs: Rc::new(HashMap::new()),
         }
     }
 
@@ -127,6 +129,7 @@ impl Environment {
             definitions: Rc::new(definitions),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
         })
     }
 
@@ -155,6 +158,7 @@ impl Environment {
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: Rc::new(reductions),
             recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
         })
     }
 
@@ -184,6 +188,7 @@ impl Environment {
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: Rc::new(reductions),
+            projection_specs: self.projection_specs.clone(),
         })
     }
 
@@ -193,6 +198,38 @@ impl Environment {
 
     pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
         self.recursor_reductions.as_ref().clone()
+    }
+
+    pub fn install_projection_spec(
+        &self,
+        name: NameId,
+        spec: ProjectionSpec,
+    ) -> Result<Self, EnvironmentError> {
+        if !self.constants.contains_key(&name) || !self.constants.contains_key(&spec.constructor) {
+            return Err(EnvironmentError::MissingConstant(name));
+        }
+        if self.projection_specs.contains_key(&name) {
+            return Err(EnvironmentError::DuplicateReduction(name));
+        }
+        let mut specs = self.projection_specs.as_ref().clone();
+        specs.insert(name, spec);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: Rc::new(specs),
+        })
+    }
+
+    pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
+        self.projection_specs.as_ref().clone()
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
