@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# rerun after alpha-only base binder cleanup
 from pathlib import Path
 import runpy
 
