@@ -370,13 +370,14 @@ impl<'a> TypeChecker<'a> {
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
             Judgment::Proven { value, .. } => {
-                let conversion = crate::convert::convert_with_policy_at_depth(
+                let conversion = crate::convert::convert_with_policy_in_context(
                     self,
                     &value,
                     expected,
                     *remaining,
                     self.delta_policy,
                     context.len(),
+                    context,
                 );
                 match conversion {
                     Judgment::Refuted { obstruction }
@@ -441,6 +442,31 @@ impl<'a> TypeChecker<'a> {
 
     pub(crate) fn expression(&self, expression: ExprId) -> Option<&Expr> {
         self.expressions.get(expression)
+    }
+
+    pub(crate) fn unit_like_type_key(
+        &self,
+        ty: &TypeValue,
+        budget: usize,
+    ) -> Option<(NameId, Vec<LevelTerm>)> {
+        let TypeValue::Term(closure) = ty else {
+            return None;
+        };
+        let exposed = self
+            .machine()
+            .expose(closure.clone(), Transparency::Reducible, budget);
+        let Value::Neutral(neutral) = exposed.proven_value()? else {
+            return None;
+        };
+        if !neutral.spine.is_empty() {
+            return None;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return None;
+        };
+        self.environment
+            .is_unit_like_type(*name)
+            .then(|| (*name, levels.clone()))
     }
 
     pub(crate) fn machine(&self) -> Machine<'_> {
