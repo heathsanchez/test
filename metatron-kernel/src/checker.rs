@@ -7,6 +7,7 @@ use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
+use crate::machine::{RecursorReduction, RecursorRule};
 use crate::parser::ResolvedExport;
 use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, Recursor};
 use crate::typecheck::{TypeChecker, TypeValue};
@@ -3147,7 +3148,35 @@ fn check_binary_enum(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+    let environment = derivation.finish();
+
+    // G31 installs executable iota authority only for the exact Bool family.
+    // Color and BoolProp retain declaration authority without computation.
+    if name_is_root_str(export, inductive.name, "Bool") {
+        let rules = block
+            .constructors
+            .iter()
+            .map(|constructor| {
+                Ok(RecursorRule {
+                    constructor: constructor.name,
+                    num_params: usize::try_from(constructor.num_params)
+                        .map_err(|_| Verdict::Reject)?,
+                    num_fields: usize::try_from(constructor.num_fields)
+                        .map_err(|_| Verdict::Reject)?,
+                })
+            })
+            .collect::<Result<Vec<_>, Verdict>>()?;
+        let reduction = RecursorReduction {
+            num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
+            num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
+            rules,
+        };
+        environment
+            .install_recursor_reduction(recursor.name, reduction)
+            .map_err(|_| Verdict::Reject)
+    } else {
+        Ok(environment)
+    }
 }
 
 fn binary_enum_motive_sort_ok(
