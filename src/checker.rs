@@ -2023,9 +2023,12 @@ fn check_binary_enum(
         recursor,
         false,
         !recursor.is_unsafe && recursor.level_params.len() == 1,
-    ) || !is_derived_binary_recursor_type(export, inductive.name, &constructor_names, recursor)
-        || !are_derived_binary_rules(export, inductive.name, &constructor_names, recursor)
-    {
+    ) || !binary_enum_recursor_obligations(
+        export,
+        inductive.name,
+        &constructor_names,
+        recursor,
+    ) {
         return Err(Verdict::Reject);
     }
     derivation.promote(
@@ -2037,7 +2040,7 @@ fn check_binary_enum(
     Ok(derivation.finish())
 }
 
-fn is_derived_binary_recursor_type(
+fn binary_enum_recursor_obligations(
     export: &ResolvedExport,
     inductive: NameId,
     constructors: &[NameId],
@@ -2046,117 +2049,46 @@ fn is_derived_binary_recursor_type(
     let [first, second] = constructors else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive_arg,
-        body: motive_sort,
-    }) = export.exprs.get(*motive)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: first_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *motive_arg, inductive)
-        && matches!(
-            export.exprs.get(*motive_sort),
-            Some(Expr::Sort(level)) if matches!(
-                export.levels.get(*level),
-                Some(Level::Param(name)) if name == &recursor.level_params[0]
-            )
-        )
-        && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
-        && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
-        && is_empty_constant(export, *target, inductive)
-        && is_bvar_application(export, *result, 3, 0)
-}
 
-fn are_derived_binary_rules(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructors: &[NameId],
-    recursor: &Recursor,
-) -> bool {
-    let [first, second] = constructors else {
-        return false;
-    };
-    recursor.rules.iter().enumerate().all(|(index, rule)| {
-        rule.constructor == constructors[index]
-            && rule.num_fields == 0
-            && is_binary_rule_rhs(
-                export,
-                rule.rhs,
-                inductive,
-                *first,
-                *second,
-                1 - index as u64,
-            )
-    })
-}
+    let type_ok = pi_spine(export, recursor.ty, 4).is_some_and(|(domains, result)| {
+        let [motive, first_minor, second_minor, target] = domains.as_slice() else {
+            return false;
+        };
+        matches!(
+            export.exprs.get(*motive),
+            Some(Expr::Pi {
+                domain: motive_arg,
+                body: motive_sort,
+            }) if is_empty_constant(export, *motive_arg, inductive)
+                && matches!(
+                    export.exprs.get(*motive_sort),
+                    Some(Expr::Sort(level)) if matches!(
+                        export.levels.get(*level),
+                        Some(Level::Param(name)) if name == &recursor.level_params[0]
+                    )
+                )
+        ) && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
+            && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
+            && is_empty_constant(export, *target, inductive)
+            && is_bvar_application(export, result, 3, 0)
+    });
 
-fn is_binary_rule_rhs(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    first: NameId,
-    second: NameId,
-    selected_minor: u64,
-) -> bool {
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive_arg, ..
-    }) = export.exprs.get(*motive)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: first_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: second_minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    matches!(export.exprs.get(*body), Some(Expr::BVar(index)) if *index == selected_minor)
-        && is_empty_constant(export, *motive_arg, inductive)
-        && is_bvar_applied_to_constant(export, *first_minor, 0, first)
-        && is_bvar_applied_to_constant(export, *second_minor, 1, second)
+    let rules_ok = recursor.rules.iter().enumerate().all(|(index, rule)| {
+        lam_spine(export, rule.rhs, 3).is_some_and(|(domains, result)| {
+            let [motive, first_minor, second_minor] = domains.as_slice() else {
+                return false;
+            };
+            matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi { domain: motive_arg, .. })
+                    if is_empty_constant(export, *motive_arg, inductive)
+            ) && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
+                && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
+                && is_bvar(export, result, 1 - index as u64)
+        })
+    });
+
+    type_ok && rules_ok
 }
 
 fn is_bvar_applied_to_constant(
