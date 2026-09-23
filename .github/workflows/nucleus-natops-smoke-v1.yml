@@ -5,14 +5,14 @@ on:
     branches: [nucleus-semantic-closure-natops-v1]
     paths:
       - "metatron-kernel/**"
-      - ".github/workflows/nucleus-natlit-smoke-v1.yml"
+      - ".github/workflows/nucleus-natops-smoke-v1.yml"
   workflow_dispatch:
 
 permissions:
   contents: read
 
 concurrency:
-  group: nucleus-natlit-smoke-v1-${{ github.ref }}
+  group: nucleus-natops-smoke-v1-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -68,8 +68,8 @@ jobs:
           by={r['test']:r for r in rows}
           assert by['tutorial/102_aNatLit']['rc']==0,by
           assert by['tutorial/103_natLitEq']['rc']==0,by
-assert by['other/nat-lit-add']['rc']==0,by
-assert by['other/nat-lit-add-bad']['rc']==1,by
-assert by['other/nat-lit-ble']['rc']==0,by
-assert by['other/nat-lit-sub']['rc']==0,by
+          assert by['other/nat-lit-add']['rc']==0,by
+          assert by['other/nat-lit-add-bad']['rc']==1,by
+          assert by['other/nat-lit-ble']['rc']==0,by
+          assert by['other/nat-lit-sub']['rc']==0,by
           PY
