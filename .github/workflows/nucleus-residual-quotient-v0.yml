@@ -1,0 +1,235 @@
+name: Nucleus Residual Quotient Atlas v0
+
+on:
+  push:
+    branches: [nucleus-residual-quotient-v0]
+    paths:
+      - ".github/workflows/nucleus-residual-quotient-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      FROZEN_HEAD: 70e7a09c79a92e49555c9c4da51b471ccfedc7e0
+      ARENA_ARTIFACT: 10712869614
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build frozen Nucleus
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$FROZEN_HEAD" HEAD
+          cargo build --release --locked
+      - name: Fetch frozen official 193-file corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Build exact 85-case consequential signature atlas
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/residual-quotient-v0
+          python - <<'PY'
+          import json, pathlib, subprocess, collections, os, re, hashlib
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+
+          def run(p):
+              env=dict(os.environ)
+              env['NUCLEUS_TRACE_PARSE_ERROR']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')[-2000:]
+
+          def full_names(records):
+              nodes={0:''}
+              pending=[]
+              for o in records:
+                  if 'in' not in o: continue
+                  i=o['in']
+                  if 'str' in o:
+                      d=o['str']; pending.append((i,d['pre'],str(d['str'])))
+                  elif 'num' in o:
+                      d=o['num']; pending.append((i,d['pre'],str(d['i'])))
+              changed=True
+              while changed and pending:
+                  changed=False; rest=[]
+                  for i,pre,s in pending:
+                      if pre in nodes:
+                          nodes[i]=(nodes[pre]+'.' if nodes[pre] else '')+s
+                          changed=True
+                      else: rest.append((i,pre,s))
+                  pending=rest
+              return nodes
+
+          def class_signature(expected,rc,records,size):
+              expr=collections.Counter()
+              decl=collections.Counter()
+              rec_names=[]
+              shape=collections.Counter()
+              has_unsafe=False; has_partial=False
+              dup_decl_names=False; decl_names=[]
+              for o in records:
+                  if 'ie' in o:
+                      tags=[k for k in o if k!='ie']
+                      if len(tags)==1: expr[tags[0]]+=1
+                  for k in ('axiom','def','thm','opaque','quot','inductive'):
+                      if k in o:
+                          decl[k]+=1
+                  for k in ('axiom','def','thm','opaque'):
+                      if k in o and isinstance(o[k],dict):
+                          d=o[k]
+                          if 'name' in d: decl_names.append(d['name'])
+                          if d.get('isUnsafe') is True or d.get('safety')=='unsafe': has_unsafe=True
+                          if d.get('safety')=='partial': has_partial=True
+                  if 'quot' in o:
+                      d=o['quot']
+                      if isinstance(d,dict):
+                          shape['quot:'+str(d.get('kind','?'))]+=1
+                          if 'name' in d: decl_names.append(d['name'])
+                  if 'inductive' in o:
+                      d=o['inductive']
+                      types=d.get('types',[]) if isinstance(d,dict) else []
+                      ctors=d.get('ctors',[]) if isinstance(d,dict) else []
+                      recs=d.get('recs',[]) if isinstance(d,dict) else []
+                      shape[f'ind:t{len(types)}:c{len(ctors)}:r{len(recs)}']+=1
+                      for t in types:
+                          key='itype:p%s:i%s:n%s:rec%s:ref%s:unsafe%s'%(
+                              t.get('numParams','?'),t.get('numIndices','?'),t.get('numNested','?'),
+                              int(bool(t.get('isRec'))),int(bool(t.get('isReflexive'))),int(bool(t.get('isUnsafe'))))
+                          shape[key]+=1
+                          has_unsafe |= bool(t.get('isUnsafe'))
+                          if 'name' in t: decl_names.append(t['name'])
+                      for c in ctors:
+                          shape[f'ctor:p{c.get("numParams","?")}:f{c.get("numFields","?")}']+=1
+                          has_unsafe |= bool(c.get('isUnsafe'))
+                          if 'name' in c: decl_names.append(c['name'])
+                      for rec in recs:
+                          shape[f'rec:p{rec.get("numParams","?")}:i{rec.get("numIndices","?")}:m{rec.get("numMotives","?")}:min{rec.get("numMinors","?")}:rules{len(rec.get("rules",[]))}:k{int(bool(rec.get("k")))}']+=1
+                          has_unsafe |= bool(rec.get('isUnsafe'))
+                          if 'name' in rec: decl_names.append(rec['name'])
+              dup_decl_names=len(decl_names)!=len(set(decl_names))
+
+              # Consequential axes only; no tutorial/file-name leakage.
+              if rc==3:
+                  obstruction='parser'
+              elif decl['quot']:
+                  obstruction='quotient-declaration'
+              elif has_unsafe or has_partial:
+                  obstruction='unsafe-partial'
+              elif dup_decl_names:
+                  obstruction='declaration-coherence'
+              elif expr['proj']:
+                  obstruction='projection'
+              elif any(k.startswith('itype:') and ':rec1:' in k for k in shape):
+                  obstruction='recursive-inductive'
+              elif any(k.startswith('itype:') and ':i0:' not in k for k in shape):
+                  obstruction='indexed-inductive'
+              else:
+                  obstruction='conversion-or-generic-check'
+
+              demanded=[]
+              if decl['quot']: demanded.append('quotient')
+              if expr['proj']: demanded.append('projection')
+              if expr['natVal']: demanded.append('nat-literal')
+              if expr['strVal']: demanded.append('string-literal')
+              if expr['mdata']: demanded.append('metadata-erasure')
+              if any(k.startswith('rec:') and ':rules0:' not in k for k in shape): demanded.append('recursor-iota')
+              if expr['letE']: demanded.append('zeta')
+              if expr['lam']: demanded.append('beta')
+              if decl['opaque']: demanded.append('opaque')
+              if has_unsafe or has_partial: demanded.append('safety')
+              if dup_decl_names: demanded.append('coherence')
+              if not demanded: demanded=['conversion']
+
+              # Coarse size pressure is consequential for budget/resource residuals.
+              if size >= 50_000_000: pressure='huge'
+              elif size >= 1_000_000: pressure='large'
+              elif size >= 100_000: pressure='medium'
+              else: pressure='small'
+
+              return {
+                  'native':'unknown' if rc==2 else 'error',
+                  'flash_consequence':'accept' if expected==0 else 'reject',
+                  'obstruction':obstruction,
+                  'demanded_ops':sorted(set(demanded)),
+                  'decl_kinds':sorted(k for k,v in decl.items() if v),
+                  'pressure':pressure,
+                  'has_indexed':any(k.startswith('itype:') and ':i0:' not in k for k in shape),
+                  'has_recursive':any(k.startswith('itype:') and ':rec1:' in k for k in shape),
+                  'has_unsafe_or_partial':has_unsafe or has_partial,
+                  'duplicate_decl_name_ids':dup_decl_names,
+              }
+
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  rc,stderr=run(p)
+                  if rc not in (2,3):
+                      continue
+                  records=[]
+                  with p.open() as f:
+                      for line in f:
+                          line=line.strip()
+                          if line: records.append(json.loads(line))
+                  sig=class_signature(expected,rc,records,p.stat().st_size)
+                  key=json.dumps(sig,sort_keys=True,separators=(',',':'))
+                  rows.append({
+                      'test':name,'expected':expected,'native_rc':rc,'bytes':p.stat().st_size,
+                      'signature':sig,'class_id':hashlib.sha256(key.encode()).hexdigest()[:12],
+                      'parse_trace':stderr,
+                  })
+          assert len(rows)==85, len(rows)
+          groups=collections.defaultdict(list)
+          for r in rows: groups[r['class_id']].append(r)
+          classes=[]
+          for cid,members in groups.items():
+              classes.append({
+                  'class_id':cid,
+                  'count':len(members),
+                  'signature':members[0]['signature'],
+                  'members':[m['test'] for m in members],
+              })
+          classes.sort(key=lambda x:(-x['count'],x['class_id']))
+          summary={
+              'schema':'nucleus-residual-quotient-v0',
+              'frozen_head':os.environ['FROZEN_HEAD'],
+              'flash_sha':os.environ['FLASH_SHA'],
+              'residuals':len(rows),
+              'class_count':len(classes),
+              'largest_class':classes[0] if classes else None,
+              'classes':classes,
+          }
+          out=pathlib.Path('evidence-out/residual-quotient-v0')
+          (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          (out/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'residuals':summary['residuals'],
+              'class_count':summary['class_count'],
+              'largest_class':summary['largest_class'],
+              'top_classes':classes[:12],
+          },sort_keys=True))
+          PY
+      - name: Upload residual quotient evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-quotient-v0-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-quotient-v0
+          if-no-files-found: error
