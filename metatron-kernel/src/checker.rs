@@ -3686,7 +3686,30 @@ impl ExactBinaryProductDerivation<'_> {
             limits.judgment_steps,
             delta_policy,
         )?;
-        Ok(derivation.finish())
+        let environment = derivation.finish();
+
+        // G32 reuses G31's already-qualified constructor-iota machine. Only
+        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
+        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+            let reduction = RecursorReduction {
+                num_params: usize::try_from(self.recursor.num_params)
+                    .map_err(|_| Verdict::Reject)?,
+                num_indices: usize::try_from(self.recursor.num_indices)
+                    .map_err(|_| Verdict::Reject)?,
+                rules: vec![RecursorRule {
+                    constructor: self.constructor.name,
+                    num_params: usize::try_from(self.constructor.num_params)
+                        .map_err(|_| Verdict::Reject)?,
+                    num_fields: usize::try_from(self.constructor.num_fields)
+                        .map_err(|_| Verdict::Reject)?,
+                }],
+            };
+            environment
+                .install_recursor_reduction(self.recursor.name, reduction)
+                .map_err(|_| Verdict::Reject)
+        } else {
+            Ok(environment)
+        }
     }
 }
 
