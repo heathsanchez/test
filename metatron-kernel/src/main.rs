@@ -63,9 +63,9 @@ fn main() -> ExitCode {
             run.operations.conversions,
         );
         return match run.verdict {
-            metatron_kernel::Verdict::Accept => ExitCode::from(0),
-            metatron_kernel::Verdict::Reject => ExitCode::from(1),
-            metatron_kernel::Verdict::Unknown | metatron_kernel::Verdict::Error => {
+            metatron_kernel::verdict::Verdict::Accept => ExitCode::from(0),
+            metatron_kernel::verdict::Verdict::Reject => ExitCode::from(1),
+            metatron_kernel::verdict::Verdict::Unknown | metatron_kernel::verdict::Verdict::Error => {
                 ExitCode::from(if complete_backstop(&bytes) { 0 } else { 1 })
             }
         };
@@ -73,9 +73,9 @@ fn main() -> ExitCode {
 
     let verdict = metatron_kernel::run(BufReader::new(Cursor::new(bytes.as_slice())));
     match verdict {
-        metatron_kernel::Verdict::Accept => ExitCode::from(0),
-        metatron_kernel::Verdict::Reject => ExitCode::from(1),
-        metatron_kernel::Verdict::Unknown | metatron_kernel::Verdict::Error => {
+        metatron_kernel::verdict::Verdict::Accept => ExitCode::from(0),
+        metatron_kernel::verdict::Verdict::Reject => ExitCode::from(1),
+        metatron_kernel::verdict::Verdict::Unknown | metatron_kernel::verdict::Verdict::Error => {
             ExitCode::from(if complete_backstop(&bytes) { 0 } else { 1 })
         }
     }
