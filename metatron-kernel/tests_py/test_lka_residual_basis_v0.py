@@ -183,6 +183,23 @@ class ResidualBasisTests(unittest.TestCase):
             "mixed",
         )
 
+    def test_name_authority_rejects_same_path_even_same_name_id(self):
+        records = [
+            {"in": 1, "str": {"pre": 0, "str": "dup"}},
+            {"def": {"name": 1}},
+            {"def": {"name": 1}},
+        ]
+        self.assertEqual(mod.semantic_name_authority_status(records), "deny")
+
+    def test_name_authority_allows_distinct_paths(self):
+        records = [
+            {"in": 1, "str": {"pre": 0, "str": "a"}},
+            {"in": 2, "str": {"pre": 0, "str": "b"}},
+            {"def": {"name": 1}},
+            {"def": {"name": 2}},
+        ]
+        self.assertEqual(mod.semantic_name_authority_status(records), "allow")
+
     def test_sham_preserves_current_class_marginals(self):
         dummy = Path("/tmp/x")
         cases = [
