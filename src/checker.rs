@@ -2205,12 +2205,18 @@ fn check_exact_nat(
     )?;
     let environment = derivation.finish();
 
-    // G33: the exact recursive N recursor opts into the same executable
-    // rule-body authority used by G31/G32. Recursive calls are not synthesized;
-    // they are already present in the validated rule RHS and re-enter this
-    // certified reduction path on a structurally smaller constructor field.
-    let rules = block
-        .constructors
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+
+
+fn install_certified_recursor_reduction(
+    environment: Environment,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> Result<Environment, Verdict> {
+    if constructors.len() != recursor.rules.len() {
+        return Err(Verdict::Reject);
+    }
+    let rules = constructors
         .iter()
         .zip(&recursor.rules)
         .map(|(constructor, rule)| {
@@ -2440,7 +2446,11 @@ fn check_exact_rbtree(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+    install_certified_recursor_reduction(
+        derivation.finish(),
+        &block.constructors,
+        recursor,
+    )
 }
 
 fn valid_rbtree_constructor_metadata(
