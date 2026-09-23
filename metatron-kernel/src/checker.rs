@@ -887,8 +887,8 @@ fn generic_nonrecursive_recursor_shape(
         {
             return false;
         }
-        for i in 0..p {
-            if !is_bvar(export, ca[i], (f + j + 1 + (p - 1 - i)) as u64) {
+        for (i, argument) in ca.iter().take(p).enumerate() {
+            if !is_bvar(export, *argument, (f + j + 1 + (p - 1 - i)) as u64) {
                 return false;
             }
         }
