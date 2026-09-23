@@ -74,6 +74,7 @@ impl<'a> TypeChecker<'a> {
             &[],
             &EnvFrame::empty(),
             &mut remaining,
+            self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
         )
     }
 
@@ -114,7 +115,15 @@ impl<'a> TypeChecker<'a> {
     /// This remains three-valued: unresolved universe equality or reduction
     /// is not a refutation.
     pub fn is_proposition(&self, expression: ExprId, budget: usize) -> Judgment<()> {
-        self.check(expression, &TypeValue::Sort(LevelTerm::Zero), budget)
+        let mut remaining = budget;
+        self.check_in(
+            expression,
+            &TypeValue::Sort(LevelTerm::Zero),
+            &[],
+            &EnvFrame::empty(),
+            &mut remaining,
+            false,
+        )
     }
 
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
@@ -256,7 +265,7 @@ impl<'a> TypeChecker<'a> {
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
                     return Judgment::unknown("application-function-type");
                 };
-                match self.check_in(*arg, &domain, context, frame, remaining) {
+                match self.check_in(*arg, &domain, context, frame, remaining, true) {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
                             PiBody::Fixed(body) => body,
@@ -334,7 +343,7 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(*value, &established, context, frame, remaining) {
+                match self.check_in(*value, &established, context, frame, remaining, true) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -356,17 +365,26 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
+        conversion_refutation_is_unknown: bool,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
-            Judgment::Proven { value, .. } => crate::convert::convert_with_policy_at_depth(
-                self,
-                &value,
-                expected,
-                *remaining,
-                self.delta_policy,
-                context.len(),
-            ),
+            Judgment::Proven { value, .. } => {
+                let conversion = crate::convert::convert_with_policy_at_depth(
+                    self,
+                    &value,
+                    expected,
+                    *remaining,
+                    self.delta_policy,
+                    context.len(),
+                );
+                match conversion {
+                    Judgment::Refuted { obstruction } if conversion_refutation_is_unknown => {
+                        Judgment::unknown(obstruction.0)
+                    }
+                    other => other,
+                }
+            }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
