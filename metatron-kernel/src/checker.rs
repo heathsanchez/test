@@ -890,17 +890,50 @@ fn check_unrecognized_single_constructor_coherence(
         || inductive.is_reflexive
         || inductive.num_nested != 0
         || constructor.is_unsafe
+        || block.recursors.iter().any(|recursor| recursor.is_unsafe)
     {
         return Err(Verdict::Unknown);
     }
 
     if constructor_result_is_definitely_malformed(export, inductive, constructor)
         || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+        || recursor_metadata_is_definitely_malformed(export, block)
     {
         Err(Verdict::Reject)
     } else {
         Err(Verdict::Unknown)
     }
+}
+
+/// G26-001 is rejection-only. It checks structural recursor metadata that is
+/// fixed by a single-inductive declaration without claiming the unsupported
+/// inductive itself is derivable. Universe/elimination details remain outside
+/// this law and therefore cannot turn a coherent unsupported block into ACCEPT.
+fn recursor_metadata_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return false;
+    };
+
+    recursor.all != inductive.all
+        || recursor.num_params != inductive.num_params
+        || recursor.num_indices != inductive.num_indices
+        || recursor.num_motives != 1
+        || recursor.num_minors != block.constructors.len() as u64
+        || recursor.rules.len() != block.constructors.len()
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+        || recursor
+            .rules
+            .iter()
+            .zip(&block.constructors)
+            .any(|(rule, constructor)| {
+                rule.constructor != constructor.name || rule.num_fields != constructor.num_fields
+            })
 }
 
 fn expression_has_definite_negative_occurrence(
@@ -3631,10 +3664,10 @@ mod tests {
     }
 
     #[test]
-    fn g25_does_not_claim_bogus_recursor_residual() {
+    fn g26_rejects_definitely_incoherent_recursor_metadata() {
         let bytes = include_bytes!("../evidence/residuals/G25-001/073_BogusRecursor.ndjson");
         let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
-        assert_eq!(check_export(export, Limits::default()), Verdict::Unknown);
+        assert_eq!(check_export(export, Limits::default()), Verdict::Reject);
     }
 
     #[test]
