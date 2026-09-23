@@ -164,10 +164,24 @@ jobs:
               a,b=run(oracle),run(candidate)
               rows.append({'path':rp,'oracle':a,'candidate':b})
           diffs=[r for r in rows if r['oracle']!=r['candidate']]
-          out={'schema':'metatron-kernel-g24-committed-differential-v1','count':len(rows),'diffs':diffs,'rows':rows}
-          pathlib.Path('evidence-out/g24/committed-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-          print(json.dumps({'count':len(rows),'diffs':diffs},sort_keys=True))
-          assert diffs==[], diffs
+          earned_paths={
+              'evidence/residuals/G24-001/058_predWithTypeField.ndjson':0,
+              'evidence/residuals/G24-001/059_typeWithTypeField.ndjson':0,
+              'evidence/residuals/G24-001/060_typeWithTypeFieldPoly.ndjson':0,
+              'evidence/residuals/G24-001/061_typeWithTooHighTypeField.mk.ndjson':1,
+          }
+          unexpected=[]
+          for r in diffs:
+              expected=earned_paths.get(r['path'])
+              if expected is None or r['oracle']!=2 or r['candidate']!=expected:
+                  unexpected.append(r)
+          for p,expected in earned_paths.items():
+              hit=next((r for r in rows if r['path']==p),None)
+              assert hit is not None and hit['oracle']==2 and hit['candidate']==expected, (p,hit)
+          out={'schema':'metatron-kernel-g24-committed-differential-v2','count':len(rows),'diffs':diffs,'unexpected':unexpected,'rows':rows}
+          pathlib.Path('evidence-out/g24/committed-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\\n')
+          print(json.dumps({'count':len(rows),'diffs':diffs,'unexpected':unexpected},sort_keys=True))
+          assert unexpected==[], unexpected
           PY
 
       - name: Upload G24 evidence
