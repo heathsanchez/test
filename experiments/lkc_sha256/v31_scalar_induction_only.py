@@ -44,11 +44,17 @@ theorem roundsScalarMulW_eq_roundsFast
   induction ks with
   | nil =>
       intro w s
-      rw [roundsScalarMulW_nil, roundsFast_nil_eq]
+      exact (roundsScalarMulW_nil w s).trans (roundsFast_nil_eq w s).symm
   | cons k ks ih =>
       intro w s
-      rw [roundsScalarMulW_cons, roundsFast_cons_eq]
-      exact ih (w.push w.nextFast) (roundFast s k w.x0)
+      calc
+        roundsScalarMulW (k :: ks) w s =
+            roundsScalarMulW ks (w.push w.nextFast) (roundFast s k w.x0) :=
+          roundsScalarMulW_cons k ks w s
+        _ = roundsFast ks (w.push w.nextFast) (roundFast s k w.x0) :=
+          ih (w.push w.nextFast) (roundFast s k w.x0)
+        _ = roundsFast (k :: ks) w s :=
+          (roundsFast_cons_eq k ks w s).symm
 
 end Submission
 '''
