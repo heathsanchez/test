@@ -1,4 +1,5 @@
 use std::collections::{HashMap, HashSet};
+use std::rc::Rc;
 
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
@@ -43,7 +44,7 @@ pub struct Machine<'a> {
     authority: AuthorityId,
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
-    definitions: HashMap<NameId, DefinitionBody>,
+    definitions: Rc<HashMap<NameId, DefinitionBody>>,
 }
 
 impl<'a> Machine<'a> {
@@ -51,7 +52,7 @@ impl<'a> Machine<'a> {
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
         levels: &'a IdTable<LevelId, Level>,
-        definitions: HashMap<NameId, DefinitionBody>,
+        definitions: Rc<HashMap<NameId, DefinitionBody>>,
     ) -> Self {
         Self {
             authority,
@@ -67,15 +68,25 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_with_witnesses(closure, transparency, budget)
+        self.expose_internal(closure, transparency, budget, false)
             .map(|exposure| exposure.value)
     }
 
     pub fn expose_with_witnesses(
         &self,
+        closure: Closure,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Judgment<Exposure> {
+        self.expose_internal(closure, transparency, budget, true)
+    }
+
+    fn expose_internal(
+        &self,
         mut closure: Closure,
         transparency: Transparency,
         mut budget: usize,
+        record_witnesses: bool,
     ) -> Judgment<Exposure> {
         let mut pending = Vec::new();
         let mut visited = HashSet::new();
@@ -105,7 +116,7 @@ impl<'a> Machine<'a> {
                             EnvBinding::Free(free) => {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
-                                transitions.push(TransitionWitness::Rigid);
+                                record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                                 return exposed(
                                     Value::Neutral(Neutral {
                                         head: NeutralHead::Free(free),
@@ -118,7 +129,7 @@ impl<'a> Machine<'a> {
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
-                    transitions.push(TransitionWitness::Rigid);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(
                         Value::Neutral(Neutral {
                             head: NeutralHead::Free(FreeId(*index)),
@@ -131,11 +142,11 @@ impl<'a> Machine<'a> {
                     let Some(level) = self.resolve_level(*level, &closure, budget) else {
                         return Judgment::unknown("unresolved-sort-level-during-reduction");
                     };
-                    transitions.push(TransitionWitness::Rigid);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(Value::Sort(level), transitions);
                 }
                 Expr::Pi { domain, body } if pending.is_empty() => {
-                    transitions.push(TransitionWitness::Rigid);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(
                         Value::Pi {
                             domain: closure.sibling(*domain, closure.env.clone()),
@@ -146,12 +157,12 @@ impl<'a> Machine<'a> {
                 }
                 Expr::Lam { domain, body } => {
                     if let Some(argument) = pending.pop() {
-                        transitions.push(TransitionWitness::Beta);
+                        record_transition(&mut transitions, record_witnesses, TransitionWitness::Beta);
                         visited.clear();
                         closure = closure.sibling(*body, closure.env.extend(argument));
                         continue;
                     }
-                    transitions.push(TransitionWitness::Rigid);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(
                         Value::Lam {
                             domain: closure.sibling(*domain, closure.env.clone()),
@@ -161,7 +172,7 @@ impl<'a> Machine<'a> {
                     );
                 }
                 Expr::Let { value, body, .. } => {
-                    transitions.push(TransitionWitness::Zeta);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Zeta);
                     visited.clear();
                     let value = closure.sibling(*value, closure.env.clone());
                     closure = closure.sibling(*body, closure.env.extend(value));
@@ -184,7 +195,7 @@ impl<'a> Machine<'a> {
                             };
                             substitution.push((*parameter, level));
                         }
-                        transitions.push(TransitionWitness::Delta);
+                        record_transition(&mut transitions, record_witnesses, TransitionWitness::Delta);
                         closure = Closure::with_levels(
                             definition.value,
                             EnvFrame::empty(),
@@ -201,7 +212,7 @@ impl<'a> Machine<'a> {
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
-                    transitions.push(TransitionWitness::Rigid);
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(
                         Value::Neutral(Neutral {
                             head: NeutralHead::Const {
@@ -241,6 +252,17 @@ fn permits_delta(transparency: Transparency, preferred_for_reduction: bool) -> b
 fn append_pending(spine: &mut Vec<Closure>, pending: &mut Vec<Closure>) {
     while let Some(argument) = pending.pop() {
         spine.push(argument);
+    }
+}
+
+#[inline]
+fn record_transition(
+    transitions: &mut Vec<TransitionWitness>,
+    enabled: bool,
+    witness: TransitionWitness,
+) {
+    if enabled {
+        transitions.push(witness);
     }
 }
 
