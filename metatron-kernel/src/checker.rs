@@ -1767,18 +1767,14 @@ fn is_rbtree_branch_minor_type(
             is_child_empty_constant_named(export, left_color, "Color", "b")
                 && is_child_empty_constant_named(export, right_color, "Color", "b")
         }
-        RbBranch::Black => {
-            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
-        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
     };
     let ih_colors_ok = match branch {
         RbBranch::Red => {
             is_child_empty_constant_named(export, left_ih_color, "Color", "b")
                 && is_child_empty_constant_named(export, right_ih_color, "Color", "b")
         }
-        RbBranch::Black => {
-            is_bvar(export, left_ih_color, 5) && is_bvar(export, right_ih_color, 5)
-        }
+        RbBranch::Black => is_bvar(export, left_ih_color, 5) && is_bvar(export, right_ih_color, 5),
     };
     let result_index_ok = match branch {
         RbBranch::Red => {
