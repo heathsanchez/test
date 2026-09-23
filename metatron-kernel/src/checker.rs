@@ -3480,13 +3480,15 @@ fn is_derived_twobool_rule(
     let [motive_arg] = motive_domains.as_slice() else {
         return false;
     };
+    let (head, arguments) = application_spine(export, result);
     rule.constructor == constructor
         && rule.num_fields == 2
         && is_empty_constant(export, *motive_arg, inductive)
         && is_twobool_minor_type(export, *minor, constructor, field_type)
         && is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && is_bvar_application(export, result, 3, 1)
+        && is_bvar(export, head, 2)
+        && are_bvars(export, &arguments, &[1, 0])
 }
 
 fn is_constructor_applied_to_two_bvars(
