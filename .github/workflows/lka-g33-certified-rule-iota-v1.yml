@@ -1,0 +1,94 @@
+name: LKA G33 Certified Rule Iota Atlas v1
+
+on:
+  push:
+    branches: [lka-g33-certified-rule-iota-v1]
+    paths:
+      - ".github/workflows/lka-g33-certified-rule-iota-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 92c45edef35ad33dbb11c03bfb922d4a4f92aa63
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Verify zero semantic change from G32
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$BASE_SHA" -- metatron-kernel/src
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+      - name: Build exact G32 oracle
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g32-oracle "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/g32-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Capture 080 frontier and recursive scout
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g33
+          python - <<'PY'
+          import hashlib,json,os,pathlib,subprocess
+          oracle=pathlib.Path('/tmp/g32-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          names=['080_nRecReduction.ndjson','081_listRecReduction.ndjson','082_rbtreeIdSpec.ndjson']
+          summaries=[]
+          for name in names:
+              path=pathlib.Path('/tmp/lean-kernel-tutorial/good')/name
+              raw=path.read_bytes()
+              def run(binary):
+                  with path.open('rb') as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE).returncode
+              a,b=run(oracle),run(candidate)
+              rows=[json.loads(x) for x in raw.decode().splitlines() if x.strip()]
+              entry={'fixture':'good/'+name,'expected_exit':0,'oracle_exit':a,'candidate_exit':b,
+                     'sha256':hashlib.sha256(raw).hexdigest(),'line_count':len(rows)}
+              summaries.append(entry)
+              pathlib.Path('evidence-out/g33/'+name).write_bytes(raw)
+              if name.startswith('080_'):
+                  print('----- BEGIN 080_nRecReduction.ndjson -----')
+                  print(raw.decode(),end='')
+                  print('----- END 080_nRecReduction.ndjson -----')
+          assert summaries[0]['oracle_exit']==2 and summaries[0]['candidate_exit']==2, summaries
+          out={'schema':'metatron-kernel-g33-certified-rule-iota-atlas-v1',
+               'arena_sha':os.environ['ARENA_SHA'],'oracle_sha':os.environ['BASE_SHA'],
+               'candidate_sha':os.environ['GITHUB_SHA'],'frontier':summaries[0],'recursive_scout':summaries[1:]}
+          pathlib.Path('evidence-out/g33/atlas.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('G33_ATLAS='+json.dumps(out,sort_keys=True))
+          PY
+      - name: Upload G33 atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g33-certified-rule-iota-atlas-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g33
+          if-no-files-found: error
