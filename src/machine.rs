@@ -540,7 +540,9 @@ impl<'a> Machine<'a> {
             return None;
         };
         if pending.len() != 2 {
-            return Some(Judgment::unknown("Nat-extension-result-applied-as-function"));
+            return Some(Judgment::unknown(
+                "Nat-extension-result-applied-as-function",
+            ));
         }
         pending.clear();
         record_transition(
