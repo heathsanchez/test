@@ -704,7 +704,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         || inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
-        || block.constructors.is_empty()
+        || block.constructors.len() != 1
         || block.recursors.len() != 1
         || block.constructors.iter().any(|c| c.is_unsafe)
         || block.recursors[0].is_unsafe
