@@ -2514,13 +2514,6 @@ impl BinaryProductSortLaw {
         }
     }
 
-    fn num_indices(self) -> u64 {
-        match self {
-            Self::Eq { .. } => 1,
-            Self::PUnit { .. } | Self::And | Self::Prod { .. } | Self::PProd { .. } => 0,
-        }
-    }
-
     fn recursor_uses_rule_k(self) -> bool {
         matches!(self, Self::Eq { .. })
     }
