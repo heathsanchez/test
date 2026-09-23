@@ -164,10 +164,14 @@ theorem roundsFast_eq_slow
       rfl
   | cons k ks ih =>
       intro win s hs hw
-      rw [roundsFast_cons_bridge k ks win s hs hw]
-      simp only [roundsSlow]
-      exact ih win.advance (round s k win.x0)
-        (valid_round s k win.x0 hs) (valid_advance win hw)
+      calc
+        roundsFast (k :: ks) win s =
+            roundsFast ks win.advance (round s k win.x0) :=
+          roundsFast_cons_bridge k ks win s hs hw
+        _ = roundsSlow ks win.advance (round s k win.x0) :=
+          ih win.advance (round s k win.x0)
+            (valid_round s k win.x0 hs) (valid_advance win hw)
+        _ = roundsSlow (k :: ks) win s := by rfl
 
 '''
 proof=proof[:rs0]+rounds_bridge+proof[rs1:]
