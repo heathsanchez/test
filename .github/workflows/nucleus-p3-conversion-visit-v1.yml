@@ -1,0 +1,229 @@
+name: Nucleus P3 Conversion Visit v1
+
+on:
+  push:
+    branches: [nucleus-p3-conversion-visit-v1]
+    paths:
+      - ".github/workflows/nucleus-p3-conversion-visit-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-p3-conversion-visit-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      G25_SHA: 4b257ea8442a7905af8b894144288864b16fb81a
+      P1_SHA: 398aa45fb6bc6bfda1147ee635ea6d4adfaa35bf
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify candidate source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build G25, P1, and P3
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g25 "$G25_SHA"
+          git worktree add --detach /tmp/p1 "$P1_SHA"
+          cargo build --release --locked --manifest-path /tmp/g25/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Exact semantic differential
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/p3
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial')
+          g25=pathlib.Path('/tmp/g25/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]; manifest=[]
+          for expected_dir,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/expected_dir).glob('*.ndjson')):
+                  try: n=int(p.name.split('_',1)[0])
+                  except ValueError: continue
+                  def run(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(g25),run(cand)
+                  rows.append({'number':n,'path':str(p),'expected':expected,'g25':a,'candidate':b})
+                  if a==expected: manifest.append(f"{expected}\t{p}")
+          rows.sort(key=lambda r:r['number'])
+          diffs=[r for r in rows if r['g25']!=r['candidate']]
+          assert not diffs, diffs
+          assert len(manifest)==78, len(manifest)
+          pathlib.Path('/tmp/correct78.tsv').write_text('\n'.join(manifest)+'\n')
+          committed=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set(); cdiffs=[]; count=0
+          for p in committed:
+              rp=str(p)
+              if rp in seen: continue
+              seen.add(rp); count+=1
+              def run2(binary):
+                  with p.open('rb') as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=run2(g25),run2(cand)
+              if a!=b: cdiffs.append({'path':rp,'g25':a,'candidate':b})
+          assert not cdiffs, cdiffs
+          out={'schema':'nucleus-p3-semantic-v1','arena_sha':os.environ['ARENA_SHA'],'g25_sha':os.environ['G25_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'tutorial_count':len(rows),'tutorial_diffs':diffs,'correct_cohort':len(manifest),'committed_count':count,'committed_diffs':cdiffs}
+          pathlib.Path('evidence-out/p3/semantic.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: In-process 78-case cohort benchmark
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          for root in . /tmp/g25/metatron-kernel /tmp/p1/metatron-kernel; do mkdir -p "$root/examples"; done
+          cat >/tmp/nucleus_cohort.rs <<'RS'
+          use std::{env, fs, io::Cursor};
+          use metatron_kernel::run;
+          fn main() {
+              let manifest=env::var("NUCLEUS_MANIFEST").expect("manifest");
+              let iters:usize=env::var("NUCLEUS_BENCH_ITERS").ok().and_then(|s|s.parse().ok()).unwrap_or(200);
+              let cases:Vec<(i32,Vec<u8>)>=fs::read_to_string(manifest).unwrap().lines().map(|line|{
+                  let (e,p)=line.split_once('\t').unwrap();
+                  (e.parse().unwrap(),fs::read(p).unwrap())
+              }).collect();
+              let mut checksum=0usize;
+              for _ in 0..iters {
+                  for (expected,bytes) in &cases {
+                      let verdict=run(Cursor::new(bytes.as_slice()));
+                      assert_eq!(verdict.exit_code(),*expected);
+                      checksum=checksum.wrapping_add(verdict.exit_code() as usize + 1);
+                  }
+              }
+              println!("{checksum}");
+          }
+          RS
+          cp /tmp/nucleus_cohort.rs examples/nucleus_cohort.rs
+          cp /tmp/nucleus_cohort.rs /tmp/g25/metatron-kernel/examples/nucleus_cohort.rs
+          cp /tmp/nucleus_cohort.rs /tmp/p1/metatron-kernel/examples/nucleus_cohort.rs
+          cargo build --release --locked --example nucleus_cohort
+          cargo build --release --locked --manifest-path /tmp/g25/metatron-kernel/Cargo.toml --example nucleus_cohort
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml --example nucleus_cohort
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'g25':pathlib.Path('/tmp/g25/metatron-kernel/target/release/examples/nucleus_cohort'),'p1':pathlib.Path('/tmp/p1/metatron-kernel/target/release/examples/nucleus_cohort'),'p3':pathlib.Path('target/release/examples/nucleus_cohort').resolve()}
+          env=dict(os.environ); env['NUCLEUS_MANIFEST']='/tmp/correct78.tsv'; env['NUCLEUS_BENCH_ITERS']='200'
+          orders=[['g25','p1','p3'],['p3','p1','g25'],['p1','g25','p3'],['p3','g25','p1'],['g25','p3','p1'],['p1','p3','g25'],['g25','p1','p3']]
+          rows=[]
+          for i,order in enumerate(orders,1):
+              vals={}
+              for name in order:
+                  t=time.perf_counter_ns(); subprocess.check_output([str(bins[name])],env=env); vals[name]=time.perf_counter_ns()-t
+              row={'round':i,**{f'{k}_ns':v for k,v in vals.items()}}; rows.append(row); print(row)
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins}
+          out={'schema':'nucleus-p3-cohort-benchmark-v1','iterations':200,'cases':78,'medians_ns':med,'p1_over_g25':med['p1']/med['g25'],'p3_over_g25':med['p3']/med['g25'],'p3_over_p1':med['p3']/med['p1'],'rounds':rows}
+          pathlib.Path('evidence-out/p3/cohort.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Deep conversion benchmark
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cat >/tmp/nucleus_conversion.rs <<'RS'
+          use std::env;
+          use metatron_kernel::environment::Environment;
+          use metatron_kernel::id::{ExprId, IdTable, LevelId};
+          use metatron_kernel::syntax::{Expr, Level};
+          use metatron_kernel::typecheck::{TypeChecker, TypeValue};
+          use metatron_kernel::value::{Closure, EnvFrame};
+          fn main() {
+              let mut levels=IdTable::default();
+              levels.insert(LevelId(0),Level::Zero).unwrap();
+              let mut exprs=IdTable::default();
+              exprs.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();
+              exprs.insert(ExprId(1),Expr::Sort(LevelId(0))).unwrap();
+              let mut left=ExprId(0); let mut right=ExprId(1); let mut next=2u64;
+              for _ in 0..6 {
+                  let l=ExprId(next); next+=1;
+                  let r=ExprId(next); next+=1;
+                  exprs.insert(l,Expr::Pi{domain:ExprId(0),body:left}).unwrap();
+                  exprs.insert(r,Expr::Pi{domain:ExprId(1),body:right}).unwrap();
+                  left=l; right=r;
+              }
+              let env=Environment::empty();
+              let checker=TypeChecker::new(&exprs,&levels,&env);
+              let l=TypeValue::Term(Closure::new(left,EnvFrame::empty()));
+              let r=TypeValue::Term(Closure::new(right,EnvFrame::empty()));
+              let iters:usize=env::var("NUCLEUS_BENCH_ITERS").ok().and_then(|s|s.parse().ok()).unwrap_or(500000);
+              let mut checksum=0usize;
+              for _ in 0..iters {
+                  let j=checker.convert(&l,&r,256);
+                  assert!(j.is_proven());
+                  checksum+=1;
+              }
+              println!("{checksum}");
+          }
+          RS
+          cp /tmp/nucleus_conversion.rs examples/nucleus_conversion.rs
+          cp /tmp/nucleus_conversion.rs /tmp/g25/metatron-kernel/examples/nucleus_conversion.rs
+          cp /tmp/nucleus_conversion.rs /tmp/p1/metatron-kernel/examples/nucleus_conversion.rs
+          cargo build --release --locked --example nucleus_conversion
+          cargo build --release --locked --manifest-path /tmp/g25/metatron-kernel/Cargo.toml --example nucleus_conversion
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml --example nucleus_conversion
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'g25':pathlib.Path('/tmp/g25/metatron-kernel/target/release/examples/nucleus_conversion'),'p1':pathlib.Path('/tmp/p1/metatron-kernel/target/release/examples/nucleus_conversion'),'p3':pathlib.Path('target/release/examples/nucleus_conversion').resolve()}
+          env=dict(os.environ); env['NUCLEUS_BENCH_ITERS']='500000'
+          orders=[['g25','p1','p3'],['p3','p1','g25'],['p1','g25','p3'],['p3','g25','p1'],['g25','p3','p1'],['p1','p3','g25'],['g25','p1','p3']]
+          rows=[]
+          for i,order in enumerate(orders,1):
+              vals={}
+              for name in order:
+                  t=time.perf_counter_ns(); out=subprocess.check_output([str(bins[name])],env=env,text=True).strip(); vals[name]=time.perf_counter_ns()-t; assert out=='500000'
+              row={'round':i,**{f'{k}_ns':v for k,v in vals.items()}}; rows.append(row); print(row)
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins}
+          out={'schema':'nucleus-p3-conversion-benchmark-v1','iterations':500000,'medians_ns':med,'p1_over_g25':med['p1']/med['g25'],'p3_over_g25':med['p3']/med['g25'],'p3_over_p1':med['p3']/med['p1'],'rounds':rows}
+          pathlib.Path('evidence-out/p3/conversion.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload P3 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p3-conversion-${{ github.sha }}
+          path: metatron-kernel/evidence-out/p3
+          if-no-files-found: error
