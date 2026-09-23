@@ -2527,6 +2527,38 @@ impl BinaryProductSortLaw {
         }
     }
 
+    fn num_indices(self) -> u64 {
+        match self {
+            Self::Eq { .. } => 1,
+            Self::PUnit { .. } | Self::And | Self::Prod { .. } | Self::PProd { .. } => 0,
+        }
+    }
+
+    fn recursor_uses_rule_k(self) -> bool {
+        matches!(self, Self::Eq { .. })
+    }
+
+    fn validates_recursor_metadata(
+        self,
+        export: &ResolvedExport,
+        inductive: &crate::syntax::InductiveType,
+        constructor: &Constructor,
+        recursor: &Recursor,
+    ) -> bool {
+        recursor.all == [inductive.name]
+            && recursor.k == self.recursor_uses_rule_k()
+            && self.recursor_levels(&inductive.level_params, recursor)
+            && !has_duplicate_parameter(&recursor.level_params)
+            && recursor.num_params == self.num_params()
+            && recursor.num_indices == self.num_indices()
+            && recursor.num_motives == 1
+            && recursor.num_minors == 1
+            && matches!(recursor.rules.as_slice(), [rule]
+                if rule.constructor == constructor.name
+                    && rule.num_fields == self.num_fields())
+            && name_is_child_str(export, recursor.name, inductive.name, "rec")
+    }
+
     fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
         match self {
             Self::PUnit { .. } => self.result_sort(export, expression),
@@ -2612,13 +2644,11 @@ impl ExactBinaryProductDerivation<'_> {
 
         let valid_recursor = match self.law {
             BinaryProductSortLaw::PUnit { .. } => {
-                valid_punit_recursor_metadata(
+                self.law.validates_recursor_metadata(
                     export,
-                    self.inductive.name,
-                    &self.inductive.level_params,
-                    self.constructor.name,
+                    self.inductive,
+                    self.constructor,
                     self.recursor,
-                    self.law,
                 ) && is_derived_punit_recursor_type(
                     export,
                     self.inductive.name,
@@ -2634,13 +2664,11 @@ impl ExactBinaryProductDerivation<'_> {
                 )
             }
             BinaryProductSortLaw::Eq { .. } => {
-                valid_eq_recursor_metadata(
+                self.law.validates_recursor_metadata(
                     export,
-                    self.inductive.name,
-                    &self.inductive.level_params,
-                    self.constructor.name,
+                    self.inductive,
+                    self.constructor,
                     self.recursor,
-                    self.law,
                 ) && is_derived_eq_recursor_type(
                     export,
                     self.inductive.name,
@@ -2658,13 +2686,11 @@ impl ExactBinaryProductDerivation<'_> {
             BinaryProductSortLaw::And
             | BinaryProductSortLaw::Prod { .. }
             | BinaryProductSortLaw::PProd { .. } => {
-                valid_binary_product_recursor_metadata(
+                self.law.validates_recursor_metadata(
                     export,
-                    self.inductive.name,
-                    &self.inductive.level_params,
-                    self.constructor.name,
+                    self.inductive,
+                    self.constructor,
                     self.recursor,
-                    self.law,
                 ) && is_derived_binary_product_recursor_type(
                     export,
                     self.inductive.name,
@@ -2823,26 +2849,6 @@ fn is_derived_binary_product_constructor_type(
         && is_binary_product_constant_application(export, result, inductive, 3, 2, law)
 }
 
-fn valid_binary_product_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    inductive_level_params: &[NameId],
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    recursor.all == [inductive]
-        && !recursor.k
-        && law.recursor_levels(inductive_level_params, recursor)
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 2
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
-        && name_is_child_str(export, recursor.name, inductive, "rec")
-}
-
 fn is_derived_binary_product_recursor_type(
     export: &ResolvedExport,
     inductive: NameId,
@@ -2974,27 +2980,6 @@ fn is_unary_polymorphic_constant(
                 && matches!(levels.as_slice(), [level]
                     if matches!(export.levels.get(*level), Some(Level::Param(name)) if *name == level_parameter))
     )
-}
-
-fn valid_punit_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    inductive_level_params: &[NameId],
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    recursor.all == [inductive]
-        && !recursor.k
-        && law.recursor_levels(inductive_level_params, recursor)
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 0
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule]
-            if rule.constructor == constructor && rule.num_fields == 0)
-        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
 fn is_derived_punit_recursor_type(
@@ -3129,27 +3114,6 @@ fn is_eq_constructor_application(
         if law.constant(export, head, constructor)
             && is_bvar(export, *carrier_arg, carrier)
             && is_bvar(export, *parameter_arg, parameter))
-}
-
-fn valid_eq_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    inductive_level_params: &[NameId],
-    constructor: NameId,
-    recursor: &Recursor,
-    law: BinaryProductSortLaw,
-) -> bool {
-    recursor.all == [inductive]
-        && recursor.k
-        && law.recursor_levels(inductive_level_params, recursor)
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 2
-        && recursor.num_indices == 1
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule]
-            if rule.constructor == constructor && rule.num_fields == 0)
-        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
 fn is_eq_motive_type(
