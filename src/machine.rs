@@ -52,13 +52,13 @@ impl<'a> Machine<'a> {
         authority: AuthorityId,
         expressions: &'a IdTable<ExprId, Expr>,
         levels: &'a IdTable<LevelId, Level>,
-        definitions: Rc<HashMap<NameId, DefinitionBody>>,
+        definitions: impl Into<Rc<HashMap<NameId, DefinitionBody>>>,
     ) -> Self {
         Self {
             authority,
             expressions,
             levels,
-            definitions,
+            definitions: definitions.into(),
         }
     }
 
