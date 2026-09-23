@@ -1,0 +1,41 @@
+{
+  "schema": "nucleus-performance-capability-v1",
+  "id": "P1-inline-visit-v1",
+  "baseline_sha": "4b257ea8442a7905af8b894144288864b16fb81a",
+  "p0_sha": "1ad261077437a2443ddf1182189e0c7f03ce3cab",
+  "candidate_sha": "398aa45fb6bc6bfda1147ee635ea6d4adfaa35bf",
+  "change": "Preserve exact reduction-cycle semantics while storing the first eight visited reduction states inline; allocate HashSet only on overflow. Retains P0 ordinary-exposure witness suppression and cached executable definition table.",
+  "semantic_qualification": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "tutorial_count": 141,
+    "tutorial_diffs": 0,
+    "committed_count": 45,
+    "committed_diffs": 0,
+    "correct_tutorial_cohort": 78
+  },
+  "supported_tutorial_timing": {
+    "rounds": 7,
+    "repetitions_per_round": 12,
+    "base_median_ns": 714625697,
+    "candidate_median_ns": 714505147,
+    "candidate_over_base": 0.9998313102922186,
+    "median_paired_ratio": 0.9922677121010497,
+    "candidate_faster_rounds": 5
+  },
+  "delta_chain_microbenchmark": {
+    "iterations": 2000000,
+    "g25_median_ns": 1556611073,
+    "p0_median_ns": 1515955965,
+    "p1_median_ns": 967138773,
+    "p0_over_g25": 0.9738822955167299,
+    "p1_over_g25": 0.621310480039223,
+    "p1_over_p0": 0.6379728668437938
+  },
+  "evidence": {
+    "run": 35851877644,
+    "job": 107151239096,
+    "artifact": 10746280389,
+    "artifact_digest": "sha256:969d0d8140f7c7c9cb381c059727639d1154cff741a6f565f86cfa06bcecbbe6"
+  },
+  "decision": "retain as a bounded performance capability; whole-Arena superiority is not yet established"
+}
