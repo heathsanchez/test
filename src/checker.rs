@@ -2508,8 +2508,8 @@ impl ExactBinaryProductDerivation<'_> {
 
         let valid_recursor = match self.law {
             BinaryProductSortLaw::PUnit { .. } => {
-                let type_valid = pi_spine(export, self.recursor.ty, 3).is_some_and(
-                    |(domains, result)| {
+                let type_valid =
+                    pi_spine(export, self.recursor.ty, 3).is_some_and(|(domains, result)| {
                         matches!(domains.as_slice(), [motive, minor, target]
                             if is_punit_motive_type(
                                 export,
@@ -2526,26 +2526,25 @@ impl ExactBinaryProductDerivation<'_> {
                                 )
                                 && self.law.constant(export, *target, self.inductive.name)
                                 && is_bvar_application(export, result, 2, 0))
-                    },
-                );
+                    });
                 let rule_valid = matches!(self.recursor.rules.as_slice(), [rule]
-                    if lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
-                        matches!(domains.as_slice(), [motive, minor]
-                            if is_punit_motive_type(
+                if lam_spine(export, rule.rhs, 2).is_some_and(|(domains, result)| {
+                    matches!(domains.as_slice(), [motive, minor]
+                        if is_punit_motive_type(
+                            export,
+                            *motive,
+                            self.inductive.name,
+                            self.recursor.level_params[0],
+                            self.law,
+                        )
+                            && is_punit_minor_type(
                                 export,
-                                *motive,
-                                self.inductive.name,
-                                self.recursor.level_params[0],
+                                *minor,
+                                self.constructor.name,
                                 self.law,
                             )
-                                && is_punit_minor_type(
-                                    export,
-                                    *minor,
-                                    self.constructor.name,
-                                    self.law,
-                                )
-                                && is_bvar(export, result, 0))
-                    }));
+                            && is_bvar(export, result, 0))
+                }));
                 self.law.validates_recursor_metadata(
                     export,
                     self.inductive,
