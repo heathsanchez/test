@@ -2797,7 +2797,8 @@ fn check_exact_rbtree(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+    let environment = derivation.finish();
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn valid_rbtree_constructor_metadata(
