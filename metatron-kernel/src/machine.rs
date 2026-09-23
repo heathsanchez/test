@@ -224,8 +224,7 @@ impl<'a> Machine<'a> {
                             + reduction.rules.len()
                             + reduction.num_indices
                             + 1;
-                        if pending.len() >= required
-                            && reduction.level_params.len() == levels.len()
+                        if pending.len() >= required && reduction.level_params.len() == levels.len()
                         {
                             let offset = pending.len() - required;
                             let arguments =
@@ -239,20 +238,16 @@ impl<'a> Machine<'a> {
                                     .find(|rule| rule.constructor == constructor)
                                 && constructor_arguments.len() == rule.num_params + rule.num_fields
                             {
-                                let prefix_len =
-                                    reduction.num_params + 1 + reduction.rules.len();
+                                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
                                 let mut rule_arguments = arguments[..prefix_len].to_vec();
-                                rule_arguments.extend_from_slice(
-                                    &constructor_arguments[rule.num_params..],
-                                );
+                                rule_arguments
+                                    .extend_from_slice(&constructor_arguments[rule.num_params..]);
 
                                 let mut level_substitution = closure.levels.to_map();
                                 let mut levels_ok = true;
-                                for (parameter, level) in
-                                    reduction.level_params.iter().zip(levels)
+                                for (parameter, level) in reduction.level_params.iter().zip(levels)
                                 {
-                                    let Some(level) =
-                                        self.resolve_level(*level, &closure, budget)
+                                    let Some(level) = self.resolve_level(*level, &closure, budget)
                                     else {
                                         levels_ok = false;
                                         break;
