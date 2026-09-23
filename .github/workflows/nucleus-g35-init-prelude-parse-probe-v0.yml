@@ -1,0 +1,94 @@
+name: Nucleus G35 Init Prelude Parse Probe v0
+
+on:
+  push:
+    branches: [nucleus-g35-init-prelude-parse-probe-v0]
+    paths:
+      - ".github/workflows/nucleus-g35-init-prelude-parse-probe-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      BASE_SHA: b8b580876facfb092c754fb5b1e47a4b22267ad0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v31
+
+      - name: Verify exact G35 source ancestry
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
+
+      - name: Build current Arena init-prelude
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test init-prelude
+
+      - name: Build parse/resolve diagnostic only
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/src/bin
+          cat > metatron-kernel/src/bin/parse_probe.rs <<'RS'
+          use std::io::{self, BufReader};
+
+          fn main() {
+              let reader = BufReader::new(io::stdin().lock());
+              match metatron_kernel::parser::parse(reader) {
+                  Ok(parsed) => {
+                      eprintln!("PARSE_OK");
+                      match parsed.resolve() {
+                          Ok(export) => {
+                              eprintln!(
+                                  "RESOLVE_OK names={} levels={} exprs={} declarations={}",
+                                  export.names.len(),
+                                  export.levels.len(),
+                                  export.exprs.len(),
+                                  export.declarations.len()
+                              );
+                          }
+                          Err(error) => {
+                              eprintln!("RESOLVE_ERROR: {error}");
+                              std::process::exit(12);
+                          }
+                      }
+                  }
+                  Err(error) => {
+                      eprintln!("PARSE_ERROR: {error}");
+                      std::process::exit(11);
+                  }
+              }
+          }
+          RS
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml --bin parse_probe
+
+      - name: Probe exact first parse/resolve blocker
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/init-prelude-parse-probe
+          set +e
+          metatron-kernel/target/release/parse_probe             < /tmp/arena/_build/tests/init-prelude.ndjson             > metatron-kernel/evidence-out/init-prelude-parse-probe/stdout.txt             2> metatron-kernel/evidence-out/init-prelude-parse-probe/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > metatron-kernel/evidence-out/init-prelude-parse-probe/exit_code.txt
+          echo "PROBE_EXIT=$rc"
+          cat metatron-kernel/evidence-out/init-prelude-parse-probe/stderr.txt
+          test "$rc" -ne 0
+
+      - name: Upload parse-probe evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g35-init-prelude-parse-probe-${{ github.sha }}
+          path: metatron-kernel/evidence-out/init-prelude-parse-probe
+          if-no-files-found: error
