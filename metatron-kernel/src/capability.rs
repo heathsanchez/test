@@ -110,6 +110,14 @@ struct PropProjectionTarget {
 /// projection authority; every uncertain case remains on the ordinary UNKNOWN
 /// path.
 fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
+    if !export
+        .exprs
+        .values()
+        .any(|expression| matches!(expression, Expr::Proj { .. }))
+    {
+        return None;
+    }
+
     for declaration in &export.declarations {
         let mut roots = Vec::new();
         match declaration {
