@@ -336,7 +336,9 @@ fn check_single_constructor_inductive(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if name_is_root_str(export, inductive.name, "NewSingleton") {
+    if name_is_root_str(export, inductive.name, "SortElimProp") {
+        check_exact_sort_elim_prop(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "NewSingleton") {
         check_exact_new_singleton(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "Exists") {
         check_exact_exists_family(export, environment, block, limits, delta_policy)
@@ -376,6 +378,271 @@ fn check_single_constructor_inductive(
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
+}
+
+/// G29-001: exact indexed Prop family whose constructor data are
+/// recoverable directly from the result indices.
+///
+/// This is the first qualified large-elimination rule for an indexed Prop.
+/// The external envelope remains name-sealed to `SortElimProp`.  The two
+/// constructor fields must occur as bare result indices (here in swapped
+/// order); no conversion is used to recover them and no generic indexed-Prop
+/// elimination authority is installed.
+fn check_exact_sort_elim_prop(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 2
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !sort_elim_prop_inductive_type(export, inductive.ty)
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
+        || !constructor.level_params.is_empty()
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !sort_elim_prop_constructor_type(
+            export,
+            constructor.ty,
+            inductive.name,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !sort_elim_prop_recursor_type(
+        export,
+        recursor.ty,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) || !sort_elim_prop_recursor_rule(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        *motive_level,
+    ) {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
+fn is_bool_constant(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, "Bool")
+    )
+}
+
+fn sort_elim_prop_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    binders: [u64; 3],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, inductive)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn sort_elim_prop_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    binders: [u64; 3],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn sort_elim_prop_inductive_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [parameter, first_index, second_index] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *parameter)
+        && is_bool_constant(export, *first_index)
+        && is_bool_constant(export, *second_index)
+        && is_prop_sort(export, result)
+}
+
+fn sort_elim_prop_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [parameter, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *parameter)
+        && is_bool_constant(export, *first_field)
+        && is_bool_constant(export, *second_field)
+        && sort_elim_prop_application(export, result, inductive, [2, 0, 1])
+}
+
+fn sort_elim_prop_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *first_index)
+        && is_bool_constant(export, *second_index)
+        && sort_elim_prop_application(export, *target, inductive, [2, 1, 0])
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn sort_elim_prop_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *first_field) || !is_bool_constant(export, *second_field) {
+        return false;
+    }
+    let (motive, arguments) = application_spine(export, result);
+    arguments.len() == 3
+        && is_bvar(export, motive, 2)
+        && are_bvars(export, &arguments[..2], &[0, 1])
+        && sort_elim_prop_constructor_application(
+            export,
+            arguments[2],
+            constructor,
+            [3, 1, 0],
+        )
+        && sort_elim_prop_application(
+            export,
+            arguments[2],
+            inductive,
+            [3, 0, 1],
+        ) == false
+}
+
+fn sort_elim_prop_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_index, second_index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
+        || !sort_elim_prop_minor_type(export, *minor, inductive, constructor)
+        || !is_bool_constant(export, *first_index)
+        || !is_bool_constant(export, *second_index)
+        || !sort_elim_prop_application(export, *target, inductive, [4, 1, 0])
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 3
+        && is_bvar(export, head, 4)
+        && are_bvars(export, &arguments, &[2, 1, 0])
+}
+
+fn sort_elim_prop_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 5) else {
+        return false;
+    };
+    let [parameter, motive, minor, first_field, second_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bool_constant(export, *parameter)
+        || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
+        || !sort_elim_prop_minor_type(export, *minor, inductive, constructor)
+        || !is_bool_constant(export, *first_field)
+        || !is_bool_constant(export, *second_field)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    arguments.len() == 2
+        && is_bvar(export, head, 2)
+        && are_bvars(export, &arguments, &[1, 0])
 }
 
 /// G28-001: exact nullary singleton Type plus its first qualified
