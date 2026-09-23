@@ -180,7 +180,9 @@ fn projection_single_constructor_owner(export: &ResolvedExport) -> Option<Verdic
 
     for expression in export.exprs.values() {
         if let Expr::Proj { type_name, .. } = expression
-            && constructor_counts.get(type_name).is_some_and(|count| *count != 1)
+            && constructor_counts
+                .get(type_name)
+                .is_some_and(|count| *count != 1)
         {
             return Some(Verdict::Reject);
         }
