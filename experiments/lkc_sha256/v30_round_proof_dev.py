@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# rerun after t2 validity threading
 from pathlib import Path
 import runpy
 
