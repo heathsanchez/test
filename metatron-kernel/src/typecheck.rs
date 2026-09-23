@@ -303,14 +303,27 @@ impl<'a> TypeChecker<'a> {
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
-            Judgment::Proven { value, .. } => crate::convert::convert_with_policy_at_depth(
-                self,
-                &value,
-                expected,
-                *remaining,
-                self.delta_policy,
-                context.len(),
-            ),
+            Judgment::Proven { value, .. } => {
+                let result = crate::convert::convert_with_policy_at_depth(
+                    self,
+                    &value,
+                    expected,
+                    *remaining,
+                    self.delta_policy,
+                    context.len(),
+                );
+                if let Judgment::Refuted { obstruction } = &result {
+                    eprintln!(
+                        "NUCLEUS_TRACE_CHECK_REFUTED expr={:?} depth={} inferred={:?} expected={:?} obstruction={:?}",
+                        expression,
+                        context.len(),
+                        value,
+                        expected,
+                        obstruction
+                    );
+                }
+                result
+            }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
