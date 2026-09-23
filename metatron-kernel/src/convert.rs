@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use crate::id::ExprId;
 use crate::judgment::Judgment;
@@ -130,6 +130,7 @@ pub(crate) fn convert_with_policy_in_context(
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone(), initial_depth)];
     let mut visited = ConversionVisitSet::new();
+    let mut unit_like_frees = HashMap::new();
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
@@ -167,7 +168,7 @@ pub(crate) fn convert_with_policy_in_context(
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
-            && unit_like_free_pair(checker, left_term, right_term, context, remaining)
+            && unit_like_free_pair(checker, left_term, right_term, &unit_like_frees, remaining)
         {
             continue;
         }
@@ -192,6 +193,14 @@ pub(crate) fn convert_with_policy_in_context(
                     body: right_body,
                 },
             ) => {
+                if let (Some(left_key), Some(right_key)) = (
+                    checker.unit_like_type_key(&left_domain, remaining),
+                    checker.unit_like_type_key(&right_domain, remaining),
+                ) && left_key == right_key
+                    && let Some(free) = fresh_local(depth)
+                {
+                    unit_like_frees.insert(free, left_key);
+                }
                 work.push((*left_body, *right_body, depth.saturating_add(1)));
                 work.push((*left_domain, *right_domain, depth));
             }
@@ -287,7 +296,7 @@ fn unit_like_free_pair(
     checker: &TypeChecker<'_>,
     left: &Closure,
     right: &Closure,
-    context: &[TypeValue],
+    unit_like_frees: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
     budget: usize,
 ) -> bool {
     let machine = checker.machine();
@@ -307,17 +316,10 @@ fn unit_like_free_pair(
     if left == right {
         return false;
     }
-    let (Ok(left_index), Ok(right_index)) = (usize::try_from(left.0), usize::try_from(right.0))
-    else {
-        return false;
-    };
-    let (Some(left_ty), Some(right_ty)) = (context.get(left_index), context.get(right_index))
-    else {
-        return false;
-    };
-    checker
-        .unit_like_type_key(left_ty, budget)
-        .zip(checker.unit_like_type_key(right_ty, budget))
+    let _ = (checker, budget);
+    unit_like_frees
+        .get(left)
+        .zip(unit_like_frees.get(right))
         .is_some_and(|(left, right)| left == right)
 }
 
