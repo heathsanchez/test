@@ -58,5 +58,9 @@ fn main() -> ExitCode {
         return ExitCode::from(fast_rc as u8);
     }
 
-    ExitCode::from(if complete_residual_check(&bytes) { 0 } else { 1 })
+    ExitCode::from(if complete_residual_check(&bytes) {
+        0
+    } else {
+        1
+    })
 }
