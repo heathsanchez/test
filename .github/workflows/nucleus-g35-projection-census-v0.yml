@@ -1,0 +1,61 @@
+name: Nucleus G35 Projection Census v0
+
+on:
+  push:
+    branches: [nucleus-g35-projection-census-v0]
+    paths: [".github/workflows/nucleus-g35-projection-census-v0.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Capture projection corridor
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/g35
+          python - <<'PY'
+          import json,pathlib,hashlib,shutil
+          root=pathlib.Path('/tmp/tutorial')
+          out=pathlib.Path('metatron-kernel/evidence-out/g35')
+          rows=[]
+          for d in ['good','bad']:
+              for p in sorted((root/d).glob('*.ndjson')):
+                  try:n=int(p.name.split('_',1)[0])
+                  except:continue
+                  if 83 <= n <= 98:
+                      dest=out/f'{d}_{p.name}'
+                      shutil.copy2(p,dest)
+                      records=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+                      proj=[r for r in records if 'proj' in r]
+                      inds=[r['inductive'] for r in records if 'inductive' in r]
+                      rows.append({'n':n,'path':f'{d}/{p.name}','sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'lines':len(records),'projection_records':proj,'inductive_blocks':inds})
+          (out/'summary.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(rows,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g35-projection-census-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g35
+          if-no-files-found: error
