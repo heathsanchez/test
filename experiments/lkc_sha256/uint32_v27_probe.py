@@ -89,6 +89,9 @@ lines += [
 "def impl (n : Nat) : Nat :=",
 "  encodeDigest (fromU (iterU (sha256Steps n) (toU (seedDigest (sha256Seed n)))))",
 "",
+"/-- DIAGNOSTIC ONLY: permits timing the runtime; never a submission candidate. -/",
+"axiom impl_correct : ∀ n, impl n = sha256Spec n",
+"",
 "end Submission",
 ]
 text="\n".join(lines)+"\n"
