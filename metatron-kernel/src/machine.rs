@@ -40,6 +40,57 @@ pub struct Exposure {
     pub transitions: Vec<TransitionWitness>,
 }
 
+type VisitKey = (AuthorityId, ExprId, u64);
+const INLINE_VISIT_CAPACITY: usize = 8;
+
+struct VisitSet {
+    inline: [Option<VisitKey>; INLINE_VISIT_CAPACITY],
+    len: usize,
+    overflow: Option<HashSet<VisitKey>>,
+}
+
+impl VisitSet {
+    #[inline]
+    fn new() -> Self {
+        Self {
+            inline: [None; INLINE_VISIT_CAPACITY],
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn insert(&mut self, key: VisitKey) -> bool {
+        if let Some(overflow) = self.overflow.as_mut() {
+            return overflow.insert(key);
+        }
+        for slot in &self.inline[..self.len] {
+            if *slot == Some(key) {
+                return false;
+            }
+        }
+        if self.len < INLINE_VISIT_CAPACITY {
+            self.inline[self.len] = Some(key);
+            self.len += 1;
+            return true;
+        }
+
+        let mut overflow = HashSet::with_capacity(INLINE_VISIT_CAPACITY * 2);
+        for slot in &self.inline[..self.len] {
+            overflow.insert(slot.expect("initialized inline visit slot"));
+        }
+        let inserted = overflow.insert(key);
+        self.overflow = Some(overflow);
+        inserted
+    }
+
+    #[inline]
+    fn clear(&mut self) {
+        self.len = 0;
+        self.overflow = None;
+    }
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
     expressions: &'a IdTable<ExprId, Expr>,
@@ -89,7 +140,7 @@ impl<'a> Machine<'a> {
         record_witnesses: bool,
     ) -> Judgment<Exposure> {
         let mut pending = Vec::new();
-        let mut visited = HashSet::new();
+        let mut visited = VisitSet::new();
         let mut transitions = Vec::new();
 
         loop {
