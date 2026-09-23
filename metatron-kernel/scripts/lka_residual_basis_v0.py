@@ -989,6 +989,17 @@ def semantic_positivity_status(
     return "allow" if saw_field else "not_applicable"
 
 
+def summarize_iota_major_shapes(shapes: list[str]) -> str:
+    if not shapes:
+        return "not_applicable"
+    kinds = set(shapes)
+    if kinds == {"constructor"}:
+        return "constructor"
+    if kinds == {"variable"}:
+        return "variable"
+    return "mixed"
+
+
 def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     exprs = expr_refs(records)
     levels = level_refs(records)
@@ -1472,17 +1483,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         recursor_reduction_scalar = "allow"
 
-    if not iota_major_shapes:
-        iota_major_shape_scalar = "not_applicable"
-    else:
-        kinds = set(iota_major_shapes)
-        if kinds == {"constructor"}:
-            iota_major_shape_scalar = "constructor"
-        elif kinds == {"variable"}:
-            iota_major_shape_scalar = "variable"
-        else:
-            # Includes any combination with an unrecognized major form.
-            iota_major_shape_scalar = "mixed"
+    iota_major_shape_scalar = summarize_iota_major_shapes(iota_major_shapes)
 
     projection_sources = [
         projection_source_by_eid.get(eid, "unknown")
