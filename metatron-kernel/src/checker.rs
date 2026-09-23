@@ -2694,10 +2694,9 @@ fn is_binary_product_constant_application(
     law: BinaryProductSortLaw,
 ) -> bool {
     let (head, arguments) = application_spine(export, expression);
-    matches!(arguments.as_slice(), [first_arg, second_arg]
-        if law.constant(export, head, constant)
-            && is_bvar(export, *first_arg, first)
-            && is_bvar(export, *second_arg, second))
+    arguments.len() == 2
+        && law.constant(export, head, constant)
+        && are_bvars(export, &arguments, &[first, second])
 }
 
 fn is_binary_product_constructor_application(
@@ -2707,12 +2706,9 @@ fn is_binary_product_constructor_application(
     law: BinaryProductSortLaw,
 ) -> bool {
     let (head, arguments) = application_spine(export, expression);
-    matches!(arguments.as_slice(), [first_parameter, second_parameter, left, right]
-        if law.constant(export, head, constructor)
-            && is_bvar(export, *first_parameter, 4)
-            && is_bvar(export, *second_parameter, 3)
-            && is_bvar(export, *left, 1)
-            && is_bvar(export, *right, 0))
+    arguments.len() == 4
+        && law.constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[4, 3, 1, 0])
 }
 
 fn is_unary_polymorphic_constant(
@@ -2769,11 +2765,9 @@ fn is_eq_application(
     index: u64,
 ) -> bool {
     let (head, arguments) = application_spine(export, expression);
-    matches!(arguments.as_slice(), [carrier_arg, parameter_arg, index_arg]
-        if law.constant(export, head, inductive)
-            && is_bvar(export, *carrier_arg, carrier)
-            && is_bvar(export, *parameter_arg, parameter)
-            && is_bvar(export, *index_arg, index))
+    arguments.len() == 3
+        && law.constant(export, head, inductive)
+        && are_bvars(export, &arguments, &[carrier, parameter, index])
 }
 
 fn is_eq_constructor_application(
@@ -2785,45 +2779,9 @@ fn is_eq_constructor_application(
     parameter: u64,
 ) -> bool {
     let (head, arguments) = application_spine(export, expression);
-    matches!(arguments.as_slice(), [carrier_arg, parameter_arg]
-        if law.constant(export, head, constructor)
-            && is_bvar(export, *carrier_arg, carrier)
-            && is_bvar(export, *parameter_arg, parameter))
-}
-
-fn is_eq_motive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    motive_level: NameId,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 2) else {
-        return false;
-    };
-    let [index, proof] = domains.as_slice() else {
-        return false;
-    };
-    is_bvar(export, *index, 1)
-        && is_eq_application(export, *proof, inductive, law, 2, 1, 0)
-        && is_sort_parameter(export, result, motive_level)
-}
-
-fn is_eq_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-    law: BinaryProductSortLaw,
-) -> bool {
-    let Some(Expr::App {
-        fun: motive_at_parameter,
-        arg: refl,
-    }) = export.exprs.get(expression)
-    else {
-        return false;
-    };
-    is_bvar_application(export, *motive_at_parameter, 0, 1)
-        && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
+    arguments.len() == 2
+        && law.constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[carrier, parameter])
 }
 
 fn has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
