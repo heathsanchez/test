@@ -120,7 +120,7 @@ pub(crate) fn convert_with_policy_in_context(
     budget: usize,
     delta_policy: DeltaPolicy,
     initial_depth: usize,
-    context: &[TypeValue],
+    _context: &[TypeValue],
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
