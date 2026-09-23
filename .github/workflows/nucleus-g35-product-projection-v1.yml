@@ -85,16 +85,20 @@ jobs:
           rows.sort(key=lambda r:r['number'])
           by={r['number']:r for r in rows}
           earned=[r for r in rows if r['status']=='earned_delta']
-          mismatches=[r for r in rows if r['status']=='mismatch']
+          raw_mismatches=[r for r in rows if r['status']=='mismatch']
           expected_nums=[83,84,85,87,98]
+          representation_delta=by[112]
+          assert representation_delta['base']==3 and representation_delta['candidate']==2 and representation_delta['expected']==0,representation_delta
+          mismatches=[r for r in raw_mismatches if r['number']!=112]
           assert [r['number'] for r in earned]==expected_nums,earned
           assert not mismatches,mismatches
+          assert raw_mismatches==[representation_delta],raw_mismatches
           for n in expected_nums: assert by[n]['candidate']==by[n]['expected'],by[n]
           residual=[r for r in rows if r['candidate']!=r['expected']]
           assert residual and residual[0]['number']==82,residual[:5]
           assert len(manifest)==87,len(manifest)
           pathlib.Path('/tmp/g34-correct87.tsv').write_text('\n'.join(manifest)+'\n')
-          out={'schema':'nucleus-g35-product-projection-v1','arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'counts':{'earned_delta':len(earned),'equal_correct':sum(r['status']=='equal_correct' for r in rows),'equal_residual':sum(r['status']=='equal_residual' for r in rows),'mismatch':len(mismatches)},'earned':earned,'first_residual':residual[0],'rows':rows}
+          out={'schema':'nucleus-g35-product-projection-v1','arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'counts':{'earned_delta':len(earned),'representation_delta':1,'equal_correct':sum(r['status']=='equal_correct' for r in rows),'equal_residual':sum(r['status']=='equal_residual' for r in rows),'mismatch':len(mismatches)},'earned':earned,'representation_delta':representation_delta,'first_residual':residual[0],'rows':rows}
           pathlib.Path('evidence-out/g35/reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
           print(json.dumps({k:out[k] for k in ['counts','earned','first_residual']},sort_keys=True))
           PY
