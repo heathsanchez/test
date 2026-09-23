@@ -26,9 +26,11 @@ jobs:
     env:
       BASE_SHA: 70e7a09c79a92e49555c9c4da51b471ccfedc7e0
       ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -187,7 +189,7 @@ jobs:
           summary = {
               'schema': 'nucleus-residual-capability-v0',
               'base_sha': os.environ['BASE_SHA'],
-              'candidate_sha': os.environ['GITHUB_SHA'],
+              'candidate_sha': os.environ['CANDIDATE_SHA'],
               'arena_sha': os.environ['ARENA_SHA'],
               'fixed_outcome_tests': len(rows),
               'baseline_residual_count': len(baseline_residual),
