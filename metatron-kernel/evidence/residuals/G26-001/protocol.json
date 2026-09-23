@@ -1,0 +1,48 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G26-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "4b257ea8442a7905af8b894144288864b16fb81a",
+    "primary_residual": {
+      "tutorial": 73,
+      "path": "bad/073_BogusRecursor.ndjson",
+      "sha256": "7f166e26d8b79ca496b066644bbe199faefa4c5fb3c6ded01e35ff4ec628a309"
+    }
+  },
+  "obstruction": "The G25 base leaves a safe unsupported single-constructor block UNKNOWN even when its supplied recursor metadata is structurally impossible for the declaration.",
+  "expected": "REJECT",
+  "observed": "UNKNOWN",
+  "least_capability": "RETAINED rejection-only law: on the already unsupported safe single-constructor frontier, reject only definite recursor-metadata contradictions fixed by the declaration itself: all-set ownership, parameter/index counts, exactly one motive for a single inductive, one minor/rule per constructor, matching rule constructor/field counts, and recursor child naming. Do not inspect elimination universes or grant positive inductive authority.",
+  "falsifier": "073 must reject; coherent unsupported 074 must remain UNKNOWN; no tutorial mismatch is allowed.",
+  "protected_suite": [
+    "all retained G0-G25 tests and falsifiers",
+    "coherent unsupported single-constructor families remain UNKNOWN",
+    "no positive authority is granted by this law"
+  ],
+  "evidence": {
+    "implementation_sha": "1537d4f580348e5a9828aae2c8f6df31001e449e",
+    "qualified_sha": "aa8b1c2ea1803193f78502b76b961a51a6e51da1",
+    "run": 35847835068,
+    "job": 107138168263,
+    "artifact": 10744570750,
+    "artifact_digest": "sha256:bcd3050ad8e410a2d7c78a55875f4ac7f5904a22a7359c49a0eda15082fa1826",
+    "tutorial_counts": {
+      "earned_delta": 3,
+      "equal_correct": 78,
+      "equal_residual": 60,
+      "mismatch": 0
+    },
+    "earned_deltas": [
+      "bad/073_BogusRecursor.ndjson",
+      "bad/136_misnamed_rec_user.ndjson",
+      "bad/137_dup_rec_def2.ndjson"
+    ],
+    "committed_differential": {
+      "count": 45,
+      "only_delta": "evidence/residuals/G25-001/073_BogusRecursor.ndjson"
+    },
+    "first_remaining_residual": "good/074_existsRec.ndjson"
+  },
+  "decision": "retained"
+}
