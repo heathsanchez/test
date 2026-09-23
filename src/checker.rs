@@ -2404,8 +2404,7 @@ fn recursor_metadata_admissible(
             .iter()
             .zip(constructors)
             .all(|(rule, constructor)| {
-                rule.constructor == constructor.name
-                    && rule.num_fields == constructor.num_fields
+                rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
             })
         && name_is_child_str(export, recursor.name, inductive.name, "rec")
 }
@@ -3436,20 +3435,18 @@ fn check_twobool_structure(
         false,
         !recursor.is_unsafe && recursor.level_params.len() == 1,
     ) || !is_derived_twobool_recursor_type(
-            export,
-            inductive.name,
-            constructor.name,
-            bool_name,
-            recursor,
-        )
-        || !is_derived_twobool_rule(
-            export,
-            inductive.name,
-            constructor.name,
-            bool_name,
-            recursor,
-        )
-    {
+        export,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        recursor,
+    ) || !is_derived_twobool_rule(
+        export,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        recursor,
+    ) {
         return Err(Verdict::Reject);
     }
     derivation.promote(
