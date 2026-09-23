@@ -2797,11 +2797,7 @@ enum BinaryProductFamily {
     PProd,
 }
 
-fn is_exists_predicate_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    carrier: u64,
-) -> bool {
+fn is_exists_predicate_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 1) else {
         return false;
     };
@@ -2836,18 +2832,10 @@ fn is_exists_constructor_application(
     let (head, arguments) = application_spine(export, expression);
     arguments.len() == 4
         && is_unary_polymorphic_constant(export, head, constructor, level)
-        && are_bvars(
-            export,
-            &arguments,
-            &[carrier, predicate, witness, proof],
-        )
+        && are_bvars(export, &arguments, &[carrier, predicate, witness, proof])
 }
 
-fn is_exact_exists_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    level: NameId,
-) -> bool {
+fn is_exact_exists_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
@@ -2912,16 +2900,7 @@ fn is_exists_minor_type(
         return false;
     };
     is_bvar(export, *motive, 2)
-        && is_exists_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            level,
-            4,
-            3,
-            1,
-            0,
-        )
+        && is_exists_constructor_application(export, *constructed, constructor, level, 4, 3, 1, 0)
 }
 
 fn is_exact_exists_recursor_type(
@@ -2986,9 +2965,7 @@ fn check_exact_exists(
     {
         return Err(Verdict::Unknown);
     }
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.all != [inductive.name]
+    if inductive.num_params != 2 || inductive.num_indices != 0 || inductive.all != [inductive.name]
     {
         return Err(Verdict::Reject);
     }
@@ -3014,12 +2991,7 @@ fn check_exact_exists(
         || constructor.level_params != [*level]
         || !name_is_child_str(export, constructor.name, inductive.name, "intro")
         || !is_exact_exists_type(export, inductive.ty, *level)
-        || !is_exact_exists_constructor_type(
-            export,
-            constructor.ty,
-            inductive.name,
-            *level,
-        )
+        || !is_exact_exists_constructor_type(export, constructor.ty, inductive.name, *level)
         || !recursor_metadata_admissible(
             export,
             inductive,
@@ -3036,13 +3008,13 @@ fn check_exact_exists(
             *level,
         )
         || !matches!(recursor.rules.as_slice(), [rule]
-            if is_exact_exists_rule(
-                export,
-                inductive.name,
-                constructor.name,
-                rule,
-                *level,
-            ))
+        if is_exact_exists_rule(
+            export,
+            inductive.name,
+            constructor.name,
+            rule,
+            *level,
+        ))
     {
         return Err(Verdict::Reject);
     }
