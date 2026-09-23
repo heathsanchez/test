@@ -676,6 +676,10 @@ fn check_inductive(
         return check_exact_rbtree(export, environment, block, limits, delta_policy);
     }
 
+    if exact_closed_reflexive_tree_candidate(export, block) {
+        return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
+    }
+
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -4393,6 +4397,332 @@ fn are_derived_rbtree_rules(
             prefix,
             RbBranch::Black,
         )
+}
+
+/// Residual-generated closed reflexive function-tree law.
+///
+/// One safe closed Type-valued recursive+reflexive inductive has a nullary
+/// leaf and one node field D -> I for an already-declared closed domain D.
+/// The recursor must expose the exact pointwise induction hypothesis and rule
+/// equation.  This is structural and grants no authority to parameterized,
+/// indexed, nested, unsafe, multi-field, or differently reflexive families.
+fn exact_closed_reflexive_tree_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || !inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [leaf.name, node.name]
+    {
+        return false;
+    }
+
+    let type_level_ok = matches!(
+        export.exprs.get(inductive.ty),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    if !type_level_ok
+        || leaf.index != 0
+        || leaf.inductive != inductive.name
+        || leaf.is_unsafe
+        || !leaf.level_params.is_empty()
+        || leaf.num_params != 0
+        || leaf.num_fields != 0
+        || !is_empty_constant(export, leaf.ty, inductive.name)
+        || node.index != 1
+        || node.inductive != inductive.name
+        || node.is_unsafe
+        || !node.level_params.is_empty()
+        || node.num_params != 0
+        || node.num_fields != 1
+        || recursor.is_unsafe
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.len() == 1,
+        )
+    {
+        return false;
+    }
+
+    let Some(domain) = reflexive_tree_constructor_domain(export, node.ty, inductive.name) else {
+        return false;
+    };
+    reflexive_tree_recursor_obligations(
+        export,
+        inductive.name,
+        leaf.name,
+        node.name,
+        domain,
+        recursor,
+    )
+}
+
+fn check_exact_closed_reflexive_tree(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [leaf, node], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_closed_reflexive_tree_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(leaf),
+            derived_constructor(node),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn reflexive_tree_constructor_domain(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+) -> Option<NameId> {
+    let Expr::Pi {
+        domain: field,
+        body: result,
+    } = export.exprs.get(expression)?
+    else {
+        return None;
+    };
+    if !is_empty_constant(export, *result, inductive) {
+        return None;
+    }
+    let Expr::Pi {
+        domain,
+        body: recursive_result,
+    } = export.exprs.get(*field)?
+    else {
+        return None;
+    };
+    if !is_empty_constant(export, *recursive_result, inductive) {
+        return None;
+    }
+    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
+        return None;
+    };
+    levels.is_empty().then_some(*name)
+}
+
+fn reflexive_tree_field_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    domain: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Pi {
+            domain: field_domain,
+            body,
+        }) if is_empty_constant(export, *field_domain, domain)
+            && is_empty_constant(export, *body, inductive)
+    )
+}
+
+fn reflexive_tree_node_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    node: NameId,
+    field: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_empty_constant(export, *fun, node)
+                && is_bvar(export, *arg, field)
+    )
+}
+
+fn reflexive_tree_node_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    node: NameId,
+    domain: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [field, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !reflexive_tree_field_type(export, *field, inductive, domain) {
+        return false;
+    }
+
+    let Some(Expr::Pi {
+        domain: ih_domain,
+        body: ih_body,
+    }) = export.exprs.get(*induction_hypothesis)
+    else {
+        return false;
+    };
+    let Some(Expr::App {
+        fun: ih_motive,
+        arg: field_at_point,
+    }) = export.exprs.get(*ih_body)
+    else {
+        return false;
+    };
+    if !is_empty_constant(export, *ih_domain, domain)
+        || !is_bvar(export, *ih_motive, 3)
+        || !is_bvar_application(export, *field_at_point, 1, 0)
+    {
+        return false;
+    }
+
+    matches!(
+        export.exprs.get(result),
+        Some(Expr::App {
+            fun: result_motive,
+            arg: constructed,
+        }) if is_bvar(export, *result_motive, 3)
+            && reflexive_tree_node_application(export, *constructed, node, 1)
+    )
+}
+
+fn reflexive_tree_recursor_call(
+    export: &ResolvedExport,
+    expression: ExprId,
+    recursor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    let [motive, leaf_minor, node_minor, target] = arguments.as_slice() else {
+        return false;
+    };
+    is_unary_polymorphic_constant(export, head, recursor, motive_level)
+        && is_bvar(export, *motive, 4)
+        && is_bvar(export, *leaf_minor, 3)
+        && is_bvar(export, *node_minor, 2)
+        && is_bvar_application(export, *target, 1, 0)
+}
+
+fn reflexive_tree_recursor_obligations(
+    export: &ResolvedExport,
+    inductive: NameId,
+    leaf: NameId,
+    node: NameId,
+    domain: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return false;
+    };
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi {
+                domain: target,
+                body: result,
+            }) if is_empty_constant(export, *target, inductive)
+                && is_sort_parameter(export, *result, *motive_level)
+        )
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, leaf_minor, node_minor, target] = type_domains.as_slice() else {
+        return false;
+    };
+    if !motive_ok(*motive)
+        || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+        || !reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+        || !is_empty_constant(export, *target, inductive)
+        || !is_bvar_application(export, type_result, 3, 0)
+    {
+        return false;
+    }
+
+    let [leaf_rule, node_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let leaf_ok = lam_spine(export, leaf_rule.rhs, 3).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor] = domains.as_slice() else {
+            return false;
+        };
+        motive_ok(*motive)
+            && is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            && reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+            && is_bvar(export, result, 1)
+    });
+
+    let node_ok = lam_spine(export, node_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [motive, leaf_minor, node_minor, field] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *leaf_minor, 0, leaf)
+            || !reflexive_tree_node_minor(export, *node_minor, inductive, node, domain)
+            || !reflexive_tree_field_type(export, *field, inductive, domain)
+        {
+            return false;
+        }
+
+        let (minor_head, arguments) = application_spine(export, result);
+        let [field_arg, pointwise_ih] = arguments.as_slice() else {
+            return false;
+        };
+        if !is_bvar(export, minor_head, 1) || !is_bvar(export, *field_arg, 0) {
+            return false;
+        }
+        let Some(Expr::Lam {
+            domain: ih_domain,
+            body: recursive_call,
+        }) = export.exprs.get(*pointwise_ih)
+        else {
+            return false;
+        };
+        is_empty_constant(export, *ih_domain, domain)
+            && reflexive_tree_recursor_call(
+                export,
+                *recursive_call,
+                recursor.name,
+                *motive_level,
+            )
+    });
+
+    leaf_ok && node_ok
 }
 
 /// G10-001: a closed, safe, two-constructor enum. This admits no constructor
