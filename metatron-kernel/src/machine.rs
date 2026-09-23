@@ -40,12 +40,14 @@ pub struct RecursorRule {
     pub constructor: NameId,
     pub num_params: usize,
     pub num_fields: usize,
+    pub rhs: ExprId,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorReduction {
     pub num_params: usize,
     pub num_indices: usize,
+    pub level_params: Vec<NameId>,
     pub rules: Vec<RecursorRule>,
 }
 
@@ -222,31 +224,58 @@ impl<'a> Machine<'a> {
                             + reduction.rules.len()
                             + reduction.num_indices
                             + 1;
-                        if pending.len() >= required {
+                        if pending.len() >= required
+                            && reduction.level_params.len() == levels.len()
+                        {
                             let offset = pending.len() - required;
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
-                                && let Some((rule_index, rule)) = reduction
+                                && let Some(rule) = reduction
                                     .rules
                                     .iter()
-                                    .enumerate()
-                                    .find(|(_, rule)| rule.constructor == constructor)
+                                    .find(|rule| rule.constructor == constructor)
                                 && constructor_arguments.len() == rule.num_params + rule.num_fields
                             {
-                                let minor_index = reduction.num_params + 1 + rule_index;
-                                let minor = arguments[minor_index].clone();
-                                let fields = &constructor_arguments[rule.num_params..];
-                                pending.truncate(offset);
-                                for field in fields.iter().rev() {
-                                    pending.push(field.clone());
+                                let prefix_len =
+                                    reduction.num_params + 1 + reduction.rules.len();
+                                let mut rule_arguments = arguments[..prefix_len].to_vec();
+                                rule_arguments.extend_from_slice(
+                                    &constructor_arguments[rule.num_params..],
+                                );
+
+                                let mut level_substitution = closure.levels.to_map();
+                                let mut levels_ok = true;
+                                for (parameter, level) in
+                                    reduction.level_params.iter().zip(levels)
+                                {
+                                    let Some(level) =
+                                        self.resolve_level(*level, &closure, budget)
+                                    else {
+                                        levels_ok = false;
+                                        break;
+                                    };
+                                    level_substitution.insert(*parameter, level);
                                 }
-                                transitions.push(TransitionWitness::ConstructorRecursor);
-                                visited.clear();
-                                closure = minor;
-                                continue;
+                                if levels_ok {
+                                    let mut level_substitution =
+                                        level_substitution.into_iter().collect::<Vec<_>>();
+                                    level_substitution.sort_by_key(|(name, _)| name.0);
+                                    pending.truncate(offset);
+                                    for argument in rule_arguments.iter().rev() {
+                                        pending.push(argument.clone());
+                                    }
+                                    transitions.push(TransitionWitness::ConstructorRecursor);
+                                    visited.clear();
+                                    closure = Closure::with_levels(
+                                        rule.rhs,
+                                        EnvFrame::empty(),
+                                        LevelSubstitution::new(level_substitution),
+                                    );
+                                    continue;
+                                }
                             }
                         }
                     }
