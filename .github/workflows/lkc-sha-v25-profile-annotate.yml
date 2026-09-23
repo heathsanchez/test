@@ -1,0 +1,31 @@
+name: LKC SHA V25 Profile Annotate
+on:
+  workflow_dispatch:
+  push:
+    branches: [lkc-sha-v24-interaction-v25]
+    paths:
+      - '.github/workflows/lkc-sha-v25-profile-annotate.yml'
+permissions:
+  actions: read
+  contents: read
+jobs:
+  annotate:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Install callgrind tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y valgrind >/dev/null
+      - uses: actions/download-artifact@v4
+        with:
+          name: sha-v25-callgrind
+          path: cg
+          run-id: 35809277840
+          github-token: ${{ github.token }}
+      - name: Exclusive profile
+        run: |
+          prof="$GITHUB_WORKSPACE/cg/candidate/callgrind-18860801433-1.out"
+          echo "=== EXCLUSIVE ==="
+          callgrind_annotate --inclusive=no --threshold=0.15 "$prof" | head -260
+          echo "=== INCLUSIVE TREE ==="
+          callgrind_annotate --inclusive=yes --tree=both --threshold=1.0 "$prof" | head -360
