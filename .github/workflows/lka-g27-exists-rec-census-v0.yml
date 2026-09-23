@@ -1,0 +1,92 @@
+name: LKA G27 Exists Rec Census v0
+
+on:
+  push:
+    branches: [lka-g27-exists-rec-v1]
+    paths:
+      - ".github/workflows/lka-g27-exists-rec-census-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 587b9706df880ba67bf8f28b7ecb6a3e5417fdd0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify exact G26 base
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo test --release
+          python scripts/check_ledger.py
+          cargo build --release --locked
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Capture 074-077 residual corridor
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g27-census/fixtures
+          python - <<'PY'
+          import hashlib,json,os,pathlib,shutil,subprocess
+          root=pathlib.Path('/tmp/lean-kernel-tutorial')
+          checker=pathlib.Path('target/release/metatron-kernel').resolve()
+          wanted=set(range(74,78))
+          rows=[]
+          for expected_dir,expected_exit in [('good',0),('bad',1)]:
+              for path in sorted((root/expected_dir).glob('*.ndjson')):
+                  try: number=int(path.name.split('_',1)[0])
+                  except ValueError: continue
+                  if number not in wanted: continue
+                  with path.open('rb') as f:
+                      run=subprocess.run([str(checker)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,check=False)
+                  raw=path.read_bytes()
+                  shutil.copyfile(path,pathlib.Path('evidence-out/g27-census/fixtures')/path.name)
+                  rows.append({
+                      'number':number,'input':f'{expected_dir}/{path.name}',
+                      'expected_exit':expected_exit,'actual_exit':run.returncode,
+                      'sha256':hashlib.sha256(raw).hexdigest(),
+                      'stderr':run.stderr.decode(errors='replace')[-2000:],
+                  })
+          rows.sort(key=lambda r:r['number'])
+          assert [r['number'] for r in rows]==list(range(74,78)), rows
+          assert rows[0]['actual_exit']==2 and rows[0]['expected_exit']==0, rows[0]
+          out={
+              'schema':'metatron-kernel-g27-exists-rec-census-v0',
+              'base_sha':os.environ['BASE_SHA'],'arena_sha':os.environ['ARENA_SHA'],
+              'rows':rows,'authority':'diagnostic-only; no authority gain'
+          }
+          pathlib.Path('evidence-out/g27-census/census.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload census
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g27-exists-rec-census-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g27-census
+          if-no-files-found: error
