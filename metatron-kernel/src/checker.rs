@@ -1869,9 +1869,7 @@ fn expression_has_definite_negative_occurrence(
             ..
         }) => {
             (*type_name == target && !positive)
-                || expression_has_definite_negative_occurrence(
-                    export, *structure, target, positive,
-                )
+                || expression_has_definite_negative_occurrence(export, *structure, target, positive)
         }
         Some(Expr::BVar(_) | Expr::Sort(_)) | None => false,
     }
@@ -2002,9 +2000,7 @@ fn expression_contains_constant(
             type_name,
             structure,
             ..
-        }) => {
-            *type_name == target || expression_contains_constant(export, *structure, target)
-        }
+        }) => *type_name == target || expression_contains_constant(export, *structure, target),
         Some(Expr::BVar(_) | Expr::Sort(_)) | None => false,
     }
 }
