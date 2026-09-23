@@ -314,7 +314,8 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
-        && name_is_root_str(export, inductive.name, "N")
+        && (name_is_root_str(export, inductive.name, "N")
+            || name_is_root_str(export, inductive.name, "Nat"))
     {
         return check_exact_nat(export, environment, block, limits, delta_policy);
     }
