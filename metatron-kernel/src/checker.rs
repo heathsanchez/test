@@ -164,7 +164,40 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
-                    Err(verdict) => return verdict,
+                    Err(verdict) => {
+                        if verdict == Verdict::Unknown
+                            && std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some()
+                        {
+                            if let Some(inductive) = block.types.first() {
+                                let max_fields = block
+                                    .constructors
+                                    .iter()
+                                    .map(|constructor| constructor.num_fields)
+                                    .max()
+                                    .unwrap_or(0);
+                                let any_k = block.recursors.iter().any(|recursor| recursor.k);
+                                eprintln!(
+                                    "NUCLEUS_INDUCTIVE_BLOCKER:name={}:types={}:ctors={}:recs={}:params={}:indices={}:nested={}:rec={}:reflexive={}:unsafe={}:max_fields={}:k={}:levels={}",
+                                    inductive.name.0,
+                                    block.types.len(),
+                                    block.constructors.len(),
+                                    block.recursors.len(),
+                                    inductive.num_params,
+                                    inductive.num_indices,
+                                    inductive.num_nested,
+                                    inductive.is_recursive,
+                                    inductive.is_reflexive,
+                                    inductive.is_unsafe,
+                                    max_fields,
+                                    any_k,
+                                    inductive.level_params.len(),
+                                );
+                            } else {
+                                eprintln!("NUCLEUS_INDUCTIVE_BLOCKER:empty-block");
+                            }
+                        }
+                        return verdict;
+                    }
                 }
             }
             Declaration::Unsupported { .. } => return Verdict::Unknown,
