@@ -3476,6 +3476,7 @@ mod tests {
         is_binary_product_motive_type, is_bvar_application,
         is_derived_binary_product_constructor_type, is_derived_binary_product_recursor_type,
         is_derived_binary_product_rule, is_exact_binary_product_parameter_telescope, is_prop_sort,
+        name_is_root_str,
     };
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
