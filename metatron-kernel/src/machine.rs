@@ -52,6 +52,19 @@ pub struct RecursorReduction {
     pub rules: Vec<RecursorRule>,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+pub enum NatBinaryOp {
+    Add,
+    Sub,
+    Ble,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BoolPrimitives {
+    pub false_ctor: NameId,
+    pub true_ctor: NameId,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionSpec {
     pub constructor: NameId,
@@ -123,6 +136,8 @@ pub struct Machine<'a> {
     singleton_recursor_reductions: HashSet<NameId>,
     recursor_reductions: HashMap<NameId, RecursorReduction>,
     projection_specs: HashMap<NameId, ProjectionSpec>,
+    nat_binary_ops: HashMap<NameId, NatBinaryOp>,
+    bool_primitives: Option<BoolPrimitives>,
 }
 
 impl<'a> Machine<'a> {
@@ -140,6 +155,8 @@ impl<'a> Machine<'a> {
             singleton_recursor_reductions: HashSet::new(),
             recursor_reductions: HashMap::new(),
             projection_specs: HashMap::new(),
+            nat_binary_ops: HashMap::new(),
+            bool_primitives: None,
         }
     }
 
@@ -158,6 +175,16 @@ impl<'a> Machine<'a> {
 
     pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
         self.projection_specs = specs;
+        self
+    }
+
+    pub fn with_nat_binary_ops(mut self, ops: HashMap<NameId, NatBinaryOp>) -> Self {
+        self.nat_binary_ops = ops;
+        self
+    }
+
+    pub fn with_bool_primitives(mut self, primitives: Option<BoolPrimitives>) -> Self {
+        self.bool_primitives = primitives;
         self
     }
 
@@ -296,6 +323,61 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
+                    if levels.is_empty()
+                        && pending.len() == 2
+                        && let Some(op) = self.nat_binary_ops.get(name).copied()
+                    {
+                        let first = pending[1].clone();
+                        let second = pending[0].clone();
+                        let first_value = self
+                            .expose_internal(first, transparency, budget, false)
+                            .proven_value()
+                            .map(|exposure| exposure.value.clone());
+                        let second_value = self
+                            .expose_internal(second, transparency, budget, false)
+                            .proven_value()
+                            .map(|exposure| exposure.value.clone());
+                        if let (Some(Value::NatLit(left)), Some(Value::NatLit(right))) =
+                            (first_value, second_value)
+                        {
+                            record_transition(
+                                &mut transitions,
+                                record_witnesses,
+                                TransitionWitness::Delta,
+                            );
+                            return match op {
+                                NatBinaryOp::Add => {
+                                    exposed(Value::NatLit(left.add(&right)), transitions)
+                                }
+                                NatBinaryOp::Sub => {
+                                    exposed(Value::NatLit(left.sub_trunc(&right)), transitions)
+                                }
+                                NatBinaryOp::Ble => {
+                                    let Some(bool_primitives) = &self.bool_primitives else {
+                                        return Judgment::unknown(
+                                            "Nat.ble-without-qualified-Bool",
+                                        );
+                                    };
+                                    let ctor = if left.compare(&right).is_le() {
+                                        bool_primitives.true_ctor
+                                    } else {
+                                        bool_primitives.false_ctor
+                                    };
+                                    exposed(
+                                        Value::Neutral(Neutral {
+                                            head: NeutralHead::Const {
+                                                name: ctor,
+                                                levels: Vec::new(),
+                                            },
+                                            spine: Vec::new(),
+                                        }),
+                                        transitions,
+                                    )
+                                }
+                            };
+                        }
+                    }
+
                     // G28: a separately qualified nullary-singleton recursor
                     // ignores its target and returns its sole minor.  This is
                     // kernel computation authority, not delta unfolding.
