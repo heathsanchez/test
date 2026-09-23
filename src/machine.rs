@@ -53,6 +53,13 @@ pub struct RecursorReduction {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProjectionSpec {
+    pub constructor: NameId,
+    pub num_params: usize,
+    pub field_param_indices: Vec<usize>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct Exposure {
     pub value: Value,
     pub transitions: Vec<TransitionWitness>,
@@ -115,6 +122,7 @@ pub struct Machine<'a> {
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
     singleton_recursor_reductions: HashSet<NameId>,
     recursor_reductions: HashMap<NameId, RecursorReduction>,
+    projection_specs: HashMap<NameId, ProjectionSpec>,
 }
 
 impl<'a> Machine<'a> {
@@ -131,6 +139,7 @@ impl<'a> Machine<'a> {
             definitions: definitions.into(),
             singleton_recursor_reductions: HashSet::new(),
             recursor_reductions: HashMap::new(),
+            projection_specs: HashMap::new(),
         }
     }
 
@@ -144,6 +153,14 @@ impl<'a> Machine<'a> {
         reductions: HashMap<NameId, RecursorReduction>,
     ) -> Self {
         self.recursor_reductions = reductions;
+        self
+    }
+
+    pub fn with_projection_specs(
+        mut self,
+        specs: HashMap<NameId, ProjectionSpec>,
+    ) -> Self {
+        self.projection_specs = specs;
         self
     }
 
@@ -396,6 +413,43 @@ impl<'a> Machine<'a> {
                         }),
                         transitions,
                     );
+                }
+                Expr::Proj {
+                    type_name,
+                    index,
+                    structure,
+                } => {
+                    if !pending.is_empty() {
+                        return Judgment::unknown("projection-applied-as-function");
+                    }
+                    let Some(spec) = self.projection_specs.get(type_name) else {
+                        return Judgment::unknown("unsupported-projection");
+                    };
+                    let Ok(index) = usize::try_from(*index) else {
+                        return Judgment::unknown("projection-index-overflow");
+                    };
+                    if index >= spec.field_param_indices.len() {
+                        return Judgment::unknown("projection-index-out-of-range");
+                    }
+                    let structure = closure.sibling(*structure, closure.env.clone());
+                    let exposed_structure =
+                        self.expose_internal(structure, transparency, budget, false);
+                    let Some(Value::Neutral(neutral)) = exposed_structure.proven_value() else {
+                        return Judgment::unknown("projection-structure-stuck");
+                    };
+                    let NeutralHead::Const { name, .. } = neutral.head else {
+                        return Judgment::unknown("projection-structure-neutral");
+                    };
+                    if name != spec.constructor {
+                        return Judgment::unknown("projection-constructor-mismatch");
+                    }
+                    let field_offset = spec.num_params + index;
+                    let Some(field) = neutral.spine.get(field_offset).cloned() else {
+                        return Judgment::unknown("projection-constructor-arity");
+                    };
+                    visited.clear();
+                    closure = field;
+                    continue;
                 }
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
