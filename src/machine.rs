@@ -523,14 +523,13 @@ impl<'a> Machine<'a> {
     ) -> Option<Closure> {
         let primitives = self.quot_primitives.as_ref()?;
 
-        let (required, target_index, function_index, level_arity) =
-            if name == primitives.lift {
-                (6usize, 5usize, 3usize, 2usize)
-            } else if name == primitives.ind {
-                (5usize, 4usize, 3usize, 1usize)
-            } else {
-                return None;
-            };
+        let (required, target_index, function_index, level_arity) = if name == primitives.lift {
+            (6usize, 5usize, 3usize, 2usize)
+        } else if name == primitives.ind {
+            (5usize, 4usize, 3usize, 1usize)
+        } else {
+            return None;
+        };
         if levels.len() != level_arity || pending.len() < required {
             return None;
         }
