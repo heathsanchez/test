@@ -361,8 +361,8 @@ impl<'a> TypeChecker<'a> {
             self.expressions,
             self.levels,
             self.environment.definition_bodies(),
-            self.environment.singleton_recursor_reductions(),
         )
+        .with_singleton_recursor_reductions(self.environment.singleton_recursor_reductions())
     }
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
