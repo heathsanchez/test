@@ -79,19 +79,17 @@ jobs:
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
 
-      - name: Transport-aware exact radius-5 Atlas connector
+      - name: Six-context exact-depth-6 Proof Atlas fiber
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/fresh_transport_09398/out
-          python3 acc_competitive/transport_exact_connector_v1.py \
+          python3 acc_competitive/transport_atlas_fiber_depth6_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
-            --snapshot-ac acc_competitive/fresh_transport_09398/snapshot_ac.json \
-            --snapshot-stable acc_competitive/fresh_transport_09398/snapshot_stable.json \
+            --rows acc_competitive/fresh_transport_09398/rows.json \
             --target-ids-file acc_competitive/fresh_transport_09398/targets.json \
             --out-dir acc_competitive/fresh_transport_09398/out \
-            --connector-depth 5 \
-            --node-cap 250000 \
+            --depth 6 \
             | tee acc_competitive/fresh_transport_09398/search.log
 
       - name: Summarize fresh residual
