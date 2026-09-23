@@ -242,19 +242,14 @@ fn expression_may_contain_target_projection(
                 )
         }
         Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
-            expression_may_contain_target_projection(
-                export,
-                *domain,
-                target_names,
-                memo,
-                depth + 1,
-            ) || expression_may_contain_target_projection(
-                export,
-                *body,
-                target_names,
-                memo,
-                depth + 1,
-            )
+            expression_may_contain_target_projection(export, *domain, target_names, memo, depth + 1)
+                || expression_may_contain_target_projection(
+                    export,
+                    *body,
+                    target_names,
+                    memo,
+                    depth + 1,
+                )
         }
         Expr::Let { ty, value, body } => {
             expression_may_contain_target_projection(export, *ty, target_names, memo, depth + 1)
@@ -290,13 +285,8 @@ fn expression_contains_invalid_prop_projection(
     if depth > 4096 {
         return false;
     }
-    if !expression_may_contain_target_projection(
-        export,
-        expression,
-        target_names,
-        relevance,
-        depth,
-    ) {
+    if !expression_may_contain_target_projection(export, expression, target_names, relevance, depth)
+    {
         return false;
     }
     let Some(node) = export.exprs.get(expression) else {
@@ -688,7 +678,6 @@ fn expression_has_loose_bvars(
         Expr::NatLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
     }
 }
-
 
 #[cfg(test)]
 mod tests {
