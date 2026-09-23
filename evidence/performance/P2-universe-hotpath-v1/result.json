@@ -1,0 +1,45 @@
+{
+  "schema": "nucleus-performance-capability-v1",
+  "id": "P2-universe-hotpath-v1",
+  "baseline_g25_sha": "4b257ea8442a7905af8b894144288864b16fb81a",
+  "parent_p1_sha": "398aa45fb6bc6bfda1147ee635ea6d4adfaa35bf",
+  "candidate_sha": "411c5a38ee29885a533dd03219ba0b7f17cfdaf9",
+  "change": "Keep level-cycle tracking inline for short universe graphs and resolve closure level substitutions directly without rebuilding HashMaps.",
+  "semantic_qualification": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "tutorial_count": 141,
+    "tutorial_diffs": 0,
+    "committed_count": 45,
+    "committed_diffs": 0,
+    "correct_tutorial_cohort": 78
+  },
+  "in_process_correct78": {
+    "iterations": 200,
+    "medians_ns": {
+      "g25": 1190603317,
+      "p1": 1060563839,
+      "p2": 1003570692
+    },
+    "p1_over_g25": 0.8907785018374847,
+    "p2_over_g25": 0.8429093701239874,
+    "p2_over_p1": 0.9462614649828731
+  },
+  "universe_hotpath": {
+    "iterations": 2000000,
+    "medians_ns": {
+      "g25": 1219799922,
+      "p1": 1127224977,
+      "p2": 509864499
+    },
+    "p1_over_g25": 0.9241064511233835,
+    "p2_over_g25": 0.4179902702108879,
+    "p2_over_p1": 0.45231831214116186
+  },
+  "evidence": {
+    "run": 35852894683,
+    "job": 107154497973,
+    "artifact": 10746690407,
+    "artifact_digest": "sha256:9c84a95f6016df084459e5901c9dd3fb2ad27589097150e898d0fdb40ab69ef2"
+  },
+  "decision": "retain"
+}
