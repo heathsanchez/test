@@ -36,8 +36,8 @@ fn check_export_with_policy(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
-    if let Some(hit) = crate::capability::execute(&export) {
-        return hit.verdict;
+    if let Some(verdict) = crate::capability::execute(&export) {
+        return verdict;
     }
 
     let mut environment = Environment::empty();
