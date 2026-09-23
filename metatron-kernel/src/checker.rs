@@ -336,7 +336,9 @@ fn check_single_constructor_inductive(
     let [inductive] = block.types.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if name_is_root_str(export, inductive.name, "And") {
+    if name_is_root_str(export, inductive.name, "Exists") {
+        check_exact_exists(export, environment, block, limits, delta_policy)
+    } else if name_is_root_str(export, inductive.name, "And") {
         check_exact_binary_product_family(
             export,
             environment,
@@ -2795,6 +2797,238 @@ enum BinaryProductFamily {
     PProd,
 }
 
+fn is_exists_predicate_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [domain]
+        if is_bvar(export, *domain, carrier) && is_prop_sort(export, result))
+}
+
+fn is_exists_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    predicate: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, inductive, level)
+        && are_bvars(export, &arguments, &[carrier, predicate])
+}
+
+fn is_exists_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+    binders: [u64; 4],
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, constructor, level)
+        && are_bvars(export, &arguments, &binders)
+}
+
+fn is_exact_exists_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [carrier, predicate]
+        if is_sort_parameter(export, *carrier, level)
+            && is_exists_predicate_type(export, *predicate, 0)
+            && is_prop_sort(export, result))
+}
+
+fn is_exact_exists_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [carrier, predicate, witness, proof]
+        if is_sort_parameter(export, *carrier, level)
+            && is_exists_predicate_type(export, *predicate, 0)
+            && is_bvar(export, *witness, 1)
+            && is_bvar_application(export, *proof, 1, 0)
+            && is_exists_application(export, result, inductive, level, 3, 2))
+}
+
+fn is_exists_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [target]
+        if is_exists_application(export, *target, inductive, level, 1, 0)
+            && is_prop_sort(export, result))
+}
+
+fn is_exists_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [witness, proof] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *witness, 2) || !is_bvar_application(export, *proof, 2, 0) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 2)
+        && is_exists_constructor_application(export, *constructed, constructor, level, [4, 3, 1, 0])
+}
+
+fn is_exact_exists_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    recursor: &Recursor,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [carrier, predicate, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_exists_motive_type(export, *motive, inductive, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
+        && is_exists_application(export, *target, inductive, level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn is_exact_exists_rule(
+    export: &ResolvedExport,
+    inductive: NameId,
+    constructor: NameId,
+    rule: &crate::syntax::RecursorRule,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
+        return false;
+    };
+    let [carrier, predicate, motive, minor, witness, proof] = domains.as_slice() else {
+        return false;
+    };
+    rule.constructor == constructor
+        && rule.num_fields == 2
+        && is_sort_parameter(export, *carrier, level)
+        && is_exists_predicate_type(export, *predicate, 0)
+        && is_exists_motive_type(export, *motive, inductive, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
+        && is_bvar(export, *witness, 3)
+        && is_bvar_application(export, *proof, 3, 0)
+        && is_binary_bvar_application(export, result, 2, 1, 0)
+}
+
+fn check_exact_exists(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.num_params != 2 || inductive.num_indices != 0 || inductive.all != [inductive.name]
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if constructor.is_unsafe || recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 2
+        || constructor.num_fields != 2
+        || constructor.level_params != [*level]
+        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
+        || !is_exact_exists_type(export, inductive.ty, *level)
+        || !is_exact_exists_constructor_type(export, constructor.ty, inductive.name, *level)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            std::slice::from_ref(constructor),
+            recursor,
+            false,
+            recursor.level_params == [*level],
+        )
+        || !is_exact_exists_recursor_type(
+            export,
+            inductive.name,
+            constructor.name,
+            recursor,
+            *level,
+        )
+        || !matches!(recursor.rules.as_slice(), [rule]
+        if is_exact_exists_rule(
+            export,
+            inductive.name,
+            constructor.name,
+            rule,
+            *level,
+        ))
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
 fn check_exact_binary_product_family(
     export: &ResolvedExport,
     environment: &Environment,
@@ -3679,6 +3913,13 @@ mod tests {
             ),
             Err(Verdict::Reject)
         ));
+    }
+
+    #[test]
+    fn g27_exact_exists_prop_recursor_is_accepted() {
+        let bytes = include_bytes!("../evidence/residuals/G27-001/074_existsRec.ndjson");
+        let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
+        assert_eq!(check_export(export, Limits::default()), Verdict::Accept);
     }
 
     #[test]
