@@ -1,4 +1,5 @@
 use crate::id::{ExprId, LevelId, NameId};
+use crate::nat::BigNat;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Name {
@@ -18,6 +19,7 @@ pub enum Level {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Expr {
     BVar(u64),
+    NatLit(BigNat),
     Sort(LevelId),
     Const {
         name: NameId,
