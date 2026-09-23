@@ -1,0 +1,108 @@
+name: ACC Fresh Transport Reproduction V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-fresh-transport-reproduction-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  reproduce:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover latest verified Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          [ -n "$ID" ] || { echo "No proof atlas"; exit 1; }
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+
+      - name: Freeze fresh 09993 transport residual
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/fresh_transport_09993
+          python3 - <<'PY'
+          import json, pathlib, urllib.request
+          BASE='https://server-9527.sair.foundation'
+          HEADERS={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          def fetch(problem):
+              req=urllib.request.Request(BASE+f'/api/acc/discoveries/snapshot?problem={problem}',headers=HEADERS)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def items(obj):
+              data=obj.get('data',obj); rows=data['items']
+              if rows: print('SNAPSHOT_FIELDS',sorted(rows[0].keys()))
+              return rows
+          def rowmap(obj):
+              return {(x.get('problemId') or x.get('challengeId')):x for x in items(obj)}
+          ac=fetch('ac'); stable=fetch('stable_ac')
+          am=rowmap(ac); sm=rowmap(stable)
+          aid='ac-09993'; sid='sac-09993'
+          a=am[aid]; s=sm[sid]
+          ab=a.get('currentBestLength'); sb=s.get('currentBestLength')
+          assert a.get('status')=='solved' and s.get('status')=='solved'
+          assert isinstance(ab,int) and isinstance(sb,int)
+          slack=sb-ab-2
+          print('FRESH_TRANSPORT_WINDOW',json.dumps({'ac':aid,'ac_best':ab,'stable':sid,'stable_best':sb,'transport_slack':slack},sort_keys=True))
+          if slack <= 0:
+              raise SystemExit('Fresh transport window has closed; stop without search')
+          root=pathlib.Path('acc_competitive/fresh_transport_09993')
+          (root/'snapshot_ac.json').write_text(json.dumps(ac,indent=2,sort_keys=True)+'\n')
+          (root/'snapshot_stable.json').write_text(json.dumps(stable,indent=2,sort_keys=True)+'\n')
+          (root/'targets.json').write_text(json.dumps([aid],indent=2)+'\n')
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+      - name: Transport-aware official best-first reproduction
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/fresh_transport_09993/out
+          python3 acc_competitive/official_bestfirst_v1.py \
+            --acc-root /tmp/acc \
+            --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
+            --snapshot-ac acc_competitive/fresh_transport_09993/snapshot_ac.json \
+            --snapshot-stable acc_competitive/fresh_transport_09993/snapshot_stable.json \
+            --target-ids-file acc_competitive/fresh_transport_09993/targets.json \
+            --out-dir acc_competitive/fresh_transport_09993/out \
+            --node-cap 250000 \
+            --time-cap 600 \
+            --depth-weight 0.15 \
+            --extra-total 40 \
+            | tee acc_competitive/fresh_transport_09993/search.log
+
+      - name: Summarize fresh residual
+        run: |
+          set -euo pipefail
+          cat acc_competitive/fresh_transport_09993/out/report.json
+          cat acc_competitive/fresh_transport_09993/out/results.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-official-bestfirst-pool
+          path: |
+            acc_competitive/fresh_transport_09993/
+          retention-days: 90
+          if-no-files-found: warn
