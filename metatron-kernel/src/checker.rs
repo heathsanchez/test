@@ -932,8 +932,14 @@ fn check_empty_inductive(
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if !valid_empty_recursor_metadata(export, inductive.name, recursor)
-        || !is_derived_empty_recursor_type(export, inductive.name, recursor)
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && recursor.level_params.len() == 1,
+    ) || !empty_recursor_obligation(export, inductive.name, recursor)
     {
         return Err(Verdict::Reject);
     }
@@ -947,69 +953,34 @@ fn check_empty_inductive(
     Ok(derivation.finish())
 }
 
-fn valid_empty_recursor_metadata(
+fn empty_recursor_obligation(
     export: &ResolvedExport,
-    inductive_name: NameId,
+    inductive: NameId,
     recursor: &Recursor,
 ) -> bool {
-    recursor.all == [inductive_name]
-        && !recursor.is_unsafe
-        && !recursor.k
-        && recursor.level_params.len() == 1
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 0
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 0
-        && recursor.rules.is_empty()
-        && matches!(
-            export.names.get(recursor.name),
-            Some(Name::Str { prefix, value }) if *prefix == inductive_name && value == "rec"
-        )
-}
-
-fn is_derived_empty_recursor_type(
-    export: &ResolvedExport,
-    inductive_name: NameId,
-    recursor: &Recursor,
-) -> bool {
-    let [universe_parameter] = recursor.level_params.as_slice() else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: motive_domain,
-        body: recursor_body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let [motive, target] = domains.as_slice() else {
         return false;
     };
     let Some(Expr::Pi {
         domain: motive_argument,
         body: motive_sort,
-    }) = export.exprs.get(*motive_domain)
+    }) = export.exprs.get(*motive)
     else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: target,
-        body: motive_application,
-    }) = export.exprs.get(*recursor_body)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *motive_argument, inductive_name)
-        && is_empty_constant(export, *target, inductive_name)
+    is_empty_constant(export, *motive_argument, inductive)
+        && is_empty_constant(export, *target, inductive)
         && matches!(
             export.exprs.get(*motive_sort),
-            Some(Expr::Sort(level))
-                if matches!(export.levels.get(*level), Some(Level::Param(name)) if name == universe_parameter)
+            Some(Expr::Sort(level)) if matches!(
+                export.levels.get(*level),
+                Some(Level::Param(name)) if name == &recursor.level_params[0]
+            )
         )
-        && matches!(
-            export.exprs.get(*motive_application),
-            Some(Expr::App { fun, arg })
-                if matches!(export.exprs.get(*fun), Some(Expr::BVar(1)))
-                    && matches!(export.exprs.get(*arg), Some(Expr::BVar(0)))
-        )
+        && is_bvar_application(export, result, 1, 0)
 }
 
 fn is_empty_constant(export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
