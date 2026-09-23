@@ -18,27 +18,18 @@ struct VerifiedCapability {
     apply: fn(&ResolvedExport) -> Option<Verdict>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
-pub(crate) struct CapabilityHit {
-    pub(crate) id: &'static str,
-    pub(crate) verdict: Verdict,
-}
-
 const CAPABILITIES: &[VerifiedCapability] = &[VerifiedCapability {
     id: "environment.declared-name-uniqueness.v0",
     apply: declared_name_uniqueness,
 }];
 
-pub(crate) fn execute(export: &ResolvedExport) -> Option<CapabilityHit> {
+pub(crate) fn execute(export: &ResolvedExport) -> Option<Verdict> {
     for capability in CAPABILITIES {
         if let Some(verdict) = (capability.apply)(export) {
             if std::env::var_os("NUCLEUS_TRACE_CAPABILITY").is_some() {
                 eprintln!("NUCLEUS_CAPABILITY_HIT:{}:{verdict:?}", capability.id);
             }
-            return Some(CapabilityHit {
-                id: capability.id,
-                verdict,
-            });
+            return Some(verdict);
         }
     }
     None
