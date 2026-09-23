@@ -59,13 +59,17 @@ jobs:
           assert a.get('status')=='solved' and s.get('status')=='solved'
           assert isinstance(ab,int) and isinstance(sb,int)
           slack=sb-ab-2
-          print('FRESH_TRANSPORT_WINDOW',json.dumps({'ac':aid,'ac_best':ab,'stable':sid,'stable_best':sb,'transport_slack':slack},sort_keys=True))
+          row={'challenge_id':aid,'stable_challenge_id':sid,'ac_best':ab,'stable_best':sb,
+               'transport_slack':slack,'source_bound_exclusive':max(ab,sb-2),
+               'ac_kTeams':a.get('kTeams'),'stable_kTeams':s.get('kTeams')}
+          print('FRESH_TRANSPORT_WINDOW',json.dumps(row,sort_keys=True))
           if slack <= 0:
               raise SystemExit('Fresh transport window has closed; stop without search')
           root=pathlib.Path('acc_competitive/fresh_transport_09993')
           (root/'snapshot_ac.json').write_text(json.dumps(ac,indent=2,sort_keys=True)+'\n')
           (root/'snapshot_stable.json').write_text(json.dumps(stable,indent=2,sort_keys=True)+'\n')
           (root/'targets.json').write_text(json.dumps([aid],indent=2)+'\n')
+          (root/'rows.json').write_text(json.dumps([row],indent=2,sort_keys=True)+'\n')
           PY
 
       - name: Fetch pinned official verifier
@@ -75,19 +79,17 @@ jobs:
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
 
-      - name: Transport-aware exact radius-5 Atlas connector
+      - name: Six-context exact-depth-6 Proof Atlas fiber
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/fresh_transport_09993/out
-          python3 acc_competitive/transport_exact_connector_v1.py \
+          python3 acc_competitive/transport_atlas_fiber_depth6_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
-            --snapshot-ac acc_competitive/fresh_transport_09993/snapshot_ac.json \
-            --snapshot-stable acc_competitive/fresh_transport_09993/snapshot_stable.json \
+            --rows acc_competitive/fresh_transport_09993/rows.json \
             --target-ids-file acc_competitive/fresh_transport_09993/targets.json \
             --out-dir acc_competitive/fresh_transport_09993/out \
-            --connector-depth 5 \
-            --node-cap 250000 \
+            --depth 6 \
             | tee acc_competitive/fresh_transport_09993/search.log
 
       - name: Summarize fresh residual
