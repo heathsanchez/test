@@ -274,7 +274,7 @@ fn parse_expr(
     line: usize,
 ) -> Result<(), ParseError> {
     let id = ExprId(number(object, "ie", line)?);
-    let tags = ["bvar", "sort", "const", "app", "lam", "forallE", "letE"]
+    let tags = ["bvar", "sort", "const", "app", "lam", "forallE", "letE", "proj"]
         .into_iter()
         .filter(|key| object.contains_key(*key))
         .collect::<Vec<_>>();
@@ -314,10 +314,30 @@ fn parse_expr(
                 body: ExprId(nested_number(value, "body", line)?),
             }
         }
+        "proj" => {
+            let value = object.get("proj").expect("tag checked");
+            let type_name = NameId(nested_number(value, "typeName", line)?);
+            if !projection_root_is_supported(&export.names, type_name) {
+                return Err(malformed(line, "unsupported projection family"));
+            }
+            Expr::Proj {
+                type_name,
+                index: nested_number(value, "idx", line)?,
+                structure: ExprId(nested_number(value, "struct", line)?),
+            }
+        }
         _ => unreachable!(),
     };
     export.exprs.insert(id, expr)?;
     Ok(())
+}
+
+fn projection_root_is_supported(names: &IdTable<NameId, Name>, id: NameId) -> bool {
+    matches!(
+        names.get(id),
+        Some(Name::Str { prefix, value })
+            if prefix.0 == 0 && matches!(value.as_str(), "And" | "Prod" | "PProd")
+    )
 }
 
 fn binder_expr(value: &Value, line: usize, lambda: bool) -> Result<Expr, ParseError> {
@@ -468,6 +488,14 @@ fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
             require_expr(&export.exprs, *ty)?;
             require_expr(&export.exprs, *value)?;
             require_expr(&export.exprs, *body)
+        }
+        Expr::Proj {
+            type_name,
+            structure,
+            ..
+        } => {
+            require_name(&export.names, *type_name)?;
+            require_expr(&export.exprs, *structure)
         }
     }
 }
