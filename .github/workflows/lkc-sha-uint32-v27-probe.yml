@@ -1,0 +1,52 @@
+name: LKC SHA UInt32 V27 Probe
+
+on:
+  push:
+    branches: [lkc-sha-uint32-v27-probe]
+    paths:
+      - 'experiments/lkc_sha256/uint32_v27_probe.py'
+      - '.github/workflows/lkc-sha-uint32-v27-probe.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        input: ["18860801433","138725260120"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate candidates
+        run: |
+          python3 experiments/lkc_sha256/algebra_v25_interaction.py
+          python3 experiments/lkc_sha256/uint32_v27_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup benchmark
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench
+          python3 benchmark.py setup --problem sha256
+      - name: V25 diagnostic
+        run: |
+          python3 bench/benchmark.py diagnostic --problem sha256 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_algebra_v25_interaction.lean" \
+            --metric wall-time --repetitions 1 --timeout 300 --memory-mb 4096 \
+            --inputs "${{ matrix.input }}" --output "$GITHUB_WORKSPACE/v25-${{ matrix.input }}"
+      - name: UInt32 V27 diagnostic
+        run: |
+          python3 bench/benchmark.py diagnostic --problem sha256 \
+            --submission "$GITHUB_WORKSPACE/experiments/lkc_sha256/generated/Submission_uint32_v27_probe.lean" \
+            --metric wall-time --repetitions 1 --timeout 300 --memory-mb 4096 \
+            --inputs "${{ matrix.input }}" --output "$GITHUB_WORKSPACE/v27-${{ matrix.input }}"
