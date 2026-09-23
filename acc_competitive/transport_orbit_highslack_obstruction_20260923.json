@@ -1,0 +1,120 @@
+{
+  "schema": "acc-transport-orbit-highslack-obstruction-v1",
+  "status": "WARRANTED_NEGATIVE_FOR_DECLARED_BOUNDARY",
+  "sealed_utc": "2026-09-23T14:17:40.975306+00:00",
+  "official_verifier_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "proof_atlas": {
+    "raw_states": 433272,
+    "orbit_classes": 251269,
+    "symmetry_group_size": 16,
+    "cost_aware_fiber_representatives": 433272,
+    "max_fiber_size": 16
+  },
+  "experiments": [
+    {
+      "run_id": 35872655412,
+      "mechanism": "transport-orbit-atlas-connector-v1",
+      "connector_depth": 5,
+      "node_cap": 250000,
+      "targets": [
+        {
+          "challenge_id": "ac-06547",
+          "stable_challenge_id": "sac-06547",
+          "ac_best": 131,
+          "stable_best": 257,
+          "transport_slack": 124,
+          "source_bound_exclusive": 255,
+          "nodes": 132799,
+          "orbit_hits": 0,
+          "node_cap_hit": false,
+          "strict_win": false
+        },
+        {
+          "challenge_id": "ac-01097",
+          "stable_challenge_id": "sac-01097",
+          "ac_best": 339,
+          "stable_best": 464,
+          "transport_slack": 123,
+          "source_bound_exclusive": 462,
+          "nodes": 132799,
+          "orbit_hits": 0,
+          "node_cap_hit": false,
+          "strict_win": false
+        },
+        {
+          "challenge_id": "ac-07381",
+          "stable_challenge_id": "sac-07381",
+          "ac_best": 315,
+          "stable_best": 420,
+          "transport_slack": 103,
+          "source_bound_exclusive": 418,
+          "nodes": 132799,
+          "orbit_hits": 1,
+          "node_cap_hit": false,
+          "strict_win": false
+        },
+        {
+          "challenge_id": "ac-08248",
+          "stable_challenge_id": "sac-08248",
+          "ac_best": 115,
+          "stable_best": 218,
+          "transport_slack": 101,
+          "source_bound_exclusive": 216,
+          "nodes": 132799,
+          "orbit_hits": 0,
+          "node_cap_hit": false,
+          "strict_win": false
+        }
+      ]
+    },
+    {
+      "run_id": 35873001524,
+      "mechanism": "transport-orbit-atlas-connector-v2-cost-aware-fibers",
+      "challenge_id": "ac-07381",
+      "stable_challenge_id": "sac-07381",
+      "connector_depth": 5,
+      "node_cap": 250000,
+      "source_bound_exclusive": 418,
+      "nodes": 132799,
+      "orbit_hits": 1,
+      "fiber_contacts": 1,
+      "min_prefix": 5,
+      "min_atlas_suffix": 1894,
+      "min_normalizer": 1,
+      "min_predicted_length": 1900,
+      "bound_gap": 1482,
+      "node_cap_hit": false,
+      "strict_win": false
+    }
+  ],
+  "conclusions": [
+    "ac-06547, ac-01097, and ac-08248 have no radius<=5 symmetry-orbit connection to the current 433272-state Proof Atlas.",
+    "ac-07381 has one radius<=5 orbit contact, but preserving the full cost-relevant symmetry fiber gives a minimum predicted source path of 1900 moves against the strict source bound 418.",
+    "The ac-07381 miss is therefore not explained by the v1 single-representative symmetry quotient; the current bottleneck is Atlas suffix depth rather than discarded orientation/normalizer information.",
+    "Do not repeat the current radius<=5 raw/orbit/cost-aware-fiber Proof Atlas mechanism on these unchanged targets with this unchanged Atlas.",
+    "Reopen only after a live-record change, material Proof Atlas growth or shallower relevant suffixes, or a genuinely nonlocal reverse/bidirectional mechanism that does not merely reuse the current Atlas suffix geometry."
+  ],
+  "publication": {
+    "candidate_rows": 0,
+    "submitted_rows": 0,
+    "quota_used_by_experiments": 0
+  },
+  "fresh_authority_after_experiments": {
+    "utc": "2026-09-23T14:17:40.975306+00:00",
+    "live_state_sha256": "bf1a9a345c7376b3f3c60ecca850416db87c1611175e89ea3438695ad860b3f4",
+    "ac_unsolved": 2672,
+    "ac_singleton_records": 4101,
+    "stable_ac_unsolved": 2673,
+    "stable_ac_singleton_records": 4745,
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "daily_quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    }
+  }
+}
