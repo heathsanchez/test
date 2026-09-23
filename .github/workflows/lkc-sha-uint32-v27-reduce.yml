@@ -1,0 +1,49 @@
+name: LKC SHA UInt32 V27 Kernel Reduce Screen
+on:
+  push:
+    branches: [lkc-sha-uint32-v27-probe]
+    paths:
+      - 'experiments/lkc_sha256/uint32_v27_probe.py'
+      - '.github/workflows/lkc-sha-uint32-v27-reduce.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  reduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        input: ["18860801433","138725260120"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate runtimes
+        run: |
+          python3 experiments/lkc_sha256/algebra_v24_probe.py
+          python3 experiments/lkc_sha256/uint32_v27_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup SHA package
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Reduce V25 runtime
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_algebra_v24_probe.lean bench/.cache/upstream/evaluation/problems/sha256/EvalV25.lean
+          printf '\n#reduce Submission.impl ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/EvalV25.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V25_REAL=%e V25_USER=%U V25_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 EvalV25.lean > "$GITHUB_WORKSPACE/v25.out"
+          tail -n 3 "$GITHUB_WORKSPACE/v25.out"
+      - name: Reduce UInt32 V27 runtime
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_uint32_v27_probe.lean bench/.cache/upstream/evaluation/problems/sha256/EvalV27.lean
+          printf '\n#reduce Submission.impl ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/EvalV27.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V27_REAL=%e V27_USER=%U V27_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 EvalV27.lean > "$GITHUB_WORKSPACE/v27.out"
+          tail -n 3 "$GITHUB_WORKSPACE/v27.out"
