@@ -560,7 +560,8 @@ impl<'a> TypeChecker<'a> {
         };
 
         for argument in &neutral.spine {
-            let (domain, body) = self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
+            let (domain, body) =
+                self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
             let _ = domain;
             current = match body {
                 PiBody::Fixed(body) => body,
