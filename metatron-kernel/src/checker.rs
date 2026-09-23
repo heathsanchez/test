@@ -425,11 +425,7 @@ fn check_exact_sort_elim_prop(
         || constructor.num_fields != 2
         || !constructor.level_params.is_empty()
         || !name_is_child_str(export, constructor.name, inductive.name, "mk")
-        || !sort_elim_prop_constructor_type(
-            export,
-            constructor.ty,
-            inductive.name,
-        )
+        || !sort_elim_prop_constructor_type(export, constructor.ty, inductive.name)
     {
         return Err(Verdict::Reject);
     }
@@ -572,12 +568,7 @@ fn sort_elim_prop_minor_type(
     arguments.len() == 3
         && is_bvar(export, motive, 2)
         && are_bvars(export, &arguments[..2], &[0, 1])
-        && sort_elim_prop_constructor_application(
-            export,
-            arguments[2],
-            constructor,
-            [3, 1, 0],
-        )
+        && sort_elim_prop_constructor_application(export, arguments[2], constructor, [3, 1, 0])
 }
 
 fn sort_elim_prop_recursor_type(
@@ -603,9 +594,7 @@ fn sort_elim_prop_recursor_type(
         return false;
     }
     let (head, arguments) = application_spine(export, result);
-    arguments.len() == 3
-        && is_bvar(export, head, 4)
-        && are_bvars(export, &arguments, &[2, 1, 0])
+    arguments.len() == 3 && is_bvar(export, head, 4) && are_bvars(export, &arguments, &[2, 1, 0])
 }
 
 fn sort_elim_prop_recursor_rule(
@@ -633,9 +622,7 @@ fn sort_elim_prop_recursor_rule(
         return false;
     }
     let (head, arguments) = application_spine(export, result);
-    arguments.len() == 2
-        && is_bvar(export, head, 2)
-        && are_bvars(export, &arguments, &[1, 0])
+    arguments.len() == 2 && is_bvar(export, head, 2) && are_bvars(export, &arguments, &[1, 0])
 }
 
 /// G28-001: exact nullary singleton Type plus its first qualified
