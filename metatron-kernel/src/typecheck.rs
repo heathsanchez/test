@@ -428,6 +428,8 @@ impl<'a> TypeChecker<'a> {
         .with_singleton_recursor_reductions(self.environment.singleton_recursor_reductions())
         .with_recursor_reductions(self.environment.recursor_reductions())
         .with_projection_specs(self.environment.projection_specs())
+        .with_nat_binary_ops(self.environment.nat_binary_ops())
+        .with_bool_primitives(self.environment.bool_primitives().cloned())
     }
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
