@@ -2561,11 +2561,8 @@ fn check_exact_nat(
         limits.judgment_steps,
         delta_policy,
     )?;
-    let environment = install_certified_recursor_reduction(
-        derivation.finish(),
-        &block.constructors,
-        recursor,
-    )?;
+    let environment =
+        install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)?;
     let Some(type_expr) = export.exprs.iter_raw().find_map(|(raw, expression)| {
         matches!(
             expression,
