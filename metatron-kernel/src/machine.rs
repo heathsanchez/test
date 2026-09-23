@@ -54,15 +54,19 @@ impl<'a> Machine<'a> {
         expressions: &'a IdTable<ExprId, Expr>,
         levels: &'a IdTable<LevelId, Level>,
         definitions: HashMap<NameId, DefinitionBody>,
-        singleton_recursor_reductions: HashSet<NameId>,
     ) -> Self {
         Self {
             authority,
             expressions,
             levels,
             definitions,
-            singleton_recursor_reductions,
+            singleton_recursor_reductions: HashSet::new(),
         }
+    }
+
+    pub fn with_singleton_recursor_reductions(mut self, reductions: HashSet<NameId>) -> Self {
+        self.singleton_recursor_reductions = reductions;
+        self
     }
 
     pub fn expose(
