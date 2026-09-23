@@ -153,7 +153,14 @@ pub(crate) fn convert_with_policy_at_depth(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(checker, cheap_left, cheap_right, remaining, depth, &mut work) {
+                match compare_values(
+                    checker,
+                    cheap_left,
+                    cheap_right,
+                    remaining,
+                    depth,
+                    &mut work,
+                ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
@@ -165,7 +172,14 @@ pub(crate) fn convert_with_policy_at_depth(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        match compare_values(checker, full_left, full_right, remaining, depth, &mut work) {
+                        match compare_values(
+                            checker,
+                            full_left,
+                            full_right,
+                            remaining,
+                            depth,
+                            &mut work,
+                        ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
                                 return Judgment::Refuted { obstruction };
