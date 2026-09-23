@@ -1,0 +1,33 @@
+{
+  "schema": "nucleus-semantic-closure-natops-v1",
+  "qualified_source_sha": "7161b6ef7e83450007c68ab738b22689f3d00ae6",
+  "qualification_run": 35865922894,
+  "artifact_id": 10751448974,
+  "artifact_sha256": "225522b5c22a2d752fd1252d13de9c2f7bba48a1e289a3637a3b8cc7910bfdf7",
+  "arena_sha": "ae76435a5fb439571a28e19d74cd1e2e3ab69667",
+  "fixed_outcome_tests": 193,
+  "hybrid_correct": 193,
+  "hybrid_incorrect": 0,
+  "nucleus_false_accepts": 0,
+  "nucleus_fast_accepts": 74,
+  "fallback_invocations": 119,
+  "retained_capabilities": [
+    "qualified Nat literal syntax/value/type/conversion",
+    "exact OfNat structure and projection",
+    "qualified Nat.add literal reduction",
+    "qualified Nat.sub literal reduction",
+    "qualified Nat.ble literal reduction through exact Bool constructors"
+  ],
+  "causal_cases": {
+    "tutorial/102_aNatLit": "accept",
+    "tutorial/103_natLitEq": "accept",
+    "other/nat-lit-add": "accept",
+    "other/nat-lit-add-bad": "reject",
+    "other/nat-lit-ble": "accept",
+    "other/nat-lit-sub": "accept"
+  },
+  "incidental_native_accepts": [
+    "perf/beta-ladder",
+    "perf/shift-cascade"
+  ]
+}
