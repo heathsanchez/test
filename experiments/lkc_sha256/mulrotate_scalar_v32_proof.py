@@ -9,6 +9,10 @@ OUT.mkdir(parents=True, exist_ok=True)
 # Runtime side: exact V31 probe.
 runpy.run_path(str(ROOT / "mulrotate_scalar_v31_probe.py"))
 v31 = (OUT / "Submission_mulrotate_scalar_v31_probe.lean").read_text()
+# Warning-clean only: the 16 window names are unused in the nil equation.
+_old_nil = "| [], " + ", ".join([f"w{i}" for i in range(16)] + ["a","b","c","d","e","f","g","h"]) + " =>"
+_new_nil = "| [], " + ", ".join(["_"] * 16 + ["a","b","c","d","e","f","g","h"]) + " =>"
+v31 = v31.replace(_old_nil, _new_nil, 1)
 runtime = v31.rsplit("\nend Submission", 1)[0] + "\n\n"
 
 # Proof side: reuse the already-qualified V25 certificate bank, replacing only
@@ -44,7 +48,7 @@ theorem dup32_shift_eq_rotrRaw (x n : Nat)
   rw [dup32_eq_or x hx, Nat.shiftRight_or_distrib]
   rw [shiftLeft32_shiftRight x n hn]
   unfold rotrRaw
-  simpa [Nat.or_comm]
+  exact Nat.or_comm _ _
 
 theorem bigSigma0Fast_mod_eq (x : Nat) (hx : x < 2^32) :
     bigSigma0Fast x % 2^32 = bigSigma0 x := by
@@ -171,18 +175,24 @@ theorem roundsScalarMul_eq_roundsFast :
   | cons k ks ih =>
       intro {intro_names}
       simp only [roundsScalarMul, roundsFast]
-      simpa [Window.nextFast, Window.push, roundFast] using
-        (ih {nextargs})
+      simp [Window.nextFast, Window.push, roundFast, ih]
 
 theorem fastStepV31_eq_fastStepAlgebra (d : Digest) :
     fastStepV31 d = fastStepAlgebra d := by
   unfold fastStepV31 fastStepAlgebra
   apply congrArg feedForwardIV
-  simpa [initialWindow] using
-    (roundsScalarMul_eq_roundsFast K
+  change
+    roundsScalarMul K
       d.a d.b d.c d.d d.e d.f d.g d.h
       0x80000000 0 0 0 0 0 0 256
-      iv.a iv.b iv.c iv.d iv.e iv.f iv.g iv.h)
+      iv.a iv.b iv.c iv.d iv.e iv.f iv.g iv.h =
+    roundsFast K
+      ⟨d.a,d.b,d.c,d.d,d.e,d.f,d.g,d.h,0x80000000,0,0,0,0,0,0,256⟩
+      ⟨iv.a,iv.b,iv.c,iv.d,iv.e,iv.f,iv.g,iv.h⟩
+  exact roundsScalarMul_eq_roundsFast K
+    d.a d.b d.c d.d d.e d.f d.g d.h
+    0x80000000 0 0 0 0 0 0 256
+    iv.a iv.b iv.c iv.d iv.e iv.f iv.g iv.h
 
 theorem fastStepV31_correct (d : Digest) (hd : ValidDigest d) :
     fastStepV31 d = sha256step d := by
