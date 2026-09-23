@@ -1,9 +1,9 @@
 use std::collections::HashSet;
 
+use crate::id::ExprId;
 use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
-use crate::id::ExprId;
 use crate::syntax::Expr;
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{FreeId, Neutral, NeutralHead, Value};
@@ -307,9 +307,7 @@ fn expression_uses_bvar(
                 || expression_uses_bvar(checker, *value, target, next)
                 || expression_uses_bvar(checker, *body, target.saturating_add(1), next)
         }
-        Expr::Proj { structure, .. } => {
-            expression_uses_bvar(checker, *structure, target, next)
-        }
+        Expr::Proj { structure, .. } => expression_uses_bvar(checker, *structure, target, next),
     }
 }
 
