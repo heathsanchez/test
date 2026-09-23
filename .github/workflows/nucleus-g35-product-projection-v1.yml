@@ -86,7 +86,7 @@ jobs:
           by={r['number']:r for r in rows}
           earned=[r for r in rows if r['status']=='earned_delta']
           mismatches=[r for r in rows if r['status']=='mismatch']
-          expected_nums=[83,84,85,87]
+          expected_nums=[83,84,85,87,98]
           assert [r['number'] for r in earned]==expected_nums,earned
           assert not mismatches,mismatches
           for n in expected_nums: assert by[n]['candidate']==by[n]['expected'],by[n]
