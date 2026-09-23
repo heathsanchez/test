@@ -1,0 +1,287 @@
+name: ACC Stable 03433 Best-First Existence V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-stable-03433-bestfirst-existence-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  CID: "ac-03433"
+  SID: "sac-03433"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze live authority
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          mkdir -p freeze
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          H={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def snap(problem):
+              u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem='+problem
+              req=urllib.request.Request(u,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+              d=o.get('data',o)
+              return o,{str(x.get('problemId') or x.get('challengeId')):x for x in d['items']}
+          ao,ac=snap('ac'); so,st=snap('stable_ac')
+          a=ac['ac-03433']; s=st['sac-03433']
+          Path('freeze/ac.json').write_text(json.dumps(ao,indent=2,sort_keys=True)+'\n')
+          Path('freeze/stable.json').write_text(json.dumps(so,indent=2,sort_keys=True)+'\n')
+          Path('freeze/row.json').write_text(json.dumps({'ac':a,'stable':s},indent=2,sort_keys=True)+'\n')
+          print('BESTFIRST_FREEZE',json.dumps({
+              'ac_status':a.get('status'),'ac_best':a.get('currentBestLength'),'ac_kTeams':a.get('kTeams'),
+              'stable_status':s.get('status'),'stable_best':s.get('currentBestLength'),'stable_kTeams':s.get('kTeams')
+          },sort_keys=True))
+          if a.get('status')!='solved':
+              raise SystemExit('AC source no longer solved')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-stable-03433-bestfirst-freeze
+          path: freeze/
+          retention-days: 90
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - lane: structural
+            weight: "0.00"
+          - lane: balanced
+            weight: "0.15"
+          - lane: depth-aware
+            weight: "0.35"
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover latest Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          [ -n "$ID" ] || { echo "No proof atlas"; exit 1; }
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+          echo "PROOF_ATLAS_ARTIFACT=$ID"
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Nonlocal existence search
+        run: |
+          set -euo pipefail
+          mkdir -p "bestfirst/${{ matrix.lane }}"
+          WEIGHT="${{ matrix.weight }}" python3 - <<'PY'
+          import json,os,sqlite3,sys
+          from pathlib import Path
+          ACC=Path('/tmp/acc')
+          sys.path.insert(0,str(ACC/'competition/tools'))
+          from verifier import core,stable_core
+          sys.path.insert(0,str(Path('acc_competitive').resolve()))
+          import official_bestfirst_v1 as bf
+
+          man=json.loads((ACC/'competition/tools/verifier/data/manifest.json').read_text())
+          by={c['challenge_id']:c for c in man['challenges']}; lim=man['limits']
+          cid='ac-03433'; sid='sac-03433'; c=by[cid]; sc=by[sid]
+          atlas=next(Path('/tmp/atlas').rglob('proof_atlas.sqlite'))
+          db=sqlite3.connect(str(atlas))
+          atlas_dist={bytes(k):int(d) for k,d in db.execute('SELECT state,distance FROM atlas')}
+          initial=tuple(tuple(w) for w in c['initial_relators'])
+          total_cap=min(int(lim['max_total_relator_length']),sum(map(len,initial))+80)
+          weight=float(os.environ['WEIGHT'])
+          path,meta=bf.search(core,initial,db,atlas_dist,10000,350000,900,total_cap,weight)
+          out={'experiment':'ACC_STABLE_UNSOLVED_SOURCE_BESTFIRST_V1','challenge_id':cid,
+               'stable_challenge_id':sid,'depth_weight':weight,'source_ceiling_exclusive':10000,
+               'total_cap':total_cap,'atlas_states':len(atlas_dist),'found':path is not None,
+               'official_pin':'99a65377c5c4f412cd9af7b8d31c41464a855736',**meta}
+          lane=Path('bestfirst')/os.environ.get('LANE','unused')
+          # GitHub expression is safer than shell injection for the actual output path.
+          outdir=Path('bestfirst')/Path(os.environ.get('OUT_LANE','lane'))
+          if path is not None:
+              v=core.verify(c,path,c['move_spec_version'],lim)
+              if not v.get('ok'): raise RuntimeError(('AC pinned verify failed',v))
+              stable=list(path)+[16,15]
+              sv=stable_core.verify(sc,stable,sc['move_spec_version'],lim)
+              if not sv.get('ok'): raise RuntimeError(('Stable pinned verify failed',sv))
+              out.update({'source_length':len(path),'stable_length':len(stable),
+                          'source_certificate_hash':v.get('certificate_hash'),
+                          'stable_certificate_hash':sv.get('certificate_hash'),
+                          'stable_moves':stable})
+          target=Path("bestfirst/${{ matrix.lane }}")
+          (target/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          (target/'candidate.txt').write_text(
+              '' if path is None else sid+': '+json.dumps(list(path)+[16,15],separators=(',',':'))+'\n')
+          print('BESTFIRST_EXISTENCE',json.dumps({k:out.get(k) for k in (
+              'depth_weight','found','source_length','stable_length','nodes','visited','frontier','seconds','prefix','atlas_suffix'
+          )},sort_keys=True))
+          db.close()
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-stable-03433-bestfirst-${{ matrix.lane }}
+          path: bestfirst/${{ matrix.lane }}/
+          retention-days: 90
+          if-no-files-found: warn
+
+  synthesize:
+    needs: [freeze, search]
+    if: always() && needs.freeze.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover lane evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/search /tmp/freeze final
+          gh run download "${{ github.run_id }}" -n acc-stable-03433-bestfirst-freeze -D /tmp/freeze
+          gh run download "${{ github.run_id }}" --pattern 'acc-stable-03433-bestfirst-*' -D /tmp/search || true
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          rs=[]
+          for p in Path('/tmp/search').rglob('result.json'):
+              try:rs.append(json.loads(p.read_text()))
+              except Exception:pass
+          rs.sort(key=lambda r:(not r.get('found'),r.get('stable_length',10**18),r.get('depth_weight',0)))
+          Path('final/search_results.json').write_text(json.dumps(rs,indent=2,sort_keys=True)+'\n')
+          found=[r for r in rs if r.get('found')]
+          if found:
+              b=found[0]
+              Path('final/verified_candidate.txt').write_text(
+                  'sac-03433: '+json.dumps(b['stable_moves'],separators=(',',':'))+'\n')
+          else:
+              Path('final/verified_candidate.txt').write_text('')
+          print('BESTFIRST_SYNTHESIS',json.dumps({
+              'lanes':len(rs),'found':len(found),'best_stable':min([r['stable_length'] for r in found],default=None)
+          },sort_keys=True))
+          PY
+
+      - name: Fetch pinned verifier and replay selected candidate
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          if [ ! -s final/verified_candidate.txt ]; then
+            echo NO_BESTFIRST_CANDIDATE
+            exit 0
+          fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission final/verified_candidate.txt
+
+      - name: Immediate live and quota gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          src=Path('final/verified_candidate.txt'); dst=Path('final/publish_candidate.txt'); dst.write_text('')
+          if not src.exists() or not src.stat().st_size:
+              print('NO_VERIFIED_BESTFIRST_CANDIDATE'); raise SystemExit(0)
+          line=src.read_text().strip(); moves=json.loads(line.split(':',1)[1].strip())
+          KEY=os.environ['SAIR_API_KEY']; PUB='https://server-9527.sair.foundation'; API='https://api.sair.foundation/api/public/v1'
+          def get(url,auth=False):
+              h={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+              if auth:h['Authorization']=f'Bearer {KEY}'
+              req=urllib.request.Request(url,headers=h)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          d=data(get(PUB+'/api/acc/discoveries/snapshot?problem=stable_ac'))
+          row=next(x for x in d['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          best=row.get('currentBestLength')
+          improves=row.get('status')!='solved' or not isinstance(best,int) or len(moves)<best
+          mine=data(get(API+'/competitions/acc/submissions/mine?limit=100',True))
+          comp=data(get(API+'/competitions/acc',True))
+          lim=next((comp.get(k) for k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay')
+                    if isinstance(comp.get(k),int)),40)
+          today=datetime.now(timezone.utc).date()
+          def stamp(rec):
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  s=rec.get(k) if isinstance(rec,dict) else None
+                  if not isinstance(s,str) or not s.strip():continue
+                  try:
+                      dt=datetime.fromisoformat(s.strip().replace('Z','+00:00'))
+                      if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+                      return dt.astimezone(timezone.utc)
+                  except Exception:pass
+              return None
+          items=mine.get('items',[]) if isinstance(mine,dict) else []
+          used=sum((t:=stamp(x)) is not None and t.date()==today for x in items)
+          gate={'stable_status':row.get('status'),'stable_best':best,'candidate_length':len(moves),
+                'strict_or_unsolved':improves,'quota_used':used,'quota_limit':lim,'quota_remaining':max(0,lim-used)}
+          Path('final/prepublish_gate.json').write_text(json.dumps(gate,indent=2,sort_keys=True)+'\n')
+          print('BESTFIRST_PREPUBLISH_GATE',json.dumps(gate,sort_keys=True))
+          if improves and used<lim:dst.write_text(line+'\n')
+          PY
+
+      - name: Publish only qualifying Stable row
+        run: |
+          set -euo pipefail
+          if [ ! -s final/publish_candidate.txt ]; then
+            echo NO_PUBLISHABLE_BESTFIRST_ROW
+            exit 0
+          fi
+          ACC_SUBMISSION_FILE=final/publish_candidate.txt           ACC_SUBMIT_OUT=final/publish           python3 acc_submit/submit_live_filtered.py | tee final/publish.log
+
+      - name: Post-live authority
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=stable_ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); row=next(x for x in d['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          Path('final/post_live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          print('BESTFIRST_POST_LIVE',json.dumps({'status':row.get('status'),'best':row.get('currentBestLength'),'kTeams':row.get('kTeams')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-stable-03433-bestfirst-final
+          path: final/
+          retention-days: 90
+          if-no-files-found: warn
