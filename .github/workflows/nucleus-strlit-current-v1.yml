@@ -83,18 +83,33 @@ jobs:
           assert not regressions,regressions
           assert not wrong,wrong
           by={r['test']:r for r in rows}
-          targets=['init-prelude','perf/grind-ring-5','perf/magma-list-deep-n21','perf/magma-list-deep-n36']
-          for name in targets:
+          parser_targets=['init-prelude','perf/grind-ring-5','perf/magma-list-deep-n21','perf/magma-list-deep-n36']
+          for name in parser_targets:
             assert by[name]['base']==3, by[name]
             assert by[name]['candidate']==2, by[name]
+
+          earned_rejects=['tutorial/096_projIndexData','tutorial/097_projIndexData2']
+          for name in earned_rejects:
+            assert by[name]['base'] in (2,3), by[name]
+            assert by[name]['candidate']==1, by[name]
+
+          # Preserve the three cases originally carried by recursor-name
+          # coherence. nested-unused-param is now rejected by projection
+          # ownership; the two tutorial cases remain naming violations.
+          for name in ['bugs/nested-unused-param','tutorial/136_misnamed_rec_user','tutorial/137_dup_rec_def2']:
+            assert by[name]['base']==1 and by[name]['candidate']==1, by[name]
+
           changes=[r for r in rows if r['base']!=r['candidate']]
-          assert sorted(r['test'] for r in changes)==targets,changes
+          expected_changes=sorted(parser_targets+earned_rejects)
+          assert sorted(r['test'] for r in changes)==expected_changes,changes
+          assert sum(r['candidate'] in (2,3) for r in rows)==49
           out={
             'schema':'nucleus-strlit-current-v1',
             'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
             'base_residual':sum(r['base'] in (2,3) for r in rows),
             'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
-            'parser_progress':[r['test'] for r in changes],
+            'parser_progress':parser_targets,
+            'earned_rejects':earned_rejects,
             'false_accepts':false_accept,'false_rejects':false_reject,
             'regressions':regressions,'wrong_deltas':wrong,
           }
