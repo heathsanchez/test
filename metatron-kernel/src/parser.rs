@@ -274,7 +274,7 @@ fn parse_expr(
     line: usize,
 ) -> Result<(), ParseError> {
     let id = ExprId(number(object, "ie", line)?);
-    let tags = ["bvar", "sort", "const", "app", "lam", "forallE", "letE"]
+    let tags = ["bvar", "sort", "const", "app", "lam", "forallE", "letE", "proj"]
         .into_iter()
         .filter(|key| object.contains_key(*key))
         .collect::<Vec<_>>();
@@ -312,6 +312,14 @@ fn parse_expr(
                 ty: ExprId(nested_number(value, "type", line)?),
                 value: ExprId(nested_number(value, "value", line)?),
                 body: ExprId(nested_number(value, "body", line)?),
+            }
+        }
+        "proj" => {
+            let value = object.get("proj").expect("tag checked");
+            Expr::Proj {
+                type_name: NameId(nested_number(value, "typeName", line)?),
+                index: nested_number(value, "idx", line)?,
+                structure: ExprId(nested_number(value, "struct", line)?),
             }
         }
         _ => unreachable!(),
@@ -468,6 +476,14 @@ fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
             require_expr(&export.exprs, *ty)?;
             require_expr(&export.exprs, *value)?;
             require_expr(&export.exprs, *body)
+        }
+        Expr::Proj {
+            type_name,
+            structure,
+            ..
+        } => {
+            require_name(&export.names, *type_name)?;
+            require_expr(&export.exprs, *structure)
         }
     }
 }
