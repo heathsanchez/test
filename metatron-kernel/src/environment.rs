@@ -67,6 +67,13 @@ impl ConstantDecl {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct ProjectionInfo {
+    pub constructor: NameId,
+    pub num_params: usize,
+    pub field_parameter_indices: Vec<usize>,
+}
+
 #[derive(Clone, Debug)]
 pub struct Environment {
     authority: AuthorityId,
@@ -74,6 +81,7 @@ pub struct Environment {
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
     singleton_recursor_reductions: Rc<HashSet<NameId>>,
     recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+    projections: Rc<HashMap<NameId, ProjectionInfo>>,
 }
 
 impl Environment {
@@ -84,6 +92,7 @@ impl Environment {
             definitions: Rc::new(HashMap::new()),
             singleton_recursor_reductions: Rc::new(HashSet::new()),
             recursor_reductions: Rc::new(HashMap::new()),
+            projections: Rc::new(HashMap::new()),
         }
     }
 
@@ -127,6 +136,7 @@ impl Environment {
             definitions: Rc::new(definitions),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
+            projections: self.projections.clone(),
         })
     }
 
@@ -155,6 +165,7 @@ impl Environment {
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: Rc::new(reductions),
             recursor_reductions: self.recursor_reductions.clone(),
+            projections: self.projections.clone(),
         })
     }
 
@@ -184,7 +195,46 @@ impl Environment {
             definitions: self.definitions.clone(),
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: Rc::new(reductions),
+            projections: self.projections.clone(),
         })
+    }
+
+    pub fn install_projection(
+        &self,
+        type_name: NameId,
+        info: ProjectionInfo,
+    ) -> Result<Self, EnvironmentError> {
+        if !self.constants.contains_key(&type_name)
+            || !self.constants.contains_key(&info.constructor)
+        {
+            return Err(EnvironmentError::MissingConstant(type_name));
+        }
+        if self.projections.contains_key(&type_name) {
+            return Err(EnvironmentError::DuplicateProjection(type_name));
+        }
+        let mut projections = self.projections.as_ref().clone();
+        projections.insert(type_name, info);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projections: Rc::new(projections),
+        })
+    }
+
+    pub fn projection(&self, type_name: NameId) -> Option<&ProjectionInfo> {
+        self.projections.get(&type_name)
+    }
+
+    pub fn projections(&self) -> HashMap<NameId, ProjectionInfo> {
+        self.projections.as_ref().clone()
     }
 
     pub fn singleton_recursor_reductions(&self) -> HashSet<NameId> {
@@ -211,6 +261,7 @@ pub enum EnvironmentError {
     DuplicateConstant(NameId),
     MissingConstant(NameId),
     DuplicateReduction(NameId),
+    DuplicateProjection(NameId),
     AuthorityOverflow,
 }
 
@@ -229,6 +280,9 @@ impl fmt::Display for EnvironmentError {
                     "duplicate singleton recursor reduction {}",
                     name.0
                 )
+            }
+            Self::DuplicateProjection(name) => {
+                write!(formatter, "duplicate projection authority {}", name.0)
             }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
