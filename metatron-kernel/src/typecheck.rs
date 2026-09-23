@@ -361,6 +361,7 @@ impl<'a> TypeChecker<'a> {
             self.expressions,
             self.levels,
             self.environment.definition_bodies(),
+            self.environment.singleton_recursor_reductions(),
         )
     }
 
