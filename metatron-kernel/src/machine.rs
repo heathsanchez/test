@@ -354,9 +354,7 @@ impl<'a> Machine<'a> {
                                 }
                                 NatBinaryOp::Ble => {
                                     let Some(bool_primitives) = &self.bool_primitives else {
-                                        return Judgment::unknown(
-                                            "Nat.ble-without-qualified-Bool",
-                                        );
+                                        return Judgment::unknown("Nat.ble-without-qualified-Bool");
                                     };
                                     let ctor = if left.compare(&right).is_le() {
                                         bool_primitives.true_ctor
