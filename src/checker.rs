@@ -166,87 +166,6 @@ fn inductive_arity_metadata_is_well_formed(
     matches!(export.exprs.get(expression), Some(Expr::Sort(_)))
 }
 
-#[derive(Clone, Copy)]
-enum PrecountClosedFamily {
-    PUnit,
-    Eq,
-}
-
-fn check_precount_closed_family(
-    export: &ResolvedExport,
-    environment: &Environment,
-    block: &InductiveBlock,
-    limits: Limits,
-    delta_policy: DeltaPolicy,
-    family: PrecountClosedFamily,
-) -> Result<Environment, Verdict> {
-    let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-
-    match family {
-        PrecountClosedFamily::PUnit => {
-            if inductive.num_params != 0
-                || inductive.num_indices != 0
-                || inductive.num_nested != 0
-                || inductive.is_recursive
-                || inductive.is_reflexive
-                || inductive.is_unsafe
-            {
-                return Err(Verdict::Unknown);
-            }
-        }
-        PrecountClosedFamily::Eq => {
-            if inductive.num_nested != 0
-                || inductive.is_recursive
-                || inductive.is_reflexive
-                || inductive.is_unsafe
-            {
-                return Err(Verdict::Unknown);
-            }
-            if inductive.num_params != 2 || inductive.num_indices != 1 {
-                return Err(Verdict::Reject);
-            }
-        }
-    }
-
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if constructor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-    let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-    let [level] = inductive.level_params.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-
-    let (constructor_suffix, law) = match family {
-        PrecountClosedFamily::PUnit => (
-            "unit",
-            BinaryProductSortLaw::PUnit { level: *level },
-        ),
-        PrecountClosedFamily::Eq => (
-            "refl",
-            BinaryProductSortLaw::Eq { level: *level },
-        ),
-    };
-
-    ExactBinaryProductDerivation {
-        inductive,
-        constructor,
-        recursor,
-        constructor_suffix,
-        law,
-    }
-    .validate_and_promote(export, environment, limits, delta_policy)
-}
-
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -254,30 +173,86 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G16-001 is deliberately routed by its earned name before constructor
+    // cardinality dispatch. This lets missing/extra constructors remain
+    // malformed claims inside the PUnit envelope (REJECT), while broader
+    // indexed/recursive/nested/unsafe neighbors remain unsupported (UNKNOWN).
     if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "PUnit")
     {
-        return check_precount_closed_family(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-            PrecountClosedFamily::PUnit,
-        );
+        if inductive.num_params != 0
+            || inductive.num_indices != 0
+            || inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+        {
+            return Err(Verdict::Unknown);
+        }
+        let [constructor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if constructor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if recursor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [level] = inductive.level_params.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        return ExactBinaryProductDerivation {
+            inductive,
+            constructor,
+            recursor,
+            constructor_suffix: "unit",
+            law: BinaryProductSortLaw::PUnit { level: *level },
+        }
+        .validate_and_promote(export, environment, limits, delta_policy);
     }
 
+    // G17-001 is the first indexed law. Keep the external envelope name-sealed
+    // and distinguish malformed Eq claims (REJECT) from genuinely broader
+    // recursive/reflexive/unsafe/nested semantics (UNKNOWN).
     if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "Eq")
     {
-        return check_precount_closed_family(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-            PrecountClosedFamily::Eq,
-        );
+        if inductive.num_nested != 0
+            || inductive.is_recursive
+            || inductive.is_reflexive
+            || inductive.is_unsafe
+        {
+            return Err(Verdict::Unknown);
+        }
+        if inductive.num_params != 2 || inductive.num_indices != 1 {
+            return Err(Verdict::Reject);
+        }
+        let [constructor] = block.constructors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if constructor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [recursor] = block.recursors.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        if recursor.is_unsafe {
+            return Err(Verdict::Unknown);
+        }
+        let [level] = inductive.level_params.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        return ExactBinaryProductDerivation {
+            inductive,
+            constructor,
+            recursor,
+            constructor_suffix: "refl",
+            law: BinaryProductSortLaw::Eq { level: *level },
+        }
+        .validate_and_promote(export, environment, limits, delta_policy);
     }
 
     if let [inductive] = block.types.as_slice()
