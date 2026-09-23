@@ -1,0 +1,56 @@
+name: Nucleus Unit Eta Census v0
+on:
+  push:
+    branches: [nucleus-unit-eta-census-v0]
+    paths: [".github/workflows/nucleus-unit-eta-census-v0.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen corpus and census 108-111
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          python - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/tests')
+          for n in [108,109,110,111]:
+              paths=list(root.rglob(f'{n:03d}_*.ndjson'))
+              assert len(paths)==1,(n,paths)
+              p=paths[0]
+              recs=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+              names={}
+              pending=[]
+              for o in recs:
+                  if 'in' not in o: continue
+                  i=o['in']
+                  if 'str' in o: pending.append((i,o['str']['pre'],str(o['str']['str'])))
+                  elif 'num' in o: pending.append((i,o['num']['pre'],str(o['num']['i'])))
+              names[0]=''
+              changed=True
+              while changed and pending:
+                  changed=False; rest=[]
+                  for i,pre,v in pending:
+                      if pre in names:
+                          names[i]=(names[pre]+'.' if names[pre] else '')+v; changed=True
+                      else: rest.append((i,pre,v))
+                  pending=rest
+              print("CASE",n,p.name)
+              for o in recs:
+                  if 'inductive' in o:
+                      d=o['inductive']
+                      print("IND",json.dumps(d,sort_keys=True))
+                      for t in d.get('types',[]): print("TYPE_NAME",names.get(t.get('name'),t.get('name')))
+                      for c in d.get('ctors',[]): print("CTOR_NAME",names.get(c.get('name'),c.get('name')))
+                      for r in d.get('recs',[]): print("REC_NAME",names.get(r.get('name'),r.get('name')))
+          PY
