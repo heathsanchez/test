@@ -2203,7 +2203,36 @@ fn check_exact_nat(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+    let environment = derivation.finish();
+
+    // G33: the exact recursive N recursor opts into the same executable
+    // rule-body authority used by G31/G32. Recursive calls are not synthesized;
+    // they are already present in the validated rule RHS and re-enter this
+    // certified reduction path on a structurally smaller constructor field.
+    let rules = block
+        .constructors
+        .iter()
+        .zip(&recursor.rules)
+        .map(|(constructor, rule)| {
+            Ok(RecursorRule {
+                constructor: constructor.name,
+                num_params: usize::try_from(constructor.num_params)
+                    .map_err(|_| Verdict::Reject)?,
+                num_fields: usize::try_from(constructor.num_fields)
+                    .map_err(|_| Verdict::Reject)?,
+                rhs: rule.rhs,
+            })
+        })
+        .collect::<Result<Vec<_>, Verdict>>()?;
+    let reduction = RecursorReduction {
+        num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
+        num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
+        level_params: recursor.level_params.clone(),
+        rules,
+    };
+    environment
+        .install_recursor_reduction(recursor.name, reduction)
+        .map_err(|_| Verdict::Reject)
 }
 
 fn nat_recursor_obligations(
@@ -3156,19 +3185,22 @@ fn check_binary_enum(
         let rules = block
             .constructors
             .iter()
-            .map(|constructor| {
+            .zip(&recursor.rules)
+            .map(|(constructor, rule)| {
                 Ok(RecursorRule {
                     constructor: constructor.name,
                     num_params: usize::try_from(constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(constructor.num_fields)
                         .map_err(|_| Verdict::Reject)?,
+                    rhs: rule.rhs,
                 })
             })
             .collect::<Result<Vec<_>, Verdict>>()?;
         let reduction = RecursorReduction {
             num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
+            level_params: recursor.level_params.clone(),
             rules,
         };
         environment
@@ -3691,17 +3723,22 @@ impl ExactBinaryProductDerivation<'_> {
         // G32 reuses G31's already-qualified constructor-iota machine. Only
         // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
         if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+            let [rule] = self.recursor.rules.as_slice() else {
+                return Err(Verdict::Reject);
+            };
             let reduction = RecursorReduction {
                 num_params: usize::try_from(self.recursor.num_params)
                     .map_err(|_| Verdict::Reject)?,
                 num_indices: usize::try_from(self.recursor.num_indices)
                     .map_err(|_| Verdict::Reject)?,
+                level_params: self.recursor.level_params.clone(),
                 rules: vec![RecursorRule {
                     constructor: self.constructor.name,
                     num_params: usize::try_from(self.constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(self.constructor.num_fields)
                         .map_err(|_| Verdict::Reject)?,
+                    rhs: rule.rhs,
                 }],
             };
             environment
