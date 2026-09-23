@@ -736,3 +736,37 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Scope remains bounded: this is not a general inductive universe checker,
   arbitrary constructor telescope rule, positivity engine, or unrestricted
   recursor synthesis law.
+
+
+## G25-001 — Prop-only binary enum recursor derivation
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G24 head
+  `a3cb6b76fc6aa5d2117f891dda966940648ffaed`, which returns `UNKNOWN`
+  on tutorial 072 `good/072_boolPropRec.ndjson`.
+- Certified residual: `BoolProp : Prop` has two nullary constructors. Unlike
+  the already retained Type-level Bool/Color binary-enum family, its generated
+  recursor has no motive universe parameter and eliminates only into `Prop`.
+- Least capability: extend the internally shared binary-enum derivation with a
+  `Prop` elimination law while leaving the newly earned external family
+  name-sealed to `BoolProp`. Constructor ownership/order, nullary shape,
+  recursor metadata, motive, minors, target, result, and both computation rules
+  are reconstructed before staged opaque promotion.
+- Negative controls: wrong motive metadata rejects; adding an illicit recursor
+  universe parameter rejects; adjacent tutorial 073 `BogusRecursor` remains
+  `UNKNOWN`, so no malformed-recursor authority leaked across the boundary.
+- Global reclosure against the exact G24 oracle across tutorials 001–141:
+  exactly one earned delta, 072 `UNKNOWN → ACCEPT`; zero mismatches.
+  Counts: 1 earned delta, 77 equal-correct, 63 equal-residual.
+- Committed differential: 45 fixtures, with exactly the retained 072 fixture
+  differing from G24 and no other delta.
+- Qualified source `ee58e47f5c9b1fffc6f2587d13cfaf87b16b9af7`;
+  implementation `3119496bc766d45bf3511505ef1a1424055d8d6c`;
+  run `35847399187`, job `107136766368`, artifact `10744405022`,
+  digest
+  `sha256:677a76e3e93b4be3efc907bd40f0056b7e0fc47fd7260789ea28c84887af0636`.
+- First remaining residual: tutorial 073
+  `bad/073_BogusRecursor.ndjson`.
+- Scope remains bounded: no general multi-constructor Prop recognizer, no
+  arbitrary Prop elimination engine, and no general malformed-recursor checker
+  is claimed.
