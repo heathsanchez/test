@@ -336,9 +336,10 @@ fn compare_nat_literal_neutral(
         let Some(pred) = literal.pred() else {
             return Judgment::refuted("Nat-zero-is-not-succ");
         };
-        let exposed = checker
-            .machine()
-            .expose(neutral.spine[0].clone(), Transparency::Reducible, budget);
+        let exposed =
+            checker
+                .machine()
+                .expose(neutral.spine[0].clone(), Transparency::Reducible, budget);
         let Some(argument) = exposed.proven_value() else {
             return Judgment::unknown("Nat-literal-succ-argument");
         };
