@@ -1,0 +1,45 @@
+name: Nucleus G34 082 Trace v0
+
+on:
+  push:
+    branches: [nucleus-g34-082-trace-v0]
+    paths:
+      - ".github/workflows/nucleus-g34-082-trace-v0.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build diagnostic candidate
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Build exact pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Trace exact 082 residual
+        run: |
+          set +e
+          metatron-kernel/target/release/metatron-kernel < /tmp/tutorial/good/082_RBTree.id_spec.ndjson >/tmp/stdout.txt 2>/tmp/stderr.txt
+          code=$?
+          echo "EXIT=$code"
+          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED)' /tmp/stderr.txt | tail -n 80
+          test "$code" -eq 2
