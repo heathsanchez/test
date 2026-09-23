@@ -29,7 +29,7 @@ const CAPABILITIES: &[VerifiedCapability] = &[
         apply: recursor_name_coherence,
     },
     VerifiedCapability {
-        id: "projection.prop-dependent-safety.v0",
+        id: "projection.prop-dependent-safety.v1",
         apply: prop_projection_safety,
     },
 ];
@@ -129,6 +129,10 @@ struct PropProjectionTarget {
 }
 
 /// Negative-only fragment of Lean's kernel projection admissibility rule.
+///
+/// V1 additionally rejects a projection when the structure argument has a
+/// statically known inductive head different from the projection's declared
+/// type name.
 ///
 /// For a Prop-valued, zero-parameter, zero-index, safe, nonrecursive,
 /// one-constructor inductive, Lean permits a projection only when the projected
