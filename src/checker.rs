@@ -2885,7 +2885,6 @@ fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprI
 /// fixture family: a generic structure/positivity rule has not yet been
 /// earned. The exported rule is validated but no iota, projection, or eta
 /// operation is installed.
-
 fn check_twobool_structure(
     export: &ResolvedExport,
     environment: &Environment,
