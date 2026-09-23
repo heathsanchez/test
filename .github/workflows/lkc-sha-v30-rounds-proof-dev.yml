@@ -1,0 +1,33 @@
+name: LKC SHA V30 Rounds Proof Dev
+on:
+  push:
+    branches: [lkc-sha-mulrotate-v30-proof-v1]
+    paths:
+      - 'experiments/lkc_sha256/v30_rounds_proof_dev.py'
+      - '.github/workflows/lkc-sha-v30-rounds-proof-dev.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 experiments/lkc_sha256/v30_rounds_proof_dev.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Compile rounds bridge
+        run: |
+          cp experiments/lkc_sha256/generated/V30RoundsProofDev.lean bench/.cache/upstream/evaluation/problems/sha256/V30RoundsProofDev.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V30RoundsProofDev.lean
