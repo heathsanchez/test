@@ -1,0 +1,46 @@
+{
+  "version": "transport-01147-depth6-exhausted-20260923",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "atlas_states": 433272,
+  "target": {
+    "challenge_id": "ac-01147",
+    "stable_challenge_id": "sac-01147",
+    "ac_best": 58,
+    "stable_best": 65,
+    "transport_cost": 2,
+    "transport_slack": 5,
+    "source_bound_exclusive": 63,
+    "ac_kTeams": 1,
+    "stable_kTeams": 2
+  },
+  "qualified_runs": {
+    "transport_aware_bestfirst_250k": "https://github.com/heathsanchez/test/actions/runs/35824300642",
+    "transport_exact_radius5": "https://github.com/heathsanchez/test/actions/runs/35824391026",
+    "six_context_exact_depth6_fiber": "https://github.com/heathsanchez/test/actions/runs/35824455615"
+  },
+  "bestfirst": {
+    "nodes": 250000,
+    "visited": 1664307,
+    "frontier": 1823919,
+    "found": false
+  },
+  "exact_radius5": {
+    "nodes": 132799,
+    "visited": 132799,
+    "frontier": 0,
+    "node_cap_hit": false,
+    "found": false
+  },
+  "depth6_fiber": {
+    "contexts": ["S6:xy", "S6:yx", "S7:xy", "S7:yx", "S7:quad-cycle", "S8:quad-cycle"],
+    "atlas_projected_signatures": 428625,
+    "quotient_exact_length_layer_sizes": [1, 14, 146, 1404, 13071, 119682, 1085720],
+    "quotient_expanded": 134318,
+    "terminal_quotient_atlas_signatures": 0,
+    "exact_atlas_hits": 0,
+    "found": false,
+    "obstruction": "fiber_depth6_exhausted"
+  },
+  "claim": "For the frozen live ac-01147/sac-01147 state (58/65), transport-aware official best-first at 250000 expansions found no source proof below 63, exhaustive exact-state radius<=5 found no connection to the 433272-state Proof Atlas, and the exact-depth-6 six-context quotient layer has zero intersection with the Atlas projection. No candidate exists in these searched mechanisms for the current frozen target state.",
+  "reuse_rule": "Do not repeat the 250000-node transport-aware best-first search, exact-state radius<=5 Atlas connector, or exact-depth-6 six-context fiber connector for ac-01147 against this same 58/65 live state and 433272-state Atlas. Retry only after the live target state changes, the verified Atlas materially grows, or a qualitatively different reverse/bidirectional/nonlocal representation is introduced by a new residual."
+}
