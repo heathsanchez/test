@@ -35,7 +35,8 @@ jobs:
           set -euo pipefail
           cd metatron-kernel
           cargo fmt --check
-          cargo build --release
+          cargo test --release --locked
+          cargo build --release --locked
           cd ..
           git worktree add --detach /tmp/base "$FAST_BASE_SHA"
           cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
