@@ -41,5 +41,5 @@ jobs:
           metatron-kernel/target/release/metatron-kernel < /tmp/tutorial/good/082_RBTree.id_spec.ndjson >/tmp/stdout.txt 2>/tmp/stderr.txt
           code=$?
           echo "EXIT=$code"
-          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED)' /tmp/stderr.txt | tail -n 80
+          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED|APP_PI)' /tmp/stderr.txt | tail -n 120
           test "$code" -eq 2
