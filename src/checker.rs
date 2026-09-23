@@ -1607,7 +1607,7 @@ fn generic_parameterized_nullary_recursor_shape(
             .iter()
             .enumerate()
             .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
-        || !is_bvar_application(export, result, 1, 0)
+        || !is_bvar_application(export, result, 2, 0)
     {
         return false;
     }
