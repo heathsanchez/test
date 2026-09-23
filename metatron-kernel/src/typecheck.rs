@@ -359,14 +359,25 @@ impl<'a> TypeChecker<'a> {
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
-            Judgment::Proven { value, .. } => crate::convert::convert_with_policy_at_depth(
-                self,
-                &value,
-                expected,
-                *remaining,
-                self.delta_policy,
-                context.len(),
-            ),
+            Judgment::Proven { value, .. } => {
+                let conversion = crate::convert::convert_with_policy_at_depth(
+                    self,
+                    &value,
+                    expected,
+                    *remaining,
+                    self.delta_policy,
+                    context.len(),
+                );
+                match conversion {
+                    Judgment::Refuted { obstruction }
+                        if self.delta_policy
+                            == crate::convert::DeltaPolicy::GuardedSemanticFallback =>
+                    {
+                        Judgment::unknown(obstruction.0)
+                    }
+                    other => other,
+                }
+            }
             Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
             Judgment::Unknown { residual } => Judgment::Unknown { residual },
         }
