@@ -36,7 +36,8 @@ jobs:
           git worktree add --detach /tmp/base "$BASE_SHA"
           cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
       - name: Fetch corpus
-        env: {GH_TOKEN: ${{ github.token }}}
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
           mkdir -p /tmp/art /tmp/tests
