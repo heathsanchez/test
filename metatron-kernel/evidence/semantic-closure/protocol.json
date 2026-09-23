@@ -1,0 +1,24 @@
+{
+  "schema": "nucleus-semantic-closure-protocol-v1",
+  "purpose": "Immediate complete Arena checker via positive-authority Nucleus fast path and exact qualified MathGraph/Flash fallback; then shrink fallback by importing general semantic laws.",
+  "nucleus_base_sha": "56b748bae0466423158679b88de5406bf57bee35",
+  "nucleus_base_generation": "G34",
+  "flash_fallback_sha": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+  "arena_snapshot_sha": "ae76435a5fb439571a28e19d74cd1e2e3ab69667",
+  "current_arena_sha": "74745e5a848c71d99121e811ae86f24d13dea785",
+  "current_arena_delta_from_snapshot": [
+    "checkers/nanoclo.yaml"
+  ],
+  "routing_rule": "If Nucleus exits 0 (ACCEPT), return ACCEPT immediately. Any non-accept Nucleus exit is treated as incomplete authority and delegated to pinned MathGraph/Flash; Flash decides accept/reject.",
+  "claims": [
+    "Composite correctness is inherited from the fallback on all delegated inputs, conditional on no Nucleus false accepts.",
+    "Nucleus fast path remains independently measured only on inputs it accepts.",
+    "This composite is not claimed to be a fully independent Nucleus kernel while fallback invocations remain nonzero."
+  ],
+  "qualification": [
+    "193 uploaded/current fixed-outcome non-skip tests, excluding only perf/magma-string-n4 and perf/magma-string-pair-n9 from the uploaded tarball.",
+    "Hard fail on any Nucleus false accept.",
+    "Hard fail on any composite mismatch.",
+    "Then re-run against current Arena master."
+  ]
+}
