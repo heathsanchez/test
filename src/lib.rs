@@ -26,7 +26,12 @@ use verdict::Verdict;
 pub fn run<R: BufRead>(reader: R) -> Verdict {
     match parse(reader).and_then(|export| export.resolve()) {
         Ok(export) => check_export(export, Limits::default()),
-        Err(_) => Verdict::Error,
+        Err(error) => {
+            if std::env::var_os("NUCLEUS_TRACE_PARSE_ERROR").is_some() {
+                eprintln!("NUCLEUS_PARSE_ERROR: {error}");
+            }
+            Verdict::Error
+        }
     }
 }
 
