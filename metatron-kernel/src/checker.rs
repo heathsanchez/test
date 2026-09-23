@@ -1586,7 +1586,12 @@ fn generic_parameterized_nullary_recursor_shape(
     }
     let (ctor_head, ctor_args) = application_spine(export, *constructed);
     if ctor_args.len() != p
-        || !is_declared_level_constant(export, ctor_head, constructor.name, &constructor.level_params)
+        || !is_declared_level_constant(
+            export,
+            ctor_head,
+            constructor.name,
+            &constructor.level_params,
+        )
         || !ctor_args
             .iter()
             .enumerate()
@@ -1671,12 +1676,7 @@ fn check_generic_parameterized_nullary(
             false,
             true,
         )
-        || !generic_parameterized_nullary_recursor_shape(
-            export,
-            inductive,
-            constructor,
-            recursor,
-        )
+        || !generic_parameterized_nullary_recursor_shape(export, inductive, constructor, recursor)
     {
         return Err(Verdict::Reject);
     }
