@@ -951,6 +951,13 @@ fn check_generic_nonrecursive_type(
     if !generic_nonrecursive_type_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
+    if block
+        .constructors
+        .iter()
+        .any(|c| constructor_has_definite_negative_recursive_field(export, inductive, c))
+    {
+        return Err(Verdict::Reject);
+    }
     if !inductive_arity_metadata_is_well_formed(export, inductive)
         || inductive.all != [inductive.name]
         || inductive.constructors
@@ -966,7 +973,6 @@ fn check_generic_nonrecursive_type(
                 || c.num_params != inductive.num_params
                 || c.level_params != inductive.level_params
                 || constructor_result_is_definitely_malformed(export, inductive, c)
-                || constructor_has_definite_negative_recursive_field(export, inductive, c)
         })
     {
         return Err(Verdict::Unknown);
