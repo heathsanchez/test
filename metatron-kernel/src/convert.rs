@@ -153,7 +153,7 @@ pub(crate) fn convert_with_policy_at_depth(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(cheap_left, cheap_right, remaining, depth, &mut work) {
+                match compare_values(checker, cheap_left, cheap_right, remaining, depth, &mut work) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
@@ -165,7 +165,7 @@ pub(crate) fn convert_with_policy_at_depth(
                         else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        match compare_values(full_left, full_right, remaining, depth, &mut work) {
+                        match compare_values(checker, full_left, full_right, remaining, depth, &mut work) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
                                 return Judgment::Refuted { obstruction };
@@ -224,6 +224,7 @@ pub(crate) fn test_conversion_calls() -> u64 {
 }
 
 fn compare_values(
+    checker: &TypeChecker<'_>,
     left: &Value,
     right: &Value,
     budget: usize,
@@ -231,6 +232,17 @@ fn compare_values(
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
 ) -> Judgment<()> {
     match (left, right) {
+        (Value::NatLit(left), Value::NatLit(right)) => {
+            if left != right {
+                return Judgment::refuted("distinct-Nat-literals");
+            }
+        }
+        (Value::NatLit(literal), Value::Neutral(neutral)) => {
+            return compare_nat_literal_neutral(checker, literal, neutral, budget, depth, work);
+        }
+        (Value::Neutral(neutral), Value::NatLit(literal)) => {
+            return compare_nat_literal_neutral(checker, literal, neutral, budget, depth, work);
+        }
         (Value::Sort(left), Value::Sort(right)) => {
             work.push((
                 TypeValue::Sort(left.clone()),
@@ -291,6 +303,55 @@ fn compare_values(
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+fn compare_nat_literal_neutral(
+    checker: &TypeChecker<'_>,
+    literal: &crate::nat::BigNat,
+    neutral: &Neutral,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+) -> Judgment<()> {
+    let Some(primitives) = checker.nat_primitives() else {
+        return Judgment::unknown("Nat-literal-conversion-without-authority");
+    };
+    let NeutralHead::Const { name, levels } = &neutral.head else {
+        return Judgment::refuted("Nat-literal-neutral-head");
+    };
+    if !levels.is_empty() {
+        return Judgment::refuted("Nat-literal-constructor-levels");
+    }
+    if *name == primitives.zero {
+        return if neutral.spine.is_empty() && literal.is_zero() {
+            Judgment::proven((), "Nat-literal-zero")
+        } else {
+            Judgment::refuted("Nat-literal-zero-mismatch")
+        };
+    }
+    if *name == primitives.succ {
+        if neutral.spine.len() != 1 {
+            return Judgment::refuted("Nat-literal-succ-arity");
+        }
+        let Some(pred) = literal.pred() else {
+            return Judgment::refuted("Nat-zero-is-not-succ");
+        };
+        let exposed = checker
+            .machine()
+            .expose(neutral.spine[0].clone(), Transparency::Reducible, budget);
+        let Some(argument) = exposed.proven_value() else {
+            return Judgment::unknown("Nat-literal-succ-argument");
+        };
+        return compare_values(
+            checker,
+            &Value::NatLit(pred),
+            argument,
+            budget.saturating_sub(1),
+            depth,
+            work,
+        );
+    }
+    Judgment::refuted("Nat-literal-non-Nat-head")
 }
 
 fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judgment<()> {
