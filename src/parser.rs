@@ -275,7 +275,7 @@ fn parse_expr(
 ) -> Result<(), ParseError> {
     let id = ExprId(number(object, "ie", line)?);
     let tags = [
-        "bvar", "sort", "const", "app", "lam", "forallE", "letE", "proj",
+        "bvar", "natVal", "sort", "const", "app", "lam", "forallE", "letE", "proj",
     ]
     .into_iter()
     .filter(|key| object.contains_key(*key))
@@ -288,6 +288,15 @@ fn parse_expr(
     }
     let expr = match tags[0] {
         "bvar" => Expr::BVar(number(object, "bvar", line)?),
+        "natVal" => {
+            let text = object
+                .get("natVal")
+                .and_then(Value::as_str)
+                .ok_or_else(|| malformed(line, "natVal must be a decimal string"))?;
+            let value = crate::nat::BigNat::parse_decimal(text)
+                .ok_or_else(|| malformed(line, "natVal must be a canonical natural number"))?;
+            Expr::NatLit(value)
+        }
         "sort" => Expr::Sort(LevelId(number(object, "sort", line)?)),
         "const" => {
             let value = object.get("const").expect("tag checked");
@@ -469,7 +478,7 @@ fn parse_inductive(value: &Value, line: usize) -> Result<Declaration, ParseError
 
 fn resolve_expr(export: &ParsedExport, expr: &Expr) -> Result<(), ParseError> {
     match expr {
-        Expr::BVar(_) => Ok(()),
+        Expr::BVar(_) | Expr::NatLit(_) => Ok(()),
         Expr::Sort(level) => require_level(&export.levels, *level),
         Expr::Const { name, levels } => {
             require_name(&export.names, *name)?;
