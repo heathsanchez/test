@@ -1,0 +1,64 @@
+name: Nucleus G36 Export Surface Census v0
+
+on:
+  push:
+    branches: [nucleus-g36-export-surface-census-v0]
+    paths:
+      - ".github/workflows/nucleus-g36-export-surface-census-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+    steps:
+      - uses: actions/checkout@v4
+      - uses: cachix/install-nix-action@v31
+      - name: Build current init-prelude export
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test init-prelude
+      - name: Census first unsupported Nucleus expression surface
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/g36
+          python - <<'PY'
+          import json,pathlib,collections,os
+          p=pathlib.Path('/tmp/arena/_build/tests/init-prelude.ndjson')
+          expr_known={'bvar','sort','const','app','lam','forallE','letE','proj'}
+          counts=collections.Counter()
+          first={}
+          total=0
+          with p.open() as f:
+              for ln,line in enumerate(f,1):
+                  total+=1
+                  obj=json.loads(line)
+                  if 'ie' in obj:
+                      tags=[k for k in obj if k!='ie']
+                      tag=tags[0] if len(tags)==1 else '<malformed>'
+                      counts[tag]+=1
+                      if tag not in expr_known and tag not in first:
+                          first[tag]={'line':ln,'record':obj}
+          unsupported={k:v for k,v in counts.items() if k not in expr_known}
+          out={'schema':'nucleus-g36-export-surface-census-v0',
+               'arena_sha':os.environ['ARENA_SHA'],
+               'test':'init-prelude','lines':total,
+               'expr_counts':dict(counts),
+               'unsupported_expr_counts':unsupported,
+               'first_unsupported':first}
+          pathlib.Path('metatron-kernel/evidence-out/g36/census.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          assert unsupported, 'expected at least one unsupported expression tag'
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g36-export-surface-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g36
