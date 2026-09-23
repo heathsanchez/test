@@ -1,0 +1,47 @@
+name: LKC SHA Scalar V28 Reduce Screen
+on:
+  push:
+    branches: [lkc-sha-scalar-v28-probe]
+    paths:
+      - 'experiments/lkc_sha256/scalar_v28_probe.py'
+      - '.github/workflows/lkc-sha-scalar-v28-reduce.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  reduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        input: ["18860801433","138725260120"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate
+        run: |
+          python3 experiments/lkc_sha256/algebra_v24_probe.py
+          python3 experiments/lkc_sha256/scalar_v28_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Reduce V25
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_algebra_v24_probe.lean bench/.cache/upstream/evaluation/problems/sha256/V25.lean
+          printf '\n#reduce Submission.impl ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/V25.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V25_REAL=%e V25_USER=%U V25_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V25.lean >/dev/null
+      - name: Reduce V28
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_scalar_v28_probe.lean bench/.cache/upstream/evaluation/problems/sha256/V28.lean
+          printf '\n#reduce Submission.implScalar ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/V28.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V28_REAL=%e V28_USER=%U V28_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V28.lean >/dev/null
