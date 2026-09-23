@@ -1,0 +1,151 @@
+name: Nucleus Residual Trace Quotient v7
+
+on:
+  push:
+    branches: [nucleus-residual-trace-v7]
+    paths:
+      - ".github/workflows/nucleus-residual-trace-v7.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: 511853988249434de5e34a800e869d03c10f46a3
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build candidate and exact warranted base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Prove diagnostic equivalence and quotient terminal residuals
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/residual-trace-v7
+          python - <<'PY'
+          import json,pathlib,subprocess,os,collections,hashlib,re
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if trace: env['NUCLEUS_TRACE_RESIDUAL']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          def shape(records):
+              inds=[]
+              decl=[]
+              expr=collections.Counter()
+              for o in records:
+                  if 'ie' in o:
+                      ks=[k for k in o if k!='ie']
+                      if len(ks)==1: expr[ks[0]]+=1
+                  for k in ('axiom','def','thm','opaque','quot','inductive'):
+                      if k in o: decl.append(k)
+                  if 'inductive' in o and isinstance(o['inductive'],dict):
+                      d=o['inductive']
+                      for t in d.get('types',[]):
+                          inds.append({
+                            'p':t.get('numParams'),
+                            'i':t.get('numIndices'),
+                            'n':t.get('numNested'),
+                            'rec':bool(t.get('isRec')),
+                            'ref':bool(t.get('isReflexive')),
+                            'unsafe':bool(t.get('isUnsafe')),
+                          })
+              return {
+                'decl_kinds':sorted(set(decl)),
+                'inductives':inds,
+                'proj':bool(expr['proj']),
+                'nat':bool(expr['natVal']),
+                'str':bool(expr['strVal']),
+                'mdata':bool(expr['mdata']),
+              }
+
+          rows=[]
+          diffs=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  a,_=rr(base,p)
+                  b,err=rr(cand,p,True)
+                  if a!=b: diffs.append({'test':name,'base':a,'candidate':b})
+                  if b not in (2,3): continue
+                  marks=re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)',err)
+                  terminal=marks[-1] if marks else ('parser-error' if b==3 else 'untraced-unknown')
+                  records=[json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+                  sig={
+                    'terminal_residual':terminal,
+                    'flash_consequence':'accept' if expected==0 else 'reject',
+                    'shape':shape(records),
+                  }
+                  key=json.dumps(sig,sort_keys=True,separators=(',',':'))
+                  rows.append({
+                    'test':name,'expected':expected,'rc':b,
+                    'terminal_residual':terminal,'signature':sig,
+                    'class_id':hashlib.sha256(key.encode()).hexdigest()[:12]
+                  })
+          assert not diffs,diffs
+          assert len(rows)==57,len(rows)
+          groups=collections.defaultdict(list)
+          for r in rows: groups[r['class_id']].append(r)
+          classes=[{
+            'class_id':cid,'count':len(ms),'signature':ms[0]['signature'],
+            'members':[m['test'] for m in ms],
+          } for cid,ms in groups.items()]
+          classes.sort(key=lambda x:(-x['count'],x['class_id']))
+          reason_counts=collections.Counter(r['terminal_residual'] for r in rows)
+          out={
+            'schema':'nucleus-residual-trace-v7','base_sha':os.environ['BASE_SHA'],
+            'candidate_sha':os.environ['GITHUB_SHA'],'verdict_diffs':diffs,
+            'residual_count':len(rows),'class_count':len(classes),
+            'terminal_reason_counts':dict(reason_counts),
+            'largest_class':classes[0] if classes else None,
+            'classes':classes,
+          }
+          dest=pathlib.Path('evidence-out/residual-trace-v7')
+          (dest/'summary.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          (dest/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'residual_count':out['residual_count'],
+            'class_count':out['class_count'],
+            'terminal_reason_counts':out['terminal_reason_counts'],
+            'top_classes':classes[:15]
+          },sort_keys=True))
+          PY
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-trace-v7-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-trace-v7
+          if-no-files-found: error
