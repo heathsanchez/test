@@ -1,0 +1,244 @@
+name: ACC History Stable Lift V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-history-stable-lift-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  lift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover owned AC witnesses and compile live Stable gains
+        run: |
+          set -euo pipefail
+          mkdir -p lift
+          python3 - <<'PY'
+          import json, os, re, urllib.parse, urllib.request, urllib.error
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1'; KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def req(path,accept='application/json'):
+              h=dict(H);h['Accept']=accept
+              r=urllib.request.Request(BASE+path,headers=h)
+              try:
+                  with urllib.request.urlopen(r,timeout=60) as z:return z.status,dict(z.headers.items()),z.read()
+              except urllib.error.HTTPError as e:return e.code,dict(e.headers.items()),e.read()
+          def js(path):
+              st,hd,raw=req(path)
+              if not 200<=st<300:raise RuntimeError(f'GET {path} HTTP {st}: {raw[:500]!r}')
+              return json.loads(raw.decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          def find_int(x,key):
+              if isinstance(x,dict):
+                  if type(x.get(key)) is int:return x[key]
+                  for v in x.values():
+                      z=find_int(v,key)
+                      if z is not None:return z
+              elif isinstance(x,list):
+                  for v in x:
+                      z=find_int(v,key)
+                      if z is not None:return z
+              return None
+
+          spec=js('/competitions/acc/submission-spec')
+          maxsol=find_int(spec,'maxSolutions') or 100
+          ac=data(js('/competitions/acc/discoveries/snapshot?problem=ac'))
+          sa=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          amap={(x.get('problemId') or x.get('challengeId')):x for x in ac['items']}
+          smap={(x.get('problemId') or x.get('challengeId')):x for x in sa['items']}
+
+          items=[];cursor=None;pages=0
+          while True:
+              q={'limit':'100'}
+              if cursor:q['cursor']=cursor
+              d=data(js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q)))
+              items += d.get('items',[]) if isinstance(d,dict) else []
+              cursor=d.get('nextCursor') if isinstance(d,dict) else None; pages+=1
+              if not cursor or pages>=100:break
+
+          pat=re.compile(r'^\s*(ac-[0-9]+)\s*:\s*(\[[^\n#]*\])',re.M)
+          owned={}; download_errors=[]
+          for rec in items:
+              if not isinstance(rec,dict) or not rec.get('submissionId'):continue
+              sid=str(rec['submissionId'])
+              st,hd,raw=req('/competitions/acc/submissions/'+urllib.parse.quote(sid,safe='')+'/download','text/plain')
+              if st!=200:
+                  download_errors.append({'submissionId':sid,'http':st});continue
+              try:txt=raw.decode('utf-8-sig')
+              except Exception:continue
+              for m in pat.finditer(txt):
+                  cid=m.group(1)
+                  try:moves=json.loads(m.group(2))
+                  except Exception:continue
+                  if not isinstance(moves,list) or not all(type(x) is int for x in moves):continue
+                  prev=owned.get(cid)
+                  if prev is None or len(moves)<len(prev['moves']):
+                      owned[cid]={'moves':moves,'submissionId':sid,'receivedAt':rec.get('receivedAt')}
+
+          candidates=[]
+          for cid,h in owned.items():
+              suffix=cid[3:]; sid='sac-'+suffix
+              s=smap.get(sid); a=amap.get(cid)
+              if not s or not a:continue
+              smoves=h['moves']+[16,15]
+              status=s.get('status');best=s.get('currentBestLength')
+              gain=(status!='solved' or not isinstance(best,int) or len(smoves)<best)
+              if not gain:continue
+              candidates.append({'cid':cid,'sid':sid,'source_len':len(h['moves']),'moves':smoves,
+                  'candidate_len':len(smoves),'stable_status':status,'stable_best':best,
+                  'source_submissionId':h['submissionId'],'ac_status':a.get('status'),'ac_best':a.get('currentBestLength')})
+
+          # Fresh unsolved first, then largest strict steal, then shorter candidate.
+          def key(c):
+              unsolved=0 if c['stable_status']!='solved' or c['stable_best'] is None else 1
+              improvement=0 if c['stable_best'] is None else -(c['stable_best']-c['candidate_len'])
+              return (unsolved,improvement,c['candidate_len'],c['sid'])
+          candidates=sorted(candidates,key=key)
+          selected=candidates[:maxsol]
+          Path('lift/recovery_summary.json').write_text(json.dumps({
+              'history_pages':pages,'history_items':len(items),'owned_ac_witnesses':len(owned),
+              'download_errors':download_errors,'live_gain_candidates':len(candidates),
+              'selected':len(selected),'maxSolutions':maxsol},indent=2,sort_keys=True)+'\n')
+          Path('lift/candidates.json').write_text(json.dumps(candidates,indent=2,sort_keys=True)+'\n')
+          Path('lift/candidate_batch.txt').write_text(''.join(
+              c['sid']+': '+json.dumps(c['moves'],separators=(',',':'))+'\n' for c in selected))
+          print('ACC_HISTORY_STABLE_LIFT',json.dumps({
+              'history_items':len(items),'owned_ac_witnesses':len(owned),'live_gain_candidates':len(candidates),
+              'selected':len(selected),'targets':[c['sid'] for c in selected]},sort_keys=True))
+          PY
+
+      - name: Pinned official batch replay
+        run: |
+          set -euo pipefail
+          if [ ! -s lift/candidate_batch.txt ]; then echo NO_HISTORY_LIFT_CANDIDATES; exit 0; fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission lift/candidate_batch.txt
+          touch lift/PINNED_VERIFIER_PASS
+          echo ACC_HISTORY_STABLE_BATCH_VERIFIED
+
+      - name: Immediate live and quota filter
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.parse,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1';KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def js(path):
+              req=urllib.request.Request(BASE+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          def find_daily(x):
+              if isinstance(x,dict):
+                  for k,v in x.items():
+                      if k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay') and type(v) is int:return v
+                  for v in x.values():
+                      z=find_daily(v)
+                      if z is not None:return z
+              elif isinstance(x,list):
+                  for v in x:
+                      z=find_daily(v)
+                      if z is not None:return z
+              return None
+          def stamp(rec):
+              for k in ('receivedAt','createdAt','updatedAt','submittedAt','created','timestamp','submitted'):
+                  s=rec.get(k) if isinstance(rec,dict) else None
+                  if not isinstance(s,str) or not s:continue
+                  try:
+                      dt=datetime.fromisoformat(s.replace('Z','+00:00'))
+                      if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+                      return dt.astimezone(timezone.utc)
+                  except Exception:pass
+              return None
+          src=Path('lift/candidate_batch.txt');dst=Path('lift/publish_batch.txt');dst.write_text('')
+          verified=Path('lift/PINNED_VERIFIER_PASS').exists() and src.exists() and src.stat().st_size>0
+          stable=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          smap={(x.get('problemId') or x.get('challengeId')):x for x in stable['items']}
+          keep=[];decisions=[]
+          if verified:
+              for line in src.read_text().splitlines():
+                  cid,raw=line.split(':',1); moves=json.loads(raw.strip()); row=smap.get(cid,{})
+                  status=row.get('status');best=row.get('currentBestLength')
+                  improves=status!='solved' or not isinstance(best,int) or len(moves)<best
+                  decisions.append({'id':cid,'candidate_len':len(moves),'live_status':status,'live_best':best,'keep':improves})
+                  if improves:keep.append(line)
+          me=data(js('/competitions/acc/me'));spec=js('/competitions/acc/submission-spec');limit=find_daily(spec)
+          items=[];cursor=None;pages=0
+          while True:
+              q={'limit':'100'}
+              if cursor:q['cursor']=cursor
+              d=data(js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q)))
+              items += d.get('items',[]) if isinstance(d,dict) else []
+              cursor=d.get('nextCursor') if isinstance(d,dict) else None;pages+=1
+              if not cursor or pages>=100:break
+          today=datetime.now(timezone.utc).date();used=sum((t:=stamp(x)) is not None and t.date()==today for x in items)
+          can_submit=bool(me.get('canSubmit')) if isinstance(me,dict) else False
+          quota_ok=isinstance(limit,int) and used<limit
+          gate={'verified':verified,'candidate_rows':len(decisions),'publishable_rows':len(keep),
+                'canSubmit':can_submit,'quota_used':used,'quota_limit':limit,
+                'quota_remaining':max(0,limit-used) if isinstance(limit,int) else None,'decisions':decisions}
+          Path('lift/prepublish_gate.json').write_text(json.dumps(gate,indent=2,sort_keys=True)+'\n')
+          print('ACC_HISTORY_STABLE_PREPUBLISH',json.dumps({k:v for k,v in gate.items() if k!='decisions'},sort_keys=True))
+          if verified and keep and can_submit and quota_ok:dst.write_text('\n'.join(keep)+'\n')
+          PY
+
+      - name: Publish only live strict gains
+        run: |
+          set -euo pipefail
+          if [ ! -s lift/publish_batch.txt ]; then echo NO_PUBLISHABLE_HISTORY_LIFT; exit 0; fi
+          ACC_SUBMISSION_FILE=lift/publish_batch.txt \
+          ACC_SUBMIT_OUT=lift/publish \
+          python3 acc_submit/submit_live_filtered.py | tee lift/publish.log
+
+      - name: Post-live gain audit
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1';KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def js(path):
+              req=urllib.request.Request(BASE+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          stable=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          smap={(x.get('problemId') or x.get('challengeId')):x for x in stable['items']}
+          ids=[]
+          p=Path('lift/publish_batch.txt')
+          if p.exists():ids=[ln.split(':',1)[0] for ln in p.read_text().splitlines() if ':' in ln]
+          rows={cid:{'status':smap.get(cid,{}).get('status'),'best':smap.get(cid,{}).get('currentBestLength'),
+                     'kTeams':smap.get(cid,{}).get('kTeams')} for cid in ids}
+          Path('lift/post_live.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print('ACC_HISTORY_STABLE_POST_LIVE',json.dumps(rows,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-history-stable-lift-v1
+          path: lift/
+          retention-days: 90
+          if-no-files-found: warn
