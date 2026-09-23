@@ -40,6 +40,11 @@ pub enum Expr {
         value: ExprId,
         body: ExprId,
     },
+    Proj {
+        type_name: NameId,
+        index: u64,
+        structure: ExprId,
+    },
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
