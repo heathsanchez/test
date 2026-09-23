@@ -319,7 +319,14 @@ fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judg
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => Judgment::refuted("distinct-neutral-heads"),
+        _ => {
+            eprintln!(
+                "NUCLEUS_TRACE_DISTINCT_HEADS left={:?} right={:?}",
+                left,
+                right
+            );
+            Judgment::refuted("distinct-neutral-heads")
+        },
     }
 }
 
