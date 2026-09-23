@@ -6,6 +6,10 @@ on:
     paths:
       - ".github/workflows/nucleus-residual-capability-v0.yml"
       - "metatron-kernel/**"
+  pull_request:
+    paths:
+      - ".github/workflows/nucleus-residual-capability-v0.yml"
+      - "metatron-kernel/**"
   workflow_dispatch:
 
 permissions:
