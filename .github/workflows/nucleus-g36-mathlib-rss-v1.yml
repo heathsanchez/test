@@ -1,0 +1,97 @@
+name: Nucleus G36 Mathlib RSS v1
+
+on:
+  push:
+    branches: [nucleus-g36-mathlib-rss-v1]
+    paths:
+      - ".github/workflows/nucleus-g36-mathlib-rss-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      NUCLEUS_SHA: 32e8e0e39234a4497b078dc1188f42994d559879
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build exact qualified G36
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$NUCLEUS_SHA" HEAD
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-g36
+          sha256sum /tmp/nucleus-g36
+          stat -c 'binary_bytes=%s' /tmp/nucleus-g36
+
+      - name: Prepare current Arena and build Mathlib export
+        timeout-minutes: 150
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cat > /tmp/arena/checkers/nucleus-g36.yaml <<'YAML'
+          description: |
+            Qualified native Nucleus G36 literal/projection authority.
+          version: "g36-32e8e0e"
+          url: https://github.com/heathsanchez/test
+          rev: 32e8e0e39234a4497b078dc1188f42994d559879
+          build: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          run: ./metatron-kernel/target/release/metatron-kernel < $IN
+          YAML
+          cd /tmp/arena
+          nix develop -c ./lka.py build-checker nucleus-g36
+          nix develop -c ./lka.py build-test mathlib
+
+      - name: Census current Mathlib expression surface
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/g36-mathlib
+          python - <<'PY'
+          import json,pathlib,collections,os
+          p=pathlib.Path('/tmp/arena/_build/tests/mathlib.ndjson')
+          known={'bvar','natVal','strVal','sort','const','app','lam','forallE','letE','proj'}
+          counts=collections.Counter(); first={}; total=0
+          with p.open() as f:
+              for ln,line in enumerate(f,1):
+                  total+=1
+                  o=json.loads(line)
+                  if 'ie' in o:
+                      tags=[k for k in o if k!='ie']
+                      tag=tags[0] if len(tags)==1 else '<malformed>'
+                      counts[tag]+=1
+                      if tag not in known and tag not in first:
+                          first[tag]={'line':ln,'record':o}
+          unsupported={k:v for k,v in counts.items() if k not in known}
+          out={'schema':'nucleus-g36-mathlib-surface-v1','arena_sha':os.environ['ARENA_SHA'],
+               'lines':total,'expr_counts':dict(counts),'unsupported_expr_counts':unsupported,
+               'first_unsupported':first,'bytes':p.stat().st_size}
+          pathlib.Path('metatron-kernel/evidence-out/g36-mathlib/surface.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Measure native Nucleus on current Mathlib
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          cd /tmp/arena
+          rm -rf _results
+          mkdir -p _results
+          ./lka.py -v run --checker nucleus-g36 --test mathlib || true
+          cp _results/nucleus-g36_mathlib.json "$GITHUB_WORKSPACE/metatron-kernel/evidence-out/g36-mathlib/arena-result.json"
+          cat "$GITHUB_WORKSPACE/metatron-kernel/evidence-out/g36-mathlib/arena-result.json"
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g36-mathlib-rss-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g36-mathlib
+          if-no-files-found: warn
