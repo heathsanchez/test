@@ -156,10 +156,7 @@ impl<'a> Machine<'a> {
         self
     }
 
-    pub fn with_projection_specs(
-        mut self,
-        specs: HashMap<NameId, ProjectionSpec>,
-    ) -> Self {
+    pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
         self.projection_specs = specs;
         self
     }
