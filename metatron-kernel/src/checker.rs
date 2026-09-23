@@ -2216,10 +2216,8 @@ fn check_exact_nat(
         .map(|(constructor, rule)| {
             Ok(RecursorRule {
                 constructor: constructor.name,
-                num_params: usize::try_from(constructor.num_params)
-                    .map_err(|_| Verdict::Reject)?,
-                num_fields: usize::try_from(constructor.num_fields)
-                    .map_err(|_| Verdict::Reject)?,
+                num_params: usize::try_from(constructor.num_params).map_err(|_| Verdict::Reject)?,
+                num_fields: usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?,
                 rhs: rule.rhs,
             })
         })
