@@ -312,16 +312,15 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
-                    if let Some(native) = self.try_native_nat_reduction(
-                        *name,
-                        levels,
-                        &mut pending,
-                        transparency,
-                        budget,
-                        record_witnesses,
-                        &mut transitions,
-                    ) {
-                        return native;
+                    if let Some(native) =
+                        self.try_native_nat_reduction(*name, levels, &mut pending, transparency, budget)
+                    {
+                        record_transition(
+                            &mut transitions,
+                            record_witnesses,
+                            TransitionWitness::NatExtension,
+                        );
+                        return exposed(native, transitions);
                     }
 
                     // G28: a separately qualified nullary-singleton recursor
@@ -500,9 +499,7 @@ impl<'a> Machine<'a> {
         pending: &mut Vec<Closure>,
         transparency: Transparency,
         budget: usize,
-        record_witnesses: bool,
-        transitions: &mut Vec<TransitionWitness>,
-    ) -> Option<Judgment<Exposure>> {
+    ) -> Option<Value> {
         let primitives = self.nat_primitives.as_ref()?;
         enum Operation {
             Add,
@@ -540,17 +537,10 @@ impl<'a> Machine<'a> {
             return None;
         };
         if pending.len() != 2 {
-            return Some(Judgment::unknown(
-                "Nat-extension-result-applied-as-function",
-            ));
+            return None;
         }
         pending.clear();
-        record_transition(
-            transitions,
-            record_witnesses,
-            TransitionWitness::NatExtension,
-        );
-        let value = match operation {
+        Some(match operation {
             Operation::Add => Value::NatLit(first.add(&second)),
             Operation::Sub => Value::NatLit(first.sub_trunc(&second)),
             Operation::Ble => {
@@ -568,8 +558,7 @@ impl<'a> Machine<'a> {
                     spine: Vec::new(),
                 })
             }
-        };
-        Some(exposed(value, std::mem::take(transitions)))
+        })
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
