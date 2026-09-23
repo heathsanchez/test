@@ -379,7 +379,10 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                 );
                 match conversion {
-                    Judgment::Refuted { obstruction } if conversion_refutation_is_unknown => {
+                    Judgment::Refuted { obstruction }
+                        if conversion_refutation_is_unknown
+                            && !definite_conversion_obstruction(obstruction.0) =>
+                    {
                         Judgment::unknown(obstruction.0)
                     }
                     other => other,
@@ -475,6 +478,13 @@ impl<'a> TypeChecker<'a> {
         entries.sort_by_key(|(name, _)| name.0);
         Closure::with_levels(expr, env, LevelSubstitution::new(entries))
     }
+}
+
+fn definite_conversion_obstruction(obstruction: &str) -> bool {
+    matches!(
+        obstruction,
+        "distinct-canonical-universes" | "distinct-Nat-literals"
+    )
 }
 
 enum PiBody {
