@@ -436,6 +436,10 @@ impl<'a> TypeChecker<'a> {
         self.environment.authority()
     }
 
+    pub(crate) fn nat_primitives(&self) -> Option<&crate::environment::NatPrimitives> {
+        self.environment.nat_primitives()
+    }
+
     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
         let mut entries: Vec<_> = self
             .level_substitution
