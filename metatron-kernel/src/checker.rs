@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
-use crate::environment::{ConstantDecl, Environment};
+use crate::environment::{ConstantDecl, Environment, NatPrimitives};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
@@ -2561,9 +2561,30 @@ fn check_exact_nat(
         limits.judgment_steps,
         delta_policy,
     )?;
-    let environment = derivation.finish();
-
-    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+    let environment = install_certified_recursor_reduction(
+        derivation.finish(),
+        &block.constructors,
+        recursor,
+    )?;
+    let Some(type_expr) = export.exprs.iter_raw().find_map(|(raw, expression)| {
+        matches!(
+            expression,
+            Expr::Const { name, levels }
+                if *name == inductive.name && levels.is_empty()
+        )
+        .then_some(ExprId(raw))
+    }) else {
+        return Err(Verdict::Unknown);
+    };
+    environment
+        .install_nat_primitives(NatPrimitives {
+            type_name: inductive.name,
+            type_expr,
+            zero: zero.name,
+            succ: succ.name,
+            recursor: recursor.name,
+        })
+        .map_err(|_| Verdict::Reject)
 }
 
 fn install_certified_recursor_reduction(
