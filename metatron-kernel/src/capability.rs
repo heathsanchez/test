@@ -416,7 +416,10 @@ fn projection_is_definitely_invalid(
     else {
         return false;
     };
-    if *name != type_name || actual_levels.len() != target.level_params.len() {
+    if *name != type_name {
+        return true;
+    }
+    if actual_levels.len() != target.level_params.len() {
         return false;
     }
 
