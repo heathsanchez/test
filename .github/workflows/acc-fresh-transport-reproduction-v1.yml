@@ -76,19 +76,19 @@ jobs:
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
 
-      - name: Transport-aware official best-first
+      - name: Transport-aware exact radius-5 Atlas connector
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/fresh_transport_04546/out
-          python3 acc_competitive/official_bestfirst_v1.py \
+          python3 acc_competitive/transport_exact_connector_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
             --snapshot-ac acc_competitive/fresh_transport_04546/snapshot_ac.json \
             --snapshot-stable acc_competitive/fresh_transport_04546/snapshot_stable.json \
             --target-ids-file acc_competitive/fresh_transport_04546/targets.json \
             --out-dir acc_competitive/fresh_transport_04546/out \
+            --connector-depth 5 \
             --node-cap 250000 \
-            --time-cap 600 \
             | tee acc_competitive/fresh_transport_04546/search.log
 
       - name: Recheck live record for any verified candidate
@@ -96,30 +96,29 @@ jobs:
           set -euo pipefail
           python3 - <<'PY'
           import json, pathlib, urllib.request
-          p=pathlib.Path('acc_competitive/fresh_transport_04546/out/results.json')
-          rows=json.loads(p.read_text())
+          rows=json.loads(pathlib.Path('acc_competitive/fresh_transport_04546/out/results.json').read_text())
           wins=[r for r in rows if r.get('strict_win')]
           if not wins:
               print('NO_VERIFIED_CANDIDATE')
               raise SystemExit(0)
-          BASE='https://server-9527.sair.foundation'
-          HEADERS={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          BASE='https://server-9527.sair.foundation'; HEADERS={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
           def fetch(problem):
               req=urllib.request.Request(BASE+f'/api/acc/discoveries/snapshot?problem={problem}',headers=HEADERS)
-              with urllib.request.urlopen(req,timeout=60) as r:
-                  return json.loads(r.read().decode())
+              with urllib.request.urlopen(req,timeout=60) as r: return json.loads(r.read().decode())
           def rowmap(obj):
-              data=obj.get('data',obj)
-              return {(x.get('problemId') or x.get('challengeId')):x for x in data['items']}
+              data=obj.get('data',obj); return {(x.get('problemId') or x.get('challengeId')):x for x in data['items']}
           am=rowmap(fetch('ac')); sm=rowmap(fetch('stable_ac'))
+          keep=[]
+          pending=pathlib.Path('acc_competitive/fresh_transport_04546/out/pending_submission.txt')
+          lines=pending.read_text().splitlines() if pending.exists() else []
           for r in wins:
-              ac_now=am[r['challenge_id']]['currentBestLength']
-              st_now=sm[r['stable_challenge_id']]['currentBestLength']
+              ac_now=am[r['challenge_id']]['currentBestLength']; st_now=sm[r['stable_challenge_id']]['currentBestLength']
               ac_ok=bool(r.get('ac_strict_win') and r['source_length'] < ac_now)
               st_ok=bool(r.get('stable_strict_win') and r['stable_length'] < st_now)
               print('LIVE_RECHECK',json.dumps({'challenge_id':r['challenge_id'],'ac_now':ac_now,'stable_now':st_now,'source_length':r.get('source_length'),'stable_length':r.get('stable_length'),'ac_publishable':ac_ok,'stable_publishable':st_ok},sort_keys=True))
-              if not (ac_ok or st_ok):
-                  pathlib.Path('acc_competitive/fresh_transport_04546/out/pending_submission.txt').write_text('')
+              if ac_ok: keep += [x for x in lines if x.startswith(r['challenge_id']+':')]
+              if st_ok: keep += [x for x in lines if x.startswith(r['stable_challenge_id']+':')]
+          pending.write_text('\n'.join(keep)+('\n' if keep else ''))
           PY
 
       - name: Summarize fresh residual
@@ -133,7 +132,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: acc-fresh-transport-04546
+          name: acc-fresh-transport-04546-radius5
           path: |
             acc_competitive/fresh_transport_04546/
           retention-days: 90
