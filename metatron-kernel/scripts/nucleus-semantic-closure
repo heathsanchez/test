@@ -11,25 +11,32 @@ NUCLEUS="${NUCLEUS_BIN:-$ROOT/target/release/metatron-kernel}"
 FLASH="${FLASH_BIN:-$ROOT/../mathgraph-fallback/target/release/sokonanoda}"
 FLASH_CONFIG="${FLASH_CONFIG:-$ROOT/../mathgraph-fallback/config.json}"
 
-tmp="$(mktemp)"
-trap 'rm -f "$tmp"' EXIT
-
+tmp=""
+input=""
 if [ "$#" -eq 1 ]; then
-  cat "$1" >"$tmp"
+  input="$1"
 else
+  tmp="$(mktemp)"
+  trap 'rm -f "$tmp"' EXIT
   cat >"$tmp"
+  input="$tmp"
 fi
 
-# Nucleus owns only the positive authority it can already prove.  Any
-# non-accept result is not treated as a negative claim here: it is delegated
-# to the complete, separately qualified MathGraph/Flash checker.
-"$NUCLEUS" <"$tmp" >/dev/null 2>/dev/null
-nucleus_rc=$?
-if [ "$nucleus_rc" -eq 0 ]; then
-  exit 0
+# Current Nucleus authority is concentrated in the small distilled corpus.
+# Large exports currently fall through, so do not pay for a full speculative
+# pass that cannot yet win.  This router is performance-only: Flash remains
+# the semantic authority on every routed input.
+MAX_NUCLEUS_BYTES="${MAX_NUCLEUS_BYTES:-1048576}"
+size="$(wc -c <"$input")"
+if [ "$size" -le "$MAX_NUCLEUS_BYTES" ]; then
+  "$NUCLEUS" <"$input" >/dev/null 2>/dev/null
+  nucleus_rc=$?
+  if [ "$nucleus_rc" -eq 0 ]; then
+    exit 0
+  fi
 fi
 
-"$FLASH" "$FLASH_CONFIG" <"$tmp" >/dev/null 2>/dev/null
+"$FLASH" "$FLASH_CONFIG" <"$input" >/dev/null 2>/dev/null
 flash_rc=$?
 case "$flash_rc" in
   0) exit 0 ;;
