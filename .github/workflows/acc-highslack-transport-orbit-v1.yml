@@ -1,0 +1,158 @@
+name: ACC High-Slack Transport Orbit V1
+
+on:
+  push:
+    branches:
+      - acc-competitive-residual-v1
+    paths:
+      - ".github/workflows/acc-highslack-transport-orbit-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  attack:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover latest verified Proof Atlas
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          [ -n "$ID" ] || { echo "No proof atlas"; exit 1; }
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+
+      - name: Freeze untouched high-slack transport residuals
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/highslack_transport_orbit_v1
+          python3 - <<'PY'
+          import json, pathlib, urllib.request
+          BASE='https://server-9527.sair.foundation'
+          HEADERS={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          REQUESTED=['ac-06547','ac-01097','ac-07381','ac-08248']
+          def fetch(problem):
+              req=urllib.request.Request(BASE+f'/api/acc/discoveries/snapshot?problem={problem}',headers=HEADERS)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def rowmap(obj):
+              data=obj.get('data',obj)
+              return {(x.get('problemId') or x.get('challengeId')):x for x in data['items']}
+          ac=fetch('ac'); stable=fetch('stable_ac')
+          am=rowmap(ac); sm=rowmap(stable)
+          active=[]; rows=[]
+          for aid in REQUESTED:
+              sid='sac-'+aid[3:]
+              a=am[aid]; s=sm[sid]
+              ab=a.get('currentBestLength'); sb=s.get('currentBestLength')
+              if a.get('status')!='solved' or s.get('status')!='solved' or not isinstance(ab,int) or not isinstance(sb,int):
+                  print('SKIP_NONLIVE',aid); continue
+              slack=sb-ab-2
+              row={'challenge_id':aid,'stable_challenge_id':sid,'ac_best':ab,'stable_best':sb,
+                   'transport_slack':slack,'source_bound_exclusive':max(ab,sb-2),
+                   'ac_kTeams':a.get('kTeams'),'stable_kTeams':s.get('kTeams')}
+              print('FRESH_TRANSPORT_WINDOW',json.dumps(row,sort_keys=True))
+              if slack>0:
+                  active.append(aid); rows.append(row)
+          if not active:
+              raise SystemExit('All requested transport windows closed; stop without search')
+          root=pathlib.Path('acc_competitive/highslack_transport_orbit_v1')
+          (root/'snapshot_ac.json').write_text(json.dumps(ac,indent=2,sort_keys=True)+'\n')
+          (root/'snapshot_stable.json').write_text(json.dumps(stable,indent=2,sort_keys=True)+'\n')
+          (root/'targets.json').write_text(json.dumps(active,indent=2)+'\n')
+          (root/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Search verified symmetry-orbit Atlas closure
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/highslack_transport_orbit_v1/out
+          python3 acc_competitive/transport_orbit_atlas_connector_v1.py \
+            --acc-root /tmp/acc \
+            --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
+            --snapshot-ac acc_competitive/highslack_transport_orbit_v1/snapshot_ac.json \
+            --snapshot-stable acc_competitive/highslack_transport_orbit_v1/snapshot_stable.json \
+            --target-ids-file acc_competitive/highslack_transport_orbit_v1/targets.json \
+            --out-dir acc_competitive/highslack_transport_orbit_v1/out \
+            --connector-depth 5 \
+            --node-cap 250000 \
+            | tee acc_competitive/highslack_transport_orbit_v1/search.log
+
+      - name: Quota gate and live strict-filter publication
+        run: |
+          set -euo pipefail
+          pending=acc_competitive/highslack_transport_orbit_v1/out/pending_submission.txt
+          if [ ! -s "$pending" ]; then
+            echo 'NO_VERIFIED_CANDIDATE'
+            exit 0
+          fi
+          python3 - <<'PY'
+          import json, os, urllib.request
+          from datetime import datetime, timezone
+          key=os.environ['SAIR_API_KEY']
+          req=urllib.request.Request('https://api.sair.foundation/api/public/v1/competitions/acc/submissions/mine?limit=100',headers={'Authorization':f'Bearer {key}','Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); items=d.get('items',[]) if isinstance(d,dict) else []
+          today=datetime.now(timezone.utc).date(); used=0
+          for x in items:
+              stamp=None
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  v=x.get(k) if isinstance(x,dict) else None
+                  if isinstance(v,str) and v.strip(): stamp=v.strip(); break
+              if not stamp: continue
+              try:
+                  dt=datetime.fromisoformat(stamp.replace('Z','+00:00'))
+                  if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
+                  if dt.astimezone(timezone.utc).date()==today: used+=1
+              except Exception: pass
+          print('QUOTA_RECHECK',json.dumps({'used':used,'limit':40,'remaining':max(0,40-used)},sort_keys=True))
+          if used>=40: raise SystemExit('Daily ACC submission quota exhausted; do not publish')
+          PY
+          ACC_SUBMISSION_FILE="$pending" \
+          ACC_SUBMIT_OUT=acc_competitive/highslack_transport_orbit_v1/publish \
+            python3 acc_submit/submit_live_filtered.py | tee acc_competitive/highslack_transport_orbit_v1/publish.log
+
+      - name: Summarize terminal evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          echo '--- frozen residuals ---'
+          cat acc_competitive/highslack_transport_orbit_v1/rows.json || true
+          echo '--- orbit report ---'
+          cat acc_competitive/highslack_transport_orbit_v1/out/report.json || true
+          echo '--- results ---'
+          cat acc_competitive/highslack_transport_orbit_v1/out/results.json || true
+          echo '--- publish comparison ---'
+          cat acc_competitive/highslack_transport_orbit_v1/publish/comparison.json || true
+          echo '--- post submit ---'
+          cat acc_competitive/highslack_transport_orbit_v1/publish/post_submit_summary.json || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-highslack-transport-orbit-v1
+          path: acc_competitive/highslack_transport_orbit_v1/
+          retention-days: 90
+          if-no-files-found: warn
