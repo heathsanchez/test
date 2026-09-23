@@ -41,6 +41,13 @@ jobs:
           test -f /tmp/tests/good/init-prelude.ndjson
           wc -c -l /tmp/tests/good/init-prelude.ndjson
 
+      - name: Capture second parse frontier
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/natlit-init-prelude-rss
+          sed -n '19538,19548p' /tmp/tests/good/init-prelude.ndjson \
+            | tee metatron-kernel/evidence-out/natlit-init-prelude-rss/lines-19538-19548.ndjson
+
       - name: Measure standalone init-prelude
         run: |
           set -euo pipefail
