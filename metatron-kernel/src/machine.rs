@@ -332,6 +332,12 @@ impl<'a> Machine<'a> {
                     arguments.push(closure.sibling(*arg, closure.env.clone()));
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => {
+                        closure = bound;
+                    }
+                    EnvBinding::Free(_) => return None,
+                },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
                     return Some((*name, arguments));
