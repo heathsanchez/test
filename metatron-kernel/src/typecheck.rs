@@ -263,6 +263,44 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
             }
+            Expr::Proj {
+                type_name,
+                index,
+                structure,
+            } => {
+                let Some(info) = self.environment.projection(*type_name) else {
+                    return Judgment::refuted("projection-type-not-certified-structure");
+                };
+                let Ok(field_index) = usize::try_from(*index) else {
+                    return Judgment::refuted("projection-index-overflow");
+                };
+                let Some(parameter_index) = info.field_parameter_indices.get(field_index).copied()
+                else {
+                    return Judgment::refuted("projection-out-of-range");
+                };
+                let structure_type = self.infer_in(*structure, context, frame, remaining);
+                let structure_type = match structure_type {
+                    Judgment::Proven { value, .. } => value,
+                    Judgment::Refuted { obstruction } => {
+                        return Judgment::Refuted { obstruction };
+                    }
+                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                };
+                let TypeValue::Term(structure_type) = structure_type else {
+                    return Judgment::refuted("projection-structure-type-not-inductive");
+                };
+                let Some(arguments) = self.type_application_arguments(structure_type, *type_name)
+                else {
+                    return Judgment::refuted("projection-type-name-mismatch");
+                };
+                let Some(field_type) = arguments.get(parameter_index) else {
+                    return Judgment::refuted("projection-missing-parameter");
+                };
+                Judgment::proven(
+                    TypeValue::Term(field_type.clone()),
+                    "certified-simple-projection-type",
+                )
+            }
             Expr::Let { ty, value, body } => {
                 let annotation_type = self.infer_in(*ty, context, frame, remaining);
                 match self.sort_level(annotation_type, *remaining) {
@@ -355,6 +393,34 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    fn type_application_arguments(
+        &self,
+        mut closure: Closure,
+        type_name: NameId,
+    ) -> Option<Vec<Closure>> {
+        let mut arguments = Vec::new();
+        loop {
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    crate::value::EnvBinding::Closure(bound) => closure = bound,
+                    crate::value::EnvBinding::Free(_) => return None,
+                },
+                Expr::Const { name, .. } => {
+                    if *name != type_name {
+                        return None;
+                    }
+                    arguments.reverse();
+                    return Some(arguments);
+                }
+                _ => return None,
+            }
+        }
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),
@@ -364,6 +430,7 @@ impl<'a> TypeChecker<'a> {
         )
         .with_singleton_recursor_reductions(self.environment.singleton_recursor_reductions())
         .with_recursor_reductions(self.environment.recursor_reductions())
+        .with_projections(self.environment.projections())
     }
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
