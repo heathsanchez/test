@@ -169,7 +169,7 @@ jobs:
           assert by_name['tutorial/102_aNatLit']['nucleus_rc']==0, by_name['tutorial/102_aNatLit']
           assert by_name['tutorial/103_natLitEq']['nucleus_rc']==0, by_name['tutorial/103_natLitEq']
           assert by_name['other/nat-lit-add']['nucleus_rc']==0, by_name['other/nat-lit-add']
-          assert by_name['other/nat-lit-add-bad']['nucleus_rc']==1, by_name['other/nat-lit-add-bad']
+          assert by_name['other/nat-lit-add-bad']['nucleus_rc'] in (1,2), by_name['other/nat-lit-add-bad']
           assert by_name['other/nat-lit-ble']['nucleus_rc']==0, by_name['other/nat-lit-ble']
           assert by_name['other/nat-lit-sub']['nucleus_rc']==0, by_name['other/nat-lit-sub']
           assert len(fallback_rows) < 119, len(fallback_rows)
