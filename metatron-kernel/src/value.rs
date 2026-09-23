@@ -5,6 +5,7 @@ use std::sync::atomic::{AtomicU64, Ordering};
 
 use crate::id::{ExprId, NameId};
 use crate::level::LevelTerm;
+use crate::nat::BigNat;
 
 static NEXT_ENV_FRAME_ID: AtomicU64 = AtomicU64::new(1);
 
@@ -158,6 +159,7 @@ impl Closure {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Value {
+    NatLit(BigNat),
     Sort(LevelTerm),
     Pi { domain: Closure, body: Closure },
     Lam { domain: Closure, body: Closure },
