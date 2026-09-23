@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use crate::environment::{BoolPrimitives, NatPrimitives};
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
 use crate::level::instantiate_level;
@@ -26,6 +27,7 @@ pub enum TransitionWitness {
     Delta,
     SingletonRecursor,
     ConstructorRecursor,
+    NatExtension,
     Rigid,
 }
 
@@ -123,6 +125,8 @@ pub struct Machine<'a> {
     singleton_recursor_reductions: HashSet<NameId>,
     recursor_reductions: HashMap<NameId, RecursorReduction>,
     projection_specs: HashMap<NameId, ProjectionSpec>,
+    nat_primitives: Option<NatPrimitives>,
+    bool_primitives: Option<BoolPrimitives>,
 }
 
 impl<'a> Machine<'a> {
@@ -140,6 +144,8 @@ impl<'a> Machine<'a> {
             singleton_recursor_reductions: HashSet::new(),
             recursor_reductions: HashMap::new(),
             projection_specs: HashMap::new(),
+            nat_primitives: None,
+            bool_primitives: None,
         }
     }
 
@@ -158,6 +164,16 @@ impl<'a> Machine<'a> {
 
     pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
         self.projection_specs = specs;
+        self
+    }
+
+    pub fn with_nat_primitives(mut self, primitives: Option<NatPrimitives>) -> Self {
+        self.nat_primitives = primitives;
+        self
+    }
+
+    pub fn with_bool_primitives(mut self, primitives: Option<BoolPrimitives>) -> Self {
+        self.bool_primitives = primitives;
         self
     }
 
@@ -296,6 +312,18 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
+                    if let Some(native) = self.try_native_nat_reduction(
+                        *name,
+                        levels,
+                        &mut pending,
+                        transparency,
+                        budget,
+                        record_witnesses,
+                        &mut transitions,
+                    ) {
+                        return native;
+                    }
+
                     // G28: a separately qualified nullary-singleton recursor
                     // ignores its target and returns its sole minor.  This is
                     // kernel computation authority, not delta unfolding.
@@ -463,6 +491,83 @@ impl<'a> Machine<'a> {
                 }
             }
         }
+    }
+
+    fn try_native_nat_reduction(
+        &self,
+        name: NameId,
+        levels: &[LevelId],
+        pending: &mut Vec<Closure>,
+        transparency: Transparency,
+        budget: usize,
+        record_witnesses: bool,
+        transitions: &mut Vec<TransitionWitness>,
+    ) -> Option<Judgment<Exposure>> {
+        let primitives = self.nat_primitives.as_ref()?;
+        enum Operation {
+            Add,
+            Sub,
+            Ble,
+        }
+        let operation = if primitives.add == Some(name) {
+            Operation::Add
+        } else if primitives.sub == Some(name) {
+            Operation::Sub
+        } else if primitives.ble == Some(name) {
+            Operation::Ble
+        } else {
+            return None;
+        };
+        if !levels.is_empty() || pending.len() < 2 {
+            return None;
+        }
+
+        // Applications are accumulated outside-in, so the last pending item
+        // is the first source argument.
+        let first = pending[pending.len() - 1].clone();
+        let second = pending[pending.len() - 2].clone();
+        let first_value = self
+            .expose_internal(first, transparency, budget.saturating_sub(1), false)
+            .proven_value()?
+            .value
+            .clone();
+        let second_value = self
+            .expose_internal(second, transparency, budget.saturating_sub(1), false)
+            .proven_value()?
+            .value
+            .clone();
+        let (Value::NatLit(first), Value::NatLit(second)) = (first_value, second_value) else {
+            return None;
+        };
+        if pending.len() != 2 {
+            return Some(Judgment::unknown("Nat-extension-result-applied-as-function"));
+        }
+        pending.clear();
+        record_transition(
+            transitions,
+            record_witnesses,
+            TransitionWitness::NatExtension,
+        );
+        let value = match operation {
+            Operation::Add => Value::NatLit(first.add(&second)),
+            Operation::Sub => Value::NatLit(first.sub_trunc(&second)),
+            Operation::Ble => {
+                let bools = self.bool_primitives.as_ref()?;
+                let ctor = if first.compare(&second) != std::cmp::Ordering::Greater {
+                    bools.true_ctor
+                } else {
+                    bools.false_ctor
+                };
+                Value::Neutral(Neutral {
+                    head: NeutralHead::Const {
+                        name: ctor,
+                        levels: Vec::new(),
+                    },
+                    spine: Vec::new(),
+                })
+            }
+        };
+        Some(exposed(value, std::mem::take(transitions)))
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
