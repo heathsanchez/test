@@ -3839,7 +3839,6 @@ mod tests {
         is_binary_product_motive_type, is_bvar_application,
         is_derived_binary_product_constructor_type, is_derived_binary_product_recursor_type,
         is_derived_binary_product_rule, is_exact_binary_product_parameter_telescope, is_prop_sort,
-        valid_binary_product_recursor_metadata,
     };
     use crate::convert::DeltaPolicy;
     use crate::convert::{reset_test_conversion_calls, test_conversion_calls};
@@ -3968,13 +3967,11 @@ mod tests {
             inductive.name,
             BinaryProductSortLaw::And,
         ));
-        assert!(valid_binary_product_recursor_metadata(
+        assert!(BinaryProductSortLaw::And.validates_recursor_metadata(
             &export,
-            inductive.name,
-            &inductive.level_params,
-            constructor.name,
+            inductive,
+            constructor,
             recursor,
-            BinaryProductSortLaw::And,
         ));
         let Expr::Pi {
             domain: first,
