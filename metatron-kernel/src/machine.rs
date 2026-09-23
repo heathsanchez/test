@@ -1,6 +1,7 @@
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
+use crate::environment::ProjectionInfo;
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
 use crate::level::instantiate_level;
@@ -115,6 +116,7 @@ pub struct Machine<'a> {
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
     singleton_recursor_reductions: HashSet<NameId>,
     recursor_reductions: HashMap<NameId, RecursorReduction>,
+    projections: HashMap<NameId, ProjectionInfo>,
 }
 
 impl<'a> Machine<'a> {
@@ -131,6 +133,7 @@ impl<'a> Machine<'a> {
             definitions: definitions.into(),
             singleton_recursor_reductions: HashSet::new(),
             recursor_reductions: HashMap::new(),
+            projections: HashMap::new(),
         }
     }
 
@@ -144,6 +147,11 @@ impl<'a> Machine<'a> {
         reductions: HashMap<NameId, RecursorReduction>,
     ) -> Self {
         self.recursor_reductions = reductions;
+        self
+    }
+
+    pub fn with_projections(mut self, projections: HashMap<NameId, ProjectionInfo>) -> Self {
+        self.projections = projections;
         self
     }
 
@@ -396,6 +404,39 @@ impl<'a> Machine<'a> {
                         }),
                         transitions,
                     );
+                }
+                Expr::Proj {
+                    type_name,
+                    index,
+                    structure,
+                } => {
+                    let Some(info) = self.projections.get(type_name) else {
+                        return Judgment::refuted("projection-type-not-certified-structure");
+                    };
+                    let Ok(field_index) = usize::try_from(*index) else {
+                        return Judgment::refuted("projection-index-overflow");
+                    };
+                    if field_index >= info.field_parameter_indices.len() {
+                        return Judgment::refuted("projection-out-of-range");
+                    }
+                    let structure = closure.sibling(*structure, closure.env.clone());
+                    let exposed_structure =
+                        self.expose_internal(structure, transparency, budget, false);
+                    let Some(Value::Neutral(neutral)) = exposed_structure.proven_value() else {
+                        return Judgment::unknown("projection-structure-not-rigid-constructor");
+                    };
+                    let NeutralHead::Const { name, .. } = neutral.head else {
+                        return Judgment::unknown("projection-structure-not-constructor");
+                    };
+                    if name != info.constructor {
+                        return Judgment::unknown("projection-structure-not-certified-constructor");
+                    }
+                    let Some(field) = neutral.spine.get(info.num_params + field_index) else {
+                        return Judgment::refuted("projection-constructor-field-missing");
+                    };
+                    visited.clear();
+                    closure = field.clone();
+                    continue;
                 }
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
