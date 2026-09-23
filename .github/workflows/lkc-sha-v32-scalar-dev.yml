@@ -1,0 +1,30 @@
+name: LKC SHA V32 Scalar Proof Dev
+on:
+  push:
+    branches: [lkc-sha-mulrotate-scalar-v32-proof]
+    paths:
+      - 'experiments/lkc_sha256/mulrotate_v32_scalar_dev.py'
+      - '.github/workflows/lkc-sha-v32-scalar-dev.yml'
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  dev:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 experiments/lkc_sha256/mulrotate_v32_scalar_dev.py
+      - run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Compile scalar bridge
+        run: |
+          cp experiments/lkc_sha256/generated/ScalarDev.lean bench/.cache/upstream/evaluation/problems/sha256/ScalarDev.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 ScalarDev.lean
