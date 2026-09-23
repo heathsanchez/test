@@ -1,0 +1,32 @@
+{
+  "schema": "nucleus-semantic-closure-production-result-v1",
+  "source_candidate_sha": "cfbda3e2b04e26299ce84e042fa25d17b611d861",
+  "run": 35862013889,
+  "job": 107184260213,
+  "artifact": 10751080912,
+  "artifact_digest": "sha256:f10083499601639f632e9438cbd282b9d6be793396b77c981202e421c1c74f06",
+  "arena_snapshot_sha": "ae76435a5fb439571a28e19d74cd1e2e3ab69667",
+  "arena_current_sha": "74745e5a848c71d99121e811ae86f24d13dea785",
+  "test_tarball_artifact": 10712869614,
+  "test_tarball_sha256": "a7721e50d4baf5c53989bb426013247b4e8bd9f291f0ce5558f7b3f04564a154",
+  "flash_sha": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+  "measured": {
+    "fixed_outcome_tests": 193,
+    "closure_correct": 193,
+    "closure_incorrect": 0,
+    "flash_correct": 193,
+    "flash_incorrect": 0,
+    "nucleus_false_accepts": 0,
+    "nucleus_fast_accepts": 63,
+    "fallback_invocations": 130,
+    "fast_path_median_closure_over_nucleus": 0.9943695720216534,
+    "serial_total_closure_over_flash": 0.9870906616762092
+  },
+  "interpretation": {
+    "correctness": "WARRANTED on the exact official downloadable 193 fixed-outcome corpus",
+    "current_full_snapshot": "DERIVED WARRANT across all 219 snapshot/current tests using the pinned full MathGraph results and unchanged current test boundary",
+    "independence": "PARTIAL: 130/193 measured tests still delegate; standalone Nucleus completeness is not yet claimed",
+    "performance": "Production router adds no measurable fast-path penalty on this gate and slightly improves serial total vs separately invoked Flash on the measured corpus"
+  },
+  "next": "Monotonically reduce fallback coverage using qualified generic Nucleus capabilities while preserving the permanent composite correctness gate."
+}
