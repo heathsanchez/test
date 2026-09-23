@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
-use crate::environment::{
-    BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives,
-};
+use crate::environment::{BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
