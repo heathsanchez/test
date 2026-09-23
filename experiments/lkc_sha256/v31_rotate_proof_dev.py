@@ -13,15 +13,20 @@ def dup32 (x : Nat) : Nat := x * 4294967297
 theorem dup32_eq_or (x : Nat) (hx : x < 2^32) :
     dup32 x = (x <<< 32) ||| x := by
   unfold dup32
+  have hnum : 4294967297 = 2^32 + 1 := by decide
   calc
-    x * 4294967297 = 2^32 * x + x := by norm_num [Nat.mul_add, Nat.mul_comm, Nat.mul_left_comm]
-    _ = (2^32 * x) ||| x := Nat.two_pow_add_eq_or_of_lt hx x
-    _ = (x <<< 32) ||| x := by rw [Nat.shiftLeft_eq, Nat.mul_comm]
+    x * 4294967297 = 2^32 * x + x := by
+      rw [hnum, Nat.mul_add, Nat.mul_one, Nat.mul_comm x (2^32)]
+    _ = (x <<< 32) ||| x := by
+      rw [Nat.shiftLeft_eq, Nat.mul_comm x (2^32)]
+      exact Nat.two_pow_add_eq_or_of_lt hx x
 
 theorem shift32_7 (x : Nat) :
     (x <<< 32) >>> 7 = x <<< 25 := by
-  simp [Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow]
-  norm_num [Nat.mul_div_assoc]
+  rw [Nat.shiftLeft_eq, Nat.shiftRight_eq_div_pow, Nat.shiftLeft_eq]
+  have hp : 2^32 = 2^7 * 2^25 := by decide
+  rw [hp, ← Nat.mul_assoc, Nat.mul_comm x (2^7), Nat.mul_assoc]
+  exact Nat.mul_div_cancel_left (x * 2^25) (by decide : 0 < 2^7)
 
 theorem dup32_shift7 (x : Nat) (hx : x < 2^32) :
     dup32 x >>> 7 = (x >>> 7) ||| (x <<< 25) := by
