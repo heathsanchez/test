@@ -1,0 +1,23 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G14-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "G13 exact Prod candidate",
+    "fixture_sha256": "9f2f275784ba923bc3a050c5f1856ad0d18c83d31ff107a5cd663d4cceaec98a",
+    "tutorial_ordinal": 41,
+    "upstream_path": "tutorial output good/041_pprodType.ndjson"
+  },
+  "obstruction": "The first PProd declaration is outside the separate exact And and Prod classifiers.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "A separate exact PProd classifier which derives the already-observed two-parameter constructor/recursor/rule spine while admitting only Sort u, Sort v parameters and the exact computed Sort (max (max (succ 0) u) v) result.",
+  "falsifier": "Reject the hypothesis if exact PProd does not ACCEPT, if any malformed claim in the recognized PProd envelope avoids REJECT, if broader dependent/indexed/recursive/nested/unsafe shapes cease to be UNKNOWN, or if any tutorial 001-040 behavior differs from sealed G13.",
+  "protected_suite": [
+    "all G0-G13 tests",
+    "exact tutorial prefix 001-041",
+    "G13/G14 differential equality on 001-040 and sole earned delta on 041",
+    "unsupported broader inductives remain UNKNOWN"
+  ],
+  "decision": "retained"
+}

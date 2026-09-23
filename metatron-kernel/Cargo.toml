@@ -1,0 +1,20 @@
+[package]
+name = "metatron-kernel"
+version = "0.1.0"
+edition = "2024"
+license = "MIT"
+description = "Residual-grown Lean Kernel Arena checker"
+
+[features]
+diagnostics = []
+
+[dependencies]
+serde_json = "1"
+
+[lib]
+name = "metatron_kernel"
+path = "src/lib.rs"
+
+[[bin]]
+name = "metatron-kernel"
+path = "src/main.rs"

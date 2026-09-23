@@ -1,0 +1,44 @@
+{
+  "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+  "artifact": {
+    "digest": "sha256:e210119080a776841d2df5bf563625ed6b2ee87c1768f8e52d532c98058f556b",
+    "id": 10710223928,
+    "name": "metatron-kernel-genesis-g2-97ae436b2af00d563a5460d01d3839d97304b5b0",
+    "size_bytes": 13212
+  },
+  "candidate_sha": "97ae436b2af00d563a5460d01d3839d97304b5b0",
+  "differential_qualification": {
+    "earned_cases": [
+      46,
+      47,
+      49
+    ],
+    "earned_delta": 3,
+    "equal": 46,
+    "mismatch": 0,
+    "oracle_sha": "5c51781af6ede78e435b756b7aa75490d10d49c9"
+  },
+  "performance": {
+    "control_retired_instructions": null,
+    "promotion_eligible": false,
+    "status": "UNKNOWN_NO_SAME_COHORT_RETIRED_INSTRUCTIONS"
+  },
+  "schema": "metatron-kernel-external-qualification-record-v1",
+  "tutorial_qualification": {
+    "incorrect": 0,
+    "matched": 49,
+    "through": 49
+  },
+  "suffix_atlas": {
+    "start_case": 46,
+    "count": 96,
+    "matched": 20,
+    "first_mismatch": 50
+  },
+  "workflow": {
+    "job_id": 106859961966,
+    "result": "success",
+    "run_id": 35761375025,
+    "url": "https://github.com/heathsanchez/test/actions/runs/35761375025"
+  }
+}

@@ -1,0 +1,9 @@
+name = "ideal-lean"
+version = "0.1.0"
+defaultTargets = ["IdealLeanTests"]
+
+[[lean_lib]]
+name = "IdealLean"
+
+[[lean_lib]]
+name = "IdealLeanTests"

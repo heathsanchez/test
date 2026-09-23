@@ -1,0 +1,165 @@
+name: Nucleus Qualified Verdict Closure v1
+
+on:
+  push:
+    branches: [nucleus-qualified-verdict-closure-v1]
+    paths:
+      - ".github/workflows/nucleus-qualified-verdict-closure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-qualified-verdict-closure-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Verify and build Nucleus
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          bash -n scripts/nucleus-semantic-closure
+
+      - name: Build pinned MathGraph fallback
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$FLASH_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+
+      - name: Fetch exact official 193-file Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
+
+      - name: Qualify bidirectional native authority and closure
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/qualified-verdict-closure
+          python - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          root=pathlib.Path('/tmp/arena-tests')
+          nucleus=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          wrapper=pathlib.Path('metatron-kernel/scripts/nucleus-semantic-closure').resolve()
+          flash=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
+          config=pathlib.Path('/tmp/mathgraph/config.json')
+          env=dict(os.environ)
+          env.update({
+              'NUCLEUS_BIN':str(nucleus),
+              'FLASH_BIN':str(flash),
+              'FLASH_CONFIG':str(config),
+          })
+
+          rows=[]
+          for d,expected,erc in [('good','accept',0),('bad','reject',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  def run(cmd):
+                      with p.open('rb') as f:
+                          t=time.perf_counter_ns()
+                          q=subprocess.run(cmd,stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,env=env)
+                          return q.returncode,time.perf_counter_ns()-t
+                  nrc,nt=run([str(nucleus)])
+                  frc,ft=run([str(flash),str(config)])
+                  hrc,ht=run(['bash',str(wrapper),str(p)])
+                  fcanon=0 if frc==0 else 1
+                  hcanon=0 if hrc==0 else 1
+                  rows.append({
+                    'test':name,'expected':expected,'expected_rc':erc,
+                    'nucleus_rc':nrc,'flash_raw_rc':frc,'flash_rc':fcanon,
+                    'hybrid_raw_rc':hrc,'hybrid_rc':hcanon,
+                    'nucleus_ns':nt,'flash_ns':ft,'hybrid_ns':ht,
+                  })
+
+          assert len(rows)==193
+          false_accept=[r for r in rows if r['expected_rc']==1 and r['nucleus_rc']==0]
+          false_reject=[r for r in rows if r['expected_rc']==0 and r['nucleus_rc']==1]
+          native_accept=[r for r in rows if r['expected_rc']==0 and r['nucleus_rc']==0]
+          native_reject=[r for r in rows if r['expected_rc']==1 and r['nucleus_rc']==1]
+          fallback=[r for r in rows if r['nucleus_rc'] in (2,3)]
+          flash_bad=[r for r in rows if r['flash_rc']!=r['expected_rc']]
+          hybrid_bad=[r for r in rows if r['hybrid_rc']!=r['expected_rc']]
+          routing_bad=[
+            r for r in rows
+            if (r['nucleus_rc'] in (0,1) and r['hybrid_raw_rc']!=r['nucleus_rc'])
+            or (r['nucleus_rc'] in (2,3) and r['hybrid_rc']!=r['flash_rc'])
+          ]
+
+          summary={
+            'schema':'nucleus-qualified-verdict-closure-v1',
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'arena_sha':os.environ['ARENA_SHA'],
+            'flash_sha':os.environ['FLASH_SHA'],
+            'fixed_outcome_tests':len(rows),
+            'native_accept':len(native_accept),
+            'native_reject':len(native_reject),
+            'native_decisions':len(native_accept)+len(native_reject),
+            'native_coverage':(len(native_accept)+len(native_reject))/len(rows),
+            'fallback_invocations':len(fallback),
+            'false_accepts':false_accept,
+            'false_rejects':false_reject,
+            'flash_bad':flash_bad,
+            'hybrid_bad':hybrid_bad,
+            'routing_bad':routing_bad,
+            'fallback_tests':[r['test'] for r in fallback],
+          }
+          out=pathlib.Path('metatron-kernel/evidence-out/qualified-verdict-closure/result.json')
+          out.write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('metatron-kernel/evidence-out/qualified-verdict-closure/rows.json').write_text(
+              json.dumps(rows,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps(summary,sort_keys=True))
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert not flash_bad, flash_bad
+          assert not hybrid_bad, hybrid_bad
+          assert not routing_bad, routing_bad
+          assert len(native_accept)==77, len(native_accept)
+          assert len(native_reject)==31, len(native_reject)
+          assert len(fallback)==85, len(fallback)
+          PY
+
+      - name: Upload closure evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-qualified-verdict-closure-${{ github.sha }}
+          path: metatron-kernel/evidence-out/qualified-verdict-closure
+          if-no-files-found: warn

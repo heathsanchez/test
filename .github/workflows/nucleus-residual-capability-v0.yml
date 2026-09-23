@@ -1,0 +1,232 @@
+name: Nucleus Residual Capability V0
+
+on:
+  push:
+    branches: [nucleus-residual-capability-v0]
+    paths:
+      - ".github/workflows/nucleus-residual-capability-v0.yml"
+      - "metatron-kernel/**"
+  pull_request:
+    paths:
+      - ".github/workflows/nucleus-residual-capability-v0.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-capability-v0-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 70e7a09c79a92e49555c9c4da51b471ccfedc7e0
+      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build and test candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Build frozen 85-case oracle Nucleus
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact official 193-file Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
+
+      - name: Differential qualification and residual atlas
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/residual-capability-v0
+          python - <<'PY'
+          import collections, json, os, pathlib, subprocess
+
+          root = pathlib.Path('/tmp/arena-tests')
+          base = pathlib.Path('/tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel')
+          cand = pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def run(binary, path, trace=False):
+              env = dict(os.environ)
+              if trace:
+                  env['NUCLEUS_TRACE_CAPABILITY'] = '1'
+                  env['NUCLEUS_TRACE_PARSE_ERROR'] = '1'
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.PIPE,
+                      stderr=subprocess.PIPE, env=env
+                  )
+              return q.returncode, q.stderr.decode('utf-8', errors='replace').strip()
+
+          def static_profile(path):
+              event_counts = collections.Counter()
+              declared = []
+              recursive = reflexive = indexed = False
+              for line in path.read_text().splitlines():
+                  obj = json.loads(line)
+                  for key in obj:
+                      event_counts[key] += 1
+                  for key in ('axiom', 'def', 'thm'):
+                      if key in obj:
+                          declared.append(obj[key]['name'])
+                  if 'inductive' in obj:
+                      block = obj['inductive']
+                      for ty in block.get('types', []):
+                          declared.append(ty['name'])
+                          recursive |= bool(ty.get('isRec'))
+                          reflexive |= bool(ty.get('isReflexive'))
+                          indexed |= int(ty.get('numIndices', 0)) > 0
+                      for ctor in block.get('ctors', []):
+                          declared.append(ctor['name'])
+                      for rec in block.get('recs', []):
+                          declared.append(rec['name'])
+              dup = len(declared) != len(set(declared))
+              if dup:
+                  coarse = 'environment.declared-name-uniqueness'
+              elif event_counts['quot']:
+                  coarse = 'quotient'
+              elif event_counts['proj']:
+                  coarse = 'projection'
+              elif recursive or reflexive:
+                  coarse = 'recursive-reflexive'
+              elif event_counts['strVal']:
+                  coarse = 'string-literal'
+              elif event_counts['natVal']:
+                  coarse = 'nat-literal'
+              elif event_counts['imax']:
+                  coarse = 'universe-imax'
+              else:
+                  coarse = 'other'
+              return {
+                  'event_counts': dict(sorted(event_counts.items())),
+                  'duplicate_declared_name': dup,
+                  'recursive': recursive,
+                  'reflexive': reflexive,
+                  'indexed': indexed,
+                  'coarse_class': coarse,
+              }
+
+          rows = []
+          for directory, expected_rc in [('good', 0), ('bad', 1)]:
+              for path in sorted((root / directory).rglob('*.ndjson')):
+                  name = str(path.relative_to(root / directory)).removesuffix('.ndjson')
+                  brc, _ = run(base, path)
+                  crc, stderr = run(cand, path, trace=True)
+                  hit = None
+                  for line in stderr.splitlines():
+                      if line.startswith('NUCLEUS_CAPABILITY_HIT:'):
+                          hit = line.split(':', 2)[1]
+                          break
+                  rows.append({
+                      'test': name,
+                      'expected_rc': expected_rc,
+                      'base_rc': brc,
+                      'candidate_rc': crc,
+                      'capability_hit': hit,
+                      'candidate_stderr': stderr,
+                      'profile': static_profile(path),
+                  })
+
+          assert len(rows) == 193
+          baseline_residual = [r for r in rows if r['base_rc'] in (2, 3)]
+          candidate_residual = [r for r in rows if r['candidate_rc'] in (2, 3)]
+          false_accept = [r['test'] for r in rows if r['expected_rc'] == 1 and r['candidate_rc'] == 0]
+          false_reject = [r['test'] for r in rows if r['expected_rc'] == 0 and r['candidate_rc'] == 1]
+          decided_regression = [
+              r['test'] for r in rows
+              if r['base_rc'] in (0, 1) and r['candidate_rc'] != r['base_rc']
+          ]
+          earned = [
+              r['test'] for r in rows
+              if r['base_rc'] in (2, 3) and r['candidate_rc'] == r['expected_rc']
+          ]
+          wrong_delta = [
+              r['test'] for r in rows
+              if r['base_rc'] in (2, 3)
+              and r['candidate_rc'] not in (2, 3)
+              and r['candidate_rc'] != r['expected_rc']
+          ]
+          hits = [r['test'] for r in rows if r['capability_hit']]
+          class_counts = collections.Counter(r['profile']['coarse_class'] for r in baseline_residual)
+
+          expected_earned = sorted([
+              'tutorial/133_dup_ind_def',
+              'tutorial/134_dup_ctor_def',
+              'tutorial/135_dup_rec_def',
+              'tutorial/138_dup_ctor_rec',
+              'tutorial/139_DupConCon',
+          ])
+
+          summary = {
+              'schema': 'nucleus-residual-capability-v0',
+              'base_sha': os.environ['BASE_SHA'],
+              'candidate_sha': os.environ['CANDIDATE_SHA'],
+              'arena_sha': os.environ['ARENA_SHA'],
+              'fixed_outcome_tests': len(rows),
+              'baseline_residual_count': len(baseline_residual),
+              'candidate_residual_count': len(candidate_residual),
+              'earned_delta_count': len(earned),
+              'earned_tests': sorted(earned),
+              'capability_hit_count': len(hits),
+              'capability_hits': sorted(hits),
+              'baseline_coarse_classes': dict(sorted(class_counts.items())),
+              'false_accepts': false_accept,
+              'false_rejects': false_reject,
+              'decided_regressions': decided_regression,
+              'wrong_deltas': wrong_delta,
+          }
+          out = pathlib.Path('metatron-kernel/evidence-out/residual-capability-v0')
+          (out / 'result.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          (out / 'rows.json').write_text(json.dumps(rows, indent=2, sort_keys=True) + '\n')
+          (out / 'baseline-residuals.json').write_text(
+              json.dumps(baseline_residual, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps(summary, sort_keys=True))
+
+          assert len(baseline_residual) == 85, len(baseline_residual)
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert not decided_regression, decided_regression
+          assert not wrong_delta, wrong_delta
+          assert sorted(earned) == expected_earned, earned
+          assert len(candidate_residual) == 80, len(candidate_residual)
+          assert 'tutorial/132_dup_defs' in hits
+          assert all(name in hits for name in expected_earned)
+          PY
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-residual-capability-v0-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-capability-v0
+          if-no-files-found: warn

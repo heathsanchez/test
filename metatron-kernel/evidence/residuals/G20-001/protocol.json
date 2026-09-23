@@ -1,0 +1,68 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G20-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "5ce6363fa9ff741ea4ae545ad617f2baadd21e7b",
+    "tutorial_ordinals": [
+      46,
+      47,
+      48,
+      49
+    ],
+    "fixtures": [
+      {
+        "path": "bad/046_inductBadNonSort.ndjson",
+        "sha256": "372f6a167433b45749fa38f14ad3a2e8ca4e0dae8762812c0b9f288e9f68499f"
+      },
+      {
+        "path": "bad/047_inductBadNonSort2.ndjson",
+        "sha256": "95836e7bee5fbd00d1d16d88cea2defa8dfb2387fc0e400d200b59715716a0d9"
+      },
+      {
+        "path": "bad/048_inductLevelParam.ndjson",
+        "sha256": "732e2fc946ab308a819366bc5395865a69235098e1a401ec1a059d05d89ef06e"
+      },
+      {
+        "path": "bad/049_inductTooFewParams.ndjson",
+        "sha256": "5d54c2cc017f35b26744f8b5ca4438bdddd8f254f3023948a542b70e5da72827"
+      }
+    ]
+  },
+  "obstruction": "The first malformed-inductive corridor is not rejected by the sealed G19 kernel: non-sort arities, duplicate universe parameters, and declared parameter counts exceeding the arity telescope fall through to UNKNOWN.",
+  "expected": "REJECT",
+  "observed": "REJECT",
+  "least_capability": "A rejection-only arity law scoped to the zero-constructor frontier: unique universe parameters and exactly numParams + numIndices Pi binders ending in Sort. It grants no ACCEPT authority and does not alter unsupported named-family neighbours.",
+  "falsifier": "Any previously accepted tutorial 001-045 changes; any protected named-family UNKNOWN neighbour becomes REJECT; any well-formed unsupported empty inductive is promoted; or any of tutorials 046-049 remains non-REJECT.",
+  "protected_suite": [
+    "all G0-G19 tests and falsifiers",
+    "exact tutorial prefix 001-045",
+    "protected named-family broader neighbours remain UNKNOWN",
+    "well-formed unsupported empty inductives remain UNKNOWN",
+    "G20 grants no new ACCEPT authority"
+  ],
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "97ae436b2af00d563a5460d01d3839d97304b5b0",
+    "oracle_sha": "5c51781af6ede78e435b756b7aa75490d10d49c9",
+    "run_id": 35761375025,
+    "job_id": 106859961966,
+    "artifact_id": 10710223928,
+    "artifact_digest": "sha256:e210119080a776841d2df5bf563625ed6b2ee87c1768f8e52d532c98058f556b",
+    "tutorial_differential": {
+      "equal": 46,
+      "earned_delta": 3,
+      "earned_cases": [
+        "046",
+        "047",
+        "049"
+      ],
+      "mismatch": 0
+    },
+    "suffix_atlas": {
+      "matched": 20,
+      "count": 96,
+      "first_mismatch": 50
+    }
+  }
+}

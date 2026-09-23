@@ -1,0 +1,23 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G12-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "G11 sealed candidate",
+    "fixture_sha256": "d81009480e131d451da9e625fe9a90fff92fbee08d324aefd6fde3c3b89979e1",
+    "tutorial_ordinal": 39,
+    "upstream_path": "tutorial output good/039_andType.ndjson"
+  },
+  "obstruction": "The first parameterized inductive (And with two Prop parameters) is outside the G9/G10/G11 closed-inductive frontier.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "Recognize only the exact built-in-shaped And envelope: two Prop parameters, one nonrecursive constructor with two fields corresponding directly and in order to those parameters, and an independently derived recursor signature and rule. Promote the three signatures opaquely through the existing transaction. Install no iota, projection, eta, positivity, or general parameterized-inductive capability.",
+  "falsifier": "Reject the candidate if parameter/field/result order, field type/count, recursor metadata/type/rule, or owner perturbations gain authority; if the sealed G11 bytes no longer return UNKNOWN; if indexed, recursive, unsafe, nested, or broader parameterized neighbors stop returning UNKNOWN; or if any protected verdict regresses.",
+  "protected_suite": [
+    "all G0-G11 tests",
+    "exact tutorial prefix 001-039",
+    "sealed G9/G10/G11 equivalence vector",
+    "unsupported indexed/recursive/unsafe/nested/mutual inductives remain UNKNOWN"
+  ],
+  "decision": "retained"
+}

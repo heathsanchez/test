@@ -1,0 +1,38 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G17-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "7b57cc7834b2f7eee34e762fbc23009cd65d6be7",
+    "fixture_sha256": "d45ed54cc74be3d7d92aae6bacc040420ba33f23fa034b4497edb389e089afdc",
+    "tutorial_ordinal": 43,
+    "upstream_path": "tutorial output good/043_eqType.ndjson"
+  },
+  "obstruction": "Equality is the first indexed non-recursive inductive and lies outside the retained G16 law set.",
+  "expected": "ACCEPT",
+  "observed": "ACCEPT",
+  "least_capability": "A name-sealed Eq index law over the retained staged single-constructor promotion architecture: one universe parameter, two parameters, one index, zero fields, Prop result, refl constructor, exact K-enabled recursor, unchanged opaque promotion.",
+  "falsifier": "Malformed named Eq claims REJECT; recursive, reflexive, unsafe, nested, and renamed neighbours remain UNKNOWN; tutorials 001-042 equal sealed G16.",
+  "protected_suite": [
+    "all G0-G17 tests",
+    "exact tutorial prefix 001-043",
+    "tutorials 001-042 equal sealed G16",
+    "tutorial 043 is the sole earned delta",
+    "broader Eq neighbours remain UNKNOWN",
+    "renamed Eq family remains UNKNOWN"
+  ],
+  "qualification": {
+    "candidate_sha": "ebc901d24688d2aa672c38e4fd80e20d6a0e5b15",
+    "oracle_sha": "7b57cc7834b2f7eee34e762fbc23009cd65d6be7",
+    "run_id": 35687371672,
+    "job_id": 106616975935,
+    "artifact_id": 10676794003,
+    "artifact_digest": "sha256:dc5a59be2174b604161e50ca855e0ecb9579e18ca77c76e128e976cf1da289d2",
+    "tutorial_differential": {
+      "equal": 42,
+      "earned_delta": 1,
+      "mismatch": 0
+    }
+  },
+  "decision": "retained"
+}

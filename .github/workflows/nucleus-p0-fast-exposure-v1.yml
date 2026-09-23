@@ -1,0 +1,153 @@
+name: Nucleus P0 Fast Exposure v1
+
+on:
+  push:
+    branches: [nucleus-p0-fast-exposure-v1]
+    paths:
+      - ".github/workflows/nucleus-p0-fast-exposure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-p0-fast-exposure-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 4b257ea8442a7905af8b894144288864b16fb81a
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify candidate source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build exact sealed G25 oracle and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g25-oracle "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/g25-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          sha256sum /tmp/g25-oracle/metatron-kernel/target/release/metatron-kernel metatron-kernel/target/release/metatron-kernel
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Exact G25 semantic differential
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/p0
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          base=pathlib.Path('/tmp/g25-oracle/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          root=pathlib.Path('/tmp/lean-kernel-tutorial')
+          for expected_dir,expected_exit in [('good',0),('bad',1)]:
+              for p in sorted((root/expected_dir).glob('*.ndjson')):
+                  try: n=int(p.name.split('_',1)[0])
+                  except ValueError: continue
+                  def run(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(base),run(cand)
+                  rows.append({'number':n,'path':f'{expected_dir}/{p.name}','expected':expected_exit,'base':a,'candidate':b})
+          rows.sort(key=lambda r:r['number'])
+          diffs=[r for r in rows if r['base']!=r['candidate']]
+          assert not diffs, diffs
+          supported=[r for r in rows if r['base']==r['expected']]
+          assert len(supported)==78, len(supported)
+          committed=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set(); committed_rows=[]
+          for p in committed:
+              rp=str(p)
+              if rp in seen: continue
+              seen.add(rp)
+              def run2(binary):
+                  with p.open('rb') as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=run2(base),run2(cand)
+              committed_rows.append({'path':rp,'base':a,'candidate':b})
+          committed_diffs=[r for r in committed_rows if r['base']!=r['candidate']]
+          assert not committed_diffs, committed_diffs
+          out={'schema':'nucleus-p0-semantic-differential-v1','arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'tutorial_count':len(rows),'supported_count':len(supported),'tutorial_diffs':diffs,'committed_count':len(committed_rows),'committed_diffs':committed_diffs}
+          pathlib.Path('evidence-out/p0/semantic-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          pathlib.Path('/tmp/p0-supported.txt').write_text('\n'.join(str(root/r['path']) for r in supported)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Supported-workload timing tournament
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,statistics,subprocess,time,os
+          base=pathlib.Path('/tmp/g25-oracle/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          paths=[pathlib.Path(x) for x in pathlib.Path('/tmp/p0-supported.txt').read_text().splitlines() if x]
+          REPS=12
+          ROUNDS=7
+          def sweep(binary):
+              t0=time.perf_counter_ns()
+              for _ in range(REPS):
+                  for p in paths:
+                      with p.open('rb') as f:
+                          rc=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                      if rc not in (0,1):
+                          raise SystemExit(f'unexpected exit {rc} on {p}')
+              return time.perf_counter_ns()-t0
+          rows=[]
+          for i in range(ROUNDS):
+              order=[('base',base),('candidate',cand)] if i%2==0 else [('candidate',cand),('base',base)]
+              vals={}
+              for name,binary in order:
+                  vals[name]=sweep(binary)
+              rows.append({'round':i+1,'base_ns':vals['base'],'candidate_ns':vals['candidate'],'ratio':vals['candidate']/vals['base']})
+              print(rows[-1])
+          b=statistics.median(r['base_ns'] for r in rows)
+          c=statistics.median(r['candidate_ns'] for r in rows)
+          ratios=[r['ratio'] for r in rows]
+          out={'schema':'nucleus-p0-supported-timing-v1','base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'supported_cases':len(paths),'repetitions_per_round':REPS,'rounds':ROUNDS,'base_median_ns':b,'candidate_median_ns':c,'candidate_over_base':c/b,'median_paired_ratio':statistics.median(ratios),'rows':rows}
+          pathlib.Path('evidence-out/p0/timing.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload P0 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p0-fast-exposure-${{ github.sha }}
+          path: metatron-kernel/evidence-out/p0
+          if-no-files-found: error

@@ -1,0 +1,37 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G24-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "58b08a1b0fc3622a480ec2d72953ba77fdc86265",
+    "tutorial_corridor": [58, 59, 60, 61],
+    "fixtures": [
+      {"path": "good/058_predWithTypeField.ndjson", "sha256": "5af1ed8df583ce1857bc0852679e04f6024b8de4f1eb2ceba91cc7ed5b6ecb6c"},
+      {"path": "good/059_typeWithTypeField.ndjson", "sha256": "5c2c36c26f88438688db304bc33d039eb8ce78522e6d3fa53e54a2ae1b14426c"},
+      {"path": "good/060_typeWithTypeFieldPoly.ndjson", "sha256": "a1bb69e5739372ba607b2ed8766cda7373c71a4286788e87ccb07c0749c257be"},
+      {"path": "bad/061_typeWithTooHighTypeField.mk.ndjson", "sha256": "d2ab0a56844b0739dd5b75d35894eca8766a7c41b8097873ba018d341622c70d"}
+    ]
+  },
+  "obstruction": "The sealed G23Q base returns UNKNOWN on the coherent field-universe corridor: Prop with a Type field, Type 1 with a Type field, a universe-polymorphic Type (u+1) with a Type u field, and the matching invalid Type 0 declaration whose Type field is too high.",
+  "expected": ["ACCEPT", "ACCEPT", "ACCEPT", "REJECT"],
+  "observed": ["UNKNOWN", "UNKNOWN", "UNKNOWN", "UNKNOWN"],
+  "least_capability": "For the deliberately narrow safe zero-parameter zero-index nonrecursive one-constructor one-manifest-Sort-field family, derive constructor-field universe admissibility from existing universe algebra: Prop is impredicative; otherwise the inferred sort of the field domain must be at most the inductive result sort. Derive the one-motive/one-minor recursor and rule structurally, then reuse staged opaque promotion.",
+  "falsifier": "058, 059 and 060 must accept; 061 must reject; all other tutorial cases must remain status-equivalent to G23Q unless independently correct under the same law; no mismatch is allowed; committed prior fixtures retain their statuses.",
+  "protected_suite": [
+    "all retained G0-G23 tests and falsifiers",
+    "tutorial 056 and 057 remain REJECT",
+    "global tutorial reclosure 001-141 has zero mismatches",
+    "prior committed fixture statuses are preserved"
+  ],
+  "evidence": {
+    "implementation_sha": "447632bbcc7724d17b63361326273ac4498dd07b",
+    "qualification_sha": "7439d79d7450d4d52fe1a9e05baf45d508ab8516",
+    "run": 35846178771,
+    "job": 107132797052,
+    "artifact": 10744010491,
+    "artifact_digest": "sha256:0068e41e35118b997dc3f136a6bf7b21bee4cc28e92912d3fb90839ca5132e88",
+    "tutorial_counts": {"earned_delta": 4, "equal_correct": 73, "equal_residual": 64, "mismatch": 0},
+    "first_remaining_residual": "good/072_boolPropRec.ndjson"
+  },
+  "decision": "retained"
+}

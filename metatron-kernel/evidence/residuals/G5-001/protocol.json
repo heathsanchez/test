@@ -1,0 +1,19 @@
+{
+  "id": "G5-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "7ba6035e5014f83ef2347638136cf43f9e45048f",
+    "fixture_sha256": "36eef2fa43e86af2d031a9cb9ec8fbd452dd7e50d3444997fe71003cc7295051",
+    "tutorial_ordinal": 9
+  },
+  "obstruction": "A rigid neutral inferred type is known not to be a sort, but sort_level erases Refuted and Unknown into Option::None, so the checker returns UNKNOWN instead of REJECT.",
+  "residual_class": "application inference",
+  "observed": {"expected_exit": 1, "actual_exit": 2, "preceding_cases_matched": 8},
+  "least_candidate_capability": "Make sort exposure a three-valued Judgment<LevelTerm> and propagate proven, refuted, and residual outcomes without collapsing polarity.",
+  "strongest_competing_explanation": "Another reduction or universe rule is needed; the obstructing value is an authority-local rigid FreeId, so further reduction cannot change its head.",
+  "falsifier": "Reject if the exact bad fixture does not REJECT, a reducible sort becomes non-sort, or a cycle/budget residual becomes REJECT.",
+  "causal_ablation": "Option-collapsed sort exposure yields UNKNOWN; tri-state exposure on identical code and authority yields REJECT.",
+  "protected_suite": ["all G0-G4 tests", "tutorial cases 001-008", "cycles and budgets remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions","promotion_rule":"same-identity candidate and flash counters only"},
+  "decision": "FROZEN_BEFORE_RETENTION"
+}

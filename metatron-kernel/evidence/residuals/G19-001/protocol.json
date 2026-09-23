@@ -1,0 +1,39 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G19-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "ce4c2f50ab649e60ee09a19c50f04c7769c5ad19",
+    "fixture_sha256": "d9781f44fcb7e46ff06da1c8a273a4fec4ae989e4114d6668720bd5b87c20b79",
+    "tutorial_ordinal": 45,
+    "upstream_path": "tutorial output good/045_rbTreeDef.ndjson"
+  },
+  "obstruction": "RBTree is the first exact declaration combining a universe parameter, two indices, recursion, three constructors, dependent result indices, and recursive hypotheses.",
+  "expected": "ACCEPT",
+  "observed": "ACCEPT",
+  "least_capability": "A name-sealed composition of already-earned parameter, index, recursion, multi-constructor and staged opaque-promotion laws, plus only RBTree's constructor-specific dependent index equations. The recursor type, recursive hypotheses, and all three rule bodies are derived before promotion.",
+  "falsifier": "Exact RBTree accepts; altered recursor type/rule bodies and K/minor-count claims reject; renamed, unsafe, reflexive, and nested variants remain UNKNOWN; tutorials 001-044 equal sealed G18.",
+  "protected_suite": [
+    "all G0-G19 tests and falsifiers",
+    "exact tutorial prefix 001-045",
+    "tutorial 045 is the sole UNKNOWN-to-ACCEPT delta against sealed G18",
+    "RBTree recursor type and all three rule RHS bodies are derived",
+    "broader unsafe/reflexive/nested and renamed RBTree neighbours remain UNKNOWN"
+  ],
+  "decision": "retained",
+  "qualification": {
+    "candidate_sha": "60fde2527b7a57c14487b7930d6083451dd01aeb",
+    "oracle_sha": "ce4c2f50ab649e60ee09a19c50f04c7769c5ad19",
+    "run_id": 35707420135,
+    "job_id": 106679605077,
+    "artifact_id": 10684434897,
+    "artifact_digest": "sha256:1b69b0eff0d12c46cd0174af8f7d559782e12c0632779e22501a38622108e86a",
+    "tutorial_differential": {
+      "equal": 44,
+      "earned_delta": 1,
+      "mismatch": 0,
+      "oracle_exit": 2,
+      "candidate_exit": 0
+    }
+  }
+}

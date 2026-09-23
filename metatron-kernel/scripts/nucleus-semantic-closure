@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+set -u
+
+if [ "$#" -gt 1 ]; then
+  echo "usage: nucleus-semantic-closure [INPUT]" >&2
+  exit 3
+fi
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+NUCLEUS="${NUCLEUS_BIN:-$ROOT/target/release/metatron-kernel}"
+FLASH="${FLASH_BIN:-$ROOT/../mathgraph-fallback/target/release/sokonanoda}"
+FLASH_CONFIG="${FLASH_CONFIG:-$ROOT/../mathgraph-fallback/config.json}"
+
+tmp="$(mktemp)"
+trap 'rm -f "$tmp"' EXIT
+
+if [ "$#" -eq 1 ]; then
+  cat "$1" >"$tmp"
+else
+  cat >"$tmp"
+fi
+
+# Qualified verdict closure: Nucleus owns both ACCEPT and REJECT where it
+# produces a decided verdict. Only UNKNOWN/ERROR delegate to the pinned
+# complete fallback.
+"$NUCLEUS" <"$tmp" >/dev/null 2>/dev/null
+nucleus_rc=$?
+case "$nucleus_rc" in
+  0) exit 0 ;;
+  1) exit 1 ;;
+  2|3) ;;
+  *) exit "$nucleus_rc" ;;
+esac
+
+"$FLASH" "$FLASH_CONFIG" <"$tmp" >/dev/null 2>/dev/null
+flash_rc=$?
+case "$flash_rc" in
+  0) exit 0 ;;
+  *) exit 1 ;;
+esac

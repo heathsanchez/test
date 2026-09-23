@@ -1,0 +1,38 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G16-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "f45b49a6989c09317635c790615ca63c617c84c7",
+    "fixture_sha256": "acc7a70c97888e02e2b92e583b370803db0bdac1ddc38f9ff036831459d3a891",
+    "tutorial_ordinal": 42,
+    "upstream_path": "tutorial output good/042_pUnitType.ndjson"
+  },
+  "obstruction": "The universe-polymorphic nullary singleton PUnit is outside the retained G15 law set.",
+  "expected": "ACCEPT",
+  "observed": "ACCEPT",
+  "least_capability": "A name-sealed PUnit nullary/singleton law consumed by the retained G15 ExactBinaryProductDerivation skeleton: one universe parameter, zero term parameters/indices/fields, one nullary constructor, one motive/minor/rule recursor, Sort-u result validation, and unchanged opaque promotion.",
+  "falsifier": "Malformed claims inside the named PUnit envelope must REJECT; indexed, recursive, unsafe and nested semantic extensions plus renamed families must remain UNKNOWN; tutorials 001-041 must equal frozen G15.",
+  "protected_suite": [
+    "all G0-G16 tests",
+    "exact tutorial prefix 001-042",
+    "tutorials 001-041 equal frozen G15",
+    "tutorial 042 is the sole earned delta",
+    "broader PUnit neighbors remain UNKNOWN",
+    "renamed PUnit family remains UNKNOWN"
+  ],
+  "qualification": {
+    "candidate_sha": "865548098d16588db5aef79b9e094746933497d9",
+    "oracle_sha": "f45b49a6989c09317635c790615ca63c617c84c7",
+    "run_id": 35686513640,
+    "job_id": 106614391496,
+    "artifact_id": 10676299174,
+    "artifact_digest": "sha256:fbb4091c6674b6dfb5c6ff919a4219d531890a035e07d90f2fac7ef36ae05106",
+    "tutorial_differential": {
+      "equal": 41,
+      "earned_delta": 1,
+      "mismatch": 0
+    }
+  },
+  "decision": "retained"
+}

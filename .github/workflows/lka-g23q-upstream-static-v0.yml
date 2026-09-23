@@ -1,0 +1,95 @@
+name: LKA G23Q Upstream Static Differential v0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lka-g23q-obligation-core-v1]
+    paths:
+      - ".github/workflows/lka-g23q-upstream-static-v0.yml"
+      - "metatron-kernel/src/**"
+
+permissions:
+  contents: read
+
+jobs:
+  differential:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      G23_SHA: 7975697a23091ee72abbfe6e68042f0e079f8738
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build exact checker pair
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g23-oracle "$G23_SHA"
+          cargo build --release --locked --manifest-path /tmp/g23-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch pinned upstream static corpus
+        run: |
+          set -euo pipefail
+          git clone --filter=blob:none https://github.com/leanprover/lean-kernel-arena.git /tmp/lka
+          git -C /tmp/lka checkout --detach "$ARENA_SHA"
+
+      - name: Compare all committed upstream NDJSON
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/upstream-static-evidence
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path("/tmp/lka")
+          oracle=pathlib.Path("/tmp/g23-oracle/metatron-kernel/target/release/metatron-kernel")
+          candidate=pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          files=sorted(root.glob("tests/**/*.ndjson"))
+          rows=[]
+          for path in files:
+              def run(binary):
+                  with path.open("rb") as f:
+                      return subprocess.run(
+                          [str(binary)],stdin=f,
+                          stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,
+                          check=False,
+                      ).returncode
+              a,b=run(oracle),run(candidate)
+              rows.append({"path":str(path.relative_to(root)),"oracle":a,"candidate":b})
+          changed=[r for r in rows if r["oracle"]!=r["candidate"]]
+          counts={}
+          for side in ("oracle","candidate"):
+              d={}
+              for r in rows:
+                  d[str(r[side])]=d.get(str(r[side]),0)+1
+              counts[side]=d
+          out={
+              "schema":"lka-g23q-upstream-static-differential-v0",
+              "arena_sha":os.environ["ARENA_SHA"],
+              "g23_sha":os.environ["G23_SHA"],
+              "source_sha":"149913f6ef818b1babc4e1a010412467ff2273d4",
+              "count":len(rows),
+              "equal":len(rows)-len(changed),
+              "changed":changed,
+              "exit_counts":counts,
+              "rows":rows,
+          }
+          pathlib.Path("metatron-kernel/upstream-static-evidence/differential.json").write_text(
+              json.dumps(out,indent=2,sort_keys=True)+"\n"
+          )
+          print(json.dumps({k:out[k] for k in ("count","equal","changed","exit_counts")},sort_keys=True))
+          assert len(rows)==16, len(rows)
+          assert changed==[], changed
+          PY
+
+      - name: Upload upstream static evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g23q-upstream-static-${{ github.sha }}
+          path: metatron-kernel/upstream-static-evidence
+          if-no-files-found: error
