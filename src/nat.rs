@@ -96,11 +96,7 @@ impl BigNat {
 
     pub fn cmp(&self, other: &Self) -> Ordering {
         match self.0.len().cmp(&other.0.len()) {
-            Ordering::Equal => self
-                .0
-                .iter()
-                .rev()
-                .cmp(other.0.iter().rev()),
+            Ordering::Equal => self.0.iter().rev().cmp(other.0.iter().rev()),
             order => order,
         }
     }
