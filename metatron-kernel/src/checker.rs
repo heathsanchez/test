@@ -556,7 +556,7 @@ fn unary_recursive_minor_field(
     else {
         return None;
     };
-    if !is_bvar_applied_to_bvar(export, *induction_hypothesis, 1, 0) {
+    if !is_bvar_application(export, *induction_hypothesis, 1, 0) {
         return None;
     }
     let Expr::App {
@@ -608,7 +608,7 @@ fn validate_conversion_lifted_unary_recursor_shape(
 
     if !is_unary_recursive_motive_type(export, *motive, inductive, recursor.level_params[0])
         || !is_empty_inductive_applied_to_bvar(export, *target, inductive, 2)
-        || !is_bvar_applied_to_bvar(export, *result, 2, 0)
+        || !is_bvar_application(export, *result, 2, 0)
     {
         return None;
     }
@@ -667,7 +667,7 @@ fn validate_conversion_lifted_unary_rule_shape(
     else {
         return None;
     };
-    if !is_bvar_applied_to_bvar(export, *minor_at_field, 1, 0) {
+    if !is_bvar_application(export, *minor_at_field, 1, 0) {
         return None;
     }
     let (head, arguments) = application_spine(export, *recursive_call);
@@ -1205,7 +1205,7 @@ fn is_derived_nat_recursor_type(
         && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
         && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_applied_to_bvar(export, result, 3, 0)
+        && is_bvar_application(export, result, 3, 0)
 }
 
 fn are_derived_nat_rules(
@@ -2284,7 +2284,7 @@ fn is_derived_binary_recursor_type(
         && is_bvar_applied_to_constant(export, *first_minor, 0, *first)
         && is_bvar_applied_to_constant(export, *second_minor, 1, *second)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_applied_to_bvar(export, *result, 3, 0)
+        && is_bvar_application(export, *result, 3, 0)
 }
 
 fn are_derived_binary_rules(
@@ -2363,445 +2363,6 @@ fn is_bvar_applied_to_constant(
             if matches!(export.exprs.get(*fun), Some(Expr::BVar(index)) if *index == variable)
                 && is_empty_constant(export, *arg, constant)
     )
-}
-
-fn is_bvar_applied_to_bvar(
-    export: &ResolvedExport,
-    expression: ExprId,
-    function: u64,
-    argument: u64,
-) -> bool {
-    matches!(
-        export.exprs.get(expression),
-        Some(Expr::App { fun, arg })
-            if matches!(export.exprs.get(*fun), Some(Expr::BVar(index)) if *index == function)
-                && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == argument)
-    )
-}
-
-/// G15-001's closed internal quotient, extended by G16-001's independently
-/// earned nullary law. External recognition remains name-sealed: adding this
-/// variant cannot authorize any unrelated fourth product family.
-fn recursor_metadata_admissible(
-    export: &ResolvedExport,
-    inductive: &crate::syntax::InductiveType,
-    constructors: &[Constructor],
-    recursor: &Recursor,
-    expected_k: bool,
-    levels_ok: bool,
-) -> bool {
-    recursor.all == [inductive.name]
-        && recursor.k == expected_k
-        && levels_ok
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == inductive.num_params
-        && recursor.num_indices == inductive.num_indices
-        && recursor.num_motives == 1
-        && recursor.num_minors == constructors.len() as u64
-        && recursor.rules.len() == constructors.len()
-        && recursor
-            .rules
-            .iter()
-            .zip(constructors)
-            .all(|(rule, constructor)| {
-                rule.constructor == constructor.name && rule.num_fields == constructor.num_fields
-            })
-        && name_is_child_str(export, recursor.name, inductive.name, "rec")
-}
-
-#[derive(Clone, Copy)]
-enum BinaryProductSortLaw {
-    And,
-    Prod { first: NameId, second: NameId },
-    PProd { first: NameId, second: NameId },
-    PUnit { level: NameId },
-    Eq { level: NameId },
-}
-
-impl BinaryProductSortLaw {
-    fn parameter_sort(self, export: &ResolvedExport, expression: ExprId, first: bool) -> bool {
-        match self {
-            Self::PUnit { .. } | Self::Eq { .. } => false,
-            Self::And => is_prop_sort(export, expression),
-            Self::Prod {
-                first: first_level,
-                second: second_level,
-            } => is_sort_succ_parameter(
-                export,
-                expression,
-                if first { first_level } else { second_level },
-            ),
-            Self::PProd {
-                first: first_level,
-                second: second_level,
-            } => is_sort_parameter(
-                export,
-                expression,
-                if first { first_level } else { second_level },
-            ),
-        }
-    }
-
-    fn result_sort(self, export: &ResolvedExport, expression: ExprId) -> bool {
-        match self {
-            Self::PUnit { level } => is_sort_parameter(export, expression, level),
-            Self::Eq { .. } => is_prop_sort(export, expression),
-            Self::And => is_prop_sort(export, expression),
-            Self::Prod { first, second } => {
-                is_sort_max_succ_parameters(export, expression, first, second)
-            }
-            Self::PProd { first, second } => {
-                is_sort_max_one_parameters(export, expression, first, second)
-            }
-        }
-    }
-
-    fn constant(self, export: &ResolvedExport, expression: ExprId, name: NameId) -> bool {
-        match self {
-            Self::PUnit { level } | Self::Eq { level } => {
-                is_unary_polymorphic_constant(export, expression, name, level)
-            }
-            Self::And => is_empty_constant(export, expression, name),
-            Self::Prod { first, second } | Self::PProd { first, second } => {
-                is_polymorphic_constant(export, expression, name, first, second)
-            }
-        }
-    }
-
-    fn declaration_levels(
-        self,
-        inductive: &crate::syntax::InductiveType,
-        constructor: &Constructor,
-    ) -> bool {
-        match self {
-            Self::PUnit { level } | Self::Eq { level } => {
-                inductive.level_params == [level] && constructor.level_params == [level]
-            }
-            Self::And => inductive.level_params.is_empty() && constructor.level_params.is_empty(),
-            Self::Prod { first, second } | Self::PProd { first, second } => {
-                first != second
-                    && inductive.level_params == [first, second]
-                    && constructor.level_params == inductive.level_params
-            }
-        }
-    }
-
-    fn recursor_levels(self, inductive_level_params: &[NameId], recursor: &Recursor) -> bool {
-        match self {
-            Self::PUnit { .. } | Self::Eq { .. } => {
-                recursor.level_params.len() == 2
-                    && recursor.level_params[1] == inductive_level_params[0]
-            }
-            Self::And => recursor.level_params.len() == 1,
-            Self::Prod { .. } | Self::PProd { .. } => {
-                recursor.level_params.len() == 3
-                    && &recursor.level_params[1..] == inductive_level_params
-            }
-        }
-    }
-
-    fn num_params(self) -> u64 {
-        match self {
-            Self::PUnit { .. } => 0,
-            Self::Eq { .. } | Self::And | Self::Prod { .. } | Self::PProd { .. } => 2,
-        }
-    }
-
-    fn num_fields(self) -> u64 {
-        match self {
-            Self::PUnit { .. } | Self::Eq { .. } => 0,
-            Self::And | Self::Prod { .. } | Self::PProd { .. } => 2,
-        }
-    }
-
-    fn recursor_uses_rule_k(self) -> bool {
-        matches!(self, Self::Eq { .. })
-    }
-
-    fn validates_recursor_metadata(
-        self,
-        export: &ResolvedExport,
-        inductive: &crate::syntax::InductiveType,
-        constructor: &Constructor,
-        recursor: &Recursor,
-    ) -> bool {
-        recursor_metadata_admissible(
-            export,
-            inductive,
-            std::slice::from_ref(constructor),
-            recursor,
-            self.recursor_uses_rule_k(),
-            self.recursor_levels(&inductive.level_params, recursor),
-        )
-    }
-
-    fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
-        match self {
-            Self::PUnit { .. } => self.result_sort(export, expression),
-            Self::Eq { level } => is_exact_eq_type(export, expression, level),
-            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
-                is_exact_binary_product_parameter_telescope(export, expression, self)
-            }
-        }
-    }
-
-    fn validates_constructor(
-        self,
-        export: &ResolvedExport,
-        expression: ExprId,
-        inductive: NameId,
-    ) -> bool {
-        match self {
-            Self::PUnit { .. } => self.constant(export, expression, inductive),
-            Self::Eq { .. } => is_derived_eq_constructor_type(export, expression, inductive, self),
-            Self::And | Self::Prod { .. } | Self::PProd { .. } => {
-                is_derived_binary_product_constructor_type(export, expression, inductive, self)
-            }
-        }
-    }
-}
-
-struct ExactBinaryProductDerivation<'a> {
-    inductive: &'a crate::syntax::InductiveType,
-    constructor: &'a Constructor,
-    recursor: &'a Recursor,
-    constructor_suffix: &'static str,
-    law: BinaryProductSortLaw,
-}
-
-impl ExactBinaryProductDerivation<'_> {
-    fn validate_and_promote(
-        &self,
-        export: &ResolvedExport,
-        environment: &Environment,
-        limits: Limits,
-        delta_policy: DeltaPolicy,
-    ) -> Result<Environment, Verdict> {
-        if !self
-            .law
-            .declaration_levels(self.inductive, self.constructor)
-            || !self.law.validates_type(export, self.inductive.ty)
-            || self.inductive.all != [self.inductive.name]
-            || self.inductive.constructors != [self.constructor.name]
-            || self.constructor.index != 0
-            || self.constructor.inductive != self.inductive.name
-            || self.constructor.num_fields != self.law.num_fields()
-            || self.constructor.num_params != self.law.num_params()
-            || !name_is_child_str(
-                export,
-                self.constructor.name,
-                self.inductive.name,
-                self.constructor_suffix,
-            )
-            || !self
-                .law
-                .validates_constructor(export, self.constructor.ty, self.inductive.name)
-        {
-            return Err(Verdict::Reject);
-        }
-
-        let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-        let derived_type = if self.inductive.level_params.is_empty() {
-            derived_type(self.inductive.name, self.inductive.ty)
-        } else {
-            derived_polymorphic_type(
-                self.inductive.name,
-                &self.inductive.level_params,
-                self.inductive.ty,
-            )
-        };
-        derivation.promote(export, derived_type, limits.judgment_steps, delta_policy)?;
-        derivation.promote(
-            export,
-            derived_constructor(self.constructor),
-            limits.judgment_steps,
-            delta_policy,
-        )?;
-
-        let valid_recursor = match self.law {
-            BinaryProductSortLaw::PUnit { .. } => {
-                self.law.validates_recursor_metadata(
-                    export,
-                    self.inductive,
-                    self.constructor,
-                    self.recursor,
-                ) && is_derived_punit_recursor_type(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                ) && is_derived_punit_rule(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                )
-            }
-            BinaryProductSortLaw::Eq { .. } => {
-                self.law.validates_recursor_metadata(
-                    export,
-                    self.inductive,
-                    self.constructor,
-                    self.recursor,
-                ) && is_derived_eq_recursor_type(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                ) && is_derived_eq_rule(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                )
-            }
-            BinaryProductSortLaw::And
-            | BinaryProductSortLaw::Prod { .. }
-            | BinaryProductSortLaw::PProd { .. } => {
-                self.law.validates_recursor_metadata(
-                    export,
-                    self.inductive,
-                    self.constructor,
-                    self.recursor,
-                ) && is_derived_binary_product_recursor_type(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                ) && is_derived_binary_product_rule(
-                    export,
-                    self.inductive.name,
-                    self.constructor.name,
-                    self.recursor,
-                    self.law,
-                )
-            }
-        };
-        if !valid_recursor {
-            return Err(Verdict::Reject);
-        }
-        derivation.promote(
-            export,
-            derived_recursor(self.recursor),
-            limits.judgment_steps,
-            delta_policy,
-        )?;
-        Ok(derivation.finish())
-    }
-}
-
-/// G12-001's complete external frontier: the built-in-shaped `And` declaration
-/// with two Prop parameters and one field for each parameter. This is a named
-/// classifier, not a general parameterized-inductive rule. The shared
-/// promotion transaction is reused unchanged and installs no computation.
-#[derive(Clone, Copy)]
-enum BinaryProductFamily {
-    And,
-    Prod,
-    PProd,
-}
-
-fn check_exact_binary_product_family(
-    export: &ResolvedExport,
-    environment: &Environment,
-    block: &InductiveBlock,
-    limits: Limits,
-    delta_policy: DeltaPolicy,
-    family: BinaryProductFamily,
-) -> Result<Environment, Verdict> {
-    let [inductive] = block.types.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-    let [constructor] = block.constructors.as_slice() else {
-        return Err(Verdict::Unknown);
-    };
-
-    if inductive.num_params != 2
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || constructor.is_unsafe
-    {
-        return Err(Verdict::Unknown);
-    }
-
-    // And's already-qualified envelope treats any universe-polymorphic
-    // neighbor as unsupported before recursor validation.
-    if matches!(family, BinaryProductFamily::And)
-        && (!inductive.level_params.is_empty() || !constructor.level_params.is_empty())
-    {
-        return Err(Verdict::Unknown);
-    }
-
-    let [recursor] = block.recursors.as_slice() else {
-        return Err(Verdict::Reject);
-    };
-    if recursor.is_unsafe {
-        return Err(Verdict::Unknown);
-    }
-
-    let (constructor_suffix, law) = match family {
-        BinaryProductFamily::And => ("intro", BinaryProductSortLaw::And),
-        BinaryProductFamily::Prod => {
-            if has_dependent_parameter_neighbor(export, inductive.ty) {
-                return Err(Verdict::Unknown);
-            }
-            let [first, second] = inductive.level_params.as_slice() else {
-                return Err(Verdict::Reject);
-            };
-            (
-                "mk",
-                BinaryProductSortLaw::Prod {
-                    first: *first,
-                    second: *second,
-                },
-            )
-        }
-        BinaryProductFamily::PProd => {
-            if has_dependent_parameter_neighbor(export, inductive.ty)
-                || pprod_has_dependent_field_neighbor(export, constructor.ty)
-            {
-                return Err(Verdict::Unknown);
-            }
-            let [first, second] = inductive.level_params.as_slice() else {
-                return Err(Verdict::Reject);
-            };
-            (
-                "mk",
-                BinaryProductSortLaw::PProd {
-                    first: *first,
-                    second: *second,
-                },
-            )
-        }
-    };
-
-    ExactBinaryProductDerivation {
-        inductive,
-        constructor,
-        recursor,
-        constructor_suffix,
-        law,
-    }
-    .validate_and_promote(export, environment, limits, delta_policy)
-}
-
-fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
-    matches!(
-        export.exprs.get(expression),
-        Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))
-    )
-}
-
-fn is_bvar(export: &ResolvedExport, expression: ExprId, expected: u64) -> bool {
-    matches!(export.exprs.get(expression), Some(Expr::BVar(index)) if *index == expected)
 }
 
 fn is_bvar_application(
@@ -3521,7 +3082,7 @@ fn is_derived_twobool_recursor_type(
         )
         && is_twobool_minor_type(export, *minor, constructor, field_type)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_applied_to_bvar(export, *result, 2, 0)
+        && is_bvar_application(export, *result, 2, 0)
 }
 
 fn is_twobool_minor_type(
