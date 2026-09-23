@@ -25,9 +25,11 @@ pub struct Limits {
 
 impl Default for Limits {
     fn default() -> Self {
-        Self {
-            judgment_steps: 16_384,
-        }
+        let judgment_steps = std::env::var("NUCLEUS_JUDGMENT_STEPS")
+            .ok()
+            .and_then(|value| value.parse::<usize>().ok())
+            .unwrap_or(16_384);
+        Self { judgment_steps }
     }
 }
 
