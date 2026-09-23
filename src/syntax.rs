@@ -49,6 +49,14 @@ pub enum Expr {
     },
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum QuotKind {
+    Type,
+    Ctor,
+    Lift,
+    Ind,
+}
+
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum Declaration {
     Axiom {
@@ -69,6 +77,12 @@ pub enum Declaration {
         level_params: Vec<NameId>,
         ty: ExprId,
         value: ExprId,
+    },
+    Quot {
+        name: NameId,
+        level_params: Vec<NameId>,
+        ty: ExprId,
+        kind: QuotKind,
     },
     Inductive(InductiveBlock),
     Unsupported {
