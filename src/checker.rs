@@ -2145,10 +2145,7 @@ fn check_binary_enum(
         return Err(Verdict::Unknown);
     };
 
-    if inductive.num_params != 0
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-    {
+    if inductive.num_params != 0 || inductive.num_indices != 0 || inductive.num_nested != 0 {
         return Err(Verdict::Unknown);
     }
     let constructor_names = block
@@ -2233,9 +2230,10 @@ fn binary_enum_motive_sort_ok(
 ) -> bool {
     match sort_law {
         BinaryEnumSortLaw::Prop => is_prop_sort(export, expression),
-        BinaryEnumSortLaw::Type => recursor.level_params.first().is_some_and(|motive_level| {
-            is_sort_parameter(export, expression, *motive_level)
-        }),
+        BinaryEnumSortLaw::Type => recursor
+            .level_params
+            .first()
+            .is_some_and(|motive_level| is_sort_parameter(export, expression, *motive_level)),
     }
 }
 
