@@ -152,6 +152,15 @@ impl<'a> TypeChecker<'a> {
             return Judgment::unknown("missing-expression-during-inference");
         };
         match expression_node {
+            Expr::NatLit(_) => {
+                let Some(primitives) = self.environment.nat_primitives() else {
+                    return Judgment::unknown("nat-literal-without-qualified-Nat");
+                };
+                Judgment::proven(
+                    TypeValue::Term(self.closure(primitives.type_expr, frame.clone())),
+                    "qualified-Nat-literal-type",
+                )
+            }
             Expr::BVar(index) => {
                 let Some(offset) = usize::try_from(*index).ok() else {
                     return Judgment::refuted("unbound-bvar");
@@ -400,7 +409,7 @@ impl<'a> TypeChecker<'a> {
                         TypeValue::Term(domain.clone()),
                         PiBody::Closure(body.clone()),
                     )),
-                    Value::Sort(_) | Value::Lam { .. } | Value::Neutral(_) => None,
+                    Value::NatLit(_) | Value::Sort(_) | Value::Lam { .. } | Value::Neutral(_) => None,
                 }
             }
             TypeValue::Sort(_) => None,
