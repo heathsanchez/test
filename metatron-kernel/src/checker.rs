@@ -308,6 +308,12 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "List")
+    {
+        return check_exact_list(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "N")
     {
         return check_exact_nat(export, environment, block, limits, delta_policy);
@@ -2106,6 +2112,342 @@ fn is_empty_constant(export: &ResolvedExport, expression: ExprId, name: NameId) 
         export.exprs.get(expression),
         Some(Expr::Const { name: actual, levels }) if *actual == name && levels.is_empty()
     )
+}
+
+/// G34: exact unary-polymorphic List family.
+///
+/// This does not introduce a second recursive evaluator.  It validates the
+/// standard List telescope, constructors, recursor and certified rule bodies,
+/// then reuses the G33 rule-body reduction capability.
+fn check_exact_list(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let Some((type_domains, type_result)) = pi_spine(export, inductive.ty, 1) else {
+        return Err(Verdict::Reject);
+    };
+    let [carrier] = type_domains.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !is_sort_succ_parameter(export, *carrier, *level)
+        || !is_sort_succ_parameter(export, type_result, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [nil, cons] = block.constructors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if nil.is_unsafe || cons.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [nil.name, cons.name]
+        || nil.index != 0
+        || nil.inductive != inductive.name
+        || nil.level_params != [*level]
+        || nil.num_params != 1
+        || nil.num_fields != 0
+        || !name_is_child_str(export, nil.name, inductive.name, "nil")
+        || !list_nil_constructor_type(export, nil.ty, inductive.name, *level)
+        || cons.index != 1
+        || cons.inductive != inductive.name
+        || cons.level_params != [*level]
+        || cons.num_params != 1
+        || cons.num_fields != 2
+        || !name_is_child_str(export, cons.name, inductive.name, "cons")
+        || !list_cons_constructor_type(export, cons.ty, inductive.name, *level)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if recursor.is_unsafe {
+        return Err(Verdict::Unknown);
+    }
+    let levels_ok = matches!(
+        recursor.level_params.as_slice(),
+        [motive_level, carrier_level]
+            if *carrier_level == *level && *motive_level != *carrier_level
+    );
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        levels_ok,
+    ) || !list_recursor_type(export, inductive.name, nil.name, cons.name, *level, recursor)
+        || !list_recursor_rules(export, inductive.name, nil.name, cons.name, *level, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(nil),
+            derived_constructor(cons),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(
+        derivation.finish(),
+        &block.constructors,
+        recursor,
+    )
+}
+
+fn list_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constant: NameId,
+    level: NameId,
+    argument: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [arg]
+        if is_unary_polymorphic_constant(export, head, constant, level)
+            && is_bvar(export, *arg, argument))
+}
+
+fn list_nil_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nil: NameId,
+    level: NameId,
+    carrier: u64,
+) -> bool {
+    list_application(export, expression, nil, level, carrier)
+}
+
+fn list_cons_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    cons: NameId,
+    level: NameId,
+    carrier: u64,
+    head: u64,
+    tail: u64,
+) -> bool {
+    let (constant, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, constant, cons, level)
+        && are_bvars(export, &arguments, &[carrier, head, tail])
+}
+
+fn list_nil_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [carrier] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && list_application(export, result, inductive, level, 0)
+}
+
+fn list_cons_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, head, tail] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, level)
+        && is_bvar(export, *head, 0)
+        && list_application(export, *tail, inductive, level, 1)
+        && list_application(export, result, inductive, level, 2)
+}
+
+fn list_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    list_application(export, *target, inductive, carrier_level, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn list_nil_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nil: NameId,
+    carrier_level: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_bvar(export, *fun, 0)
+                && list_nil_application(export, *arg, nil, carrier_level, 1)
+    )
+}
+
+fn list_cons_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [head, tail, tail_ih] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *head, 2)
+        || !list_application(export, *tail, inductive, carrier_level, 3)
+        || !is_bvar_application(export, *tail_ih, 3, 0)
+    {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 4)
+        && list_cons_application(export, *constructed, cons, carrier_level, 5, 2, 1)
+}
+
+fn list_recursor_type(
+    export: &ResolvedExport,
+    inductive: NameId,
+    nil: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return false;
+    };
+    if *declared_carrier != carrier_level {
+        return false;
+    }
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [carrier, motive, nil_minor, cons_minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+        && list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+        && list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+        && list_application(export, *target, inductive, carrier_level, 3)
+        && is_bvar_application(export, result, 3, 0)
+}
+
+fn list_recursor_rules(
+    export: &ResolvedExport,
+    inductive: NameId,
+    nil: NameId,
+    cons: NameId,
+    carrier_level: NameId,
+    recursor: &Recursor,
+) -> bool {
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return false;
+    };
+    if *declared_carrier != carrier_level {
+        return false;
+    }
+    let [nil_rule, cons_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let nil_ok = lam_spine(export, nil_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [carrier, motive, nil_minor, cons_minor] = domains.as_slice() else {
+            return false;
+        };
+        is_sort_succ_parameter(export, *carrier, carrier_level)
+            && list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+            && list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+            && list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+            && is_bvar(export, result, 1)
+    });
+
+    let cons_ok = lam_spine(export, cons_rule.rhs, 6).is_some_and(|(domains, result)| {
+        let [carrier, motive, nil_minor, cons_minor, head, tail] = domains.as_slice() else {
+            return false;
+        };
+        if !is_sort_succ_parameter(export, *carrier, carrier_level)
+            || !list_motive_type(export, *motive, inductive, carrier_level, *motive_level)
+            || !list_nil_minor_type(export, *nil_minor, nil, carrier_level)
+            || !list_cons_minor_type(export, *cons_minor, inductive, cons, carrier_level)
+            || !is_bvar(export, *head, 3)
+            || !list_application(export, *tail, inductive, carrier_level, 4)
+        {
+            return false;
+        }
+        let (minor, arguments) = application_spine(export, result);
+        let [head_arg, tail_arg, recursive_call] = arguments.as_slice() else {
+            return false;
+        };
+        if !is_bvar(export, minor, 2)
+            || !is_bvar(export, *head_arg, 1)
+            || !is_bvar(export, *tail_arg, 0)
+        {
+            return false;
+        }
+        let (recursive, recursive_arguments) = application_spine(export, *recursive_call);
+        recursive_arguments.len() == 5
+            && is_polymorphic_constant(
+                export,
+                recursive,
+                recursor.name,
+                *motive_level,
+                carrier_level,
+            )
+            && are_bvars(export, &recursive_arguments, &[5, 4, 3, 2, 0])
+    });
+
+    nil_ok && cons_ok
 }
 
 /// G18-001: exact local recursive N. Recursion is admitted only inside this
