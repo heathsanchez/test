@@ -3396,23 +3396,15 @@ fn is_twobool_constructor_type(
     field_type: NameId,
     inductive: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second] = domains.as_slice() else {
         return false;
     };
     is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && is_empty_constant(export, *body, inductive)
+        && is_empty_constant(export, result, inductive)
 }
 
 fn is_derived_twobool_recursor_type(
@@ -3422,45 +3414,23 @@ fn is_derived_twobool_recursor_type(
     field_type: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 3) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: motive_arg,
-        body: motive_sort,
-    }) = export.exprs.get(*motive)
-    else {
+    let [motive, minor, target] = domains.as_slice() else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let Some((motive_domains, motive_sort)) = pi_spine(export, *motive, 1) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive_arg] = motive_domains.as_slice() else {
         return false;
     };
     is_empty_constant(export, *motive_arg, inductive)
-        && matches!(
-            export.exprs.get(*motive_sort),
-            Some(Expr::Sort(level)) if matches!(
-                export.levels.get(*level),
-                Some(Level::Param(name)) if name == &recursor.level_params[0]
-            )
-        )
+        && is_sort_parameter(export, motive_sort, recursor.level_params[0])
         && is_twobool_minor_type(export, *minor, constructor, field_type)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_application(export, *result, 2, 0)
+        && is_bvar_application(export, result, 2, 0)
 }
 
 fn is_twobool_minor_type(
@@ -3469,30 +3439,22 @@ fn is_twobool_minor_type(
     constructor: NameId,
     field_type: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second] = domains.as_slice() else {
         return false;
     };
     let Some(Expr::App {
         fun: motive,
         arg: constructed,
-    }) = export.exprs.get(*body)
+    }) = export.exprs.get(result)
     else {
         return false;
     };
     is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && matches!(export.exprs.get(*motive), Some(Expr::BVar(2)))
+        && is_bvar(export, *motive, 2)
         && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
 }
 
@@ -3506,170 +3468,26 @@ fn is_derived_twobool_rule(
     let [rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 4) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: motive_arg, ..
-    }) = export.exprs.get(*motive)
-    else {
+    let [motive, minor, first, second] = domains.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let Some((motive_domains, _motive_sort)) = pi_spine(export, *motive, 1) else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: first,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let [motive_arg] = motive_domains.as_slice() else {
         return false;
     };
-    let Some(Expr::Lam {
-        domain: second,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *motive_arg, inductive)
+    rule.constructor == constructor
+        && rule.num_fields == 2
+        && is_empty_constant(export, *motive_arg, inductive)
         && is_twobool_minor_type(export, *minor, constructor, field_type)
         && is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && is_bvar_applied_to_two_bvars(export, *result, 2, 1, 0)
+        && is_bvar_application(export, result, 3, 1)
 }
-
-fn is_constructor_applied_to_two_bvars(
-    export: &ResolvedExport,
-    expression: ExprId,
-    constructor: NameId,
-    first: u64,
-    second: u64,
-) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *head, constructor)
-        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
-        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
-}
-
-fn is_bvar_applied_to_two_bvars(
-    export: &ResolvedExport,
-    expression: ExprId,
-    function: u64,
-    first: u64,
-    second: u64,
-) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    matches!(export.exprs.get(*head), Some(Expr::BVar(index)) if *index == function)
-        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
-        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
-}
-
-fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
-    matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
-}
-
-fn name_is_child_str(export: &ResolvedExport, name: NameId, prefix: NameId, value: &str) -> bool {
-    matches!(export.names.get(name), Some(Name::Str { prefix: actual_prefix, value: actual }) if *actual_prefix == prefix && actual == value)
-}
-
-fn first_constructor_domain_constant(
-    export: &ResolvedExport,
-    expression: ExprId,
-) -> Option<NameId> {
-    let Expr::Pi { domain, .. } = export.exprs.get(expression)? else {
-        return None;
-    };
-    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
-        return None;
-    };
-    levels.is_empty().then_some(*name)
-}
-
-fn derived_type(name: NameId, ty: ExprId) -> DerivedSignature {
-    DerivedSignature {
-        kind: OpaqueInductiveKind::Type,
-        name,
-        level_params: Vec::new(),
-        ty,
-    }
-}
-
-fn derived_polymorphic_type(name: NameId, level_params: &[NameId], ty: ExprId) -> DerivedSignature {
-    DerivedSignature {
-        kind: OpaqueInductiveKind::Type,
-        name,
-        level_params: level_params.to_vec(),
-        ty,
-    }
-}
-
-fn derived_constructor(constructor: &Constructor) -> DerivedSignature {
-    DerivedSignature {
-        kind: OpaqueInductiveKind::Constructor,
-        name: constructor.name,
-        level_params: constructor.level_params.clone(),
-        ty: constructor.ty,
-    }
-}
-
-fn derived_recursor(recursor: &Recursor) -> DerivedSignature {
-    DerivedSignature {
-        kind: OpaqueInductiveKind::Recursor,
-        name: recursor.name,
-        level_params: recursor.level_params.clone(),
-        ty: recursor.ty,
-    }
-}
-
-fn has_duplicate_parameter(parameters: &[NameId]) -> bool {
-    parameters
-        .iter()
-        .enumerate()
-        .any(|(index, parameter)| parameters[..index].contains(parameter))
-}
-
-fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
-    parameters
-        .iter()
-        .map(|parameter| (*parameter, LevelTerm::param(format!("u#{}", parameter.0))))
-        .collect()
-}
-
-fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
-    match judgment {
-        Judgment::Proven { .. } => Ok(()),
-        Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
