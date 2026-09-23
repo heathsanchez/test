@@ -1,0 +1,29 @@
+name: Format Nucleus Generic Nonrecursive
+
+on:
+  push:
+    branches: [nucleus-generic-nonrecursive-v1]
+    paths:
+      - ".github/workflows/nucleus-generic-nonrecursive-format.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Apply rustfmt and commit
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          if git diff --quiet; then exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add metatron-kernel
+          git commit -m "style(nucleus): apply rustfmt to generic nonrecursive derivation"
+          git push origin HEAD:nucleus-generic-nonrecursive-v1
