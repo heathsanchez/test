@@ -4714,12 +4714,7 @@ fn reflexive_tree_recursor_obligations(
             return false;
         };
         is_empty_constant(export, *ih_domain, domain)
-            && reflexive_tree_recursor_call(
-                export,
-                *recursive_call,
-                recursor.name,
-                *motive_level,
-            )
+            && reflexive_tree_recursor_call(export, *recursive_call, recursor.name, *motive_level)
     });
 
     leaf_ok && node_ok
