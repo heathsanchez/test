@@ -557,7 +557,6 @@ fn sort_elim_prop_motive_type(
 fn sort_elim_prop_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
-    inductive: NameId,
     constructor: NameId,
 ) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
@@ -579,12 +578,6 @@ fn sort_elim_prop_minor_type(
             constructor,
             [3, 1, 0],
         )
-        && sort_elim_prop_application(
-            export,
-            arguments[2],
-            inductive,
-            [3, 0, 1],
-        ) == false
 }
 
 fn sort_elim_prop_recursor_type(
@@ -602,7 +595,7 @@ fn sort_elim_prop_recursor_type(
     };
     if !is_bool_constant(export, *parameter)
         || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
-        || !sort_elim_prop_minor_type(export, *minor, inductive, constructor)
+        || !sort_elim_prop_minor_type(export, *minor, constructor)
         || !is_bool_constant(export, *first_index)
         || !is_bool_constant(export, *second_index)
         || !sort_elim_prop_application(export, *target, inductive, [4, 1, 0])
@@ -633,7 +626,7 @@ fn sort_elim_prop_recursor_rule(
     };
     if !is_bool_constant(export, *parameter)
         || !sort_elim_prop_motive_type(export, *motive, inductive, motive_level)
-        || !sort_elim_prop_minor_type(export, *minor, inductive, constructor)
+        || !sort_elim_prop_minor_type(export, *minor, constructor)
         || !is_bool_constant(export, *first_field)
         || !is_bool_constant(export, *second_field)
     {
