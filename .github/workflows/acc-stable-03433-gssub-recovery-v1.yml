@@ -1,0 +1,247 @@
+name: ACC Stable 03433 GS-Sub Recovery V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-stable-03433-gssub-recovery-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  ACSOLVERX_PIN: "6a12515fe1d95178a483b76d5553266e61122417"
+  CID: "ac-03433"
+  SID: "sac-03433"
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Freeze live source and target
+        run: |
+          set -euo pipefail
+          mkdir -p freeze
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          H={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def snap(problem):
+              u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem='+problem
+              req=urllib.request.Request(u,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+              d=o.get('data',o); return o,{str(x.get('problemId') or x.get('challengeId')):x for x in d['items']}
+          ao,ac=snap('ac'); so,st=snap('stable_ac')
+          a=ac['ac-03433']; s=st['sac-03433']
+          Path('freeze/snapshot_ac.json').write_text(json.dumps(ao,indent=2,sort_keys=True)+'\n')
+          Path('freeze/snapshot_stable.json').write_text(json.dumps(so,indent=2,sort_keys=True)+'\n')
+          Path('freeze/targets.json').write_text(json.dumps(['ac-03433'])+'\n')
+          Path('freeze/row.json').write_text(json.dumps({'ac':a,'stable':s},indent=2,sort_keys=True)+'\n')
+          print('GSSUB_03433_FREEZE',json.dumps({
+            'ac_status':a.get('status'),'ac_best':a.get('currentBestLength'),'ac_kTeams':a.get('kTeams'),
+            'stable_status':s.get('status'),'stable_best':s.get('currentBestLength'),'stable_kTeams':s.get('kTeams')
+          },sort_keys=True))
+          if a.get('status')!='solved': raise SystemExit('AC source no longer solved')
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-stable-03433-gssub-freeze
+          path: freeze/
+          retention-days: 90
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 3
+      matrix:
+        include:
+          - lane: greedy
+            weight: "0.0"
+          - lane: balanced
+            weight: "0.15"
+          - lane: depth
+            weight: "0.50"
+    runs-on: ubuntu-latest
+    timeout-minutes: 28
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-stable-03433-gssub-freeze
+          path: /tmp/freeze
+
+      - name: Fetch pinned repositories
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          git clone --quiet https://github.com/Math-AI-Caltech/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet "$ACSOLVERX_PIN"
+          test "$(git -C /tmp/acsolverx rev-parse HEAD)" = "$ACSOLVERX_PIN"
+
+      - name: Install GS-Sub runtime
+        run: python3 -m pip install --quiet "numpy==2.1.3" "numba==0.63.1"
+
+      - name: Fresh quotient search with exact atomic compilation
+        run: |
+          set -euo pipefail
+          mkdir -p "gssub/${{ matrix.lane }}"
+          set -o pipefail
+          python3 andrews_curtis/solver_v2_gssub.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --out-dir "gssub/${{ matrix.lane }}"             --target-ids-file /tmp/freeze/targets.json             --include-solved             --snapshot-ac-file /tmp/freeze/snapshot_ac.json             --snapshot-stable-file /tmp/freeze/snapshot_stable.json             --defer-live-filter             --max-targets 1             --max-nodes 400000             --max-quotient-total 80             --reverse-depth 7             --reverse-cap 250000             --compiler-beam 8             --depth-weight "${{ matrix.weight }}"             --search-seconds 1100             | tee "gssub/${{ matrix.lane }}.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-stable-03433-gssub-${{ matrix.lane }}
+          path: |
+            gssub/${{ matrix.lane }}/
+            gssub/${{ matrix.lane }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  synthesize:
+    needs: [freeze,search]
+    if: always() && needs.freeze.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover search evidence and select Stable only
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/search final
+          gh run download "${{ github.run_id }}" --pattern 'acc-stable-03433-gssub-*' -D /tmp/search || true
+          python3 - <<'PY'
+          import json,re
+          from pathlib import Path
+          reports=[]; candidates=[]
+          for p in Path('/tmp/search').rglob('search_results.json'):
+              try:
+                  rs=json.loads(p.read_text()); reports += rs if isinstance(rs,list) else [rs]
+              except Exception: pass
+          for p in Path('/tmp/search').rglob('submission_v2.txt'):
+              for line in p.read_text().splitlines():
+                  m=re.match(r'^sac-03433\s*:\s*(\[.*\])\s*$',line.strip())
+                  if not m: continue
+                  try:moves=list(json.loads(m.group(1)))
+                  except Exception:continue
+                  candidates.append(moves)
+          uniq={tuple(x):x for x in candidates}
+          candidates=sorted(uniq.values(),key=lambda x:(len(x),x))
+          Path('final/search_results.json').write_text(json.dumps(reports,indent=2,sort_keys=True)+'\n')
+          Path('final/verified_candidate.txt').write_text(
+              '' if not candidates else 'sac-03433: '+json.dumps(candidates[0],separators=(',',':'))+'\n')
+          print('GSSUB_03433_SYNTHESIS',json.dumps({
+              'reports':len(reports),'stable_candidates':len(candidates),
+              'best_length':None if not candidates else len(candidates[0]),
+              'quotient_found':sum(bool(r.get('quotient_found')) for r in reports),
+              'compiled_verified':sum(bool(r.get('stable_verdict',{}).get('ok')) for r in reports)
+          },sort_keys=True))
+          PY
+
+      - name: Pinned official replay
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          if [ ! -s final/verified_candidate.txt ]; then
+            echo NO_GSSUB_STABLE_CANDIDATE
+            exit 0
+          fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission final/verified_candidate.txt
+
+      - name: Immediate live and quota gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          src=Path('final/verified_candidate.txt'); dst=Path('final/publish_candidate.txt'); dst.write_text('')
+          if not src.exists() or not src.stat().st_size:
+              print('NO_VERIFIED_GSSUB_CANDIDATE'); raise SystemExit(0)
+          line=src.read_text().strip(); moves=json.loads(line.split(':',1)[1].strip())
+          KEY=os.environ['SAIR_API_KEY']; PUB='https://server-9527.sair.foundation'; API='https://api.sair.foundation/api/public/v1'
+          def get(url,auth=False):
+              h={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+              if auth:h['Authorization']=f'Bearer {KEY}'
+              req=urllib.request.Request(url,headers=h)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          d=data(get(PUB+'/api/acc/discoveries/snapshot?problem=stable_ac'))
+          row=next(x for x in d['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          best=row.get('currentBestLength')
+          improves=row.get('status')!='solved' or not isinstance(best,int) or len(moves)<best
+          mine=data(get(API+'/competitions/acc/submissions/mine?limit=100',True))
+          comp=data(get(API+'/competitions/acc',True))
+          lim=next((comp.get(k) for k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay') if isinstance(comp.get(k),int)),40)
+          today=datetime.now(timezone.utc).date()
+          def stamp(rec):
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  s=rec.get(k) if isinstance(rec,dict) else None
+                  if not isinstance(s,str) or not s.strip():continue
+                  try:
+                      dt=datetime.fromisoformat(s.strip().replace('Z','+00:00'))
+                      if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+                      return dt.astimezone(timezone.utc)
+                  except Exception:pass
+              return None
+          items=mine.get('items',[]) if isinstance(mine,dict) else []
+          used=sum((t:=stamp(x)) is not None and t.date()==today for x in items)
+          gate={'stable_status':row.get('status'),'stable_best':best,'candidate_length':len(moves),
+                'strict_or_unsolved':improves,'quota_used':used,'quota_limit':lim,'quota_remaining':max(0,lim-used)}
+          Path('final/prepublish_gate.json').write_text(json.dumps(gate,indent=2,sort_keys=True)+'\n')
+          print('GSSUB_03433_PREPUBLISH_GATE',json.dumps(gate,sort_keys=True))
+          if improves and used<lim:dst.write_text(line+'\n')
+          PY
+
+      - name: Publish only qualifying Stable row
+        run: |
+          set -euo pipefail
+          if [ ! -s final/publish_candidate.txt ]; then
+            echo NO_PUBLISHABLE_GSSUB_ROW
+            exit 0
+          fi
+          ACC_SUBMISSION_FILE=final/publish_candidate.txt           ACC_SUBMIT_OUT=final/publish           python3 acc_submit/submit_live_filtered.py | tee final/publish.log
+
+      - name: Post-live authority
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,urllib.request
+          from pathlib import Path
+          u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=stable_ac'
+          req=urllib.request.Request(u,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); row=next(x for x in d['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          Path('final/post_live.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          print('GSSUB_03433_POST_LIVE',json.dumps({'status':row.get('status'),'best':row.get('currentBestLength'),'kTeams':row.get('kTeams')},sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-stable-03433-gssub-final
+          path: final/
+          retention-days: 90
+          if-no-files-found: warn
