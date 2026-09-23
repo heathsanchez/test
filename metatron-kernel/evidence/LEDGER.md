@@ -770,3 +770,34 @@ machine-readable authority. Rejected and unknown experiments remain recorded.
 - Scope remains bounded: no general multi-constructor Prop recognizer, no
   arbitrary Prop elimination engine, and no general malformed-recursor checker
   is claimed.
+
+
+## G26-001 — Definite recursor-metadata incoherence
+
+- Status: RETAINED and externally qualified.
+- Frozen baseline: sealed G25 head
+  `4b257ea8442a7905af8b894144288864b16fb81a`.
+- Primary residual: tutorial 073 `BogusRecursor` was `UNKNOWN` despite a
+  supplied recursor whose structural metadata cannot belong to its inductive.
+- Least capability: rejection-only structural coherence on the already
+  unsupported safe single-constructor frontier. A recursor is definitely
+  malformed when declaration-fixed metadata disagrees: ownership/all set,
+  parameter/index counts, single-inductive motive count, minor/rule counts,
+  rule constructor/field counts, or child `.rec` naming. Elimination
+  universes, rule K, and positive inductive semantics remain outside the law.
+- Global reclosure found three independent earned deltas with zero mismatches:
+  tutorials 073, 136, and 137 all moved `UNKNOWN → REJECT`.
+  This is the first direct cross-corpus evidence that the law is reusable
+  rather than a patch for 073.
+- Adjacent coherent unsupported tutorial 074 remains `UNKNOWN`.
+- Qualification: source `aa8b1c2ea1803193f78502b76b961a51a6e51da1`;
+  implementation `1537d4f580348e5a9828aae2c8f6df31001e449e`;
+  run `35847835068`, job `107138168263`, artifact `10744570750`,
+  digest
+  `sha256:bcd3050ad8e410a2d7c78a55875f4ac7f5904a22a7359c49a0eda15082fa1826`.
+- Tutorial reclosure counts: 3 earned deltas, 78 equal-correct,
+  60 equal-residual, 0 mismatches. Committed corpus differs from G25 only on
+  the retained 073 fixture.
+- First remaining residual: tutorial 074 `good/074_existsRec.ndjson`.
+- Scope remains bounded: this law can reject definite structural contradiction
+  but cannot accept an unfamiliar inductive or infer its elimination universe.
