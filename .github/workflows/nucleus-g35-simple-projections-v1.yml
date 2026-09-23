@@ -1,0 +1,142 @@
+name: Nucleus G35 Simple Projections Qualification v1
+
+on:
+  push:
+    branches: [nucleus-g35-simple-projections-v1]
+    paths:
+      - ".github/workflows/nucleus-g35-simple-projections-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-g35-simple-projections-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 56b748bae0466423158679b88de5406bf57bee35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build exact G34 oracle and G35 candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g34 "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/g34/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Exact projection boundary and global reclosure
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g35
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial')
+          base=pathlib.Path('/tmp/g34/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,e in [('good',0),('bad',1)]:
+              for p in sorted((root/d).glob('*.ndjson')):
+                  try:n=int(p.name.split('_',1)[0])
+                  except ValueError:continue
+                  def rr(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=rr(base),rr(cand)
+                  status=('earned_delta' if b==e and a!=e else 'mismatch') if a!=b else ('equal_correct' if b==e else 'equal_residual')
+                  rows.append({'number':n,'input':f'{d}/{p.name}','expected':e,'base':a,'candidate':b,'status':status})
+          rows.sort(key=lambda r:r['number'])
+          by={r['number']:r for r in rows}
+          # Exact earned simple-product projection corridor.
+          for n in (83,84,85):
+              assert by[n]['candidate']==0 and by[n]['status']=='earned_delta',by[n]
+          # Exact negative projection boundaries.
+          for n in (87,88):
+              assert by[n]['candidate']==1 and by[n]['status']=='earned_delta',by[n]
+          # Dependent Sigma and Prop-structure projection laws are not granted here.
+          assert by[86]['candidate'] != 0, by[86]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          mismatches=[r for r in rows if r['status']=='mismatch']
+          assert not mismatches,mismatches
+          assert all(r['status']=='earned_delta' for r in changes),changes
+          residual=[r for r in rows if r['candidate']!=r['expected']]
+          out={'schema':'nucleus-g35-simple-projections-qualification-v1',
+               'arena_sha':os.environ['ARENA_SHA'],'base_sha':os.environ['BASE_SHA'],
+               'candidate_sha':os.environ['GITHUB_SHA'],'changes':changes,'mismatches':mismatches,
+               'counts':{'earned_delta':sum(r['status']=='earned_delta' for r in rows),
+                         'equal_correct':sum(r['status']=='equal_correct' for r in rows),
+                         'equal_residual':sum(r['status']=='equal_residual' for r in rows),
+                         'mismatch':len(mismatches)},
+               'first_remaining_residual':residual[0] if residual else None}
+          pathlib.Path('evidence-out/g35/reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Replay committed corpus against G34
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          base=pathlib.Path('/tmp/g34/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set();rows=[]
+          for p in paths:
+              rp=str(p)
+              if rp in seen:continue
+              seen.add(rp)
+              def rr(binary):
+                  with p.open('rb') as f:return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=rr(base),rr(cand);rows.append({'path':rp,'base':a,'candidate':b})
+          diffs=[r for r in rows if r['base']!=r['candidate']]
+          pathlib.Path('evidence-out/g35/committed-differential.json').write_text(json.dumps({'count':len(rows),'diffs':diffs,'rows':rows},indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'count':len(rows),'diffs':diffs},sort_keys=True))
+          PY
+
+      - name: Upload G35 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g35-simple-projections-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g35
+          if-no-files-found: error
