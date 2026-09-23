@@ -1959,9 +1959,7 @@ fn is_derived_rbtree_branch_rule(
     };
 
     let (head, arguments) = application_spine(export, result);
-    if !is_bvar(export, head, 5 + (color_prefix / 2) as u64)
-        || arguments.len() != arity + 2
-    {
+    if !is_bvar(export, head, 5 + (color_prefix / 2) as u64) || arguments.len() != arity + 2 {
         return false;
     }
     let Some(left_call) = rbtree_recursor_application_args(
@@ -2000,18 +1998,14 @@ fn is_derived_rbtree_branch_rule(
             is_child_empty_constant_named(export, left_color, "Color", "b")
                 && is_child_empty_constant_named(export, right_color, "Color", "b")
         }
-        RbBranch::Black => {
-            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
-        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
     };
     let call_colors_ok = match branch {
         RbBranch::Red => {
             is_child_empty_constant_named(export, left_call[5], "Color", "b")
                 && is_child_empty_constant_named(export, right_call[5], "Color", "b")
         }
-        RbBranch::Black => {
-            is_bvar(export, left_call[5], 5) && is_bvar(export, right_call[5], 4)
-        }
+        RbBranch::Black => is_bvar(export, left_call[5], 5) && is_bvar(export, right_call[5], 4),
     };
 
     colors_ok
