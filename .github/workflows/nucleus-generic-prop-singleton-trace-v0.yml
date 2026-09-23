@@ -1,0 +1,58 @@
+name: Nucleus Generic Prop Singleton Trace v0
+on:
+  push:
+    branches: [nucleus-generic-prop-singleton-v1]
+    paths:
+      - ".github/workflows/nucleus-generic-prop-singleton-trace-v0.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate
+        working-directory: metatron-kernel
+        run: cargo build --release --locked
+      - name: Fetch corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace exact singleton-shaped blockers
+        working-directory: metatron-kernel
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,json
+          root=pathlib.Path('/tmp/tests')
+          bin=pathlib.Path('target/release/metatron-kernel').resolve()
+          targets=[
+            ('good','perf/irrelevance-before-evaluation'),
+            ('good','tutorial/095_projDataIndexRec'),
+            ('bad','bugs/constlevels'),
+            ('bad','bugs/large-elim-param'),
+            ('bad','bugs/level-imax-normalization'),
+            ('bad','bugs/proj-non-structure'),
+            ('bad','tutorial/096_projIndexData'),
+            ('bad','tutorial/097_projIndexData2'),
+            ('bad','tutorial/113_indexedStructEta'),
+          ]
+          rows=[]
+          for d,name in targets:
+            p=root/d/(name+'.ndjson')
+            env=dict(os.environ); env['NUCLEUS_TRACE_GENERIC']='1'; env['NUCLEUS_TRACE_RESIDUAL']='1'
+            with p.open('rb') as f:
+              q=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+            err=q.stderr.decode(errors='replace')
+            rows.append({'test':name,'rc':q.returncode,'stderr':[x for x in err.splitlines() if 'NUCLEUS_' in x]})
+          print(json.dumps(rows,indent=2))
+          PY
