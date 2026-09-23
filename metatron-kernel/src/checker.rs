@@ -1916,110 +1916,57 @@ fn is_derived_rbtree_leaf_rule(
     is_bvar(export, result, 2)
 }
 
-fn is_derived_rbtree_red_rule(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    level: NameId,
-    recursor: &Recursor,
-    prefix: (ExprId, ExprId, ExprId, ExprId, ExprId),
-) -> bool {
-    let Some(body) = peel_rbtree_rule_prefix(export, expression, prefix) else {
-        return false;
-    };
-    let Some((domains, result)) = lam_spine(export, body, 4) else {
-        return false;
-    };
-    let [height, left, value, right] = domains.as_slice() else {
-        return false;
-    };
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
-    else {
-        return false;
-    };
-    let (head, arguments) = application_spine(export, result);
-    if !is_bvar(export, head, 5) || arguments.len() != 6 {
-        return false;
-    }
-    let Some(left_call) = rbtree_recursor_application_args(
-        export,
-        arguments[4],
-        recursor.name,
-        recursor.level_params[0],
-        level,
-    ) else {
-        return false;
-    };
-    let Some(right_call) = rbtree_recursor_application_args(
-        export,
-        arguments[5],
-        recursor.name,
-        recursor.level_params[0],
-        level,
-    ) else {
-        return false;
-    };
-    is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 5)
-        && is_child_empty_constant_named(export, left_color, "Color", "b")
-        && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 6)
-        && is_bvar(export, right_carrier, 7)
-        && is_child_empty_constant_named(export, right_color, "Color", "b")
-        && is_bvar(export, right_height, 2)
-        && are_bvars(export, &arguments[..4], &[3, 2, 1, 0])
-        && left_call.len() == 8
-        && are_bvars(export, &left_call[..5], &[8, 7, 6, 5, 4])
-        && is_child_empty_constant_named(export, left_call[5], "Color", "b")
-        && is_bvar(export, left_call[6], 3)
-        && is_bvar(export, left_call[7], 2)
-        && right_call.len() == 8
-        && are_bvars(export, &right_call[..5], &[8, 7, 6, 5, 4])
-        && is_child_empty_constant_named(export, right_call[5], "Color", "b")
-        && is_bvar(export, right_call[6], 3)
-        && is_bvar(export, right_call[7], 0)
+#[derive(Clone, Copy)]
+enum RbBranch {
+    Red,
+    Black,
 }
 
-fn is_derived_rbtree_black_rule(
+fn is_derived_rbtree_branch_rule(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
     level: NameId,
     recursor: &Recursor,
     prefix: (ExprId, ExprId, ExprId, ExprId, ExprId),
+    branch: RbBranch,
 ) -> bool {
     let Some(body) = peel_rbtree_rule_prefix(export, expression, prefix) else {
         return false;
     };
-    let Some((domains, result)) = lam_spine(export, body, 6) else {
+    let color_prefix = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 2,
+    };
+    let arity = 4 + color_prefix;
+    let Some((domains, result)) = lam_spine(export, body, arity) else {
         return false;
     };
-    let [first_color, second_color, height, left, value, right] = domains.as_slice() else {
-        return false;
-    };
+    let height = domains[color_prefix];
+    let left = domains[color_prefix + 1];
+    let value = domains[color_prefix + 2];
+    let right = domains[color_prefix + 3];
+
     let (
         Some((left_carrier, left_color, left_height)),
         Some((right_carrier, right_color, right_height)),
     ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
     )
     else {
         return false;
     };
+
     let (head, arguments) = application_spine(export, result);
-    if !is_bvar(export, head, 6) || arguments.len() != 8 {
+    if !is_bvar(export, head, 5 + (color_prefix / 2) as u64)
+        || arguments.len() != arity + 2
+    {
         return false;
     }
     let Some(left_call) = rbtree_recursor_application_args(
         export,
-        arguments[6],
+        arguments[arity],
         recursor.name,
         recursor.level_params[0],
         level,
@@ -2028,32 +1975,61 @@ fn is_derived_rbtree_black_rule(
     };
     let Some(right_call) = rbtree_recursor_application_args(
         export,
-        arguments[7],
+        arguments[arity + 1],
         recursor.name,
         recursor.level_params[0],
         level,
     ) else {
         return false;
     };
-    is_root_empty_constant_named(export, *first_color, "Color")
-        && is_root_empty_constant_named(export, *second_color, "Color")
-        && is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 7)
-        && is_bvar(export, left_color, 2)
+
+    let prefix_bvars = (0..arity as u64).rev().collect::<Vec<_>>();
+    let recursive_prefix = (0..5)
+        .map(|offset| 8 + color_prefix as u64 - offset)
+        .collect::<Vec<_>>();
+
+    let colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[0], "Color")
+                && is_root_empty_constant_named(export, domains[1], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => {
+            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
+        }
+    };
+    let call_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_call[5], "Color", "b")
+                && is_child_empty_constant_named(export, right_call[5], "Color", "b")
+        }
+        RbBranch::Black => {
+            is_bvar(export, left_call[5], 5) && is_bvar(export, right_call[5], 4)
+        }
+    };
+
+    colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 5 + color_prefix as u64)
+        && child_colors_ok
         && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 8)
-        && is_bvar(export, right_carrier, 9)
-        && is_bvar(export, right_color, 3)
+        && is_bvar(export, value, 6 + color_prefix as u64)
+        && is_bvar(export, right_carrier, 7 + color_prefix as u64)
         && is_bvar(export, right_height, 2)
-        && are_bvars(export, &arguments[..6], &[5, 4, 3, 2, 1, 0])
+        && are_bvars(export, &arguments[..arity], &prefix_bvars)
         && left_call.len() == 8
-        && are_bvars(export, &left_call[..5], &[10, 9, 8, 7, 6])
-        && is_bvar(export, left_call[5], 5)
+        && are_bvars(export, &left_call[..5], &recursive_prefix)
+        && call_colors_ok
         && is_bvar(export, left_call[6], 3)
         && is_bvar(export, left_call[7], 2)
         && right_call.len() == 8
-        && are_bvars(export, &right_call[..5], &[10, 9, 8, 7, 6])
-        && is_bvar(export, right_call[5], 4)
+        && are_bvars(export, &right_call[..5], &recursive_prefix)
         && is_bvar(export, right_call[6], 3)
         && is_bvar(export, right_call[7], 0)
 }
@@ -2078,8 +2054,24 @@ fn are_derived_rbtree_rules(
         && black_rule.constructor == constructors[2]
         && black_rule.num_fields == 6
         && is_derived_rbtree_leaf_rule(export, leaf_rule.rhs, prefix)
-        && is_derived_rbtree_red_rule(export, red_rule.rhs, inductive, level, recursor, prefix)
-        && is_derived_rbtree_black_rule(export, black_rule.rhs, inductive, level, recursor, prefix)
+        && is_derived_rbtree_branch_rule(
+            export,
+            red_rule.rhs,
+            inductive,
+            level,
+            recursor,
+            prefix,
+            RbBranch::Red,
+        )
+        && is_derived_rbtree_branch_rule(
+            export,
+            black_rule.rhs,
+            inductive,
+            level,
+            recursor,
+            prefix,
+            RbBranch::Black,
+        )
 }
 
 /// G10-001: a closed, safe, two-constructor enum. This admits no constructor
