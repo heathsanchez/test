@@ -52,17 +52,17 @@ impl EnvFrame {
     }
 
     pub fn lookup(&self, index: u64) -> Option<EnvBinding> {
-        let mut frame = self.clone();
+        let mut node = self.0.as_ref();
         let mut remaining = index;
         loop {
-            match frame.0.as_ref() {
+            match node {
                 EnvNode::Empty => return None,
-                EnvNode::Extend { parent, value, .. } if remaining == 0 => {
+                EnvNode::Extend { value, .. } if remaining == 0 => {
                     return Some(value.clone());
                 }
                 EnvNode::Extend { parent, .. } => {
                     remaining -= 1;
-                    frame = parent.clone();
+                    node = parent.0.as_ref();
                 }
             }
         }
