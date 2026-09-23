@@ -460,11 +460,7 @@ fn check_exact_sort_elim_prop2(
     Ok(derivation.finish())
 }
 
-fn is_bool_identity_application(
-    export: &ResolvedExport,
-    expression: ExprId,
-    binder: u64,
-) -> bool {
+fn is_bool_identity_application(export: &ResolvedExport, expression: ExprId, binder: u64) -> bool {
     let (head, arguments) = application_spine(export, expression);
     let [carrier, value] = arguments.as_slice() else {
         return false;
