@@ -1,0 +1,39 @@
+{
+  "schema": "nucleus-performance-capability-v1",
+  "id": "P7-id-hasher-v1",
+  "baseline_p4_sha": "55d4ecea29bd1ed6e85226076d5c09bfb6f0a291",
+  "candidate_sha": "1fdc4d6e2fc68297b2975ba7af8367679ad64150",
+  "change": "Replace randomized SipHash in integer IdTable keys with a u64 identity hasher and use Entry insertion to avoid duplicate probes.",
+  "semantic_qualification": {
+    "tutorial_count": 141,
+    "tutorial_diffs": 0,
+    "committed_count": 45,
+    "committed_diffs": 0,
+    "correct_tutorial_cohort": 78
+  },
+  "in_process_correct78": {
+    "iterations": 300,
+    "medians_ns": {
+      "p4": 1434085667,
+      "p7": 1264329544
+    },
+    "p7_over_p4": 0.8816276273403407,
+    "paired_median_ratio": 0.8816276273403407
+  },
+  "parse_resolve_only": {
+    "iterations": 500,
+    "medians_ns": {
+      "p4": 1428779764,
+      "p7": 1378954841
+    },
+    "p7_over_p4": 0.9651276395037185,
+    "paired_median_ratio": 0.9690285888856576
+  },
+  "evidence": {
+    "run": 35854793840,
+    "job": 107160618376,
+    "artifact": 10747240650,
+    "artifact_digest": "sha256:0810c507458f8b25fc801b2d0a6280a1e8da3f9852e384701fe0d57a6fc027ed"
+  },
+  "decision": "retain"
+}
