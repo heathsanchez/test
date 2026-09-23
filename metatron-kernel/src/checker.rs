@@ -137,10 +137,67 @@ fn check_export_with_policy(
                         continue;
                     }
                     Err(verdict) => {
-                        if verdict == Verdict::Unknown
-                            && std::env::var_os("NUCLEUS_TRACE_TERMINAL_RESIDUAL").is_some()
-                        {
-                            eprintln!("NUCLEUS_TERMINAL_RESIDUAL:inductive-check-unknown");
+                        if verdict == Verdict::Unknown {
+                            if std::env::var_os("NUCLEUS_TRACE_TERMINAL_RESIDUAL").is_some() {
+                                eprintln!("NUCLEUS_TERMINAL_RESIDUAL:inductive-check-unknown");
+                            }
+                            if std::env::var_os("NUCLEUS_TRACE_INDUCTIVE_UNKNOWN").is_some() {
+                                let type_shapes: Vec<_> = block
+                                    .types
+                                    .iter()
+                                    .map(|ty| {
+                                        serde_json::json!({
+                                            "name_id": ty.name.0,
+                                            "num_params": ty.num_params,
+                                            "num_indices": ty.num_indices,
+                                            "num_nested": ty.num_nested,
+                                            "is_recursive": ty.is_recursive,
+                                            "is_reflexive": ty.is_reflexive,
+                                            "is_unsafe": ty.is_unsafe,
+                                            "level_params": ty.level_params.len(),
+                                            "declared_constructors": ty.constructors.len(),
+                                        })
+                                    })
+                                    .collect();
+                                let constructor_shapes: Vec<_> = block
+                                    .constructors
+                                    .iter()
+                                    .map(|ctor| {
+                                        serde_json::json!({
+                                            "inductive_id": ctor.inductive.0,
+                                            "num_params": ctor.num_params,
+                                            "num_fields": ctor.num_fields,
+                                            "is_unsafe": ctor.is_unsafe,
+                                            "level_params": ctor.level_params.len(),
+                                        })
+                                    })
+                                    .collect();
+                                let recursor_shapes: Vec<_> = block
+                                    .recursors
+                                    .iter()
+                                    .map(|rec| {
+                                        serde_json::json!({
+                                            "num_params": rec.num_params,
+                                            "num_indices": rec.num_indices,
+                                            "num_motives": rec.num_motives,
+                                            "num_minors": rec.num_minors,
+                                            "rule_count": rec.rules.len(),
+                                            "rule_fields": rec.rules.iter().map(|r| r.num_fields).collect::<Vec<_>>(),
+                                            "k": rec.k,
+                                            "is_unsafe": rec.is_unsafe,
+                                            "level_params": rec.level_params.len(),
+                                        })
+                                    })
+                                    .collect();
+                                eprintln!(
+                                    "NUCLEUS_INDUCTIVE_UNKNOWN:{}",
+                                    serde_json::json!({
+                                        "types": type_shapes,
+                                        "constructors": constructor_shapes,
+                                        "recursors": recursor_shapes,
+                                    })
+                                );
+                            }
                         }
                         return verdict;
                     }
