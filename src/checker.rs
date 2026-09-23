@@ -32,7 +32,16 @@ impl Default for Limits {
 }
 
 pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
-    check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback)
+    let has_unqualified_string_literal = export
+        .exprs
+        .values()
+        .any(|expression| matches!(expression, Expr::StrLit(_)));
+    let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
+    if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {
+        Verdict::Unknown
+    } else {
+        verdict
+    }
 }
 
 fn check_export_with_policy(
