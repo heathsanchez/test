@@ -2288,13 +2288,38 @@ impl BinaryProductSortLaw {
     fn result_sort(self, export: &ResolvedExport, expression: ExprId) -> bool {
         match self {
             Self::PUnit { level } => is_sort_parameter(export, expression, level),
-            Self::Eq { .. } => is_prop_sort(export, expression),
-            Self::And => is_prop_sort(export, expression),
+            Self::Eq { .. } | Self::And => is_prop_sort(export, expression),
             Self::Prod { first, second } => {
-                is_sort_max_succ_parameters(export, expression, first, second)
+                let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
+                    return false;
+                };
+                let Some(Level::Max(left, right)) = export.levels.get(*level) else {
+                    return false;
+                };
+                level_is_succ_parameter(export, *left, first)
+                    && level_is_succ_parameter(export, *right, second)
             }
             Self::PProd { first, second } => {
-                is_sort_max_one_parameters(export, expression, first, second)
+                let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
+                    return false;
+                };
+                let Some(Level::Max(left, right)) = export.levels.get(*level) else {
+                    return false;
+                };
+                let Some(Level::Max(one, first_level)) = export.levels.get(*left) else {
+                    return false;
+                };
+                matches!(
+                    export.levels.get(*one),
+                    Some(Level::Succ(inner))
+                        if matches!(export.levels.get(*inner), Some(Level::Zero))
+                ) && matches!(
+                    export.levels.get(*first_level),
+                    Some(Level::Param(name)) if *name == first
+                ) && matches!(
+                    export.levels.get(*right),
+                    Some(Level::Param(name)) if *name == second
+                )
             }
         }
     }
@@ -3101,21 +3126,6 @@ fn is_sort_succ_parameter(export: &ResolvedExport, expression: ExprId, parameter
     level_is_succ_parameter(export, *level, parameter)
 }
 
-fn is_sort_max_succ_parameters(
-    export: &ResolvedExport,
-    expression: ExprId,
-    first: NameId,
-    second: NameId,
-) -> bool {
-    let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Level::Max(left, right)) = export.levels.get(*level) else {
-        return false;
-    };
-    level_is_succ_parameter(export, *left, first) && level_is_succ_parameter(export, *right, second)
-}
-
 fn level_is_succ_parameter(export: &ResolvedExport, level: LevelId, parameter: NameId) -> bool {
     matches!(
         export.levels.get(level),
@@ -3169,33 +3179,6 @@ fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprI
             Some(Expr::Pi { .. } | Expr::App { .. })
         )
     })
-}
-
-fn is_sort_max_one_parameters(
-    export: &ResolvedExport,
-    expression: ExprId,
-    first: NameId,
-    second: NameId,
-) -> bool {
-    let Some(Expr::Sort(level)) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Level::Max(left, right)) = export.levels.get(*level) else {
-        return false;
-    };
-    let Some(Level::Max(one, first_level)) = export.levels.get(*left) else {
-        return false;
-    };
-    level_is_one(export, *one)
-        && matches!(export.levels.get(*first_level), Some(Level::Param(name)) if *name == first)
-        && matches!(export.levels.get(*right), Some(Level::Param(name)) if *name == second)
-}
-
-fn level_is_one(export: &ResolvedExport, level: LevelId) -> bool {
-    matches!(
-        export.levels.get(level),
-        Some(Level::Succ(inner)) if matches!(export.levels.get(*inner), Some(Level::Zero))
-    )
 }
 
 /// G11-001's exact `TwoBool` promotion boundary. This deliberately names the
