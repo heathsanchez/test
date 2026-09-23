@@ -34,8 +34,9 @@ jobs:
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
-          for name in init-prelude perf/grind-ring-5 perf/magma-list-deep-n21 perf/magma-list-deep-n36; do
-            p="/tmp/tests/good/$name.ndjson"
+          for spec in "init-prelude:19543" "perf/grind-ring-5:10835" "perf/magma-list-deep-n21:17962" "perf/magma-list-deep-n36:17961"; do
+            name="${spec%:*}"; line="${spec##*:}"; p="/tmp/tests/good/$name.ndjson"
             echo "=== $name ==="
+            sed -n "${line}p" "$p"
             NUCLEUS_TRACE_PARSE_ERROR=1 target/release/metatron-kernel < "$p" >/dev/null || true
           done
