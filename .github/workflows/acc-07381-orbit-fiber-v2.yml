@@ -1,0 +1,121 @@
+name: ACC 07381 Orbit Fiber V2
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths: [".github/workflows/acc-07381-orbit-fiber-v2.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      GH_TOKEN: ${{ github.token }}
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover verified Atlas and pinned verifier
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          [ -n "$ID" ]
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Freeze the verified 07381 fiber residual
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/orbit_fiber_07381_v2
+          python3 - <<'PY'
+          import json,pathlib,urllib.request
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}; B='https://server-9527.sair.foundation'
+          def get(p):
+              q=urllib.request.Request(B+f'/api/acc/discoveries/snapshot?problem={p}',headers=H)
+              with urllib.request.urlopen(q,timeout=60) as r:return json.loads(r.read().decode())
+          def mp(o):
+              d=o.get('data',o);return {(x.get('problemId') or x.get('challengeId')):x for x in d['items']}
+          ac=get('ac'); st=get('stable_ac'); a=mp(ac)['ac-07381']; s=mp(st)['sac-07381']
+          ab=a['currentBestLength']; sb=s['currentBestLength']; slack=sb-ab-2
+          row={'challenge_id':'ac-07381','stable_challenge_id':'sac-07381','ac_best':ab,'stable_best':sb,
+               'transport_slack':slack,'source_bound_exclusive':max(ab,sb-2),'ac_kTeams':a.get('kTeams'),'stable_kTeams':s.get('kTeams')}
+          print('FRESH_07381_RESIDUAL',json.dumps(row,sort_keys=True))
+          if slack<=0:raise SystemExit('07381 transport residual closed')
+          p=pathlib.Path('acc_competitive/orbit_fiber_07381_v2')
+          (p/'snapshot_ac.json').write_text(json.dumps(ac,indent=2,sort_keys=True)+'\n')
+          (p/'snapshot_stable.json').write_text(json.dumps(st,indent=2,sort_keys=True)+'\n')
+          (p/'targets.json').write_text('["ac-07381"]\n')
+          (p/'row.json').write_text(json.dumps(row,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Cost-aware symmetry-fiber connector
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/orbit_fiber_07381_v2/out
+          python3 acc_competitive/transport_orbit_atlas_connector_v2.py \
+            --acc-root /tmp/acc \
+            --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
+            --snapshot-ac acc_competitive/orbit_fiber_07381_v2/snapshot_ac.json \
+            --snapshot-stable acc_competitive/orbit_fiber_07381_v2/snapshot_stable.json \
+            --target-ids-file acc_competitive/orbit_fiber_07381_v2/targets.json \
+            --out-dir acc_competitive/orbit_fiber_07381_v2/out \
+            --connector-depth 5 --node-cap 250000 \
+            | tee acc_competitive/orbit_fiber_07381_v2/search.log
+
+      - name: Live gate and publish only a strict verified gain
+        run: |
+          set -euo pipefail
+          f=acc_competitive/orbit_fiber_07381_v2/out/pending_submission.txt
+          if [ ! -s "$f" ]; then echo NO_VERIFIED_CANDIDATE; exit 0; fi
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from datetime import datetime,timezone
+          key=os.environ['SAIR_API_KEY']; h={'Authorization':f'Bearer {key}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          q=urllib.request.Request('https://api.sair.foundation/api/public/v1/competitions/acc/submissions/mine?limit=100',headers=h)
+          with urllib.request.urlopen(q,timeout=60) as r:o=json.loads(r.read().decode())
+          d=o.get('data',o); items=d.get('items',[]) if isinstance(d,dict) else []; today=datetime.now(timezone.utc).date(); used=0
+          for x in items:
+              for k in ('receivedAt','updatedAt','createdAt','submittedAt','created','timestamp','submitted'):
+                  v=x.get(k) if isinstance(x,dict) else None
+                  if not isinstance(v,str) or not v.strip():continue
+                  try:
+                      dt=datetime.fromisoformat(v.strip().replace('Z','+00:00'))
+                      if dt.tzinfo is None:dt=dt.replace(tzinfo=timezone.utc)
+                      if dt.astimezone(timezone.utc).date()==today:used+=1
+                  except Exception:pass
+                  break
+          print('QUOTA_RECHECK',json.dumps({'used':used,'remaining':max(0,40-used)},sort_keys=True))
+          if used>=40:raise SystemExit('ACC quota exhausted')
+          PY
+          ACC_SUBMISSION_FILE="$f" ACC_SUBMIT_OUT=acc_competitive/orbit_fiber_07381_v2/publish \
+            python3 acc_submit/submit_live_filtered.py | tee acc_competitive/orbit_fiber_07381_v2/publish.log
+
+      - name: Emit evidence
+        if: always()
+        run: |
+          cat acc_competitive/orbit_fiber_07381_v2/row.json || true
+          cat acc_competitive/orbit_fiber_07381_v2/out/report.json || true
+          cat acc_competitive/orbit_fiber_07381_v2/out/results.json || true
+          cat acc_competitive/orbit_fiber_07381_v2/publish/comparison.json || true
+          cat acc_competitive/orbit_fiber_07381_v2/publish/post_submit_summary.json || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-07381-orbit-fiber-v2
+          path: acc_competitive/orbit_fiber_07381_v2/
+          retention-days: 90
