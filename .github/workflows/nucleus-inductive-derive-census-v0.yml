@@ -1,0 +1,135 @@
+name: Nucleus Inductive Derivation Census v0
+
+on:
+  push:
+    branches: [nucleus-inductive-derive-census-v0]
+    paths:
+      - ".github/workflows/nucleus-inductive-derive-census-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: d723576ded09be6c52fffb18403c23f10f5575e5
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact 55-case authority
+        working-directory: metatron-kernel
+        run: cargo build --release --locked
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Census inductive-envelope residual geometry
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/inductive-derive-census-v0
+          python - <<'PY'
+          import json,pathlib,subprocess,os,collections,re
+          root=pathlib.Path('/tmp/tests')
+          bin=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              env=dict(os.environ); env['NUCLEUS_TRACE_RESIDUAL']='1'
+              with p.open('rb') as f:
+                q=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              if q.returncode not in (2,3): continue
+              err=q.stderr.decode(errors='replace')
+              marks=re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)',err)
+              terminal=marks[-1] if marks else ('parser-error' if q.returncode==3 else 'untraced-unknown')
+              if terminal!='inductive-envelope': continue
+              recs=[json.loads(line) for line in p.read_text().splitlines() if line.strip()]
+              blocks=[o['inductive'] for o in recs if 'inductive' in o]
+              feats=[]
+              for b in blocks:
+                tys=b.get('types',[]); ctors=b.get('ctors',[]); recs_=b.get('recs',[])
+                feat={
+                  'types':len(tys),'ctors':len(ctors),'recs':len(recs_),
+                  'safe':all(not x.get('isUnsafe',False) for x in [*tys,*ctors,*recs_]),
+                  'max_params':max([x.get('numParams',0) for x in [*tys,*ctors,*recs_]] or [0]),
+                  'max_indices':max([x.get('numIndices',0) for x in [*tys,*recs_]] or [0]),
+                  'max_nested':max([x.get('numNested',0) for x in tys] or [0]),
+                  'recursive':any(x.get('isRec',False) for x in tys),
+                  'reflexive':any(x.get('isReflexive',False) for x in tys),
+                  'k':any(x.get('k',False) for x in recs_),
+                  'max_fields':max([x.get('numFields',0) for x in ctors] or [0]),
+                  'rules':sum(len(x.get('rules',[])) for x in recs_),
+                }
+                feat['simple_generic_candidate']=(
+                  feat['types']==1 and feat['safe'] and feat['max_nested']==0
+                )
+                feat['closed_nonrecursive_candidate']=(
+                  feat['simple_generic_candidate'] and feat['max_params']==0 and
+                  feat['max_indices']==0 and not feat['recursive'] and not feat['reflexive']
+                )
+                feat['param_nonrecursive_candidate']=(
+                  feat['simple_generic_candidate'] and feat['max_indices']==0 and
+                  not feat['recursive'] and not feat['reflexive']
+                )
+                feat['indexed_nonrecursive_candidate']=(
+                  feat['simple_generic_candidate'] and not feat['recursive'] and not feat['reflexive']
+                )
+                feats.append(feat)
+              rows.append({
+                'test':str(p.relative_to(root/d)).removesuffix('.ndjson'),
+                'expected':expected,'blocks':feats
+              })
+          assert len(rows)==34,len(rows)
+          counts=collections.Counter()
+          for r in rows:
+            for f in r['blocks']:
+              for k in ['simple_generic_candidate','closed_nonrecursive_candidate',
+                        'param_nonrecursive_candidate','indexed_nonrecursive_candidate']:
+                if f[k]: counts[k]+=1
+              counts['has_mutual'] += f['types']>1
+              counts['has_nested'] += f['max_nested']>0
+              counts['has_recursive'] += f['recursive']
+              counts['has_reflexive'] += f['reflexive']
+              counts['has_indices'] += f['max_indices']>0
+              counts['has_params'] += f['max_params']>0
+              counts['has_k'] += f['k']
+          # Per-test "all blocks fit" counts are more actionable.
+          test_counts={}
+          for k in ['simple_generic_candidate','closed_nonrecursive_candidate',
+                    'param_nonrecursive_candidate','indexed_nonrecursive_candidate']:
+            test_counts[k]=sum(bool(r['blocks']) and all(f[k] for f in r['blocks']) for r in rows)
+          sig=collections.Counter()
+          for r in rows:
+            key=tuple(sorted(tuple(sorted(f.items())) for f in r['blocks']))
+            sig[key]+=1
+          out={
+            'schema':'nucleus-inductive-derive-census-v0',
+            'base_sha':os.environ['BASE_SHA'],
+            'residuals':len(rows),
+            'block_feature_counts':dict(counts),
+            'test_candidate_counts':test_counts,
+            'rows':rows,
+          }
+          dest=pathlib.Path('evidence-out/inductive-derive-census-v0/census.json')
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'residuals':len(rows),
+            'test_candidate_counts':test_counts,
+            'block_feature_counts':dict(counts)
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-inductive-derive-census-${{ github.sha }}
+          path: metatron-kernel/evidence-out/inductive-derive-census-v0
+          if-no-files-found: error
