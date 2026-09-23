@@ -1,7 +1,9 @@
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
-use crate::environment::{BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives};
+use crate::environment::{
+    BoolPrimitives, ConstantDecl, Environment, NatOperation, NatPrimitives, QuotPrimitives,
+};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
@@ -474,9 +476,25 @@ fn check_quot_declaration(
     )
     .with_delta_policy(delta_policy);
     verdict_boundary(checker.is_type(ty, limits.judgment_steps))?;
-    environment
+    let extended = environment
         .extend(name, ConstantDecl::theorem(level_params.to_vec(), ty))
-        .map_err(|_| Verdict::Reject)
+        .map_err(|_| Verdict::Reject)?;
+
+    if kind == QuotKind::Ind {
+        let quotient = quotient_parent(export, name, "ind").ok_or(Verdict::Reject)?;
+        let mk = quotient_child(export, quotient, "mk").ok_or(Verdict::Reject)?;
+        let lift = quotient_child(export, quotient, "lift").ok_or(Verdict::Reject)?;
+        extended
+            .install_quot_primitives(QuotPrimitives {
+                type_name: quotient,
+                mk,
+                lift,
+                ind: name,
+            })
+            .map_err(|_| Verdict::Reject)
+    } else {
+        Ok(extended)
+    }
 }
 
 fn inductive_arity_metadata_is_well_formed(
