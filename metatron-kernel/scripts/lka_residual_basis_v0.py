@@ -1198,6 +1198,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     projection_source_by_eid: dict[int, str] = {}
     recursor_reduction_results: list[str] = []
     iota_major_shapes: list[str] = []
+    iota_after_delta_shapes: list[str] = []
 
     def owner_is_unit_like(owner: int) -> bool:
         t = type_by_name.get(owner)
@@ -1219,6 +1220,60 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     # This is a discovery witness only; any admitted kernel law must replace
     # structural identity by definitional equality.
     rule_k_reflexive: list[str] = []
+
+    # Discover transparent helper definitions whose outer lambda parameters feed
+    # the major premise of a recursor. Later applications of such a helper can
+    # expose an ordinary iota redex after lawful delta reduction.
+    delta_iota_parameter: dict[int, int] = {}
+    for row in records:
+        d = row.get("def")
+        if not isinstance(d, dict):
+            continue
+        name, value = d.get("name"), d.get("value")
+        if not isinstance(name, int) or not isinstance(value, int):
+            continue
+
+        outer_depth = 0
+        body = value
+        for _ in range(64):
+            brow = exprs.get(body, {})
+            lam = brow.get("lam")
+            if not isinstance(lam, dict) or not isinstance(lam.get("body"), int):
+                break
+            outer_depth += 1
+            body = int(lam["body"])
+
+        if outer_depth == 0:
+            continue
+
+        # For this low-bandwidth probe we use only a recursor call visible at
+        # the outer definition body. Nested recursor programs remain UNKNOWN.
+        head, args = app_spine(exprs, body)
+        hrow = exprs.get(head, {})
+        hconst = hrow.get("const")
+        if not isinstance(hconst, dict) or not isinstance(hconst.get("name"), int):
+            continue
+        rec_info = recursor_by_name.get(int(hconst["name"]))
+        if rec_info is None:
+            continue
+        _owner, rec = rec_info
+        required = (
+            int(rec.get("numParams", 0))
+            + int(rec.get("numMotives", 0))
+            + int(rec.get("numMinors", 0))
+            + int(rec.get("numIndices", 0))
+            + 1
+        )
+        if len(args) < required:
+            continue
+        major = args[-1]
+        mrow = exprs.get(major, {})
+        bvar = mrow.get("bvar")
+        if not isinstance(bvar, int) or bvar >= outer_depth:
+            continue
+        # Application arguments are in lambda introduction order; de Bruijn 0
+        # denotes the most recently introduced parameter.
+        delta_iota_parameter[int(name)] = outer_depth - 1 - int(bvar)
 
     roots: list[int] = []
     declaration_types: list[int] = []
@@ -1276,6 +1331,26 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         hrow = exprs.get(head, {})
         const = hrow.get("const")
         if isinstance(const, dict) and isinstance(const.get("name"), int):
+            helper_name = int(const["name"])
+            if helper_name in delta_iota_parameter:
+                arg_index = delta_iota_parameter[helper_name]
+                if arg_index < len(args):
+                    major_arg = args[arg_index]
+                    mhead, _margs = app_spine(exprs, major_arg)
+                    mhrow = exprs.get(mhead, {})
+                    mconst = mhrow.get("const")
+                    ctor_owner = (
+                        ctor_owner_by_name.get(int(mconst["name"]))
+                        if isinstance(mconst, dict) and isinstance(mconst.get("name"), int)
+                        else None
+                    )
+                    if ctor_owner is not None:
+                        iota_after_delta_shapes.append("constructor")
+                    elif isinstance(exprs.get(major_arg, {}).get("bvar"), int):
+                        iota_after_delta_shapes.append("variable")
+                    else:
+                        iota_after_delta_shapes.append("other")
+
             rec_info = recursor_by_name.get(int(const["name"]))
             if rec_info is not None:
                 owner, rec = rec_info
@@ -1484,6 +1559,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         recursor_reduction_scalar = "allow"
 
     iota_major_shape_scalar = summarize_iota_major_shapes(iota_major_shapes)
+    iota_after_delta_scalar = summarize_iota_major_shapes(iota_after_delta_shapes)
 
     projection_sources = [
         projection_source_by_eid.get(eid, "unknown")
@@ -1513,6 +1589,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semantic:inductive_eta_admissibility": inductive_eta_scalar,
         "semantic:recursor_reduction_admissibility": recursor_reduction_scalar,
         "semantic:iota_major_shape": iota_major_shape_scalar,
+        "semantic:iota_after_delta": iota_after_delta_scalar,
         "semantic:projection_admissibility_scalar": projection_scalar,
         "semantic:projection_source_coherence": sorted(projection_sources),
         "semantic:projection_admissibility": sorted(projection_results),
