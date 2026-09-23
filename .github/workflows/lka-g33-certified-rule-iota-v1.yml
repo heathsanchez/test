@@ -99,8 +99,14 @@ jobs:
 
           def structural(label,mut):
               rows=json.loads(json.dumps(base))
-              ind=next(r['inductive'] for r in rows if 'inductive' in r and any(
-                  t.get('name')==25 for t in r['inductive']['types']))
+              ind=next(
+                  r['inductive'] for r in rows
+                  if 'inductive' in r
+                  and len(r['inductive'].get('types', [])) == 1
+                  and len(r['inductive'].get('ctors', [])) == 2
+                  and len(r['inductive'].get('recs', [])) == 1
+                  and len(r['inductive']['recs'][0].get('rules', [])) == 2
+              )
               mut(ind)
               with tempfile.NamedTemporaryFile('w',suffix='.ndjson',delete=False) as f:
                   p=pathlib.Path(f.name)
