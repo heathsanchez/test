@@ -2801,6 +2801,16 @@ fn check_exact_nat(
     if zero.is_unsafe || succ.is_unsafe {
         return Err(Verdict::Unknown);
     }
+    let constructor_names_ok = if name_is_root_str(export, inductive.name, "N") {
+        (name_is_child_str(export, zero.name, inductive.name, "zero")
+            && name_is_child_str(export, succ.name, inductive.name, "succ"))
+            || (name_is_child_str(export, zero.name, inductive.name, "O")
+                && name_is_child_str(export, succ.name, inductive.name, "S"))
+    } else {
+        name_is_child_str(export, zero.name, inductive.name, "zero")
+            && name_is_child_str(export, succ.name, inductive.name, "succ")
+    };
+
     if inductive.all != [inductive.name]
         || inductive.constructors != [zero.name, succ.name]
         || zero.index != 0
@@ -2808,14 +2818,13 @@ fn check_exact_nat(
         || !zero.level_params.is_empty()
         || zero.num_fields != 0
         || zero.num_params != 0
-        || !name_is_child_str(export, zero.name, inductive.name, "zero")
+        || !constructor_names_ok
         || !is_empty_constant(export, zero.ty, inductive.name)
         || succ.index != 1
         || succ.inductive != inductive.name
         || !succ.level_params.is_empty()
         || succ.num_fields != 1
         || succ.num_params != 0
-        || !name_is_child_str(export, succ.name, inductive.name, "succ")
         || !matches!(
             export.exprs.get(succ.ty),
             Some(Expr::Pi { domain, body })
