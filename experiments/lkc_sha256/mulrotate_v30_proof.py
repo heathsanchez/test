@@ -137,6 +137,8 @@ theorem smallSigma1Fast_mod32 (x : Nat) (hx : x < 2^32) :
 '''
 
 proof=proof[:start]+custom+proof[end:]
+proof=proof.replace("theorem t2_mod32 (s : Digest) :", "theorem t2_mod32 (s : Digest) (hs : ValidDigest s) :")
+proof=proof.replace("(t2_mod32 s))", "(t2_mod32 s hs))")
 proof=proof.replace("bigSigma1Fast_mod32 s.e)", "bigSigma1Fast_mod32 s.e hs.e)")
 proof=proof.replace("bigSigma0Fast_mod32 s.a)", "bigSigma0Fast_mod32 s.a hs.a)")
 
