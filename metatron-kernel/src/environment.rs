@@ -1,10 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody};
+use crate::machine::{AuthorityId, DefinitionBody, RecursorReduction};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
@@ -72,6 +72,8 @@ pub struct Environment {
     authority: AuthorityId,
     constants: Rc<HashMap<NameId, ConstantDecl>>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
+    singleton_recursor_reductions: Rc<HashSet<NameId>>,
+    recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
 }
 
 impl Environment {
@@ -80,6 +82,8 @@ impl Environment {
             authority: AuthorityId(0),
             constants: Rc::new(HashMap::new()),
             definitions: Rc::new(HashMap::new()),
+            singleton_recursor_reductions: Rc::new(HashSet::new()),
+            recursor_reductions: Rc::new(HashMap::new()),
         }
     }
 
@@ -121,7 +125,74 @@ impl Environment {
             authority: AuthorityId(authority),
             constants: Rc::new(constants),
             definitions: Rc::new(definitions),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
         })
+    }
+
+    /// Install the independently qualified nullary-singleton recursor
+    /// computation rule for an already admitted recursor constant.
+    pub fn install_singleton_recursor_reduction(
+        &self,
+        name: NameId,
+    ) -> Result<Self, EnvironmentError> {
+        if !self.constants.contains_key(&name) {
+            return Err(EnvironmentError::MissingConstant(name));
+        }
+        if self.singleton_recursor_reductions.contains(&name) {
+            return Err(EnvironmentError::DuplicateReduction(name));
+        }
+        let mut reductions = self.singleton_recursor_reductions.as_ref().clone();
+        reductions.insert(name);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: Rc::new(reductions),
+            recursor_reductions: self.recursor_reductions.clone(),
+        })
+    }
+
+    /// Install an independently qualified constructor-specific iota table for
+    /// an already admitted recursor constant.
+    pub fn install_recursor_reduction(
+        &self,
+        name: NameId,
+        reduction: RecursorReduction,
+    ) -> Result<Self, EnvironmentError> {
+        if !self.constants.contains_key(&name) {
+            return Err(EnvironmentError::MissingConstant(name));
+        }
+        if self.recursor_reductions.contains_key(&name) {
+            return Err(EnvironmentError::DuplicateReduction(name));
+        }
+        let mut reductions = self.recursor_reductions.as_ref().clone();
+        reductions.insert(name, reduction);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: Rc::new(reductions),
+        })
+    }
+
+    pub fn singleton_recursor_reductions(&self) -> HashSet<NameId> {
+        self.singleton_recursor_reductions.as_ref().clone()
+    }
+
+    pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
+        self.recursor_reductions.as_ref().clone()
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
@@ -138,6 +209,8 @@ impl Default for Environment {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum EnvironmentError {
     DuplicateConstant(NameId),
+    MissingConstant(NameId),
+    DuplicateReduction(NameId),
     AuthorityOverflow,
 }
 
@@ -146,6 +219,16 @@ impl fmt::Display for EnvironmentError {
         match self {
             Self::DuplicateConstant(name) => {
                 write!(formatter, "duplicate constant name {}", name.0)
+            }
+            Self::MissingConstant(name) => {
+                write!(formatter, "missing constant name {}", name.0)
+            }
+            Self::DuplicateReduction(name) => {
+                write!(
+                    formatter,
+                    "duplicate singleton recursor reduction {}",
+                    name.0
+                )
             }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
