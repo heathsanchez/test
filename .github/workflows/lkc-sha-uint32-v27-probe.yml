@@ -38,6 +38,11 @@ jobs:
           git -C bench checkout "$BENCH_COMMIT"
           cd bench
           python3 benchmark.py setup --problem sha256
+      - name: Compile UInt32 probe directly
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_uint32_v27_probe.lean bench/.cache/upstream/evaluation/problems/sha256/UInt32Probe.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          lake env lean -DautoImplicit=false -DwarningAsError=true -DmaxRecDepth=4000000 -DmaxHeartbeats=0 UInt32Probe.lean
       - name: V25 diagnostic
         run: |
           python3 bench/benchmark.py diagnostic --problem sha256 \
