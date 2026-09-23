@@ -3170,13 +3170,7 @@ fn check_twobool_structure(
         recursor,
         false,
         !recursor.is_unsafe && recursor.level_params.len() == 1,
-    ) || !is_derived_twobool_recursor_type(
-        export,
-        inductive.name,
-        constructor.name,
-        bool_name,
-        recursor,
-    ) || !is_derived_twobool_rule(
+    ) || !twobool_recursor_obligations(
         export,
         inductive.name,
         constructor.name,
@@ -3219,52 +3213,49 @@ fn is_twobool_constructor_type(
         && is_empty_constant(export, *body, inductive)
 }
 
-fn is_derived_twobool_recursor_type(
+fn twobool_recursor_obligations(
     export: &ResolvedExport,
     inductive: NameId,
     constructor: NameId,
     field_type: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: motive,
-        body,
-    }) = export.exprs.get(recursor.ty)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive_arg,
-        body: motive_sort,
-    }) = export.exprs.get(*motive)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: target,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *motive_arg, inductive)
-        && matches!(
-            export.exprs.get(*motive_sort),
-            Some(Expr::Sort(level)) if matches!(
-                export.levels.get(*level),
-                Some(Level::Param(name)) if name == &recursor.level_params[0]
+    let type_ok = pi_spine(export, recursor.ty, 3).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, minor, target]
+            if matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi {
+                    domain: motive_arg,
+                    body: motive_sort,
+                }) if is_empty_constant(export, *motive_arg, inductive)
+                    && matches!(
+                        export.exprs.get(*motive_sort),
+                        Some(Expr::Sort(level)) if matches!(
+                            export.levels.get(*level),
+                            Some(Level::Param(name)) if name == &recursor.level_params[0]
+                        )
+                    )
             )
-        )
-        && is_twobool_minor_type(export, *minor, constructor, field_type)
-        && is_empty_constant(export, *target, inductive)
-        && is_bvar_application(export, *result, 2, 0)
+                && is_twobool_minor_type(export, *minor, constructor, field_type)
+                && is_empty_constant(export, *target, inductive)
+                && is_bvar_application(export, result, 2, 0))
+    });
+
+    let rule_ok = matches!(recursor.rules.as_slice(), [rule]
+        if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+            matches!(domains.as_slice(), [motive, minor, first, second]
+                if matches!(
+                    export.exprs.get(*motive),
+                    Some(Expr::Pi { domain: motive_arg, .. })
+                        if is_empty_constant(export, *motive_arg, inductive)
+                )
+                    && is_twobool_minor_type(export, *minor, constructor, field_type)
+                    && is_empty_constant(export, *first, field_type)
+                    && is_empty_constant(export, *second, field_type)
+                    && is_bvar_applied_to_two_bvars(export, result, 2, 1, 0))
+        }));
+
+    type_ok && rule_ok
 }
 
 fn is_twobool_minor_type(
@@ -3300,56 +3291,6 @@ fn is_twobool_minor_type(
         && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
 }
 
-fn is_derived_twobool_rule(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    field_type: NameId,
-    recursor: &Recursor,
-) -> bool {
-    let [rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: motive,
-        body,
-    }) = export.exprs.get(rule.rhs)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: motive_arg, ..
-    }) = export.exprs.get(*motive)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: minor,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: first,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Lam {
-        domain: second,
-        body: result,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *motive_arg, inductive)
-        && is_twobool_minor_type(export, *minor, constructor, field_type)
-        && is_empty_constant(export, *first, field_type)
-        && is_empty_constant(export, *second, field_type)
-        && is_bvar_applied_to_two_bvars(export, *result, 2, 1, 0)
-}
 
 fn is_constructor_applied_to_two_bvars(
     export: &ResolvedExport,
