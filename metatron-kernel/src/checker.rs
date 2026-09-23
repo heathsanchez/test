@@ -2784,6 +2784,41 @@ fn is_eq_constructor_application(
         && are_bvars(export, &arguments, &[carrier, parameter])
 }
 
+fn is_eq_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index, 1)
+        && is_eq_application(export, *proof, inductive, law, 2, 1, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn is_eq_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    law: BinaryProductSortLaw,
+) -> bool {
+    let Some(Expr::App {
+        fun: motive_at_parameter,
+        arg: refl,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    is_bvar_application(export, *motive_at_parameter, 0, 1)
+        && is_eq_constructor_application(export, *refl, constructor, law, 2, 1)
+}
+
 fn has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
         return false;
