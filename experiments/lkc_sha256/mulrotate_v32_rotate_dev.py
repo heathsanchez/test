@@ -5,6 +5,9 @@ ROOT=Path(__file__).resolve().parent
 OUT=ROOT/"generated"; OUT.mkdir(parents=True,exist_ok=True)
 runpy.run_path(str(ROOT/"mulrotate_scalar_v31_probe.py"))
 src=(OUT/"Submission_mulrotate_scalar_v31_probe.lean").read_text()
+_old_nil="| [], " + ", ".join([f"w{i}" for i in range(16)] + ["a","b","c","d","e","f","g","h"]) + " =>"
+_new_nil="| [], " + ", ".join(["_"]*16 + ["a","b","c","d","e","f","g","h"]) + " =>"
+src=src.replace(_old_nil,_new_nil,1)
 prefix=src.rsplit("\nend Submission",1)[0]
 proof=r'''
 theorem dup32_eq_or_dev (x : Nat) (hx : x < 2^32) :
@@ -29,7 +32,7 @@ theorem dup32_shift_eq_rotrRaw_dev (x n : Nat)
   rw [dup32_eq_or_dev x hx, Nat.shiftRight_or_distrib]
   rw [shiftLeft32_shiftRight_dev x n hn]
   unfold rotrRaw
-  simpa [Nat.or_comm]
+  exact Nat.or_comm _ _
 
 example (x : Nat) (hx : x < 2^32) :
     dup32 x >>> 2 = rotrRaw x 2 :=
