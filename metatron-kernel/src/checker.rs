@@ -15,7 +15,7 @@ use crate::syntax::{
     Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
 };
 use crate::typecheck::{TypeChecker, TypeValue};
-use crate::value::{EnvFrame, FreeId, Value};
+use crate::value::{EnvFrame, FreeId, NeutralHead, Value};
 use crate::verdict::Verdict;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -1937,11 +1937,19 @@ fn check_conversion_lifted_reflexive_unary(
         else {
             return Err(Verdict::Reject);
         };
-        verdict_boundary(checker.convert(
-            &TypeValue::Term(checker.closure(*inductive_parameter, EnvFrame::empty())),
-            &TypeValue::Term(field_domain.clone()),
+        let reduced_field_domain = checker.machine().expose(
+            field_domain.clone(),
+            Transparency::Reducible,
             limits.judgment_steps,
-        ))?;
+        );
+        let Some(Value::Neutral(neutral_domain)) = reduced_field_domain.proven_value() else {
+            return Err(Verdict::Reject);
+        };
+        if !matches!(neutral_domain.head, NeutralHead::Free(free) if free == alpha)
+            || !neutral_domain.spine.is_empty()
+        {
+            return Err(Verdict::Reject);
+        }
 
         let recursive_body = field_body.under_free(point);
         let constructor_target = checker.closure(
