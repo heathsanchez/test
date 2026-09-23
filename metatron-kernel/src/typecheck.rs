@@ -280,7 +280,7 @@ impl<'a> TypeChecker<'a> {
             } => {
                 let specs = self.environment.projection_specs();
                 let Some(spec) = specs.get(type_name) else {
-                    return Judgment::unknown("unsupported-projection");
+                    return Judgment::refuted("projection-type-not-certified-structure");
                 };
                 let Ok(index) = usize::try_from(*index) else {
                     return Judgment::refuted("projection-index-overflow");
