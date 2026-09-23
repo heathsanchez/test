@@ -1,0 +1,51 @@
+name: LKC SHA V32 Packed Window Screen
+
+on:
+  push:
+    branches: [lkc-sha-v32-packed-window-probe]
+    paths:
+      - 'experiments/lkc_sha256/packed_window_v32_probe.py'
+      - '.github/workflows/lkc-sha-v32-packed-window-screen.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+
+jobs:
+  reduce:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        input: ["18860801433","138725260120","2199121876686"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Generate V31 and V32
+        run: |
+          python3 experiments/lkc_sha256/mulrotate_scalar_v31_probe.py
+          python3 experiments/lkc_sha256/packed_window_v32_probe.py
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup SHA
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Reduce V31
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_mulrotate_scalar_v31_probe.lean bench/.cache/upstream/evaluation/problems/sha256/V31.lean
+          printf '\n#reduce Submission.implV31 ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/V31.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V31_REAL=%e V31_USER=%U V31_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V31.lean >/dev/null
+      - name: Reduce V32
+        run: |
+          cp experiments/lkc_sha256/generated/Submission_v32_packed_window_probe.lean bench/.cache/upstream/evaluation/problems/sha256/V32.lean
+          printf '\n#reduce Submission.implV32 ${{ matrix.input }}\n' >> bench/.cache/upstream/evaluation/problems/sha256/V32.lean
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -f 'V32_REAL=%e V32_USER=%U V32_RSS=%M' lake env lean -DautoImplicit=false -DmaxRecDepth=4000000 -DmaxHeartbeats=0 V32.lean >/dev/null
