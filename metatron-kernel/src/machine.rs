@@ -23,6 +23,7 @@ pub enum TransitionWitness {
     Beta,
     Zeta,
     Delta,
+    SingletonRecursor,
     Rigid,
 }
 
@@ -44,6 +45,7 @@ pub struct Machine<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     definitions: HashMap<NameId, DefinitionBody>,
+    singleton_recursor_reductions: HashSet<NameId>,
 }
 
 impl<'a> Machine<'a> {
@@ -52,12 +54,14 @@ impl<'a> Machine<'a> {
         expressions: &'a IdTable<ExprId, Expr>,
         levels: &'a IdTable<LevelId, Level>,
         definitions: HashMap<NameId, DefinitionBody>,
+        singleton_recursor_reductions: HashSet<NameId>,
     ) -> Self {
         Self {
             authority,
             expressions,
             levels,
             definitions,
+            singleton_recursor_reductions,
         }
     }
 
@@ -171,6 +175,18 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::Const { name, levels } => {
+                    // G28: a separately qualified nullary-singleton recursor
+                    // ignores its target and returns its sole minor.  This is
+                    // kernel computation authority, not delta unfolding.
+                    if self.singleton_recursor_reductions.contains(name) && pending.len() >= 3 {
+                        let _motive = pending.pop().expect("length checked");
+                        let minor = pending.pop().expect("length checked");
+                        let _target = pending.pop().expect("length checked");
+                        transitions.push(TransitionWitness::SingletonRecursor);
+                        visited.clear();
+                        closure = minor;
+                        continue;
+                    }
                     if let Some(definition) = self.definitions.get(name)
                         && permits_delta(transparency, definition.preferred_for_reduction)
                     {
