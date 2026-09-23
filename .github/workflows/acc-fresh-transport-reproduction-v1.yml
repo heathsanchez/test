@@ -79,21 +79,19 @@ jobs:
           git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
           test "$(git -C /tmp/acc rev-parse HEAD)" = "99a65377c5c4f412cd9af7b8d31c41464a855736"
 
-      - name: Transport-aware official best-first reproduction
+      - name: Transport-aware exact radius-5 Atlas connector
         run: |
           set -euo pipefail
           mkdir -p acc_competitive/fresh_transport_01147/out
-          python3 acc_competitive/official_bestfirst_v1.py \
+          python3 acc_competitive/transport_exact_connector_v1.py \
             --acc-root /tmp/acc \
             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)" \
             --snapshot-ac acc_competitive/fresh_transport_01147/snapshot_ac.json \
             --snapshot-stable acc_competitive/fresh_transport_01147/snapshot_stable.json \
             --target-ids-file acc_competitive/fresh_transport_01147/targets.json \
             --out-dir acc_competitive/fresh_transport_01147/out \
+            --connector-depth 5 \
             --node-cap 250000 \
-            --time-cap 600 \
-            --depth-weight 0.15 \
-            --extra-total 40 \
             | tee acc_competitive/fresh_transport_01147/search.log
 
       - name: Summarize fresh residual
