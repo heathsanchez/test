@@ -1,0 +1,257 @@
+name: ACC 03433 History Recovery V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-03433-history-recovery-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  CID: "ac-03433"
+  SID: "sac-03433"
+
+jobs:
+  recover-verify-gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+
+      - name: Recover exact AC witness from owned submission history
+        run: |
+          set -euo pipefail
+          mkdir -p recovery
+          python3 - <<'PY'
+          import json, os, re, urllib.parse, urllib.request, urllib.error
+          from pathlib import Path
+
+          BASE='https://api.sair.foundation/api/public/v1'
+          KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+
+          def req(path, accept='application/json'):
+              h=dict(H); h['Accept']=accept
+              r=urllib.request.Request(BASE+path,headers=h)
+              try:
+                  with urllib.request.urlopen(r,timeout=60) as z:
+                      raw=z.read()
+                      return z.status, dict(z.headers.items()), raw
+              except urllib.error.HTTPError as e:
+                  return e.code, dict(e.headers.items()), e.read()
+
+          def js(path):
+              st,hd,raw=req(path)
+              if not 200 <= st < 300:
+                  raise RuntimeError(f'GET {path} HTTP {st}: {raw[:500]!r}')
+              return json.loads(raw.decode())
+
+          def data(o): return o.get('data',o) if isinstance(o,dict) else o
+
+          # Fresh live state first.
+          ac=data(js('/competitions/acc/discoveries/snapshot?problem=ac'))
+          sa=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          a=next(x for x in ac['items'] if (x.get('problemId') or x.get('challengeId'))=='ac-03433')
+          s=next(x for x in sa['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          live={'ac_status':a.get('status'),'ac_best':a.get('currentBestLength'),'ac_kTeams':a.get('kTeams'),
+                'stable_status':s.get('status'),'stable_best':s.get('currentBestLength'),'stable_kTeams':s.get('kTeams')}
+          Path('recovery/live_before.json').write_text(json.dumps(live,indent=2,sort_keys=True)+'\n')
+          print('ACC03433_LIVE_BEFORE',json.dumps(live,sort_keys=True))
+
+          # Traverse owned immutable submission history.
+          items=[]; cursor=None; pages=0
+          while True:
+              q={'limit':'100'}
+              if cursor: q['cursor']=cursor
+              o=js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q))
+              d=data(o); batch=d.get('items',[]) if isinstance(d,dict) else []
+              items.extend(batch); pages += 1
+              cursor=d.get('nextCursor') if isinstance(d,dict) else None
+              if not cursor or pages>=100: break
+          Path('recovery/history_meta.json').write_text(json.dumps({'pages':pages,'items':len(items)},indent=2,sort_keys=True)+'\n')
+
+          pat=re.compile(r'^\s*ac-03433\s*:\s*(\[[^\n#]*\])',re.M)
+          hits=[]; download_errors=[]
+          for rec in items:
+              sid=rec.get('submissionId') if isinstance(rec,dict) else None
+              if not sid: continue
+              st,hd,raw=req('/competitions/acc/submissions/'+urllib.parse.quote(str(sid),safe='')+'/download','text/plain')
+              if st != 200:
+                  download_errors.append({'submissionId':sid,'http':st}); continue
+              try: txt=raw.decode('utf-8-sig')
+              except Exception: continue
+              for m in pat.finditer(txt):
+                  try: moves=json.loads(m.group(1))
+                  except Exception: continue
+                  if isinstance(moves,list) and all(type(x) is int for x in moves):
+                      hits.append({'submissionId':str(sid),'moves':moves,'length':len(moves),
+                                   'receivedAt':rec.get('receivedAt'),'status':rec.get('status')})
+
+          # Also inspect any payload text exposed directly by history/detail responses.
+          for rec in items:
+              if not isinstance(rec,dict): continue
+              candidates=[]
+              for key in ('payload','text','submissionText','originalText'):
+                  v=rec.get(key)
+                  if isinstance(v,str): candidates.append(v)
+                  elif isinstance(v,dict):
+                      for kk in ('text','payloadText','originalText'):
+                          if isinstance(v.get(kk),str): candidates.append(v[kk])
+              for txt in candidates:
+                  for m in pat.finditer(txt):
+                      try: moves=json.loads(m.group(1))
+                      except Exception: continue
+                      if isinstance(moves,list) and all(type(x) is int for x in moves):
+                          hits.append({'submissionId':str(rec.get('submissionId')),'moves':moves,'length':len(moves),
+                                       'receivedAt':rec.get('receivedAt'),'status':rec.get('status'),'via':'inline'})
+
+          uniq={tuple(h['moves']):h for h in hits}
+          hits=sorted(uniq.values(),key=lambda h:(h['length'],h.get('submissionId') or ''))
+          Path('recovery/recovery_summary.json').write_text(json.dumps({
+              'history_pages':pages,'history_items':len(items),'download_errors':download_errors,
+              'source_hits':len(hits),'source_lengths':[h['length'] for h in hits[:20]]
+          },indent=2,sort_keys=True)+'\n')
+          Path('recovery/source_hits.json').write_text(json.dumps(hits,indent=2,sort_keys=True)+'\n')
+          if not hits:
+              Path('recovery/verified_candidate.txt').write_text('')
+              print('ACC03433_HISTORY_RECOVERY',json.dumps({'history_items':len(items),'source_hits':0,'candidate':None},sort_keys=True))
+              raise SystemExit(0)
+
+          h=hits[0]; smoves=h['moves']+[16,15]
+          Path('recovery/source_witness.txt').write_text('ac-03433: '+json.dumps(h['moves'],separators=(',',':'))+'\n')
+          Path('recovery/verified_candidate.txt').write_text('sac-03433: '+json.dumps(smoves,separators=(',',':'))+'\n')
+          Path('recovery/selected_source.json').write_text(json.dumps(h,indent=2,sort_keys=True)+'\n')
+          print('ACC03433_HISTORY_RECOVERY',json.dumps({'history_items':len(items),'source_hits':len(hits),
+                'source_length':h['length'],'candidate_length':len(smoves),'submissionId':h['submissionId']},sort_keys=True))
+          PY
+
+      - name: Fetch pinned official verifier
+        if: hashFiles('recovery/verified_candidate.txt') != ''
+        run: |
+          set -euo pipefail
+          if [ ! -s recovery/verified_candidate.txt ]; then echo NO_HISTORY_CANDIDATE; exit 0; fi
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Pinned official replay
+        run: |
+          set -euo pipefail
+          if [ ! -s recovery/verified_candidate.txt ]; then echo NO_HISTORY_CANDIDATE; exit 0; fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier \
+            --manifest /tmp/acc/competition/tools/verifier/data/manifest.json \
+            --submission recovery/verified_candidate.txt
+          touch recovery/PINNED_VERIFIER_PASS
+          echo ACC03433_PINNED_VERIFIER_PASS
+
+      - name: Immediate live record and quota gate
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, os, urllib.parse, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1'; KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def js(path):
+              req=urllib.request.Request(BASE+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          def stamp(rec):
+              for k in ('receivedAt','createdAt','updatedAt','submittedAt','created','timestamp','submitted'):
+                  s=rec.get(k) if isinstance(rec,dict) else None
+                  if not isinstance(s,str) or not s: continue
+                  try:
+                      dt=datetime.fromisoformat(s.replace('Z','+00:00'))
+                      if dt.tzinfo is None: dt=dt.replace(tzinfo=timezone.utc)
+                      return dt.astimezone(timezone.utc)
+                  except Exception: pass
+              return None
+          def find_daily(x):
+              if isinstance(x,dict):
+                  for k,v in x.items():
+                      if k in ('dailySubmissions','dailySubmissionLimit','submissionsPerDay') and type(v) is int:return v
+                  for v in x.values():
+                      z=find_daily(v)
+                      if z is not None:return z
+              elif isinstance(x,list):
+                  for v in x:
+                      z=find_daily(v)
+                      if z is not None:return z
+              return None
+          gate_path=Path('recovery/prepublish_gate.json'); pub=Path('recovery/publish_candidate.txt'); pub.write_text('')
+          cand=Path('recovery/verified_candidate.txt')
+          verified=Path('recovery/PINNED_VERIFIER_PASS').exists() and cand.exists() and cand.stat().st_size>0
+          moves=[]
+          if verified:moves=json.loads(cand.read_text().split(':',1)[1].strip())
+          stable=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          row=next(x for x in stable['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          best=row.get('currentBestLength'); status=row.get('status')
+          improves=bool(verified) and (status!='solved' or not isinstance(best,int) or len(moves)<best)
+          me=data(js('/competitions/acc/me'))
+          spec=js('/competitions/acc/submission-spec')
+          limit=find_daily(spec)
+          items=[]; cursor=None; pages=0
+          while True:
+              q={'limit':'100'}
+              if cursor:q['cursor']=cursor
+              d=data(js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q)))
+              items += d.get('items',[]) if isinstance(d,dict) else []
+              cursor=d.get('nextCursor') if isinstance(d,dict) else None; pages+=1
+              if not cursor or pages>=100:break
+          today=datetime.now(timezone.utc).date()
+          used=sum((t:=stamp(x)) is not None and t.date()==today for x in items)
+          quota_ok=isinstance(limit,int) and used<limit
+          can_submit=bool(me.get('canSubmit')) if isinstance(me,dict) else False
+          gate={'verified':verified,'stable_status':status,'stable_best':best,
+                'candidate_length':len(moves) if verified else None,'strict_or_unsolved':improves,
+                'canSubmit':can_submit,'quota_used':used,'quota_limit':limit,
+                'quota_remaining':max(0,limit-used) if isinstance(limit,int) else None}
+          gate_path.write_text(json.dumps(gate,indent=2,sort_keys=True)+'\n')
+          print('ACC03433_PREPUBLISH_GATE',json.dumps(gate,sort_keys=True))
+          if verified and improves and can_submit and quota_ok:pub.write_text(cand.read_text())
+          PY
+
+      - name: Publish only verified strict-gain row
+        run: |
+          set -euo pipefail
+          if [ ! -s recovery/publish_candidate.txt ]; then echo NO_PUBLISHABLE_HISTORY_ROW; exit 0; fi
+          ACC_SUBMISSION_FILE=recovery/publish_candidate.txt \
+          ACC_SUBMIT_OUT=recovery/publish \
+          python3 acc_submit/submit_live_filtered.py | tee recovery/publish.log
+
+      - name: Post-live authority
+        if: always()
+        run: |
+          python3 - <<'PY'
+          import json,os,urllib.request
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1'; KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def js(path):
+              req=urllib.request.Request(BASE+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          sa=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          row=next(x for x in sa['items'] if (x.get('problemId') or x.get('challengeId'))=='sac-03433')
+          out={'status':row.get('status'),'best':row.get('currentBestLength'),'kTeams':row.get('kTeams')}
+          Path('recovery/post_live.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('ACC03433_POST_LIVE',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-03433-history-recovery-v1
+          path: recovery/
+          retention-days: 90
+          if-no-files-found: warn
