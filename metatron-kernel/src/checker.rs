@@ -1419,6 +1419,20 @@ fn rbtree_application_parts(
         .then_some((*carrier, *color, *height))
 }
 
+
+fn rbtree_child_pair(
+    export: &ResolvedExport,
+    left: ExprId,
+    right: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> Option<((ExprId, ExprId, ExprId), (ExprId, ExprId, ExprId))> {
+    Some((
+        rbtree_application_parts(export, left, inductive, level)?,
+        rbtree_application_parts(export, right, inductive, level)?,
+    ))
+}
+
 fn is_root_empty_constant_named(export: &ResolvedExport, expression: ExprId, root: &str) -> bool {
     matches!(
         export.exprs.get(expression),
@@ -1707,13 +1721,10 @@ fn is_rbtree_red_minor_type(
         return false;
     };
 
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
+    let Some((
+        (left_carrier, left_color, left_height),
+        (right_carrier, right_color, right_height),
+    )) = rbtree_child_pair(export, *left, *right, inductive, level)
     else {
         return false;
     };
@@ -1778,13 +1789,10 @@ fn is_rbtree_black_minor_type(
         return false;
     };
 
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
+    let Some((
+        (left_carrier, left_color, left_height),
+        (right_carrier, right_color, right_height),
+    )) = rbtree_child_pair(export, *left, *right, inductive, level)
     else {
         return false;
     };
@@ -1933,13 +1941,10 @@ fn is_derived_rbtree_red_rule(
     let [height, left, value, right] = domains.as_slice() else {
         return false;
     };
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
+    let Some((
+        (left_carrier, left_color, left_height),
+        (right_carrier, right_color, right_height),
+    )) = rbtree_child_pair(export, *left, *right, inductive, level)
     else {
         return false;
     };
@@ -2003,13 +2008,10 @@ fn is_derived_rbtree_black_rule(
     let [first_color, second_color, height, left, value, right] = domains.as_slice() else {
         return false;
     };
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
+    let Some((
+        (left_carrier, left_color, left_height),
+        (right_carrier, right_color, right_height),
+    )) = rbtree_child_pair(export, *left, *right, inductive, level)
     else {
         return false;
     };
