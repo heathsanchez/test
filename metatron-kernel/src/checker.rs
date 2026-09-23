@@ -976,9 +976,11 @@ fn check_generic_nonrecursive_type(
             false,
             recursor.level_params.len() == inductive.level_params.len() + 1,
         )
-        || !generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor)
     {
         return Err(Verdict::Reject);
+    }
+    if !generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor) {
+        return Err(Verdict::Unknown);
     }
 
     let mut d = ClosedNonrecursiveDerivation::begin(environment);
