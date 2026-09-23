@@ -853,13 +853,13 @@ fn g14_candidate_preserves_the_sealed_g13_behavior_vector() {
 }
 
 #[test]
-fn g15_shared_representation_earns_no_fourth_family() {
+fn generic_derivation_accepts_a_structurally_identical_renamed_product_family() {
     let pprod = include_str!("../evidence/residuals/G14-001/fixture.ndjson");
     let renamed = pprod.replacen("\"str\":\"PProd\"", "\"str\":\"PProd2\"", 1);
 
     assert_eq!(
         run_with_g15_oracle("renamed fourth family", renamed),
-        Verdict::Unknown,
+        Verdict::Accept,
     );
 }
 
@@ -982,13 +982,13 @@ fn punit_broader_neighbors_preserve_unknown() {
 }
 
 #[test]
-fn g16_punit_law_does_not_authorize_a_renamed_family() {
+fn generic_derivation_accepts_a_structurally_identical_renamed_punit_family() {
     let punit = include_str!("../evidence/residuals/G16-001/fixture.ndjson");
     let renamed = punit.replacen("\"str\":\"PUnit\"", "\"str\":\"PUnit2\"", 1);
 
     assert_eq!(
         run_with_g15_oracle("renamed PUnit family", renamed),
-        Verdict::Unknown,
+        Verdict::Accept,
     );
 }
 
