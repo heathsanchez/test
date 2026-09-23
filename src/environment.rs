@@ -104,6 +104,7 @@ pub struct Environment {
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
+    unit_like_types: Rc<HashSet<NameId>>,
 }
 
 impl Environment {
@@ -118,6 +119,7 @@ impl Environment {
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
+            unit_like_types: Rc::new(HashSet::new()),
         }
     }
 
@@ -165,6 +167,7 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -197,6 +200,7 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -230,6 +234,7 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -269,6 +274,7 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -308,6 +314,7 @@ impl Environment {
             nat_primitives: Some(primitives),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -350,6 +357,7 @@ impl Environment {
             nat_primitives: Some(primitives),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -380,6 +388,7 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: Some(primitives),
             quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
@@ -419,11 +428,44 @@ impl Environment {
             nat_primitives: self.nat_primitives.clone(),
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: Some(primitives),
+            unit_like_types: self.unit_like_types.clone(),
         })
     }
 
     pub fn quot_primitives(&self) -> Option<&QuotPrimitives> {
         self.quot_primitives.as_ref()
+    }
+
+    pub fn install_unit_like_type(&self, name: NameId) -> Result<Self, EnvironmentError> {
+        if !self.constants.contains_key(&name) {
+            return Err(EnvironmentError::MissingConstant(name));
+        }
+        if self.unit_like_types.contains(&name) {
+            return Err(EnvironmentError::DuplicateUnitLikeType(name));
+        }
+        let mut unit_like_types = self.unit_like_types.as_ref().clone();
+        unit_like_types.insert(name);
+        let authority = self
+            .authority
+            .0
+            .checked_add(1)
+            .ok_or(EnvironmentError::AuthorityOverflow)?;
+        Ok(Self {
+            authority: AuthorityId(authority),
+            constants: self.constants.clone(),
+            definitions: self.definitions.clone(),
+            singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
+            recursor_reductions: self.recursor_reductions.clone(),
+            projection_specs: self.projection_specs.clone(),
+            nat_primitives: self.nat_primitives.clone(),
+            bool_primitives: self.bool_primitives.clone(),
+            quot_primitives: self.quot_primitives.clone(),
+            unit_like_types: Rc::new(unit_like_types),
+        })
+    }
+
+    pub fn is_unit_like_type(&self, name: NameId) -> bool {
+        self.unit_like_types.contains(&name)
     }
 
     pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
@@ -454,6 +496,7 @@ pub enum EnvironmentError {
     DuplicateNatOperation(NameId),
     DuplicateBoolPrimitives,
     DuplicateQuotPrimitives,
+    DuplicateUnitLikeType(NameId),
     AuthorityOverflow,
 }
 
@@ -483,6 +526,9 @@ impl fmt::Display for EnvironmentError {
             }
             Self::DuplicateQuotPrimitives => {
                 write!(formatter, "duplicate Quot primitive authority")
+            }
+            Self::DuplicateUnitLikeType(name) => {
+                write!(formatter, "duplicate unit-like type {}", name.0)
             }
             Self::AuthorityOverflow => write!(formatter, "environment authority overflow"),
         }
