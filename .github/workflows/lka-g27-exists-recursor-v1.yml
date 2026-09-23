@@ -1,0 +1,130 @@
+name: LKA G27 Exists Recursor Atlas v1
+
+on:
+  push:
+    branches: [lka-g27-exists-recursor-v1]
+    paths:
+      - ".github/workflows/lka-g27-exists-recursor-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g27-exists-recursor-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 587b9706df880ba67bf8f28b7ecb6a3e5417fdd0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify zero semantic change from G26
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$BASE_SHA" -- metatron-kernel/src
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+
+      - name: Build exact G26 oracle
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g26-oracle "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/g26-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Capture exact 074 residual atlas
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g27
+          python - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+
+          path = pathlib.Path('/tmp/lean-kernel-tutorial/good/074_existsRec.ndjson')
+          assert path.exists(), path
+          raw = path.read_bytes()
+          sha = hashlib.sha256(raw).hexdigest()
+
+          oracle = pathlib.Path('/tmp/g26-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate = pathlib.Path('target/release/metatron-kernel').resolve()
+
+          def run(binary):
+              with path.open('rb') as f:
+                  return subprocess.run(
+                      [str(binary)],
+                      stdin=f,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,
+                  )
+
+          a = run(oracle)
+          b = run(candidate)
+          assert a.returncode == 2, (a.returncode, a.stderr.decode(errors='replace'))
+          assert b.returncode == 2, (b.returncode, b.stderr.decode(errors='replace'))
+
+          rows = [json.loads(line) for line in raw.decode().splitlines() if line.strip()]
+          summary = {
+              'schema': 'metatron-kernel-g27-exists-recursor-atlas-v1',
+              'arena_sha': os.environ['ARENA_SHA'],
+              'oracle_sha': os.environ['BASE_SHA'],
+              'candidate_sha': os.environ['GITHUB_SHA'],
+              'fixture': 'good/074_existsRec.ndjson',
+              'expected_exit': 0,
+              'oracle_exit': a.returncode,
+              'candidate_exit': b.returncode,
+              'sha256': sha,
+              'line_count': len(rows),
+              'record_kinds': [r.get('kind') or r.get('type') or r.get('tag') for r in rows],
+              'top_level_keys': [sorted(r.keys()) for r in rows],
+          }
+
+          pathlib.Path('evidence-out/g27/074_existsRec.ndjson').write_bytes(raw)
+          pathlib.Path('evidence-out/g27/atlas.json').write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + '\n'
+          )
+
+          print('G27_ATLAS=' + json.dumps(summary, sort_keys=True))
+          print('----- BEGIN 074_existsRec.ndjson -----')
+          print(raw.decode(), end='')
+          print('----- END 074_existsRec.ndjson -----')
+          PY
+
+      - name: Upload G27 atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g27-exists-recursor-atlas-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g27
+          if-no-files-found: error
