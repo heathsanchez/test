@@ -6,7 +6,7 @@ use crate::level::level_equal;
 use crate::machine::Transparency;
 use crate::syntax::Expr;
 use crate::typecheck::{TypeChecker, TypeValue};
-use crate::value::{FreeId, Neutral, NeutralHead, Value};
+use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
 const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
@@ -259,9 +259,10 @@ pub(crate) fn test_conversion_calls() -> u64 {
 
 fn eta_contract(
     checker: &TypeChecker<'_>,
-    closure: &crate::value::Closure,
+    closure: &Closure,
     depth: usize,
-) -> Option<crate::value::Closure> {
+) -> Option<Closure> {
+    let closure = resolve_local_closure(checker, closure)?;
     let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
         return None;
     };
@@ -276,6 +277,27 @@ fn eta_contract(
     }
     let free = fresh_local(depth)?;
     Some(closure.sibling(*fun, closure.env.extend_free(free)))
+}
+
+fn resolve_local_closure(
+    checker: &TypeChecker<'_>,
+    closure: &Closure,
+) -> Option<Closure> {
+    let mut current = closure.clone();
+    for _ in 0..64 {
+        match checker.expression(current.expr)? {
+            Expr::BVar(index) => match current.env.lookup(*index)? {
+                EnvBinding::Closure(bound) => current = bound,
+                EnvBinding::Free(_) => return Some(current),
+            },
+            Expr::Let { value, body, .. } => {
+                let value = current.sibling(*value, current.env.clone());
+                current = current.sibling(*body, current.env.extend(value));
+            }
+            _ => return Some(current),
+        }
+    }
+    None
 }
 
 fn expression_uses_bvar(
