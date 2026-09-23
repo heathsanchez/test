@@ -1572,16 +1572,28 @@ fn check_generic_closed_prop_singleton(
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote_all(
-        export,
-        [
-            derived_type(inductive.name, inductive.ty),
-            derived_constructor(constructor),
-            derived_recursor(recursor),
-        ],
-        limits.judgment_steps,
-        delta_policy,
-    )?;
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC").is_some() {
+        eprintln!("NUCLEUS_GENERIC_SINGLETON:shape-ok");
+    }
+    for (label, signature) in [
+        ("type", derived_type(inductive.name, inductive.ty)),
+        ("constructor", derived_constructor(constructor)),
+        ("recursor", derived_recursor(recursor)),
+    ] {
+        match derivation.promote(export, signature, limits.judgment_steps, delta_policy) {
+            Ok(()) => {
+                if std::env::var_os("NUCLEUS_TRACE_GENERIC").is_some() {
+                    eprintln!("NUCLEUS_GENERIC_SINGLETON:{label}-promoted");
+                }
+            }
+            Err(verdict) => {
+                if std::env::var_os("NUCLEUS_TRACE_GENERIC").is_some() {
+                    eprintln!("NUCLEUS_GENERIC_SINGLETON:{label}-failed:{verdict:?}");
+                }
+                return Err(verdict);
+            }
+        }
+    }
     derivation
         .finish()
         .install_singleton_recursor_reduction(recursor.name)
