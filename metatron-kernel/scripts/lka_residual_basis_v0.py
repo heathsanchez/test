@@ -1186,6 +1186,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
 
     projection_source_by_eid: dict[int, str] = {}
     recursor_reduction_results: list[str] = []
+    iota_major_shapes: list[str] = []
 
     def owner_is_unit_like(owner: int) -> bool:
         t = type_by_name.get(owner)
@@ -1285,10 +1286,12 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
                         else None
                     )
                     if ctor_owner == owner:
+                        iota_major_shapes.append("constructor")
                         recursor_reduction_results.append("allow")
                     else:
                         mrow = exprs.get(major, {})
                         if isinstance(mrow.get("bvar"), int):
+                            iota_major_shapes.append("variable")
                             if owner_is_unit_like(owner):
                                 recursor_reduction_results.append("allow")
                             elif bool(rec.get("k")):
@@ -1298,6 +1301,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
                             else:
                                 recursor_reduction_results.append("deny")
                         else:
+                            iota_major_shapes.append("other")
                             recursor_reduction_results.append("unknown")
 
             owner = k_recursor_owner.get(int(const["name"]))
@@ -1468,6 +1472,18 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
     else:
         recursor_reduction_scalar = "allow"
 
+    if not iota_major_shapes:
+        iota_major_shape_scalar = "not_applicable"
+    else:
+        kinds = set(iota_major_shapes)
+        if kinds == {"constructor"}:
+            iota_major_shape_scalar = "constructor"
+        elif kinds == {"variable"}:
+            iota_major_shape_scalar = "variable"
+        else:
+            # Includes any combination with an unrecognized major form.
+            iota_major_shape_scalar = "mixed"
+
     projection_sources = [
         projection_source_by_eid.get(eid, "unknown")
         for eid, _proj in proj_rows
@@ -1495,6 +1511,7 @@ def semantic_probe_features(records: list[dict[str, Any]]) -> dict[str, Any]:
         "semantic:proof_irrelevance_applicability": proof_irrelevance_scalar,
         "semantic:inductive_eta_admissibility": inductive_eta_scalar,
         "semantic:recursor_reduction_admissibility": recursor_reduction_scalar,
+        "semantic:iota_major_shape": iota_major_shape_scalar,
         "semantic:projection_admissibility_scalar": projection_scalar,
         "semantic:projection_source_coherence": sorted(projection_sources),
         "semantic:projection_admissibility": sorted(projection_results),
