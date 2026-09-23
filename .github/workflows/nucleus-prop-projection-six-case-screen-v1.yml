@@ -1,0 +1,123 @@
+name: Nucleus Prop Projection Six-Case Screen V1
+
+on:
+  push:
+    branches: [nucleus-residual-capability-prop-projection-v1]
+    paths:
+      - ".github/workflows/nucleus-prop-projection-six-case-screen-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-prop-projection-six-case-screen-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  screen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CURRENT_BASE_SHA: 86fbfa31bf5359a791928edaf6aa0482c29bc233
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build exact candidate and current warranted base
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/current-base "$CURRENT_BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/current-base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen official corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Six-case protected separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/prop-projection-six-case-screen-v1
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root = pathlib.Path('/tmp/tests')
+          base = pathlib.Path('/tmp/current-base/metatron-kernel/target/release/metatron-kernel')
+          cand = pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets = {
+              'tutorial/089_projProp1': 0,
+              'tutorial/090_projProp2': 1,
+              'tutorial/091_projProp3': 0,
+              'tutorial/092_projProp4': 1,
+              'tutorial/093_projProp5': 1,
+              'tutorial/094_projProp6': 1,
+          }
+
+          def locate(name):
+              stem = name.split('/')[-1]
+              hits = list(root.rglob(stem + '.ndjson'))
+              assert len(hits) == 1, (name, hits)
+              return hits[0]
+
+          def rr(binary, path, trace=False):
+              env = dict(os.environ)
+              if trace:
+                  env['NUCLEUS_TRACE_CAPABILITY'] = '1'
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, env=env, timeout=60
+                  )
+              return q.returncode, q.stderr.decode('utf-8', errors='replace')
+
+          rows = []
+          for test, expected in targets.items():
+              path = locate(test)
+              brc, _ = rr(base, path)
+              crc, stderr = rr(cand, path, True)
+              hit = 'NUCLEUS_CAPABILITY_HIT:projection.prop-dependent-safety.v0:Reject' in stderr
+              rows.append({
+                  'test': test, 'expected': expected, 'base': brc,
+                  'candidate': crc, 'capability_hit': hit,
+              })
+
+          by = {r['test']: r for r in rows}
+          neg = ['tutorial/090_projProp2','tutorial/092_projProp4',
+                 'tutorial/093_projProp5','tutorial/094_projProp6']
+          pos = ['tutorial/089_projProp1','tutorial/091_projProp3']
+
+          assert all(by[n]['base'] in (2,3) for n in targets), rows
+          assert all(by[n]['candidate'] == 1 and by[n]['capability_hit'] for n in neg), rows
+          assert all(by[n]['candidate'] in (2,3) and not by[n]['capability_hit'] for n in pos), rows
+
+          out = {
+              'schema': 'nucleus-prop-projection-six-case-screen-v1',
+              'candidate_sha': os.environ['GITHUB_SHA'],
+              'current_base_sha': os.environ['CURRENT_BASE_SHA'],
+              'rows': rows,
+              'screen_pass': True,
+          }
+          dest=pathlib.Path('metatron-kernel/evidence-out/prop-projection-six-case-screen-v1/result.json')
+          dest.write_text(json.dumps(out, indent=2, sort_keys=True)+'\n')
+          print(json.dumps(out, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-prop-projection-six-case-screen-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/prop-projection-six-case-screen-v1
+          if-no-files-found: warn
