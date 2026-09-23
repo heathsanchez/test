@@ -60,13 +60,13 @@ theorem scalar_cons_chunk (k : Nat) (ks : List Nat)
 
 theorem fast_nil_chunk (w : Window) (s : Digest) :
     roundsFast [] w s = s := by
-  rw [roundsFast]
+  rfl
 
 theorem fast_cons_chunk (k : Nat) (ks : List Nat)
     (w : Window) (s : Digest) :
     roundsFast (k :: ks) w s =
       roundsFast ks (w.push w.nextFast) (roundFast s k w.x0) := by
-  rw [roundsFast]
+  rfl
 '''
 
 parts=[base]
