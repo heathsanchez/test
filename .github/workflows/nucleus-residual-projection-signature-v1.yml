@@ -81,6 +81,7 @@ jobs:
               env = dict(os.environ)
               if trace:
                   env['NUCLEUS_TRACE_TERMINAL_RESIDUAL'] = '1'
+                  env['NUCLEUS_TRACE_CHECKER_UNKNOWN'] = '1'
                   env['NUCLEUS_TRACE_PARSE_ERROR'] = '1'
               with path.open('rb') as f:
                   q = subprocess.run(
@@ -96,12 +97,21 @@ jobs:
                   if line.startswith('NUCLEUS_TERMINAL_RESIDUAL:')
               ]
               if residuals:
-                  return residuals[-1]
+                  terminal = residuals[-1]
+                  if terminal == 'inductive-check-unknown':
+                      sites = [
+                          line.split(':', 1)[1]
+                          for line in stderr.splitlines()
+                          if line.startswith('NUCLEUS_CHECKER_UNKNOWN:')
+                      ]
+                      if sites:
+                          return terminal + '@checker-line-' + sites[-1]
+                  return terminal
               if rc == 3:
                   for line in stderr.splitlines():
                       if line.startswith('NUCLEUS_PARSE_ERROR:'):
                           msg = line.split(':', 1)[1].strip()
-                          msg = re.sub(r'^malformed record at line \\d+:\\s*', '', msg)
+                          msg = re.sub(r'^malformed record at line \d+:\s*', '', msg)
                           return 'parse-error:' + msg
                   return 'parse-error:unclassified'
               if rc == 2:
