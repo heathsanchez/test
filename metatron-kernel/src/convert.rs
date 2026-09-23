@@ -257,11 +257,7 @@ pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
 }
 
-fn eta_contract(
-    checker: &TypeChecker<'_>,
-    closure: &Closure,
-    depth: usize,
-) -> Option<Closure> {
+fn eta_contract(checker: &TypeChecker<'_>, closure: &Closure, depth: usize) -> Option<Closure> {
     let closure = resolve_local_closure(checker, closure)?;
     let Expr::Lam { body, .. } = checker.expression(closure.expr)? else {
         return None;
@@ -279,10 +275,7 @@ fn eta_contract(
     Some(closure.sibling(*fun, closure.env.extend_free(free)))
 }
 
-fn resolve_local_closure(
-    checker: &TypeChecker<'_>,
-    closure: &Closure,
-) -> Option<Closure> {
+fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option<Closure> {
     let mut current = closure.clone();
     for _ in 0..64 {
         match checker.expression(current.expr)? {
