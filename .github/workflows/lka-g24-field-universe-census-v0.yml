@@ -1,11 +1,6 @@
 name: LKA G24 Field Universe Census v0
 
 on:
-  push:
-    branches: [lka-g24-field-universe-v1]
-    paths:
-      - ".github/workflows/lka-g24-field-universe-census-v0.yml"
-      - "metatron-kernel/**"
   workflow_dispatch:
 
 permissions:
