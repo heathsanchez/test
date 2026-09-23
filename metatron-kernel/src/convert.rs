@@ -231,6 +231,20 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
+                if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                    if let Judgment::Unknown { residual } = &cheap_left {
+                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:left:{}", residual.0);
+                    }
+                    if let Judgment::Unknown { residual } = &cheap_right {
+                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:right:{}", residual.0);
+                    }
+                    if let Judgment::Refuted { obstruction } = &cheap_left {
+                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:left-refuted:{}", obstruction.0);
+                    }
+                    if let Judgment::Refuted { obstruction } = &cheap_right {
+                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:right-refuted:{}", obstruction.0);
+                    }
+                }
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
