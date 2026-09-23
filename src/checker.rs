@@ -9,7 +9,9 @@ use crate::judgment::Judgment;
 use crate::level::LevelTerm;
 use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule};
 use crate::parser::ResolvedExport;
-use crate::syntax::{Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor};
+use crate::syntax::{
+    Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
+};
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{EnvFrame, FreeId};
 use crate::verdict::Verdict;
@@ -197,7 +199,6 @@ fn check_export_with_policy(
     Verdict::Accept
 }
 
-
 fn quotient_parent(export: &ResolvedExport, name: NameId, suffix: &str) -> Option<NameId> {
     match export.names.get(name) {
         Some(Name::Str { prefix, value })
@@ -216,11 +217,7 @@ fn quotient_child(export: &ResolvedExport, parent: NameId, suffix: &str) -> Opti
     })
 }
 
-fn is_quot_relation_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    carrier: u64,
-) -> bool {
+fn is_quot_relation_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
@@ -261,11 +258,7 @@ fn is_quot_mk_application(
         && are_bvars(export, &arguments, &[carrier, relation, value])
 }
 
-fn is_quot_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    level: NameId,
-) -> bool {
+fn is_quot_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
@@ -445,15 +438,15 @@ fn check_quot_declaration(
                 return Err(Verdict::Reject);
             };
             matches!(level_params, [quotient_level, value_level]
-                if quotient_level != value_level
-                    && environment.get(quotient).is_some()
-                    && is_quot_lift_type(
-                        export,
-                        ty,
-                        quotient,
-                        *quotient_level,
-                        *value_level,
-                    ))
+            if quotient_level != value_level
+                && environment.get(quotient).is_some()
+                && is_quot_lift_type(
+                    export,
+                    ty,
+                    quotient,
+                    *quotient_level,
+                    *value_level,
+                ))
         }
         QuotKind::Ind => {
             let Some(quotient) = quotient_parent(export, name, "ind") else {
