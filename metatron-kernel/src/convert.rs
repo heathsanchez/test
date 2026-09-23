@@ -304,15 +304,16 @@ fn unit_like_free_pair(
     if left == right || !left.spine.is_empty() || !right.spine.is_empty() {
         return false;
     }
-    let (Ok(left_index), Ok(right_index)) =
-        (usize::try_from(left.0), usize::try_from(right.0))
+    let (Ok(left_index), Ok(right_index)) = (usize::try_from(left.0), usize::try_from(right.0))
     else {
         return false;
     };
-    let (Some(left_ty), Some(right_ty)) = (context.get(left_index), context.get(right_index)) else {
+    let (Some(left_ty), Some(right_ty)) = (context.get(left_index), context.get(right_index))
+    else {
         return false;
     };
-    checker.unit_like_type_key(left_ty, budget)
+    checker
+        .unit_like_type_key(left_ty, budget)
         .zip(checker.unit_like_type_key(right_ty, budget))
         .is_some_and(|(left, right)| left == right)
 }
