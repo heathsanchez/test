@@ -101,4 +101,8 @@ impl<I: TableId, T> IdTable<I, T> {
     pub fn values(&self) -> impl Iterator<Item = &T> {
         self.entries.values()
     }
+
+    pub fn iter_raw(&self) -> impl Iterator<Item = (u64, &T)> {
+        self.entries.iter().map(|(id, value)| (*id, value))
+    }
 }
