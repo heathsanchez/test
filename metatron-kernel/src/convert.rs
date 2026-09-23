@@ -6,6 +6,53 @@ use crate::machine::Transparency;
 use crate::typecheck::{TypeChecker, TypeValue};
 use crate::value::{FreeId, Neutral, NeutralHead, Value};
 
+type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
+const INLINE_CONVERSION_VISIT_CAPACITY: usize = 8;
+
+struct ConversionVisitSet {
+    inline: [Option<ConversionVisitKey>; INLINE_CONVERSION_VISIT_CAPACITY],
+    len: usize,
+    overflow: Option<HashSet<ConversionVisitKey>>,
+}
+
+impl ConversionVisitSet {
+    #[inline]
+    fn new() -> Self {
+        Self {
+            inline: std::array::from_fn(|_| None),
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn insert(&mut self, key: ConversionVisitKey) -> bool {
+        if let Some(overflow) = self.overflow.as_mut() {
+            return overflow.insert(key);
+        }
+        if self.inline[..self.len]
+            .iter()
+            .flatten()
+            .any(|existing| existing == &key)
+        {
+            return false;
+        }
+        if self.len < INLINE_CONVERSION_VISIT_CAPACITY {
+            self.inline[self.len] = Some(key);
+            self.len += 1;
+            return true;
+        }
+
+        let mut overflow = HashSet::with_capacity(INLINE_CONVERSION_VISIT_CAPACITY * 2);
+        for slot in &mut self.inline[..self.len] {
+            overflow.insert(slot.take().expect("initialized conversion visit slot"));
+        }
+        let inserted = overflow.insert(key);
+        self.overflow = Some(overflow);
+        inserted
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum DeltaPolicy {
     PreferredOnly,
@@ -60,7 +107,7 @@ pub(crate) fn convert_with_policy_at_depth(
 
     let mut remaining = budget;
     let mut work = vec![(left.clone(), right.clone(), initial_depth)];
-    let mut visited = HashSet::new();
+    let mut visited = ConversionVisitSet::new();
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
