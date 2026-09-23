@@ -1698,12 +1698,7 @@ fn generic_field_structure_recursor_shape(
     };
     let (motive_head, motive_args) = application_spine(export, *motive_target);
     if motive_args.len() != p
-        || !is_declared_level_constant(
-            export,
-            motive_head,
-            inductive.name,
-            &inductive.level_params,
-        )
+        || !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params)
         || !motive_args
             .iter()
             .enumerate()
@@ -1728,20 +1723,11 @@ fn generic_field_structure_recursor_shape(
     let Some((minor_domains, minor_result)) = pi_spine(export, minor, fields) else {
         return false;
     };
-    if !ctor_fields
-        .iter()
-        .zip(&minor_domains)
-        .enumerate()
-        .all(|(field, (ctor_domain, minor_domain))| {
-            expression_matches_lift(
-                export,
-                *ctor_domain,
-                *minor_domain,
-                field as u64,
-                1,
-            )
-        })
-    {
+    if !ctor_fields.iter().zip(&minor_domains).enumerate().all(
+        |(field, (ctor_domain, minor_domain))| {
+            expression_matches_lift(export, *ctor_domain, *minor_domain, field as u64, 1)
+        },
+    ) {
         return false;
     }
 
@@ -1779,12 +1765,7 @@ fn generic_field_structure_recursor_shape(
 
     let (target_head, target_args) = application_spine(export, target);
     if target_args.len() != p
-        || !is_declared_level_constant(
-            export,
-            target_head,
-            inductive.name,
-            &inductive.level_params,
-        )
+        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
         || !target_args
             .iter()
             .enumerate()
