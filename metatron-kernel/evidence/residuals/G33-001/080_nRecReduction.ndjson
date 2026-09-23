@@ -236,12 +236,3 @@
 {"app":{"arg":167,"fn":164},"ie":168}
 {"app":{"arg":168,"fn":143},"ie":169}
 {"thm":{"all":[45],"levelParams":[],"name":45,"type":141,"value":169}}
-Traceback (most recent call last):
-  File "<stdin>", line 8, in <module>
-  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/pathlib.py", line 1019, in read_bytes
-    with self.open(mode='rb') as f:
-         ^^^^^^^^^^^^^^^^^^^^
-  File "/opt/hostedtoolcache/Python/3.12.14/x64/lib/python3.12/pathlib.py", line 1013, in open
-    return io.open(self, mode, buffering, encoding, errors, newline)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/tmp/lean-kernel-tutorial/good/082_rbtreeIdSpec.ndjson'
