@@ -42,7 +42,9 @@ for r,k in enumerate(K):
 L += ["  feedForwardIV ⟨a64,b64,c64,d64,e64,f64,g64,h64⟩","",
       "def impl (n : Nat) : Nat :=",
       "  encodeDigest (iterDigest straightStep (sha256Steps n) (seedDigest (sha256Seed n)))",
-      "","end Submission",""]
+      "", "/-- DIAGNOSTIC ONLY: timing stub; not a qualifying submission. -/",
+      "axiom impl_correct : ∀ n, impl n = sha256Spec n",
+      "", "end Submission",""]
 text=prefix+"\n".join(L)
 p=OUT/"Submission_straight_v26_probe.lean"; p.write_text(text)
 print(f"generated {p} bytes={len(text.encode())}")
