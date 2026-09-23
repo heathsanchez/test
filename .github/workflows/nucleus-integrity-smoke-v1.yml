@@ -1,0 +1,72 @@
+name: Nucleus Integrity Smoke v1
+
+on:
+  push:
+    branches: [nucleus-integrity-v1]
+    paths:
+      - "metatron-kernel/**"
+      - ".github/workflows/nucleus-integrity-smoke-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-integrity-smoke-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Verify and build
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch exact Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Run six-case literal census
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          bin=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          cases=[
+            ('tutorial/133_dup_ind_def',1),
+            ('tutorial/134_dup_ctor_def',1),
+            ('tutorial/135_dup_rec_def',1),
+            ('tutorial/136_misnamed_rec_user',1),
+            ('tutorial/137_dup_rec_def2',1),
+            ('tutorial/138_dup_ctor_rec',1),
+            ('tutorial/139_DupConCon',1),
+          ]
+          rows=[]
+          for name,expected in cases:
+              d='bad' if name=='other/nat-lit-add-bad' else 'good'
+              p=root/d/(name+'.ndjson')
+              env=dict(__import__('os').environ)
+              env['NUCLEUS_TRACE_PARSE_ERROR']='1'
+              with p.open('rb') as f:
+                  proc=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              rows.append({'test':name,'expected':expected,'rc':proc.returncode,'stderr':proc.stderr.decode(errors='replace')[-1000:]})
+          print(json.dumps(rows,sort_keys=True))
+          by={r['test']:r for r in rows}
+          for name,expected in cases:
+              assert by[name]['rc']==expected,by
+          PY
