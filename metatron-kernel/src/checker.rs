@@ -1003,13 +1003,8 @@ fn check_exact_exists_family(
         inductive.name,
         constructor.name,
         *level,
-    ) || !is_exists_recursor_rule(
-        export,
-        recursor,
-        inductive.name,
-        constructor.name,
-        *level,
-    ) {
+    ) || !is_exists_recursor_rule(export, recursor, inductive.name, constructor.name, *level)
+    {
         return Err(Verdict::Reject);
     }
 
@@ -1022,11 +1017,7 @@ fn check_exact_exists_family(
     Ok(derivation.finish())
 }
 
-fn is_exists_predicate_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    carrier: u64,
-) -> bool {
+fn is_exists_predicate_type(export: &ResolvedExport, expression: ExprId, carrier: u64) -> bool {
     matches!(
         export.exprs.get(expression),
         Some(Expr::Pi { domain, body })
@@ -1061,18 +1052,10 @@ fn is_exists_constructor_application(
     let (head, arguments) = application_spine(export, expression);
     arguments.len() == 4
         && is_unary_polymorphic_constant(export, head, constructor, level)
-        && are_bvars(
-            export,
-            &arguments,
-            &[carrier, predicate, witness, proof],
-        )
+        && are_bvars(export, &arguments, &[carrier, predicate, witness, proof])
 }
 
-fn is_exists_inductive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    level: NameId,
-) -> bool {
+fn is_exists_inductive_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
@@ -1116,8 +1099,7 @@ fn is_exists_motive_type(
     let [target] = domains.as_slice() else {
         return false;
     };
-    is_exists_application(export, *target, inductive, level, 1, 0)
-        && is_prop_sort(export, result)
+    is_exists_application(export, *target, inductive, level, 1, 0) && is_prop_sort(export, result)
 }
 
 fn is_exists_minor_type(
@@ -1142,16 +1124,7 @@ fn is_exists_minor_type(
     is_bvar(export, *witness, 2)
         && is_bvar_application(export, *proof, 2, 0)
         && is_bvar(export, *motive, 2)
-        && is_exists_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            level,
-            4,
-            3,
-            1,
-            0,
-        )
+        && is_exists_constructor_application(export, *constructed, constructor, level, 4, 3, 1, 0)
 }
 
 fn is_exists_recursor_type(
