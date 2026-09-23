@@ -41,7 +41,7 @@ jobs:
           metatron-kernel/target/release/metatron-kernel < /tmp/tutorial/good/082_RBTree.id_spec.ndjson >/tmp/stdout.txt 2>/tmp/stderr.txt
           code=$?
           echo "EXIT=$code"
-          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED|APP_PI|DISTINCT_HEADS)' /tmp/stderr.txt | tail -n 160
+          grep -E 'NUCLEUS_TRACE_(DECL|UNKNOWN|REFUTED|APP_PI|DISTINCT_HEADS|CHECK_REFUTED)' /tmp/stderr.txt | tail -n 220
           python - <<'PY'
           import json
           p='/tmp/tutorial/good/082_RBTree.id_spec.ndjson'
