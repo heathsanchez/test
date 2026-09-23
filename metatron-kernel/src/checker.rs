@@ -2876,7 +2876,6 @@ fn is_exists_motive_type(
 fn is_exists_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
-    inductive: NameId,
     constructor: NameId,
     level: NameId,
 ) -> bool {
@@ -2916,13 +2915,14 @@ fn is_exact_exists_recursor_type(
     is_sort_parameter(export, *carrier, level)
         && is_exists_predicate_type(export, *predicate, 0)
         && is_exists_motive_type(export, *motive, inductive, level)
-        && is_exists_minor_type(export, *minor, inductive, constructor, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
         && is_exists_application(export, *target, inductive, level, 3, 2)
         && is_bvar_application(export, result, 2, 0)
 }
 
 fn is_exact_exists_rule(
     export: &ResolvedExport,
+    inductive: NameId,
     constructor: NameId,
     rule: &crate::syntax::RecursorRule,
     level: NameId,
@@ -3006,6 +3006,7 @@ fn check_exact_exists(
         || !matches!(recursor.rules.as_slice(), [rule]
         if is_exact_exists_rule(
             export,
+            inductive.name,
             constructor.name,
             rule,
             *level,
