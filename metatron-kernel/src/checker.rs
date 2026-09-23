@@ -1693,138 +1693,123 @@ fn is_rbtree_leaf_minor_type(
         && is_bvar(export, arguments[0], 1)
 }
 
-fn is_rbtree_red_minor_type(
+fn is_rbtree_branch_minor_type(
     export: &ResolvedExport,
     expression: ExprId,
     inductive: NameId,
-    red: NameId,
+    constructor: NameId,
     level: NameId,
+    branch: RbBranch,
 ) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+    let color_prefix = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 2,
+    };
+    let arity = 6 + color_prefix;
+    let Some((domains, result)) = pi_spine(export, expression, arity) else {
         return false;
     };
-    let [height, left, value, right, left_ih, right_ih] = domains.as_slice() else {
-        return false;
-    };
+
+    let height = domains[color_prefix];
+    let left = domains[color_prefix + 1];
+    let value = domains[color_prefix + 2];
+    let right = domains[color_prefix + 3];
+    let left_ih = domains[color_prefix + 4];
+    let right_ih = domains[color_prefix + 5];
 
     let (
         Some((left_carrier, left_color, left_height)),
         Some((right_carrier, right_color, right_height)),
     ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
+        rbtree_application_parts(export, left, inductive, level),
+        rbtree_application_parts(export, right, inductive, level),
     )
     else {
         return false;
+    };
+
+    let (left_motive, right_motive, result_motive) = match branch {
+        RbBranch::Red => (5, 6, 7),
+        RbBranch::Black => (8, 9, 10),
     };
     let (
         Some((left_ih_color, left_ih_height, left_ih_tree)),
         Some((right_ih_color, right_ih_height, right_ih_tree)),
         Some((result_color, result_height, result_tree)),
     ) = (
-        motive_application_parts(export, *left_ih, 5),
-        motive_application_parts(export, *right_ih, 6),
-        motive_application_parts(export, result, 7),
+        motive_application_parts(export, left_ih, left_motive),
+        motive_application_parts(export, right_ih, right_motive),
+        motive_application_parts(export, result, result_motive),
     )
     else {
         return false;
     };
-    let Some(result_args) = rbtree_constructor_application_args(export, result_tree, red, level)
+
+    let Some(result_args) =
+        rbtree_constructor_application_args(export, result_tree, constructor, level)
     else {
         return false;
     };
 
-    is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 3)
-        && is_child_empty_constant_named(export, left_color, "Color", "b")
+    let branch_index = match branch {
+        RbBranch::Red => 0,
+        RbBranch::Black => 1,
+    };
+    let prefix_colors_ok = match branch {
+        RbBranch::Red => true,
+        RbBranch::Black => {
+            is_root_empty_constant_named(export, domains[0], "Color")
+                && is_root_empty_constant_named(export, domains[1], "Color")
+        }
+    };
+    let child_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_color, "Color", "b")
+        }
+        RbBranch::Black => {
+            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
+        }
+    };
+    let ih_colors_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, left_ih_color, "Color", "b")
+                && is_child_empty_constant_named(export, right_ih_color, "Color", "b")
+        }
+        RbBranch::Black => {
+            is_bvar(export, left_ih_color, 5) && is_bvar(export, right_ih_color, 5)
+        }
+    };
+    let result_index_ok = match branch {
+        RbBranch::Red => {
+            is_child_empty_constant_named(export, result_color, "Color", "r")
+                && is_bvar(export, result_height, 5)
+        }
+        RbBranch::Black => {
+            is_child_empty_constant_named(export, result_color, "Color", "b")
+                && is_named_succ_bvar(export, result_height, "N", "succ", 5)
+        }
+    };
+
+    let mut result_bvars = vec![8 + 3 * branch_index];
+    result_bvars.extend((2..=5 + color_prefix as u64).rev());
+
+    prefix_colors_ok
+        && is_root_empty_constant_named(export, height, "N")
+        && is_bvar(export, left_carrier, 3 + 3 * branch_index)
+        && child_colors_ok
         && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 4)
-        && is_bvar(export, right_carrier, 5)
-        && is_child_empty_constant_named(export, right_color, "Color", "b")
+        && is_bvar(export, value, 4 + 3 * branch_index)
+        && is_bvar(export, right_carrier, 5 + 3 * branch_index)
         && is_bvar(export, right_height, 2)
-        && is_child_empty_constant_named(export, left_ih_color, "Color", "b")
+        && ih_colors_ok
         && is_bvar(export, left_ih_height, 3)
         && is_bvar(export, left_ih_tree, 2)
-        && is_child_empty_constant_named(export, right_ih_color, "Color", "b")
         && is_bvar(export, right_ih_height, 4)
         && is_bvar(export, right_ih_tree, 1)
-        && is_child_empty_constant_named(export, result_color, "Color", "r")
-        && is_bvar(export, result_height, 5)
-        && result_args.len() == 5
-        && are_bvars(export, &result_args, &[8, 5, 4, 3, 2])
-}
-
-fn is_rbtree_black_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    black: NameId,
-    level: NameId,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 8) else {
-        return false;
-    };
-    let [
-        first_color,
-        second_color,
-        height,
-        left,
-        value,
-        right,
-        left_ih,
-        right_ih,
-    ] = domains.as_slice()
-    else {
-        return false;
-    };
-
-    let (
-        Some((left_carrier, left_color, left_height)),
-        Some((right_carrier, right_color, right_height)),
-    ) = (
-        rbtree_application_parts(export, *left, inductive, level),
-        rbtree_application_parts(export, *right, inductive, level),
-    )
-    else {
-        return false;
-    };
-    let (
-        Some((left_ih_color, left_ih_height, left_ih_tree)),
-        Some((right_ih_color, right_ih_height, right_ih_tree)),
-        Some((result_color, result_height, result_tree)),
-    ) = (
-        motive_application_parts(export, *left_ih, 8),
-        motive_application_parts(export, *right_ih, 9),
-        motive_application_parts(export, result, 10),
-    )
-    else {
-        return false;
-    };
-    let Some(result_args) = rbtree_constructor_application_args(export, result_tree, black, level)
-    else {
-        return false;
-    };
-
-    is_root_empty_constant_named(export, *first_color, "Color")
-        && is_root_empty_constant_named(export, *second_color, "Color")
-        && is_root_empty_constant_named(export, *height, "N")
-        && is_bvar(export, left_carrier, 6)
-        && is_bvar(export, left_color, 2)
-        && is_bvar(export, left_height, 0)
-        && is_bvar(export, *value, 7)
-        && is_bvar(export, right_carrier, 8)
-        && is_bvar(export, right_color, 3)
-        && is_bvar(export, right_height, 2)
-        && is_bvar(export, left_ih_color, 5)
-        && is_bvar(export, left_ih_height, 3)
-        && is_bvar(export, left_ih_tree, 2)
-        && is_bvar(export, right_ih_color, 5)
-        && is_bvar(export, right_ih_height, 4)
-        && is_bvar(export, right_ih_tree, 1)
-        && is_child_empty_constant_named(export, result_color, "Color", "b")
-        && is_named_succ_bvar(export, result_height, "N", "succ", 5)
-        && result_args.len() == 7
-        && are_bvars(export, &result_args, &[11, 7, 6, 5, 4, 3, 2])
+        && result_index_ok
+        && result_args.len() == 5 + color_prefix
+        && are_bvars(export, &result_args, &result_bvars)
 }
 
 fn is_derived_rbtree_recursor_type(
@@ -1864,8 +1849,22 @@ fn is_derived_rbtree_recursor_type(
     is_sort_succ_parameter(export, *carrier, level)
         && is_rbtree_motive_type(export, *motive, inductive, level, recursor.level_params[0])
         && is_rbtree_leaf_minor_type(export, *leaf_minor, constructors[0], level)
-        && is_rbtree_red_minor_type(export, *red_minor, inductive, constructors[1], level)
-        && is_rbtree_black_minor_type(export, *black_minor, inductive, constructors[2], level)
+        && is_rbtree_branch_minor_type(
+            export,
+            *red_minor,
+            inductive,
+            constructors[1],
+            level,
+            RbBranch::Red,
+        )
+        && is_rbtree_branch_minor_type(
+            export,
+            *black_minor,
+            inductive,
+            constructors[2],
+            level,
+            RbBranch::Black,
+        )
         && is_root_empty_constant_named(export, *color, "Color")
         && is_root_empty_constant_named(export, *height, "N")
         && is_bvar(export, target_carrier, 6)
