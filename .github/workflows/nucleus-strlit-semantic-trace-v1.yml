@@ -1,0 +1,44 @@
+name: Nucleus StrLit Semantic Trace v1
+
+on:
+  push:
+    branches: [nucleus-strlit-semantic-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-strlit-semantic-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: metatron-kernel
+        run: |
+          cargo fmt --check
+          cargo build --release --locked
+      - name: Fetch corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Reveal post-parser String residuals
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          for name in init-prelude perf/grind-ring-5 perf/magma-list-deep-n21 perf/magma-list-deep-n36; do
+            echo "=== $name ==="
+            p="/tmp/tests/good/$name.ndjson"
+            NUCLEUS_TRACE_UNQUALIFIED_STRING=1 NUCLEUS_TRACE_RESIDUAL=1 NUCLEUS_TRACE_CAPABILITY=1 target/release/metatron-kernel < "$p" >/dev/null || true
+          done
