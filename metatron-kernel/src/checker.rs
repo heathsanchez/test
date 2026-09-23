@@ -41,6 +41,7 @@ fn check_export_with_policy(
     // Keep the resolved tables available while consuming declaration records.
     let declarations = std::mem::take(&mut export.declarations);
     for declaration in declarations {
+        eprintln!("NUCLEUS_TRACE_DECL {:?}", declaration);
         #[cfg(feature = "diagnostics")]
         crate::diagnostics::declaration();
         let level_parameters = match &declaration {
@@ -4832,8 +4833,14 @@ fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
 fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
-        Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Refuted { obstruction } => {
+            eprintln!("NUCLEUS_TRACE_REFUTED {:?}", obstruction);
+            Err(Verdict::Reject)
+        }
+        Judgment::Unknown { residual } => {
+            eprintln!("NUCLEUS_TRACE_UNKNOWN {:?}", residual);
+            Err(Verdict::Unknown)
+        }
     }
 }
 
