@@ -33,6 +33,10 @@ const CAPABILITIES: &[VerifiedCapability] = &[
         apply: projection_declared_owner,
     },
     VerifiedCapability {
+        id: "projection.single-constructor-owner.v0",
+        apply: projection_single_constructor_owner,
+    },
+    VerifiedCapability {
         id: "projection.prop-dependent-safety.v0",
         apply: prop_projection_safety,
     },
@@ -154,6 +158,29 @@ fn projection_declared_owner(export: &ResolvedExport) -> Option<Verdict> {
     for expression in export.exprs.values() {
         if let Expr::Proj { type_name, .. } = expression
             && !inductive_names.contains(type_name)
+        {
+            return Some(Verdict::Reject);
+        }
+    }
+    None
+}
+
+/// Lean kernel projections are structure projections: their owner must have
+/// exactly one constructor.  This is a rejection-only consequence and grants
+/// no projection typing or reduction authority.
+fn projection_single_constructor_owner(export: &ResolvedExport) -> Option<Verdict> {
+    let mut constructor_counts = HashMap::<NameId, usize>::new();
+    for declaration in &export.declarations {
+        if let Declaration::Inductive(block) = declaration {
+            for inductive in &block.types {
+                constructor_counts.insert(inductive.name, inductive.constructors.len());
+            }
+        }
+    }
+
+    for expression in export.exprs.values() {
+        if let Expr::Proj { type_name, .. } = expression
+            && constructor_counts.get(type_name).is_some_and(|count| *count != 1)
         {
             return Some(Verdict::Reject);
         }
