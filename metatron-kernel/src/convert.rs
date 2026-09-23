@@ -131,6 +131,8 @@ pub(crate) fn convert_with_policy_in_context(
     let mut work = vec![(left.clone(), right.clone(), initial_depth)];
     let mut visited = ConversionVisitSet::new();
     let mut unit_like_frees = HashMap::new();
+    let mut proposition_frees = HashSet::new();
+    let mut proof_frees = HashMap::new();
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
@@ -147,7 +149,8 @@ pub(crate) fn convert_with_policy_in_context(
         // Residual-generated function eta capability.  This is deliberately
         // syntactic and contraction-only: (fun x => f x) may contract to f
         // exactly when the bound variable does not occur in f.  No unfolding,
-        // proof irrelevance, or structure eta authority is introduced here.
+        // structure eta authority is introduced here; proof irrelevance, when
+        // available, is a separately guarded typed-binder consequence below.
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right) {
             if let Some(contracted) = eta_contract(checker, left_term, depth) {
                 work.push((
@@ -173,6 +176,12 @@ pub(crate) fn convert_with_policy_in_context(
             continue;
         }
 
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && proof_free_pair(checker, left_term, right_term, &proof_frees, remaining)
+        {
+            continue;
+        }
+
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
                 match level_equal(left, right, remaining) {
@@ -193,13 +202,27 @@ pub(crate) fn convert_with_policy_in_context(
                     body: right_body,
                 },
             ) => {
-                if let (Some(left_key), Some(right_key)) = (
-                    checker.unit_like_type_key(&left_domain, remaining),
-                    checker.unit_like_type_key(&right_domain, remaining),
-                ) && left_key == right_key
-                    && let Some(free) = fresh_local(depth)
-                {
-                    unit_like_frees.insert(free, left_key);
+                if let Some(free) = fresh_local(depth) {
+                    if let (Some(left_key), Some(right_key)) = (
+                        checker.unit_like_type_key(&left_domain, remaining),
+                        checker.unit_like_type_key(&right_domain, remaining),
+                    ) && left_key == right_key
+                    {
+                        unit_like_frees.insert(free, left_key);
+                    }
+
+                    if checker.type_value_is_prop_sort(&left_domain, remaining)
+                        && checker.type_value_is_prop_sort(&right_domain, remaining)
+                    {
+                        proposition_frees.insert(free);
+                    } else if let (Some(left_prop), Some(right_prop)) = (
+                        bare_free_type(checker, &left_domain, remaining),
+                        bare_free_type(checker, &right_domain, remaining),
+                    ) && left_prop == right_prop
+                        && proposition_frees.contains(&left_prop)
+                    {
+                        proof_frees.insert(free, left_prop);
+                    }
                 }
                 work.push((*left_body, *right_body, depth.saturating_add(1)));
                 work.push((*left_domain, *right_domain, depth));
@@ -290,6 +313,59 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn bare_free_type(
+    checker: &TypeChecker<'_>,
+    ty: &TypeValue,
+    budget: usize,
+) -> Option<FreeId> {
+    let TypeValue::Term(closure) = ty else {
+        return None;
+    };
+    let exposed = checker
+        .machine()
+        .expose(closure.clone(), Transparency::Reducible, budget);
+    let Value::Neutral(neutral) = exposed.proven_value()? else {
+        return None;
+    };
+    if !neutral.spine.is_empty() {
+        return None;
+    }
+    let NeutralHead::Free(free) = neutral.head else {
+        return None;
+    };
+    Some(free)
+}
+
+fn proof_free_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    proof_frees: &HashMap<FreeId, FreeId>,
+    budget: usize,
+) -> bool {
+    let machine = checker.machine();
+    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
+        (left.proven_value(), right.proven_value())
+    else {
+        return false;
+    };
+    if !left.spine.is_empty() || !right.spine.is_empty() {
+        return false;
+    }
+    let (NeutralHead::Free(left), NeutralHead::Free(right)) = (&left.head, &right.head) else {
+        return false;
+    };
+    if left == right {
+        return false;
+    }
+    proof_frees
+        .get(left)
+        .zip(proof_frees.get(right))
+        .is_some_and(|(left_prop, right_prop)| left_prop == right_prop)
 }
 
 fn unit_like_free_pair(
