@@ -3072,7 +3072,7 @@ fn twobool_recursor_obligations(
                 && is_twobool_minor_type(export, *minor, constructor, field_type)
                 && is_empty_constant(export, *first, field_type)
                 && is_empty_constant(export, *second, field_type)
-                && is_bvar_applied_to_two_bvars(export, result, 2, 1, 0))
+                && is_binary_bvar_application(export, result, 2, 1, 0))
     }));
 
     type_ok && rule_ok
@@ -3133,27 +3133,6 @@ fn is_constructor_applied_to_two_bvars(
         && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
 }
 
-fn is_bvar_applied_to_two_bvars(
-    export: &ResolvedExport,
-    expression: ExprId,
-    function: u64,
-    first: u64,
-    second: u64,
-) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    matches!(export.exprs.get(*head), Some(Expr::BVar(index)) if *index == function)
-        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
-        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
-}
 
 fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
     matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
