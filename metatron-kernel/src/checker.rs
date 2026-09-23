@@ -166,6 +166,49 @@ fn inductive_arity_metadata_is_well_formed(
     matches!(export.exprs.get(expression), Some(Expr::Sort(_)))
 }
 
+fn owned_single_type_recursor_metadata_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    // G26-001's earned negative envelope is intentionally narrower than
+    // generic recursor validation. Broader indexed/parameterized/recursive
+    // families remain UNKNOWN until separately earned.
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.num_params != 0
+        || constructor.num_fields != 0
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.all != [inductive.name]
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return false;
+    }
+
+    !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        recursor.k,
+        true,
+    )
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -173,6 +216,14 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // G26-001: negative-only recursor coherence. A single safe inductive
+    // that explicitly owns a .rec declaration cannot advertise impossible
+    // motive/minor/rule cardinalities. This grants no positive family
+    // authority; well-formed but unsupported recursors remain UNKNOWN.
+    if owned_single_type_recursor_metadata_is_definitely_malformed(export, block) {
+        return Err(Verdict::Reject);
+    }
+
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader
@@ -3631,10 +3682,10 @@ mod tests {
     }
 
     #[test]
-    fn g25_does_not_claim_bogus_recursor_residual() {
+    fn g26_rejects_impossible_owned_recursor_metadata() {
         let bytes = include_bytes!("../evidence/residuals/G25-001/073_BogusRecursor.ndjson");
         let export = parse(Cursor::new(bytes)).unwrap().resolve().unwrap();
-        assert_eq!(check_export(export, Limits::default()), Verdict::Unknown);
+        assert_eq!(check_export(export, Limits::default()), Verdict::Reject);
     }
 
     #[test]
