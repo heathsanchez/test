@@ -60,7 +60,7 @@ jobs:
               elif isinstance(node,list):
                   for v in node:
                       if isinstance(v,int): deps(v)
-          for i in (404,637,638): deps(i)
+          for i in (404,637,638,619,620,67,618,617,616,615): deps(i)
           for i in sorted(seen):
               r=expr[i]
               if 'const' in r:
