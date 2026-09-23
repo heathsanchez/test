@@ -8,7 +8,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::id::{ExprId, NameId};
-use crate::level::{instantiate_level, LevelTerm};
+use crate::level::{LevelTerm, instantiate_level};
 use crate::parser::ResolvedExport;
 use crate::syntax::{Declaration, Expr};
 use crate::verdict::Verdict;
@@ -92,7 +92,6 @@ fn declared_name_uniqueness(export: &ResolvedExport) -> Option<Verdict> {
     None
 }
 
-
 #[derive(Clone, Debug)]
 struct PropProjectionTarget {
     level_params: Vec<NameId>,
@@ -115,8 +114,7 @@ fn prop_projection_safety(export: &ResolvedExport) -> Option<Verdict> {
         let mut roots = Vec::new();
         match declaration {
             Declaration::Axiom { ty, .. } => roots.push(*ty),
-            Declaration::Definition { ty, value, .. }
-            | Declaration::Theorem { ty, value, .. } => {
+            Declaration::Definition { ty, value, .. } | Declaration::Theorem { ty, value, .. } => {
                 roots.push(*ty);
                 roots.push(*value);
             }
@@ -167,38 +165,18 @@ fn expression_contains_invalid_prop_projection(
             if let Some(Expr::BVar(bvar)) = export.exprs.get(*structure)
                 && let Ok(bvar) = usize::try_from(*bvar)
                 && let Some(structure_ty) = context.get(bvar).copied()
-                && projection_is_definitely_invalid(
-                    export,
-                    *type_name,
-                    *index,
-                    structure_ty,
-                )
+                && projection_is_definitely_invalid(export, *type_name, *index, structure_ty)
             {
                 return true;
             }
-            expression_contains_invalid_prop_projection(
-                export,
-                *structure,
-                context,
-                depth + 1,
-            )
+            expression_contains_invalid_prop_projection(export, *structure, context, depth + 1)
         }
         Expr::App { fun, arg } => {
             expression_contains_invalid_prop_projection(export, *fun, context, depth + 1)
-                || expression_contains_invalid_prop_projection(
-                    export,
-                    *arg,
-                    context,
-                    depth + 1,
-                )
+                || expression_contains_invalid_prop_projection(export, *arg, context, depth + 1)
         }
         Expr::Lam { domain, body } | Expr::Pi { domain, body } => {
-            if expression_contains_invalid_prop_projection(
-                export,
-                *domain,
-                context,
-                depth + 1,
-            ) {
+            if expression_contains_invalid_prop_projection(export, *domain, context, depth + 1) {
                 return true;
             }
             context.insert(0, *domain);
@@ -209,12 +187,7 @@ fn expression_contains_invalid_prop_projection(
         }
         Expr::Let { ty, value, body } => {
             if expression_contains_invalid_prop_projection(export, *ty, context, depth + 1)
-                || expression_contains_invalid_prop_projection(
-                    export,
-                    *value,
-                    context,
-                    depth + 1,
-                )
+                || expression_contains_invalid_prop_projection(export, *value, context, depth + 1)
             {
                 return true;
             }
@@ -370,8 +343,7 @@ fn proposition_status(
 
     let mut substitution = HashMap::<NameId, LevelTerm>::new();
     for (parameter, level) in level_params.iter().zip(levels) {
-        let level =
-            instantiate_level(&export.levels, *level, outer_substitution, 256).ok()?;
+        let level = instantiate_level(&export.levels, *level, outer_substitution, 256).ok()?;
         substitution.insert(*parameter, level);
     }
     let level = instantiate_level(&export.levels, *result_level, &substitution, 256).ok()?;
@@ -454,10 +426,7 @@ fn application_spine(export: &ResolvedExport, expression: ExprId) -> (ExprId, Ve
     (head, arguments)
 }
 
-fn pi_arity_and_result(
-    export: &ResolvedExport,
-    expression: ExprId,
-) -> Option<(usize, ExprId)> {
+fn pi_arity_and_result(export: &ResolvedExport, expression: ExprId) -> Option<(usize, ExprId)> {
     let mut arity = 0usize;
     let mut current = expression;
     for _ in 0..4096 {
