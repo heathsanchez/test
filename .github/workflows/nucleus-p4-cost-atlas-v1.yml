@@ -1,0 +1,79 @@
+name: Nucleus P4 deterministic cost atlas v1
+
+on:
+  push:
+    branches: [nucleus-p4-cost-atlas-v1]
+    paths:
+      - ".github/workflows/nucleus-p4-cost-atlas-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  atlas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - name: Install profiler
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq valgrind
+      - name: Build tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Build instrumentable P4 cohort runner
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p examples evidence-out/p4-atlas
+          cargo build --release --locked
+          python - <<'PY'
+          import pathlib,subprocess
+          b=pathlib.Path('target/release/metatron-kernel').resolve();root=pathlib.Path('/tmp/tutorial');rows=[]
+          for d,e in [('good',0),('bad',1)]:
+            for p in sorted((root/d).glob('*.ndjson')):
+              try:int(p.name.split('_',1)[0])
+              except ValueError:continue
+              with p.open('rb') as f:r=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              if r==e:rows.append(f'{e}\t{p}')
+          assert len(rows)==78,len(rows)
+          pathlib.Path('/tmp/correct78.tsv').write_text('\n'.join(rows)+'\n')
+          PY
+          cat > examples/nucleus_atlas.rs <<'RS'
+          use std::{env,fs,io::Cursor};
+          use metatron_kernel::run;
+          fn main(){let m=env::var("NUCLEUS_MANIFEST").unwrap();let n:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap_or_else(|_|"10".into()).parse().unwrap();let cs:Vec<(i32,Vec<u8>)>=fs::read_to_string(m).unwrap().lines().map(|l|{let(e,p)=l.split_once('\t').unwrap();(e.parse().unwrap(),fs::read(p).unwrap())}).collect();let mut s=0usize;for _ in 0..n{for(e,b)in &cs{let v=run(Cursor::new(b.as_slice()));assert_eq!(v.exit_code(),*e);s=s.wrapping_add(v.exit_code() as usize+1)}}println!("{s}");}
+          RS
+          RUSTFLAGS='-C debuginfo=1' cargo build --release --locked --example nucleus_atlas
+      - name: Callgrind real supported cohort
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          export NUCLEUS_MANIFEST=/tmp/correct78.tsv
+          export NUCLEUS_BENCH_ITERS=10
+          valgrind --tool=callgrind --callgrind-out-file=evidence-out/p4-atlas/callgrind.out target/release/examples/nucleus_atlas >evidence-out/p4-atlas/stdout.txt 2>evidence-out/p4-atlas/stderr.txt
+          callgrind_annotate --inclusive=yes --auto=yes --threshold=0.1 evidence-out/p4-atlas/callgrind.out > evidence-out/p4-atlas/annotate.txt
+          grep -E 'metatron_kernel|alloc::|hashbrown|std::collections|core::' evidence-out/p4-atlas/annotate.txt | head -n 160 | tee evidence-out/p4-atlas/top-filtered.txt || true
+      - name: Upload atlas
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p4-cost-atlas-${{ github.sha }}
+          path: metatron-kernel/evidence-out/p4-atlas
+          if-no-files-found: error
