@@ -379,6 +379,8 @@ fn check_single_constructor_inductive(
             delta_policy,
             BinaryProductFamily::PProd,
         )
+    } else if name_is_root_str(export, inductive.name, "OfNat") {
+        check_exact_ofnat(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "TwoBool") {
         check_twobool_structure(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
@@ -388,6 +390,296 @@ fn check_single_constructor_inductive(
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
+}
+
+/// Exact built-in-shaped OfNat structure used by the Nat literal extension.
+///
+/// The exported recursor is reconstructed from the declaration; only after the
+/// telescope, constructor, motive/minor and rule body agree do we install the
+/// single field projection. No generic structure authority is granted here.
+fn check_exact_ofnat(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if inductive.num_params != 2
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+    let [carrier_level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != [*carrier_level]
+        || constructor.num_params != 2
+        || constructor.num_fields != 1
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !ofnat_type(export, inductive.ty, *carrier_level)
+        || !ofnat_constructor_type(
+            export,
+            constructor.ty,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+    let [motive_level, declared_carrier] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if *declared_carrier != *carrier_level
+        || *motive_level == *carrier_level
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !ofnat_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+            *motive_level,
+        )
+        || !ofnat_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *carrier_level,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 2,
+                field_param_indices: vec![0],
+            },
+        )
+        .map_err(|_| Verdict::Reject)
+}
+
+fn is_nat_constant(export: &ResolvedExport, expression: ExprId) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_root_str(export, *name, "Nat")
+    )
+}
+
+fn ofnat_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    carrier: u64,
+    numeral: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_unary_polymorphic_constant(export, head, inductive, carrier_level)
+        && are_bvars(export, &arguments, &[carrier, numeral])
+}
+
+fn ofnat_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    carrier_level: NameId,
+    carrier: u64,
+    numeral: u64,
+    field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, constructor, carrier_level)
+        && are_bvars(export, &arguments, &[carrier, numeral, field])
+}
+
+fn ofnat_type(export: &ResolvedExport, expression: ExprId, carrier_level: NameId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [carrier, numeral] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && is_sort_succ_parameter(export, result, carrier_level)
+}
+
+fn ofnat_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    _constructor: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, numeral, field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && is_bvar(export, *field, 1)
+        && ofnat_application(export, result, inductive, carrier_level, 2, 1)
+}
+
+fn ofnat_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    ofnat_application(export, *target, inductive, carrier_level, 1, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn ofnat_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    carrier_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *field, 2) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && ofnat_constructor_application(
+            export,
+            *constructed,
+            constructor,
+            carrier_level,
+            3,
+            2,
+            0,
+        )
+}
+
+fn ofnat_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 5) else {
+        return false;
+    };
+    let [carrier, numeral, motive, minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && ofnat_motive_type(
+            export,
+            *motive,
+            inductive,
+            carrier_level,
+            motive_level,
+        )
+        && ofnat_minor_type(export, *minor, constructor, carrier_level)
+        && ofnat_application(export, *target, inductive, carrier_level, 3, 2)
+        && is_bvar_application(export, result, 2, 0)
+}
+
+fn ofnat_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    carrier_level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor || rule.num_fields != 1 {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 5) else {
+        return false;
+    };
+    let [carrier, numeral, motive, minor, field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_succ_parameter(export, *carrier, carrier_level)
+        && is_nat_constant(export, *numeral)
+        && ofnat_motive_type(
+            export,
+            *motive,
+            inductive,
+            carrier_level,
+            motive_level,
+        )
+        && ofnat_minor_type(export, *minor, constructor, carrier_level)
+        && is_bvar(export, *field, 3)
+        && is_bvar_application(export, result, 1, 0)
 }
 
 /// G30-001: exact indexed Prop family with one constructor field hidden
