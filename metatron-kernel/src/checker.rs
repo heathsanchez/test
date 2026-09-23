@@ -4768,6 +4768,14 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
+        let environment = if matches!(self.law, BinaryProductSortLaw::PUnit { .. }) {
+            environment
+                .install_unit_like_type(self.inductive.name)
+                .map_err(|_| Verdict::Reject)?
+        } else {
+            environment
+        };
+
         // G32 reuses G31's already-qualified constructor-iota machine. Only
         // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
         if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
