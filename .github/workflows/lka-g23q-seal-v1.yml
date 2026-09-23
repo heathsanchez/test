@@ -1,0 +1,61 @@
+name: LKA G23Q Seal v1
+
+on:
+  push:
+    branches: [lka-g23q-obligation-core-v1]
+    paths:
+      - "metatron-kernel/evidence/residuals/G23Q-001/protocol.json"
+      - "metatron-kernel/evidence/LEDGER.md"
+      - "metatron-kernel/evidence/ledger.jsonl"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  seal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify retained source is byte-identical
+        run: |
+          set -euo pipefail
+          git show 149913f6ef818b1babc4e1a010412467ff2273d4:metatron-kernel/src/checker.rs > /tmp/g23q-retained-checker.rs
+          cmp /tmp/g23q-retained-checker.rs metatron-kernel/src/checker.rs
+          test "$(wc -l < metatron-kernel/src/checker.rs)" -eq 3373
+
+      - name: Verify causal evidence ledger
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python scripts/check_ledger.py
+          grep -q '^## G23-001 ' evidence/LEDGER.md
+          grep -q '^## G23Q-001 ' evidence/LEDGER.md
+          python - <<'PY'
+          import json,pathlib
+          records=[
+              json.loads(line) for line in pathlib.Path("evidence/ledger.jsonl").read_text().splitlines()
+              if line.strip()
+          ]
+          by_id={row["id"]:row for row in records}
+          assert by_id["G23-001"]["decision"]=="retained"
+          q=by_id["G23Q-001"]
+          assert q["decision"]=="retained"
+          assert q["implementation_commit"]=="149913f6ef818b1babc4e1a010412467ff2273d4"
+          p=json.load(open("evidence/residuals/G23Q-001/protocol.json"))
+          assert p["source_sha"]=="149913f6ef818b1babc4e1a010412467ff2273d4"
+          assert p["oracle_sha"]=="7975697a23091ee72abbfe6e68042f0e079f8738"
+          assert p["checker_lines"]==3373
+          assert p["tutorial_equal"]==141
+          assert p["broad_equal"]==180
+          assert p["upstream_static_equal"]==16
+          assert p["upstream_arena_error_count"]==0
+          assert p["decision"]=="retained"
+          PY
