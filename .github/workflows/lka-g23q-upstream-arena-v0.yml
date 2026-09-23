@@ -93,6 +93,18 @@ jobs:
       - name: Run upstream groups through both checkers
         run: |
           set -euo pipefail
+          # GitHub-hosted runners expose the perf binary but deny PMU events.
+          # Arena's measurement wrapper interprets that perf exit as the checker
+          # exit instead of falling back. Shadow perf so the runner takes its
+          # documented wall-time-only fallback and executes the checker itself.
+          mkdir -p /tmp/lka-no-perf
+          cat > /tmp/lka-no-perf/perf <<'SH'
+          #!/bin/sh
+          exit 1
+          SH
+          chmod +x /tmp/lka-no-perf/perf
+          export PATH="/tmp/lka-no-perf:$PATH"
+
           cd /tmp/lka
           for checker in g23-oracle g23q; do
             for test in 'bugs/*' 'corner-cases/*' 'other/*' 'perf/*' init-prelude; do
@@ -159,6 +171,11 @@ jobs:
           },sort_keys=True))
           assert len(selected) >= 68, len(selected)
           assert diffs == [], diffs
+          assert all(
+              status != "error"
+              for counts in status_counts.values()
+              for status in counts
+          ), status_counts
           PY
 
       - name: Upload upstream Arena evidence
