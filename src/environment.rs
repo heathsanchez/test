@@ -71,6 +71,7 @@ impl ConstantDecl {
 pub struct Environment {
     authority: AuthorityId,
     constants: Rc<HashMap<NameId, ConstantDecl>>,
+    definitions: Rc<HashMap<NameId, DefinitionBody>>,
 }
 
 impl Environment {
@@ -78,6 +79,7 @@ impl Environment {
         Self {
             authority: AuthorityId(0),
             constants: Rc::new(HashMap::new()),
+            definitions: Rc::new(HashMap::new()),
         }
     }
 
@@ -98,6 +100,17 @@ impl Environment {
             return Err(EnvironmentError::DuplicateConstant(name));
         }
         let mut constants = self.constants.as_ref().clone();
+        let mut definitions = self.definitions.as_ref().clone();
+        if let Some(value) = declaration.value {
+            definitions.insert(
+                name,
+                DefinitionBody {
+                    value,
+                    preferred_for_reduction: declaration.preferred_for_reduction,
+                    level_params: declaration.level_params.clone(),
+                },
+            );
+        }
         constants.insert(name, declaration);
         let authority = self
             .authority
@@ -107,25 +120,12 @@ impl Environment {
         Ok(Self {
             authority: AuthorityId(authority),
             constants: Rc::new(constants),
+            definitions: Rc::new(definitions),
         })
     }
 
-    pub fn definition_bodies(&self) -> HashMap<NameId, DefinitionBody> {
-        self.constants
-            .iter()
-            .filter_map(|(name, declaration)| {
-                declaration.value.map(|value| {
-                    (
-                        *name,
-                        DefinitionBody {
-                            value,
-                            preferred_for_reduction: declaration.preferred_for_reduction,
-                            level_params: declaration.level_params.clone(),
-                        },
-                    )
-                })
-            })
-            .collect()
+    pub fn definition_bodies(&self) -> Rc<HashMap<NameId, DefinitionBody>> {
+        self.definitions.clone()
     }
 }
 
