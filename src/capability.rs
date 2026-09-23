@@ -364,7 +364,9 @@ fn expression_may_contain_target_projection(
                     depth + 1,
                 )
         }
-        Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+        Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {
+            false
+        }
     };
     memo.insert(expression, result);
     result
@@ -481,7 +483,9 @@ fn expression_contains_invalid_prop_projection(
             context.remove(0);
             result
         }
-        Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+        Expr::BVar(_) | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {
+            false
+        }
     }
 }
 
