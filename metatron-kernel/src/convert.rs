@@ -133,6 +133,7 @@ pub(crate) fn convert_with_policy_in_context(
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
+    let mut proof_function_frees = HashMap::new();
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
@@ -182,6 +183,18 @@ pub(crate) fn convert_with_policy_in_context(
             continue;
         }
 
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && fixed_proof_function_application_pair(
+                checker,
+                left_term,
+                right_term,
+                &proof_function_frees,
+                remaining,
+            )
+        {
+            continue;
+        }
+
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
                 match level_equal(left, right, remaining) {
@@ -222,6 +235,14 @@ pub(crate) fn convert_with_policy_in_context(
                         && proposition_frees.contains(&left_prop)
                     {
                         proof_frees.insert(free, left_prop);
+                    }
+
+                    if let (Some(left_key), Some(right_key)) = (
+                        checker.fixed_proof_function_type_key(&left_domain, remaining),
+                        checker.fixed_proof_function_type_key(&right_domain, remaining),
+                    ) && left_key == right_key
+                    {
+                        proof_function_frees.insert(free, left_key);
                     }
                 }
                 work.push((*left_body, *right_body, depth.saturating_add(1)));
@@ -332,6 +353,32 @@ fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> O
         return None;
     };
     Some(free)
+}
+
+fn fixed_proof_function_application_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    proof_functions: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    budget: usize,
+) -> bool {
+    let machine = checker.machine();
+    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
+        (left.proven_value(), right.proven_value())
+    else {
+        return false;
+    };
+    if left.spine.is_empty() || right.spine.is_empty() || left.spine.len() != right.spine.len() {
+        return false;
+    }
+    let (NeutralHead::Free(left_head), NeutralHead::Free(right_head)) =
+        (&left.head, &right.head)
+    else {
+        return false;
+    };
+    left_head == right_head && proof_functions.contains_key(left_head)
 }
 
 fn proof_free_pair(
