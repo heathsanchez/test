@@ -6641,8 +6641,18 @@ fn parameter_substitution(parameters: &[NameId]) -> HashMap<NameId, LevelTerm> {
 fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
-        Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Refuted { obstruction } => {
+            if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                eprintln!("NUCLEUS_OBSTRUCTION:{}", obstruction.0);
+            }
+            Err(Verdict::Reject)
+        }
+        Judgment::Unknown { residual } => {
+            if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                eprintln!("NUCLEUS_RESIDUAL:{}", residual.0);
+            }
+            Err(Verdict::Unknown)
+        }
     }
 }
 
