@@ -1,0 +1,57 @@
+{
+  "version": "transport-02404-depth6-exhausted-20260923",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "atlas_states": 433272,
+  "target": {
+    "challenge_id": "ac-02404",
+    "stable_challenge_id": "sac-02404",
+    "ac_best": 38,
+    "stable_best": 63,
+    "transport_cost": 2,
+    "transport_slack": 23,
+    "source_bound_exclusive": 61,
+    "ac_kTeams": 1,
+    "stable_kTeams": 1
+  },
+  "qualified_runs": {
+    "transport_aware_bestfirst_250k": "https://github.com/heathsanchez/test/actions/runs/35840656253",
+    "transport_exact_radius5": "https://github.com/heathsanchez/test/actions/runs/35840800094",
+    "six_context_exact_depth6_fiber": "https://github.com/heathsanchez/test/actions/runs/35840874085"
+  },
+  "bestfirst": {
+    "nodes": 250000,
+    "visited": 1666111,
+    "frontier": 1796101,
+    "found": false
+  },
+  "exact_radius5": {
+    "nodes": 132797,
+    "visited": 132797,
+    "frontier": 0,
+    "node_cap_hit": false,
+    "found": false
+  },
+  "depth6_fiber": {
+    "contexts": ["S6:xy", "S6:yx", "S7:xy", "S7:yx", "S7:quad-cycle", "S8:quad-cycle"],
+    "atlas_projected_signatures": 428625,
+    "quotient_exact_length_layer_sizes": [1, 14, 146, 1404, 13073, 119722, 1086317],
+    "quotient_expanded": 134360,
+    "terminal_quotient_atlas_signatures": 0,
+    "exact_atlas_hits": 0,
+    "found": false,
+    "obstruction": "fiber_depth6_exhausted"
+  },
+  "post_search_live_recheck": {
+    "authority_run": "https://github.com/heathsanchez/test/actions/runs/35819481180",
+    "utc": "2026-09-23T09:10:32.786907+00:00",
+    "live_state_sha256": "f8fb5d2ccac514f96ab68494c99199f25451dae9c9e17d3fd1dd1be313b08201",
+    "ac_best": 38,
+    "stable_best": 63,
+    "ac_kTeams": 1,
+    "stable_kTeams": 1,
+    "quota_used": 0,
+    "quota_limit": 40
+  },
+  "claim": "For the frozen live ac-02404/sac-02404 state (38/63), transport-aware official best-first at 250000 expansions found no source proof below 61, exhaustive exact-state radius<=5 found no connection to the 433272-state Proof Atlas, and the exact-depth-6 six-context quotient layer has zero intersection with the Atlas projection. The same 38/63 live state was independently rechecked after the search. No candidate exists in these searched mechanisms for the current frozen target state.",
+  "reuse_rule": "Do not repeat the 250000-node transport-aware best-first search, exact-state radius<=5 Atlas connector, or exact-depth-6 six-context fiber connector for ac-02404 against this same 38/63 live state and 433272-state Atlas. Retry only after the live target state changes, the verified Atlas materially grows, or a qualitatively different reverse/bidirectional/nonlocal representation is introduced by a newly verified residual."
+}
