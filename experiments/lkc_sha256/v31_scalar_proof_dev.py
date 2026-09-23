@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-# one-step proof factorization: keep the theorem term linear
+# scalar proof assembled from small recursion-equation lemmas
 from pathlib import Path
 import runpy
 
 ROOT=Path(__file__).resolve().parent
 OUT=ROOT/"generated"; OUT.mkdir(parents=True,exist_ok=True)
-
 runpy.run_path(str(ROOT/"mulrotate_scalar_v31_probe.py"))
 src=(OUT/"Submission_mulrotate_scalar_v31_probe.lean").read_text()
 prefix=src.rsplit("\nend Submission",1)[0] + "\n\n"
 
 proof=r'''
-/-! V31 scalar-state bridge through a proof-only structured wrapper. -/
+/-! V31 scalar-state bridge through certified recursion equations. -/
 
 def roundsScalarMulW (ks : List Nat) (w : Window) (s : Digest) : Digest :=
   roundsScalarMul ks
@@ -21,18 +20,17 @@ def roundsScalarMulW (ks : List Nat) (w : Window) (s : Digest) : Digest :=
 
 theorem roundsScalarMulW_nil (w : Window) (s : Digest) :
     roundsScalarMulW [] w s = s := by
-  cases w
-  cases s
-  rfl
+  unfold roundsScalarMulW
+  rw [roundsScalarMul]
 
 theorem roundsScalarMulW_cons (k : Nat) (ks : List Nat)
     (w : Window) (s : Digest) :
     roundsScalarMulW (k :: ks) w s =
-      roundsScalarMulW ks
-        (w.push w.nextFast)
-        (roundFast s k w.x0) := by
-  cases w
-  cases s
+      roundsScalarMulW ks (w.push w.nextFast) (roundFast s k w.x0) := by
+  rcases w with ⟨w0,w1,w2,w3,w4,w5,w6,w7,w8,w9,w10,w11,w12,w13,w14,w15⟩
+  rcases s with ⟨a,b,c,d,e,f,g,h⟩
+  unfold roundsScalarMulW
+  rw [roundsScalarMul]
   rfl
 
 theorem roundsScalarMulW_eq_roundsFast :
