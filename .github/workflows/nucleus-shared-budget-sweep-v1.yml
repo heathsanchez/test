@@ -1,0 +1,71 @@
+name: Nucleus Shared Subterm Budget Sweep v1
+
+on:
+  push:
+    branches: [nucleus-shared-budget-sweep-v1]
+    paths:
+      - ".github/workflows/nucleus-shared-budget-sweep-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Sweep exact shared-subterm judgment budget
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/shared-budget-sweep-v1
+          python - <<'PY'
+          import json,os,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/tests/good/perf')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          budgets=[16384,32768,65536,131072,262144,524288,1048576]
+          rows=[]
+          for stem in ['repeated-subproblem','shared-subterm']:
+            p=root/(stem+'.ndjson')
+            for budget in budgets:
+              env=dict(os.environ); env['NUCLEUS_JUDGMENT_STEPS']=str(budget)
+              with p.open('rb') as f:
+                t=time.perf_counter_ns()
+                q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=180)
+                elapsed=time.perf_counter_ns()-t
+              rows.append({'test':'perf/'+stem,'budget':budget,'rc':q.returncode,'elapsed_ns':elapsed})
+              if stem=='shared-subterm' and q.returncode==0:
+                break
+          out={'schema':'nucleus-shared-budget-sweep-v1','base_sha':'d86a9d044c219974fb4eb99640d5fb514c876e51','rows':rows}
+          pathlib.Path('evidence-out/shared-budget-sweep-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-shared-budget-sweep-${{ github.sha }}
+          path: metatron-kernel/evidence-out/shared-budget-sweep-v1
+          if-no-files-found: warn
