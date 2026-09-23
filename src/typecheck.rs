@@ -521,7 +521,9 @@ impl<'a> TypeChecker<'a> {
 fn definite_conversion_obstruction(obstruction: &str) -> bool {
     matches!(
         obstruction,
-        "distinct-canonical-universes" | "distinct-Nat-literals"
+        "distinct-canonical-universes"
+            | "distinct-Nat-literals"
+            | "rigid-value-constructor-mismatch"
     )
 }
 
