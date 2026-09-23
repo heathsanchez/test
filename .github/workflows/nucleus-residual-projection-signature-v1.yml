@@ -1,0 +1,282 @@
+name: Nucleus Residual Projection Signature V1
+
+on:
+  push:
+    branches: [nucleus-residual-projection-signature-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-projection-signature-v1.yml"
+      - "metatron-kernel/**"
+  pull_request:
+    paths:
+      - ".github/workflows/nucleus-residual-projection-signature-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-projection-signature-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: e3e9b9350fd4e0b10d65ed3569a937f34069c593
+      ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+      CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build and test diagnostic candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Build frozen residual-capability V0 authority
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact official 193-file Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
+
+      - name: Runtime residual and projection consequence census
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/residual-projection-signature-v1
+          python - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          root = pathlib.Path('/tmp/arena-tests')
+          base = pathlib.Path('/tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel')
+          cand = pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def run(binary, path, trace=False):
+              env = dict(os.environ)
+              if trace:
+                  env['NUCLEUS_TRACE_TERMINAL_RESIDUAL'] = '1'
+                  env['NUCLEUS_TRACE_PARSE_ERROR'] = '1'
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, env=env
+                  )
+              return q.returncode, q.stderr.decode('utf-8', errors='replace').strip()
+
+          def terminal_residual(rc, stderr):
+              residuals = [
+                  line.split(':', 1)[1]
+                  for line in stderr.splitlines()
+                  if line.startswith('NUCLEUS_TERMINAL_RESIDUAL:')
+              ]
+              if residuals:
+                  return residuals[-1]
+              if rc == 3:
+                  for line in stderr.splitlines():
+                      if line.startswith('NUCLEUS_PARSE_ERROR:'):
+                          msg = line.split(':', 1)[1].strip()
+                          msg = re.sub(r'^malformed record at line \\d+:\\s*', '', msg)
+                          return 'parse-error:' + msg
+                  return 'parse-error:unclassified'
+              if rc == 2:
+                  return 'unknown-untraced'
+              return None
+
+          def static_profile(path):
+              event_counts = collections.Counter()
+              declared = []
+              types = {}
+              projections = []
+              recursive = reflexive = indexed = False
+
+              objects = [json.loads(line) for line in path.read_text().splitlines()]
+              for obj in objects:
+                  for key in obj:
+                      event_counts[key] += 1
+                  for key in ('axiom', 'def', 'thm'):
+                      if key in obj:
+                          declared.append(obj[key]['name'])
+                  if 'inductive' in obj:
+                      block = obj['inductive']
+                      ctors_by_type = collections.defaultdict(list)
+                      recs_by_type = collections.defaultdict(list)
+                      for ctor in block.get('ctors', []):
+                          declared.append(ctor['name'])
+                          ctors_by_type[ctor['induct']].append(ctor)
+                      for rec in block.get('recs', []):
+                          declared.append(rec['name'])
+                          for owner in rec.get('all', []):
+                              recs_by_type[owner].append(rec)
+                      for ty in block.get('types', []):
+                          declared.append(ty['name'])
+                          recursive |= bool(ty.get('isRec'))
+                          reflexive |= bool(ty.get('isReflexive'))
+                          indexed |= int(ty.get('numIndices', 0)) > 0
+                          ctors = ctors_by_type.get(ty['name'], [])
+                          recs = recs_by_type.get(ty['name'], [])
+                          types[ty['name']] = {
+                              'num_params': int(ty.get('numParams', 0)),
+                              'num_indices': int(ty.get('numIndices', 0)),
+                              'is_rec': bool(ty.get('isRec')),
+                              'is_reflexive': bool(ty.get('isReflexive')),
+                              'ctor_count': len(ctors),
+                              'ctor_fields': sorted(int(c.get('numFields', 0)) for c in ctors),
+                              'rec_count': len(recs),
+                              'rec_k': sorted(bool(r.get('k')) for r in recs),
+                          }
+                  if 'proj' in obj:
+                      p = obj['proj']
+                      target = types.get(p['typeName'])
+                      projections.append({
+                          'idx': int(p['idx']),
+                          'target_declared': target is not None,
+                          'target_shape': target,
+                      })
+
+              dup = len(declared) != len(set(declared))
+              if dup:
+                  coarse = 'environment.declared-name-uniqueness'
+              elif event_counts['quot']:
+                  coarse = 'quotient'
+              elif event_counts['proj']:
+                  coarse = 'projection'
+              elif recursive or reflexive:
+                  coarse = 'recursive-reflexive'
+              elif event_counts['imax']:
+                  coarse = 'universe-imax'
+              else:
+                  coarse = 'other'
+
+              unique_proj = []
+              seen = set()
+              for item in projections:
+                  key = json.dumps(item, sort_keys=True)
+                  if key not in seen:
+                      seen.add(key)
+                      unique_proj.append(item)
+              unique_proj.sort(key=lambda x: json.dumps(x, sort_keys=True))
+              return {
+                  'event_counts': dict(sorted(event_counts.items())),
+                  'duplicate_declared_name': dup,
+                  'recursive': recursive,
+                  'reflexive': reflexive,
+                  'indexed': indexed,
+                  'coarse_class': coarse,
+                  'projection_shapes': unique_proj,
+              }
+
+          rows = []
+          for directory, expected_rc in [('good', 0), ('bad', 1)]:
+              for path in sorted((root / directory).rglob('*.ndjson')):
+                  name = str(path.relative_to(root / directory)).removesuffix('.ndjson')
+                  brc, _ = run(base, path, trace=False)
+                  crc, stderr = run(cand, path, trace=True)
+                  profile = static_profile(path)
+                  rows.append({
+                      'test': name,
+                      'expected_rc': expected_rc,
+                      'flash_consequence_rc': expected_rc,
+                      'base_rc': brc,
+                      'candidate_rc': crc,
+                      'terminal_residual': terminal_residual(crc, stderr),
+                      'candidate_stderr': stderr,
+                      'profile': profile,
+                  })
+
+          assert len(rows) == 193
+          parity_bad = [r['test'] for r in rows if r['base_rc'] != r['candidate_rc']]
+          residual = [r for r in rows if r['base_rc'] in (2, 3)]
+          projection = [r for r in residual if r['profile']['coarse_class'] == 'projection']
+
+          terminal_counts = collections.Counter(
+              (r['terminal_residual'], r['flash_consequence_rc']) for r in projection
+          )
+          exact_groups = collections.defaultdict(list)
+          for r in projection:
+              sig = {
+                  'terminal_residual': r['terminal_residual'],
+                  'flash_consequence_rc': r['flash_consequence_rc'],
+                  'projection_shapes': r['profile']['projection_shapes'],
+              }
+              key = json.dumps(sig, sort_keys=True, separators=(',', ':'))
+              exact_groups[key].append(r['test'])
+
+          groups = []
+          for key, tests in exact_groups.items():
+              groups.append({
+                  'signature': json.loads(key),
+                  'count': len(tests),
+                  'tests': sorted(tests),
+              })
+          groups.sort(key=lambda g: (-g['count'], json.dumps(g['signature'], sort_keys=True)))
+
+          summary = {
+              'schema': 'nucleus-residual-projection-signature-v1',
+              'base_sha': os.environ['BASE_SHA'],
+              'candidate_sha': os.environ['CANDIDATE_SHA'],
+              'arena_sha': os.environ['ARENA_SHA'],
+              'flash_sha': os.environ['FLASH_SHA'],
+              'fixed_outcome_tests': len(rows),
+              'semantic_parity_mismatches': parity_bad,
+              'residual_count': len(residual),
+              'projection_region_count': len(projection),
+              'untraced_projection_unknowns': sorted(
+                  r['test'] for r in projection if r['terminal_residual'] == 'unknown-untraced'
+              ),
+              'terminal_counts': [
+                  {'terminal_residual': k[0], 'flash_consequence_rc': k[1], 'count': v}
+                  for k, v in sorted(terminal_counts.items(), key=lambda kv: (-kv[1], str(kv[0])))
+              ],
+              'exact_projection_signature_class_count': len(groups),
+              'largest_exact_projection_class': groups[0] if groups else None,
+          }
+
+          out = pathlib.Path('metatron-kernel/evidence-out/residual-projection-signature-v1')
+          (out / 'result.json').write_text(json.dumps(summary, indent=2, sort_keys=True) + '\n')
+          (out / 'rows.json').write_text(json.dumps(rows, indent=2, sort_keys=True) + '\n')
+          (out / 'projection-residuals.json').write_text(
+              json.dumps(projection, indent=2, sort_keys=True) + '\n'
+          )
+          (out / 'projection-classes.json').write_text(
+              json.dumps(groups, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps(summary, sort_keys=True))
+
+          assert not parity_bad, parity_bad
+          assert len(residual) == 80, len(residual)
+          assert len(projection) == 28, len(projection)
+          PY
+
+      - name: Upload projection-signature evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-residual-projection-signature-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-projection-signature-v1
+          if-no-files-found: warn
