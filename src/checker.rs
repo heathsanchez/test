@@ -2795,7 +2795,7 @@ fn check_exact_binary_product_family(
     let (constructor_suffix, law) = match family {
         BinaryProductFamily::And => ("intro", BinaryProductSortLaw::And),
         BinaryProductFamily::Prod => {
-            if prod_has_dependent_parameter_neighbor(export, inductive.ty) {
+            if has_dependent_parameter_neighbor(export, inductive.ty) {
                 return Err(Verdict::Unknown);
             }
             let [first, second] = inductive.level_params.as_slice() else {
@@ -2810,7 +2810,7 @@ fn check_exact_binary_product_family(
             )
         }
         BinaryProductFamily::PProd => {
-            if pprod_has_dependent_parameter_neighbor(export, inductive.ty)
+            if has_dependent_parameter_neighbor(export, inductive.ty)
                 || pprod_has_dependent_field_neighbor(export, constructor.ty)
             {
                 return Err(Verdict::Unknown);
@@ -3272,7 +3272,7 @@ fn is_derived_eq_rule(
         && is_bvar(export, result, 0)
 }
 
-fn prod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
+fn has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
         return false;
     };
@@ -3337,16 +3337,6 @@ fn is_polymorphic_constant(
 
 /// G14-001's name-specific frontier. G15 shares only its already-qualified
 /// derivation skeleton; this envelope and its Sort-level law remain separate.
-fn pprod_has_dependent_parameter_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
-    let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
-        return false;
-    };
-    matches!(
-        export.exprs.get(*body),
-        Some(Expr::Pi { domain, .. }) if matches!(export.exprs.get(*domain), Some(Expr::Pi { .. }))
-    )
-}
-
 fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
     let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
         return false;
