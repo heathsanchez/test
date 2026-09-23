@@ -859,7 +859,10 @@ def semantic_name_authority_status(records: list[dict[str, Any]]) -> str:
     seen: dict[tuple[Any, ...], tuple[str, int]] = {}
     for kind, nid, path in declared:
         assert path is not None
-        if path in seen and seen[path][1] != nid:
+        # Namespace authority is over canonical declaration names, not numeric
+        # exporter IDs. A second declaration at the same canonical path is a
+        # collision even when renaming caused the exporter to reuse one NameId.
+        if path in seen:
             return "deny"
         seen[path] = (kind, nid)
 
