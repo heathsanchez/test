@@ -239,6 +239,7 @@ impl Environment {
             singleton_recursor_reductions: self.singleton_recursor_reductions.clone(),
             recursor_reductions: self.recursor_reductions.clone(),
             projection_specs: Rc::new(specs),
+            nat_primitives: self.nat_primitives.clone(),
         })
     }
 
