@@ -274,10 +274,12 @@ fn parse_expr(
     line: usize,
 ) -> Result<(), ParseError> {
     let id = ExprId(number(object, "ie", line)?);
-    let tags = ["bvar", "sort", "const", "app", "lam", "forallE", "letE", "proj"]
-        .into_iter()
-        .filter(|key| object.contains_key(*key))
-        .collect::<Vec<_>>();
+    let tags = [
+        "bvar", "sort", "const", "app", "lam", "forallE", "letE", "proj",
+    ]
+    .into_iter()
+    .filter(|key| object.contains_key(*key))
+    .collect::<Vec<_>>();
     if tags.len() != 1 {
         return Err(malformed(
             line,
