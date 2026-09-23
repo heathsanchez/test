@@ -36,6 +36,10 @@ fn check_export_with_policy(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Verdict {
+    if let Some(hit) = crate::capability::execute(&export) {
+        return hit.verdict;
+    }
+
     let mut environment = Environment::empty();
 
     // Keep the resolved tables available while consuming declaration records.
