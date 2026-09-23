@@ -1778,10 +1778,7 @@ fn is_rbtree_red_minor_type(
         && is_child_empty_constant_named(export, result_color, "Color", "r")
         && is_bvar(export, result_height, 5)
         && result_args.len() == 5
-        && [8, 5, 4, 3, 2]
-            .into_iter()
-            .zip(result_args.iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &result_args, &[8, 5, 4, 3, 2])
 }
 
 fn is_rbtree_black_minor_type(
@@ -1854,10 +1851,7 @@ fn is_rbtree_black_minor_type(
         && is_child_empty_constant_named(export, result_color, "Color", "b")
         && is_named_succ_bvar(export, result_height, "N", "succ", 5)
         && result_args.len() == 7
-        && [11, 7, 6, 5, 4, 3, 2]
-            .into_iter()
-            .zip(result_args.iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &result_args, &[11, 7, 6, 5, 4, 3, 2])
 }
 
 fn is_derived_rbtree_recursor_type(
@@ -2006,23 +2000,14 @@ fn is_derived_rbtree_red_rule(
         && is_bvar(export, right_carrier, 7)
         && is_child_empty_constant_named(export, right_color, "Color", "b")
         && is_bvar(export, right_height, 2)
-        && [3, 2, 1, 0]
-            .into_iter()
-            .zip(arguments[..4].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &arguments[..4], &[3, 2, 1, 0])
         && left_call.len() == 8
-        && [8, 7, 6, 5, 4]
-            .into_iter()
-            .zip(left_call[..5].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &left_call[..5], &[8, 7, 6, 5, 4])
         && is_child_empty_constant_named(export, left_call[5], "Color", "b")
         && is_bvar(export, left_call[6], 3)
         && is_bvar(export, left_call[7], 2)
         && right_call.len() == 8
-        && [8, 7, 6, 5, 4]
-            .into_iter()
-            .zip(right_call[..5].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &right_call[..5], &[8, 7, 6, 5, 4])
         && is_child_empty_constant_named(export, right_call[5], "Color", "b")
         && is_bvar(export, right_call[6], 3)
         && is_bvar(export, right_call[7], 0)
@@ -2087,23 +2072,14 @@ fn is_derived_rbtree_black_rule(
         && is_bvar(export, right_carrier, 9)
         && is_bvar(export, right_color, 3)
         && is_bvar(export, right_height, 2)
-        && [5, 4, 3, 2, 1, 0]
-            .into_iter()
-            .zip(arguments[..6].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &arguments[..6], &[5, 4, 3, 2, 1, 0])
         && left_call.len() == 8
-        && [10, 9, 8, 7, 6]
-            .into_iter()
-            .zip(left_call[..5].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &left_call[..5], &[10, 9, 8, 7, 6])
         && is_bvar(export, left_call[5], 5)
         && is_bvar(export, left_call[6], 3)
         && is_bvar(export, left_call[7], 2)
         && right_call.len() == 8
-        && [10, 9, 8, 7, 6]
-            .into_iter()
-            .zip(right_call[..5].iter())
-            .all(|(expected, actual)| is_bvar(export, *actual, expected))
+        && are_bvars(export, &right_call[..5], &[10, 9, 8, 7, 6])
         && is_bvar(export, right_call[5], 4)
         && is_bvar(export, right_call[6], 3)
         && is_bvar(export, right_call[7], 0)
@@ -2788,6 +2764,14 @@ fn is_prop_sort(export: &ResolvedExport, expression: ExprId) -> bool {
 
 fn is_bvar(export: &ResolvedExport, expression: ExprId, expected: u64) -> bool {
     matches!(export.exprs.get(expression), Some(Expr::BVar(index)) if *index == expected)
+}
+
+fn are_bvars(export: &ResolvedExport, expressions: &[ExprId], expected: &[u64]) -> bool {
+    expressions.len() == expected.len()
+        && expressions
+            .iter()
+            .zip(expected)
+            .all(|(expression, expected)| is_bvar(export, *expression, *expected))
 }
 
 fn is_bvar_application(
