@@ -91,6 +91,62 @@ impl VisitSet {
     }
 }
 
+const INLINE_PENDING_CAPACITY: usize = 8;
+
+struct PendingStack {
+    inline: [Option<Closure>; INLINE_PENDING_CAPACITY],
+    len: usize,
+    overflow: Option<Vec<Closure>>,
+}
+
+impl PendingStack {
+    #[inline]
+    fn new() -> Self {
+        Self {
+            inline: std::array::from_fn(|_| None),
+            len: 0,
+            overflow: None,
+        }
+    }
+
+    #[inline]
+    fn is_empty(&self) -> bool {
+        self.len == 0 && self.overflow.as_ref().is_none_or(Vec::is_empty)
+    }
+
+    #[inline]
+    fn push(&mut self, value: Closure) {
+        if let Some(overflow) = self.overflow.as_mut() {
+            overflow.push(value);
+            return;
+        }
+        if self.len < INLINE_PENDING_CAPACITY {
+            self.inline[self.len] = Some(value);
+            self.len += 1;
+            return;
+        }
+        let mut overflow = Vec::with_capacity(INLINE_PENDING_CAPACITY * 2);
+        for slot in &mut self.inline[..self.len] {
+            overflow.push(slot.take().expect("initialized pending slot"));
+        }
+        self.len = 0;
+        overflow.push(value);
+        self.overflow = Some(overflow);
+    }
+
+    #[inline]
+    fn pop(&mut self) -> Option<Closure> {
+        if let Some(overflow) = self.overflow.as_mut() {
+            return overflow.pop();
+        }
+        if self.len == 0 {
+            return None;
+        }
+        self.len -= 1;
+        self.inline[self.len].take()
+    }
+}
+
 pub struct Machine<'a> {
     authority: AuthorityId,
     expressions: &'a IdTable<ExprId, Expr>,
@@ -139,7 +195,7 @@ impl<'a> Machine<'a> {
         mut budget: usize,
         record_witnesses: bool,
     ) -> Judgment<Exposure> {
-        let mut pending = Vec::new();
+        let mut pending = PendingStack::new();
         let mut visited = VisitSet::new();
         let mut transitions = Vec::new();
 
@@ -312,7 +368,7 @@ fn permits_delta(transparency: Transparency, preferred_for_reduction: bool) -> b
     }
 }
 
-fn append_pending(spine: &mut Vec<Closure>, pending: &mut Vec<Closure>) {
+fn append_pending(spine: &mut Vec<Closure>, pending: &mut PendingStack) {
     while let Some(argument) = pending.pop() {
         spine.push(argument);
     }
