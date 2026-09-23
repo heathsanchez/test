@@ -1313,20 +1313,8 @@ fn check_exact_rbtree(
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
         || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
-        || !is_derived_rbtree_branch_type(
-            export,
-            red.ty,
-            inductive.name,
-            *level,
-            RbBranch::Red,
-        )
-        || !is_derived_rbtree_branch_type(
-            export,
-            black.ty,
-            inductive.name,
-            *level,
-            RbBranch::Black,
-        )
+        || !is_derived_rbtree_branch_type(export, red.ty, inductive.name, *level, RbBranch::Red)
+        || !is_derived_rbtree_branch_type(export, black.ty, inductive.name, *level, RbBranch::Black)
     {
         return Err(Verdict::Reject);
     }
@@ -1544,9 +1532,7 @@ fn is_derived_rbtree_branch_type(
             is_child_empty_constant_named(export, left_color, "Color", "b")
                 && is_child_empty_constant_named(export, right_color, "Color", "b")
         }
-        RbBranch::Black => {
-            is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3)
-        }
+        RbBranch::Black => is_bvar(export, left_color, 2) && is_bvar(export, right_color, 3),
     };
     let result_index_ok = match branch {
         RbBranch::Red => {
