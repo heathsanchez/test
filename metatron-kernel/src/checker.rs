@@ -2938,7 +2938,7 @@ fn is_exact_exists_rule(
         && is_sort_parameter(export, *carrier, level)
         && is_exists_predicate_type(export, *predicate, 0)
         && is_exists_motive_type(export, *motive, inductive, level)
-        && is_exists_minor_type(export, *minor, inductive, constructor, level)
+        && is_exists_minor_type(export, *minor, constructor, level)
         && is_bvar(export, *witness, 3)
         && is_bvar_application(export, *proof, 3, 0)
         && is_binary_bvar_application(export, result, 2, 1, 0)
