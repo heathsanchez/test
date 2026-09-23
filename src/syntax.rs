@@ -20,6 +20,7 @@ pub enum Level {
 pub enum Expr {
     BVar(u64),
     NatLit(BigNat),
+    StrLit(String),
     Sort(LevelId),
     Const {
         name: NameId,
