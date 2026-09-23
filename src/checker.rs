@@ -1074,7 +1074,12 @@ fn check_exact_nat(
         || succ.num_fields != 1
         || succ.num_params != 0
         || !name_is_child_str(export, succ.name, inductive.name, "succ")
-        || !is_nat_succ_type(export, succ.ty, inductive.name)
+        || !matches!(
+            export.exprs.get(succ.ty),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive.name)
+                    && is_empty_constant(export, *body, inductive.name)
+        )
     {
         return Err(Verdict::Reject);
     }
@@ -1085,6 +1090,9 @@ fn check_exact_nat(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
+    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
+        return Err(Verdict::Reject);
+    };
     if !recursor_metadata_admissible(
         export,
         inductive,
@@ -1093,7 +1101,23 @@ fn check_exact_nat(
         false,
         recursor.level_params.len() == 1,
     ) || !is_derived_nat_recursor_type(export, inductive.name, zero.name, succ.name, recursor)
-        || !are_derived_nat_rules(export, inductive.name, zero.name, succ.name, recursor)
+        || !is_derived_nat_zero_rule(
+            export,
+            zero_rule.rhs,
+            inductive.name,
+            zero.name,
+            succ.name,
+            recursor.level_params[0],
+        )
+        || !is_derived_nat_succ_rule(
+            export,
+            succ_rule.rhs,
+            inductive.name,
+            zero.name,
+            succ.name,
+            recursor.name,
+            recursor.level_params[0],
+        )
     {
         return Err(Verdict::Reject);
     }
@@ -1111,15 +1135,6 @@ fn check_exact_nat(
         delta_policy,
     )?;
     Ok(derivation.finish())
-}
-
-fn is_nat_succ_type(export: &ResolvedExport, expression: ExprId, inductive: NameId) -> bool {
-    matches!(
-        export.exprs.get(expression),
-        Some(Expr::Pi { domain, body })
-            if is_empty_constant(export, *domain, inductive)
-                && is_empty_constant(export, *body, inductive)
-    )
 }
 
 fn is_nat_motive_type(
@@ -1187,34 +1202,6 @@ fn is_derived_nat_recursor_type(
         && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
         && is_empty_constant(export, *target, inductive)
         && is_bvar_application(export, result, 3, 0)
-}
-
-fn are_derived_nat_rules(
-    export: &ResolvedExport,
-    inductive: NameId,
-    zero: NameId,
-    succ: NameId,
-    recursor: &Recursor,
-) -> bool {
-    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
-        return false;
-    };
-    is_derived_nat_zero_rule(
-        export,
-        zero_rule.rhs,
-        inductive,
-        zero,
-        succ,
-        recursor.level_params[0],
-    ) && is_derived_nat_succ_rule(
-        export,
-        succ_rule.rhs,
-        inductive,
-        zero,
-        succ,
-        recursor.name,
-        recursor.level_params[0],
-    )
 }
 
 fn is_derived_nat_zero_rule(
@@ -1878,23 +1865,6 @@ fn peel_rbtree_rule_prefix(
         .then_some(body)
 }
 
-fn is_derived_rbtree_leaf_rule(
-    export: &ResolvedExport,
-    expression: ExprId,
-    prefix: (ExprId, ExprId, ExprId, ExprId, ExprId),
-) -> bool {
-    let Some(result) = peel_rbtree_rule_prefix(export, expression, prefix) else {
-        return false;
-    };
-    is_bvar(export, result, 2)
-}
-
-#[derive(Clone, Copy)]
-enum RbBranch {
-    Red,
-    Black,
-}
-
 fn is_derived_rbtree_branch_rule(
     export: &ResolvedExport,
     expression: ExprId,
@@ -2020,7 +1990,8 @@ fn are_derived_rbtree_rules(
         && red_rule.num_fields == 4
         && black_rule.constructor == constructors[2]
         && black_rule.num_fields == 6
-        && is_derived_rbtree_leaf_rule(export, leaf_rule.rhs, prefix)
+        && peel_rbtree_rule_prefix(export, leaf_rule.rhs, prefix)
+            .is_some_and(|result| is_bvar(export, result, 2))
         && is_derived_rbtree_branch_rule(
             export,
             red_rule.rhs,
