@@ -178,7 +178,7 @@ pub(crate) fn convert_with_policy_at_depth(
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
                                 if is_soft_conversion_obstruction(obstruction) {
-                                    return Judgment::unknown(obstruction);
+                                    return Judgment::unknown(obstruction.0);
                                 }
                                 return Judgment::Refuted { obstruction };
                             }
@@ -235,9 +235,9 @@ pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
 }
 
-fn is_soft_conversion_obstruction(obstruction: &'static str) -> bool {
+fn is_soft_conversion_obstruction(obstruction: crate::judgment::ObstructionId) -> bool {
     matches!(
-        obstruction,
+        obstruction.0,
         "distinct-neutral-heads"
             | "neutral-spine-length"
             | "rigid-value-constructor-mismatch"
