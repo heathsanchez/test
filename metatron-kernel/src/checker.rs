@@ -3129,7 +3129,7 @@ fn check_exact_rbtree(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
 fn valid_rbtree_constructor_metadata(
