@@ -3242,18 +3242,18 @@ fn twobool_recursor_obligations(
     });
 
     let rule_ok = matches!(recursor.rules.as_slice(), [rule]
-        if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
-            matches!(domains.as_slice(), [motive, minor, first, second]
-                if matches!(
-                    export.exprs.get(*motive),
-                    Some(Expr::Pi { domain: motive_arg, .. })
-                        if is_empty_constant(export, *motive_arg, inductive)
-                )
-                    && is_twobool_minor_type(export, *minor, constructor, field_type)
-                    && is_empty_constant(export, *first, field_type)
-                    && is_empty_constant(export, *second, field_type)
-                    && is_bvar_applied_to_two_bvars(export, result, 2, 1, 0))
-        }));
+    if lam_spine(export, rule.rhs, 4).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, minor, first, second]
+            if matches!(
+                export.exprs.get(*motive),
+                Some(Expr::Pi { domain: motive_arg, .. })
+                    if is_empty_constant(export, *motive_arg, inductive)
+            )
+                && is_twobool_minor_type(export, *minor, constructor, field_type)
+                && is_empty_constant(export, *first, field_type)
+                && is_empty_constant(export, *second, field_type)
+                && is_bvar_applied_to_two_bvars(export, result, 2, 1, 0))
+    }));
 
     type_ok && rule_ok
 }
@@ -3290,7 +3290,6 @@ fn is_twobool_minor_type(
         && matches!(export.exprs.get(*motive), Some(Expr::BVar(2)))
         && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
 }
-
 
 fn is_constructor_applied_to_two_bvars(
     export: &ResolvedExport,
