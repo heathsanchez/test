@@ -142,6 +142,36 @@ proof=proof.replace("(t2_mod32 s))", "(t2_mod32 s hs))")
 proof=proof.replace("bigSigma1Fast_mod32 s.e)", "bigSigma1Fast_mod32 s.e hs.e)")
 proof=proof.replace("bigSigma0Fast_mod32 s.a)", "bigSigma0Fast_mod32 s.a hs.a)")
 
+# Replace V25's recursive rounds proof with a small certified one-step bridge.
+rs0=proof.index("theorem roundsFast_eq_slow")
+rs1=proof.index("def generate", rs0)
+rounds_bridge=r'''theorem roundsFast_cons_bridge
+    (k : Nat) (ks : List Nat) (win : Window) (s : Digest)
+    (hs : ValidDigest s) (hw : ValidWindow win) :
+    roundsFast (k :: ks) win s =
+      roundsFast ks win.advance (round s k win.x0) := by
+  simp only [roundsFast]
+  rw [Window.nextFast_eq_nextWord win hw]
+  rw [roundFast_eq_round s k win.x0 hs]
+  rfl
+
+theorem roundsFast_eq_slow
+    (ks : List Nat) : ∀ win s, ValidDigest s → ValidWindow win →
+      roundsFast ks win s = roundsSlow ks win s := by
+  induction ks with
+  | nil =>
+      intro win s hs hw
+      rfl
+  | cons k ks ih =>
+      intro win s hs hw
+      rw [roundsFast_cons_bridge k ks win s hs hw]
+      simp only [roundsSlow]
+      exact ih win.advance (round s k win.x0)
+        (valid_round s k win.x0 hs) (valid_advance win hw)
+
+'''
+proof=proof[:rs0]+rounds_bridge+proof[rs1:]
+
 text=prefix+proof+"\nend Submission\n"
 p=OUT/"Submission_mulrotate_v30_proof.lean"
 p.write_text(text)
