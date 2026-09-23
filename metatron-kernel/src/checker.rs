@@ -417,22 +417,9 @@ fn check_conversion_lifted_unary_recursive(
         return Err(Verdict::Reject);
     }
 
-    let Some((recursor_parameter, recursor_minor_field)) =
-        validate_conversion_lifted_unary_recursor_shape(
-            export,
-            inductive.name,
-            constructor.name,
-            recursor,
-        )
+    let Some((recursor_parameter, recursor_minor_field, rule_field)) =
+        conversion_lifted_unary_shapes(export, inductive.name, constructor.name, recursor)
     else {
-        return Err(Verdict::Reject);
-    };
-    let Some(rule_field) = validate_conversion_lifted_unary_rule_shape(
-        export,
-        inductive.name,
-        constructor.name,
-        recursor,
-    ) else {
         return Err(Verdict::Reject);
     };
 
@@ -565,91 +552,37 @@ fn unary_recursive_minor_field(
     .then_some(*field)
 }
 
-fn validate_conversion_lifted_unary_recursor_shape(
+fn conversion_lifted_unary_shapes(
     export: &ResolvedExport,
     inductive: NameId,
     constructor: NameId,
     recursor: &Recursor,
-) -> Option<(ExprId, ExprId)> {
-    let Expr::Pi {
-        domain: parameter,
-        body,
-    } = export.exprs.get(recursor.ty)?
-    else {
+) -> Option<(ExprId, ExprId, ExprId)> {
+    let (recursor_domains, recursor_result) = pi_spine(export, recursor.ty, 4)?;
+    let [parameter, motive, minor, target] = recursor_domains.as_slice() else {
         return None;
     };
-    let Expr::Pi {
-        domain: motive,
-        body,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-    let Expr::Pi {
-        domain: minor,
-        body,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-    let Expr::Pi {
-        domain: target,
-        body: result,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-
     if !is_unary_recursive_motive_type(export, *motive, inductive, recursor.level_params[0])
         || !is_empty_inductive_applied_to_bvar(export, *target, inductive, 2)
-        || !is_bvar_application(export, *result, 2, 0)
+        || !is_bvar_application(export, recursor_result, 2, 0)
     {
         return None;
     }
-    let field = unary_recursive_minor_field(export, *minor, constructor)?;
-    Some((*parameter, field))
-}
+    let recursor_minor_field = unary_recursive_minor_field(export, *minor, constructor)?;
 
-fn validate_conversion_lifted_unary_rule_shape(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> Option<ExprId> {
     let [rule] = recursor.rules.as_slice() else {
         return None;
     };
-    let Expr::Lam {
-        domain: parameter,
-        body,
-    } = export.exprs.get(rule.rhs)?
-    else {
+    let (rule_domains, rule_result) = lam_spine(export, rule.rhs, 4)?;
+    let [_parameter, rule_motive, rule_minor, rule_field] = rule_domains.as_slice() else {
         return None;
     };
-    let Expr::Lam {
-        domain: motive,
-        body,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-    let Expr::Lam {
-        domain: minor,
-        body,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-    let Expr::Lam {
-        domain: field,
-        body: result,
-    } = export.exprs.get(*body)?
-    else {
-        return None;
-    };
-
-    if !is_unary_recursive_motive_type(export, *motive, inductive, recursor.level_params[0])
-        || unary_recursive_minor_field(export, *minor, constructor).is_none()
+    if !is_unary_recursive_motive_type(
+        export,
+        *rule_motive,
+        inductive,
+        recursor.level_params[0],
+    ) || unary_recursive_minor_field(export, *rule_minor, constructor).is_none()
     {
         return None;
     }
@@ -657,7 +590,7 @@ fn validate_conversion_lifted_unary_rule_shape(
     let Expr::App {
         fun: minor_at_field,
         arg: recursive_call,
-    } = export.exprs.get(*result)?
+    } = export.exprs.get(rule_result)?
     else {
         return None;
     };
@@ -666,16 +599,12 @@ fn validate_conversion_lifted_unary_rule_shape(
     }
     let (head, arguments) = application_spine(export, *recursive_call);
     if !is_unary_polymorphic_constant(export, head, recursor.name, recursor.level_params[0])
-        || arguments.len() != 4
-        || !is_bvar(export, arguments[0], 3)
-        || !is_bvar(export, arguments[1], 2)
-        || !is_bvar(export, arguments[2], 1)
-        || !is_bvar(export, arguments[3], 0)
+        || !are_bvars(export, &arguments, &[3, 2, 1, 0])
     {
         return None;
     }
-    let _ = parameter;
-    Some(*field)
+
+    Some((*parameter, recursor_minor_field, *rule_field))
 }
 
 /// G21-001 is a rejection-only constructor-result law for the otherwise
