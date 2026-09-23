@@ -1,0 +1,133 @@
+name: Nucleus G34 Arena RSS v1
+
+on:
+  push:
+    branches: [nucleus-g34-arena-rss-v1]
+    paths:
+      - ".github/workflows/nucleus-g34-arena-rss-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-g34-arena-rss-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 240
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      NUCLEUS_SHA: 56b748bae0466423158679b88de5406bf57bee35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build exact qualified Nucleus G34
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$NUCLEUS_SHA" || {
+            echo "branch workflow commit may differ; verifying source ancestry instead"
+            git merge-base --is-ancestor "$NUCLEUS_SHA" HEAD
+          }
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-g34
+          sha256sum /tmp/nucleus-g34
+          stat -c 'binary_bytes=%s' /tmp/nucleus-g34
+
+      - name: Prepare exact current Arena
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cat > /tmp/arena/checkers/nucleus-g34.yaml <<'YAML'
+          description: |
+            Qualified Nucleus G34 semantic-performance authority, exact source SHA.
+          version: "g34-56b748b"
+          url: https://github.com/heathsanchez/test
+          rev: 56b748bae0466423158679b88de5406bf57bee35
+          build: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          run: ./metatron-kernel/target/release/metatron-kernel < $IN
+          YAML
+          cd /tmp/arena
+          nix develop -c ./lka.py build-checker nucleus-g34
+
+      - name: Build leaderboard real-world workloads
+        timeout-minutes: 200
+        run: |
+          set -euo pipefail
+          cd /tmp/arena
+          for t in init-prelude init std mathlib cedar cslib con-leche; do
+            echo "=== BUILD $t ==="
+            nix develop -c ./lka.py build-test "$t"
+          done
+
+      - name: Measure Arena wall time and peak RSS
+        timeout-minutes: 35
+        run: |
+          set -euo pipefail
+          cd /tmp/arena
+          rm -rf _results
+          mkdir -p _results
+          for t in init-prelude init std mathlib cedar cslib con-leche; do
+            echo "=== RUN $t ==="
+            nix develop -c ./lka.py -v run --checker nucleus-g34 --test "$t"
+          done
+
+      - name: Summarize exact Arena metrics
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-rss-g34
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+          root=pathlib.Path('/tmp/arena/_results')
+          rows=[]
+          for p in sorted(root.glob('nucleus-g34_*.json')):
+              d=json.loads(p.read_text())
+              rows.append({
+                  'test':d.get('test'),
+                  'status':d.get('status'),
+                  'correctness':d.get('correctness'),
+                  'exit_code':d.get('exit_code'),
+                  'wall_time':d.get('wall_time'),
+                  'cpu_time':d.get('cpu_time'),
+                  'max_rss':d.get('max_rss'),
+                  'instructions':d.get('instructions'),
+              })
+          binary=pathlib.Path('/tmp/nucleus-g34')
+          out={
+              'schema':'nucleus-g34-arena-rss-v1',
+              'candidate_sha':os.environ['NUCLEUS_SHA'],
+              'arena_sha':os.environ['ARENA_SHA'],
+              'binary_bytes':binary.stat().st_size if binary.exists() else None,
+              'rows':rows,
+              'max_rss_bytes':max((r['max_rss'] or 0 for r in rows),default=0),
+              'accepted_wall_time_sum':sum((r['wall_time'] or 0) for r in rows if r['status']=='accepted'),
+              'accepted_tests':[r['test'] for r in rows if r['status']=='accepted'],
+              'nonaccepted_tests':[r['test'] for r in rows if r['status']!='accepted'],
+          }
+          dest=pathlib.Path('metatron-kernel/evidence-out/arena-rss-g34/result.json')
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Capture current public leaderboard reference
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-rss-g34
+          curl -fsSL https://arena.lean-lang.org/results.json             -o metatron-kernel/evidence-out/arena-rss-g34/public-results.json || true
+
+      - name: Upload Arena RSS evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g34-arena-rss-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-rss-g34
+          if-no-files-found: warn
