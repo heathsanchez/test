@@ -116,7 +116,11 @@ fn recursor_name_coherence(export: &ResolvedExport) -> Option<Verdict> {
         // Nested-inductive elimination legitimately generates specialized
         // recursors such as <type>.rec_1 / rec_2.  The simple reserved-name
         // law is warranted only for blocks with no nested inductive surface.
-        if block.types.iter().any(|inductive| inductive.num_nested != 0) {
+        if block
+            .types
+            .iter()
+            .any(|inductive| inductive.num_nested != 0)
+        {
             continue;
         }
         for recursor in &block.recursors {
