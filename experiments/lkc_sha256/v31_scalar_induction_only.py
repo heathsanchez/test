@@ -28,18 +28,26 @@ theorem roundsScalarMulW_cons (k : Nat) (ks : List Nat)
   rw [roundsScalarMul]
   rfl
 
+theorem roundsFast_nil_eq (w : Window) (s : Digest) :
+    roundsFast [] w s = s := by
+  rw [roundsFast]
+
+theorem roundsFast_cons_eq (k : Nat) (ks : List Nat)
+    (w : Window) (s : Digest) :
+    roundsFast (k :: ks) w s =
+      roundsFast ks (w.push w.nextFast) (roundFast s k w.x0) := by
+  rw [roundsFast]
+
 theorem roundsScalarMulW_eq_roundsFast
     (ks : List Nat) : ∀ (w : Window) (s : Digest),
       roundsScalarMulW ks w s = roundsFast ks w s := by
   induction ks with
   | nil =>
       intro w s
-      rw [roundsScalarMulW_nil]
-      rfl
+      rw [roundsScalarMulW_nil, roundsFast_nil_eq]
   | cons k ks ih =>
       intro w s
-      rw [roundsScalarMulW_cons]
-      simp only [roundsFast]
+      rw [roundsScalarMulW_cons, roundsFast_cons_eq]
       exact ih (w.push w.nextFast) (roundFast s k w.x0)
 
 end Submission
