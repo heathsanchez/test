@@ -242,7 +242,10 @@ pub(crate) fn convert_with_policy_in_context(
                         eprintln!("NUCLEUS_CONVERSION_EXPOSURE:left-refuted:{}", obstruction.0);
                     }
                     if let Judgment::Refuted { obstruction } = &cheap_right {
-                        eprintln!("NUCLEUS_CONVERSION_EXPOSURE:right-refuted:{}", obstruction.0);
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE:right-refuted:{}",
+                            obstruction.0
+                        );
                     }
                 }
                 let (Some(cheap_left), Some(cheap_right)) =
