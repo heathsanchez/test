@@ -1091,8 +1091,14 @@ fn check_exact_nat(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    if !valid_nat_recursor_metadata(export, inductive.name, zero.name, succ.name, recursor)
-        || !is_derived_nat_recursor_type(export, inductive.name, zero.name, succ.name, recursor)
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == 1,
+    ) || !is_derived_nat_recursor_type(export, inductive.name, zero.name, succ.name, recursor)
         || !are_derived_nat_rules(export, inductive.name, zero.name, succ.name, recursor)
     {
         return Err(Verdict::Reject);
@@ -1133,32 +1139,6 @@ fn is_nat_succ_type(export: &ResolvedExport, expression: ExprId, inductive: Name
             if is_empty_constant(export, *domain, inductive)
                 && is_empty_constant(export, *body, inductive)
     )
-}
-
-fn valid_nat_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    zero: NameId,
-    succ: NameId,
-    recursor: &Recursor,
-) -> bool {
-    recursor.all == [inductive]
-        && !recursor.k
-        && recursor.level_params.len() == 1
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 0
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 2
-        && matches!(
-            recursor.rules.as_slice(),
-            [zero_rule, succ_rule]
-                if zero_rule.constructor == zero
-                    && zero_rule.num_fields == 0
-                    && succ_rule.constructor == succ
-                    && succ_rule.num_fields == 1
-        )
-        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
 fn is_nat_motive_type(
@@ -1364,12 +1344,15 @@ fn check_exact_rbtree(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    if !valid_rbtree_recursor_metadata(
+    if !recursor_metadata_admissible(
         export,
-        inductive.name,
-        *level,
-        [leaf.name, red.name, black.name],
+        inductive,
+        &block.constructors,
         recursor,
+        false,
+        recursor.level_params.len() == 2
+            && recursor.level_params[1] == *level
+            && recursor.level_params[0] != *level,
     ) || !is_derived_rbtree_recursor_type(
         export,
         inductive.name,
@@ -1613,36 +1596,6 @@ fn is_derived_rbtree_black_type(
         && is_bvar(export, result_carrier, 6)
         && is_child_empty_constant_named(export, result_color, "Color", "b")
         && is_named_succ_bvar(export, result_height, "N", "succ", 3)
-}
-
-fn valid_rbtree_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    level: NameId,
-    constructors: [NameId; 3],
-    recursor: &Recursor,
-) -> bool {
-    recursor.all == [inductive]
-        && !recursor.k
-        && recursor.level_params.len() == 2
-        && recursor.level_params[1] == level
-        && recursor.level_params[0] != level
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 1
-        && recursor.num_indices == 2
-        && recursor.num_motives == 1
-        && recursor.num_minors == 3
-        && matches!(
-            recursor.rules.as_slice(),
-            [leaf_rule, red_rule, black_rule]
-                if leaf_rule.constructor == constructors[0]
-                    && leaf_rule.num_fields == 0
-                    && red_rule.constructor == constructors[1]
-                    && red_rule.num_fields == 4
-                    && black_rule.constructor == constructors[2]
-                    && black_rule.num_fields == 6
-        )
-        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
 fn application_spine(export: &ResolvedExport, expression: ExprId) -> (ExprId, Vec<ExprId>) {
@@ -2255,8 +2208,14 @@ fn check_binary_enum(
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if !valid_binary_recursor_metadata(export, inductive.name, recursor)
-        || !is_derived_binary_recursor_type(export, inductive.name, &constructor_names, recursor)
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && recursor.level_params.len() == 1,
+    ) || !is_derived_binary_recursor_type(export, inductive.name, &constructor_names, recursor)
         || !are_derived_binary_rules(export, inductive.name, &constructor_names, recursor)
     {
         return Err(Verdict::Reject);
@@ -2268,26 +2227,6 @@ fn check_binary_enum(
         delta_policy,
     )?;
     Ok(derivation.finish())
-}
-
-fn valid_binary_recursor_metadata(
-    export: &ResolvedExport,
-    inductive_name: NameId,
-    recursor: &Recursor,
-) -> bool {
-    recursor.all == [inductive_name]
-        && !recursor.is_unsafe
-        && !recursor.k
-        && recursor.level_params.len() == 1
-        && recursor.num_params == 0
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 2
-        && recursor.rules.len() == 2
-        && matches!(
-            export.names.get(recursor.name),
-            Some(Name::Str { prefix, value }) if *prefix == inductive_name && value == "rec"
-        )
 }
 
 fn is_derived_binary_recursor_type(
@@ -2443,6 +2382,34 @@ fn is_bvar_applied_to_bvar(
 /// G15-001's closed internal quotient, extended by G16-001's independently
 /// earned nullary law. External recognition remains name-sealed: adding this
 /// variant cannot authorize any unrelated fourth product family.
+fn recursor_metadata_admissible(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+    expected_k: bool,
+    levels_ok: bool,
+) -> bool {
+    recursor.all == [inductive.name]
+        && recursor.k == expected_k
+        && levels_ok
+        && !has_duplicate_parameter(&recursor.level_params)
+        && recursor.num_params == inductive.num_params
+        && recursor.num_indices == inductive.num_indices
+        && recursor.num_motives == 1
+        && recursor.num_minors == constructors.len() as u64
+        && recursor.rules.len() == constructors.len()
+        && recursor
+            .rules
+            .iter()
+            .zip(constructors)
+            .all(|(rule, constructor)| {
+                rule.constructor == constructor.name
+                    && rule.num_fields == constructor.num_fields
+            })
+        && name_is_child_str(export, recursor.name, inductive.name, "rec")
+}
+
 #[derive(Clone, Copy)]
 enum BinaryProductSortLaw {
     And,
@@ -2566,18 +2533,14 @@ impl BinaryProductSortLaw {
         constructor: &Constructor,
         recursor: &Recursor,
     ) -> bool {
-        recursor.all == [inductive.name]
-            && recursor.k == self.recursor_uses_rule_k()
-            && self.recursor_levels(&inductive.level_params, recursor)
-            && !has_duplicate_parameter(&recursor.level_params)
-            && recursor.num_params == self.num_params()
-            && recursor.num_indices == self.num_indices()
-            && recursor.num_motives == 1
-            && recursor.num_minors == 1
-            && matches!(recursor.rules.as_slice(), [rule]
-                if rule.constructor == constructor.name
-                    && rule.num_fields == self.num_fields())
-            && name_is_child_str(export, recursor.name, inductive.name, "rec")
+        recursor_metadata_admissible(
+            export,
+            inductive,
+            std::slice::from_ref(constructor),
+            recursor,
+            self.recursor_uses_rule_k(),
+            self.recursor_levels(&inductive.level_params, recursor),
+        )
     }
 
     fn validates_type(self, export: &ResolvedExport, expression: ExprId) -> bool {
@@ -3465,8 +3428,14 @@ fn check_twobool_structure(
     let [recursor] = block.recursors.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if !valid_twobool_recursor_metadata(export, inductive.name, constructor.name, recursor)
-        || !is_derived_twobool_recursor_type(
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        !recursor.is_unsafe && recursor.level_params.len() == 1,
+    ) || !is_derived_twobool_recursor_type(
             export,
             inductive.name,
             constructor.name,
@@ -3490,25 +3459,6 @@ fn check_twobool_structure(
         delta_policy,
     )?;
     Ok(derivation.finish())
-}
-
-fn valid_twobool_recursor_metadata(
-    export: &ResolvedExport,
-    inductive: NameId,
-    constructor: NameId,
-    recursor: &Recursor,
-) -> bool {
-    recursor.all == [inductive]
-        && !recursor.is_unsafe
-        && !recursor.k
-        && recursor.level_params.len() == 1
-        && !has_duplicate_parameter(&recursor.level_params)
-        && recursor.num_params == 0
-        && recursor.num_indices == 0
-        && recursor.num_motives == 1
-        && recursor.num_minors == 1
-        && matches!(recursor.rules.as_slice(), [rule] if rule.constructor == constructor && rule.num_fields == 2)
-        && name_is_child_str(export, recursor.name, inductive, "rec")
 }
 
 fn is_twobool_constructor_type(
