@@ -54,7 +54,7 @@ theorem fast_step_fun (k : Nat) (ks : List Nat)
     (w : Window) (s : Digest) :
     roundsFast (k :: ks) w s =
       roundsFast ks (w.push w.nextFast) (roundFast s k w.x0) := by
-  rw [roundsFast]
+  rfl
 
 theorem runner_nil : ScalarRunner [] = FastRunner [] := by
   funext w s
