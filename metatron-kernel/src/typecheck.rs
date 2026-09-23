@@ -244,7 +244,12 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
+                let function_type_trace = function_type.clone();
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    eprintln!(
+                        "NUCLEUS_TRACE_APP_PI expr={:?} fun={:?} arg={:?} inferred={:?} depth={} remaining={}",
+                        expression, fun, arg, function_type_trace, context.len(), *remaining
+                    );
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining) {
