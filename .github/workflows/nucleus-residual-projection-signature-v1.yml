@@ -118,6 +118,36 @@ jobs:
                   return 'unknown-untraced'
               return None
 
+          def parse_kv_line(line, prefix):
+              payload = line[len(prefix):]
+              out = {}
+              for item in payload.split(';'):
+                  key, value = item.split('=', 1)
+                  if value in ('true', 'false'):
+                      out[key] = value == 'true'
+                  elif value.isdigit():
+                      out[key] = int(value)
+                  else:
+                      out[key] = value
+              return out
+
+          def terminal_inductive_block(stderr):
+              block = None
+              types, ctors, recs = [], [], []
+              for line in stderr.splitlines():
+                  if line.startswith('NUCLEUS_INDUCTIVE_BLOCK:'):
+                      block = parse_kv_line(line, 'NUCLEUS_INDUCTIVE_BLOCK:')
+                      types, ctors, recs = [], [], []
+                  elif line.startswith('NUCLEUS_INDUCTIVE_TYPE:'):
+                      types.append(parse_kv_line(line, 'NUCLEUS_INDUCTIVE_TYPE:'))
+                  elif line.startswith('NUCLEUS_INDUCTIVE_CTOR:'):
+                      ctors.append(parse_kv_line(line, 'NUCLEUS_INDUCTIVE_CTOR:'))
+                  elif line.startswith('NUCLEUS_INDUCTIVE_REC:'):
+                      recs.append(parse_kv_line(line, 'NUCLEUS_INDUCTIVE_REC:'))
+              if block is None:
+                  return None
+              return {'block': block, 'types': types, 'ctors': ctors, 'recs': recs}
+
           def static_profile(path):
               event_counts = collections.Counter()
               declared = []
@@ -215,6 +245,7 @@ jobs:
                       'base_rc': brc,
                       'candidate_rc': crc,
                       'terminal_residual': terminal_residual(crc, stderr),
+                      'terminal_inductive_block': terminal_inductive_block(stderr),
                       'candidate_stderr': stderr,
                       'profile': profile,
                   })
@@ -246,6 +277,31 @@ jobs:
               })
           groups.sort(key=lambda g: (-g['count'], json.dumps(g['signature'], sort_keys=True)))
 
+          inductive_blocked = [
+              r for r in projection
+              if r['terminal_residual']
+              and r['terminal_residual'].startswith('inductive-check-unknown')
+          ]
+          block_groups_map = collections.defaultdict(list)
+          for r in inductive_blocked:
+              sig = {
+                  'flash_consequence_rc': r['flash_consequence_rc'],
+                  'terminal_inductive_block': r['terminal_inductive_block'],
+              }
+              key = json.dumps(sig, sort_keys=True, separators=(',', ':'))
+              block_groups_map[key].append(r['test'])
+          block_groups = [
+              {
+                  'signature': json.loads(key),
+                  'count': len(tests),
+                  'tests': sorted(tests),
+              }
+              for key, tests in block_groups_map.items()
+          ]
+          block_groups.sort(
+              key=lambda g: (-g['count'], json.dumps(g['signature'], sort_keys=True))
+          )
+
           summary = {
               'schema': 'nucleus-residual-projection-signature-v1',
               'base_sha': os.environ['BASE_SHA'],
@@ -265,6 +321,9 @@ jobs:
               ],
               'exact_projection_signature_class_count': len(groups),
               'largest_exact_projection_class': groups[0] if groups else None,
+              'inductive_blocked_projection_count': len(inductive_blocked),
+              'terminal_inductive_block_class_count': len(block_groups),
+              'largest_terminal_inductive_block_class': block_groups[0] if block_groups else None,
           }
 
           out = pathlib.Path('metatron-kernel/evidence-out/residual-projection-signature-v1')
@@ -276,11 +335,16 @@ jobs:
           (out / 'projection-classes.json').write_text(
               json.dumps(groups, indent=2, sort_keys=True) + '\n'
           )
+          (out / 'terminal-inductive-block-classes.json').write_text(
+              json.dumps(block_groups, indent=2, sort_keys=True) + '\n'
+          )
           print(json.dumps(summary, sort_keys=True))
 
           assert not parity_bad, parity_bad
           assert len(residual) == 80, len(residual)
           assert len(projection) == 28, len(projection)
+          assert len(inductive_blocked) == 19, len(inductive_blocked)
+          assert all(r['terminal_inductive_block'] is not None for r in inductive_blocked)
           PY
 
       - name: Upload projection-signature evidence
