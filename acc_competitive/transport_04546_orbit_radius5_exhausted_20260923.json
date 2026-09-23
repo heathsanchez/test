@@ -1,0 +1,59 @@
+{
+  "schema": "acc-transport-orbit-residual-certificate-v1",
+  "target": {
+    "challenge_id": "ac-04546",
+    "stable_challenge_id": "sac-04546",
+    "ac_best": 108,
+    "stable_best": 121,
+    "transport_cost": 2,
+    "transport_slack": 11,
+    "source_bound_exclusive": 119,
+    "ac_kTeams": 1,
+    "stable_kTeams": 1
+  },
+  "capability": {
+    "implementation": "acc_competitive/transport_orbit_atlas_connector_v1.py",
+    "implementation_commit": "e9d1344cc54fb7e562456299543bf5c8d8788280",
+    "description": "Transport-aware Atlas connector over the exact 16-element generator-sign/swap symmetry orbit, with independent AC and Stable publication gates and pinned official verification for any recovered path."
+  },
+  "official_verifier_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "proof_atlas": {
+    "raw_states": 433272,
+    "orbit_classes": 251269,
+    "symmetry_group_size": 16,
+    "effective_orbit_upper_bound": 6932352
+  },
+  "evidence": {
+    "workflow_run": 35857508797,
+    "job_id": 107169430729,
+    "connector_depth": 5,
+    "nodes": 132377,
+    "node_cap_hit": false,
+    "orbit_hits": 0,
+    "found": 0,
+    "ac_wins": 0,
+    "stable_wins": 0,
+    "pending_rows": 0,
+    "artifact_id": 10747719663,
+    "artifact_sha256": "f1cfa120db24d4ae36f1cdb7f072b97117e79e7ec4bc0114b061a35617c95cfd"
+  },
+  "post_search_live_authority": {
+    "run_id": 35846007411,
+    "job_id": 107169616050,
+    "utc": "2026-09-23T11:57:50.620357+00:00",
+    "live_state_sha256": "166b65d99432c9c3a9363403d6a156267b61ee6d29f0945c39ec167f163b6e52",
+    "quota": {"used": 0, "remaining": 40, "limit": 40},
+    "standing": {"unique": 0, "tied": 6, "lost": 106},
+    "ac": {"unsolved": 2672, "singleton_records": 4098},
+    "stable_ac": {"unsolved": 2673, "singleton_records": 4747},
+    "target_still_live": {"ac_best": 108, "stable_best": 121, "ac_kTeams": 1, "stable_kTeams": 1}
+  },
+  "result": "no_radius5_intersection_even_after_symmetry_orbit_closure",
+  "interpretation": "The fresh 04546 transport residual is not merely outside the raw Atlas radius-5 neighborhood. Its complete exact radius-5 neighborhood has zero intersection with the Atlas under all 16 generator-sign/swap symmetries. Together with the previously sealed exact-depth-6 six-context fiber obstruction, this rejects further local Atlas-connection scaling on this unchanged residual.",
+  "reuse_rule": "Do not repeat raw radius<=5, 250000-node official best-first, six-context depth-6 fiber, or symmetry-orbit radius<=5 search for ac-04546/sac-04546 while the live target remains 108/121 and the verified Proof Atlas remains 433272 states. Reopen only after material Atlas growth, a live target change, or a genuinely nonlocal/reverse/bidirectional mechanism.",
+  "publication": {
+    "candidate": false,
+    "submitted": false,
+    "quota_consumed": 0
+  }
+}
