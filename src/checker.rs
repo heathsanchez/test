@@ -1284,7 +1284,17 @@ fn check_exact_rbtree(
     let [level] = inductive.level_params.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if !is_exact_rbtree_type(export, inductive.ty, *level) {
+    let Some((type_domains, type_result)) = pi_spine(export, inductive.ty, 3) else {
+        return Err(Verdict::Reject);
+    };
+    let [carrier, color, height] = type_domains.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !is_sort_succ_parameter(export, *carrier, *level)
+        || !is_root_empty_constant_named(export, *color, "Color")
+        || !is_root_empty_constant_named(export, *height, "N")
+        || !is_sort_succ_parameter(export, type_result, *level)
+    {
         return Err(Verdict::Reject);
     }
 
@@ -1294,12 +1304,25 @@ fn check_exact_rbtree(
     if leaf.is_unsafe || red.is_unsafe || black.is_unsafe {
         return Err(Verdict::Unknown);
     }
+    let leaf_type_valid = pi_spine(export, leaf.ty, 1).is_some_and(|(domains, result)| {
+        let [leaf_carrier] = domains.as_slice() else {
+            return false;
+        };
+        rbtree_application_parts(export, result, inductive.name, *level).is_some_and(
+            |(result_carrier, result_color, result_height)| {
+                is_sort_succ_parameter(export, *leaf_carrier, *level)
+                    && is_bvar(export, result_carrier, 0)
+                    && is_child_empty_constant_named(export, result_color, "Color", "b")
+                    && is_child_empty_constant_named(export, result_height, "N", "zero")
+            },
+        )
+    });
     if inductive.all != [inductive.name]
         || inductive.constructors != [leaf.name, red.name, black.name]
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, leaf, 0, 0, "leaf")
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, red, 1, 4, "red")
         || !valid_rbtree_constructor_metadata(export, inductive.name, *level, black, 2, 6, "black")
-        || !is_derived_rbtree_leaf_type(export, leaf.ty, inductive.name, *level)
+        || !leaf_type_valid
         || !is_derived_rbtree_branch_type(export, red.ty, inductive.name, *level, RbBranch::Red)
         || !is_derived_rbtree_branch_type(export, black.ty, inductive.name, *level, RbBranch::Black)
     {
@@ -1370,19 +1393,6 @@ fn valid_rbtree_constructor_metadata(
         && name_is_child_str(export, constructor.name, inductive, suffix)
 }
 
-fn is_exact_rbtree_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 3) else {
-        return false;
-    };
-    let [carrier, color, height] = domains.as_slice() else {
-        return false;
-    };
-    is_sort_succ_parameter(export, *carrier, level)
-        && is_root_empty_constant_named(export, *color, "Color")
-        && is_root_empty_constant_named(export, *height, "N")
-        && is_sort_succ_parameter(export, result, level)
-}
-
 fn rbtree_application_parts(
     export: &ResolvedExport,
     expression: ExprId,
@@ -1437,29 +1447,6 @@ fn is_named_succ_bvar(
             if is_child_empty_constant_named(export, *fun, root, child)
                 && is_bvar(export, *arg, argument)
     )
-}
-
-fn is_derived_rbtree_leaf_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    level: NameId,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 1) else {
-        return false;
-    };
-    let [carrier] = domains.as_slice() else {
-        return false;
-    };
-    let Some((result_carrier, result_color, result_height)) =
-        rbtree_application_parts(export, result, inductive, level)
-    else {
-        return false;
-    };
-    is_sort_succ_parameter(export, *carrier, level)
-        && is_bvar(export, result_carrier, 0)
-        && is_child_empty_constant_named(export, result_color, "Color", "b")
-        && is_child_empty_constant_named(export, result_height, "N", "zero")
 }
 
 fn is_derived_rbtree_branch_type(
@@ -1640,24 +1627,6 @@ fn is_rbtree_motive_type(
         && is_sort_parameter(export, result, motive_level)
 }
 
-fn is_rbtree_leaf_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    leaf: NameId,
-    level: NameId,
-) -> bool {
-    let Some((color, height, tree)) = motive_application_parts(export, expression, 0) else {
-        return false;
-    };
-    let Some(arguments) = rbtree_constructor_application_args(export, tree, leaf, level) else {
-        return false;
-    };
-    is_child_empty_constant_named(export, color, "Color", "b")
-        && is_child_empty_constant_named(export, height, "N", "zero")
-        && arguments.len() == 1
-        && is_bvar(export, arguments[0], 1)
-}
-
 #[derive(Clone, Copy)]
 enum RbBranch {
     Red,
@@ -1812,10 +1781,20 @@ fn is_derived_rbtree_recursor_type(
     else {
         return false;
     };
+    let leaf_minor_valid =
+        motive_application_parts(export, *leaf_minor, 0).is_some_and(|(color, height, tree)| {
+            rbtree_constructor_application_args(export, tree, constructors[0], level).is_some_and(
+                |arguments| {
+                    is_child_empty_constant_named(export, color, "Color", "b")
+                        && is_child_empty_constant_named(export, height, "N", "zero")
+                        && matches!(arguments.as_slice(), [argument] if is_bvar(export, *argument, 1))
+                },
+            )
+        });
 
     is_sort_succ_parameter(export, *carrier, level)
         && is_rbtree_motive_type(export, *motive, inductive, level, recursor.level_params[0])
-        && is_rbtree_leaf_minor_type(export, *leaf_minor, constructors[0], level)
+        && leaf_minor_valid
         && is_rbtree_branch_minor_type(
             export,
             *red_minor,
@@ -1840,17 +1819,6 @@ fn is_derived_rbtree_recursor_type(
         && is_bvar(export, result_color, 2)
         && is_bvar(export, result_height, 1)
         && is_bvar(export, result_tree, 0)
-}
-
-fn rbtree_recursor_prefix_domains(
-    export: &ResolvedExport,
-    expression: ExprId,
-) -> Option<(ExprId, ExprId, ExprId, ExprId, ExprId)> {
-    let (domains, _) = pi_spine(export, expression, 5)?;
-    let [carrier, motive, leaf, red, black] = domains.as_slice() else {
-        return None;
-    };
-    Some((*carrier, *motive, *leaf, *red, *black))
 }
 
 fn peel_rbtree_rule_prefix(
@@ -1987,9 +1955,13 @@ fn are_derived_rbtree_rules(
     let [leaf_rule, red_rule, black_rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let Some(prefix) = rbtree_recursor_prefix_domains(export, recursor.ty) else {
+    let Some((prefix_domains, _)) = pi_spine(export, recursor.ty, 5) else {
         return false;
     };
+    let [carrier, motive, leaf, red, black] = prefix_domains.as_slice() else {
+        return false;
+    };
+    let prefix = (*carrier, *motive, *leaf, *red, *black);
     leaf_rule.constructor == constructors[0]
         && leaf_rule.num_fields == 0
         && red_rule.constructor == constructors[1]
