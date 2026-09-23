@@ -2556,19 +2556,10 @@ fn is_binary_bvar_application(
     first: u64,
     second: u64,
 ) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_bvar(export, *head, function)
-        && is_bvar(export, *first_arg, first)
-        && is_bvar(export, *arg, second)
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_bvar(export, head, function)
+        && are_bvars(export, &arguments, &[first, second])
 }
 
 fn is_exact_binary_product_parameter_telescope(
@@ -3118,21 +3109,11 @@ fn is_constructor_applied_to_two_bvars(
     first: u64,
     second: u64,
 ) -> bool {
-    let Some(Expr::App { fun, arg }) = export.exprs.get(expression) else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: head,
-        arg: first_arg,
-    }) = export.exprs.get(*fun)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *head, constructor)
-        && matches!(export.exprs.get(*first_arg), Some(Expr::BVar(index)) if *index == first)
-        && matches!(export.exprs.get(*arg), Some(Expr::BVar(index)) if *index == second)
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[first, second])
 }
-
 
 fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
     matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
