@@ -1090,9 +1090,6 @@ fn check_exact_nat(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
-        return Err(Verdict::Reject);
-    };
     if !recursor_metadata_admissible(
         export,
         inductive,
@@ -1100,24 +1097,7 @@ fn check_exact_nat(
         recursor,
         false,
         recursor.level_params.len() == 1,
-    ) || !is_derived_nat_recursor_type(export, inductive.name, zero.name, succ.name, recursor)
-        || !is_derived_nat_zero_rule(
-            export,
-            zero_rule.rhs,
-            inductive.name,
-            zero.name,
-            succ.name,
-            recursor.level_params[0],
-        )
-        || !is_derived_nat_succ_rule(
-            export,
-            succ_rule.rhs,
-            inductive.name,
-            zero.name,
-            succ.name,
-            recursor.name,
-            recursor.level_params[0],
-        )
+    ) || !nat_recursor_obligations(export, inductive.name, zero.name, succ.name, recursor)
     {
         return Err(Verdict::Reject);
     }
@@ -1137,132 +1117,103 @@ fn check_exact_nat(
     Ok(derivation.finish())
 }
 
-fn is_nat_motive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    motive_level: NameId,
-) -> bool {
-    matches!(
-        export.exprs.get(expression),
-        Some(Expr::Pi { domain, body })
-            if is_empty_constant(export, *domain, inductive)
-                && is_sort_parameter(export, *body, motive_level)
-    )
-}
-
-fn is_nat_succ_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    succ: NameId,
-) -> bool {
-    let Some((domains, result)) = pi_spine(export, expression, 2) else {
-        return false;
-    };
-    let [value, induction_hypothesis] = domains.as_slice() else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: motive,
-        arg: succ_value,
-    }) = export.exprs.get(result)
-    else {
-        return false;
-    };
-    let Some(Expr::App {
-        fun: succ_head,
-        arg: succ_arg,
-    }) = export.exprs.get(*succ_value)
-    else {
-        return false;
-    };
-    is_empty_constant(export, *value, inductive)
-        && is_bvar_application(export, *induction_hypothesis, 2, 0)
-        && is_bvar(export, *motive, 3)
-        && is_empty_constant(export, *succ_head, succ)
-        && is_bvar(export, *succ_arg, 1)
-}
-
-fn is_derived_nat_recursor_type(
+fn nat_recursor_obligations(
     export: &ResolvedExport,
     inductive: NameId,
     zero: NameId,
     succ: NameId,
     recursor: &Recursor,
 ) -> bool {
-    let Some((domains, result)) = pi_spine(export, recursor.ty, 4) else {
+    let motive_level = recursor.level_params[0];
+
+    let motive_ok = |expression: ExprId| {
+        matches!(
+            export.exprs.get(expression),
+            Some(Expr::Pi { domain, body })
+                if is_empty_constant(export, *domain, inductive)
+                    && is_sort_parameter(export, *body, motive_level)
+        )
+    };
+
+    let succ_minor_ok = |expression: ExprId| {
+        let Some((domains, result)) = pi_spine(export, expression, 2) else {
+            return false;
+        };
+        let [value, induction_hypothesis] = domains.as_slice() else {
+            return false;
+        };
+        let Some(Expr::App {
+            fun: motive,
+            arg: succ_value,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        let Some(Expr::App {
+            fun: succ_head,
+            arg: succ_arg,
+        }) = export.exprs.get(*succ_value)
+        else {
+            return false;
+        };
+        is_empty_constant(export, *value, inductive)
+            && is_bvar_application(export, *induction_hypothesis, 2, 0)
+            && is_bvar(export, *motive, 3)
+            && is_empty_constant(export, *succ_head, succ)
+            && is_bvar(export, *succ_arg, 1)
+    };
+
+    let Some((type_domains, type_result)) = pi_spine(export, recursor.ty, 4) else {
         return false;
     };
-    let [motive, zero_minor, succ_minor, target] = domains.as_slice() else {
+    let [motive, zero_minor, succ_minor, target] = type_domains.as_slice() else {
         return false;
     };
-    is_nat_motive_type(export, *motive, inductive, recursor.level_params[0])
+    let type_ok = motive_ok(*motive)
         && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
-        && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
+        && succ_minor_ok(*succ_minor)
         && is_empty_constant(export, *target, inductive)
-        && is_bvar_application(export, result, 3, 0)
-}
+        && is_bvar_application(export, type_result, 3, 0);
 
-fn is_derived_nat_zero_rule(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    zero: NameId,
-    succ: NameId,
-    motive_level: NameId,
-) -> bool {
-    let Some((domains, result)) = lam_spine(export, expression, 3) else {
+    let [zero_rule, succ_rule] = recursor.rules.as_slice() else {
         return false;
     };
-    let [motive, zero_minor, succ_minor] = domains.as_slice() else {
-        return false;
-    };
-    is_nat_motive_type(export, *motive, inductive, motive_level)
-        && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
-        && is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
-        && is_bvar(export, result, 1)
-}
+    let zero_ok = lam_spine(export, zero_rule.rhs, 3).is_some_and(|(domains, result)| {
+        matches!(domains.as_slice(), [motive, zero_minor, succ_minor]
+            if motive_ok(*motive)
+                && is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+                && succ_minor_ok(*succ_minor)
+                && is_bvar(export, result, 1))
+    });
 
-fn is_derived_nat_succ_rule(
-    export: &ResolvedExport,
-    expression: ExprId,
-    inductive: NameId,
-    zero: NameId,
-    succ: NameId,
-    recursor_name: NameId,
-    motive_level: NameId,
-) -> bool {
-    let Some((domains, result)) = lam_spine(export, expression, 4) else {
-        return false;
-    };
-    let [motive, zero_minor, succ_minor, value] = domains.as_slice() else {
-        return false;
-    };
-    if !is_nat_motive_type(export, *motive, inductive, motive_level)
-        || !is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
-        || !is_nat_succ_minor_type(export, *succ_minor, inductive, succ)
-        || !is_empty_constant(export, *value, inductive)
-    {
-        return false;
-    }
-    let Some(Expr::App {
-        fun: succ_step,
-        arg: recursive_call,
-    }) = export.exprs.get(result)
-    else {
-        return false;
-    };
-    if !is_bvar_application(export, *succ_step, 1, 0) {
-        return false;
-    }
-    let (head, arguments) = application_spine(export, *recursive_call);
-    arguments.len() == 4
-        && is_unary_polymorphic_constant(export, head, recursor_name, motive_level)
-        && [3, 2, 1, 0]
-            .into_iter()
-            .zip(arguments)
-            .all(|(expected, actual)| is_bvar(export, actual, expected))
+    let succ_ok = lam_spine(export, succ_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [motive, zero_minor, succ_minor, value] = domains.as_slice() else {
+            return false;
+        };
+        if !motive_ok(*motive)
+            || !is_bvar_applied_to_constant(export, *zero_minor, 0, zero)
+            || !succ_minor_ok(*succ_minor)
+            || !is_empty_constant(export, *value, inductive)
+        {
+            return false;
+        }
+        let Some(Expr::App {
+            fun: succ_step,
+            arg: recursive_call,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        if !is_bvar_application(export, *succ_step, 1, 0) {
+            return false;
+        }
+        let (head, arguments) = application_spine(export, *recursive_call);
+        arguments.len() == 4
+            && is_unary_polymorphic_constant(export, head, recursor.name, motive_level)
+            && are_bvars(export, &arguments, &[3, 2, 1, 0])
+    });
+
+    type_ok && zero_ok && succ_ok
 }
 
 fn check_exact_rbtree(
