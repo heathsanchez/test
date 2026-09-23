@@ -444,6 +444,136 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
+    pub(crate) fn proof_terms_same_proposition(
+        &self,
+        left: &Closure,
+        right: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let Some(left_value) = self
+            .machine()
+            .expose(left.clone(), Transparency::Reducible, budget)
+            .proven_value()
+            .cloned()
+        else {
+            return false;
+        };
+        let Some(right_value) = self
+            .machine()
+            .expose(right.clone(), Transparency::Reducible, budget)
+            .proven_value()
+            .cloned()
+        else {
+            return false;
+        };
+        let (Value::Neutral(left_neutral), Value::Neutral(right_neutral)) =
+            (&left_value, &right_value)
+        else {
+            return false;
+        };
+
+        let Some(left_ty) = self.neutral_result_type(left_neutral, context, budget) else {
+            return false;
+        };
+        let Some(right_ty) = self.neutral_result_type(right_neutral, context, budget) else {
+            return false;
+        };
+        let Some(left_normal) = self.normalize_type_value(&left_ty, budget) else {
+            return false;
+        };
+        let Some(right_normal) = self.normalize_type_value(&right_ty, budget) else {
+            return false;
+        };
+        left_normal == right_normal
+            && self.normalized_type_is_proposition(&left_normal, context, budget, 0)
+    }
+
+    fn normalize_type_value(&self, ty: &TypeValue, budget: usize) -> Option<Value> {
+        match ty {
+            TypeValue::Sort(level) => Some(Value::Sort(level.clone())),
+            TypeValue::Term(closure) => self
+                .machine()
+                .expose(closure.clone(), Transparency::Reducible, budget)
+                .proven_value()
+                .cloned(),
+            TypeValue::Pi { .. } => None,
+        }
+    }
+
+    fn normalized_type_is_proposition(
+        &self,
+        value: &Value,
+        context: &[TypeValue],
+        budget: usize,
+        depth: usize,
+    ) -> bool {
+        if depth >= 16 || budget == 0 {
+            return false;
+        }
+        let Value::Neutral(neutral) = value else {
+            return false;
+        };
+        let Some(ty) = self.neutral_result_type(neutral, context, budget - 1) else {
+            return false;
+        };
+        let Some(normal) = self.normalize_type_value(&ty, budget - 1) else {
+            return false;
+        };
+        match normal {
+            Value::Sort(LevelTerm::Zero) => true,
+            Value::Neutral(_) if normal != *value => {
+                self.normalized_type_is_proposition(&normal, context, budget - 1, depth + 1)
+            }
+            _ => false,
+        }
+    }
+
+    fn neutral_result_type(
+        &self,
+        neutral: &crate::value::Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Option<TypeValue> {
+        let mut current = match &neutral.head {
+            NeutralHead::Free(free) => {
+                let index = usize::try_from(free.0).ok()?;
+                context.get(index)?.clone()
+            }
+            NeutralHead::Const { name, levels } => {
+                let declaration = self.environment.get(*name)?;
+                if declaration.level_params.len() != levels.len() {
+                    return None;
+                }
+                let substitution = declaration
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                TypeValue::Term(Closure::with_levels(
+                    declaration.ty,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitution),
+                ))
+            }
+        };
+
+        for argument in &neutral.spine {
+            let (domain, body) = self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
+            let _ = domain;
+            current = match body {
+                PiBody::Fixed(body) => body,
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        Some(current)
+    }
+
     pub(crate) fn unit_like_type_key(
         &self,
         ty: &TypeValue,

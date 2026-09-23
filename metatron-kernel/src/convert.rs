@@ -120,7 +120,7 @@ pub(crate) fn convert_with_policy_in_context(
     budget: usize,
     delta_policy: DeltaPolicy,
     initial_depth: usize,
-    _context: &[TypeValue],
+    context: &[TypeValue],
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -168,6 +168,12 @@ pub(crate) fn convert_with_policy_in_context(
                 ));
                 continue;
             }
+        }
+
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && checker.proof_terms_same_proposition(left_term, right_term, context, remaining)
+        {
+            continue;
         }
 
         if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
