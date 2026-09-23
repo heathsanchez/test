@@ -1,0 +1,105 @@
+name: Nucleus Residual Capability FunEta v1
+
+on:
+  push:
+    branches: [nucleus-residual-capability-funeta-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-capability-funeta-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-capability-funeta-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: e3e9b9350fd4e0b10d65ed3569a937f34069c593
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build candidate and exact compiler base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch frozen official corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Global reclosure and eta falsification
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/residual-funeta-v1
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  def rr(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=rr(base),rr(cand)
+                  rows.append({'test':name,'expected':expected,'base':a,'candidate':b})
+          assert len(rows)==193
+          by={r['test']:r for r in rows}
+          false_accept=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_reject=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          regressions=[r for r in rows if r['base']==r['expected'] and r['candidate']!=r['expected']]
+          wrong_delta=[r for r in rows if r['base']!=r['candidate'] and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          assert not false_accept,false_accept
+          assert not false_reject,false_reject
+          assert not regressions,regressions
+          assert not wrong_delta,wrong_delta
+          assert by['tutorial/114_funEta']['candidate']==0,by['tutorial/114_funEta']
+          assert by['tutorial/115_funEtaDep']['candidate']==0,by['tutorial/115_funEtaDep']
+          assert by['tutorial/116_funEtaBad']['candidate']!=0,by['tutorial/116_funEtaBad']
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          out={
+            'schema':'nucleus-residual-capability-funeta-v1',
+            'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'earned_count':len(earned),'earned':[r['test'] for r in earned],
+            'changes':changes,'false_accepts':false_accept,'false_rejects':false_reject,
+            'regressions':regressions,'wrong_deltas':wrong_delta,
+            'base_residual':sum(r['base'] in (2,3) for r in rows),
+            'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+            'native_decisions':sum(r['candidate']==r['expected'] for r in rows),
+            'fun_eta_bad_rc':by['tutorial/116_funEtaBad']['candidate'],
+          }
+          dest=pathlib.Path('evidence-out/residual-funeta-v1/result.json')
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-capability-funeta-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-funeta-v1
+          if-no-files-found: error
