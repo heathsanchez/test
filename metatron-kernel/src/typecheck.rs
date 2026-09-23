@@ -288,9 +288,9 @@ impl<'a> TypeChecker<'a> {
                 let TypeValue::Term(structure_type) = structure_type else {
                     return Judgment::refuted("projection-not-structure");
                 };
-                let exposed = self
-                    .machine()
-                    .expose(structure_type, Transparency::Reducible, *remaining);
+                let exposed =
+                    self.machine()
+                        .expose(structure_type, Transparency::Reducible, *remaining);
                 let neutral = match exposed {
                     Judgment::Proven {
                         value: Value::Neutral(neutral),
