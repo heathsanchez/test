@@ -2824,15 +2824,12 @@ fn is_exists_constructor_application(
     expression: ExprId,
     constructor: NameId,
     level: NameId,
-    carrier: u64,
-    predicate: u64,
-    witness: u64,
-    proof: u64,
+    binders: [u64; 4],
 ) -> bool {
     let (head, arguments) = application_spine(export, expression);
     arguments.len() == 4
         && is_unary_polymorphic_constant(export, head, constructor, level)
-        && are_bvars(export, &arguments, &[carrier, predicate, witness, proof])
+        && are_bvars(export, &arguments, &binders)
 }
 
 fn is_exact_exists_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
@@ -2900,7 +2897,7 @@ fn is_exists_minor_type(
         return false;
     };
     is_bvar(export, *motive, 2)
-        && is_exists_constructor_application(export, *constructed, constructor, level, 4, 3, 1, 0)
+        && is_exists_constructor_application(export, *constructed, constructor, level, [4, 3, 1, 0])
 }
 
 fn is_exact_exists_recursor_type(
@@ -2926,7 +2923,6 @@ fn is_exact_exists_recursor_type(
 
 fn is_exact_exists_rule(
     export: &ResolvedExport,
-    inductive: NameId,
     constructor: NameId,
     rule: &crate::syntax::RecursorRule,
     level: NameId,
@@ -3010,7 +3006,6 @@ fn check_exact_exists(
         || !matches!(recursor.rules.as_slice(), [rule]
         if is_exact_exists_rule(
             export,
-            inductive.name,
             constructor.name,
             rule,
             *level,
