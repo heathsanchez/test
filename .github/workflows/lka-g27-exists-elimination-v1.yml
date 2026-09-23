@@ -1,0 +1,145 @@
+name: LKA G27 Exists Elimination Qualification v1
+
+on:
+  push:
+    branches: [lka-g27-exists-elimination-v1]
+    paths:
+      - ".github/workflows/lka-g27-exists-elimination-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g27-exists-elimination-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: cd176276d675434190a19c14c4a2d7f8f0ab75b1
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify source and retained evidence
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build exact G26 oracle
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g26-oracle "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/g26-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Global tutorial reclosure
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g27
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/lean-kernel-tutorial')
+          oracle=pathlib.Path('/tmp/g26-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for expected_dir,expected_exit in [('good',0),('bad',1)]:
+              for path in sorted((root/expected_dir).glob('*.ndjson')):
+                  try: number=int(path.name.split('_',1)[0])
+                  except ValueError: continue
+                  def run(binary):
+                      with path.open('rb') as f:
+                          return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(oracle),run(candidate)
+                  status=('earned_delta' if b==expected_exit and a!=expected_exit else 'mismatch') if a!=b else ('equal_correct' if b==expected_exit else 'equal_residual')
+                  rows.append({'number':number,'input':f'{expected_dir}/{path.name}','expected_exit':expected_exit,'oracle_exit':a,'candidate_exit':b,'status':status})
+          rows.sort(key=lambda r:r['number'])
+          by={r['number']:r for r in rows}
+          assert by[74]['oracle_exit']==2 and by[74]['candidate_exit']==0 and by[74]['status']=='earned_delta', by[74]
+          assert by[75]['oracle_exit']==by[75]['candidate_exit']==2, by[75]
+          changes=[r for r in rows if r['oracle_exit']!=r['candidate_exit']]
+          mismatches=[r for r in rows if r['status']=='mismatch']
+          assert changes==[by[74]], changes
+          assert mismatches==[], mismatches
+          residuals=[r for r in rows if r['candidate_exit']!=r['expected_exit']]
+          out={
+            'schema':'metatron-kernel-g27-exists-elimination-qualification-v1',
+            'arena_sha':os.environ['ARENA_SHA'],'oracle_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'changes':changes,'mismatches':mismatches,
+            'counts':{
+              'earned_delta':1,
+              'equal_correct':sum(r['status']=='equal_correct' for r in rows),
+              'equal_residual':sum(r['status']=='equal_residual' for r in rows),
+              'mismatch':0
+            },
+            'first_remaining_residual':residuals[0] if residuals else None
+          }
+          pathlib.Path('evidence-out/g27/tutorial-reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Replay committed corpus against G26
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          oracle=pathlib.Path('/tmp/g26-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set(); rows=[]
+          for path in paths:
+              rp=str(path)
+              if rp in seen: continue
+              seen.add(rp)
+              def run(binary):
+                  with path.open('rb') as f:
+                      return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=run(oracle),run(candidate)
+              rows.append({'path':rp,'oracle':a,'candidate':b})
+          diffs=[r for r in rows if r['oracle']!=r['candidate']]
+          expected='evidence/residuals/G27-001/074_existsRec.ndjson'
+          assert diffs==[{'path':expected,'oracle':2,'candidate':0}], diffs
+          out={'schema':'metatron-kernel-g27-committed-differential-v1','count':len(rows),'diffs':diffs,'rows':rows}
+          pathlib.Path('evidence-out/g27/committed-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'count':len(rows),'diffs':diffs},sort_keys=True))
+          PY
+
+      - name: Upload G27 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g27-exists-elimination-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g27
+          if-no-files-found: error
