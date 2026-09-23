@@ -609,15 +609,7 @@ fn ofnat_minor_type(
         return false;
     };
     is_bvar(export, *motive, 1)
-        && ofnat_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            carrier_level,
-            3,
-            2,
-            0,
-        )
+        && ofnat_constructor_application(export, *constructed, constructor, carrier_level, 3, 2, 0)
 }
 
 fn ofnat_recursor_type(
@@ -636,13 +628,7 @@ fn ofnat_recursor_type(
     };
     is_sort_succ_parameter(export, *carrier, carrier_level)
         && is_nat_constant(export, *numeral)
-        && ofnat_motive_type(
-            export,
-            *motive,
-            inductive,
-            carrier_level,
-            motive_level,
-        )
+        && ofnat_motive_type(export, *motive, inductive, carrier_level, motive_level)
         && ofnat_minor_type(export, *minor, constructor, carrier_level)
         && ofnat_application(export, *target, inductive, carrier_level, 3, 2)
         && is_bvar_application(export, result, 2, 0)
@@ -670,13 +656,7 @@ fn ofnat_recursor_rule(
     };
     is_sort_succ_parameter(export, *carrier, carrier_level)
         && is_nat_constant(export, *numeral)
-        && ofnat_motive_type(
-            export,
-            *motive,
-            inductive,
-            carrier_level,
-            motive_level,
-        )
+        && ofnat_motive_type(export, *motive, inductive, carrier_level, motive_level)
         && ofnat_minor_type(export, *minor, constructor, carrier_level)
         && is_bvar(export, *field, 3)
         && is_bvar_application(export, result, 1, 0)
