@@ -742,13 +742,7 @@ fn check_single_constructor_inductive(
         && inductive.is_reflexive
         && !inductive.is_unsafe
     {
-        check_conversion_lifted_reflexive_unary(
-            export,
-            environment,
-            block,
-            limits,
-            delta_policy,
-        )
+        check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
     } else {
@@ -1807,7 +1801,6 @@ fn check_conversion_lifted_unary_recursive(
     Ok(derivation.finish())
 }
 
-
 /// Residual-generated extension of G23: one-parameter reflexive recursion
 /// whose sole recursive field is a function. The field's parameter and
 /// codomain are admitted only after reducible conversion proves them equal
@@ -2020,9 +2013,7 @@ fn reflexive_unary_minor_field(
     else {
         return None;
     };
-    if !is_bvar(export, *ih_motive, 2)
-        || !is_bvar_application(export, *field_at_argument, 1, 0)
-    {
+    if !is_bvar(export, *ih_motive, 2) || !is_bvar_application(export, *field_at_argument, 1, 0) {
         return None;
     }
 
