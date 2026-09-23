@@ -96,17 +96,9 @@ fn check_export_with_policy(
                 {
                     return verdict;
                 }
-                let nat_binary_op = environment
-                    .nat_primitives()
-                    .and_then(|primitives| {
-                        classify_nat_binary_op(
-                            &export,
-                            name,
-                            &level_params,
-                            ty,
-                            primitives.type_name,
-                        )
-                    });
+                let nat_binary_op = environment.nat_primitives().and_then(|primitives| {
+                    classify_nat_binary_op(&export, name, &level_params, ty, primitives.type_name)
+                });
                 (
                     name,
                     ConstantDecl::definition(level_params, ty, value, preferred_for_reduction),
