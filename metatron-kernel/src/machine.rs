@@ -24,6 +24,7 @@ pub enum TransitionWitness {
     Zeta,
     Delta,
     SingletonRecursor,
+    ConstructorRecursor,
     Rigid,
 }
 
@@ -32,6 +33,20 @@ pub struct DefinitionBody {
     pub value: ExprId,
     pub preferred_for_reduction: bool,
     pub level_params: Vec<NameId>,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RecursorRule {
+    pub constructor: NameId,
+    pub num_params: usize,
+    pub num_fields: usize,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct RecursorReduction {
+    pub num_params: usize,
+    pub num_indices: usize,
+    pub rules: Vec<RecursorRule>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -46,6 +61,7 @@ pub struct Machine<'a> {
     levels: &'a IdTable<LevelId, Level>,
     definitions: HashMap<NameId, DefinitionBody>,
     singleton_recursor_reductions: HashSet<NameId>,
+    recursor_reductions: HashMap<NameId, RecursorReduction>,
 }
 
 impl<'a> Machine<'a> {
@@ -61,11 +77,20 @@ impl<'a> Machine<'a> {
             levels,
             definitions,
             singleton_recursor_reductions: HashSet::new(),
+            recursor_reductions: HashMap::new(),
         }
     }
 
     pub fn with_singleton_recursor_reductions(mut self, reductions: HashSet<NameId>) -> Self {
         self.singleton_recursor_reductions = reductions;
+        self
+    }
+
+    pub fn with_recursor_reductions(
+        mut self,
+        reductions: HashMap<NameId, RecursorReduction>,
+    ) -> Self {
+        self.recursor_reductions = reductions;
         self
     }
 
@@ -191,6 +216,44 @@ impl<'a> Machine<'a> {
                         closure = minor;
                         continue;
                     }
+                    if let Some(reduction) = self.recursor_reductions.get(name) {
+                        let required = reduction.num_params
+                            + 1
+                            + reduction.rules.len()
+                            + reduction.num_indices
+                            + 1;
+                        if pending.len() >= required {
+                            let offset = pending.len() - required;
+                            let arguments = pending[offset..]
+                                .iter()
+                                .rev()
+                                .cloned()
+                                .collect::<Vec<_>>();
+                            let target = arguments.last().expect("required includes target");
+                            if let Some((constructor, constructor_arguments)) =
+                                self.constructor_application(target)
+                                && let Some((rule_index, rule)) = reduction
+                                    .rules
+                                    .iter()
+                                    .enumerate()
+                                    .find(|(_, rule)| rule.constructor == constructor)
+                                && constructor_arguments.len()
+                                    == rule.num_params + rule.num_fields
+                            {
+                                let minor_index = reduction.num_params + 1 + rule_index;
+                                let minor = arguments[minor_index].clone();
+                                let fields = &constructor_arguments[rule.num_params..];
+                                pending.truncate(offset);
+                                for field in fields.iter().rev() {
+                                    pending.push(field.clone());
+                                }
+                                transitions.push(TransitionWitness::ConstructorRecursor);
+                                visited.clear();
+                                closure = minor;
+                                continue;
+                            }
+                        }
+                    }
                     if let Some(definition) = self.definitions.get(name)
                         && permits_delta(transparency, definition.preferred_for_reduction)
                     {
@@ -236,6 +299,24 @@ impl<'a> Machine<'a> {
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
                 }
+            }
+        }
+    }
+
+    fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
+        let mut closure = target.clone();
+        let mut arguments = Vec::new();
+        loop {
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::Const { name, .. } => {
+                    arguments.reverse();
+                    return Some((*name, arguments));
+                }
+                _ => return None,
             }
         }
     }
