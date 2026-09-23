@@ -1,0 +1,32 @@
+{
+  "schema": "nucleus-vs-arena-flash-overlap-v1",
+  "scope": "78 tutorial exports on which Nucleus P4 and official Arena MathGraph flash both produce the correct accept/reject outcome; tiny-process timing, not full-Arena authority",
+  "arena_sha": "74745e5a848c71d99121e811ae86f24d13dea785",
+  "flash_sha": "78c7502bac8a5ba000057b3f083bc0595ac65750",
+  "nucleus_p4_source": "55d4ecea29bd1ed6e85226076d5c09bfb6f0a291",
+  "build": {
+    "nucleus": "RUSTFLAGS=-C target-cpu=native release locked",
+    "flash": "official Arena recipe: target-cpu=native, PGO trained on init-prelude, two-thread config"
+  },
+  "timing": {
+    "cases": 78,
+    "repetitions_per_round": 12,
+    "rounds": 7,
+    "medians_ns": {
+      "nucleus": 880317448,
+      "flash": 4190275461
+    },
+    "nucleus_over_flash": 0.21008581803114065
+  },
+  "binary_bytes": {
+    "nucleus": 890160,
+    "flash": 1900408
+  },
+  "evidence": {
+    "run": 35853944105,
+    "job": 107157893391,
+    "artifact": 10746159041,
+    "artifact_digest": "sha256:97a039f119e9ecd955ab661886bd84e951b11dea135e0f8edee8e2a0c768da32"
+  },
+  "conclusion": "P4 is decisively faster on the bounded common-correct tutorial overlap. This does not establish full-Arena superiority because Nucleus authority is still incomplete and tiny-process startup contributes to this benchmark."
+}
