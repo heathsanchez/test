@@ -177,6 +177,9 @@ pub(crate) fn convert_with_policy_at_depth(
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
+                                if is_soft_conversion_obstruction(obstruction) {
+                                    return Judgment::unknown(obstruction);
+                                }
                                 return Judgment::Refuted { obstruction };
                             }
                             Judgment::Unknown { residual } => {
@@ -204,7 +207,7 @@ pub(crate) fn convert_with_policy_at_depth(
                         return Judgment::unknown("full-conversion-exposure");
                     };
                     let Some(full) = value_as_type(full, depth) else {
-                        return Judgment::refuted("rigid-type-constructor-mismatch");
+                        return Judgment::unknown("rigid-type-constructor-mismatch");
                     };
                     full
                 } else {
@@ -230,6 +233,16 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn is_soft_conversion_obstruction(obstruction: &'static str) -> bool {
+    matches!(
+        obstruction,
+        "distinct-neutral-heads"
+            | "neutral-spine-length"
+            | "rigid-value-constructor-mismatch"
+            | "rigid-type-constructor-mismatch"
+    )
 }
 
 fn compare_values(
