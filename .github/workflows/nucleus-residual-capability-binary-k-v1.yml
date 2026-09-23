@@ -1,0 +1,151 @@
+name: Nucleus Residual Capability Binary K v1
+
+on:
+  push:
+    branches: [nucleus-residual-capability-binary-k-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-capability-binary-k-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-capability-binary-k-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      BASE_SHA: a75f5e391cb6262397d80ef6d0d72cd55c809b95
+      ARENA_ARTIFACT: 10712869614
+      CANDIDATE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build candidate and exact 58-case warranted base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen official corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Qualify binary-enum K coherence and globally reclose
+        timeout-minutes: 20
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/residual-binary-k-v1
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          rows=[]
+
+          def rr(binary,path,trace=False):
+              env=dict(os.environ)
+              if trace:
+                  env['NUCLEUS_TRACE_CAPABILITY']='1'
+              with path.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,env=env,timeout=120
+                  )
+              return q.returncode,q.stderr.decode('utf-8',errors='replace')
+
+          for directory,expected in [('good',0),('bad',1)]:
+              for path in sorted((root/directory).rglob('*.ndjson')):
+                  test=str(path.relative_to(root/directory)).removesuffix('.ndjson')
+                  brc,_=rr(base,path)
+                  crc,stderr=rr(cand,path,True)
+                  rows.append({
+                      'test':test,'expected':expected,'base':brc,'candidate':crc,
+                      'capability_hit':
+                        'NUCLEUS_CAPABILITY_HIT:inductive.binary-enum-k-coherence.v0:Reject' in stderr,
+                  })
+
+          assert len(rows)==193
+          by={r['test']:r for r in rows}
+          target='bugs/rec-k-lie'
+          protected='bugs/large-elim-param'
+
+          false_accept=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_reject=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong=[r for r in rows if r['base'] in (2,3) and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          hits=[r['test'] for r in rows if r['capability_hit']]
+
+          assert not false_accept,false_accept
+          assert not false_reject,false_reject
+          assert not regressions,regressions
+          assert not wrong,wrong
+          assert [r['test'] for r in earned]==[target],earned
+          assert [r['test'] for r in changes]==[target],changes
+          assert hits==[target],hits
+          assert by[target]['base'] in (2,3) and by[target]['candidate']==1,by[target]
+          assert by[protected]['candidate']==by[protected]['base'] and by[protected]['base'] in (2,3),by[protected]
+
+          base_residual=sum(r['base'] in (2,3) for r in rows)
+          candidate_residual=sum(r['candidate'] in (2,3) for r in rows)
+          native_accept=sum(r['expected']==0 and r['candidate']==0 for r in rows)
+          native_reject=sum(r['expected']==1 and r['candidate']==1 for r in rows)
+          assert base_residual==58,base_residual
+          assert candidate_residual==57,candidate_residual
+          assert native_accept==90,native_accept
+          assert native_reject==46,native_reject
+
+          out={
+            'schema':'nucleus-residual-capability-binary-k-v1',
+            'base_sha':os.environ['BASE_SHA'],
+            'candidate_sha':os.environ['CANDIDATE_SHA'],
+            'fixed_outcome_tests':len(rows),
+            'base_residual':base_residual,
+            'candidate_residual':candidate_residual,
+            'native_accept':native_accept,
+            'native_reject':native_reject,
+            'earned':[r['test'] for r in earned],
+            'capability_hits':hits,
+            'protected_large_elim_param':by[protected],
+            'false_accepts':false_accept,'false_rejects':false_reject,
+            'regressions':regressions,'wrong_deltas':wrong,
+          }
+          outdir=pathlib.Path('metatron-kernel/evidence-out/residual-binary-k-v1')
+          (outdir/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          (outdir/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-binary-k-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-binary-k-v1
+          if-no-files-found: warn
