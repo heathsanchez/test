@@ -298,10 +298,13 @@ fn unit_like_free_pair(
     else {
         return false;
     };
+    if !left.spine.is_empty() || !right.spine.is_empty() {
+        return false;
+    }
     let (NeutralHead::Free(left), NeutralHead::Free(right)) = (&left.head, &right.head) else {
         return false;
     };
-    if left == right || !left.spine.is_empty() || !right.spine.is_empty() {
+    if left == right {
         return false;
     }
     let (Ok(left_index), Ok(right_index)) = (usize::try_from(left.0), usize::try_from(right.0))
