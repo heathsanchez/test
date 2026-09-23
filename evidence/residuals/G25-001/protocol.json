@@ -1,0 +1,48 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G25-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "a3cb6b76fc6aa5d2117f891dda966940648ffaed",
+    "tutorial_ordinal": 72,
+    "fixture": {
+      "path": "good/072_boolPropRec.ndjson",
+      "sha256": "25b41ff38e681eab9d6bc8f0bc7565378d8a54bc5b135ef3bf95d80eccea5b04"
+    },
+    "adjacent_negative": {
+      "path": "bad/073_BogusRecursor.ndjson",
+      "sha256": "7f166e26d8b79ca496b066644bbe199faefa4c5fb3c6ded01e35ff4ec628a309"
+    }
+  },
+  "obstruction": "The sealed G24 base returns UNKNOWN on BoolProp.rec. BoolProp is a safe zero-parameter, zero-index, nonrecursive proposition with two nullary constructors; its generated recursor eliminates only into Prop.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "RETAINED: extend the existing internally shared binary-enum derivation with a Prop-only elimination sort law while keeping the newly earned external family name-sealed to BoolProp. Reconstruct motive/minors/rules and reuse staged opaque promotion; do not trust supplied recursor metadata.",
+  "falsifier": "Exact 072 must accept; malformed motive metadata and an illicit recursor universe parameter must reject inside the BoolProp envelope; tutorial 073 must remain UNKNOWN; every other tutorial remains status-equivalent to G24.",
+  "protected_suite": [
+    "all retained G0-G24 tests and falsifiers",
+    "existing Bool/Color Type-enum behavior is unchanged",
+    "073 BogusRecursor remains UNKNOWN",
+    "global tutorial reclosure 001-141 has zero mismatches"
+  ],
+  "evidence": {
+    "implementation_sha": "3119496bc766d45bf3511505ef1a1424055d8d6c",
+    "qualified_sha": "ee58e47f5c9b1fffc6f2587d13cfaf87b16b9af7",
+    "run": 35847399187,
+    "job": 107136766368,
+    "artifact": 10744405022,
+    "artifact_digest": "sha256:677a76e3e93b4be3efc907bd40f0056b7e0fc47fd7260789ea28c84887af0636",
+    "tutorial_counts": {
+      "earned_delta": 1,
+      "equal_correct": 77,
+      "equal_residual": 63,
+      "mismatch": 0
+    },
+    "committed_differential": {
+      "count": 45,
+      "only_delta": "evidence/residuals/G25-001/072_boolPropRec.ndjson"
+    },
+    "first_remaining_residual": "bad/073_BogusRecursor.ndjson"
+  },
+  "decision": "retained"
+}
