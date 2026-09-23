@@ -1,0 +1,57 @@
+name: LKA G27 Prop Elimination Census v0
+
+on:
+  push:
+    branches: [lka-g27-prop-elim-census-v0]
+    paths: [".github/workflows/lka-g27-prop-elim-census-v0.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate
+        working-directory: metatron-kernel
+        run: cargo build --release --locked
+      - name: Build pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Capture 074 through 077
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g27-census
+          for n in 074 075 076 077; do
+            f=$(find /tmp/tutorial -type f -name "$n"'_*.ndjson' -print -quit)
+            test -n "$f"
+            cp "$f" evidence-out/g27-census/
+            set +e
+            target/release/metatron-kernel <"$f" >/dev/null 2>/dev/null
+            rc=$?
+            set -e
+            printf '%s\t%s\t%s\n' "$n" "$rc" "$(basename "$f")" | tee -a evidence-out/g27-census/status.tsv
+            sha256sum "$f" >> evidence-out/g27-census/sha256.txt
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lka-g27-prop-elim-census-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g27-census
+          if-no-files-found: error
