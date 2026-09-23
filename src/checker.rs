@@ -2835,27 +2835,10 @@ fn is_polymorphic_constant(
 /// G14-001's name-specific frontier. G15 shares only its already-qualified
 /// derivation skeleton; this envelope and its Sort-level law remain separate.
 fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprId) -> bool {
-    let Some(Expr::Pi { body, .. }) = export.exprs.get(expression) else {
+    let Some((domains, _)) = pi_spine(export, expression, 4) else {
         return false;
     };
-    let Some(Expr::Pi { body, .. }) = export.exprs.get(*body) else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: first_field,
-        body,
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    let Some(Expr::Pi {
-        domain: second_field,
-        ..
-    }) = export.exprs.get(*body)
-    else {
-        return false;
-    };
-    [first_field, second_field].into_iter().any(|domain| {
+    domains[2..].iter().any(|domain| {
         matches!(
             export.exprs.get(*domain),
             Some(Expr::Pi { .. } | Expr::App { .. })
@@ -2867,6 +2850,7 @@ fn pprod_has_dependent_field_neighbor(export: &ResolvedExport, expression: ExprI
 /// fixture family: a generic structure/positivity rule has not yet been
 /// earned. The exported rule is validated but no iota, projection, or eta
 /// operation is installed.
+
 fn check_twobool_structure(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2963,23 +2947,15 @@ fn is_twobool_constructor_type(
     field_type: NameId,
     inductive: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second] = domains.as_slice() else {
         return false;
     };
     is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && is_empty_constant(export, *body, inductive)
+        && is_empty_constant(export, result, inductive)
 }
 
 fn twobool_recursor_obligations(
@@ -3033,30 +3009,22 @@ fn is_twobool_minor_type(
     constructor: NameId,
     field_type: NameId,
 ) -> bool {
-    let Some(Expr::Pi {
-        domain: first,
-        body,
-    }) = export.exprs.get(expression)
-    else {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
-    let Some(Expr::Pi {
-        domain: second,
-        body,
-    }) = export.exprs.get(*body)
-    else {
+    let [first, second] = domains.as_slice() else {
         return false;
     };
     let Some(Expr::App {
         fun: motive,
         arg: constructed,
-    }) = export.exprs.get(*body)
+    }) = export.exprs.get(result)
     else {
         return false;
     };
     is_empty_constant(export, *first, field_type)
         && is_empty_constant(export, *second, field_type)
-        && matches!(export.exprs.get(*motive), Some(Expr::BVar(2)))
+        && is_bvar(export, *motive, 2)
         && is_constructor_applied_to_two_bvars(export, *constructed, constructor, 1, 0)
 }
 
@@ -3085,10 +3053,8 @@ fn first_constructor_domain_constant(
     export: &ResolvedExport,
     expression: ExprId,
 ) -> Option<NameId> {
-    let Expr::Pi { domain, .. } = export.exprs.get(expression)? else {
-        return None;
-    };
-    let Expr::Const { name, levels } = export.exprs.get(*domain)? else {
+    let (domains, _) = pi_spine(export, expression, 1)?;
+    let Expr::Const { name, levels } = export.exprs.get(domains[0])? else {
         return None;
     };
     levels.is_empty().then_some(*name)
