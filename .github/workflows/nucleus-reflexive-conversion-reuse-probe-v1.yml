@@ -1,0 +1,121 @@
+name: Nucleus Reflexive Conversion Reuse Probe v1
+
+on:
+  push:
+    branches: [nucleus-reflexive-conversion-reuse-probe-v1]
+    paths:
+      - ".github/workflows/nucleus-reflexive-conversion-reuse-probe-v1.yml"
+      - "metatron-kernel/src/checker.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      BASE_SHA: 511853988249434de5e34a800e869d03c10f46a3
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build probe and exact 57-case authority
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+
+      - name: Test conversion-law transfer boundary
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/reflexive-conversion-reuse-probe-v1
+          python - <<'PY'
+          import json, pathlib, subprocess, os
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          names=[
+            'tutorial/055_reduceCtorParam.mk',
+            'tutorial/119_reduceCtorParamRefl.mk',
+            'tutorial/120_reduceCtorParamRefl2.mk',
+            'tutorial/117_reflOccLeft',
+            'tutorial/118_reflOccInIndex',
+            'tutorial/121_rTreeRec',
+          ]
+
+          def locate(name):
+              stem=name.split('/')[-1]+'.ndjson'
+              hits=list(root.rglob(stem))
+              assert len(hits)==1,(name,hits)
+              return hits[0]
+
+          def rr(binary,path):
+              with path.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=60)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          rows=[]
+          for name in names:
+              p=locate(name)
+              brc,be=rr(base,p)
+              crc,ce=rr(cand,p)
+              rows.append({'test':name,'base':brc,'candidate':crc,'base_stderr':be,'candidate_stderr':ce})
+
+          by={r['test']:r for r in rows}
+          assert by['tutorial/055_reduceCtorParam.mk']['base']==0
+          assert by['tutorial/055_reduceCtorParam.mk']['candidate']==0
+          assert by['tutorial/119_reduceCtorParamRefl.mk']['base'] in (2,3)
+          assert by['tutorial/120_reduceCtorParamRefl2.mk']['base'] in (2,3)
+
+          target_accept=[
+            by['tutorial/119_reduceCtorParamRefl.mk']['candidate'],
+            by['tutorial/120_reduceCtorParamRefl2.mk']['candidate'],
+          ]
+          separators=['tutorial/117_reflOccLeft','tutorial/118_reflOccInIndex','tutorial/121_rTreeRec']
+          assert all(by[n]['candidate']==by[n]['base'] for n in separators),rows
+
+          status='TRANSFER_PASS' if target_accept==[0,0] else 'TRANSFER_FAIL'
+          out={
+            'schema':'nucleus-reflexive-conversion-reuse-probe-v1',
+            'base_sha':os.environ['BASE_SHA'],
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'status':status,
+            'rows':rows,
+          }
+          dest=pathlib.Path('metatron-kernel/evidence-out/reflexive-conversion-reuse-probe-v1/result.json')
+          dest.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          if status!='TRANSFER_PASS':
+              raise SystemExit(2)
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-reflexive-conversion-reuse-probe-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/reflexive-conversion-reuse-probe-v1
+          if-no-files-found: warn
