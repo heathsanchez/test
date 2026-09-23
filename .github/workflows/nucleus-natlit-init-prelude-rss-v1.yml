@@ -1,0 +1,68 @@
+name: Nucleus NatLit Init Prelude RSS v1
+
+on:
+  push:
+    branches: [nucleus-natlit-init-prelude-rss-v1]
+    paths:
+      - ".github/workflows/nucleus-natlit-init-prelude-rss-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  measure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      BASE_SHA: 653e9d3270f9f02ca141c45d3078e9d59f622a72
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact qualified NatLit Nucleus
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$BASE_SHA" HEAD
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          stat -c 'binary_bytes=%s' metatron-kernel/target/release/metatron-kernel
+
+      - name: Fetch frozen official Arena tarball
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test -f /tmp/tests/good/init-prelude.ndjson
+          wc -c -l /tmp/tests/good/init-prelude.ndjson
+
+      - name: Measure standalone init-prelude
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/natlit-init-prelude-rss
+          set +e
+          /usr/bin/time -f 'real_seconds=%e\nuser_seconds=%U\nsys_seconds=%S\nmax_rss_kb=%M' \
+            -o metatron-kernel/evidence-out/natlit-init-prelude-rss/time.txt \
+            metatron-kernel/target/release/metatron-kernel \
+            < /tmp/tests/good/init-prelude.ndjson \
+            > metatron-kernel/evidence-out/natlit-init-prelude-rss/stdout.txt \
+            2> metatron-kernel/evidence-out/natlit-init-prelude-rss/stderr.txt
+          rc=$?
+          set -e
+          echo "$rc" > metatron-kernel/evidence-out/natlit-init-prelude-rss/exit_code.txt
+          echo "NUCLEUS_RC=$rc"
+          cat metatron-kernel/evidence-out/natlit-init-prelude-rss/time.txt
+          cat metatron-kernel/evidence-out/natlit-init-prelude-rss/stderr.txt
+          test "$rc" -ne 3
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-natlit-init-prelude-rss-${{ github.sha }}
+          path: metatron-kernel/evidence-out/natlit-init-prelude-rss
+          if-no-files-found: error
