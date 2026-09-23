@@ -192,9 +192,12 @@ fn trace_name_role(export: &ResolvedExport, name: NameId, owner: Option<NameId>)
             format!("child:{value}")
         }
         Some(Name::Num { prefix, .. }) if owner == Some(*prefix) => "child-num".to_owned(),
-        Some(Name::Str { prefix: NameId(0), .. }) | Some(Name::Num { prefix: NameId(0), .. }) => {
-            "root".to_owned()
-        }
+        Some(Name::Str {
+            prefix: NameId(0), ..
+        })
+        | Some(Name::Num {
+            prefix: NameId(0), ..
+        }) => "root".to_owned(),
         Some(Name::Str { .. }) => "other-str".to_owned(),
         Some(Name::Num { .. }) => "other-num".to_owned(),
         None => "missing".to_owned(),
