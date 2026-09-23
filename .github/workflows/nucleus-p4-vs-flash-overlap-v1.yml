@@ -1,0 +1,158 @@
+name: Nucleus P4 vs Arena Flash overlap v1
+
+on:
+  push:
+    branches: [nucleus-p4-vs-flash-overlap-v1]
+    paths:
+      - ".github/workflows/nucleus-p4-vs-flash-overlap-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  duel:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+      - uses: cachix/install-nix-action@v31
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build Nucleus P4 native
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          RUSTFLAGS='-C target-cpu=native' cargo build --release --locked
+          cp target/release/metatron-kernel /tmp/nucleus
+          sha256sum /tmp/nucleus
+
+      - name: Build pinned Arena tutorial and init-prelude
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cd /tmp/arena
+          nix develop -c ./lka.py build-test init-prelude
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Build official MathGraph flash with Arena PGO recipe
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/flash
+          git -C /tmp/flash checkout -q "$FLASH_SHA"
+          cat >/tmp/flash/config.json <<'EOF'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          EOF
+          cd /tmp/flash
+          rm -rf pgo
+          RUSTFLAGS="-C target-cpu=native -Cprofile-generate=$PWD/pgo" cargo build --release --locked
+          target/release/sokonanoda config.json < /tmp/arena/_build/tests/init-prelude.ndjson >/dev/null
+          LLVM_PROFDATA="$(rustc --print sysroot)/lib/rustlib/$(rustc -vV | sed -n 's/^host: //p')/bin/llvm-profdata"
+          "$LLVM_PROFDATA" merge -o "$PWD/pgo/merged.profdata" "$PWD/pgo"
+          RUSTFLAGS="-C target-cpu=native -Cprofile-use=$PWD/pgo/merged.profdata" cargo build --release --locked
+          cp target/release/sokonanoda /tmp/flash-bin
+          sha256sum /tmp/flash-bin
+
+      - name: Freeze exact 78-case common-correct cohort
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/flash-duel
+          python - <<'PY'
+          import json,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial')
+          rows=[]; manifest=[]
+          for d,e in [('good',0),('bad',1)]:
+              for p in sorted((root/d).glob('*.ndjson')):
+                  try:n=int(p.name.split('_',1)[0])
+                  except ValueError:continue
+                  with p.open('rb') as f:
+                      a=subprocess.run(['/tmp/nucleus'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  if a==e:
+                      with p.open('rb') as f:
+                          b=subprocess.run(['/tmp/flash-bin','/tmp/flash/config.json'],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                      # Arena wrapper maps any nonzero flash exit to reject, but on this common-correct
+                      # cohort we require raw success for accepts and raw failure for rejects.
+                      flash_sem=0 if b==0 else 1
+                      assert flash_sem==e,(p,b,e)
+                      manifest.append((e,str(p)))
+                      rows.append({'number':n,'path':str(p),'expected':e,'nucleus':a,'flash_raw':b})
+          assert len(manifest)==78,len(manifest)
+          pathlib.Path('/tmp/common78.tsv').write_text('\n'.join(f'{e}\t{p}' for e,p in manifest)+'\n')
+          pathlib.Path('evidence-out/flash-duel/cohort.json').write_text(json.dumps({'count':78,'rows':rows},indent=2,sort_keys=True)+'\n')
+          print('COMMON_CORRECT=78')
+          PY
+
+      - name: Arena-style process timing duel
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,statistics,subprocess,time
+          cases=[line.split('\t',1) for line in pathlib.Path('/tmp/common78.tsv').read_text().splitlines()]
+          commands={
+            'nucleus':lambda p:['/tmp/nucleus'],
+            'flash':lambda p:['/tmp/flash-bin','/tmp/flash/config.json'],
+          }
+          def sweep(name,reps=12):
+              cmd=commands[name]
+              t0=time.perf_counter_ns()
+              for _ in range(reps):
+                  for expected,p in cases:
+                      with open(p,'rb') as f:
+                          rc=subprocess.run(cmd(p),stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                      semantic=0 if (name=='flash' and rc==0) else (1 if name=='flash' else rc)
+                      if int(expected)!=semantic:
+                          raise SystemExit((name,p,expected,rc))
+              return time.perf_counter_ns()-t0
+          orders=[['nucleus','flash'],['flash','nucleus'],['nucleus','flash'],['flash','nucleus'],['nucleus','flash'],['flash','nucleus'],['nucleus','flash']]
+          rows=[]
+          for i,order in enumerate(orders,1):
+              vals={}
+              for name in order: vals[name]=sweep(name)
+              row={'round':i,**{f'{k}_ns':v for k,v in vals.items()},'nucleus_over_flash':vals['nucleus']/vals['flash']}
+              rows.append(row); print(row)
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in commands}
+          out={'schema':'nucleus-p4-vs-arena-flash-overlap-v1','cases':78,'repetitions_per_round':12,'rounds':rows,'medians_ns':med,'nucleus_over_flash':med['nucleus']/med['flash']}
+          pathlib.Path('evidence-out/flash-duel/timing.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Record binary sizes
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,pathlib
+          out={'nucleus_bytes':os.path.getsize('/tmp/nucleus'),'flash_bytes':os.path.getsize('/tmp/flash-bin')}
+          pathlib.Path('evidence-out/flash-duel/binary-size.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(out)
+          PY
+
+      - name: Upload duel evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p4-vs-flash-${{ github.sha }}
+          path: metatron-kernel/evidence-out/flash-duel
+          if-no-files-found: error
