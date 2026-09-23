@@ -216,7 +216,11 @@ impl<'a> Machine<'a> {
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
                     return exposed(
                         Value::Neutral(Neutral {
                             head: NeutralHead::Free(FreeId(*index)),
@@ -229,11 +233,19 @@ impl<'a> Machine<'a> {
                     let Some(level) = self.resolve_level(*level, &closure, budget) else {
                         return Judgment::unknown("unresolved-sort-level-during-reduction");
                     };
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
                     return exposed(Value::Sort(level), transitions);
                 }
                 Expr::Pi { domain, body } if pending.is_empty() => {
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
                     return exposed(
                         Value::Pi {
                             domain: closure.sibling(*domain, closure.env.clone()),
@@ -253,7 +265,11 @@ impl<'a> Machine<'a> {
                         closure = closure.sibling(*body, closure.env.extend(argument));
                         continue;
                     }
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
                     return exposed(
                         Value::Lam {
                             domain: closure.sibling(*domain, closure.env.clone()),
@@ -263,7 +279,11 @@ impl<'a> Machine<'a> {
                     );
                 }
                 Expr::Let { value, body, .. } => {
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Zeta);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Zeta,
+                    );
                     visited.clear();
                     let value = closure.sibling(*value, closure.env.clone());
                     closure = closure.sibling(*body, closure.env.extend(value));
@@ -361,7 +381,11 @@ impl<'a> Machine<'a> {
                     }
                     let mut spine = Vec::new();
                     append_pending(&mut spine, &mut pending);
-                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
                     return exposed(
                         Value::Neutral(Neutral {
                             head: NeutralHead::Const {
