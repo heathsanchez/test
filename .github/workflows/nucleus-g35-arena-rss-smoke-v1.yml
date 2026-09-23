@@ -1,0 +1,70 @@
+name: Nucleus G35 Arena RSS Smoke v1
+
+on:
+  push:
+    branches: [nucleus-g35-arena-rss-smoke-v1]
+    paths:
+      - ".github/workflows/nucleus-g35-arena-rss-smoke-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  smoke:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ARENA_SHA: 74745e5a848c71d99121e811ae86f24d13dea785
+      NUCLEUS_SHA: b8b580876facfb092c754fb5b1e47a4b22267ad0
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@v31
+
+      - name: Prepare exact current Arena and G35 checker
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          cat > /tmp/arena/checkers/nucleus-g35.yaml <<'YAML'
+          description: Qualified Nucleus G35 simple projection authority
+          version: "g35-b8b5808"
+          url: https://github.com/heathsanchez/test
+          rev: b8b580876facfb092c754fb5b1e47a4b22267ad0
+          build: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          run: ./metatron-kernel/target/release/metatron-kernel < $IN
+          YAML
+          cd /tmp/arena
+          nix develop -c ./lka.py build-checker nucleus-g35
+          nix develop -c ./lka.py build-test init-prelude
+
+      - name: Run init-prelude with Arena metrics
+        run: |
+          set -euo pipefail
+          cd /tmp/arena
+          rm -rf _results && mkdir -p _results
+          nix develop -c ./lka.py -v run --checker nucleus-g35 --test init-prelude
+
+      - name: Summarize smoke
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-rss-g35-smoke
+          cp /tmp/arena/_results/nucleus-g35_init-prelude.json metatron-kernel/evidence-out/arena-rss-g35-smoke/result.json || true
+          python - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('metatron-kernel/evidence-out/arena-rss-g35-smoke/result.json')
+          if p.exists():
+              d=json.loads(p.read_text())
+              print(json.dumps({k:d.get(k) for k in ['test','status','correctness','exit_code','wall_time','cpu_time','max_rss','instructions','stderr']},sort_keys=True))
+          PY
+
+      - name: Upload smoke evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g35-arena-rss-smoke-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-rss-g35-smoke
+          if-no-files-found: warn
