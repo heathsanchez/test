@@ -446,7 +446,7 @@ fn expression_uses_bvar(
     let next = budget - 1;
     match expression {
         Expr::BVar(index) => *index == target,
-        Expr::NatLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
+        Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => false,
         Expr::App { fun, arg } => {
             expression_uses_bvar(checker, *fun, target, next)
                 || expression_uses_bvar(checker, *arg, target, next)
