@@ -436,6 +436,10 @@ impl<'a> TypeChecker<'a> {
         }
     }
 
+    pub(crate) fn expression(&self, expression: ExprId) -> Option<&Expr> {
+        self.expressions.get(expression)
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),
