@@ -1,0 +1,60 @@
+name: LKC SHA Generic Runner Law Control
+on:
+  push:
+    branches: [lkc-sha-v31-interaction-proof-v1]
+    paths:
+      - '.github/workflows/lkc-sha-generic-runner-control.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+env:
+  BENCH_COMMIT: d8ea5fcefefd7f25b9c451d386f449c8f9312e25
+jobs:
+  proof:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain none
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Setup SHA
+        run: |
+          git clone https://github.com/shalashaska117/LeanKernelChallengeStage1Benchmark.git bench
+          git -C bench checkout "$BENCH_COMMIT"
+          cd bench && python3 benchmark.py setup --problem sha256
+      - name: Compile pure generic theorem
+        run: |
+          cat > bench/.cache/upstream/evaluation/problems/sha256/GenericRunner.lean <<'EOF'
+          import Spec
+
+          theorem runners_equal_of_same_laws
+              {K W S : Type}
+              (nextW : K → W → S → W)
+              (nextS : K → W → S → S)
+              (F G : List K → W → S → S)
+              (fNil : ∀ w s, F [] w s = s)
+              (fCons : ∀ k ks w s,
+                F (k :: ks) w s = F ks (nextW k w s) (nextS k w s))
+              (gNil : ∀ w s, G [] w s = s)
+              (gCons : ∀ k ks w s,
+                G (k :: ks) w s = G ks (nextW k w s) (nextS k w s)) :
+              ∀ ks w s, F ks w s = G ks w s := by
+            intro ks
+            induction ks with
+            | nil =>
+                intro w s
+                exact (fNil w s).trans (gNil w s).symm
+            | cons k ks ih =>
+                intro w s
+                calc
+                  F (k :: ks) w s = F ks (nextW k w s) (nextS k w s) :=
+                    fCons k ks w s
+                  _ = G ks (nextW k w s) (nextS k w s) :=
+                    ih (nextW k w s) (nextS k w s)
+                  _ = G (k :: ks) w s :=
+                    (gCons k ks w s).symm
+          EOF
+          cd bench/.cache/upstream/evaluation/problems/sha256
+          /usr/bin/time -v lake env lean -DautoImplicit=false -DwarningAsError=true GenericRunner.lean
