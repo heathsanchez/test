@@ -4,7 +4,9 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody, ProjectionSpec, RecursorReduction};
+use crate::machine::{
+    AuthorityId, BoolPrimitives, DefinitionBody, NatBinaryOp, ProjectionSpec, RecursorReduction,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
@@ -74,19 +76,6 @@ pub struct NatPrimitives {
     pub zero: NameId,
     pub succ: NameId,
     pub recursor: NameId,
-}
-
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub enum NatBinaryOp {
-    Add,
-    Sub,
-    Ble,
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct BoolPrimitives {
-    pub false_ctor: NameId,
-    pub true_ctor: NameId,
 }
 
 #[derive(Clone, Debug)]
