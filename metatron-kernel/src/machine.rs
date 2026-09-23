@@ -241,6 +241,13 @@ impl<'a> Machine<'a> {
                         transitions,
                     );
                 }
+                Expr::NatLit(value) if pending.is_empty() => {
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    return exposed(Value::NatLit(value.clone()), transitions);
+                }
+                Expr::NatLit(_) => {
+                    return Judgment::unknown("nat-literal-applied-as-function");
+                }
                 Expr::Sort(level) if pending.is_empty() => {
                     let Some(level) = self.resolve_level(*level, &closure, budget) else {
                         return Judgment::unknown("unresolved-sort-level-during-reduction");
