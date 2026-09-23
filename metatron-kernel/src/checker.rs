@@ -409,6 +409,7 @@ fn is_quot_ind_type(
         && is_bvar_application(export, result, 2, 0)
 }
 
+#[allow(clippy::too_many_arguments)]
 fn check_quot_declaration(
     export: &ResolvedExport,
     environment: &Environment,
@@ -472,9 +473,7 @@ fn check_quot_declaration(
         parameter_substitution(level_params),
     )
     .with_delta_policy(delta_policy);
-    if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
-        return Err(verdict);
-    }
+    verdict_boundary(checker.is_type(ty, limits.judgment_steps))?;
     environment
         .extend(name, ConstantDecl::theorem(level_params.to_vec(), ty))
         .map_err(|_| Verdict::Reject)
