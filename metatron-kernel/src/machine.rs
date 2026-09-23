@@ -422,13 +422,16 @@ impl<'a> Machine<'a> {
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
                         self.expose_internal(structure, transparency, budget, false);
-                    let Some(Value::Neutral(neutral)) = exposed_structure.proven_value() else {
+                    let Some(exposure) = exposed_structure.proven_value() else {
                         return Judgment::unknown("projection-structure-not-rigid-constructor");
                     };
-                    let NeutralHead::Const { name, .. } = neutral.head else {
+                    let Value::Neutral(neutral) = &exposure.value else {
+                        return Judgment::unknown("projection-structure-not-rigid-constructor");
+                    };
+                    let NeutralHead::Const { name, .. } = &neutral.head else {
                         return Judgment::unknown("projection-structure-not-constructor");
                     };
-                    if name != info.constructor {
+                    if *name != info.constructor {
                         return Judgment::unknown("projection-structure-not-certified-constructor");
                     }
                     let Some(field) = neutral.spine.get(info.num_params + field_index) else {
