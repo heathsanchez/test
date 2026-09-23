@@ -82,6 +82,22 @@ impl ClosedNonrecursiveDerivation {
         Ok(())
     }
 
+    pub(crate) fn promote_all<I>(
+        &mut self,
+        export: &ResolvedExport,
+        signatures: I,
+        judgment_steps: usize,
+        delta_policy: DeltaPolicy,
+    ) -> Result<(), Verdict>
+    where
+        I: IntoIterator<Item = DerivedSignature>,
+    {
+        for signature in signatures {
+            self.promote(export, signature, judgment_steps, delta_policy)?;
+        }
+        Ok(())
+    }
+
     /// Commit the derivation. Until this value is returned, all stages remain
     /// local and the caller's persistent environment is unchanged.
     /// Read-only access to the staged authority for conversion-sensitive
