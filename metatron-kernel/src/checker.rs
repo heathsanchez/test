@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use crate::convert::DeltaPolicy;
-use crate::environment::{ConstantDecl, Environment};
+use crate::environment::{ConstantDecl, Environment, ProjectionInfo};
 use crate::id::NameId;
 use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
@@ -4076,7 +4076,7 @@ impl ExactBinaryProductDerivation<'_> {
 
         // G32 reuses G31's already-qualified constructor-iota machine. Only
         // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        let environment = if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
@@ -4097,6 +4097,26 @@ impl ExactBinaryProductDerivation<'_> {
             };
             environment
                 .install_recursor_reduction(self.recursor.name, reduction)
+                .map_err(|_| Verdict::Reject)?
+        } else {
+            environment
+        };
+
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::And
+                | BinaryProductSortLaw::Prod { .. }
+                | BinaryProductSortLaw::PProd { .. }
+        ) {
+            environment
+                .install_projection(
+                    self.inductive.name,
+                    ProjectionInfo {
+                        constructor: self.constructor.name,
+                        num_params: 2,
+                        field_parameter_indices: vec![0, 1],
+                    },
+                )
                 .map_err(|_| Verdict::Reject)
         } else {
             Ok(environment)
