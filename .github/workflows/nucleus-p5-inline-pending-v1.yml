@@ -1,0 +1,154 @@
+name: Nucleus P5 Inline Pending v1
+
+on:
+  push:
+    branches: [nucleus-p5-inline-pending-v1]
+    paths:
+      - ".github/workflows/nucleus-p5-inline-pending-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      G25_SHA: 4b257ea8442a7905af8b894144288864b16fb81a
+      P1_SHA: 398aa45fb6bc6bfda1147ee635ea6d4adfaa35bf
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: "rustfmt, clippy"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+
+      - name: Verify source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build baselines and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g25 "$G25_SHA"
+          git worktree add --detach /tmp/p1 "$P1_SHA"
+          cargo build --release --locked --manifest-path /tmp/g25/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Exact semantics and freeze cohort
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/p5
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial');base=pathlib.Path('/tmp/g25/metatron-kernel/target/release/metatron-kernel');cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[];manifest=[]
+          for d,e in [('good',0),('bad',1)]:
+            for p in sorted((root/d).glob('*.ndjson')):
+              try:n=int(p.name.split('_',1)[0])
+              except ValueError:continue
+              def rr(b):
+                with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=rr(base),rr(cand);rows.append({'n':n,'path':str(p),'expected':e,'base':a,'candidate':b})
+              if a==e:manifest.append(f'{e}\t{p}')
+          rows.sort(key=lambda r:r['n']);diffs=[r for r in rows if r['base']!=r['candidate']];assert not diffs,diffs;assert len(manifest)==78,len(manifest)
+          pathlib.Path('/tmp/correct78.tsv').write_text('\n'.join(manifest)+'\n')
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'));seen=set();cdiffs=[];count=0
+          for p in paths:
+            rp=str(p)
+            if rp in seen:continue
+            seen.add(rp);count+=1
+            def rr2(b):
+              with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+            a,b=rr2(base),rr2(cand)
+            if a!=b:cdiffs.append({'path':rp,'base':a,'candidate':b})
+          assert not cdiffs,cdiffs
+          out={'schema':'nucleus-p5-semantic-v1','tutorial_count':len(rows),'tutorial_diffs':diffs,'committed_count':count,'committed_diffs':cdiffs,'correct_cohort':78,'candidate_sha':os.environ['GITHUB_SHA']}
+          pathlib.Path('evidence-out/p5/semantic.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n');print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: In-process 78-case cohort
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          for root in . /tmp/g25/metatron-kernel /tmp/p1/metatron-kernel; do mkdir -p "$root/examples"; done
+          cat >/tmp/cohort.rs <<'RS'
+          use std::{env,fs,io::Cursor};use metatron_kernel::run;
+          fn main(){let m=env::var("NUCLEUS_MANIFEST").unwrap();let n:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap().parse().unwrap();let cs:Vec<(i32,Vec<u8>)>=fs::read_to_string(m).unwrap().lines().map(|l|{let(e,p)=l.split_once('\t').unwrap();(e.parse().unwrap(),fs::read(p).unwrap())}).collect();let mut s=0usize;for _ in 0..n{for(e,b)in &cs{let v=run(Cursor::new(b.as_slice()));assert_eq!(v.exit_code(),*e);s=s.wrapping_add(v.exit_code() as usize+1)}}println!("{s}");}
+          RS
+          cp /tmp/cohort.rs examples/nucleus_cohort.rs;cp /tmp/cohort.rs /tmp/g25/metatron-kernel/examples/nucleus_cohort.rs;cp /tmp/cohort.rs /tmp/p1/metatron-kernel/examples/nucleus_cohort.rs
+          cargo build --release --locked --example nucleus_cohort
+          cargo build --release --locked --manifest-path /tmp/g25/metatron-kernel/Cargo.toml --example nucleus_cohort
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml --example nucleus_cohort
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'g25':pathlib.Path('/tmp/g25/metatron-kernel/target/release/examples/nucleus_cohort'),'p1':pathlib.Path('/tmp/p1/metatron-kernel/target/release/examples/nucleus_cohort'),'candidate':pathlib.Path('target/release/examples/nucleus_cohort').resolve()}
+          env=dict(os.environ);env['NUCLEUS_MANIFEST']='/tmp/correct78.tsv';env['NUCLEUS_BENCH_ITERS']='200';orders=[['g25','p1','candidate'],['candidate','p1','g25'],['p1','g25','candidate'],['candidate','g25','p1'],['g25','candidate','p1'],['p1','candidate','g25'],['g25','p1','candidate']];rows=[]
+          for i,o in enumerate(orders,1):
+            vals={}
+            for k in o:t=time.perf_counter_ns();subprocess.check_output([str(bins[k])],env=env);vals[k]=time.perf_counter_ns()-t
+            rows.append({'round':i,**{f'{k}_ns':v for k,v in vals.items()}})
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins};out={'schema':'nucleus-p5-cohort-v1','medians_ns':med,'candidate_over_g25':med['candidate']/med['g25'],'candidate_over_p1':med['candidate']/med['p1'],'rows':rows}
+          pathlib.Path('evidence-out/p5/cohort.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n');print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Application-spine benchmark
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p examples /tmp/p1/metatron-kernel/examples
+          cat >/tmp/micro.rs <<'RS'
+          use std::{collections::HashMap,env,hint::black_box};
+          use metatron_kernel::id::{ExprId,IdTable,LevelId,NameId};
+          use metatron_kernel::machine::{AuthorityId,Machine,Transparency};
+          use metatron_kernel::syntax::{Expr,Level};
+          use metatron_kernel::value::{Closure,EnvFrame,Value};
+          fn main(){let mut ls=IdTable::default();ls.insert(LevelId(0),Level::Zero).unwrap();let mut es=IdTable::default();es.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();es.insert(ExprId(1),Expr::Const{name:NameId(99),levels:vec![]}).unwrap();let mut root=ExprId(1);for i in 0..6u64{let id=ExprId(2+i);es.insert(id,Expr::App{fun:root,arg:ExprId(0)}).unwrap();root=id;}let m=Machine::new(AuthorityId(0),&es,&ls,HashMap::new());let c=Closure::new(root,EnvFrame::empty());let n:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap().parse().unwrap();let mut s=0usize;for _ in 0..n{let j=black_box(m.expose(c.clone(),Transparency::Opaque,64));if matches!(j.proven_value(),Some(Value::Neutral(v)) if v.spine.len()==6){s+=1}else{panic!()}}println!("{s}");}
+          RS
+          cp /tmp/micro.rs examples/nucleus_micro.rs
+          cp /tmp/micro.rs /tmp/p1/metatron-kernel/examples/nucleus_micro.rs
+          cargo build --release --locked --example nucleus_micro
+          cargo build --release --locked --manifest-path /tmp/p1/metatron-kernel/Cargo.toml --example nucleus_micro
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'p1':pathlib.Path('/tmp/p1/metatron-kernel/target/release/examples/nucleus_micro'),'candidate':pathlib.Path('target/release/examples/nucleus_micro').resolve()};env=dict(os.environ);env['NUCLEUS_BENCH_ITERS']='2000000';orders=[['p1','candidate'],['candidate','p1'],['p1','candidate'],['candidate','p1'],['p1','candidate'],['candidate','p1'],['p1','candidate']];rows=[]
+          for i,o in enumerate(orders,1):
+            vals={}
+            for k in o:t=time.perf_counter_ns();out=subprocess.check_output([str(bins[k])],env=env,text=True).strip();assert out=='2000000';vals[k]=time.perf_counter_ns()-t
+            rows.append({'round':i,**{f'{k}_ns':v for k,v in vals.items()}})
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins};out={'schema':'nucleus-p5-micro-v1','medians_ns':med,'candidate_over_p1':med['candidate']/med['p1'],'rows':rows}
+          pathlib.Path('evidence-out/p5/micro.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n');print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p5-${{ github.sha }}
+          path: metatron-kernel/evidence-out/p5
+          if-no-files-found: error
