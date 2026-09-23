@@ -327,12 +327,8 @@ fn parse_expr(
         }
         "proj" => {
             let value = object.get("proj").expect("tag checked");
-            let type_name = NameId(nested_number(value, "typeName", line)?);
-            if !projection_root_is_supported(&export.names, type_name) {
-                return Err(malformed(line, "unsupported projection family"));
-            }
             Expr::Proj {
-                type_name,
+                type_name: NameId(nested_number(value, "typeName", line)?),
                 index: nested_number(value, "idx", line)?,
                 structure: ExprId(nested_number(value, "struct", line)?),
             }
@@ -341,14 +337,6 @@ fn parse_expr(
     };
     export.exprs.insert(id, expr)?;
     Ok(())
-}
-
-fn projection_root_is_supported(names: &IdTable<NameId, Name>, id: NameId) -> bool {
-    matches!(
-        names.get(id),
-        Some(Name::Str { prefix, value })
-            if prefix.0 == 0 && matches!(value.as_str(), "And" | "Prod" | "PProd")
-    )
 }
 
 fn binder_expr(value: &Value, line: usize, lambda: bool) -> Result<Expr, ParseError> {
