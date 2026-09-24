@@ -260,11 +260,26 @@ pub(crate) fn convert_with_policy_in_context(
                     }
                     let full_left = machine.expose(left, Transparency::Full, remaining);
                     let full_right = machine.expose(right, Transparency::Full, remaining);
-                    let (Some(full_left), Some(full_right)) =
+                    let (Some(full_left_value), Some(full_right_value)) =
                         (full_left.proven_value(), full_right.proven_value())
                     else {
+                        if std::env::var_os("NUCLEUS_TRACE_EXPOSURE").is_some() {
+                            let describe = |side: &Judgment<crate::machine::Exposure>| match side {
+                                Judgment::Proven { .. } => "proven".to_string(),
+                                Judgment::Refuted { obstruction } => format!("refuted:{}", obstruction.0),
+                                Judgment::Unknown { residual } => format!("unknown:{}", residual.0),
+                            };
+                            eprintln!(
+                                "NUCLEUS_FULL_EXPOSURE:left_expr={}:right_expr={}:left={}:right={}",
+                                left.expr.0,
+                                right.expr.0,
+                                describe(&full_left),
+                                describe(&full_right),
+                            );
+                        }
                         return Judgment::unknown("full-conversion-exposure");
                     };
+                    let (full_left, full_right) = (full_left_value, full_right_value);
                     match compare_values(
                         checker,
                         full_left,
