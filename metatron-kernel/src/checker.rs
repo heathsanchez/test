@@ -590,6 +590,39 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    if std::env::var_os("NUCLEUS_TRACE_INDUCTIVE_CENSUS").is_some() {
+        let type_shapes = block.types.iter().map(|inductive| {
+            format!(
+                "{}:p{}:i{}:n{}:r{}:x{}:u{}:l{}:c{}",
+                inductive.name.0, inductive.num_params, inductive.num_indices,
+                inductive.num_nested, u8::from(inductive.is_recursive),
+                u8::from(inductive.is_reflexive), u8::from(inductive.is_unsafe),
+                inductive.level_params.len(), inductive.constructors.len(),
+            )
+        }).collect::<Vec<_>>();
+        let constructor_shapes = block.constructors.iter().map(|constructor| {
+            format!(
+                "{}:idx{}:p{}:f{}:u{}:l{}",
+                constructor.name.0, constructor.index, constructor.num_params,
+                constructor.num_fields, u8::from(constructor.is_unsafe),
+                constructor.level_params.len(),
+            )
+        }).collect::<Vec<_>>();
+        let recursor_shapes = block.recursors.iter().map(|recursor| {
+            format!(
+                "{}:p{}:i{}:mot{}:min{}:k{}:u{}:l{}:rules{}",
+                recursor.name.0, recursor.num_params, recursor.num_indices,
+                recursor.num_motives, recursor.num_minors, u8::from(recursor.k),
+                u8::from(recursor.is_unsafe), recursor.level_params.len(),
+                recursor.rules.len(),
+            )
+        }).collect::<Vec<_>>();
+        eprintln!(
+            "NUCLEUS_INDUCTIVE_CENSUS:types={}:ctors={}:recs={}:T=[{}]:C=[{}]:R=[{}]",
+            block.types.len(), block.constructors.len(), block.recursors.len(),
+            type_shapes.join(","), constructor_shapes.join(","), recursor_shapes.join(","),
+        );
+    }
     // G26-001: negative-only recursor coherence. A single safe inductive
     // that explicitly owns a .rec declaration cannot advertise impossible
     // motive/minor/rule cardinalities. This grants no positive family
