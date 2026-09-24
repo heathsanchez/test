@@ -546,6 +546,7 @@ impl<'a> TypeChecker<'a> {
         .with_nat_primitives(self.environment.nat_primitives().cloned())
         .with_bool_primitives(self.environment.bool_primitives().cloned())
         .with_quot_primitives(self.environment.quot_primitives().cloned())
+        .with_exposure_cache(self.environment.exposure_cache())
     }
 
     pub(crate) fn instantiate(&self, level: LevelId, budget: usize) -> Result<LevelTerm, ()> {
