@@ -377,8 +377,8 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
-                            if let Some((constructor, constructor_arguments)) =
-                                self.rule_constructor_application(
+                            if let Some((constructor, constructor_arguments)) = self
+                                .rule_constructor_application(
                                     target,
                                     reduction,
                                     transparency,
@@ -659,8 +659,7 @@ impl<'a> Machine<'a> {
     ) -> Option<(NameId, Vec<Closure>)> {
         let matches_rule = |constructor: NameId, arity: usize| {
             reduction.rules.iter().any(|rule| {
-                rule.constructor == constructor
-                    && arity == rule.num_params + rule.num_fields
+                rule.constructor == constructor && arity == rule.num_params + rule.num_fields
             })
         };
 
