@@ -1793,26 +1793,22 @@ fn check_generic_closed_prop_singleton(
     let [motive_level] = recursor.level_params.as_slice() else {
         return Err(Verdict::Reject);
     };
-    if !recursor_metadata_admissible(
-        export,
-        inductive,
-        &block.constructors,
-        recursor,
-        true,
-        true,
-    ) || !new_singleton_recursor_type(
-        export,
-        recursor.ty,
-        inductive.name,
-        constructor.name,
-        *motive_level,
-    ) || !new_singleton_recursor_rule(
-        export,
-        recursor,
-        inductive.name,
-        constructor.name,
-        *motive_level,
-    ) {
+    if !recursor_metadata_admissible(export, inductive, &block.constructors, recursor, true, true)
+        || !new_singleton_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+        || !new_singleton_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+    {
         return Err(Verdict::Reject);
     }
 
