@@ -258,11 +258,7 @@ pub(crate) fn convert_with_policy_in_context(
                     if std::env::var_os("NUCLEUS_TRACE_RECURSOR_EXPOSURE").is_some() {
                         eprintln!(
                             "NUCLEUS_RECURSOR_EXPOSURE:left_expr={}:right_expr={}:depth={}:left={:?}:right={:?}",
-                            left.expr.0,
-                            right.expr.0,
-                            depth,
-                            cheap_left,
-                            cheap_right,
+                            left.expr.0, right.expr.0, depth, cheap_left, cheap_right,
                         );
                     }
                     return Judgment::unknown("conversion-exposure");
