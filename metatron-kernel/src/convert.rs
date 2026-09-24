@@ -61,8 +61,11 @@ pub enum DeltaPolicy {
     GuardedSemanticFallback,
 }
 
-#[cfg(test)]
 use std::cell::Cell;
+
+thread_local! {
+    static TYPED_PROOF_IRREL_ACTIVE: Cell<bool> = const { Cell::new(false) };
+}
 
 #[cfg(test)]
 thread_local! {
@@ -120,7 +123,7 @@ pub(crate) fn convert_with_policy_in_context(
     budget: usize,
     delta_policy: DeltaPolicy,
     initial_depth: usize,
-    _context: &[TypeValue],
+    context: &[TypeValue],
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -144,6 +147,21 @@ pub(crate) fn convert_with_policy_in_context(
         }
         remaining -= 1;
         if !visited.insert((checker.authority(), left.clone(), right.clone())) {
+            continue;
+        }
+
+        if depth == initial_depth
+            && let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && guarded_typed_proof_pair(
+                checker,
+                left_term,
+                right_term,
+                context,
+                remaining,
+                delta_policy,
+                depth,
+            )
+        {
             continue;
         }
 
@@ -341,6 +359,69 @@ pub(crate) fn reset_test_conversion_calls() {
 #[cfg(test)]
 pub(crate) fn test_conversion_calls() -> u64 {
     TRUSTED_CONVERSION_CALLS.with(Cell::get)
+}
+
+fn guarded_typed_proof_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    context: &[TypeValue],
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    depth: usize,
+) -> bool {
+    TYPED_PROOF_IRREL_ACTIVE.with(|active| {
+        if active.replace(true) {
+            return false;
+        }
+        let result = typed_proof_pair(
+            checker,
+            left,
+            right,
+            context,
+            budget,
+            delta_policy,
+            depth,
+        );
+        active.set(false);
+        result
+    })
+}
+
+fn typed_proof_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    context: &[TypeValue],
+    budget: usize,
+    delta_policy: DeltaPolicy,
+    depth: usize,
+) -> bool {
+    let left_type = match checker.infer_closure_in_context(left, context, budget) {
+        Judgment::Proven { value, .. } => value,
+        Judgment::Refuted { .. } | Judgment::Unknown { .. } => return false,
+    };
+    let right_type = match checker.infer_closure_in_context(right, context, budget) {
+        Judgment::Proven { value, .. } => value,
+        Judgment::Refuted { .. } | Judgment::Unknown { .. } => return false,
+    };
+    if !checker.inferred_type_is_prop_in_context(&left_type, context, budget)
+        || !checker.inferred_type_is_prop_in_context(&right_type, context, budget)
+    {
+        return false;
+    }
+    matches!(
+        convert_with_policy_in_context(
+            checker,
+            &left_type,
+            &right_type,
+            budget,
+            delta_policy,
+            depth,
+            context,
+        ),
+        Judgment::Proven { .. }
+    )
 }
 
 fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> Option<FreeId> {
