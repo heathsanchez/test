@@ -133,6 +133,7 @@ pub(crate) fn convert_with_policy_in_context(
     let mut unit_like_frees = HashMap::new();
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
+    let mut proof_function_frees = HashMap::new();
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
@@ -182,6 +183,18 @@ pub(crate) fn convert_with_policy_in_context(
             continue;
         }
 
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && fixed_proof_function_application_pair(
+                checker,
+                left_term,
+                right_term,
+                &proof_function_frees,
+                remaining,
+            )
+        {
+            continue;
+        }
+
         match (left, right) {
             (TypeValue::Sort(left), TypeValue::Sort(right)) => {
                 match level_equal(left, right, remaining) {
@@ -223,6 +236,14 @@ pub(crate) fn convert_with_policy_in_context(
                     {
                         proof_frees.insert(free, left_prop);
                     }
+
+                    if let (Some(left_key), Some(right_key)) = (
+                        checker.fixed_proof_function_type_key(&left_domain, remaining),
+                        checker.fixed_proof_function_type_key(&right_domain, remaining),
+                    ) && left_key == right_key
+                    {
+                        proof_function_frees.insert(free, left_key);
+                    }
                 }
                 work.push((*left_body, *right_body, depth.saturating_add(1)));
                 work.push((*left_domain, *right_domain, depth));
@@ -243,6 +264,7 @@ pub(crate) fn convert_with_policy_in_context(
                     remaining,
                     depth,
                     &mut work,
+                    &mut proof_function_frees,
                 ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
@@ -256,7 +278,13 @@ pub(crate) fn convert_with_policy_in_context(
                             return Judgment::unknown("full-conversion-exposure");
                         };
                         match compare_values(
-                            checker, full_left, full_right, remaining, depth, &mut work,
+                            checker,
+                            full_left,
+                            full_right,
+                            remaining,
+                            depth,
+                            &mut work,
+                            &mut proof_function_frees,
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
@@ -332,6 +360,31 @@ fn bare_free_type(checker: &TypeChecker<'_>, ty: &TypeValue, budget: usize) -> O
         return None;
     };
     Some(free)
+}
+
+fn fixed_proof_function_application_pair(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    proof_functions: &HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    budget: usize,
+) -> bool {
+    let machine = checker.machine();
+    let left = machine.expose(left.clone(), Transparency::Reducible, budget);
+    let right = machine.expose(right.clone(), Transparency::Reducible, budget);
+    let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
+        (left.proven_value(), right.proven_value())
+    else {
+        return false;
+    };
+    if left.spine.is_empty() || right.spine.is_empty() || left.spine.len() != right.spine.len() {
+        return false;
+    }
+    let (NeutralHead::Free(left_head), NeutralHead::Free(right_head)) = (&left.head, &right.head)
+    else {
+        return false;
+    };
+    left_head == right_head && proof_functions.contains_key(left_head)
 }
 
 fn proof_free_pair(
@@ -471,6 +524,7 @@ fn compare_values(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     match (left, right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
@@ -479,10 +533,26 @@ fn compare_values(
             }
         }
         (Value::NatLit(literal), Value::Neutral(neutral)) => {
-            return compare_nat_literal_neutral(checker, literal, neutral, budget, depth, work);
+            return compare_nat_literal_neutral(
+                checker,
+                literal,
+                neutral,
+                budget,
+                depth,
+                work,
+                proof_function_frees,
+            );
         }
         (Value::Neutral(neutral), Value::NatLit(literal)) => {
-            return compare_nat_literal_neutral(checker, literal, neutral, budget, depth, work);
+            return compare_nat_literal_neutral(
+                checker,
+                literal,
+                neutral,
+                budget,
+                depth,
+                work,
+                proof_function_frees,
+            );
         }
         (Value::Sort(left), Value::Sort(right)) => {
             work.push((
@@ -514,6 +584,15 @@ fn compare_values(
             let Some(free) = fresh_local(depth) else {
                 return Judgment::unknown("binder-depth-overflow");
             };
+            let left_domain_type = TypeValue::Term(left_domain.clone());
+            let right_domain_type = TypeValue::Term(right_domain.clone());
+            if let (Some(left_key), Some(right_key)) = (
+                checker.fixed_proof_function_type_key(&left_domain_type, budget),
+                checker.fixed_proof_function_type_key(&right_domain_type, budget),
+            ) && left_key == right_key
+            {
+                proof_function_frees.insert(free, left_key);
+            }
             work.push((
                 TypeValue::Term(left_body.under_free(free)),
                 TypeValue::Term(right_body.under_free(free)),
@@ -553,6 +632,7 @@ fn compare_nat_literal_neutral(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
         return Judgment::unknown("Nat-literal-conversion-without-authority");
@@ -591,6 +671,7 @@ fn compare_nat_literal_neutral(
             budget.saturating_sub(1),
             depth,
             work,
+            proof_function_frees,
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")
