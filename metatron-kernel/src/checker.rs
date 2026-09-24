@@ -9,7 +9,7 @@ use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
-use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule, Transparency};
+use crate::machine::{ProjectionFieldType, ProjectionSpec, RecursorReduction, RecursorRule, Transparency};
 use crate::parser::ResolvedExport;
 use crate::syntax::{
     Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
@@ -882,7 +882,7 @@ fn check_exact_ofnat(
             ProjectionSpec {
                 constructor: constructor.name,
                 num_params: 2,
-                field_param_indices: vec![0],
+                field_types: vec![ProjectionFieldType::Parameter(0)],
             },
         )
         .map_err(|_| Verdict::Reject)
@@ -1840,7 +1840,7 @@ fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveB
         constructor_domains.as_slice(),
         [constructor_parameter, field]
             if *constructor_parameter == *parameter_type
-                && is_bvar(export, *field, 0)
+                && !expression_contains_constant(export, *field, inductive.name)
     )
 }
 
@@ -1894,6 +1894,13 @@ fn check_generic_unary_structure(
         delta_policy,
     )?;
 
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 2) else {
+        return Err(Verdict::Reject);
+    };
+    let [_, field_type] = constructor_domains.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+
     let environment = derivation
         .finish()
         .install_projection_spec(
@@ -1901,7 +1908,7 @@ fn check_generic_unary_structure(
             ProjectionSpec {
                 constructor: constructor.name,
                 num_params: 1,
-                field_param_indices: vec![0],
+                field_types: vec![ProjectionFieldType::Derived(*field_type)],
             },
         )
         .map_err(|_| Verdict::Reject)?;
@@ -6822,7 +6829,7 @@ impl ExactBinaryProductDerivation<'_> {
                     ProjectionSpec {
                         constructor: self.constructor.name,
                         num_params: 2,
-                        field_param_indices: vec![0, 1],
+                        field_types: vec![ProjectionFieldType::Parameter(0), ProjectionFieldType::Parameter(1)],
                     },
                 )
                 .map_err(|_| Verdict::Reject)?
