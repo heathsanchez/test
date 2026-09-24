@@ -2257,6 +2257,42 @@ fn check_generic_field_structure(
         }
     }
 
+    if p == 1 && fields == 2 && inductive.level_params.is_empty() {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        let staged = derivation
+            .finish()
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: p,
+                    field_types: constructor_domains[p..]
+                        .iter()
+                        .copied()
+                        .map(ProjectionFieldType::Derived)
+                        .collect(),
+                },
+            )
+            .map_err(|_| Verdict::Reject)?;
+        let mut recursor_derivation = ClosedNonrecursiveDerivation::begin(&staged);
+        recursor_derivation.promote(
+            export,
+            derived_recursor(recursor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+        return install_certified_recursor_reduction(
+            recursor_derivation.finish(),
+            &block.constructors,
+            recursor,
+        );
+    }
+
     derivation.promote_all(
         export,
         [derived_constructor(constructor), derived_recursor(recursor)],
