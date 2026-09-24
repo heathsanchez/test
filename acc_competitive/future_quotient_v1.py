@@ -289,31 +289,29 @@ def build_index(core, atlas_path, out_db, total_cap, progress_every=10000):
         FROM observations
         WHERE next_move IS NOT NULL
         GROUP BY future_sig,next_move;
+
+        CREATE TEMP TABLE policy_mode AS
+        SELECT signature,move,n,total FROM (
+          SELECT signature,move,n,
+                 SUM(n) OVER (PARTITION BY signature) AS total,
+                 ROW_NUMBER() OVER (PARTITION BY signature ORDER BY n DESC,move ASC) AS rn
+          FROM future_policy
+        ) WHERE rn=1;
+
+        INSERT INTO future_classes
+        SELECT o.future_sig,
+               COUNT(*),
+               MIN(o.distance),
+               MAX(o.distance),
+               AVG(o.distance),
+               COUNT(DISTINCT o.distance_band),
+               pm.move,
+               COALESCE(1.0*pm.n/pm.total,0.0)
+        FROM observations o
+        LEFT JOIN policy_mode pm ON pm.signature=o.future_sig
+        GROUP BY o.future_sig;
         """
     )
-    qdb.commit()
-
-    # SQLite-compatible policy-mode construction.
-    class_rows = qdb.execute(
-        """
-        SELECT future_sig,COUNT(*),MIN(distance),MAX(distance),AVG(distance),COUNT(DISTINCT distance_band)
-        FROM observations GROUP BY future_sig
-        """
-    ).fetchall()
-    insert = []
-    for sig, cnt, mind, maxd, avgd, bands in class_rows:
-        pol = qdb.execute(
-            "SELECT move,n FROM future_policy WHERE signature=? ORDER BY n DESC,move ASC",
-            (sig,),
-        ).fetchall()
-        if pol:
-            pm, pn = pol[0]
-            denom = sum(x[1] for x in pol)
-            purity = pn / denom if denom else 0.0
-        else:
-            pm, purity = None, 0.0
-        insert.append((sig, cnt, mind, maxd, avgd, bands, pm, purity))
-    qdb.executemany("INSERT INTO future_classes VALUES(?,?,?,?,?,?,?,?)", insert)
     qdb.commit()
 
     base_classes = qdb.execute("SELECT COUNT(*) FROM base_classes").fetchone()[0]
