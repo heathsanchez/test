@@ -784,6 +784,8 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
+    } else if generic_field_structure_candidate(export, block) {
+        check_generic_field_structure(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
@@ -1924,6 +1926,106 @@ fn check_generic_unary_structure(
         .map_err(|_| Verdict::Reject)?;
 
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
+fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    let (Ok(p), Ok(fields)) = (
+        usize::try_from(inductive.num_params),
+        usize::try_from(constructor.num_fields),
+    ) else {
+        return false;
+    };
+    if fields == 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.num_params != inductive.num_params
+        || constructor.is_unsafe
+        || recursor.k
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+    let Some((_, result)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
+        return false;
+    }
+    let Some((ctor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+        return false;
+    };
+    ctor_domains[p..]
+        .iter()
+        .all(|field| !expression_contains_constant(export, *field, inductive.name))
+}
+
+fn check_generic_field_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_field_structure_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != inductive.level_params
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote_all(
+        export,
+        [
+            derived_inductive,
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
 }
 
 fn generic_parameterized_nullary_candidate(
