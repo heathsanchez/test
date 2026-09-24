@@ -2186,12 +2186,13 @@ fn check_generic_field_structure(
             })
         });
         let nonrecursive_fields = match (p, fields) {
-            (Some(p), Some(fields)) => pi_spine(export, constructor.ty, p + fields)
-                .is_some_and(|(domains, _)| {
+            (Some(p), Some(fields)) => {
+                pi_spine(export, constructor.ty, p + fields).is_some_and(|(domains, _)| {
                     domains[p..]
                         .iter()
                         .all(|field| !expression_contains_constant(export, *field, inductive.name))
-                }),
+                })
+            }
             _ => false,
         };
         let all_ok = inductive.all == [inductive.name];
