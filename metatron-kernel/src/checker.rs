@@ -2014,6 +2014,57 @@ fn check_generic_field_structure(
     ) else {
         return Err(Verdict::Unknown);
     };
+    if std::env::var_os("NUCLEUS_TRACE_P3_FIELD").is_some() {
+        let candidate = generic_field_structure_candidate(export, block);
+        let parameter_product =
+            generic_field_structure_is_parameter_product(export, inductive, constructor);
+        let result_nonprop = usize::try_from(inductive.num_params)
+            .ok()
+            .and_then(|p| pi_spine(export, inductive.ty, p))
+            .is_some_and(|(_, result)| {
+                matches!(
+                    export.exprs.get(result),
+                    Some(Expr::Sort(level))
+                        if !matches!(export.levels.get(*level), Some(Level::Zero))
+                )
+            });
+        let fields_nonrecursive = usize::try_from(inductive.num_params)
+            .ok()
+            .zip(usize::try_from(constructor.num_fields).ok())
+            .and_then(|(p, fields)| pi_spine(export, constructor.ty, p + fields).map(|x| (p, x)))
+            .is_some_and(|(p, (domains, _))| {
+                domains[p..]
+                    .iter()
+                    .all(|field| !expression_contains_constant(export, *field, inductive.name))
+            });
+        let metadata = recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        );
+        let rec_shape =
+            generic_unary_structure_recursor_shape(export, inductive, constructor, recursor);
+        eprintln!(
+            "NUCLEUS_P3_FIELD:name={}:candidate={}:param_product={}:result_nonprop={}:fields_nonrecursive={}:all={}:constructors={}:index={}:owner={}:levels={}:dup={}:ctor_result_bad={}:metadata={}:rec_shape={}",
+            inductive.name.0,
+            u8::from(candidate),
+            u8::from(parameter_product),
+            u8::from(result_nonprop),
+            u8::from(fields_nonrecursive),
+            u8::from(inductive.all == [inductive.name]),
+            u8::from(inductive.constructors == [constructor.name]),
+            u8::from(constructor.index == 0),
+            u8::from(constructor.inductive == inductive.name),
+            u8::from(constructor.level_params == inductive.level_params),
+            u8::from(has_duplicate_parameter(&inductive.level_params)),
+            u8::from(constructor_result_is_definitely_malformed(export, inductive, constructor)),
+            u8::from(metadata),
+            u8::from(rec_shape),
+        );
+    }
     if !generic_field_structure_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
