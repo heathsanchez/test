@@ -1,0 +1,58 @@
+name: Nucleus Rule-Aware Major Micro v1
+
+on:
+  push:
+    branches: [nucleus-rule-aware-major-v1]
+    paths:
+      - ".github/workflows/nucleus-rule-aware-major-micro-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  micro:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        working-directory: metatron-kernel
+        run: cargo build --release --locked
+      - name: Fetch corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Five-case microgate
+        working-directory: metatron-kernel
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,time,json
+          root=pathlib.Path('/tmp/tests')
+          b=pathlib.Path('target/release/metatron-kernel').resolve()
+          cases=[
+            ('good','perf/args-before-unfold',0),
+            ('good','perf/folded-constant-first',0),
+            ('good','perf/folded-constant-last',0),
+            ('bad','perf/refute-cheap-first',1),
+            ('bad','perf/refute-cheap-last',1),
+          ]
+          rows=[]
+          for d,n,e in cases:
+              p=root/d/(n+'.ndjson')
+              t=time.perf_counter()
+              try:
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=25)
+                  rows.append({'test':n,'expected':e,'rc':q.returncode,'seconds':time.perf_counter()-t})
+              except subprocess.TimeoutExpired:
+                  rows.append({'test':n,'expected':e,'rc':'TIMEOUT','seconds':time.perf_counter()-t})
+          print(json.dumps(rows,sort_keys=True))
+          PY
