@@ -426,8 +426,7 @@ impl<'a> TypeChecker<'a> {
             TypeValue::Pi { domain, body } => Some((*domain, PiBody::Fixed(*body))),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
-                let reducible =
-                    machine.expose(closure.clone(), Transparency::Reducible, budget);
+                let reducible = machine.expose(closure.clone(), Transparency::Reducible, budget);
                 if let Some(Value::Pi { domain, body }) = reducible.proven_value() {
                     return Some((
                         TypeValue::Term(domain.clone()),
