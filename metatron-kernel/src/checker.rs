@@ -2166,7 +2166,72 @@ fn check_generic_field_structure(
     ) else {
         return Err(Verdict::Unknown);
     };
-    if !generic_field_structure_candidate(export, block) {
+    let candidate = generic_field_structure_candidate(export, block);
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_FIELD").is_some()
+        && inductive.num_params == 3
+        && inductive.num_indices == 0
+        && constructor.num_fields == 1
+    {
+        let p = usize::try_from(inductive.num_params).ok();
+        let fields = usize::try_from(constructor.num_fields).ok();
+        let parameter_product =
+            generic_field_structure_is_parameter_product(export, inductive, constructor);
+        let arity_sort = p.is_some_and(|p| {
+            pi_spine(export, inductive.ty, p).is_some_and(|(_, result)| {
+                matches!(
+                    export.exprs.get(result),
+                    Some(Expr::Sort(level))
+                        if !matches!(export.levels.get(*level), Some(Level::Zero))
+                )
+            })
+        });
+        let nonrecursive_fields = match (p, fields) {
+            (Some(p), Some(fields)) => pi_spine(export, constructor.ty, p + fields)
+                .is_some_and(|(domains, _)| {
+                    domains[p..]
+                        .iter()
+                        .all(|field| !expression_contains_constant(export, *field, inductive.name))
+                }),
+            _ => false,
+        };
+        let all_ok = inductive.all == [inductive.name];
+        let constructors_ok = inductive.constructors == [constructor.name];
+        let index_ok = constructor.index == 0;
+        let owner_ok = constructor.inductive == inductive.name;
+        let levels_ok = constructor.level_params == inductive.level_params;
+        let unique_levels = !has_duplicate_parameter(&inductive.level_params);
+        let result_ok = !constructor_result_is_definitely_malformed(export, inductive, constructor);
+        let metadata_ok = recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        );
+        let rec_shape =
+            generic_field_structure_recursor_shape(export, inductive, constructor, recursor);
+        eprintln!(
+            "NUCLEUS_GENERIC_FIELD:name={}:candidate={}:parameter_product={}:arity_sort={}:nonrecursive_fields={}:all={}:constructors={}:index={}:owner={}:levels={}:unique_levels={}:result={}:metadata={}:rec_shape={}:rec_levels={}:ind_levels={}",
+            inductive.name.0,
+            u8::from(candidate),
+            u8::from(parameter_product),
+            u8::from(arity_sort),
+            u8::from(nonrecursive_fields),
+            u8::from(all_ok),
+            u8::from(constructors_ok),
+            u8::from(index_ok),
+            u8::from(owner_ok),
+            u8::from(levels_ok),
+            u8::from(unique_levels),
+            u8::from(result_ok),
+            u8::from(metadata_ok),
+            u8::from(rec_shape),
+            recursor.level_params.len(),
+            inductive.level_params.len(),
+        );
+    }
+    if !candidate {
         return Err(Verdict::Unknown);
     }
     if inductive.all != [inductive.name]
