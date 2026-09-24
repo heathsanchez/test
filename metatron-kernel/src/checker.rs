@@ -2257,10 +2257,7 @@ fn check_generic_field_structure(
                     };
                     eprintln!(
                         "NUCLEUS_P3_MATRIX:name={}:param={}:kind={}:status={}",
-                        inductive.name.0,
-                        index,
-                        kind,
-                        status,
+                        inductive.name.0, index, kind, status,
                     );
                 }
                 verdict_boundary(judgment)?;
