@@ -1,0 +1,101 @@
+name: VeriTile Gauge Blind Transfer V3
+
+on:
+  push:
+    branches:
+      - veritile-gauge-blind-transfer-v3
+    paths:
+      - "experiments/veritile_gauge_blind_transfer_v3/**"
+      - ".github/workflows/veritile-gauge-blind-transfer-v3.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+
+      - uses: actions/checkout@v4
+        name: Checkout frozen VeriTile
+        with:
+          repository: Lizn-zn/VeriTile
+          ref: 95a01f598e2cd1cac4052e5e5ff9145c658e18db
+          path: vendor/VeriTile
+
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build frozen VeriTile Triton surface
+        working-directory: vendor/VeriTile
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build VeriTile.Triton
+
+      - name: Compile exactly frozen gauge capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git show 9fa6a451eea2cb68004ce0934ee565763ad7c109:experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | sha256sum | cut -d' ' -f1)" =                "$(sha256sum experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | cut -d' ' -f1)"
+          cp experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean              vendor/VeriTile/VeriTile/MathGraphGaugeCapability.lean
+          cd vendor/VeriTile
+          mkdir -p .lake/build/lib/lean/VeriTile
+          lake env lean             -o .lake/build/lib/lean/VeriTile/MathGraphGaugeCapability.olean             VeriTile/MathGraphGaugeCapability.lean
+
+      - name: Ablation must fail without frozen capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp vendor/VeriTile/bench/tritonbench_g/block_sparse_attn/BlockSparseAttn.lean              /tmp/BlockSparseAttnAblation.lean
+          cat experiments/veritile_gauge_blind_transfer_v3/BlockSparseTransferAppend.lean              >> /tmp/BlockSparseAttnAblation.lean
+          set +e
+          (cd vendor/VeriTile && lake env lean /tmp/BlockSparseAttnAblation.lean)              > /tmp/ablation-v3.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/ablation-v3.log
+          if [ "$rc" -eq 0 ]; then exit 1; fi
+          grep -q "MathGraphGaugeCapability.common_factor_ratio" /tmp/ablation-v3.log
+          echo "ABLATION_RC=$rc" >> "$GITHUB_ENV"
+
+      - name: Blind transfer into block sparse attention
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/VeriTile/bench/tritonbench_g/block_sparse_attn/BlockSparseAttn.lean")
+          s=p.read_text()
+          needle="import VeriTile.Triton\n"
+          assert needle in s
+          s=s.replace(needle,needle+"import VeriTile.MathGraphGaugeCapability\n",1)
+          s+=Path("experiments/veritile_gauge_blind_transfer_v3/BlockSparseTransferAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/block_sparse_attn/BlockSparseAttn.lean
+
+      - name: Emit evidence
+        env:
+          VERITILE_ROOT: vendor/VeriTile
+          EVIDENCE_OUT: evidence/veritile-gauge-blind-transfer-v3.json
+        run: python experiments/veritile_gauge_blind_transfer_v3/audit.py
+
+      - uses: actions/upload-artifact@v4
+        name: Upload evidence
+        with:
+          name: veritile-gauge-blind-transfer-v3
+          path: |
+            evidence/veritile-gauge-blind-transfer-v3.json
+            /tmp/ablation-v3.log
+          if-no-files-found: error
