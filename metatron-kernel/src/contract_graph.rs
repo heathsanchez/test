@@ -377,24 +377,14 @@ pub(crate) const CONTRACTS: &[SemanticContract] = &[
     SemanticContract {
         id: "structure.fields.shadow@1",
         status: ContractStatus::Candidate,
-        requires: &[
-            "type.signature@1",
-            "constructor.signature@1",
-            "recursor.signature@1",
-            "validated.structure-shape@1",
-        ],
+        requires: &["observed.structure-fields-envelope@1"],
         produces: &["structure.fields@1"],
         preserves: &["lean.verdict@1"],
     },
     SemanticContract {
         id: "indexed-recursive.shadow@1",
         status: ContractStatus::Candidate,
-        requires: &[
-            "type.signature@1",
-            "constructor.signature@1",
-            "recursor.signature@1",
-            "validated.indexed-recursive-shape@1",
-        ],
+        requires: &["observed.indexed-recursive-envelope@1"],
         produces: &["inductive.indexed-recursive@1"],
         preserves: &["lean.verdict@1"],
     },
