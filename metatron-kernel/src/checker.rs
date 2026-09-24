@@ -1928,6 +1928,28 @@ fn check_generic_unary_structure(
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
+fn generic_field_structure_is_parameter_product(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    let (Ok(p), Ok(fields)) = (
+        usize::try_from(inductive.num_params),
+        usize::try_from(constructor.num_fields),
+    ) else {
+        return false;
+    };
+    if p == 0 || fields != p {
+        return false;
+    }
+    let Some((domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+        return false;
+    };
+    domains[p..]
+        .iter()
+        .all(|domain| is_bvar(export, *domain, (p - 1) as u64))
+}
+
 fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([inductive], [constructor], [recursor]) = (
         block.types.as_slice(),
@@ -1943,6 +1965,7 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
         return false;
     };
     if fields == 0
+        || generic_field_structure_is_parameter_product(export, inductive, constructor)
         || inductive.num_indices != 0
         || inductive.num_nested != 0
         || inductive.is_recursive
