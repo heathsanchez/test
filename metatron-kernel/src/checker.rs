@@ -1684,9 +1684,10 @@ fn generic_unary_structure_recursor_shape(
     let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
         return false;
     };
-    if params != ind_params.as_slice() {
-        return false;
-    }
+    // Parameter domains are validated by kernel conversion after the
+    // inductive signature is staged. Exported recursors may erase reducible
+    // wrappers such as outParam, so expression identity is too strong here.
+    let _ = params;
 
     let Some((motive_domains, motive_result)) = pi_spine(export, motive, 1) else {
         return false;
@@ -1782,10 +1783,9 @@ fn generic_unary_structure_recursor_shape(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
         return false;
     };
-    if rule_domains[..p] != ind_params[..]
-        || rule_domains[p] != motive
-        || rule_domains[p + 1] != minor
-    {
+    // Rule parameter domains are validated by the same conversion-lifted
+    // parameter check as the recursor telescope.
+    if rule_domains[p] != motive || rule_domains[p + 1] != minor {
         return false;
     }
     for field in 0..fields {
@@ -2189,19 +2189,78 @@ fn check_generic_field_structure(
         return Err(Verdict::Unknown);
     }
 
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return Err(Verdict::Reject);
+    };
+    let Ok(fields) = usize::try_from(constructor.num_fields) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+        return Err(Verdict::Reject);
+    };
+    let constructor_params = &constructor_domains[..p];
+    let Some((recursor_domains, _)) = pi_spine(export, recursor.ty, p + 3) else {
+        return Err(Verdict::Reject);
+    };
+    let recursor_params = &recursor_domains[..p];
+    let [rule] = recursor.rules.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
+        return Err(Verdict::Reject);
+    };
+    let rule_params = &rule_domains[..p];
+
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
     let derived_inductive = if inductive.level_params.is_empty() {
         derived_type(inductive.name, inductive.ty)
     } else {
         derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
     };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    {
+        let checker = TypeChecker::with_level_substitution(
+            &export.exprs,
+            &export.levels,
+            derivation.environment(),
+            parameter_substitution(&recursor.level_params),
+        )
+        .with_delta_policy(delta_policy);
+        let mut frame = EnvFrame::empty();
+
+        for index in 0..p {
+            let expected =
+                TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
+            for actual in [
+                constructor_params[index],
+                recursor_params[index],
+                rule_params[index],
+            ] {
+                verdict_boundary(checker.convert(
+                    &expected,
+                    &TypeValue::Term(checker.closure(actual, frame.clone())),
+                    limits.judgment_steps,
+                ))?;
+            }
+            let Some(offset) = u64::try_from(index).ok() else {
+                return Err(Verdict::Reject);
+            };
+            frame = frame.extend_free(FreeId(30_000 + offset));
+        }
+    }
+
     derivation.promote_all(
         export,
-        [
-            derived_inductive,
-            derived_constructor(constructor),
-            derived_recursor(recursor),
-        ],
+        [derived_constructor(constructor), derived_recursor(recursor)],
         limits.judgment_steps,
         delta_policy,
     )?;
