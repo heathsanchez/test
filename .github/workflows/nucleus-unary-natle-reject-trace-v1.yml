@@ -40,6 +40,7 @@ jobs:
         working-directory: metatron-kernel
         env:
           NUCLEUS_TRACE_REJECT_BLOCK: "1"
+          NUCLEUS_TRACE_NAT_LE: "1"
         run: |
           set -euo pipefail
           python - <<'PY'
@@ -52,7 +53,9 @@ jobs:
               p=root/(name+'.ndjson')
               with p.open('rb') as f:
                   q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=os.environ,timeout=120)
-              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_BLOCK_EXIT:' in x]
-              rows.append({'test':name,'rc':q.returncode,'exits':marks})
+              stderr=q.stderr.decode(errors='replace').splitlines()
+              marks=[x for x in stderr if 'NUCLEUS_BLOCK_EXIT:' in x]
+              natle=[x for x in stderr if 'NUCLEUS_NAT_LE:' in x]
+              rows.append({'test':name,'rc':q.returncode,'exits':marks,'natle':natle})
           print(json.dumps(rows,sort_keys=True))
           PY
