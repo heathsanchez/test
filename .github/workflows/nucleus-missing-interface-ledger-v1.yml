@@ -1,0 +1,142 @@
+name: Nucleus Missing Interface Ledger v1
+
+on:
+  push:
+    branches: [nucleus-missing-interface-ledger-v1]
+    paths:
+      - ".github/workflows/nucleus-missing-interface-ledger-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ledger:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Prove diagnostic-only independent boundary
+        run: |
+          set -euo pipefail
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+      - name: Build and test diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Build exact semantic base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Build missing-interface quotient
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INTERFACE_LEDGER: "1"
+          NUCLEUS_TRACE_INDUCTIVE_CENSUS: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/missing-interface-ledger-v1
+          python - <<'PY'
+          import collections,json,os,pathlib,re,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if not trace:
+                  env.pop('NUCLEUS_TRACE_INTERFACE_LEDGER',None)
+                  env.pop('NUCLEUS_TRACE_INDUCTIVE_CENSUS',None)
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=120)
+              return q.returncode,q.stderr.decode(errors='replace').splitlines()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,stderr=rr(cand,p,True)
+                  assert crc==brc,(name,brc,crc)
+                  interfaces=[]
+                  for line in stderr:
+                      if 'NUCLEUS_INTERFACE_MISS:' in line:
+                          payload=line.split('NUCLEUS_INTERFACE_MISS:',1)[1]
+                          interface,detail=payload.split(':',1)
+                          interfaces.append({'interface':interface,'detail':detail})
+                  census=[line.split('NUCLEUS_INDUCTIVE_CENSUS:',1)[1]
+                          for line in stderr if 'NUCLEUS_INDUCTIVE_CENSUS:' in line]
+                  if brc not in (0,1):
+                      rows.append({
+                          'test':name,'expected':expected,'rc':brc,
+                          'interfaces':interfaces,
+                          'primary_interface':interfaces[-1]['interface'] if interfaces else None,
+                          'primary_detail':interfaces[-1]['detail'] if interfaces else None,
+                          'terminal_inductive_shape':census[-1] if census else None,
+                      })
+          assert len(rows)==41,len(rows)
+          unclassified=[r['test'] for r in rows if not r['primary_interface']]
+          assert not unclassified,unclassified
+          counts=collections.Counter(r['primary_interface'] for r in rows)
+          outcomes={}
+          by_interface={}
+          for r in rows:
+              key=r['primary_interface']
+              by_interface.setdefault(key,[]).append(r['test'])
+              o=outcomes.setdefault(key,{'accept':0,'reject':0})
+              o['accept' if r['expected']==0 else 'reject'] += 1
+          shape_counts=collections.Counter(
+              (r['primary_interface'],r['terminal_inductive_shape'])
+              for r in rows if r['terminal_inductive_shape']
+          )
+          out={
+              'schema':'nucleus-missing-interface-ledger-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'residual_count':len(rows),
+              'verdict_identity':True,
+              'interface_counts':dict(counts),
+              'protected_outcomes':outcomes,
+              'by_interface':by_interface,
+              'shape_counts':[
+                  {'interface':interface,'shape':shape,'count':count}
+                  for (interface,shape),count in shape_counts.most_common()
+              ],
+              'rows':rows,
+          }
+          dest=pathlib.Path('evidence-out/missing-interface-ledger-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'residual_count':out['residual_count'],
+              'interface_counts':out['interface_counts'],
+              'protected_outcomes':out['protected_outcomes'],
+              'by_interface':out['by_interface'],
+              'top_shapes':out['shape_counts'][:12],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-missing-interface-ledger-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/missing-interface-ledger-v1
+          if-no-files-found: error
