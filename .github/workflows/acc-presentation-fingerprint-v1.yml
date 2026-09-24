@@ -1,0 +1,50 @@
+name: ACC Presentation Fingerprint V1
+
+on:
+  push:
+    branches: [acc-presentation-fingerprint-v1]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  fingerprint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch target presentations
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, urllib.request
+          from pathlib import Path
+
+          URL='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          targets=['ac-04741','ac-10090','ac-06708','ac-00850','ac-05833']
+          req=urllib.request.Request(URL,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+          with urllib.request.urlopen(req,timeout=60) as r:
+              obj=json.loads(r.read().decode())
+          data=obj.get('data',obj)
+          rows={str(x.get('problemId') or x.get('challengeId')):x for x in data['items']}
+          out=[]
+          for cid in targets:
+              row=rows[cid]
+              problem=row.get('problem')
+              canon=json.dumps(problem,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+              out.append({
+                  'challengeId':cid,
+                  'currentBestLength':row.get('currentBestLength'),
+                  'kTeams':row.get('kTeams'),
+                  'problem':problem,
+                  'problem_sha256':hashlib.sha256(canon.encode()).hexdigest(),
+                  'canonical_problem':canon,
+              })
+          Path('acc_presentation_fingerprints.json').write_text(json.dumps(out,indent=2,ensure_ascii=False)+'\n')
+          print('ACC_PRESENTATION_FINGERPRINTS',json.dumps(out,sort_keys=True,ensure_ascii=False))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-presentation-fingerprint-v1
+          path: acc_presentation_fingerprints.json
+          if-no-files-found: error
