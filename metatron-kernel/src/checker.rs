@@ -7321,13 +7321,13 @@ fn trace_contract_plan(required: &str) {
     };
 
     match plan_required_interface(required_static, evidence.iter().copied()) {
-        PathStatus::WarrantedPath { contracts } => {
+        PathStatus::Warranted { contracts } => {
             eprintln!(
                 "NUCLEUS_CONTRACT_PLAN:required={required_static}:status=WARRANTED_PATH:contracts={}",
                 contracts.join(",")
             );
         }
-        PathStatus::CandidatePath {
+        PathStatus::Candidate {
             candidate_count,
             contracts,
         } => {
@@ -7336,7 +7336,7 @@ fn trace_contract_plan(required: &str) {
                 contracts.join(",")
             );
         }
-        PathStatus::NoRegisteredPath => {
+        PathStatus::None => {
             eprintln!("NUCLEUS_CONTRACT_PLAN:required={required_static}:status=NO_REGISTERED_PATH");
         }
     }
