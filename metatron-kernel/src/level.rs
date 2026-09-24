@@ -34,7 +34,18 @@ pub fn max(left: LevelTerm, right: LevelTerm) -> LevelTerm {
     }
 }
 
+fn level_is_zero_or_one(level: &LevelTerm) -> bool {
+    matches!(level, LevelTerm::Zero)
+        || matches!(
+            level,
+            LevelTerm::Succ(inner) if matches!(inner.as_ref(), LevelTerm::Zero)
+        )
+}
+
 pub fn level_imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
+    if level_is_zero_or_one(&left) {
+        return right;
+    }
     if left == right {
         return left;
     }
