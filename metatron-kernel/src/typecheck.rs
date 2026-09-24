@@ -278,8 +278,11 @@ impl<'a> TypeChecker<'a> {
                             ..
                         } => {
                             let machine = self.machine();
-                            let reducible =
-                                machine.expose(closure.clone(), Transparency::Reducible, *remaining);
+                            let reducible = machine.expose(
+                                closure.clone(),
+                                Transparency::Reducible,
+                                *remaining,
+                            );
                             let reducible_shape = match reducible.proven_value() {
                                 Some(Value::Pi { .. }) => "pi",
                                 Some(Value::Neutral(_)) => "neutral",
@@ -288,11 +291,8 @@ impl<'a> TypeChecker<'a> {
                                 Some(Value::NatLit(_)) => "nat",
                                 None => "unknown",
                             };
-                            let full = machine.expose(
-                                closure.clone(),
-                                Transparency::Full,
-                                *remaining,
-                            );
+                            let full =
+                                machine.expose(closure.clone(), Transparency::Full, *remaining);
                             let full_shape = match full.proven_value() {
                                 Some(Value::Pi { .. }) => "pi",
                                 Some(Value::Neutral(_)) => "neutral",
