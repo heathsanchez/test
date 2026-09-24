@@ -1,0 +1,172 @@
+name: Nucleus Live Contract Planner v1
+
+on:
+  push:
+    branches: [nucleus-live-contract-planner-v1]
+    paths:
+      - ".github/workflows/nucleus-live-contract-planner-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build and test planner
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          CARGO_TARGET_DIR=target-diagnostics cargo build --release --locked --features diagnostics
+      - name: Build exact semantic base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Build live 41-residual contract plan
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INTERFACE_LEDGER: "1"
+          NUCLEUS_TRACE_CONTRACT_PLAN: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/live-contract-planner-v1
+          python - <<'PY'
+          import collections,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          normal=pathlib.Path('target/release/metatron-kernel').resolve()
+          diag=pathlib.Path('target-diagnostics/release/metatron-kernel').resolve()
+
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if not trace:
+                  env.pop('NUCLEUS_TRACE_INTERFACE_LEDGER',None)
+                  env.pop('NUCLEUS_TRACE_CONTRACT_PLAN',None)
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                      env=env,timeout=120
+                  )
+              return q.returncode,q.stderr.decode(errors='replace').splitlines()
+
+          rows=[]
+          all_cases=0
+          normal_changes=[]
+          diagnostic_changes=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  all_cases += 1
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  nrc,_=rr(normal,p)
+                  drc,stderr=rr(diag,p,True)
+                  if nrc != brc:
+                      normal_changes.append({'test':name,'base':brc,'candidate':nrc})
+                  if drc != brc:
+                      diagnostic_changes.append({'test':name,'base':brc,'diagnostic':drc})
+                  if brc in (0,1):
+                      continue
+
+                  misses=[]
+                  plans=[]
+                  for line in stderr:
+                      if 'NUCLEUS_INTERFACE_MISS:' in line:
+                          payload=line.split('NUCLEUS_INTERFACE_MISS:',1)[1]
+                          interface,detail=payload.split(':',1)
+                          misses.append({'interface':interface,'detail':detail})
+                      if 'NUCLEUS_CONTRACT_PLAN:' in line:
+                          payload=line.split('NUCLEUS_CONTRACT_PLAN:',1)[1]
+                          parts=payload.split(':')
+                          record={}
+                          for part in parts:
+                              if '=' in part:
+                                  k,v=part.split('=',1)
+                                  record[k]=v
+                          plans.append(record)
+
+                  assert misses,(name,'missing interface trace')
+                  assert plans,(name,'missing contract plan trace')
+                  rows.append({
+                      'test':name,
+                      'expected':expected,
+                      'primary_interface':misses[-1]['interface'],
+                      'primary_detail':misses[-1]['detail'],
+                      'plan':plans[-1],
+                  })
+
+          assert all_cases == 193,all_cases
+          assert not normal_changes,normal_changes
+          assert not diagnostic_changes,diagnostic_changes
+          assert len(rows) == 41,len(rows)
+
+          status_counts=collections.Counter(r['plan'].get('status') for r in rows)
+          interface_counts=collections.Counter(r['primary_interface'] for r in rows)
+          candidate_by_interface=collections.Counter(
+              r['primary_interface'] for r in rows
+              if r['plan'].get('status') == 'CANDIDATE_PATH'
+          )
+          no_path_by_interface=collections.Counter(
+              r['primary_interface'] for r in rows
+              if r['plan'].get('status') == 'NO_REGISTERED_PATH'
+          )
+          warranted_by_interface=collections.Counter(
+              r['primary_interface'] for r in rows
+              if r['plan'].get('status') == 'WARRANTED_PATH'
+          )
+
+          out={
+              'schema':'nucleus-live-contract-planner-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'verdict_identity':True,
+              'diagnostic_verdict_identity':True,
+              'residual_count':len(rows),
+              'status_counts':dict(status_counts),
+              'interface_counts':dict(interface_counts),
+              'candidate_by_interface':dict(candidate_by_interface),
+              'no_path_by_interface':dict(no_path_by_interface),
+              'warranted_by_interface':dict(warranted_by_interface),
+              'rows':rows,
+              'normal_changes':normal_changes,
+              'diagnostic_changes':diagnostic_changes,
+          }
+          dest=pathlib.Path('evidence-out/live-contract-planner-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'residual_count':out['residual_count'],
+              'status_counts':out['status_counts'],
+              'candidate_by_interface':out['candidate_by_interface'],
+              'no_path_by_interface':out['no_path_by_interface'],
+              'warranted_by_interface':out['warranted_by_interface'],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-live-contract-planner-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/live-contract-planner-v1
+          if-no-files-found: error
