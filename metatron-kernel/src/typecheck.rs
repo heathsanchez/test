@@ -362,7 +362,10 @@ impl<'a> TypeChecker<'a> {
                         Closure::with_levels(field_expression, field_frame, level_substitution)
                     }
                 };
-                Judgment::proven(TypeValue::Term(field_type), "qualified-structure-projection")
+                Judgment::proven(
+                    TypeValue::Term(field_type),
+                    "qualified-structure-projection",
+                )
             }
             Expr::Let { ty, value, body } => {
                 let annotation_type = self.infer_in(*ty, context, frame, remaining);
