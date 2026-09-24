@@ -3770,6 +3770,7 @@ fn acc_application(
         && are_bvars(export, &arguments, &[carrier, relation, index])
 }
 
+#[allow(clippy::too_many_arguments)]
 fn acc_constructor_application(
     export: &ResolvedExport,
     expression: ExprId,
