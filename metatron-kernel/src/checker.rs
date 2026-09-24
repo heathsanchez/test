@@ -681,9 +681,9 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
-        && environment.nat_primitives().is_some_and(|nat| {
-            name_is_child_str(export, inductive.name, nat.type_name, "le")
-        })
+        && environment
+            .nat_primitives()
+            .is_some_and(|nat| name_is_child_str(export, inductive.name, nat.type_name, "le"))
     {
         return check_exact_nat_le(export, environment, block, limits, delta_policy);
     }
@@ -4641,12 +4641,7 @@ fn nat_le_step_application(
         && are_bvars(export, &arguments, &[lower, upper, proof])
 }
 
-fn nat_succ_bvar(
-    export: &ResolvedExport,
-    expression: ExprId,
-    succ: NameId,
-    value: u64,
-) -> bool {
+fn nat_succ_bvar(export: &ResolvedExport, expression: ExprId, succ: NameId, value: u64) -> bool {
     matches!(
         export.exprs.get(expression),
         Some(Expr::App { fun, arg })
@@ -4655,11 +4650,7 @@ fn nat_succ_bvar(
     )
 }
 
-fn nat_le_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    nat: NameId,
-) -> bool {
+fn nat_le_type(export: &ResolvedExport, expression: ExprId, nat: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 2) else {
         return false;
     };
@@ -4669,12 +4660,7 @@ fn nat_le_type(
             && is_prop_sort(export, result))
 }
 
-fn nat_le_refl_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    nat: NameId,
-    le: NameId,
-) -> bool {
+fn nat_le_refl_type(export: &ResolvedExport, expression: ExprId, nat: NameId, le: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 1) else {
         return false;
     };
@@ -4728,11 +4714,7 @@ fn nat_le_motive_type(
         && is_prop_sort(export, result)
 }
 
-fn nat_le_refl_minor_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    refl: NameId,
-) -> bool {
+fn nat_le_refl_minor_type(export: &ResolvedExport, expression: ExprId, refl: NameId) -> bool {
     let (head, arguments) = application_spine(export, expression);
     let [upper, proof] = arguments.as_slice() else {
         return false;
@@ -4906,13 +4888,7 @@ fn check_exact_nat_le(
         || step.num_params != 1
         || step.num_fields != 2
         || !name_is_child_str(export, step.name, inductive.name, "step")
-        || !nat_le_step_type(
-            export,
-            step.ty,
-            nat.type_name,
-            nat.succ,
-            inductive.name,
-        )
+        || !nat_le_step_type(export, step.ty, nat.type_name, nat.succ, inductive.name)
         || !recursor_metadata_admissible(
             export,
             inductive,
