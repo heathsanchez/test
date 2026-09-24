@@ -7287,6 +7287,61 @@ fn trace_missing_interface(interface: &str, detail: &str) {
     if std::env::var_os("NUCLEUS_TRACE_INTERFACE_LEDGER").is_some() {
         eprintln!("NUCLEUS_INTERFACE_MISS:{interface}:{detail}");
     }
+    #[cfg(feature = "diagnostics")]
+    trace_contract_plan(interface);
+}
+
+#[cfg(feature = "diagnostics")]
+fn trace_contract_plan(required: &str) {
+    use crate::contract_graph::{PathStatus, plan_required_interface};
+
+    if std::env::var_os("NUCLEUS_TRACE_CONTRACT_PLAN").is_none() {
+        return;
+    }
+
+    let required_static = match required {
+        "structure.fields@1" => "structure.fields@1",
+        "inductive.indexed-recursive@1" => "inductive.indexed-recursive@1",
+        "inductive.indexed@1" => "inductive.indexed@1",
+        "inductive.mutual@1" => "inductive.mutual@1",
+        "inductive.admission@1" => "inductive.admission@1",
+        "conversion.rigid-head@1" => "conversion.rigid-head@1",
+        "conversion.exposure@1" => "conversion.exposure@1",
+        "type.application@1" => "type.application@1",
+        "universe.resolve@1" => "universe.resolve@1",
+        "projection.type@1" => "projection.type@1",
+        "projection.reduce@1" => "projection.reduce@1",
+        _ => "semantic.residual@1",
+    };
+
+    let evidence: &[&'static str] = match required_static {
+        "structure.fields@1" => &["observed.structure-fields-envelope@1"],
+        "inductive.indexed-recursive@1" => &["observed.indexed-recursive-envelope@1"],
+        _ => &[],
+    };
+
+    match plan_required_interface(required_static, evidence.iter().copied()) {
+        PathStatus::WarrantedPath { contracts } => {
+            eprintln!(
+                "NUCLEUS_CONTRACT_PLAN:required={required_static}:status=WARRANTED_PATH:contracts={}",
+                contracts.join(",")
+            );
+        }
+        PathStatus::CandidatePath {
+            candidate_count,
+            contracts,
+        } => {
+            eprintln!(
+                "NUCLEUS_CONTRACT_PLAN:required={required_static}:status=CANDIDATE_PATH:candidates={candidate_count}:contracts={}",
+                contracts.join(",")
+            );
+        }
+        PathStatus::NoRegisteredPath => {
+            eprintln!(
+                "NUCLEUS_CONTRACT_PLAN:required={required_static}:status=NO_REGISTERED_PATH"
+            );
+        }
+    }
 }
 
 fn trace_residual_interface(residual: &'static str) {
