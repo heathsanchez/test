@@ -1,0 +1,117 @@
+name: VeriTile Gauge Transfer V2
+
+on:
+  push:
+    branches:
+      - veritile-gauge-transfer-v2
+    paths:
+      - "experiments/veritile_gauge_transfer_v2/**"
+      - ".github/workflows/veritile-gauge-transfer-v2.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen VeriTile
+        uses: actions/checkout@v4
+        with:
+          repository: Lizn-zn/VeriTile
+          ref: 95a01f598e2cd1cac4052e5e5ff9145c658e18db
+          path: vendor/VeriTile
+
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build frozen VeriTile Triton surface
+        shell: bash
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build VeriTile.Triton
+
+      - name: Check V1 source theorem
+        shell: bash
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          cat > SeedProbe.lean <<'LEAN'
+          import VeriTile.Triton.Math.Softmax
+          #check VeriTile.Triton.TiledSoftmax.naive_eq_stable
+          LEAN
+          lake env lean SeedProbe.lean
+
+      - name: Compile importable gauge capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean              vendor/VeriTile/VeriTile/MathGraphGaugeCapability.lean
+          cd vendor/VeriTile
+          mkdir -p .lake/build/lib/lean/VeriTile
+          lake env lean             -o .lake/build/lib/lean/VeriTile/MathGraphGaugeCapability.olean             VeriTile/MathGraphGaugeCapability.lean
+
+      - name: Ablation must fail without gauge capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp vendor/VeriTile/bench/tritonbench_g/mixed_sparse_attention/MixedSparseAttention.lean              /tmp/MixedSparseAttentionAblation.lean
+          cat experiments/veritile_gauge_transfer_v2/MixedSparseTransferAppend.lean              >> /tmp/MixedSparseAttentionAblation.lean
+          set +e
+          (cd vendor/VeriTile && lake env lean /tmp/MixedSparseAttentionAblation.lean)              > /tmp/ablation-v2.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/ablation-v2.log
+          if [ "$rc" -eq 0 ]; then
+            echo "Ablation unexpectedly passed" >&2
+            exit 1
+          fi
+          grep -q "MathGraphGaugeCapability.common_factor_ratio" /tmp/ablation-v2.log
+          echo "ABLATION_RC=$rc" >> "$GITHUB_ENV"
+
+      - name: Transfer gauge capability into mixed sparse attention
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/VeriTile/bench/tritonbench_g/mixed_sparse_attention/MixedSparseAttention.lean")
+          s = p.read_text()
+          needle = "import VeriTile.Triton\n"
+          assert needle in s
+          s = s.replace(needle, needle + "import VeriTile.MathGraphGaugeCapability\n", 1)
+          s += Path("experiments/veritile_gauge_transfer_v2/MixedSparseTransferAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/mixed_sparse_attention/MixedSparseAttention.lean
+
+      - name: Emit bounded evidence
+        shell: bash
+        env:
+          VERITILE_ROOT: vendor/VeriTile
+          EVIDENCE_OUT: evidence/veritile-gauge-transfer-v2.json
+        run: |
+          set -euo pipefail
+          python experiments/veritile_gauge_transfer_v2/audit.py
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: veritile-gauge-transfer-v2
+          path: |
+            evidence/veritile-gauge-transfer-v2.json
+            /tmp/ablation-v2.log
+          if-no-files-found: error
