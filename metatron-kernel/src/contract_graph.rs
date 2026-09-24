@@ -366,7 +366,11 @@ pub(crate) fn close_interfaces(
 
 #[cfg(test)]
 mod tests {
-    use super::{ContractStatus, SemanticObjectEnvelope, close_interfaces};
+    use super::{
+        AdapterContract, ContractStatus, ExecutableAdapter, ProtectedQuery,
+        ProtectedSemanticState, SemanticObjectEnvelope, close_interfaces,
+        compose_adapter_contracts, compose_executable_adapters, query_protected,
+    };
 
     fn seed_interfaces() -> [&'static str; 9] {
         [
@@ -492,6 +496,258 @@ mod tests {
 
         assert!(!warranted.interfaces.contains("projection.apply@1"));
         assert!(exploratory.interfaces.contains("projection.apply@1"));
+    }
+
+    fn retain_observations(
+        mut state: ProtectedSemanticState,
+        target: &'static str,
+        retained: &[&'static str],
+    ) -> ProtectedSemanticState {
+        state
+            .observations
+            .retain(|observation, _| retained.contains(observation));
+        state.type_id = target;
+        state
+    }
+
+    fn source_to_middle(state: ProtectedSemanticState) -> ProtectedSemanticState {
+        retain_observations(
+            state,
+            "kernel.middle@1",
+            &[
+                "lean.verdict@1",
+                "lean.control-state@1",
+                "lean.protected-result@1",
+            ],
+        )
+    }
+
+    fn middle_to_target(state: ProtectedSemanticState) -> ProtectedSemanticState {
+        retain_observations(
+            state,
+            "kernel.target@1",
+            &["lean.verdict@1", "lean.protected-result@1"],
+        )
+    }
+
+    fn target_to_summary(state: ProtectedSemanticState) -> ProtectedSemanticState {
+        retain_observations(
+            state,
+            "kernel.summary@1",
+            &["lean.verdict@1", "lean.protected-result@1"],
+        )
+    }
+
+    fn category_chain() -> (ExecutableAdapter, ExecutableAdapter, ExecutableAdapter) {
+        let a = ExecutableAdapter::atomic(
+            AdapterContract::atomic(
+                "adapter.source-middle@1",
+                "kernel.source@1",
+                "kernel.middle@1",
+                ContractStatus::Warranted,
+                [
+                    "lean.verdict@1",
+                    "lean.control-state@1",
+                    "lean.protected-result@1",
+                ],
+                ["lean.kernel-assumptions@1"],
+                ["evidence:source-middle"],
+            ),
+            source_to_middle,
+        );
+        let b = ExecutableAdapter::atomic(
+            AdapterContract::atomic(
+                "adapter.middle-target@1",
+                "kernel.middle@1",
+                "kernel.target@1",
+                ContractStatus::Warranted,
+                ["lean.verdict@1", "lean.protected-result@1"],
+                ["projection.contract@1"],
+                ["evidence:middle-target"],
+            ),
+            middle_to_target,
+        );
+        let c = ExecutableAdapter::atomic(
+            AdapterContract::atomic(
+                "adapter.target-summary@1",
+                "kernel.target@1",
+                "kernel.summary@1",
+                ContractStatus::Warranted,
+                [
+                    "lean.verdict@1",
+                    "lean.protected-result@1",
+                    "resource.cost@1",
+                ],
+                ["summary.contract@1"],
+                ["evidence:target-summary"],
+            ),
+            target_to_summary,
+        );
+        (a, b, c)
+    }
+
+    fn source_state() -> ProtectedSemanticState {
+        ProtectedSemanticState {
+            type_id: "kernel.source@1",
+            observations: [
+                ("lean.verdict@1", 1),
+                ("lean.control-state@1", 7),
+                ("lean.protected-result@1", 42),
+                ("resource.cost@1", 999),
+            ]
+            .into_iter()
+            .collect(),
+        }
+    }
+
+    #[test]
+    fn preservation_of_composite_is_intersection_and_metadata_composes_structurally() {
+        let (a, b, _) = category_chain();
+        let ab = compose_adapter_contracts(&a.contract, &b.contract).expect("A then B composes");
+
+        assert_eq!(ab.source, "kernel.source@1");
+        assert_eq!(ab.target, "kernel.target@1");
+        assert_eq!(ab.status, ContractStatus::Warranted);
+        assert_eq!(
+            ab.preserves,
+            ["lean.protected-result@1", "lean.verdict@1"]
+                .into_iter()
+                .collect()
+        );
+        assert_eq!(
+            ab.assumptions,
+            ["lean.kernel-assumptions@1", "projection.contract@1"]
+                .into_iter()
+                .collect()
+        );
+        assert_eq!(
+            ab.evidence,
+            ["evidence:middle-target", "evidence:source-middle"]
+                .into_iter()
+                .collect()
+        );
+        assert_eq!(
+            ab.provenance,
+            vec!["adapter.source-middle@1", "adapter.middle-target@1"]
+        );
+    }
+
+    #[test]
+    fn adapter_composition_is_associative_at_contract_and_protected_output_levels() {
+        let (a, b, c) = category_chain();
+
+        let ab = compose_executable_adapters(&a, &b).expect("A then B");
+        let left = compose_executable_adapters(&ab, &c).expect("(C o B) o A");
+
+        let bc = compose_executable_adapters(&b, &c).expect("B then C");
+        let right = compose_executable_adapters(&a, &bc).expect("C o (B o A)");
+
+        assert_eq!(left.contract, right.contract);
+        assert_eq!(
+            left.contract.preserves,
+            ["lean.protected-result@1", "lean.verdict@1"]
+                .into_iter()
+                .collect()
+        );
+        assert_eq!(
+            left.contract.provenance,
+            vec![
+                "adapter.source-middle@1",
+                "adapter.middle-target@1",
+                "adapter.target-summary@1",
+            ]
+        );
+
+        let source = source_state();
+        let left_output = left.execute(source.clone());
+        let right_output = right.execute(source);
+        assert_eq!(left_output, right_output);
+        assert_eq!(
+            query_protected(&left, &left_output, "lean.protected-result@1"),
+            ProtectedQuery::Value(42)
+        );
+        assert_eq!(
+            query_protected(&right, &right_output, "lean.protected-result@1"),
+            ProtectedQuery::Value(42)
+        );
+        assert_eq!(
+            query_protected(&left, &left_output, "lean.control-state@1"),
+            ProtectedQuery::UnknownOutsidePreservationContract
+        );
+        assert_eq!(
+            query_protected(&right, &right_output, "resource.cost@1"),
+            ProtectedQuery::UnknownOutsidePreservationContract
+        );
+    }
+
+    #[test]
+    fn identity_adapter_is_left_and_right_identity_for_contract_and_execution() {
+        let (a, _, _) = category_chain();
+        let source_identity = ExecutableAdapter::identity("kernel.source@1");
+        let middle_identity = ExecutableAdapter::identity("kernel.middle@1");
+
+        let left = compose_executable_adapters(&source_identity, &a).expect("A o I");
+        let right = compose_executable_adapters(&a, &middle_identity).expect("I o A");
+
+        assert_eq!(left.contract, a.contract);
+        assert_eq!(right.contract, a.contract);
+
+        let source = source_state();
+        assert_eq!(left.execute(source.clone()), a.execute(source.clone()));
+        assert_eq!(right.execute(source.clone()), a.execute(source));
+    }
+
+    #[test]
+    fn candidate_status_contaminates_composite_without_leaking_warrant() {
+        let (a, _, _) = category_chain();
+        let candidate = ExecutableAdapter::atomic(
+            AdapterContract::atomic(
+                "adapter.candidate@1",
+                "kernel.middle@1",
+                "kernel.target@1",
+                ContractStatus::Candidate,
+                ["lean.verdict@1"],
+                ["candidate.assumption@1"],
+                ["evidence:candidate"],
+            ),
+            middle_to_target,
+        );
+
+        let composite =
+            compose_executable_adapters(&a, &candidate).expect("candidate composition is defined");
+        assert_eq!(composite.contract.status, ContractStatus::Candidate);
+        assert_eq!(
+            composite.contract.preserves,
+            ["lean.verdict@1"].into_iter().collect()
+        );
+    }
+
+    #[test]
+    fn emits_categorical_contract_evidence() {
+        let (a, b, c) = category_chain();
+        let ab = compose_executable_adapters(&a, &b).expect("A then B");
+        let left = compose_executable_adapters(&ab, &c).expect("left bracketing");
+        let bc = compose_executable_adapters(&b, &c).expect("B then C");
+        let right = compose_executable_adapters(&a, &bc).expect("right bracketing");
+        let output = left.execute(source_state());
+
+        eprintln!(
+            "NUCLEUS_CATEGORY_ASSOCIATIVE:contract_equal={}:output_equal={}:preserves={:?}:assumptions={:?}:evidence={:?}:provenance={:?}",
+            left.contract == right.contract,
+            output == right.execute(source_state()),
+            left.contract.preserves,
+            left.contract.assumptions,
+            left.contract.evidence,
+            left.contract.provenance,
+        );
+        eprintln!(
+            "NUCLEUS_CATEGORY_UNKNOWN:control={:?}:cost={:?}",
+            query_protected(&left, &output, "lean.control-state@1"),
+            query_protected(&left, &output, "resource.cost@1"),
+        );
+
+        assert_eq!(left.contract, right.contract);
+        assert_eq!(output, right.execute(source_state()));
     }
 
     #[test]
