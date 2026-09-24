@@ -1,0 +1,62 @@
+name: Nucleus Decidable Trace v1
+
+on:
+  push:
+    branches: [nucleus-decidable-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-decidable-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace Decidable validation
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_DECIDABLE: "1"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests/good')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+          for name in ['perf/magma-list-pair-n21','perf/magma-list-pair-n7']:
+              p=root/(name+'.ndjson')
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=os.environ,timeout=120)
+              stderr=q.stderr.decode(errors='replace').splitlines()
+              rows.append({
+                'test':name,'rc':q.returncode,
+                'checks':[x for x in stderr if 'NUCLEUS_DECIDABLE_CHECKS:' in x],
+              })
+          print(json.dumps(rows,sort_keys=True))
+          PY
