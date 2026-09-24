@@ -4778,7 +4778,10 @@ fn decidable_true_minor_type(
     let [proof] = domains.as_slice() else {
         return false;
     };
-    if !is_bvar(export, *proof, 1) {
+    // The true minor follows the false minor in Decidable.rec's telescope.
+    // Before the proof binder, p is therefore bvar 2; after the proof binder,
+    // motive is bvar 2 and p is bvar 3.
+    if !is_bvar(export, *proof, 2) {
         return false;
     }
     let Some(Expr::App {
@@ -4788,8 +4791,8 @@ fn decidable_true_minor_type(
     else {
         return false;
     };
-    is_bvar(export, *motive, 1)
-        && decidable_constructor_application(export, *constructed, true_ctor, 2, 0)
+    is_bvar(export, *motive, 2)
+        && decidable_constructor_application(export, *constructed, true_ctor, 3, 0)
 }
 
 fn decidable_recursor_type(
