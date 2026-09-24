@@ -372,14 +372,7 @@ impl<'a> Machine<'a> {
                             + reduction.num_indices
                             + 1;
                         if pending.len() < required {
-                            if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
-                                eprintln!(
-                                    "NUCLEUS_IOTA_FAIL:name={}:gate=saturation:pending={}:required={}",
-                                    name.0,
-                                    pending.len(),
-                                    required,
-                                );
-                            }
+                            // Unsaturated recursors are ordinary rigid values.
                         } else if reduction.level_params.len() != levels.len() {
                             if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
                                 eprintln!(
