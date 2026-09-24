@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
-"""Discover the coarsest residual quotient induced by qualified Nucleus probes.
+"""Discover a consequence-native quotient of the live Nucleus residual.
 
-The script never changes checker semantics. It replays one frozen corpus through
-a current checker plus a panel of exact historical/alternative qualified
-checkers. Residual cases under the current checker are partitioned only by
-future protected consequences: the return-code vector produced by the probe
-panel.
+This tool is diagnostic only. It never changes checker semantics. It replays a
+frozen corpus through the current checker plus exact historical/experimental
+probe checkers. Residual cases under the current checker are partitioned only by
+future protected consequences: the return-code vector produced by probes that
+make no wrong decisive decision anywhere on the corpus.
 
-A deterministic separator-driven refinement then reconstructs the same quotient
-without enumerating set partitions. Each chosen probe is the one that separates
-the largest number of still-indistinguishable residual pairs.
+Unsafe probes are retained as negative evidence but excluded from the quotient.
+A deterministic separator-driven refinement reconstructs the full safe-signature
+partition without enumerating set partitions.
 """
 
 from __future__ import annotations
@@ -69,7 +69,11 @@ def parse_probe(spec: str) -> tuple[str, pathlib.Path]:
     return label, pathlib.Path(raw_path)
 
 
-def separated_pairs(blocks: Iterable[list[str]], outcomes: dict[str, dict[str, int]], probe: str) -> int:
+def separated_pairs(
+    blocks: Iterable[list[str]],
+    outcomes: dict[str, dict[str, int]],
+    probe: str,
+) -> int:
     score = 0
     for block in blocks:
         counts: dict[int, int] = defaultdict(int)
@@ -92,7 +96,11 @@ def refine(
 
     while remaining:
         scored = [
-            (separated_pairs(blocks, outcomes, probe), -probe_order.index(probe), probe)
+            (
+                separated_pairs(blocks, outcomes, probe),
+                -probe_order.index(probe),
+                probe,
+            )
             for probe in remaining
         ]
         score, _, chosen = max(scored)
@@ -126,7 +134,10 @@ def signature_partition(
     groups: dict[tuple[int, ...], list[str]] = defaultdict(list)
     for name in names:
         groups[tuple(outcomes[name][probe] for probe in probe_order)].append(name)
-    return sorted((sorted(v) for v in groups.values()), key=lambda b: (b[0], len(b), tuple(b)))
+    return sorted(
+        (sorted(v) for v in groups.values()),
+        key=lambda b: (b[0], len(b), tuple(b)),
+    )
 
 
 def main() -> int:
@@ -148,14 +159,13 @@ def main() -> int:
     labels = [label for label, _ in probes]
     if len(labels) != len(set(labels)):
         raise SystemExit("duplicate probe label")
-
     for label, binary in probes:
         if not binary.is_file():
             raise SystemExit(f"missing binary for {label}: {binary}")
 
     all_rows: list[dict[str, object]] = []
     by_name: dict[str, dict[str, int]] = {}
-    wrong: list[dict[str, object]] = []
+    wrong_by_probe: dict[str, list[dict[str, object]]] = defaultdict(list)
 
     for case in cases:
         result: dict[str, int] = {}
@@ -163,11 +173,10 @@ def main() -> int:
             rc = run(binary, case, args.timeout)
             result[label] = rc
             if rc in DECISIVE and rc != case.expected:
-                wrong.append(
+                wrong_by_probe[label].append(
                     {
                         "test": case.name,
                         "expected": case.expected,
-                        "probe": label,
                         "status": rc,
                     }
                 )
@@ -180,8 +189,12 @@ def main() -> int:
             }
         )
 
-    if wrong:
-        raise SystemExit("a supposedly qualified probe made a wrong protected decision: " + json.dumps(wrong[:20]))
+    current_wrong = wrong_by_probe.get(args.current_label, [])
+    if current_wrong:
+        raise SystemExit(
+            "current checker made a wrong protected decision: "
+            + json.dumps(current_wrong[:20], sort_keys=True)
+        )
 
     current_residual = sorted(
         case.name
@@ -189,19 +202,41 @@ def main() -> int:
         if by_name[case.name][args.current_label] in RESIDUAL
     )
 
-    probe_order = [label for label, _ in args.probe]
-    refined, separator_sequence = refine(current_residual, probe_order, by_name)
-    direct = signature_partition(current_residual, probe_order, by_name)
+    requested_probe_order = [label for label, _ in args.probe]
+    safe_probe_order = [
+        probe for probe in requested_probe_order if not wrong_by_probe.get(probe)
+    ]
+    excluded_unsafe = [
+        {
+            "probe": probe,
+            "wrong_count": len(wrong_by_probe[probe]),
+            "wrong": wrong_by_probe[probe],
+        }
+        for probe in requested_probe_order
+        if wrong_by_probe.get(probe)
+    ]
+
+    refined, separator_sequence = refine(
+        current_residual, safe_probe_order, by_name
+    )
+    direct = signature_partition(
+        current_residual, safe_probe_order, by_name
+    )
     if refined != direct:
         raise SystemExit(
-            "separator refinement did not reconstruct full signature quotient: "
-            + json.dumps({"refined": refined, "direct": direct}, sort_keys=True)
+            "separator refinement did not reconstruct full safe-signature quotient: "
+            + json.dumps(
+                {"refined": refined, "direct": direct},
+                sort_keys=True,
+            )
         )
 
     classes = []
     for index, members in enumerate(refined):
         first = members[0]
-        signature = {probe: by_name[first][probe] for probe in probe_order}
+        signature = {
+            probe: by_name[first][probe] for probe in safe_probe_order
+        }
         classes.append(
             {
                 "class_id": f"Q{index:02d}",
@@ -209,36 +244,52 @@ def main() -> int:
                 "size": len(members),
                 "signature": signature,
                 "decisive_probes": [
-                    probe for probe in probe_order if signature[probe] in DECISIVE
+                    probe
+                    for probe in safe_probe_order
+                    if signature[probe] in DECISIVE
                 ],
             }
         )
 
     probe_stats = []
-    for probe in probe_order:
+    for probe in requested_probe_order:
         resolved = [
-            name for name in current_residual if by_name[name][probe] in DECISIVE
+            name
+            for name in current_residual
+            if by_name[name][probe] in DECISIVE
+            and by_name[name][probe]
+            == next(case.expected for case in cases if case.name == name)
         ]
         probe_stats.append(
             {
                 "probe": probe,
+                "safe": probe in safe_probe_order,
+                "wrong_count": len(wrong_by_probe.get(probe, [])),
                 "resolves_current_residual": len(resolved),
                 "resolved_tests": resolved,
-                "global_pair_separations": separated_pairs([current_residual], by_name, probe),
+                "global_pair_separations": (
+                    separated_pairs([current_residual], by_name, probe)
+                    if probe in safe_probe_order
+                    else 0
+                ),
             }
         )
     probe_stats.sort(
         key=lambda row: (
+            not bool(row["safe"]),
             -int(row["resolves_current_residual"]),
             -int(row["global_pair_separations"]),
             str(row["probe"]),
         )
     )
 
+    safe_ranked = [row for row in probe_stats if row["safe"]]
     out = {
         "schema": "nucleus-future-quotient-arena-v1",
         "current_label": args.current_label,
-        "probe_order": probe_order,
+        "requested_probe_order": requested_probe_order,
+        "safe_probe_order": safe_probe_order,
+        "excluded_unsafe_probes": excluded_unsafe,
         "total_cases": len(cases),
         "current_residual_count": len(current_residual),
         "quotient_class_count": len(classes),
@@ -248,8 +299,9 @@ def main() -> int:
         "separator_sequence": separator_sequence,
         "classes": classes,
         "probe_stats": probe_stats,
-        "best_next_probe": probe_stats[0]["probe"] if probe_stats else None,
-        "wrong_decisions": wrong,
+        "best_next_probe": (
+            safe_ranked[0]["probe"] if safe_ranked else None
+        ),
         "rows": all_rows,
     }
 
@@ -261,6 +313,14 @@ def main() -> int:
                 "current_residual_count": out["current_residual_count"],
                 "quotient_class_count": out["quotient_class_count"],
                 "collapse_ratio": out["collapse_ratio"],
+                "safe_probe_order": out["safe_probe_order"],
+                "excluded_unsafe_probes": [
+                    {
+                        "probe": row["probe"],
+                        "wrong_count": row["wrong_count"],
+                    }
+                    for row in excluded_unsafe
+                ],
                 "separator_sequence": out["separator_sequence"],
                 "best_next_probe": out["best_next_probe"],
                 "probe_stats": out["probe_stats"],
