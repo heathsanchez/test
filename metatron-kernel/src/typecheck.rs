@@ -560,11 +560,7 @@ impl<'a> TypeChecker<'a> {
         self.environment.nat_primitives()
     }
 
-    pub(crate) fn closed_proof_type_key(
-        &self,
-        term: &Closure,
-        budget: usize,
-    ) -> Option<TypeValue> {
+    pub(crate) fn closed_proof_type_key(&self, term: &Closure, budget: usize) -> Option<TypeValue> {
         if term.env.id() != 0 {
             return None;
         }
