@@ -208,12 +208,65 @@ pub(crate) fn query_protected(
 pub(crate) enum PathStatus {
     Warranted {
         contracts: Vec<&'static str>,
+        path_id: String,
     },
     Candidate {
         candidate_count: usize,
         contracts: Vec<&'static str>,
+        path_id: String,
     },
     None,
+}
+
+fn contract_registry_rank(id: &str) -> usize {
+    CONTRACTS
+        .iter()
+        .position(|contract| contract.id == id)
+        .unwrap_or(usize::MAX)
+}
+
+pub(crate) fn canonicalize_planner_lineage(
+    contracts: impl IntoIterator<Item = &'static str>,
+) -> Vec<&'static str> {
+    let mut lineage = contracts
+        .into_iter()
+        .filter(|id| !id.starts_with("identity:"))
+        .collect::<Vec<_>>();
+    lineage.sort_by(|left, right| {
+        contract_registry_rank(left)
+            .cmp(&contract_registry_rank(right))
+            .then_with(|| left.cmp(right))
+    });
+    lineage.dedup();
+    lineage
+}
+
+pub(crate) fn canonical_planner_path_id(
+    required: &'static str,
+    candidate_count: usize,
+    contracts: impl IntoIterator<Item = &'static str>,
+) -> String {
+    let lineage = canonicalize_planner_lineage(contracts);
+    format!(
+        "planner:{required}:c{candidate_count}:{}",
+        lineage.join(">")
+    )
+}
+
+pub(crate) fn canonical_adapter_path_id(contract: &AdapterContract) -> String {
+    let lineage = contract
+        .provenance
+        .iter()
+        .copied()
+        .filter(|id| !id.starts_with("identity:"))
+        .collect::<Vec<_>>();
+    format!(
+        "adapter:{}:{}:{}:{}",
+        contract.source,
+        contract.target,
+        contract.preserves.iter().copied().collect::<Vec<_>>().join(","),
+        lineage.join(">")
+    )
 }
 
 pub(crate) fn plan_required_interface(
@@ -246,8 +299,7 @@ pub(crate) fn plan_required_interface(
             }
 
             provenance.push(contract.id);
-            provenance.sort_unstable();
-            provenance.dedup();
+            provenance = canonicalize_planner_lineage(provenance);
 
             for produced in contract.produces {
                 let replace = match best.get(produced) {
@@ -272,16 +324,23 @@ pub(crate) fn plan_required_interface(
     if interfaces.contains(required) && !best.contains_key(required) {
         return PathStatus::Warranted {
             contracts: Vec::new(),
+            path_id: canonical_planner_path_id(required, 0, []),
         };
     }
 
     match best.get(required) {
         Some((0, path)) => PathStatus::Warranted {
             contracts: path.clone(),
+            path_id: canonical_planner_path_id(required, 0, path.iter().copied()),
         },
         Some((candidate_count, path)) => PathStatus::Candidate {
             candidate_count: *candidate_count,
             contracts: path.clone(),
+            path_id: canonical_planner_path_id(
+                required,
+                *candidate_count,
+                path.iter().copied(),
+            ),
         },
         None => PathStatus::None,
     }
@@ -823,6 +882,97 @@ mod tests {
 
         assert_eq!(left.contract, right.contract);
         assert_eq!(output, right.execute(source_state()));
+    }
+
+    #[test]
+    fn canonical_planner_path_collapses_duplicate_identity_and_order_noise() {
+        let first = super::canonical_planner_path_id(
+            "structure.fields@1",
+            1,
+            [
+                "identity:kernel.source@1",
+                "structure.fields.shadow@1",
+                "structure.fields.shadow@1",
+            ],
+        );
+        let second = super::canonical_planner_path_id(
+            "structure.fields@1",
+            1,
+            ["structure.fields.shadow@1"],
+        );
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn canonical_adapter_path_is_parenthesis_independent_and_identity_neutral() {
+        let (a, b, c) = category_chain();
+        let ab = compose_adapter_contracts(&a.contract, &b.contract).expect("A then B");
+        let left = compose_adapter_contracts(&ab, &c.contract).expect("(C o B) o A");
+
+        let bc = compose_adapter_contracts(&b.contract, &c.contract).expect("B then C");
+        let right = compose_adapter_contracts(&a.contract, &bc).expect("C o (B o A)");
+
+        assert_eq!(
+            super::canonical_adapter_path_id(&left),
+            super::canonical_adapter_path_id(&right)
+        );
+
+        let source_identity = AdapterContract::identity("kernel.source@1");
+        let left_identity =
+            compose_adapter_contracts(&source_identity, &a.contract).expect("A o identity");
+        assert_eq!(
+            super::canonical_adapter_path_id(&left_identity),
+            super::canonical_adapter_path_id(&a.contract)
+        );
+    }
+
+    #[test]
+    fn canonical_path_id_distinguishes_warrant_distance() {
+        let candidate = super::canonical_planner_path_id(
+            "structure.fields@1",
+            1,
+            ["structure.fields.shadow@1"],
+        );
+        let warranted = super::canonical_planner_path_id(
+            "structure.fields@1",
+            0,
+            ["structure.fields.shadow@1"],
+        );
+        assert_ne!(candidate, warranted);
+    }
+
+    #[test]
+    fn emits_canonical_path_evidence() {
+        let plan = super::plan_required_interface(
+            "structure.fields@1",
+            ["observed.structure-fields-envelope@1"],
+        );
+        let super::PathStatus::Candidate {
+            candidate_count,
+            contracts,
+            path_id,
+        } = plan
+        else {
+            panic!("expected candidate path");
+        };
+
+        eprintln!(
+            "NUCLEUS_CANONICAL_PATH:required=structure.fields@1:candidates={candidate_count}:contracts={}:path_id={path_id}",
+            contracts.join(",")
+        );
+
+        let (a, b, c) = category_chain();
+        let ab = compose_adapter_contracts(&a.contract, &b.contract).expect("A then B");
+        let left = compose_adapter_contracts(&ab, &c.contract).expect("left");
+        let bc = compose_adapter_contracts(&b.contract, &c.contract).expect("B then C");
+        let right = compose_adapter_contracts(&a.contract, &bc).expect("right");
+        let left_id = super::canonical_adapter_path_id(&left);
+        let right_id = super::canonical_adapter_path_id(&right);
+        eprintln!(
+            "NUCLEUS_CANONICAL_ADAPTER:left={left_id}:right={right_id}:equal={}",
+            left_id == right_id
+        );
+        assert_eq!(left_id, right_id);
     }
 
     #[test]
