@@ -154,6 +154,7 @@ def main() -> int:
     parser.add_argument("--current-label", default="current")
     parser.add_argument("--probe", action="append", default=[], type=parse_probe)
     parser.add_argument("--timeout", type=int, default=120)
+    parser.add_argument("--probe-timeout", type=int, default=10)
     parser.add_argument("--expect-count", type=int, default=193)
     parser.add_argument("--out", type=pathlib.Path, required=True)
     args = parser.parse_args()
@@ -183,7 +184,12 @@ def main() -> int:
             if label in disabled_probes and label != args.current_label:
                 rc = 125
             else:
-                rc = run(binary, case, args.timeout)
+                timeout = (
+                    args.timeout
+                    if label == args.current_label
+                    else args.probe_timeout
+                )
+                rc = run(binary, case, timeout)
             result[label] = rc
             if rc not in VALID_STATUS:
                 invalid_by_probe[label].append(
