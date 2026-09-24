@@ -1,0 +1,100 @@
+name: Nucleus Typed Proof Irrelevance v1
+
+on:
+  push:
+    branches: [nucleus-typed-proof-irrel-v1]
+    paths:
+      - ".github/workflows/nucleus-typed-proof-irrel-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: b1f88db94ad9484ee604e4bae78116d0f323920e
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build candidate and exact 44-case base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Global 193-case reclosure
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/typed-proof-irrel-v1
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          def rr(binary,p):
+              with p.open('rb') as f:
+                  return subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=300).returncode
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  rows.append({'test':name,'expected':expected,'base':rr(base,p),'candidate':rr(cand,p)})
+          assert len(rows)==193
+          fa=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          fr=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          reg=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong=[r for r in rows if r['base'] in (2,3) and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          assert not fa,fa
+          assert not fr,fr
+          assert not reg,reg
+          assert not wrong,wrong
+          by={r['test']:r for r in rows}
+          assert by['tutorial/105_proofIrrelevanceBad']['candidate'] != 0, by['tutorial/105_proofIrrelevanceBad']
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          assert any(r['test']=='perf/irrelevance-before-evaluation' for r in earned), earned
+          base_res=sum(r['base'] in (2,3) for r in rows)
+          cand_res=sum(r['candidate'] in (2,3) for r in rows)
+          assert base_res==44,base_res
+          assert cand_res < base_res,(base_res,cand_res)
+          out={
+            'schema':'nucleus-typed-proof-irrel-v1','base_sha':os.environ['BASE_SHA'],
+            'candidate_sha':os.environ['GITHUB_SHA'],'base_residual':base_res,
+            'candidate_residual':cand_res,'earned':[r['test'] for r in earned],
+            'changes':changes,'false_accepts':fa,'false_rejects':fr,
+            'regressions':reg,'wrong_deltas':wrong,
+            'native_accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+            'native_reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+          }
+          pathlib.Path('evidence-out/typed-proof-irrel-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-typed-proof-irrel-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/typed-proof-irrel-v1
+          if-no-files-found: error
