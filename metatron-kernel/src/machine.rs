@@ -378,7 +378,12 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                self.rule_constructor_application(
+                                    target,
+                                    reduction,
+                                    transparency,
+                                    budget.saturating_sub(1),
+                                )
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -642,6 +647,44 @@ impl<'a> Machine<'a> {
                 }
                 _ => return None,
             }
+        }
+    }
+
+    fn rule_constructor_application(
+        &self,
+        target: &Closure,
+        reduction: &RecursorReduction,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let matches_rule = |constructor: NameId, arity: usize| {
+            reduction.rules.iter().any(|rule| {
+                rule.constructor == constructor
+                    && arity == rule.num_params + rule.num_fields
+            })
+        };
+
+        if let Some((constructor, arguments)) = self.constructor_application(target)
+            && matches_rule(constructor, arguments.len())
+        {
+            return Some((constructor, arguments));
+        }
+
+        if budget == 0 {
+            return None;
+        }
+
+        let exposure = self
+            .expose_internal(target.clone(), transparency, budget, false)
+            .proven_value()?
+            .value
+            .clone();
+        match exposure {
+            Value::Neutral(Neutral {
+                head: NeutralHead::Const { name, .. },
+                spine,
+            }) if matches_rule(name, spine.len()) => Some((name, spine)),
+            _ => None,
         }
     }
 
