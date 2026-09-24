@@ -255,7 +255,33 @@ pub(crate) fn convert_with_policy_in_context(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
-                    return Judgment::unknown("conversion-exposure");
+                    if delta_policy != DeltaPolicy::GuardedSemanticFallback {
+                        return Judgment::unknown("conversion-exposure");
+                    }
+                    let full_left = machine.expose(left, Transparency::Full, remaining);
+                    let full_right = machine.expose(right, Transparency::Full, remaining);
+                    let (Some(full_left), Some(full_right)) =
+                        (full_left.proven_value(), full_right.proven_value())
+                    else {
+                        return Judgment::unknown("full-conversion-exposure");
+                    };
+                    match compare_values(
+                        checker,
+                        full_left,
+                        full_right,
+                        remaining,
+                        depth,
+                        &mut work,
+                        &mut proof_function_frees,
+                    ) {
+                        Judgment::Proven { .. } => continue,
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => {
+                            return Judgment::Unknown { residual };
+                        }
+                    }
                 };
                 match compare_values(
                     checker,
