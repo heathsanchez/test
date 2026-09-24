@@ -2000,6 +2000,158 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
         .all(|field| !expression_contains_constant(export, *field, inductive.name))
 }
 
+fn generic_field_structure_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let (Ok(p), Ok(fields)) = (
+        usize::try_from(inductive.num_params),
+        usize::try_from(constructor.num_fields),
+    ) else {
+        return false;
+    };
+    let Some((ctor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+        return false;
+    };
+    let ctor_fields = &ctor_domains[p..];
+
+    let Some((domains, result)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let params = &domains[..p];
+    let motive = domains[p];
+    let minor = domains[p + 1];
+    let target = domains[p + 2];
+
+    let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    if params != ind_params.as_slice() {
+        return false;
+    }
+
+    let Some((motive_domains, motive_result)) = pi_spine(export, motive, 1) else {
+        return false;
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (motive_head, motive_args) = application_spine(export, *motive_target);
+    if motive_args.len() != p
+        || !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params)
+        || !motive_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
+    {
+        return false;
+    }
+
+    let motive_level = match export.exprs.get(motive_result) {
+        Some(Expr::Sort(level)) => match export.levels.get(*level) {
+            Some(Level::Param(name)) => *name,
+            _ => return false,
+        },
+        _ => return false,
+    };
+    if recursor.level_params.first().copied() != Some(motive_level)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+
+    let Some((minor_domains, minor_result)) = pi_spine(export, minor, fields) else {
+        return false;
+    };
+    if !ctor_fields.iter().zip(&minor_domains).enumerate().all(
+        |(field, (ctor_domain, minor_domain))| {
+            expression_matches_lift(export, *ctor_domain, *minor_domain, field as u64, 1)
+        },
+    ) {
+        return false;
+    }
+
+    let Some(Expr::App {
+        fun: minor_motive,
+        arg: constructed,
+    }) = export.exprs.get(minor_result)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *minor_motive, fields as u64) {
+        return false;
+    }
+    let (ctor_head, ctor_args) = application_spine(export, *constructed);
+    if ctor_args.len() != p + fields
+        || !is_declared_level_constant(
+            export,
+            ctor_head,
+            constructor.name,
+            &constructor.level_params,
+        )
+    {
+        return false;
+    }
+    for (i, arg) in ctor_args.iter().take(p).enumerate() {
+        if !is_bvar(export, *arg, (p + fields - i) as u64) {
+            return false;
+        }
+    }
+    for field in 0..fields {
+        if !is_bvar(export, ctor_args[p + field], (fields - 1 - field) as u64) {
+            return false;
+        }
+    }
+
+    let (target_head, target_args) = application_spine(export, target);
+    if target_args.len() != p
+        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
+        || !target_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor.name || rule.num_fields != constructor.num_fields {
+        return false;
+    }
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
+        return false;
+    };
+    if rule_domains[..p] != ind_params[..]
+        || rule_domains[p] != motive
+        || rule_domains[p + 1] != minor
+    {
+        return false;
+    }
+    for field in 0..fields {
+        if !expression_matches_lift(
+            export,
+            minor_domains[field],
+            rule_domains[p + 2 + field],
+            field as u64,
+            1,
+        ) {
+            return false;
+        }
+    }
+    let (rule_head, rule_args) = application_spine(export, rule_result);
+    is_bvar(export, rule_head, fields as u64)
+        && rule_args.len() == fields
+        && rule_args
+            .iter()
+            .enumerate()
+            .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
+}
+
 fn check_generic_field_structure(
     export: &ResolvedExport,
     environment: &Environment,
