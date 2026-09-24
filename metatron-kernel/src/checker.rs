@@ -1669,13 +1669,29 @@ fn generic_unary_structure_recursor_shape(
     ) else {
         return false;
     };
+    let trace_p3 = std::env::var_os("NUCLEUS_TRACE_P3_POST_PARAM").is_some()
+        && p == 3
+        && fields == 1
+        && !require_syntactic_parameters;
+    macro_rules! fail {
+        ($stage:literal) => {{
+            if trace_p3 {
+                eprintln!(
+                    "NUCLEUS_P3_POST_PARAM:name={}:stage={}",
+                    inductive.name.0, $stage
+                );
+            }
+            return false;
+        }};
+    }
+
     let Some((ctor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
-        return false;
+        fail!("constructor-telescope");
     };
     let ctor_fields = &ctor_domains[p..];
 
     let Some((domains, result)) = pi_spine(export, recursor.ty, p + 3) else {
-        return false;
+        fail!("recursor-telescope");
     };
     let params = &domains[..p];
     let motive = domains[p];
@@ -1683,51 +1699,56 @@ fn generic_unary_structure_recursor_shape(
     let target = domains[p + 2];
 
     let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
-        return false;
+        fail!("inductive-telescope");
     };
     if require_syntactic_parameters && params != ind_params.as_slice() {
-        return false;
+        fail!("parameter-syntax");
     }
 
     let Some((motive_domains, motive_result)) = pi_spine(export, motive, 1) else {
-        return false;
+        fail!("motive-telescope");
     };
     let [motive_target] = motive_domains.as_slice() else {
-        return false;
+        fail!("motive-domain-count");
     };
     let (motive_head, motive_args) = application_spine(export, *motive_target);
-    if motive_args.len() != p
-        || !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params)
-        || !motive_args
-            .iter()
-            .enumerate()
-            .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
+    if motive_args.len() != p {
+        fail!("motive-arity");
+    }
+    if !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params) {
+        fail!("motive-head");
+    }
+    if !motive_args
+        .iter()
+        .enumerate()
+        .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
     {
-        return false;
+        fail!("motive-parameters");
     }
 
     let motive_level = match export.exprs.get(motive_result) {
         Some(Expr::Sort(level)) => match export.levels.get(*level) {
             Some(Level::Param(name)) => *name,
-            _ => return false,
+            _ => fail!("motive-level"),
         },
-        _ => return false,
+        _ => fail!("motive-result"),
     };
-    if recursor.level_params.first().copied() != Some(motive_level)
-        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
-    {
-        return false;
+    if recursor.level_params.first().copied() != Some(motive_level) {
+        fail!("recursor-motive-level");
+    }
+    if recursor.level_params.get(1..) != Some(inductive.level_params.as_slice()) {
+        fail!("recursor-inductive-levels");
     }
 
     let Some((minor_domains, minor_result)) = pi_spine(export, minor, fields) else {
-        return false;
+        fail!("minor-telescope");
     };
     if !ctor_fields.iter().zip(&minor_domains).enumerate().all(
         |(field, (ctor_domain, minor_domain))| {
             expression_matches_lift(export, *ctor_domain, *minor_domain, field as u64, 1)
         },
     ) {
-        return false;
+        fail!("minor-field-lift");
     }
 
     let Some(Expr::App {
@@ -1735,59 +1756,72 @@ fn generic_unary_structure_recursor_shape(
         arg: constructed,
     }) = export.exprs.get(minor_result)
     else {
-        return false;
+        fail!("minor-result-shape");
     };
     if !is_bvar(export, *minor_motive, fields as u64) {
-        return false;
+        fail!("minor-motive");
     }
     let (ctor_head, ctor_args) = application_spine(export, *constructed);
-    if ctor_args.len() != p + fields
-        || !is_declared_level_constant(
-            export,
-            ctor_head,
-            constructor.name,
-            &constructor.level_params,
-        )
-    {
-        return false;
+    if ctor_args.len() != p + fields {
+        fail!("minor-constructor-arity");
+    }
+    if !is_declared_level_constant(
+        export,
+        ctor_head,
+        constructor.name,
+        &constructor.level_params,
+    ) {
+        fail!("minor-constructor-head");
     }
     for (i, arg) in ctor_args.iter().take(p).enumerate() {
         if !is_bvar(export, *arg, (p + fields - i) as u64) {
-            return false;
+            fail!("minor-constructor-params");
         }
     }
     for field in 0..fields {
         if !is_bvar(export, ctor_args[p + field], (fields - 1 - field) as u64) {
-            return false;
+            fail!("minor-constructor-fields");
         }
     }
 
     let (target_head, target_args) = application_spine(export, target);
-    if target_args.len() != p
-        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
-        || !target_args
-            .iter()
-            .enumerate()
-            .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
-        || !is_bvar_application(export, result, 2, 0)
+    if target_args.len() != p {
+        fail!("target-arity");
+    }
+    if !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params) {
+        fail!("target-head");
+    }
+    if !target_args
+        .iter()
+        .enumerate()
+        .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
     {
-        return false;
+        fail!("target-params");
+    }
+    if !is_bvar_application(export, result, 2, 0) {
+        fail!("recursor-result");
     }
 
     let [rule] = recursor.rules.as_slice() else {
-        return false;
+        fail!("rule-count");
     };
-    if rule.constructor != constructor.name || rule.num_fields != constructor.num_fields {
-        return false;
+    if rule.constructor != constructor.name {
+        fail!("rule-constructor");
+    }
+    if rule.num_fields != constructor.num_fields {
+        fail!("rule-field-count");
     }
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
-        return false;
+        fail!("rule-telescope");
     };
-    if rule_domains[..p] != ind_params[..]
-        || rule_domains[p] != motive
-        || rule_domains[p + 1] != minor
-    {
-        return false;
+    if rule_domains[..p] != ind_params[..] {
+        fail!("rule-parameters");
+    }
+    if rule_domains[p] != motive {
+        fail!("rule-motive");
+    }
+    if rule_domains[p + 1] != minor {
+        fail!("rule-minor");
     }
     for field in 0..fields {
         if !expression_matches_lift(
@@ -1797,16 +1831,31 @@ fn generic_unary_structure_recursor_shape(
             field as u64,
             1,
         ) {
-            return false;
+            fail!("rule-field-lift");
         }
     }
     let (rule_head, rule_args) = application_spine(export, rule_result);
-    is_bvar(export, rule_head, fields as u64)
-        && rule_args.len() == fields
-        && rule_args
-            .iter()
-            .enumerate()
-            .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
+    if !is_bvar(export, rule_head, fields as u64) {
+        fail!("rule-head");
+    }
+    if rule_args.len() != fields {
+        fail!("rule-arity");
+    }
+    if !rule_args
+        .iter()
+        .enumerate()
+        .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
+    {
+        fail!("rule-arguments");
+    }
+
+    if trace_p3 {
+        eprintln!(
+            "NUCLEUS_P3_POST_PARAM:name={}:stage=pass",
+            inductive.name.0
+        );
+    }
+    true
 }
 
 fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
