@@ -752,6 +752,8 @@ fn check_single_constructor_inductive(
         check_twobool_structure(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
+    } else if generic_closed_prop_singleton_candidate(block) {
+        check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
     } else if inductive.num_params == 1
@@ -1715,6 +1717,104 @@ fn check_generic_parameterized_nullary(
         delta_policy,
     )?;
     Ok(derivation.finish())
+}
+
+fn generic_closed_prop_singleton_candidate(block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    inductive.num_params == 0
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+        && !inductive.is_unsafe
+        && inductive.level_params.is_empty()
+        && constructor.num_params == 0
+        && constructor.num_fields == 0
+        && !constructor.is_unsafe
+        && recursor.k
+        && !recursor.is_unsafe
+}
+
+fn check_generic_closed_prop_singleton(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if !generic_closed_prop_singleton_candidate(block) {
+        return Err(Verdict::Unknown);
+    }
+
+    // Lean's K target for this structural envelope is a closed inductive Prop
+    // with one constructor whose telescope contains only the parameters
+    // (there are none here).  Derive every remaining exported claim rather
+    // than trusting the metadata.
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !matches!(
+            export.exprs.get(inductive.ty),
+            Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))
+        )
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || !constructor.level_params.is_empty()
+        || !is_empty_constant(export, constructor.ty, inductive.name)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(export, inductive, &block.constructors, recursor, true, true)
+        || !new_singleton_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+        || !new_singleton_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation
+        .finish()
+        .install_singleton_recursor_reduction(recursor.name)
+        .map_err(|_| Verdict::Reject)
 }
 
 fn check_exact_new_singleton(
