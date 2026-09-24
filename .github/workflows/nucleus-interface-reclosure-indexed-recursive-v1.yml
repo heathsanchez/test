@@ -1,0 +1,124 @@
+name: Nucleus Interface Reclosure Indexed Recursive v1
+
+on:
+  push:
+    branches: [nucleus-interface-reclosure-indexed-recursive-v1]
+    paths:
+      - ".github/workflows/nucleus-interface-reclosure-indexed-recursive-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reclose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build shadow interface runtime
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Build exact semantic base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Reclose after indexed recursive interface
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INTERFACE_LEDGER: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/interface-reclosure-indexed-recursive-v1
+          python - <<'PY'
+          import collections,json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          target={
+            'init-prelude','perf/magma-list-deep-n21','perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21','perf/magma-list-pair-n7',
+            'bugs/proj-of-stuck-prop','bugs/proj-of-subst-prop','bugs/rec-of-subst-prop'
+          }
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if not trace:
+                  env.pop('NUCLEUS_TRACE_INTERFACE_LEDGER',None)
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env,timeout=120)
+              return q.returncode,q.stderr.decode(errors='replace').splitlines()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,stderr=rr(cand,p,True)
+                  assert crc==brc,(name,brc,crc)
+                  if name not in target:
+                      continue
+                  marks=[]
+                  for line in stderr:
+                      if 'NUCLEUS_INTERFACE_MISS:' in line:
+                          payload=line.split('NUCLEUS_INTERFACE_MISS:',1)[1]
+                          interface,detail=payload.split(':',1)
+                          marks.append({'interface':interface,'detail':detail})
+                  rows.append({
+                      'test':name,'expected':expected,'base_rc':brc,'candidate_rc':crc,
+                      'primary_interface':marks[-1]['interface'] if marks else None,
+                      'primary_detail':marks[-1]['detail'] if marks else None,
+                  })
+          assert len(rows)==8,len(rows)
+          assert not [r for r in rows if not r['primary_interface']]
+          counts=collections.Counter(r['primary_interface'] for r in rows)
+          outcomes={}
+          by_interface={}
+          for r in rows:
+              key=r['primary_interface']
+              by_interface.setdefault(key,[]).append(r['test'])
+              o=outcomes.setdefault(key,{'accept':0,'reject':0})
+              o['accept' if r['expected']==0 else 'reject'] += 1
+          out={
+              'schema':'nucleus-interface-reclosure-indexed-recursive-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'verdict_identity':True,
+              'case_count':len(rows),
+              'reclosed_interface_counts':dict(counts),
+              'protected_outcomes':outcomes,
+              'by_interface':by_interface,
+              'rows':rows,
+          }
+          dest=pathlib.Path('evidence-out/interface-reclosure-indexed-recursive-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:out[k] for k in [
+              'case_count','reclosed_interface_counts','protected_outcomes','by_interface'
+          ]},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-interface-reclosure-indexed-recursive-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/interface-reclosure-indexed-recursive-v1
+          if-no-files-found: error
