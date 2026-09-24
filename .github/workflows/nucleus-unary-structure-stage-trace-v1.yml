@@ -41,6 +41,7 @@ jobs:
         working-directory: metatron-kernel
         env:
           NUCLEUS_TRACE_UNARY_STAGE: "1"
+          NUCLEUS_TRACE_RESIDUAL: "1"
         run: |
           set -euo pipefail
           mkdir -p evidence-out/unary-stage-trace-v1
@@ -65,8 +66,10 @@ jobs:
             p=root/d/(name+'.ndjson')
             with p.open('rb') as f:
               q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=os.environ,timeout=120)
-            marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_UNARY_STAGE:' in x]
-            rows.append({'test':name,'expected':0 if d=='good' else 1,'rc':q.returncode,'marks':marks})
+            stderr=q.stderr.decode(errors='replace').splitlines()
+            marks=[x for x in stderr if 'NUCLEUS_UNARY_STAGE:' in x]
+            residuals=[x.split('NUCLEUS_RESIDUAL:',1)[1] for x in stderr if 'NUCLEUS_RESIDUAL:' in x]
+            rows.append({'test':name,'expected':0 if d=='good' else 1,'rc':q.returncode,'marks':marks,'residuals':residuals,'terminal':residuals[-1] if residuals else None})
           out={'schema':'nucleus-unary-structure-stage-trace-v1','candidate_sha':os.environ['GITHUB_SHA'],'rows':rows}
           dest=pathlib.Path('evidence-out/unary-stage-trace-v1')
           (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
