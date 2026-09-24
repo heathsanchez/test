@@ -35,14 +35,14 @@ jobs:
           spec = importlib.util.spec_from_file_location('fsac_pinned', 'fsac.py')
           fsac = importlib.util.module_from_spec(spec); spec.loader.exec_module(fsac)
           move_spec=json.loads(Path('official/competition/tools/verifier/data/stable_move_spec.json').read_text())
-          inv_map={}; mul_map={}; conj_map={}; destab_map={}
+          inv_map={}; mul_map={}; conj_map={}
           for m in move_spec['moves']:
               c=m['category']
               if c=='inversion': inv_map[m['relator']]=m['id']
               elif c=='multiplication': mul_map[(m['relator'],m['other'],bool(m['invert_other']))]=m['id']
               elif c=='conjugation': conj_map[(m['relator'],m['conjugator'])]=m['id']
-              elif c=='destabilization': destab_map[m['relator']]=m['id']
-          assert destab_map[0]==15 and destab_map[1]==16
+          assert inv_map[0]==0 and inv_map[1]==1
+          assert mul_map[(0,1,False)]==2 and mul_map[(1,0,False)]==4
 
           tok={'x':1,'x^-1':-1,'y':2,'y^-1':-2}; prefix='Presentation: <x, y | '; suffix='>.'
           def word(s):
@@ -72,7 +72,7 @@ jobs:
                       out.extend(conj_map[(i,-a)] for a in u)
                   else: raise ValueError(mv)
               assert saw_destab
-              out += [destab_map[1],destab_map[0]]
+              out += [16,15]
               return out
 
           positives=[]; lines=[]; t0=time.time()
