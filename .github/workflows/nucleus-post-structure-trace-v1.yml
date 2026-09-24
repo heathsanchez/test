@@ -41,6 +41,7 @@ jobs:
         working-directory: metatron-kernel
         env:
           NUCLEUS_TRACE_RESIDUAL: "1"
+          NUCLEUS_TRACE_SIGNATURE: "1"
         run: |
           set -euo pipefail
           mkdir -p evidence-out/post-structure-trace-v1
@@ -69,6 +70,7 @@ jobs:
                 'residuals':[x for x in stderr if 'NUCLEUS_RESIDUAL:' in x],
                 'refuted':[x for x in stderr if 'NUCLEUS_REFUTED:' in x],
                 'inductive_exits':[x for x in stderr if 'NUCLEUS_INDUCTIVE_EXIT:' in x],
+                'signatures':[x for x in stderr if 'NUCLEUS_SIGNATURE:' in x],
               })
           out={'schema':'nucleus-post-structure-trace-v1','candidate_sha':os.environ['GITHUB_SHA'],'rows':rows}
           dest=pathlib.Path('evidence-out/post-structure-trace-v1')
