@@ -238,12 +238,12 @@ impl Environment {
         })
     }
 
-    pub fn singleton_recursor_reductions(&self) -> HashSet<NameId> {
-        self.singleton_recursor_reductions.as_ref().clone()
+    pub fn singleton_recursor_reductions(&self) -> Rc<HashSet<NameId>> {
+        self.singleton_recursor_reductions.clone()
     }
 
-    pub fn recursor_reductions(&self) -> HashMap<NameId, RecursorReduction> {
-        self.recursor_reductions.as_ref().clone()
+    pub fn recursor_reductions(&self) -> Rc<HashMap<NameId, RecursorReduction>> {
+        self.recursor_reductions.clone()
     }
 
     pub fn install_projection_spec(
@@ -278,8 +278,8 @@ impl Environment {
         })
     }
 
-    pub fn projection_specs(&self) -> HashMap<NameId, ProjectionSpec> {
-        self.projection_specs.as_ref().clone()
+    pub fn projection_specs(&self) -> Rc<HashMap<NameId, ProjectionSpec>> {
+        self.projection_specs.clone()
     }
 
     pub fn install_nat_primitives(
