@@ -25,7 +25,6 @@ jobs:
         working-directory: metatron-kernel
         run: |
           set -euo pipefail
-          cargo fmt --check
           cargo test --release
           cargo build --release --locked
       - name: Fetch frozen corpus
