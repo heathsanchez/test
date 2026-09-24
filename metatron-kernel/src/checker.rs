@@ -1639,7 +1639,6 @@ fn expression_matches_lift(
     }
 }
 
-
 fn generic_unary_structure_recursor_shape(
     export: &ResolvedExport,
     inductive: &crate::syntax::InductiveType,
@@ -1792,11 +1791,7 @@ fn generic_unary_structure_recursor_shape(
             .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
 }
 
-
-fn generic_unary_structure_candidate(
-    export: &ResolvedExport,
-    block: &InductiveBlock,
-) -> bool {
+fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([inductive], [constructor], [recursor]) = (
         block.types.as_slice(),
         block.constructors.as_slice(),
@@ -1828,14 +1823,13 @@ fn generic_unary_structure_candidate(
     let [parameter_type] = inductive_domains.as_slice() else {
         return false;
     };
-    if !matches!(
-        export.exprs.get(*parameter_type),
-        Some(Expr::Sort(_))
-    ) || !matches!(
-        export.exprs.get(inductive_result),
-        Some(Expr::Sort(level))
-            if !matches!(export.levels.get(*level), Some(Level::Zero))
-    ) {
+    if !matches!(export.exprs.get(*parameter_type), Some(Expr::Sort(_)))
+        || !matches!(
+            export.exprs.get(inductive_result),
+            Some(Expr::Sort(level))
+                if !matches!(export.levels.get(*level), Some(Level::Zero))
+        )
+    {
         return false;
     }
 
