@@ -4886,49 +4886,85 @@ fn check_exact_decidable(
         return Err(Verdict::Reject);
     };
 
-    if inductive.all != [inductive.name]
-        || inductive.constructors != [false_ctor.name, true_ctor.name]
-        || !name_is_root_str(export, inductive.name, "Decidable")
-        || !decidable_type(export, inductive.ty)
-        || false_ctor.index != 0
-        || false_ctor.inductive != inductive.name
-        || false_ctor.num_params != 1
-        || false_ctor.num_fields != 1
-        || !false_ctor.level_params.is_empty()
-        || !name_is_child_str(export, false_ctor.name, inductive.name, "isFalse")
-        || !decidable_false_constructor_type(export, false_ctor.ty, inductive.name)
-        || true_ctor.index != 1
-        || true_ctor.inductive != inductive.name
-        || true_ctor.num_params != 1
-        || true_ctor.num_fields != 1
-        || !true_ctor.level_params.is_empty()
-        || !name_is_child_str(export, true_ctor.name, inductive.name, "isTrue")
-        || !decidable_true_constructor_type(export, true_ctor.ty, inductive.name)
-        || !recursor_metadata_admissible(
-            export,
-            inductive,
-            &block.constructors,
-            recursor,
-            false,
-            true,
-        )
-        || !decidable_recursor_type(
-            export,
-            recursor,
-            inductive.name,
-            false_ctor.name,
-            true_ctor.name,
-            *motive_level,
-        )
-        || !decidable_recursor_rules(
-            export,
-            recursor,
-            inductive.name,
-            false_ctor.name,
-            true_ctor.name,
-            *motive_level,
-        )
-    {
+    let checks = [
+        ("all", inductive.all == [inductive.name]),
+        (
+            "constructors",
+            inductive.constructors == [false_ctor.name, true_ctor.name],
+        ),
+        ("name", name_is_root_str(export, inductive.name, "Decidable")),
+        ("type", decidable_type(export, inductive.ty)),
+        ("false_index", false_ctor.index == 0),
+        ("false_owner", false_ctor.inductive == inductive.name),
+        ("false_params", false_ctor.num_params == 1),
+        ("false_fields", false_ctor.num_fields == 1),
+        ("false_levels", false_ctor.level_params.is_empty()),
+        (
+            "false_name",
+            name_is_child_str(export, false_ctor.name, inductive.name, "isFalse"),
+        ),
+        (
+            "false_type",
+            decidable_false_constructor_type(export, false_ctor.ty, inductive.name),
+        ),
+        ("true_index", true_ctor.index == 1),
+        ("true_owner", true_ctor.inductive == inductive.name),
+        ("true_params", true_ctor.num_params == 1),
+        ("true_fields", true_ctor.num_fields == 1),
+        ("true_levels", true_ctor.level_params.is_empty()),
+        (
+            "true_name",
+            name_is_child_str(export, true_ctor.name, inductive.name, "isTrue"),
+        ),
+        (
+            "true_type",
+            decidable_true_constructor_type(export, true_ctor.ty, inductive.name),
+        ),
+        (
+            "metadata",
+            recursor_metadata_admissible(
+                export,
+                inductive,
+                &block.constructors,
+                recursor,
+                false,
+                true,
+            ),
+        ),
+        (
+            "rec_type",
+            decidable_recursor_type(
+                export,
+                recursor,
+                inductive.name,
+                false_ctor.name,
+                true_ctor.name,
+                *motive_level,
+            ),
+        ),
+        (
+            "rec_rules",
+            decidable_recursor_rules(
+                export,
+                recursor,
+                inductive.name,
+                false_ctor.name,
+                true_ctor.name,
+                *motive_level,
+            ),
+        ),
+    ];
+    if std::env::var_os("NUCLEUS_TRACE_DECIDABLE").is_some() {
+        eprintln!(
+            "NUCLEUS_DECIDABLE_CHECKS:{}",
+            checks
+                .iter()
+                .map(|(name, ok)| format!("{name}={}", u8::from(*ok)))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+    }
+    if checks.iter().any(|(_, ok)| !*ok) {
         return Err(Verdict::Reject);
     }
 
