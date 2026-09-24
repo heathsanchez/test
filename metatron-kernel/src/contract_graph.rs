@@ -264,7 +264,12 @@ pub(crate) fn canonical_adapter_path_id(contract: &AdapterContract) -> String {
         "adapter:{}:{}:{}:{}",
         contract.source,
         contract.target,
-        contract.preserves.iter().copied().collect::<Vec<_>>().join(","),
+        contract
+            .preserves
+            .iter()
+            .copied()
+            .collect::<Vec<_>>()
+            .join(","),
         lineage.join(">")
     )
 }
@@ -336,11 +341,7 @@ pub(crate) fn plan_required_interface(
         Some((candidate_count, path)) => PathStatus::Candidate {
             candidate_count: *candidate_count,
             contracts: path.clone(),
-            path_id: canonical_planner_path_id(
-                required,
-                *candidate_count,
-                path.iter().copied(),
-            ),
+            path_id: canonical_planner_path_id(required, *candidate_count, path.iter().copied()),
         },
         None => PathStatus::None,
     }
