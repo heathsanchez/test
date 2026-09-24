@@ -356,7 +356,7 @@ impl<'a> TypeChecker<'a> {
                                 .level_params
                                 .iter()
                                 .copied()
-                                .zip(levels.into_iter())
+                                .zip(levels)
                                 .collect(),
                         );
                         Closure::with_levels(field_expression, field_frame, level_substitution)
