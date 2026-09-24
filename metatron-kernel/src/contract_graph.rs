@@ -367,9 +367,9 @@ pub(crate) fn close_interfaces(
 #[cfg(test)]
 mod tests {
     use super::{
-        AdapterContract, ContractStatus, ExecutableAdapter, ProtectedQuery,
-        ProtectedSemanticState, SemanticObjectEnvelope, close_interfaces,
-        compose_adapter_contracts, compose_executable_adapters, query_protected,
+        AdapterContract, ContractStatus, ExecutableAdapter, ProtectedQuery, ProtectedSemanticState,
+        SemanticObjectEnvelope, close_interfaces, compose_adapter_contracts,
+        compose_executable_adapters, query_protected,
     };
 
     fn seed_interfaces() -> [&'static str; 9] {
