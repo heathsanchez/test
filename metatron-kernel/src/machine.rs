@@ -382,14 +382,39 @@ impl<'a> Machine<'a> {
                                 let target_shape = constructor_application
                                     .as_ref()
                                     .map(|(constructor, arguments)| (constructor.0, arguments.len()));
+                                let matching_rule = constructor_application.as_ref().and_then(
+                                    |(constructor, arguments)| {
+                                        reduction
+                                            .rules
+                                            .iter()
+                                            .find(|rule| rule.constructor == *constructor)
+                                            .map(|rule| {
+                                                (
+                                                    constructor.0,
+                                                    arguments.len(),
+                                                    rule.num_params,
+                                                    rule.num_fields,
+                                                )
+                                            })
+                                    },
+                                );
+                                let rules = reduction
+                                    .rules
+                                    .iter()
+                                    .map(|rule| {
+                                        (rule.constructor.0, rule.num_params, rule.num_fields)
+                                    })
+                                    .collect::<Vec<_>>();
                                 eprintln!(
-                                    "NUCLEUS_IOTA:name={}:pending={}:required={}:level_params={}:levels={}:target={:?}",
+                                    "NUCLEUS_IOTA:name={}:pending={}:required={}:level_params={}:levels={}:target={:?}:matching_rule={:?}:rules={:?}",
                                     name.0,
                                     pending.len(),
                                     required,
                                     reduction.level_params.len(),
                                     levels.len(),
                                     target_shape,
+                                    matching_rule,
+                                    rules,
                                 );
                             }
                             if let Some((constructor, constructor_arguments)) =
