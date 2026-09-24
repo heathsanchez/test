@@ -2069,6 +2069,44 @@ fn check_generic_field_structure(
             u8::from(rec_shape),
         );
     }
+    if std::env::var_os("NUCLEUS_TRACE_P3_PARAM_CONV").is_some()
+        && inductive.num_params == 3
+        && constructor.num_fields == 1
+    {
+        let p = 3usize;
+        let ind_params = pi_spine(export, inductive.ty, p).map(|(domains, _)| domains);
+        let rec_params = pi_spine(export, recursor.ty, p + 3).map(|(domains, _)| domains[..p].to_vec());
+        if let (Some(ind_params), Some(rec_params)) = (ind_params, rec_params) {
+            let checker = TypeChecker::with_level_substitution(
+                &export.exprs,
+                &export.levels,
+                environment,
+                parameter_substitution(&inductive.level_params),
+            )
+            .with_delta_policy(delta_policy);
+            let mut frame = EnvFrame::empty();
+            let mut statuses = Vec::new();
+            for (index, (left, right)) in ind_params.iter().zip(&rec_params).enumerate() {
+                let judgment = checker.convert(
+                    &TypeValue::Term(checker.closure(*left, frame.clone())),
+                    &TypeValue::Term(checker.closure(*right, frame.clone())),
+                    limits.judgment_steps,
+                );
+                let status = match judgment {
+                    Judgment::Proven { .. } => "proven".to_string(),
+                    Judgment::Refuted { obstruction } => format!("refuted:{}", obstruction.0),
+                    Judgment::Unknown { residual } => format!("unknown:{}", residual.0),
+                };
+                statuses.push(format!("{}={}", index, status));
+                frame = frame.extend_free(FreeId(20_000 + index as u64));
+            }
+            eprintln!(
+                "NUCLEUS_P3_PARAM_CONV:name={}:{}",
+                inductive.name.0,
+                statuses.join(",")
+            );
+        }
+    }
     if !generic_field_structure_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
