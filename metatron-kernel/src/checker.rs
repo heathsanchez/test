@@ -2239,16 +2239,31 @@ fn check_generic_field_structure(
 
         for index in 0..p {
             let expected = TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
-            for actual in [
-                constructor_params[index],
-                recursor_params[index],
-                rule_params[index],
+            for (kind, actual) in [
+                ("constructor", constructor_params[index]),
+                ("recursor", recursor_params[index]),
+                ("rule", rule_params[index]),
             ] {
-                verdict_boundary(checker.convert(
+                let judgment = checker.convert(
                     &expected,
                     &TypeValue::Term(checker.closure(actual, frame.clone())),
                     limits.judgment_steps,
-                ))?;
+                );
+                if std::env::var_os("NUCLEUS_TRACE_P3_MATRIX").is_some() {
+                    let status = match &judgment {
+                        Judgment::Proven { .. } => "proven",
+                        Judgment::Refuted { obstruction } => obstruction.0,
+                        Judgment::Unknown { residual } => residual.0,
+                    };
+                    eprintln!(
+                        "NUCLEUS_P3_MATRIX:name={}:param={}:kind={}:status={}",
+                        inductive.name.0,
+                        index,
+                        kind,
+                        status,
+                    );
+                }
+                verdict_boundary(judgment)?;
             }
             let Some(offset) = u64::try_from(index).ok() else {
                 return Err(Verdict::Reject);
