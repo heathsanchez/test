@@ -257,7 +257,8 @@ pub(crate) fn convert_with_policy_in_context(
                 else {
                     return Judgment::unknown("conversion-exposure");
                 };
-                match compare_values(
+
+                match compare_values_transactionally(
                     checker,
                     cheap_left,
                     cheap_right,
@@ -270,14 +271,52 @@ pub(crate) fn convert_with_policy_in_context(
                     Judgment::Refuted { .. }
                         if delta_policy == DeltaPolicy::GuardedSemanticFallback =>
                     {
-                        let full_left = machine.expose(left, Transparency::Full, remaining);
-                        let full_right = machine.expose(right, Transparency::Full, remaining);
-                        let (Some(full_left), Some(full_right)) =
-                            (full_left.proven_value(), full_right.proven_value())
-                        else {
+                        let full_left_judgment =
+                            machine.expose(left.clone(), Transparency::Full, remaining);
+                        let full_right_judgment =
+                            machine.expose(right.clone(), Transparency::Full, remaining);
+
+                        if let Some(full_left) = full_left_judgment.proven_value()
+                            && matches!(
+                                compare_values_transactionally(
+                                    checker,
+                                    full_left,
+                                    cheap_right,
+                                    remaining,
+                                    depth,
+                                    &mut work,
+                                    &mut proof_function_frees,
+                                ),
+                                Judgment::Proven { .. }
+                            )
+                        {
+                            continue;
+                        }
+
+                        if let Some(full_right) = full_right_judgment.proven_value()
+                            && matches!(
+                                compare_values_transactionally(
+                                    checker,
+                                    cheap_left,
+                                    full_right,
+                                    remaining,
+                                    depth,
+                                    &mut work,
+                                    &mut proof_function_frees,
+                                ),
+                                Judgment::Proven { .. }
+                            )
+                        {
+                            continue;
+                        }
+
+                        let (Some(full_left), Some(full_right)) = (
+                            full_left_judgment.proven_value(),
+                            full_right_judgment.proven_value(),
+                        ) else {
                             return Judgment::unknown("full-conversion-exposure");
                         };
-                        match compare_values(
+                        match compare_values_transactionally(
                             checker,
                             full_left,
                             full_right,
@@ -515,6 +554,33 @@ fn expression_uses_bvar(
         }
         Expr::Proj { structure, .. } => expression_uses_bvar(checker, *structure, target, next),
     }
+}
+
+fn compare_values_transactionally(
+    checker: &TypeChecker<'_>,
+    left: &Value,
+    right: &Value,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+) -> Judgment<()> {
+    let mut trial_work = Vec::new();
+    let mut trial_proof_function_frees = proof_function_frees.clone();
+    let result = compare_values(
+        checker,
+        left,
+        right,
+        budget,
+        depth,
+        &mut trial_work,
+        &mut trial_proof_function_frees,
+    );
+    if matches!(result, Judgment::Proven { .. }) {
+        work.extend(trial_work);
+        *proof_function_frees = trial_proof_function_frees;
+    }
+    result
 }
 
 fn compare_values(
