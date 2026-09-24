@@ -757,8 +757,6 @@ fn check_single_constructor_inductive(
         Err(Verdict::Reject)
     ) {
         Err(Verdict::Reject)
-    } else if generic_field_structure_candidate(export, block) {
-        check_generic_field_structure(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
     } else if inductive.num_params == 1
@@ -771,6 +769,8 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
+    } else if generic_field_structure_candidate(export, block) {
+        check_generic_field_structure(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
