@@ -681,6 +681,14 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && environment.nat_primitives().is_some_and(|nat| {
+            name_is_child_str(export, inductive.name, nat.type_name, "le")
+        })
+    {
+        return check_exact_nat_le(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && (name_is_root_str(export, inductive.name, "N")
             || name_is_root_str(export, inductive.name, "Nat"))
     {
@@ -4586,6 +4594,362 @@ fn check_exact_acc(
         [
             derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
             derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn nat_le_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    le: NameId,
+    lower: u64,
+    upper: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, le)
+        && are_bvars(export, &arguments, &[lower, upper])
+}
+
+fn nat_le_refl_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    refl: NameId,
+    value: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, refl)
+            && is_bvar(export, *argument, value))
+}
+
+fn nat_le_step_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    step: NameId,
+    lower: u64,
+    upper: u64,
+    proof: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_empty_constant(export, head, step)
+        && are_bvars(export, &arguments, &[lower, upper, proof])
+}
+
+fn nat_succ_bvar(
+    export: &ResolvedExport,
+    expression: ExprId,
+    succ: NameId,
+    value: u64,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::App { fun, arg })
+            if is_empty_constant(export, *fun, succ)
+                && is_bvar(export, *arg, value)
+    )
+}
+
+fn nat_le_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [lower, upper]
+        if is_empty_constant(export, *lower, nat)
+            && is_empty_constant(export, *upper, nat)
+            && is_prop_sort(export, result))
+}
+
+fn nat_le_refl_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    le: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [value]
+        if is_empty_constant(export, *value, nat)
+            && nat_le_application(export, result, le, 0, 0))
+}
+
+fn nat_le_step_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [lower, upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *lower, nat)
+        || !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 1, 0)
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    let [lower_arg, upper_arg] = arguments.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, head, le)
+        && is_bvar(export, *lower_arg, 2)
+        && nat_succ_bvar(export, *upper_arg, succ, 1)
+}
+
+fn nat_le_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    le: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_empty_constant(export, *upper, nat)
+        && nat_le_application(export, *proof, le, 1, 0)
+        && is_prop_sort(export, result)
+}
+
+fn nat_le_refl_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    refl: NameId,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    let [upper, proof] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, head, 0)
+        && is_bvar(export, *upper, 1)
+        && nat_le_refl_application(export, *proof, refl, 1)
+}
+
+fn nat_le_step_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    step: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [upper, proof, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 3, 0)
+        || !is_binary_bvar_application(export, *induction_hypothesis, 3, 1, 0)
+    {
+        return false;
+    }
+    let (motive, arguments) = application_spine(export, result);
+    let [next_upper, stepped] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, motive, 4)
+        && nat_succ_bvar(export, *next_upper, succ, 2)
+        && nat_le_step_application(export, *stepped, step, 5, 2, 1)
+}
+
+fn nat_le_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    refl: NameId,
+    step: NameId,
+) -> bool {
+    if !recursor.level_params.is_empty() {
+        return false;
+    }
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 6) else {
+        return false;
+    };
+    let [lower, motive, refl_minor, step_minor, upper, proof] = domains.as_slice() else {
+        return false;
+    };
+    if !is_empty_constant(export, *lower, nat)
+        || !nat_le_motive_type(export, *motive, nat, le)
+        || !nat_le_refl_minor_type(export, *refl_minor, refl)
+        || !nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+        || !is_empty_constant(export, *upper, nat)
+        || !nat_le_application(export, *proof, le, 4, 0)
+    {
+        return false;
+    }
+    is_binary_bvar_application(export, result, 4, 1, 0)
+}
+
+fn nat_le_recursor_rules(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    nat: NameId,
+    succ: NameId,
+    le: NameId,
+    refl: NameId,
+    step: NameId,
+) -> bool {
+    let [refl_rule, step_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let refl_ok = lam_spine(export, refl_rule.rhs, 4).is_some_and(|(domains, result)| {
+        let [lower, motive, refl_minor, step_minor] = domains.as_slice() else {
+            return false;
+        };
+        is_empty_constant(export, *lower, nat)
+            && nat_le_motive_type(export, *motive, nat, le)
+            && nat_le_refl_minor_type(export, *refl_minor, refl)
+            && nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+            && is_bvar(export, result, 1)
+    });
+
+    let step_ok = lam_spine(export, step_rule.rhs, 6).is_some_and(|(domains, result)| {
+        let [lower, motive, refl_minor, step_minor, upper, proof] = domains.as_slice() else {
+            return false;
+        };
+        if !is_empty_constant(export, *lower, nat)
+            || !nat_le_motive_type(export, *motive, nat, le)
+            || !nat_le_refl_minor_type(export, *refl_minor, refl)
+            || !nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
+            || !is_empty_constant(export, *upper, nat)
+            || !nat_le_application(export, *proof, le, 5, 0)
+        {
+            return false;
+        }
+        let Some(Expr::App {
+            fun: step_at_proof,
+            arg: recursive_call,
+        }) = export.exprs.get(result)
+        else {
+            return false;
+        };
+        if !is_binary_bvar_application(export, *step_at_proof, 2, 1, 0) {
+            return false;
+        }
+        let (head, arguments) = application_spine(export, *recursive_call);
+        arguments.len() == 6
+            && is_empty_constant(export, head, recursor.name)
+            && are_bvars(export, &arguments, &[5, 4, 3, 2, 1, 0])
+    });
+
+    refl_ok && step_ok
+}
+
+fn check_exact_nat_le(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [refl, step], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some(nat) = environment.nat_primitives() else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || refl.is_unsafe
+        || step.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [refl.name, step.name]
+        || !name_is_child_str(export, inductive.name, nat.type_name, "le")
+        || !nat_le_type(export, inductive.ty, nat.type_name)
+        || refl.index != 0
+        || refl.inductive != inductive.name
+        || !refl.level_params.is_empty()
+        || refl.num_params != 1
+        || refl.num_fields != 0
+        || !name_is_child_str(export, refl.name, inductive.name, "refl")
+        || !nat_le_refl_type(export, refl.ty, nat.type_name, inductive.name)
+        || step.index != 1
+        || step.inductive != inductive.name
+        || !step.level_params.is_empty()
+        || step.num_params != 1
+        || step.num_fields != 2
+        || !name_is_child_str(export, step.name, inductive.name, "step")
+        || !nat_le_step_type(
+            export,
+            step.ty,
+            nat.type_name,
+            nat.succ,
+            inductive.name,
+        )
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            recursor.level_params.is_empty(),
+        )
+        || !nat_le_recursor_type(
+            export,
+            recursor,
+            nat.type_name,
+            nat.succ,
+            inductive.name,
+            refl.name,
+            step.name,
+        )
+        || !nat_le_recursor_rules(
+            export,
+            recursor,
+            nat.type_name,
+            nat.succ,
+            inductive.name,
+            refl.name,
+            step.name,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(refl),
+            derived_constructor(step),
             derived_recursor(recursor),
         ],
         limits.judgment_steps,
