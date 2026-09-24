@@ -191,8 +191,46 @@ impl<'a> Machine<'a> {
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
+        if let Some(result) = self.expose_rigid_top(&closure, budget) {
+            return result;
+        }
         self.expose_internal(closure, transparency, budget, false)
             .map(|exposure| exposure.value)
+    }
+
+    /// Answer already-rigid top-level observations without allocating the
+    /// general reduction worklist/visit state. This is deliberately limited
+    /// to forms whose WHNF is immediate and independent of transparency.
+    fn expose_rigid_top(&self, closure: &Closure, budget: usize) -> Option<Judgment<Value>> {
+        if budget == 0 {
+            return Some(Judgment::unknown("reduction-budget-exhausted"));
+        }
+        let expression = self.expressions.get(closure.expr)?;
+        match expression {
+            Expr::NatLit(value) => Some(Judgment::proven(
+                Value::NatLit(value.clone()),
+                "direct-rigid-observation",
+            )),
+            Expr::Sort(level) => Some(match self.resolve_level(*level, closure, budget - 1) {
+                Some(level) => Judgment::proven(Value::Sort(level), "direct-rigid-observation"),
+                None => Judgment::unknown("unresolved-sort-level-during-reduction"),
+            }),
+            Expr::Pi { domain, body } => Some(Judgment::proven(
+                Value::Pi {
+                    domain: closure.sibling(*domain, closure.env.clone()),
+                    body: closure.sibling(*body, closure.env.clone()),
+                },
+                "direct-rigid-observation",
+            )),
+            Expr::Lam { domain, body } => Some(Judgment::proven(
+                Value::Lam {
+                    domain: closure.sibling(*domain, closure.env.clone()),
+                    body: closure.sibling(*body, closure.env.clone()),
+                },
+                "direct-rigid-observation",
+            )),
+            _ => None,
+        }
     }
 
     pub fn expose_with_witnesses(
