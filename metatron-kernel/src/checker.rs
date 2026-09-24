@@ -784,6 +784,11 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
+    } else if matches!(
+        check_unrecognized_single_constructor_coherence(export, block),
+        Err(Verdict::Reject)
+    ) {
+        Err(Verdict::Reject)
     } else if generic_field_structure_candidate(export, block) {
         check_generic_field_structure(export, environment, block, limits, delta_policy)
     } else {
@@ -2029,7 +2034,7 @@ fn check_generic_field_structure(
         )
         || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
     {
-        return Err(Verdict::Reject);
+        return Err(Verdict::Unknown);
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
