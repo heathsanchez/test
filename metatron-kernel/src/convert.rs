@@ -380,8 +380,7 @@ fn fixed_proof_function_application_pair(
     if left.spine.is_empty() || right.spine.is_empty() || left.spine.len() != right.spine.len() {
         return false;
     }
-    let (NeutralHead::Free(left_head), NeutralHead::Free(right_head)) =
-        (&left.head, &right.head)
+    let (NeutralHead::Free(left_head), NeutralHead::Free(right_head)) = (&left.head, &right.head)
     else {
         return false;
     };
@@ -525,10 +524,7 @@ fn compare_values(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
-    proof_function_frees: &mut HashMap<
-        FreeId,
-        (crate::id::NameId, Vec<crate::level::LevelTerm>),
-    >,
+    proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     match (left, right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
