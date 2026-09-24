@@ -426,8 +426,19 @@ impl<'a> TypeChecker<'a> {
             TypeValue::Pi { domain, body } => Some((*domain, PiBody::Fixed(*body))),
             TypeValue::Term(closure) => {
                 let machine = self.machine();
-                let exposed = machine.expose(closure, Transparency::Reducible, budget);
-                match exposed.proven_value()? {
+                let reducible =
+                    machine.expose(closure.clone(), Transparency::Reducible, budget);
+                if let Some(Value::Pi { domain, body }) = reducible.proven_value() {
+                    return Some((
+                        TypeValue::Term(domain.clone()),
+                        PiBody::Closure(body.clone()),
+                    ));
+                }
+                if self.delta_policy != crate::convert::DeltaPolicy::GuardedSemanticFallback {
+                    return None;
+                }
+                let full = machine.expose(closure, Transparency::Full, budget);
+                match full.proven_value()? {
                     Value::Pi { domain, body } => Some((
                         TypeValue::Term(domain.clone()),
                         PiBody::Closure(body.clone()),
