@@ -1,0 +1,96 @@
+name: Nucleus Residual Trace v15
+
+on:
+  push:
+    branches: [nucleus-residual-trace-v15]
+    paths:
+      - ".github/workflows/nucleus-residual-trace-v15.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build trace and exact semantic base
+        run: |
+          set -euo pipefail
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          cd ..
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Prove verdict identity and trace residuals
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/residual-trace-v12
+          python - <<'PY'
+          import json,pathlib,subprocess,os,re,collections
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if trace: env['NUCLEUS_TRACE_RESIDUAL']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,err=rr(cand,p,brc not in (0,1))
+                  assert crc==brc,(name,brc,crc)
+                  residuals=re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)',err) if brc not in (0,1) else []
+                  rows.append({
+                    'test':name,'expected':expected,'rc':brc,
+                    'residuals':residuals,'terminal':residuals[-1] if residuals else None
+                  })
+          residual=[r for r in rows if r['rc'] not in (0,1)]
+          assert len(rows)==193
+          assert len(residual)==41,len(residual)
+          counts=collections.Counter(r['terminal'] or 'untraced' for r in residual)
+          by_reason={}
+          for r in residual:
+              by_reason.setdefault(r['terminal'] or 'untraced',[]).append(r['test'])
+          out={
+            'schema':'nucleus-residual-trace-v15',
+            'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'residual_count':len(residual),'terminal_reason_counts':dict(counts),
+            'by_reason':by_reason,'rows':residual
+          }
+          pathlib.Path('evidence-out/residual-trace-v12/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:out[k] for k in ['residual_count','terminal_reason_counts','by_reason']},sort_keys=True))
+          PY
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-residual-trace-v15-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-trace-v12
+          if-no-files-found: error
