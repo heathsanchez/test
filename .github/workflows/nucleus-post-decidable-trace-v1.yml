@@ -1,0 +1,155 @@
+name: Nucleus Post Decidable Trace v1
+
+on:
+  push:
+    branches: [nucleus-post-decidable-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-post-decidable-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: aa430901d51f54a3926741bab3a32cac363dc251
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Build exact Decidable base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace exact 40-case frontier
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INDUCTIVE_EXIT: "1"
+          NUCLEUS_TRACE_RESIDUAL: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/post-decidable-trace-v1
+          python - <<'PY'
+          import collections,json,os,pathlib,re,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if not trace:
+                  env.pop('NUCLEUS_TRACE_INDUCTIVE_EXIT',None)
+                  env.pop('NUCLEUS_TRACE_RESIDUAL',None)
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                      env=env,timeout=120
+                  )
+              return q.returncode,q.stderr.decode(errors='replace').splitlines()
+
+          def classify(exits,residuals):
+              if exits:
+                  payload=exits[-1].split('NUCLEUS_INDUCTIVE_EXIT:Unknown:',1)[1]
+                  mt=re.search(r'types=\[(.*?)\]',payload)
+                  mc=re.search(r'ctors=\[(.*?)\]',payload)
+                  types=[] if not mt or not mt.group(1) else mt.group(1).split(',')
+                  ctors=[] if not mc or not mc.group(1) else mc.group(1).split(',')
+                  if len(types)!=1:
+                      return 'inductive.mutual@1'
+                  m=re.search(r':p(\d+):i(\d+):n(\d+):r(\d+):x(\d+):u(\d+):l(\d+):c(\d+)',types[0])
+                  if not m:
+                      return 'inductive.admission@1'
+                  p,i,n,r,x,u,l,c=map(int,m.groups())
+                  if n: return 'inductive.nested@1'
+                  if i and r: return 'inductive.indexed-recursive@1'
+                  if i: return 'inductive.indexed@1'
+                  if x: return 'inductive.reflexive@1'
+                  if r: return 'inductive.recursive@1'
+                  if len(ctors)==1:
+                      fm=re.search(r':f(\d+):',ctors[0])
+                      if fm and int(fm.group(1))>0: return 'structure.fields@1'
+                  if c>2: return 'inductive.multi-constructor@1'
+                  return 'inductive.admission@1'
+              if residuals:
+                  r=residuals[-1]
+                  return {
+                      'distinct-neutral-heads':'conversion.rigid-head@1',
+                      'conversion-exposure':'conversion.exposure@1',
+                      'full-conversion-exposure':'conversion.exposure@1',
+                      'application-function-type':'type.application@1',
+                      'unresolved-sort-level-during-reduction':'universe.resolve@1',
+                  }.get(r,'semantic.residual@1')
+              return 'unclassified@1'
+
+          rows=[]
+          changes=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,stderr=rr(cand,p,True)
+                  if brc!=crc:
+                      changes.append({'test':name,'base':brc,'candidate':crc})
+                  if brc in (0,1):
+                      continue
+                  exits=[x for x in stderr if 'NUCLEUS_INDUCTIVE_EXIT:Unknown:' in x]
+                  residuals=[x.split('NUCLEUS_RESIDUAL:',1)[1] for x in stderr if 'NUCLEUS_RESIDUAL:' in x]
+                  rows.append({
+                      'test':name,'expected':expected,'interface':classify(exits,residuals),
+                      'terminal_exit':exits[-1] if exits else None,
+                      'terminal_residual':residuals[-1] if residuals else None,
+                  })
+          assert not changes,changes
+          assert len(rows)==40,len(rows)
+          counts=collections.Counter(r['interface'] for r in rows)
+          by={}
+          outcomes={}
+          for r in rows:
+              by.setdefault(r['interface'],[]).append(r['test'])
+              o=outcomes.setdefault(r['interface'],{'accept':0,'reject':0})
+              o['accept' if r['expected']==0 else 'reject']+=1
+          out={
+              'schema':'nucleus-post-decidable-trace-v1',
+              'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+              'verdict_identity':True,'residual_count':len(rows),
+              'interface_counts':dict(counts),'protected_outcomes':outcomes,
+              'by_interface':by,'rows':rows,'changes':changes,
+          }
+          dest=pathlib.Path('evidence-out/post-decidable-trace-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'residual_count':out['residual_count'],
+              'interface_counts':out['interface_counts'],
+              'protected_outcomes':out['protected_outcomes'],
+              'by_interface':out['by_interface'],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-post-decidable-trace-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/post-decidable-trace-v1
+          if-no-files-found: error
