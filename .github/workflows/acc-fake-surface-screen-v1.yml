@@ -23,11 +23,12 @@ jobs:
           curl -fsSLo stable_ac.jsonl https://raw.githubusercontent.com/SAIRcompetition/Andrews-Curtis/99a65377c5c4f412cd9af7b8d31c41464a855736/competition/problems/stable_ac.jsonl
           curl -fsSLo fsac.py https://raw.githubusercontent.com/SauersML/group-approximation/5080b7d3bb4ddd1de98d28c7f8904f48a87be463/experiments/andrews-curtis-fake-surfaces/fsac.py
           sha256sum stable_ac.jsonl fsac.py | tee source-sha256.txt
-      - name: Screen exact recursive elimination corridor
+      - name: Screen and live-gate exact recursive elimination corridor
         shell: bash
         run: |
           python3 - <<'PY'
-          import importlib.util, json, time
+          import importlib.util, json, time, urllib.request
+          from datetime import datetime, timezone
           from pathlib import Path
 
           spec = importlib.util.spec_from_file_location('fsac_pinned', 'fsac.py')
@@ -35,8 +36,7 @@ jobs:
           spec.loader.exec_module(fsac)
 
           tok = {'x':1, 'x^-1':-1, 'y':2, 'y^-1':-2}
-          prefix='Presentation: <x, y | '
-          suffix='>.'
+          prefix='Presentation: <x, y | '; suffix='>.'
           def word(s):
               s=s.strip()
               if s == '1': return []
@@ -44,11 +44,14 @@ jobs:
           def parse(desc):
               if not (desc.startswith(prefix) and desc.endswith(suffix)):
                   raise ValueError(f'unparsed description wrapper: {desc!r}')
-              body=desc[len(prefix):-len(suffix)]
-              parts=body.split(' = 1; ')
+              body=desc[len(prefix):-len(suffix)]; parts=body.split(' = 1; ')
               if len(parts) != 2 or not parts[1].endswith(' = 1'):
                   raise ValueError(f'unparsed description body: {desc!r}')
               return [word(parts[0]), word(parts[1][:-4])]
+          def get(url):
+              req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r: return json.loads(r.read().decode())
+          def data(o): return o.get('data',o) if isinstance(o,dict) else o
 
           rows=[]; positives=[]; verified=0; t0=time.time()
           for line in Path('stable_ac.jsonl').read_text().splitlines():
@@ -58,26 +61,31 @@ jobs:
                   ok=fsac.verify(rels, 2, cert)
                   if not ok: raise AssertionError(f"fsac independent verifier rejected {o['challenge_id']}")
                   verified += 1
-                  positives.append({
-                      'challenge_id':o['challenge_id'],
-                      'macro_count':len(cert),
-                      'initial_lengths':[len(x) for x in rels],
-                      'certificate':cert,
-                  })
+                  positives.append({'challenge_id':o['challenge_id'],'macro_count':len(cert),'initial_lengths':[len(x) for x in rels],'certificate':cert})
+
+          live=data(get('https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=stable_ac'))
+          live_map={str(x.get('problemId') or x.get('challengeId')):x for x in live['items'] if x.get('problemId') or x.get('challengeId')}
+          frontier=[]
+          for p in positives:
+              row=live_map.get(p['challenge_id'],{})
+              p['live_status']=row.get('status'); p['live_best']=row.get('currentBestLength'); p['live_kTeams']=row.get('kTeams')
+              if row.get('status') != 'solved' or row.get('kTeams') == 0:
+                  frontier.append({'challenge_id':p['challenge_id'],'kind':'UNSOLVED','live_best':None,'macro_count':p['macro_count']})
+              else:
+                  frontier.append({'challenge_id':p['challenge_id'],'kind':'SOLVED_NEEDS_OFFICIAL_COMPILE','live_best':row.get('currentBestLength'),'macro_count':p['macro_count']})
+
+          unsolved=[x for x in frontier if x['kind']=='UNSOLVED']
           result={
-              'status':'PASS',
+              'status':'PASS','utc':datetime.now(timezone.utc).isoformat(),
               'official_commit':'99a65377c5c4f412cd9af7b8d31c41464a855736',
               'fsac_commit':'5080b7d3bb4ddd1de98d28c7f8904f48a87be463',
-              'rows':len(rows),
-              'trivialize_successes':len(positives),
-              'independent_macro_verify_successes':verified,
-              'elapsed_seconds':round(time.time()-t0,3),
-              'positives':positives,
+              'rows':len(rows),'trivialize_successes':len(positives),'independent_macro_verify_successes':verified,
+              'live_unsolved_successes':len(unsolved),'live_unsolved':unsolved,
+              'elapsed_seconds':round(time.time()-t0,3),'positives':positives,
           }
           Path('result.json').write_text(json.dumps(result,indent=2)+'\n')
-          Path('positive-ids.txt').write_text('\n'.join(p['challenge_id'] for p in positives)+('\n' if positives else ''))
+          Path('positive-ids.txt').write_text('\n'.join(p['challenge_id'] for p in positives)+'\n')
           print(json.dumps({k:v for k,v in result.items() if k!='positives'},indent=2))
-          print('positive_ids=', [p['challenge_id'] for p in positives[:100]])
           PY
       - uses: actions/upload-artifact@v4
         with:
