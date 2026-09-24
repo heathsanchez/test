@@ -5,7 +5,9 @@ use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody, ExposureCache, ProjectionSpec, RecursorReduction};
+use crate::machine::{
+    AuthorityId, DefinitionBody, ExposureCache, ProjectionSpec, RecursorReduction,
+};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
