@@ -2238,8 +2238,7 @@ fn check_generic_field_structure(
         let mut frame = EnvFrame::empty();
 
         for index in 0..p {
-            let expected =
-                TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
+            let expected = TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
             for actual in [
                 constructor_params[index],
                 recursor_params[index],
