@@ -379,9 +379,9 @@ impl<'a> Machine<'a> {
                             let target = arguments.last().expect("required includes target");
                             let constructor_application = self.constructor_application(target);
                             if std::env::var_os("NUCLEUS_TRACE_IOTA").is_some() {
-                                let target_shape = constructor_application
-                                    .as_ref()
-                                    .map(|(constructor, arguments)| (constructor.0, arguments.len()));
+                                let target_shape = constructor_application.as_ref().map(
+                                    |(constructor, arguments)| (constructor.0, arguments.len()),
+                                );
                                 let matching_rule = constructor_application.as_ref().and_then(
                                     |(constructor, arguments)| {
                                         reduction
