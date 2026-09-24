@@ -1,0 +1,47 @@
+{
+  "schema": "nucleus-kernel-renovation-baseline-v1",
+  "captured_at": "2026-09-25",
+  "independent_nucleus": {
+    "repo": "heathsanchez/test",
+    "branch": "nucleus-compound-46-v1",
+    "sha": "143a195a846e5625474f31786c68fc68379106fa",
+    "frozen_decisions": 147,
+    "frozen_residual": 46,
+    "frozen_wrong": 0
+  },
+  "lean_kernel_renovation": {
+    "repo": "leanprover/lean4",
+    "issue": 14977,
+    "state": "open",
+    "priority_label": "P-high",
+    "updated_at": "2026-09-21T12:48:35Z",
+    "master_sha": "28e5513b896da0fbabd1f8ddec3d46f95649a466",
+    "declaration_path": "src/Lean/Declaration.lean",
+    "declaration_blob_sha": "ed4c6fd541dbb550e50b6f86c4f9ce4f3925c69e",
+    "expected_inductive_decl_shape": "inductDecl(lparams,nparams,types,isUnsafe)",
+    "planned_explicit_flags": [
+      "impredicativity",
+      "projections",
+      "eta",
+      "ruleK",
+      "largeElimination"
+    ]
+  },
+  "lean4export": {
+    "repo": "leanprover/lean4export",
+    "master_sha": "66f1fb4bc256072069767fce52d39480e4524869",
+    "format_doc": "format_ndjson.md",
+    "format_version": "3.1.0",
+    "exporter_version": "3.1.0"
+  },
+  "arena": {
+    "repo": "leanprover/lean-kernel-arena",
+    "master_sha": "5d7ca987618f1136aaa296057b50a2c10c4ce77a",
+    "frozen_round_2026_09_mathgraph_sha": "78c7502bac8a5ba000057b3f083bc0595ac65750"
+  },
+  "scientific_boundary": {
+    "status": "WARRANTED_EXTERNAL_BASELINE",
+    "claim": "This file pins the pre-renovation external interface and the independent Nucleus comparison authority. It does not claim that the renovation has landed or that Lean/FRO has endorsed Nucleus.",
+    "trigger_policy": "Issue/interface/export-format changes trigger an independent Nucleus compatibility replay. Ordinary Arena/master motion is recorded but does not by itself imply a kernel-interface change."
+  }
+}
