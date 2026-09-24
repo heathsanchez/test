@@ -445,7 +445,7 @@ mod tests {
         compose_executable_adapters, query_protected,
     };
 
-    fn seed_interfaces() -> [&'static str; 9] {
+    fn seed_interfaces() -> [&'static str; 11] {
         [
             "validated.type@1",
             "validated.constructor@1",
@@ -454,6 +454,8 @@ mod tests {
             "validated.recursor-rule@1",
             "validated.structure-shape@1",
             "validated.indexed-recursive-shape@1",
+            "observed.structure-fields-envelope@1",
+            "observed.indexed-recursive-envelope@1",
             "application@1",
             "canonical.payload@1",
         ]
@@ -821,6 +823,24 @@ mod tests {
 
         assert_eq!(left.contract, right.contract);
         assert_eq!(output, right.execute(source_state()));
+    }
+
+    #[test]
+    fn live_planner_distinguishes_candidate_path_from_absence() {
+        assert!(matches!(
+            super::plan_required_interface(
+                "structure.fields@1",
+                ["observed.structure-fields-envelope@1"],
+            ),
+            super::PathStatus::CandidatePath {
+                candidate_count: 1,
+                ..
+            }
+        ));
+        assert!(matches!(
+            super::plan_required_interface("conversion.rigid-head@1", []),
+            super::PathStatus::NoRegisteredPath
+        ));
     }
 
     #[test]
