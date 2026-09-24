@@ -378,7 +378,11 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                self.constructor_application_reducing(
+                                    target,
+                                    transparency,
+                                    budget.saturating_sub(1),
+                                )
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -642,6 +646,32 @@ impl<'a> Machine<'a> {
                 }
                 _ => return None,
             }
+        }
+    }
+
+    fn constructor_application_reducing(
+        &self,
+        target: &Closure,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        if let Some(direct) = self.constructor_application(target) {
+            return Some(direct);
+        }
+        if budget == 0 {
+            return None;
+        }
+        let exposed = self
+            .expose_internal(target.clone(), transparency, budget, false)
+            .proven_value()?
+            .value
+            .clone();
+        match exposed {
+            Value::Neutral(Neutral {
+                head: NeutralHead::Const { name, .. },
+                spine,
+            }) => Some((name, spine)),
+            _ => None,
         }
     }
 
