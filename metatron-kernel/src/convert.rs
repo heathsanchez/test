@@ -374,15 +374,7 @@ fn guarded_typed_proof_pair(
         if active.replace(true) {
             return false;
         }
-        let result = typed_proof_pair(
-            checker,
-            left,
-            right,
-            context,
-            budget,
-            delta_policy,
-            depth,
-        );
+        let result = typed_proof_pair(checker, left, right, context, budget, delta_policy, depth);
         active.set(false);
         result
     })
