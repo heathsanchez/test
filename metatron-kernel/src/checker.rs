@@ -667,6 +667,12 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Acc")
+    {
+        return check_exact_acc(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "List")
     {
         return check_exact_list(export, environment, block, limits, delta_policy);
@@ -3737,6 +3743,502 @@ fn list_recursor_rules(
     });
 
     nil_ok && cons_ok
+}
+
+fn acc_relation_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    matches!(domains.as_slice(), [left, right]
+        if is_bvar(export, *left, 0)
+            && is_bvar(export, *right, 1)
+            && is_prop_sort(export, result))
+}
+
+fn acc_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 3
+        && is_unary_polymorphic_constant(export, head, inductive, level)
+        && are_bvars(export, &arguments, &[carrier, relation, index])
+}
+
+fn acc_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+    recursive_field: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 4
+        && is_unary_polymorphic_constant(export, head, constructor, level)
+        && are_bvars(
+            export,
+            &arguments,
+            &[carrier, relation, index, recursive_field],
+        )
+}
+
+fn acc_recursive_field_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: point,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, carrier) {
+        return false;
+    }
+    let Some(Expr::Pi {
+        domain: edge,
+        body: recursive,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(
+        export,
+        *edge,
+        relation.saturating_add(1),
+        0,
+        index.saturating_add(1),
+    ) {
+        return false;
+    }
+    acc_application(
+        export,
+        *recursive,
+        inductive,
+        level,
+        carrier.saturating_add(2),
+        relation.saturating_add(2),
+        1,
+    )
+}
+
+fn acc_inductive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [carrier, relation, index] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && acc_relation_type(export, *relation)
+        && is_bvar(export, *index, 1)
+        && is_prop_sort(export, result)
+}
+
+fn acc_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 4) else {
+        return false;
+    };
+    let [carrier, relation, index, recursive_field] = domains.as_slice() else {
+        return false;
+    };
+    is_sort_parameter(export, *carrier, level)
+        && acc_relation_type(export, *relation)
+        && is_bvar(export, *index, 1)
+        && acc_recursive_field_type(
+            export,
+            *recursive_field,
+            inductive,
+            level,
+            2,
+            1,
+            0,
+        )
+        && acc_application(export, result, inductive, level, 3, 2, 1)
+}
+
+fn acc_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    level: NameId,
+    motive_level: NameId,
+    carrier: u64,
+    relation: u64,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index, carrier)
+        && acc_application(
+            export,
+            *target,
+            inductive,
+            level,
+            carrier.saturating_add(1),
+            relation.saturating_add(1),
+            0,
+        )
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn acc_induction_hypothesis_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    carrier: u64,
+    relation: u64,
+    index: u64,
+    motive: u64,
+    recursive_field: u64,
+) -> bool {
+    let Some(Expr::Pi {
+        domain: point,
+        body,
+    }) = export.exprs.get(expression)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, carrier) {
+        return false;
+    }
+    let Some(Expr::Pi {
+        domain: edge,
+        body: result,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(
+        export,
+        *edge,
+        relation.saturating_add(1),
+        0,
+        index.saturating_add(1),
+    ) {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, *result);
+    if !is_bvar(export, head, motive.saturating_add(2)) || arguments.len() != 2 {
+        return false;
+    }
+    let [point_arg, recursive_target] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *point_arg, 1)
+        && is_binary_bvar_application(
+            export,
+            *recursive_target,
+            recursive_field.saturating_add(2),
+            1,
+            0,
+        )
+}
+
+fn acc_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 3) else {
+        return false;
+    };
+    let [index, recursive_field, induction_hypothesis] = domains.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, *index, 2)
+        || !acc_recursive_field_type(
+            export,
+            *recursive_field,
+            inductive,
+            level,
+            3,
+            2,
+            0,
+        )
+        || !acc_induction_hypothesis_type(
+            export,
+            *induction_hypothesis,
+            4,
+            3,
+            1,
+            2,
+            0,
+        )
+    {
+        return false;
+    }
+
+    let (motive, arguments) = application_spine(export, result);
+    if !is_bvar(export, motive, 3) || arguments.len() != 2 {
+        return false;
+    }
+    let [index_arg, constructed] = arguments.as_slice() else {
+        return false;
+    };
+    is_bvar(export, *index_arg, 2)
+        && acc_constructor_application(
+            export,
+            *constructed,
+            constructor,
+            level,
+            5,
+            4,
+            2,
+            1,
+        )
+        && motive_level != level
+}
+
+fn acc_recursor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 6) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !is_sort_parameter(export, *carrier, level)
+        || !acc_relation_type(export, *relation)
+        || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
+        || !acc_minor_type(
+            export,
+            *minor,
+            inductive,
+            constructor,
+            level,
+            motive_level,
+        )
+        || !is_bvar(export, *index, 3)
+        || !acc_application(export, *target, inductive, level, 4, 3, 0)
+    {
+        return false;
+    }
+    let (result_motive, result_arguments) = application_spine(export, result);
+    result_arguments.len() == 2
+        && is_bvar(export, result_motive, 3)
+        && are_bvars(export, &result_arguments, &[1, 0])
+}
+
+fn acc_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    level: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor || rule.num_fields != 2 {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 6) else {
+        return false;
+    };
+    let [carrier, relation, motive, minor, index, recursive_field] = domains.as_slice() else {
+        return false;
+    };
+    if !is_sort_parameter(export, *carrier, level)
+        || !acc_relation_type(export, *relation)
+        || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
+        || !acc_minor_type(
+            export,
+            *minor,
+            inductive,
+            constructor,
+            level,
+            motive_level,
+        )
+        || !is_bvar(export, *index, 3)
+        || !acc_recursive_field_type(
+            export,
+            *recursive_field,
+            inductive,
+            level,
+            4,
+            3,
+            0,
+        )
+    {
+        return false;
+    }
+
+    let (minor_head, minor_arguments) = application_spine(export, result);
+    let [index_arg, field_arg, pointwise_ih] = minor_arguments.as_slice() else {
+        return false;
+    };
+    if !is_bvar(export, minor_head, 2)
+        || !is_bvar(export, *index_arg, 1)
+        || !is_bvar(export, *field_arg, 0)
+    {
+        return false;
+    }
+
+    let Some(Expr::Lam {
+        domain: point,
+        body,
+    }) = export.exprs.get(*pointwise_ih)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *point, 5) {
+        return false;
+    }
+    let Some(Expr::Lam {
+        domain: edge,
+        body: recursive_call,
+    }) = export.exprs.get(*body)
+    else {
+        return false;
+    };
+    if !is_binary_bvar_application(export, *edge, 5, 0, 2) {
+        return false;
+    }
+
+    let (recursive_head, recursive_arguments) = application_spine(export, *recursive_call);
+    let [carrier_arg, relation_arg, motive_arg, minor_arg, point_arg, target_arg] =
+        recursive_arguments.as_slice()
+    else {
+        return false;
+    };
+    is_polymorphic_constant(
+        export,
+        recursive_head,
+        recursor.name,
+        motive_level,
+        level,
+    ) && are_bvars(
+        export,
+        &[*carrier_arg, *relation_arg, *motive_arg, *minor_arg, *point_arg],
+        &[7, 6, 5, 4, 1],
+    ) && is_binary_bvar_application(export, *target_arg, 2, 1, 0)
+}
+
+fn check_exact_acc(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || !inductive.is_recursive
+        || !inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [level] = inductive.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    let [motive_level, recursor_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if *recursor_level != *level || *motive_level == *level {
+        return Err(Verdict::Reject);
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !name_is_root_str(export, inductive.name, "Acc")
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != [*level]
+        || constructor.num_params != 2
+        || constructor.num_fields != 2
+        || !name_is_child_str(export, constructor.name, inductive.name, "intro")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+        || !acc_inductive_type(export, inductive.ty, *level)
+        || !acc_constructor_type(export, constructor.ty, inductive.name, *level)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !acc_recursor_type(
+            export,
+            recursor.ty,
+            inductive.name,
+            constructor.name,
+            *level,
+            *motive_level,
+        )
+        || !acc_recursor_rule(
+            export,
+            recursor,
+            inductive.name,
+            constructor.name,
+            *level,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
 /// G18-001: exact local recursive N. Recursion is admitted only inside this
