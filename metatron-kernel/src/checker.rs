@@ -2060,7 +2060,11 @@ fn check_generic_field_structure(
             u8::from(constructor.inductive == inductive.name),
             u8::from(constructor.level_params == inductive.level_params),
             u8::from(has_duplicate_parameter(&inductive.level_params)),
-            u8::from(constructor_result_is_definitely_malformed(export, inductive, constructor)),
+            u8::from(constructor_result_is_definitely_malformed(
+                export,
+                inductive,
+                constructor
+            )),
             u8::from(metadata),
             u8::from(rec_shape),
         );
