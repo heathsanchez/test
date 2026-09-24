@@ -3836,11 +3836,7 @@ fn acc_recursive_field_type(
     )
 }
 
-fn acc_inductive_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    level: NameId,
-) -> bool {
+fn acc_inductive_type(export: &ResolvedExport, expression: ExprId, level: NameId) -> bool {
     let Some((domains, result)) = pi_spine(export, expression, 3) else {
         return false;
     };
@@ -3868,15 +3864,7 @@ fn acc_constructor_type(
     is_sort_parameter(export, *carrier, level)
         && acc_relation_type(export, *relation)
         && is_bvar(export, *index, 1)
-        && acc_recursive_field_type(
-            export,
-            *recursive_field,
-            inductive,
-            level,
-            2,
-            1,
-            0,
-        )
+        && acc_recursive_field_type(export, *recursive_field, inductive, level, 2, 1, 0)
         && acc_application(export, result, inductive, level, 3, 2, 1)
 }
 
@@ -3975,24 +3963,8 @@ fn acc_minor_type(
         return false;
     };
     if !is_bvar(export, *index, 2)
-        || !acc_recursive_field_type(
-            export,
-            *recursive_field,
-            inductive,
-            level,
-            3,
-            2,
-            0,
-        )
-        || !acc_induction_hypothesis_type(
-            export,
-            *induction_hypothesis,
-            4,
-            3,
-            1,
-            2,
-            0,
-        )
+        || !acc_recursive_field_type(export, *recursive_field, inductive, level, 3, 2, 0)
+        || !acc_induction_hypothesis_type(export, *induction_hypothesis, 4, 3, 1, 2, 0)
     {
         return false;
     }
@@ -4005,16 +3977,7 @@ fn acc_minor_type(
         return false;
     };
     is_bvar(export, *index_arg, 2)
-        && acc_constructor_application(
-            export,
-            *constructed,
-            constructor,
-            level,
-            5,
-            4,
-            2,
-            1,
-        )
+        && acc_constructor_application(export, *constructed, constructor, level, 5, 4, 2, 1)
         && motive_level != level
 }
 
@@ -4035,14 +3998,7 @@ fn acc_recursor_type(
     if !is_sort_parameter(export, *carrier, level)
         || !acc_relation_type(export, *relation)
         || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
-        || !acc_minor_type(
-            export,
-            *minor,
-            inductive,
-            constructor,
-            level,
-            motive_level,
-        )
+        || !acc_minor_type(export, *minor, inductive, constructor, level, motive_level)
         || !is_bvar(export, *index, 3)
         || !acc_application(export, *target, inductive, level, 4, 3, 0)
     {
@@ -4077,24 +4033,9 @@ fn acc_recursor_rule(
     if !is_sort_parameter(export, *carrier, level)
         || !acc_relation_type(export, *relation)
         || !acc_motive_type(export, *motive, inductive, level, motive_level, 1, 0)
-        || !acc_minor_type(
-            export,
-            *minor,
-            inductive,
-            constructor,
-            level,
-            motive_level,
-        )
+        || !acc_minor_type(export, *minor, inductive, constructor, level, motive_level)
         || !is_bvar(export, *index, 3)
-        || !acc_recursive_field_type(
-            export,
-            *recursive_field,
-            inductive,
-            level,
-            4,
-            3,
-            0,
-        )
+        || !acc_recursive_field_type(export, *recursive_field, inductive, level, 4, 3, 0)
     {
         return false;
     }
@@ -4132,22 +4073,30 @@ fn acc_recursor_rule(
     }
 
     let (recursive_head, recursive_arguments) = application_spine(export, *recursive_call);
-    let [carrier_arg, relation_arg, motive_arg, minor_arg, point_arg, target_arg] =
-        recursive_arguments.as_slice()
+    let [
+        carrier_arg,
+        relation_arg,
+        motive_arg,
+        minor_arg,
+        point_arg,
+        target_arg,
+    ] = recursive_arguments.as_slice()
     else {
         return false;
     };
-    is_polymorphic_constant(
-        export,
-        recursive_head,
-        recursor.name,
-        motive_level,
-        level,
-    ) && are_bvars(
-        export,
-        &[*carrier_arg, *relation_arg, *motive_arg, *minor_arg, *point_arg],
-        &[7, 6, 5, 4, 1],
-    ) && is_binary_bvar_application(export, *target_arg, 2, 1, 0)
+    is_polymorphic_constant(export, recursive_head, recursor.name, motive_level, level)
+        && are_bvars(
+            export,
+            &[
+                *carrier_arg,
+                *relation_arg,
+                *motive_arg,
+                *minor_arg,
+                *point_arg,
+            ],
+            &[7, 6, 5, 4, 1],
+        )
+        && is_binary_bvar_application(export, *target_arg, 2, 1, 0)
 }
 
 fn check_exact_acc(
