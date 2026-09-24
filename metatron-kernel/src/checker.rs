@@ -1668,16 +1668,13 @@ fn generic_unary_structure_recursor_shape(
     ) else {
         return false;
     };
-    let trace_p3 = std::env::var_os("NUCLEUS_TRACE_P3_RECURSOR").is_some()
-        && p == 3
-        && fields == 1;
+    let trace_p3 = std::env::var_os("NUCLEUS_TRACE_P3_RECURSOR").is_some() && p == 3 && fields == 1;
     macro_rules! fail {
         ($stage:literal) => {{
             if trace_p3 {
                 eprintln!(
                     "NUCLEUS_P3_RECURSOR:name={}:stage={}",
-                    inductive.name.0,
-                    $stage
+                    inductive.name.0, $stage
                 );
             }
             return false;
@@ -1849,10 +1846,7 @@ fn generic_unary_structure_recursor_shape(
     }
 
     if trace_p3 {
-        eprintln!(
-            "NUCLEUS_P3_RECURSOR:name={}:stage=pass",
-            inductive.name.0
-        );
+        eprintln!("NUCLEUS_P3_RECURSOR:name={}:stage=pass", inductive.name.0);
     }
     true
 }
