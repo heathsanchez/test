@@ -1,0 +1,86 @@
+name: Nucleus Interface Chain Shape v1
+
+on:
+  push:
+    branches: [nucleus-interface-chain-shape-v1]
+    paths:
+      - ".github/workflows/nucleus-interface-chain-shape-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace next interface chain shape
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INTERFACE_LEDGER: "1"
+          NUCLEUS_TRACE_INDUCTIVE_CENSUS: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/interface-chain-shape-v1
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          targets=[
+            ('good','init-prelude'),
+            ('good','perf/magma-list-deep-n21'),
+            ('good','perf/magma-list-deep-n36'),
+            ('good','perf/magma-list-pair-n21'),
+            ('good','perf/magma-list-pair-n7'),
+            ('bad','bugs/proj-of-stuck-prop'),
+            ('bad','bugs/proj-of-subst-prop'),
+            ('bad','bugs/rec-of-subst-prop'),
+          ]
+          rows=[]
+          for d,name in targets:
+              p=root/d/(name+'.ndjson')
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=os.environ,timeout=120)
+              stderr=q.stderr.decode(errors='replace').splitlines()
+              interfaces=[x.split('NUCLEUS_INTERFACE_MISS:',1)[1] for x in stderr if 'NUCLEUS_INTERFACE_MISS:' in x]
+              census=[x.split('NUCLEUS_INDUCTIVE_CENSUS:',1)[1] for x in stderr if 'NUCLEUS_INDUCTIVE_CENSUS:' in x]
+              rows.append({
+                  'test':name,'expected':0 if d=='good' else 1,'rc':q.returncode,
+                  'primary_interface':interfaces[-1] if interfaces else None,
+                  'terminal_shape':census[-1] if census else None,
+                  'census_count':len(census),
+              })
+          out={'schema':'nucleus-interface-chain-shape-v1','candidate_sha':os.environ['GITHUB_SHA'],'rows':rows}
+          dest=pathlib.Path('evidence-out/interface-chain-shape-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-interface-chain-shape-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/interface-chain-shape-v1
+          if-no-files-found: error
