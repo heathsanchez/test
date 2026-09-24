@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Discover a consequence-native quotient of the live Nucleus residual.
 
-Diagnostic only: checker semantics are untouched. A frozen corpus is replayed
+V1 diagnostic only: checker semantics are untouched. A frozen corpus is replayed
 through the current checker plus exact historical/experimental probe checkers.
 Current residual cases are partitioned only by future protected consequences:
 the probe return-code vectors.
