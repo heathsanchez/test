@@ -2075,7 +2075,8 @@ fn check_generic_field_structure(
     {
         let p = 3usize;
         let ind_params = pi_spine(export, inductive.ty, p).map(|(domains, _)| domains);
-        let rec_params = pi_spine(export, recursor.ty, p + 3).map(|(domains, _)| domains[..p].to_vec());
+        let rec_params =
+            pi_spine(export, recursor.ty, p + 3).map(|(domains, _)| domains[..p].to_vec());
         if let (Some(ind_params), Some(rec_params)) = (ind_params, rec_params) {
             let checker = TypeChecker::with_level_substitution(
                 &export.exprs,
