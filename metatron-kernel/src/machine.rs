@@ -400,8 +400,7 @@ impl<'a> Machine<'a> {
                                     {
                                         let prefix_len =
                                             reduction.num_params + 1 + reduction.rules.len();
-                                        let mut rule_arguments =
-                                            arguments[..prefix_len].to_vec();
+                                        let mut rule_arguments = arguments[..prefix_len].to_vec();
                                         rule_arguments.extend_from_slice(
                                             &constructor_arguments[rule.num_params..],
                                         );
@@ -420,11 +419,9 @@ impl<'a> Machine<'a> {
                                             level_substitution.insert(*parameter, level);
                                         }
                                         if levels_ok {
-                                            let mut level_substitution = level_substitution
-                                                .into_iter()
-                                                .collect::<Vec<_>>();
-                                            level_substitution
-                                                .sort_by_key(|(name, _)| name.0);
+                                            let mut level_substitution =
+                                                level_substitution.into_iter().collect::<Vec<_>>();
+                                            level_substitution.sort_by_key(|(name, _)| name.0);
                                             pending.truncate(offset);
                                             for argument in rule_arguments.iter().rev() {
                                                 pending.push(argument.clone());
@@ -448,8 +445,7 @@ impl<'a> Machine<'a> {
                                                 name.0,
                                             );
                                         }
-                                    } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL")
-                                        .is_some()
+                                    } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some()
                                     {
                                         eprintln!(
                                             "NUCLEUS_IOTA_FAIL:name={}:gate=constructor-arity:constructor={}:actual={}:expected={}",
@@ -474,8 +470,7 @@ impl<'a> Machine<'a> {
                             } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
                                 eprintln!(
                                     "NUCLEUS_IOTA_FAIL:name={}:gate=target:required={}",
-                                    name.0,
-                                    required,
+                                    name.0, required,
                                 );
                             }
                         }
