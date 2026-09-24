@@ -1,0 +1,79 @@
+name: Nucleus Unary Structure Stage Trace v1
+
+on:
+  push:
+    branches: [nucleus-unary-structure-stage-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-unary-structure-stage-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo test --release
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace exact ten-case unary family
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_UNARY_STAGE: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/unary-stage-trace-v1
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          targets=[
+            ('good','init-prelude'),
+            ('good','perf/grind-ring-5'),
+            ('good','perf/magma-list-deep-n21'),
+            ('good','perf/magma-list-deep-n36'),
+            ('good','perf/magma-list-pair-n21'),
+            ('good','perf/magma-list-pair-n7'),
+            ('bad','bugs/proj-of-stuck-prop'),
+            ('bad','bugs/proj-of-subst-prop'),
+            ('bad','bugs/rec-missing-ih'),
+            ('bad','bugs/rec-of-subst-prop'),
+          ]
+          rows=[]
+          for d,name in targets:
+            p=root/d/(name+'.ndjson')
+            with p.open('rb') as f:
+              q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=os.environ,timeout=120)
+            marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_UNARY_STAGE:' in x]
+            rows.append({'test':name,'expected':0 if d=='good' else 1,'rc':q.returncode,'marks':marks})
+          out={'schema':'nucleus-unary-structure-stage-trace-v1','candidate_sha':os.environ['GITHUB_SHA'],'rows':rows}
+          dest=pathlib.Path('evidence-out/unary-stage-trace-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-unary-structure-stage-trace-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/unary-stage-trace-v1
+          if-no-files-found: error
