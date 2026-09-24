@@ -184,9 +184,7 @@ pub(crate) fn close_interfaces(
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        ContractStatus, SemanticObjectEnvelope, close_interfaces,
-    };
+    use super::{ContractStatus, SemanticObjectEnvelope, close_interfaces};
 
     fn seed_interfaces() -> [&'static str; 9] {
         [
@@ -231,7 +229,10 @@ mod tests {
             "projection.reduce@1",
             "recursor.iota@1",
         ] {
-            assert!(closure.interfaces.contains(interface), "missing {interface}");
+            assert!(
+                closure.interfaces.contains(interface),
+                "missing {interface}"
+            );
         }
 
         for candidate_only in [
@@ -262,15 +263,21 @@ mod tests {
             );
         }
 
-        assert!(closure
-            .fired_contracts
-            .contains(&"projection.reduce-then-apply@1"));
-        assert!(closure
-            .fired_contracts
-            .contains(&"structure.fields.shadow@1"));
-        assert!(closure
-            .fired_contracts
-            .contains(&"indexed-recursive.shadow@1"));
+        assert!(
+            closure
+                .fired_contracts
+                .contains(&"projection.reduce-then-apply@1")
+        );
+        assert!(
+            closure
+                .fired_contracts
+                .contains(&"structure.fields.shadow@1")
+        );
+        assert!(
+            closure
+                .fired_contracts
+                .contains(&"indexed-recursive.shadow@1")
+        );
     }
 
     #[test]
