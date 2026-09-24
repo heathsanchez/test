@@ -4891,6 +4891,7 @@ fn check_exact_nat_le(
     let Some(nat) = environment.nat_primitives() else {
         return Err(Verdict::Unknown);
     };
+    let trace = std::env::var_os("NUCLEUS_TRACE_NAT_LE").is_some();
 
     if inductive.num_params != 1
         || inductive.num_indices != 1
@@ -4906,66 +4907,111 @@ fn check_exact_nat_le(
         return Err(Verdict::Unknown);
     }
 
-    if inductive.all != [inductive.name]
-        || inductive.constructors != [refl.name, step.name]
-        || !name_is_child_str(export, inductive.name, nat.type_name, "le")
-        || !nat_le_type(export, inductive.ty, nat.type_name)
-        || refl.index != 0
-        || refl.inductive != inductive.name
-        || !refl.level_params.is_empty()
-        || refl.num_params != 1
-        || refl.num_fields != 0
-        || !name_is_child_str(export, refl.name, inductive.name, "refl")
-        || !nat_le_refl_type(export, refl.ty, nat.type_name, inductive.name)
-        || step.index != 1
-        || step.inductive != inductive.name
-        || !step.level_params.is_empty()
-        || step.num_params != 1
-        || step.num_fields != 2
-        || !name_is_child_str(export, step.name, inductive.name, "step")
-        || !nat_le_step_type(export, step.ty, nat.type_name, nat.succ, inductive.name)
-        || !recursor_metadata_admissible(
-            export,
-            inductive,
-            &block.constructors,
-            recursor,
-            false,
-            recursor.level_params.is_empty(),
-        )
-        || !nat_le_recursor_type(
-            export,
-            recursor,
-            nat.type_name,
-            nat.succ,
-            inductive.name,
-            refl.name,
-            step.name,
-        )
-        || !nat_le_recursor_rules(
-            export,
-            recursor,
-            nat.type_name,
-            nat.succ,
-            inductive.name,
-            refl.name,
-            step.name,
-        )
-    {
+    let checks = [
+        ("all", inductive.all == [inductive.name]),
+        ("constructors", inductive.constructors == [refl.name, step.name]),
+        (
+            "name",
+            name_is_child_str(export, inductive.name, nat.type_name, "le"),
+        ),
+        ("type", nat_le_type(export, inductive.ty, nat.type_name)),
+        ("refl_index", refl.index == 0),
+        ("refl_owner", refl.inductive == inductive.name),
+        ("refl_levels", refl.level_params.is_empty()),
+        ("refl_params", refl.num_params == 1),
+        ("refl_fields", refl.num_fields == 0),
+        (
+            "refl_name",
+            name_is_child_str(export, refl.name, inductive.name, "refl"),
+        ),
+        (
+            "refl_type",
+            nat_le_refl_type(export, refl.ty, nat.type_name, inductive.name),
+        ),
+        ("step_index", step.index == 1),
+        ("step_owner", step.inductive == inductive.name),
+        ("step_levels", step.level_params.is_empty()),
+        ("step_params", step.num_params == 1),
+        ("step_fields", step.num_fields == 2),
+        (
+            "step_name",
+            name_is_child_str(export, step.name, inductive.name, "step"),
+        ),
+        (
+            "step_type",
+            nat_le_step_type(export, step.ty, nat.type_name, nat.succ, inductive.name),
+        ),
+        (
+            "metadata",
+            recursor_metadata_admissible(
+                export,
+                inductive,
+                &block.constructors,
+                recursor,
+                false,
+                recursor.level_params.is_empty(),
+            ),
+        ),
+        (
+            "rec_type",
+            nat_le_recursor_type(
+                export,
+                recursor,
+                nat.type_name,
+                nat.succ,
+                inductive.name,
+                refl.name,
+                step.name,
+            ),
+        ),
+        (
+            "rec_rules",
+            nat_le_recursor_rules(
+                export,
+                recursor,
+                nat.type_name,
+                nat.succ,
+                inductive.name,
+                refl.name,
+                step.name,
+            ),
+        ),
+    ];
+    if trace {
+        eprintln!(
+            "NUCLEUS_NAT_LE:checks={}",
+            checks
+                .iter()
+                .map(|(name, ok)| format!("{name}={}", u8::from(*ok)))
+                .collect::<Vec<_>>()
+                .join(",")
+        );
+    }
+    if checks.iter().any(|(_, ok)| !*ok) {
         return Err(Verdict::Reject);
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote_all(
-        export,
-        [
-            derived_type(inductive.name, inductive.ty),
-            derived_constructor(refl),
-            derived_constructor(step),
-            derived_recursor(recursor),
-        ],
-        limits.judgment_steps,
-        delta_policy,
-    )?;
+    for (stage, signature) in [
+        ("type", derived_type(inductive.name, inductive.ty)),
+        ("refl", derived_constructor(refl)),
+        ("step", derived_constructor(step)),
+        ("recursor", derived_recursor(recursor)),
+    ] {
+        match derivation.promote(export, signature, limits.judgment_steps, delta_policy) {
+            Ok(()) => {
+                if trace {
+                    eprintln!("NUCLEUS_NAT_LE:promote:{stage}=ok");
+                }
+            }
+            Err(verdict) => {
+                if trace {
+                    eprintln!("NUCLEUS_NAT_LE:promote:{stage}={verdict:?}");
+                }
+                return Err(verdict);
+            }
+        }
+    }
     install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
