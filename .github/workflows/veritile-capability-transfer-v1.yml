@@ -43,30 +43,34 @@ jobs:
           lake exe cache get
           lake build VeriTile.Triton
 
-      - name: Elaborate seed stable-softmax proof
+      - name: Check frozen seed theorem
         shell: bash
         working-directory: vendor/VeriTile
         run: |
           set -euo pipefail
-          lake env lean bench/examples/SoftmaxStableEquiv.lean
+          cat > SeedProbe.lean <<'LEAN'
+          import VeriTile.Triton.Math.Softmax
+          #check VeriTile.Triton.TiledSoftmax.naive_eq_stable
+          LEAN
+          lake env lean SeedProbe.lean
 
-      - name: Compile capability
+      - name: Compile importable capability
         shell: bash
         run: |
           set -euo pipefail
-          cp experiments/veritile_capability_transfer/MathGraphShiftCapability.lean              vendor/VeriTile/MathGraphShiftCapability.lean
+          cp experiments/veritile_capability_transfer/MathGraphShiftCapability.lean              vendor/VeriTile/VeriTile/MathGraphShiftCapability.lean
           cd vendor/VeriTile
-          lake env lean MathGraphShiftCapability.lean
+          mkdir -p .lake/build/lib/lean/VeriTile
+          lake env lean             -o .lake/build/lib/lean/VeriTile/MathGraphShiftCapability.olean             VeriTile/MathGraphShiftCapability.lean
 
       - name: Ablation must fail without capability
-        id: ablation
         shell: bash
         run: |
           set -euo pipefail
-          cp vendor/VeriTile/bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean /tmp/SoftmaxReducevAblation.lean
-          cat experiments/veritile_capability_transfer/TransferAppend.lean >> /tmp/SoftmaxReducevAblation.lean
+          cp vendor/VeriTile/bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean              /tmp/SoftmaxReducevAblation.lean
+          cat experiments/veritile_capability_transfer/TransferAppend.lean              >> /tmp/SoftmaxReducevAblation.lean
           set +e
-          (cd vendor/VeriTile && lake env lean /tmp/SoftmaxReducevAblation.lean) > /tmp/ablation.log 2>&1
+          (cd vendor/VeriTile && lake env lean /tmp/SoftmaxReducevAblation.lean)              > /tmp/ablation.log 2>&1
           rc=$?
           set -e
           cat /tmp/ablation.log
@@ -74,6 +78,7 @@ jobs:
             echo "Ablation unexpectedly passed" >&2
             exit 1
           fi
+          grep -q "MathGraphShiftCapability.weighted_shift_invariant" /tmp/ablation.log
           echo "ABLATION_RC=$rc" >> "$GITHUB_ENV"
 
       - name: Transfer capability into held-out kernel
@@ -86,8 +91,14 @@ jobs:
           s = p.read_text()
           needle = "import VeriTile.Triton\n"
           assert needle in s
-          s = s.replace(needle, needle + "import MathGraphShiftCapability\n", 1)
-          s += Path("experiments/veritile_capability_transfer/TransferAppend.lean").read_text()
+          s = s.replace(
+              needle,
+              needle + "import VeriTile.MathGraphShiftCapability\n",
+              1,
+          )
+          s += Path(
+              "experiments/veritile_capability_transfer/TransferAppend.lean"
+          ).read_text()
           p.write_text(s)
           PY
           cd vendor/VeriTile
