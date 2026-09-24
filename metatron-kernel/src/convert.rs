@@ -147,6 +147,16 @@ pub(crate) fn convert_with_policy_in_context(
             continue;
         }
 
+        if let (TypeValue::Term(left_term), TypeValue::Term(right_term)) = (&left, &right)
+            && let (Some(left_type), Some(right_type)) = (
+                checker.closed_proof_type_key(left_term, remaining),
+                checker.closed_proof_type_key(right_term, remaining),
+            )
+            && left_type == right_type
+        {
+            continue;
+        }
+
         // Residual-generated function eta capability.  This is deliberately
         // syntactic and contraction-only: (fun x => f x) may contract to f
         // exactly when the bound variable does not occur in f.  No unfolding,
