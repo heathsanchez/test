@@ -1,0 +1,84 @@
+name: ACC Fake-Surface Screen V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - '.github/workflows/acc-fake-surface-screen-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch pinned sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsSLo stable_ac.jsonl https://raw.githubusercontent.com/SAIRcompetition/Andrews-Curtis/99a65377c5c4f412cd9af7b8d31c41464a855736/competition/problems/stable_ac.jsonl
+          curl -fsSLo fsac.py https://raw.githubusercontent.com/SauersML/group-approximation/5080b7d3bb4ddd1de98d28c7f8904f48a87be463/experiments/andrews-curtis-fake-surfaces/fsac.py
+          sha256sum stable_ac.jsonl fsac.py | tee source-sha256.txt
+      - name: Screen exact recursive elimination corridor
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import importlib.util, json, re, time
+          from pathlib import Path
+
+          spec = importlib.util.spec_from_file_location('fsac_pinned', 'fsac.py')
+          fsac = importlib.util.module_from_spec(spec)
+          spec.loader.exec_module(fsac)
+
+          tok = {'x':1, 'x^-1':-1, 'y':2, 'y^-1':-2}
+          rx = re.compile(r'^Presentation: <x, y \\| (.*?) = 1; (.*?) = 1>\\.$')
+          def word(s):
+              s=s.strip()
+              if s == '1': return []
+              return [tok[t] for t in s.split()]
+          def parse(desc):
+              m=rx.match(desc)
+              if not m: raise ValueError(f'unparsed description: {desc!r}')
+              return [word(m.group(1)), word(m.group(2))]
+
+          rows=[]; positives=[]; verified=0; t0=time.time()
+          for line in Path('stable_ac.jsonl').read_text().splitlines():
+              o=json.loads(line); rels=parse(o['description']); rows.append(o['challenge_id'])
+              cert=fsac.trivialize(rels, 2)
+              if cert is not None:
+                  ok=fsac.verify(rels, 2, cert)
+                  if not ok: raise AssertionError(f"fsac independent verifier rejected {o['challenge_id']}")
+                  verified += 1
+                  positives.append({
+                      'challenge_id':o['challenge_id'],
+                      'macro_count':len(cert),
+                      'initial_lengths':[len(x) for x in rels],
+                      'certificate':cert,
+                  })
+          result={
+              'status':'PASS',
+              'official_commit':'99a65377c5c4f412cd9af7b8d31c41464a855736',
+              'fsac_commit':'5080b7d3bb4ddd1de98d28c7f8904f48a87be463',
+              'rows':len(rows),
+              'trivialize_successes':len(positives),
+              'independent_macro_verify_successes':verified,
+              'elapsed_seconds':round(time.time()-t0,3),
+              'positives':positives,
+          }
+          Path('result.json').write_text(json.dumps(result,indent=2)+'\n')
+          Path('positive-ids.txt').write_text('\n'.join(p['challenge_id'] for p in positives)+('\n' if positives else ''))
+          print(json.dumps({k:v for k,v in result.items() if k!='positives'},indent=2))
+          print('positive_ids=', [p['challenge_id'] for p in positives[:100]])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-fake-surface-screen-v1
+          path: |
+            result.json
+            positive-ids.txt
+            source-sha256.txt
+          retention-days: 90
