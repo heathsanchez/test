@@ -5,7 +5,7 @@
 //! semantic interfaces, then computes consequence closure without changing
 //! checker behavior.
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ContractStatus {
@@ -20,6 +20,188 @@ pub(crate) struct SemanticContract {
     pub(crate) requires: &'static [&'static str],
     pub(crate) produces: &'static [&'static str],
     pub(crate) preserves: &'static [&'static str],
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct AdapterContract {
+    pub(crate) id: String,
+    pub(crate) source: &'static str,
+    pub(crate) target: &'static str,
+    pub(crate) status: ContractStatus,
+    pub(crate) preserves: BTreeSet<&'static str>,
+    pub(crate) assumptions: BTreeSet<&'static str>,
+    pub(crate) evidence: BTreeSet<&'static str>,
+    pub(crate) provenance: Vec<&'static str>,
+    is_identity: bool,
+}
+
+impl AdapterContract {
+    pub(crate) fn atomic(
+        id: &'static str,
+        source: &'static str,
+        target: &'static str,
+        status: ContractStatus,
+        preserves: impl IntoIterator<Item = &'static str>,
+        assumptions: impl IntoIterator<Item = &'static str>,
+        evidence: impl IntoIterator<Item = &'static str>,
+    ) -> Self {
+        Self {
+            id: id.to_owned(),
+            source,
+            target,
+            status,
+            preserves: preserves.into_iter().collect(),
+            assumptions: assumptions.into_iter().collect(),
+            evidence: evidence.into_iter().collect(),
+            provenance: vec![id],
+            is_identity: false,
+        }
+    }
+
+    pub(crate) fn identity(type_id: &'static str) -> Self {
+        Self {
+            id: format!("identity:{type_id}"),
+            source: type_id,
+            target: type_id,
+            status: ContractStatus::Warranted,
+            preserves: BTreeSet::new(),
+            assumptions: BTreeSet::new(),
+            evidence: BTreeSet::new(),
+            provenance: Vec::new(),
+            is_identity: true,
+        }
+    }
+}
+
+pub(crate) fn compose_adapter_contracts(
+    first: &AdapterContract,
+    second: &AdapterContract,
+) -> Option<AdapterContract> {
+    if first.target != second.source {
+        return None;
+    }
+    if first.is_identity {
+        return Some(second.clone());
+    }
+    if second.is_identity {
+        return Some(first.clone());
+    }
+
+    let preserves = first
+        .preserves
+        .intersection(&second.preserves)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let assumptions = first
+        .assumptions
+        .union(&second.assumptions)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let evidence = first
+        .evidence
+        .union(&second.evidence)
+        .copied()
+        .collect::<BTreeSet<_>>();
+
+    let mut provenance = first.provenance.clone();
+    provenance.extend(second.provenance.iter().copied());
+    let status = if first.status == ContractStatus::Warranted
+        && second.status == ContractStatus::Warranted
+    {
+        ContractStatus::Warranted
+    } else {
+        ContractStatus::Candidate
+    };
+
+    Some(AdapterContract {
+        id: format!("compose:{}", provenance.join(">")),
+        source: first.source,
+        target: second.target,
+        status,
+        preserves,
+        assumptions,
+        evidence,
+        provenance,
+        is_identity: false,
+    })
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct ProtectedSemanticState {
+    pub(crate) type_id: &'static str,
+    pub(crate) observations: BTreeMap<&'static str, i64>,
+}
+
+#[derive(Clone)]
+pub(crate) struct ExecutableAdapter {
+    pub(crate) contract: AdapterContract,
+    stages: Vec<fn(ProtectedSemanticState) -> ProtectedSemanticState>,
+}
+
+impl ExecutableAdapter {
+    pub(crate) fn atomic(
+        contract: AdapterContract,
+        stage: fn(ProtectedSemanticState) -> ProtectedSemanticState,
+    ) -> Self {
+        Self {
+            contract,
+            stages: vec![stage],
+        }
+    }
+
+    pub(crate) fn identity(type_id: &'static str) -> Self {
+        Self {
+            contract: AdapterContract::identity(type_id),
+            stages: Vec::new(),
+        }
+    }
+
+    pub(crate) fn execute(&self, mut state: ProtectedSemanticState) -> ProtectedSemanticState {
+        assert_eq!(state.type_id, self.contract.source);
+        for stage in &self.stages {
+            state = stage(state);
+        }
+        assert_eq!(state.type_id, self.contract.target);
+        state
+    }
+}
+
+pub(crate) fn compose_executable_adapters(
+    first: &ExecutableAdapter,
+    second: &ExecutableAdapter,
+) -> Option<ExecutableAdapter> {
+    let contract = compose_adapter_contracts(&first.contract, &second.contract)?;
+    if first.contract.is_identity {
+        return Some(second.clone());
+    }
+    if second.contract.is_identity {
+        return Some(first.clone());
+    }
+    let mut stages = first.stages.clone();
+    stages.extend(second.stages.iter().copied());
+    Some(ExecutableAdapter { contract, stages })
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum ProtectedQuery {
+    Value(i64),
+    UnknownOutsidePreservationContract,
+}
+
+pub(crate) fn query_protected(
+    adapter: &ExecutableAdapter,
+    state: &ProtectedSemanticState,
+    observation: &'static str,
+) -> ProtectedQuery {
+    if !adapter.contract.preserves.contains(observation) {
+        return ProtectedQuery::UnknownOutsidePreservationContract;
+    }
+    state
+        .observations
+        .get(observation)
+        .copied()
+        .map(ProtectedQuery::Value)
+        .unwrap_or(ProtectedQuery::UnknownOutsidePreservationContract)
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
