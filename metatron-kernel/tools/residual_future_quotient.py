@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
 """Discover a consequence-native quotient of the live Nucleus residual.
 
-This tool is diagnostic only. It never changes checker semantics. It replays a
-frozen corpus through the current checker plus exact historical/experimental
-probe checkers. Residual cases under the current checker are partitioned only by
-future protected consequences: the return-code vector produced by probes that
-make no wrong decisive decision anywhere on the corpus.
+Diagnostic only: checker semantics are untouched. A frozen corpus is replayed
+through the current checker plus exact historical/experimental probe checkers.
+Current residual cases are partitioned only by future protected consequences:
+the probe return-code vectors.
 
-Unsafe probes are retained as negative evidence but excluded from the quotient.
+A probe is admitted to the quotient only if, on the whole frozen corpus, it:
+  * never makes a wrong decisive ACCEPT/REJECT, and
+  * returns only the declared status codes 0/1/2/3.
+
+Unsafe probes remain in the evidence as negatives but cannot influence classes.
 A deterministic separator-driven refinement reconstructs the full safe-signature
 partition without enumerating set partitions.
 """
@@ -24,6 +27,7 @@ from typing import Iterable
 
 DECISIVE = {0, 1}
 RESIDUAL = {2, 3}
+VALID_STATUS = DECISIVE | RESIDUAL
 
 
 @dataclass(frozen=True)
@@ -154,6 +158,7 @@ def main() -> int:
     cases = corpus(args.corpus)
     if len(cases) != args.expect_count:
         raise SystemExit(f"expected {args.expect_count} cases, found {len(cases)}")
+    expected_by_name = {case.name: case.expected for case in cases}
 
     probes = [(args.current_label, args.current), *args.probe]
     labels = [label for label, _ in probes]
@@ -166,12 +171,17 @@ def main() -> int:
     all_rows: list[dict[str, object]] = []
     by_name: dict[str, dict[str, int]] = {}
     wrong_by_probe: dict[str, list[dict[str, object]]] = defaultdict(list)
+    invalid_by_probe: dict[str, list[dict[str, object]]] = defaultdict(list)
 
     for case in cases:
         result: dict[str, int] = {}
         for label, binary in probes:
             rc = run(binary, case, args.timeout)
             result[label] = rc
+            if rc not in VALID_STATUS:
+                invalid_by_probe[label].append(
+                    {"test": case.name, "status": rc}
+                )
             if rc in DECISIVE and rc != case.expected:
                 wrong_by_probe[label].append(
                     {
@@ -190,10 +200,14 @@ def main() -> int:
         )
 
     current_wrong = wrong_by_probe.get(args.current_label, [])
-    if current_wrong:
+    current_invalid = invalid_by_probe.get(args.current_label, [])
+    if current_wrong or current_invalid:
         raise SystemExit(
-            "current checker made a wrong protected decision: "
-            + json.dumps(current_wrong[:20], sort_keys=True)
+            "current checker violated the protected status boundary: "
+            + json.dumps(
+                {"wrong": current_wrong[:20], "invalid": current_invalid[:20]},
+                sort_keys=True,
+            )
         )
 
     current_residual = sorted(
@@ -204,16 +218,20 @@ def main() -> int:
 
     requested_probe_order = [label for label, _ in args.probe]
     safe_probe_order = [
-        probe for probe in requested_probe_order if not wrong_by_probe.get(probe)
+        probe
+        for probe in requested_probe_order
+        if not wrong_by_probe.get(probe) and not invalid_by_probe.get(probe)
     ]
     excluded_unsafe = [
         {
             "probe": probe,
-            "wrong_count": len(wrong_by_probe[probe]),
-            "wrong": wrong_by_probe[probe],
+            "wrong_count": len(wrong_by_probe.get(probe, [])),
+            "invalid_count": len(invalid_by_probe.get(probe, [])),
+            "wrong": wrong_by_probe.get(probe, []),
+            "invalid": invalid_by_probe.get(probe, []),
         }
         for probe in requested_probe_order
-        if wrong_by_probe.get(probe)
+        if wrong_by_probe.get(probe) or invalid_by_probe.get(probe)
     ]
 
     refined, separator_sequence = refine(
@@ -257,14 +275,14 @@ def main() -> int:
             name
             for name in current_residual
             if by_name[name][probe] in DECISIVE
-            and by_name[name][probe]
-            == next(case.expected for case in cases if case.name == name)
+            and by_name[name][probe] == expected_by_name[name]
         ]
         probe_stats.append(
             {
                 "probe": probe,
                 "safe": probe in safe_probe_order,
                 "wrong_count": len(wrong_by_probe.get(probe, [])),
+                "invalid_count": len(invalid_by_probe.get(probe, [])),
                 "resolves_current_residual": len(resolved),
                 "resolved_tests": resolved,
                 "global_pair_separations": (
@@ -318,6 +336,7 @@ def main() -> int:
                     {
                         "probe": row["probe"],
                         "wrong_count": row["wrong_count"],
+                        "invalid_count": row["invalid_count"],
                     }
                     for row in excluded_unsafe
                 ],
