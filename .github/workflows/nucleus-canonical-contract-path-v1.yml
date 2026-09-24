@@ -103,10 +103,13 @@ jobs:
                       if 'NUCLEUS_CONTRACT_PLAN:' in line:
                           payload=line.split('NUCLEUS_CONTRACT_PLAN:',1)[1]
                           record={}
-                          for part in payload.split(':'):
+                          head,path_id=(payload.split(':path_id=',1)+[None])[:2] if ':path_id=' in payload else (payload,None)
+                          for part in head.split(':'):
                               if '=' in part:
                                   k,v=part.split('=',1)
                                   record[k]=v
+                          if path_id is not None:
+                              record['path_id']=path_id
                           plans.append(record)
 
                   assert misses,(name,'missing interface trace')
