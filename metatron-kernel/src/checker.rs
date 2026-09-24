@@ -175,10 +175,20 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
+                    Err(Verdict::Unknown) => {
+                        trace_missing_interface(
+                            missing_inductive_interface(&block),
+                            "inductive-envelope",
+                        );
+                        return Verdict::Unknown;
+                    }
                     Err(verdict) => return verdict,
                 }
             }
-            Declaration::Unsupported { .. } => return Verdict::Unknown,
+            Declaration::Unsupported { .. } => {
+                trace_missing_interface("declaration.kind@1", "unsupported-declaration");
+                return Verdict::Unknown;
+            }
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -7949,7 +7959,69 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
         Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Unknown { residual } => {
+            trace_residual_interface(residual.0);
+            Err(Verdict::Unknown)
+        }
+    }
+}
+
+fn trace_missing_interface(interface: &str, detail: &str) {
+    if std::env::var_os("NUCLEUS_TRACE_INTERFACE_LEDGER").is_some() {
+        eprintln!("NUCLEUS_INTERFACE_MISS:{interface}:{detail}");
+    }
+}
+
+fn trace_residual_interface(residual: &'static str) {
+    let interface = match residual {
+        "distinct-neutral-heads" => "conversion.rigid-head@1",
+        "conversion-exposure" | "full-conversion-exposure" => "conversion.exposure@1",
+        "application-function-type" => "type.application@1",
+        "unsupported-projection"
+        | "projection-index-overflow"
+        | "projection-index-out-of-range"
+        | "projection-parameter-arity"
+        | "projection-not-structure"
+        | "projection-type-name-mismatch" => "projection.type@1",
+        "projection-structure-stuck"
+        | "projection-structure-neutral"
+        | "projection-constructor-mismatch"
+        | "projection-constructor-arity"
+        | "projection-applied-as-function" => "projection.reduce@1",
+        "unresolved-sort-level-during-reduction"
+        | "unresolved-imax-case"
+        | "polymorphic-delta-instantiation"
+        | "neutral-level-instantiation" => "universe.resolve@1",
+        "rigid-value-constructor-mismatch" => "conversion.constructor-separation@1",
+        _ => "semantic.residual@1",
+    };
+    trace_missing_interface(interface, residual);
+}
+
+fn missing_inductive_interface(block: &InductiveBlock) -> &'static str {
+    let [inductive] = block.types.as_slice() else {
+        return "inductive.mutual@1";
+    };
+    if inductive.num_nested != 0 {
+        "inductive.nested@1"
+    } else if inductive.num_indices != 0 && inductive.is_recursive {
+        "inductive.indexed-recursive@1"
+    } else if inductive.num_indices != 0 {
+        "inductive.indexed@1"
+    } else if inductive.is_reflexive {
+        "inductive.reflexive@1"
+    } else if inductive.is_recursive {
+        "inductive.recursive@1"
+    } else if block
+        .constructors
+        .first()
+        .is_some_and(|constructor| block.constructors.len() == 1 && constructor.num_fields != 0)
+    {
+        "structure.fields@1"
+    } else if block.constructors.len() > 2 {
+        "inductive.multi-constructor@1"
+    } else {
+        "inductive.admission@1"
     }
 }
 
