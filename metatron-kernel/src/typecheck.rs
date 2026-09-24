@@ -480,6 +480,53 @@ impl<'a> TypeChecker<'a> {
         matches!(exposed.proven_value(), Some(Value::Sort(LevelTerm::Zero)))
     }
 
+    pub(crate) fn infer_closure_in_context(
+        &self,
+        closure: &Closure,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> Judgment<TypeValue> {
+        let mut remaining = budget;
+        let checker = Self {
+            expressions: self.expressions,
+            levels: self.levels,
+            environment: self.environment,
+            level_substitution: closure.levels.to_map(),
+            delta_policy: self.delta_policy,
+        };
+        checker.infer_in(closure.expr, context, &closure.env, &mut remaining)
+    }
+
+    pub(crate) fn inferred_type_is_prop_in_context(
+        &self,
+        ty: &TypeValue,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> bool {
+        let TypeValue::Term(closure) = ty else {
+            return false;
+        };
+        match self.infer_closure_in_context(closure, context, budget) {
+            Judgment::Proven {
+                value: TypeValue::Sort(level),
+                ..
+            } => level == LevelTerm::Zero,
+            Judgment::Proven {
+                value: TypeValue::Term(sort),
+                ..
+            } => {
+                let exposed = self.machine().expose(sort, Transparency::Reducible, budget);
+                matches!(exposed.proven_value(), Some(Value::Sort(LevelTerm::Zero)))
+            }
+            Judgment::Proven {
+                value: TypeValue::Pi { .. },
+                ..
+            }
+            | Judgment::Refuted { .. }
+            | Judgment::Unknown { .. } => false,
+        }
+    }
+
     pub(crate) fn machine(&self) -> Machine<'_> {
         Machine::new(
             self.environment.authority(),
