@@ -7337,9 +7337,7 @@ fn trace_contract_plan(required: &str) {
             );
         }
         PathStatus::NoRegisteredPath => {
-            eprintln!(
-                "NUCLEUS_CONTRACT_PLAN:required={required_static}:status=NO_REGISTERED_PATH"
-            );
+            eprintln!("NUCLEUS_CONTRACT_PLAN:required={required_static}:status=NO_REGISTERED_PATH");
         }
     }
 }
