@@ -206,14 +206,14 @@ pub(crate) fn query_protected(
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) enum PathStatus {
-    WarrantedPath {
+    Warranted {
         contracts: Vec<&'static str>,
     },
-    CandidatePath {
+    Candidate {
         candidate_count: usize,
         contracts: Vec<&'static str>,
     },
-    NoRegisteredPath,
+    None,
 }
 
 pub(crate) fn plan_required_interface(
@@ -270,20 +270,20 @@ pub(crate) fn plan_required_interface(
     }
 
     if interfaces.contains(required) && !best.contains_key(required) {
-        return PathStatus::WarrantedPath {
+        return PathStatus::Warranted {
             contracts: Vec::new(),
         };
     }
 
     match best.get(required) {
-        Some((0, path)) => PathStatus::WarrantedPath {
+        Some((0, path)) => PathStatus::Warranted {
             contracts: path.clone(),
         },
-        Some((candidate_count, path)) => PathStatus::CandidatePath {
+        Some((candidate_count, path)) => PathStatus::Candidate {
             candidate_count: *candidate_count,
             contracts: path.clone(),
         },
-        None => PathStatus::NoRegisteredPath,
+        None => PathStatus::None,
     }
 }
 
@@ -832,14 +832,14 @@ mod tests {
                 "structure.fields@1",
                 ["observed.structure-fields-envelope@1"],
             ),
-            super::PathStatus::CandidatePath {
+            super::PathStatus::Candidate {
                 candidate_count: 1,
                 ..
             }
         ));
         assert!(matches!(
             super::plan_required_interface("conversion.rigid-head@1", []),
-            super::PathStatus::NoRegisteredPath
+            super::PathStatus::None
         ));
     }
 
