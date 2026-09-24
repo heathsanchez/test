@@ -632,10 +632,7 @@ fn compare_nat_literal_neutral(
     budget: usize,
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
-    proof_function_frees: &mut HashMap<
-        FreeId,
-        (crate::id::NameId, Vec<crate::level::LevelTerm>),
-    >,
+    proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
         return Judgment::unknown("Nat-literal-conversion-without-authority");
