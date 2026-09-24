@@ -1757,8 +1757,8 @@ fn generic_field_structure_recursor_shape(
     {
         return false;
     }
-    for i in 0..p {
-        if !is_bvar(export, ctor_args[i], (p + fields - i) as u64) {
+    for (i, arg) in ctor_args.iter().take(p).enumerate() {
+        if !is_bvar(export, *arg, (p + fields - i) as u64) {
             return false;
         }
     }
