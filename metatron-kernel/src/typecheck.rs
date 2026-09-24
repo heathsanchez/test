@@ -560,6 +560,49 @@ impl<'a> TypeChecker<'a> {
         self.environment.nat_primitives()
     }
 
+    pub(crate) fn closed_proof_type_key(
+        &self,
+        term: &Closure,
+        budget: usize,
+    ) -> Option<TypeValue> {
+        if term.env.id() != 0 {
+            return None;
+        }
+
+        let checker = TypeChecker::with_level_substitution(
+            self.expressions,
+            self.levels,
+            self.environment,
+            term.levels.to_map(),
+        )
+        .with_delta_policy(self.delta_policy);
+
+        let ty = match checker.infer(term.expr, budget) {
+            Judgment::Proven { value, .. } => value,
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => return None,
+        };
+        let TypeValue::Term(proposition) = &ty else {
+            return None;
+        };
+        if proposition.env.id() != 0 {
+            return None;
+        }
+
+        let proposition_checker = TypeChecker::with_level_substitution(
+            self.expressions,
+            self.levels,
+            self.environment,
+            proposition.levels.to_map(),
+        )
+        .with_delta_policy(self.delta_policy);
+
+        matches!(
+            proposition_checker.is_proposition(proposition.expr, budget),
+            Judgment::Proven { .. }
+        )
+        .then_some(ty)
+    }
+
     pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
         if left == right {
             return false;
