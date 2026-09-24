@@ -1,0 +1,37 @@
+{
+  "schema": "acc-free-face-preimage-depth2-v1",
+  "status": "WARRANTED_BOUNDED_NEGATIVE",
+  "created_utc": "2026-09-24T19:42:00Z",
+  "objective": "Find fresh unsolved Stable ACC rows that enter the already-qualified recursive free-face/fake-surface terminal basin after at most two rank-preserving official moves.",
+  "authority": {
+    "official_repo": "SAIRcompetition/Andrews-Curtis",
+    "official_commit": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "fsac_repo": "SauersML/group-approximation",
+    "fsac_commit": "5080b7d3bb4ddd1de98d28c7f8904f48a87be463",
+    "qualified_free_face_run": 35984616715,
+    "qualified_free_face_head": "3549ebb2d12fd12c4aee81cbc367d11b0e3b6a4f",
+    "live_state_run": 36032299534,
+    "live_state_artifact": 10827564277,
+    "live_state_utc": "2026-09-24T18:58:12.809378+00:00",
+    "fresh_authority_run": 36047776218,
+    "fresh_authority_utc": "2026-09-24T19:23:17.461311+00:00"
+  },
+  "validation": {
+    "direct_positive_count_reproduced": 54,
+    "direct_positive_count_qualified": 54,
+    "unsolved_count_at_live_state": 2672,
+    "unsolved_count_at_fresh_authority": 2672,
+    "note": "The fresh authority run confirmed the unsolved count did not change between the full-row snapshot and the screen boundary."
+  },
+  "search_boundary": {
+    "rows": "2672 live-unsolved Stable initial presentations",
+    "moves": "official rank-preserving sac-r8-v1 IDs 0..13 only",
+    "depth1_states": 37408,
+    "depth1_basin_hits": 0,
+    "depth2_states": 486304,
+    "depth2_exclusion": "immediate inverse second moves omitted because they return to the already-screened initial state",
+    "depth2_basin_hits": 0,
+    "stabilization": "not included; bare stabilization adds singleton g3, which the greedy fsac rule eliminates first and therefore reduces immediately to the already-screened rank-2 initial state"
+  },
+  "conclusion": "No currently unsolved Stable row lies within rank-preserving official-move distance <=2 of the qualified free-face basin. Further radius-only expansion of this mechanism is retired absent a new residual; positive-EV work must change the source witness or introduce a genuinely different state transition justified by new evidence."
+}
