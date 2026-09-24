@@ -62,7 +62,24 @@ impl ClosedNonrecursiveDerivation {
             parameter_substitution(&signature.level_params),
         )
         .with_delta_policy(delta_policy);
-        verdict_boundary(checker.is_type(signature.ty, judgment_steps))?;
+        let signature_judgment = checker.is_type(signature.ty, judgment_steps);
+        if std::env::var_os("NUCLEUS_TRACE_SIGNATURE").is_some() {
+            match &signature_judgment {
+                Judgment::Proven { .. } => eprintln!(
+                    "NUCLEUS_SIGNATURE:{:?}:{}:proven",
+                    signature.kind, signature.name.0
+                ),
+                Judgment::Refuted { obstruction } => eprintln!(
+                    "NUCLEUS_SIGNATURE:{:?}:{}:refuted:{}",
+                    signature.kind, signature.name.0, obstruction.0
+                ),
+                Judgment::Unknown { residual } => eprintln!(
+                    "NUCLEUS_SIGNATURE:{:?}:{}:unknown:{}",
+                    signature.kind, signature.name.0, residual.0
+                ),
+            }
+        }
+        verdict_boundary(signature_judgment)?;
 
         let declaration = match signature.kind {
             OpaqueInductiveKind::Type => {
