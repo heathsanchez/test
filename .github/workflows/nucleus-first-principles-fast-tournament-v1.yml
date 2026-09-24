@@ -1,0 +1,139 @@
+name: Nucleus First Principles Fast Tournament v1
+
+on:
+  push:
+    branches: [nucleus-first-principles-fast-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-first-principles-fast-tournament-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-first-principles-fast-tournament-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  FROZEN_ARENA_ARTIFACT: 10712869614
+
+jobs:
+  corpus:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$FROZEN_ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/frozen
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/frozen
+          test "$(find /tmp/frozen -type f -name '*.ndjson' | wc -l)" -eq 193
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-frozen-193
+          path: /tmp/frozen
+
+  arm:
+    needs: [corpus]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: base, ref: a997bafa022153e3789efa14cf752bcb171e8b2f}
+          - {name: waist, ref: 4ce02a0faaa7365a56e02b932c1bdcd9d4fc510f}
+          - {name: demand, ref: d2ddfe6628ea0b6db89ae0915d19da8f2cc814ca}
+          - {name: reuse, ref: 0e0b72b7c7c1bd96c97cb69c0dc352eda0b5f29f}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/download-artifact@v4
+        with:
+          name: nucleus-frozen-193
+          path: /tmp/frozen
+      - name: Build exact arm
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/src "${{ matrix.ref }}"
+          CARGO_TARGET_DIR=/tmp/target cargo build --release --locked --manifest-path /tmp/src/metatron-kernel/Cargo.toml
+          cp /tmp/target/release/metatron-kernel /tmp/nucleus
+          stat -c '%s' /tmp/nucleus > /tmp/binary.bytes
+      - name: Exact 193 parity and timed reps
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/out
+          python - <<'PY' | tee /tmp/out/result.json
+          import json, pathlib, statistics, subprocess, time, os
+          root=pathlib.Path('/tmp/frozen')
+          binary=pathlib.Path('/tmp/nucleus')
+          tests=[]
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  tests.append((str(p.relative_to(root/d)).removesuffix('.ndjson'),p,expected))
+          assert len(tests)==193
+
+          rows=[]
+          times=[]
+          for rep in range(5):
+              start=time.perf_counter_ns()
+              for name,p,expected in tests:
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180)
+                  if rep==0:
+                      rows.append({'test':name,'expected':expected,'rc':q.returncode})
+              times.append(time.perf_counter_ns()-start)
+
+          wrong=[r for r in rows if r['rc']!=r['expected']]
+          assert not wrong,wrong[:20]
+          out={
+              'name':'${{ matrix.name }}',
+              'ref':'${{ matrix.ref }}',
+              'tests':len(tests),
+              'wrong':wrong,
+              'times_ns':times,
+              'median_ns':statistics.median(times),
+              'min_ns':min(times),
+              'binary_bytes':int(pathlib.Path('/tmp/binary.bytes').read_text()),
+          }
+          print(json.dumps(out,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-first-principles-${{ matrix.name }}
+          path: /tmp/out/result.json
+
+  rank:
+    needs: [arm]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: nucleus-first-principles-*
+          path: /tmp/results
+      - name: Rank exact survivors
+        run: |
+          python - <<'PY' | tee /tmp/summary.txt
+          import json, pathlib
+          rows=[json.loads(p.read_text()) for p in pathlib.Path('/tmp/results').rglob('result.json')]
+          rows.sort(key=lambda r:(r['median_ns'],r['binary_bytes']))
+          base=next((r for r in rows if r['name']=='base'),None)
+          print('NUCLEUS_FIRST_PRINCIPLES_FAST_TOURNAMENT_V1=PASS')
+          for i,r in enumerate(rows,1):
+              delta=((r['median_ns']/base['median_ns'])-1)*100 if base else 0
+              print(f"{i}. {r['name']} median_ms={r['median_ns']/1e6:.3f} delta_vs_base_pct={delta:+.3f} bytes={r['binary_bytes']} wrong={len(r['wrong'])}")
+          pathlib.Path('/tmp/ranking.json').write_text(json.dumps(rows,indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-first-principles-fast-tournament-v1
+          path: |
+            /tmp/summary.txt
+            /tmp/ranking.json
