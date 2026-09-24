@@ -1,0 +1,111 @@
+name: Nucleus WHNF0 Residual Separator v1
+
+on:
+  push:
+    branches: [nucleus-future-quotient-arena-v1]
+    paths:
+      - ".github/workflows/nucleus-whnf0-residual-separator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-whnf0-residual-separator-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      ARENA_ARTIFACT: 10712869614
+      WHNF0_SHA: 0e0b72b7c7c1bd96c97cb69c0dc352eda0b5f29f
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build current and exact WHNF0 probe
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/current
+          git worktree add --detach /tmp/whnf0 "$WHNF0_SHA"
+          CARGO_TARGET_DIR=/tmp/whnf0-target cargo build --release --locked --manifest-path /tmp/whnf0/metatron-kernel/Cargo.toml
+          cp /tmp/whnf0-target/release/metatron-kernel /tmp/whnf0-bin
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Run WHNF0 only on current residual
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/whnf0-residual-separator-v1
+          python - <<'PY'
+          import json, pathlib, subprocess, os, time
+          root=pathlib.Path('/tmp/tests')
+          current=pathlib.Path('/tmp/current')
+          probe=pathlib.Path('/tmp/whnf0-bin')
+          rows=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for path in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(path.relative_to(root/kind)).removesuffix('.ndjson')
+                  with path.open('rb') as f:
+                      rc=subprocess.run([str(current)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL,timeout=180).returncode
+                  if rc != 2:
+                      continue
+                  t=time.perf_counter()
+                  try:
+                      with path.open('rb') as f:
+                          q=subprocess.run([str(probe)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90)
+                      prc=q.returncode
+                      stderr=q.stderr.decode(errors='replace')[-500:]
+                  except subprocess.TimeoutExpired:
+                      prc=124
+                      stderr='timeout'
+                  rows.append({
+                      'test':name,'kind':kind,'expected':expected,'current':rc,
+                      'whnf0':prc,'seconds':time.perf_counter()-t,'stderr_tail':stderr,
+                  })
+          assert len(rows)==40, len(rows)
+          wrong=[r for r in rows if r['whnf0'] in (0,1) and r['whnf0']!=r['expected']]
+          assert not wrong, wrong
+          classes={}
+          for r in rows:
+              classes.setdefault(str(r['whnf0']),[]).append(r['test'])
+          out={
+              'schema':'nucleus-whnf0-residual-separator-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'probe_sha':os.environ['WHNF0_SHA'],
+              'current_residual':len(rows),
+              'resolved_correct':sum(r['whnf0'] in (0,1) for r in rows),
+              'still_declined':sum(r['whnf0']==2 for r in rows),
+              'probe_errors':sum(r['whnf0']==3 for r in rows),
+              'timeouts':sum(r['whnf0']==124 for r in rows),
+              'wrong':wrong,
+              'classes':classes,
+              'rows':rows,
+          }
+          p=pathlib.Path('metatron-kernel/evidence-out/whnf0-residual-separator-v1/result.json')
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({k:out[k] for k in ['current_residual','resolved_correct','still_declined','probe_errors','timeouts']},sort_keys=True))
+          print('RESOLVED',json.dumps([r['test'] for r in rows if r['whnf0'] in (0,1)]))
+          print('TIMEOUTS',json.dumps([r['test'] for r in rows if r['whnf0']==124]))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-whnf0-residual-separator-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/whnf0-residual-separator-v1
+          if-no-files-found: error
