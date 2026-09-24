@@ -1521,7 +1521,12 @@ fn expression_matches_lift(
     };
     match (left, right) {
         (Expr::BVar(left), Expr::BVar(right)) => {
-            *right == if *left >= cutoff { left.saturating_add(amount) } else { *left }
+            *right
+                == if *left >= cutoff {
+                    left.saturating_add(amount)
+                } else {
+                    *left
+                }
         }
         (Expr::NatLit(left), Expr::NatLit(right)) => left == right,
         (Expr::StrLit(left), Expr::StrLit(right)) => left == right,
