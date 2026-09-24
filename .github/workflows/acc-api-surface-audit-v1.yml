@@ -1,0 +1,75 @@
+name: ACC API Surface Audit V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-api-surface-audit-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Inspect authenticated ACC read capabilities without submitting
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$SAIR_API_KEY"
+          python3 - <<'PY'
+          import json, os, urllib.request, urllib.error
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          API='https://api.sair.foundation/api/public/v1'
+          KEY=os.environ['SAIR_API_KEY']
+
+          def get(path):
+              req=urllib.request.Request(API+path,headers={
+                  'Accept':'application/json','User-Agent':'Mozilla/5.0',
+                  'Authorization':f'Bearer {KEY}'})
+              try:
+                  with urllib.request.urlopen(req,timeout=60) as r:
+                      return {'status':r.status,'body':json.loads(r.read().decode())}
+              except urllib.error.HTTPError as e:
+                  body=e.read().decode(errors='replace')[:1000]
+                  return {'status':e.code,'body':body}
+
+          comp=get('/competitions/acc')
+          me=get('/competitions/acc/me')
+          body=comp.get('body',{})
+          if isinstance(body,dict) and isinstance(body.get('data'),dict):
+              body=body['data']
+          mebody=me.get('body',{})
+          if isinstance(mebody,dict) and isinstance(mebody.get('data'),dict):
+              mebody=mebody['data']
+
+          # Preserve only schema/capability material; do not expose API keys or unrelated profile fields.
+          out={
+              'schema':'acc-api-surface-audit-v1',
+              'utc':datetime.now(timezone.utc).isoformat(),
+              'competition_status':comp['status'],
+              'competition_keys':sorted(body.keys()) if isinstance(body,dict) else [],
+              'capabilities':body.get('capabilities') if isinstance(body,dict) else None,
+              'submissionSpec':body.get('submissionSpec') if isinstance(body,dict) else None,
+              'publicationState':body.get('publicationState') if isinstance(body,dict) else None,
+              'limits':body.get('limits') if isinstance(body,dict) else None,
+              'me_status':me['status'],
+              'me_keys':sorted(mebody.keys()) if isinstance(mebody,dict) else [],
+          }
+          Path('acc_api_surface_audit_v1.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('ACC_API_SURFACE_AUDIT',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-api-surface-audit-v1
+          path: acc_api_surface_audit_v1.json
+          if-no-files-found: error
