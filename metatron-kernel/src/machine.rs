@@ -482,9 +482,6 @@ impl<'a> Machine<'a> {
                     index,
                     structure,
                 } => {
-                    if !pending.is_empty() {
-                        return Judgment::unknown("projection-applied-as-function");
-                    }
                     let Some(spec) = self.projection_specs.get(type_name) else {
                         return Judgment::unknown("unsupported-projection");
                     };
