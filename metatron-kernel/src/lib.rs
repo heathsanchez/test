@@ -1,6 +1,7 @@
 use std::io::BufRead;
 
 mod capability;
+mod contract_graph;
 pub mod checker;
 pub mod convert;
 #[cfg(feature = "diagnostics")]
