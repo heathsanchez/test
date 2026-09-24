@@ -263,7 +263,20 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
+                let function_type_trace = function_type.clone();
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                    if std::env::var_os("NUCLEUS_TRACE_APPLICATION").is_some() {
+                        eprintln!(
+                            "NUCLEUS_APPLICATION:expr={}:fun={}:arg={}:fun_node={:?}:function_type={:?}:context_depth={}:remaining={}",
+                            expression.0,
+                            fun.0,
+                            arg.0,
+                            self.expressions.get(*fun),
+                            function_type_trace,
+                            context.len(),
+                            *remaining,
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
