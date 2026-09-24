@@ -54,14 +54,17 @@ def corpus(root: pathlib.Path) -> list[Case]:
 
 def run(binary: pathlib.Path, case: Case, timeout: int) -> int:
     with case.path.open("rb") as handle:
-        return subprocess.run(
-            [str(binary)],
-            stdin=handle,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            timeout=timeout,
-            check=False,
-        ).returncode
+        try:
+            return subprocess.run(
+                [str(binary)],
+                stdin=handle,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=timeout,
+                check=False,
+            ).returncode
+        except subprocess.TimeoutExpired:
+            return 124
 
 
 def parse_probe(spec: str) -> tuple[str, pathlib.Path]:
@@ -172,16 +175,22 @@ def main() -> int:
     by_name: dict[str, dict[str, int]] = {}
     wrong_by_probe: dict[str, list[dict[str, object]]] = defaultdict(list)
     invalid_by_probe: dict[str, list[dict[str, object]]] = defaultdict(list)
+    disabled_probes: set[str] = set()
 
     for case in cases:
         result: dict[str, int] = {}
         for label, binary in probes:
-            rc = run(binary, case, args.timeout)
+            if label in disabled_probes and label != args.current_label:
+                rc = 125
+            else:
+                rc = run(binary, case, args.timeout)
             result[label] = rc
             if rc not in VALID_STATUS:
                 invalid_by_probe[label].append(
                     {"test": case.name, "status": rc}
                 )
+                if label != args.current_label:
+                    disabled_probes.add(label)
             if rc in DECISIVE and rc != case.expected:
                 wrong_by_probe[label].append(
                     {
@@ -190,6 +199,8 @@ def main() -> int:
                         "status": rc,
                     }
                 )
+                if label != args.current_label:
+                    disabled_probes.add(label)
         by_name[case.name] = result
         all_rows.append(
             {
