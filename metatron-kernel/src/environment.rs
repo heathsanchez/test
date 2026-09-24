@@ -1,10 +1,11 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::fmt;
 use std::rc::Rc;
 
 use crate::id::{ExprId, NameId};
-use crate::machine::{AuthorityId, DefinitionBody, ProjectionSpec, RecursorReduction};
+use crate::machine::{AuthorityId, DefinitionBody, ExposureCache, ProjectionSpec, RecursorReduction};
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ConstantDecl {
@@ -105,6 +106,8 @@ pub struct Environment {
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
     unit_like_types: Rc<HashSet<NameId>>,
+    /// Certified reduction observations scoped to this exact authority lineage.
+    exposure_cache: ExposureCache,
 }
 
 impl Environment {
@@ -120,11 +123,16 @@ impl Environment {
             bool_primitives: None,
             quot_primitives: None,
             unit_like_types: Rc::new(HashSet::new()),
+            exposure_cache: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
     pub fn authority(&self) -> AuthorityId {
         self.authority
+    }
+
+    pub(crate) fn exposure_cache(&self) -> ExposureCache {
+        self.exposure_cache.clone()
     }
 
     pub fn get(&self, name: NameId) -> Option<&ConstantDecl> {
@@ -168,6 +176,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -201,6 +210,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -235,6 +245,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -275,6 +286,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -315,6 +327,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -358,6 +371,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -389,6 +403,7 @@ impl Environment {
             bool_primitives: Some(primitives),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -429,6 +444,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: Some(primitives),
             unit_like_types: self.unit_like_types.clone(),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
@@ -461,6 +477,7 @@ impl Environment {
             bool_primitives: self.bool_primitives.clone(),
             quot_primitives: self.quot_primitives.clone(),
             unit_like_types: Rc::new(unit_like_types),
+            exposure_cache: self.exposure_cache.clone(),
         })
     }
 
