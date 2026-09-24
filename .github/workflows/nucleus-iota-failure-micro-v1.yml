@@ -1,0 +1,54 @@
+name: Nucleus Iota Failure Micro v1
+
+on:
+  push:
+    branches: [nucleus-iota-failure-micro-v1]
+    paths:
+      - ".github/workflows/nucleus-iota-failure-micro-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo build --release --locked
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace refute-cheap-first
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_IOTA_FAIL: "1"
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import pathlib,subprocess,os
+          p=pathlib.Path('/tmp/tests/bad/perf/refute-cheap-first.ndjson')
+          b=pathlib.Path('target/release/metatron-kernel').resolve()
+          with p.open('rb') as f:
+              q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,env=dict(os.environ),timeout=90)
+          lines=sorted(set(x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_IOTA_FAIL:' in x))
+          print('RC',q.returncode)
+          print('\n'.join(lines[:200]))
+          PY
