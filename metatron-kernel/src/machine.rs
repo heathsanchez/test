@@ -377,8 +377,23 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            let constructor_application = self.constructor_application(target);
+                            if std::env::var_os("NUCLEUS_TRACE_IOTA").is_some() {
+                                let target_shape = constructor_application
+                                    .as_ref()
+                                    .map(|(constructor, arguments)| (constructor.0, arguments.len()));
+                                eprintln!(
+                                    "NUCLEUS_IOTA:name={}:pending={}:required={}:level_params={}:levels={}:target={:?}",
+                                    name.0,
+                                    pending.len(),
+                                    required,
+                                    reduction.level_params.len(),
+                                    levels.len(),
+                                    target_shape,
+                                );
+                            }
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                constructor_application
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
