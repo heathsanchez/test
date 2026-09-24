@@ -1812,19 +1812,45 @@ fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveB
         }};
     }
 
-    if inductive.num_params != 1 { fail!("num_params"); }
-    if inductive.num_indices != 0 { fail!("num_indices"); }
-    if inductive.num_nested != 0 { fail!("num_nested"); }
-    if inductive.is_recursive { fail!("recursive"); }
-    if inductive.is_reflexive { fail!("reflexive"); }
-    if inductive.is_unsafe { fail!("inductive_unsafe"); }
-    if inductive.level_params.len() != 1 { fail!("inductive_levels"); }
-    if constructor.num_params != 1 { fail!("ctor_params"); }
-    if constructor.num_fields != 1 { fail!("ctor_fields"); }
-    if constructor.is_unsafe { fail!("ctor_unsafe"); }
-    if recursor.k { fail!("recursor_k"); }
-    if recursor.is_unsafe { fail!("recursor_unsafe"); }
-    if recursor.level_params.len() != 2 { fail!("recursor_levels"); }
+    if inductive.num_params != 1 {
+        fail!("num_params");
+    }
+    if inductive.num_indices != 0 {
+        fail!("num_indices");
+    }
+    if inductive.num_nested != 0 {
+        fail!("num_nested");
+    }
+    if inductive.is_recursive {
+        fail!("recursive");
+    }
+    if inductive.is_reflexive {
+        fail!("reflexive");
+    }
+    if inductive.is_unsafe {
+        fail!("inductive_unsafe");
+    }
+    if inductive.level_params.len() != 1 {
+        fail!("inductive_levels");
+    }
+    if constructor.num_params != 1 {
+        fail!("ctor_params");
+    }
+    if constructor.num_fields != 1 {
+        fail!("ctor_fields");
+    }
+    if constructor.is_unsafe {
+        fail!("ctor_unsafe");
+    }
+    if recursor.k {
+        fail!("recursor_k");
+    }
+    if recursor.is_unsafe {
+        fail!("recursor_unsafe");
+    }
+    if recursor.level_params.len() != 2 {
+        fail!("recursor_levels");
+    }
 
     let Some((inductive_domains, inductive_result)) = pi_spine(export, inductive.ty, 1) else {
         fail!("inductive_telescope");
@@ -1907,7 +1933,14 @@ fn check_generic_unary_structure(
                 constructor.level_params == inductive.level_params,
                 has_duplicate_parameter(&inductive.level_params),
                 constructor_result_is_definitely_malformed(export, inductive, constructor),
-                recursor_metadata_admissible(export, inductive, &block.constructors, recursor, false, true),
+                recursor_metadata_admissible(
+                    export,
+                    inductive,
+                    &block.constructors,
+                    recursor,
+                    false,
+                    true,
+                ),
                 generic_unary_structure_recursor_shape(export, inductive, constructor, recursor),
             );
         }
