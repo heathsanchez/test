@@ -1,0 +1,112 @@
+name: VeriTile Capability Transfer V1
+
+on:
+  push:
+    branches:
+      - veritile-capability-transfer-v1
+    paths:
+      - "experiments/veritile_capability_transfer/**"
+      - ".github/workflows/veritile-capability-transfer-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout experiment
+        uses: actions/checkout@v4
+
+      - name: Checkout frozen VeriTile
+        uses: actions/checkout@v4
+        with:
+          repository: Lizn-zn/VeriTile
+          ref: 95a01f598e2cd1cac4052e5e5ff9145c658e18db
+          path: vendor/VeriTile
+
+      - name: Install Lean toolchain
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build frozen VeriTile lite library
+        shell: bash
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build VeriTile
+
+      - name: Elaborate seed stable-softmax proof
+        shell: bash
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          lake env lean bench/examples/SoftmaxStableEquiv.lean
+
+      - name: Compile capability
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp experiments/veritile_capability_transfer/MathGraphShiftCapability.lean              vendor/VeriTile/MathGraphShiftCapability.lean
+          cd vendor/VeriTile
+          lake env lean MathGraphShiftCapability.lean
+
+      - name: Ablation must fail without capability
+        id: ablation
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp vendor/VeriTile/bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean /tmp/SoftmaxReducevAblation.lean
+          cat experiments/veritile_capability_transfer/TransferAppend.lean >> /tmp/SoftmaxReducevAblation.lean
+          set +e
+          (cd vendor/VeriTile && lake env lean /tmp/SoftmaxReducevAblation.lean) > /tmp/ablation.log 2>&1
+          rc=$?
+          set -e
+          cat /tmp/ablation.log
+          if [ "$rc" -eq 0 ]; then
+            echo "Ablation unexpectedly passed" >&2
+            exit 1
+          fi
+          echo "ABLATION_RC=$rc" >> "$GITHUB_ENV"
+
+      - name: Transfer capability into held-out kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("vendor/VeriTile/bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean")
+          s = p.read_text()
+          needle = "import VeriTile.Triton\n"
+          assert needle in s
+          s = s.replace(needle, needle + "import MathGraphShiftCapability\n", 1)
+          s += Path("experiments/veritile_capability_transfer/TransferAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean
+
+      - name: Emit bounded evidence
+        shell: bash
+        env:
+          VERITILE_ROOT: vendor/VeriTile
+          EVIDENCE_OUT: evidence/veritile-capability-transfer-v1.json
+        run: |
+          set -euo pipefail
+          python experiments/veritile_capability_transfer/audit.py
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: veritile-capability-transfer-v1
+          path: |
+            evidence/veritile-capability-transfer-v1.json
+            /tmp/ablation.log
+          if-no-files-found: error
