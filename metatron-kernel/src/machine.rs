@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::rc::Rc;
 
@@ -13,7 +14,7 @@ use crate::value::{
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub struct AuthorityId(pub u64);
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub enum Transparency {
     Opaque,
     Reducible,
@@ -67,6 +68,23 @@ pub struct Exposure {
     pub value: Value,
     pub transitions: Vec<TransitionWitness>,
 }
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub(crate) struct ExposureCacheKey {
+    pub authority: AuthorityId,
+    pub closure: Closure,
+    pub transparency: Transparency,
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) struct CachedExposure {
+    pub value: Value,
+    /// Reuse is permitted only at a budget at least as large as the budget
+    /// under which this result was first proven.
+    pub required_budget: usize,
+}
+
+pub(crate) type ExposureCache = Rc<RefCell<HashMap<ExposureCacheKey, CachedExposure>>>;
 
 type VisitKey = (AuthorityId, ExprId, u64);
 const INLINE_VISIT_CAPACITY: usize = 8;
@@ -129,6 +147,7 @@ pub struct Machine<'a> {
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
+    exposure_cache: ExposureCache,
 }
 
 impl<'a> Machine<'a> {
@@ -149,6 +168,7 @@ impl<'a> Machine<'a> {
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
+            exposure_cache: Rc::new(RefCell::new(HashMap::new())),
         }
     }
 
@@ -185,14 +205,52 @@ impl<'a> Machine<'a> {
         self
     }
 
+    pub(crate) fn with_exposure_cache(mut self, cache: ExposureCache) -> Self {
+        self.exposure_cache = cache;
+        self
+    }
+
     pub fn expose(
         &self,
         closure: Closure,
         transparency: Transparency,
         budget: usize,
     ) -> Judgment<Value> {
-        self.expose_internal(closure, transparency, budget, false)
-            .map(|exposure| exposure.value)
+        let key = ExposureCacheKey {
+            authority: self.authority,
+            closure: closure.clone(),
+            transparency,
+        };
+        if let Some(cached) = self.exposure_cache.borrow().get(&key)
+            && budget >= cached.required_budget
+        {
+            return Judgment::proven(cached.value.clone(), "cached-certified-exposure");
+        }
+
+        let result = self
+            .expose_internal(closure, transparency, budget, false)
+            .map(|exposure| exposure.value);
+
+        if let Judgment::Proven { value, .. } = &result {
+            let mut cache = self.exposure_cache.borrow_mut();
+            match cache.get_mut(&key) {
+                Some(existing) if budget < existing.required_budget => {
+                    existing.value = value.clone();
+                    existing.required_budget = budget;
+                }
+                None => {
+                    cache.insert(
+                        key,
+                        CachedExposure {
+                            value: value.clone(),
+                            required_budget: budget,
+                        },
+                    );
+                }
+                Some(_) => {}
+            }
+        }
+        result
     }
 
     pub fn expose_with_witnesses(
