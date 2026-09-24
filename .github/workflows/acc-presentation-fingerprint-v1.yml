@@ -12,7 +12,7 @@ jobs:
   fingerprint:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch target presentations
+      - name: Resolve official presentations and live records
         shell: bash
         run: |
           set -euo pipefail
@@ -20,28 +20,52 @@ jobs:
           import hashlib, json, urllib.request
           from pathlib import Path
 
-          URL='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          LIVE='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem=ac'
+          OFFICIAL='https://raw.githubusercontent.com/SAIRcompetition/Andrews-Curtis/main/competition/problems/ac.jsonl'
           targets=['ac-04741','ac-10090','ac-06708','ac-00850','ac-05833']
-          req=urllib.request.Request(URL,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
-          with urllib.request.urlopen(req,timeout=60) as r:
-              obj=json.loads(r.read().decode())
-          data=obj.get('data',obj)
-          rows={str(x.get('problemId') or x.get('challengeId')):x for x in data['items']}
+
+          def get(url):
+              req=urllib.request.Request(url,headers={'Accept':'application/json,text/plain,*/*','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return r.read()
+
+          live_obj=json.loads(get(LIVE).decode())
+          live_data=live_obj.get('data',live_obj)
+          live_rows={str(x.get('problemId') or x.get('challengeId')):x for x in live_data['items']}
+
+          official_bytes=get(OFFICIAL)
+          official_rows={}
+          for line in official_bytes.decode().splitlines():
+              if not line.strip():
+                  continue
+              row=json.loads(line)
+              official_rows[row['challenge_id']]=row
+
+          assert len(official_rows)==10115, len(official_rows)
+          missing=[cid for cid in targets if cid not in official_rows or cid not in live_rows]
+          assert not missing, missing
+
           out=[]
           for cid in targets:
-              row=rows[cid]
-              problem=row.get('problem')
-              canon=json.dumps(problem,sort_keys=True,separators=(',',':'),ensure_ascii=False)
+              live=live_rows[cid]
+              official=official_rows[cid]
+              description=official['description']
               out.append({
                   'challengeId':cid,
-                  'currentBestLength':row.get('currentBestLength'),
-                  'kTeams':row.get('kTeams'),
-                  'problem':problem,
-                  'problem_sha256':hashlib.sha256(canon.encode()).hexdigest(),
-                  'canonical_problem':canon,
+                  'currentBestLength':live.get('currentBestLength'),
+                  'kTeams':live.get('kTeams'),
+                  'live_problem_field':live.get('problem'),
+                  'official_description':description,
+                  'presentation_sha256':hashlib.sha256(description.encode()).hexdigest(),
               })
-          Path('acc_presentation_fingerprints.json').write_text(json.dumps(out,indent=2,ensure_ascii=False)+'\n')
-          print('ACC_PRESENTATION_FINGERPRINTS',json.dumps(out,sort_keys=True,ensure_ascii=False))
+
+          payload={
+              'official_corpus_rows':len(official_rows),
+              'official_corpus_sha256':hashlib.sha256(official_bytes).hexdigest(),
+              'targets':out,
+          }
+          Path('acc_presentation_fingerprints.json').write_text(json.dumps(payload,indent=2,ensure_ascii=False)+'\n')
+          print('ACC_PRESENTATION_RESOLVER',json.dumps(payload,sort_keys=True,ensure_ascii=False))
           PY
       - uses: actions/upload-artifact@v4
         with:
