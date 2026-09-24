@@ -564,10 +564,12 @@ impl<'a> TypeChecker<'a> {
         if left == right {
             return false;
         }
-        self.environment.bool_primitives().is_some_and(|primitives| {
-            let is_bool = |name| name == primitives.false_ctor || name == primitives.true_ctor;
-            is_bool(left) && is_bool(right)
-        })
+        self.environment
+            .bool_primitives()
+            .is_some_and(|primitives| {
+                let is_bool = |name| name == primitives.false_ctor || name == primitives.true_ctor;
+                is_bool(left) && is_bool(right)
+            })
     }
 
     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
