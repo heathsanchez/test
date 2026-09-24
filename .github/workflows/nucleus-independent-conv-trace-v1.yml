@@ -1,0 +1,45 @@
+name: Nucleus Independent Conversion Trace v1
+on:
+  push:
+    branches: [nucleus-independent-conv-trace-v1]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo build --release --features diagnostics
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace residual conversion cases
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_CONVERSION: "1"
+          METATRON_KERNEL_DIAGNOSTICS: "1"
+        run: |
+          set +e
+          for f in             /tmp/tests/good/perf/args-before-unfold.ndjson             /tmp/tests/good/perf/folded-constant-first.ndjson             /tmp/tests/good/perf/folded-constant-last.ndjson             /tmp/tests/bad/perf/refute-cheap-first.ndjson             /tmp/tests/bad/perf/refute-cheap-last.ndjson             /tmp/tests/good/tutorial/099_ruleK.ndjson             /tmp/tests/bad/tutorial/100_ruleKbad.ndjson             /tmp/tests/bad/tutorial/105_proofIrrelevanceBad.ndjson             /tmp/tests/good/perf/church-numerals.ndjson             /tmp/tests/good/perf/shared-subterm.ndjson             /tmp/tests/good/perf/unroll-versus-evaluate.ndjson; do
+            echo "===== $f ====="
+            target/release/metatron-kernel < "$f"
+            echo "rc=$?"
+          done
+          exit 0
