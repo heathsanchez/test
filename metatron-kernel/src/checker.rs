@@ -179,31 +179,39 @@ fn check_export_with_policy(
                         if verdict == Verdict::Unknown
                             && std::env::var_os("NUCLEUS_TRACE_POST_P3").is_some()
                         {
-                            let types = block.types.iter().map(|inductive| {
-                                format!(
-                                    "{}:p{}:i{}:n{}:r{}:x{}:u{}:l{}:c{}",
-                                    inductive.name.0,
-                                    inductive.num_params,
-                                    inductive.num_indices,
-                                    inductive.num_nested,
-                                    u8::from(inductive.is_recursive),
-                                    u8::from(inductive.is_reflexive),
-                                    u8::from(inductive.is_unsafe),
-                                    inductive.level_params.len(),
-                                    inductive.constructors.len(),
-                                )
-                            }).collect::<Vec<_>>();
-                            let constructors = block.constructors.iter().map(|constructor| {
-                                format!(
-                                    "{}:idx{}:p{}:f{}:u{}:l{}",
-                                    constructor.name.0,
-                                    constructor.index,
-                                    constructor.num_params,
-                                    constructor.num_fields,
-                                    u8::from(constructor.is_unsafe),
-                                    constructor.level_params.len(),
-                                )
-                            }).collect::<Vec<_>>();
+                            let types = block
+                                .types
+                                .iter()
+                                .map(|inductive| {
+                                    format!(
+                                        "{}:p{}:i{}:n{}:r{}:x{}:u{}:l{}:c{}",
+                                        inductive.name.0,
+                                        inductive.num_params,
+                                        inductive.num_indices,
+                                        inductive.num_nested,
+                                        u8::from(inductive.is_recursive),
+                                        u8::from(inductive.is_reflexive),
+                                        u8::from(inductive.is_unsafe),
+                                        inductive.level_params.len(),
+                                        inductive.constructors.len(),
+                                    )
+                                })
+                                .collect::<Vec<_>>();
+                            let constructors = block
+                                .constructors
+                                .iter()
+                                .map(|constructor| {
+                                    format!(
+                                        "{}:idx{}:p{}:f{}:u{}:l{}",
+                                        constructor.name.0,
+                                        constructor.index,
+                                        constructor.num_params,
+                                        constructor.num_fields,
+                                        u8::from(constructor.is_unsafe),
+                                        constructor.level_params.len(),
+                                    )
+                                })
+                                .collect::<Vec<_>>();
                             eprintln!(
                                 "NUCLEUS_POST_P3:inductive:types=[{}]:ctors=[{}]",
                                 types.join(","),
