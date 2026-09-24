@@ -8,7 +8,7 @@ the probe return-code vectors.
 
 A probe is admitted to the quotient only if, on the whole frozen corpus, it:
   * never makes a wrong decisive ACCEPT/REJECT, and
-  * returns only the declared status codes 0/1/2/3.
+  * returns only the declared protected status codes 0/1/2. Exit 3 is Error.
 
 Unsafe probes remain in the evidence as negatives but cannot influence classes.
 A deterministic separator-driven refinement reconstructs the full safe-signature
@@ -26,7 +26,7 @@ from dataclasses import dataclass
 from typing import Iterable
 
 DECISIVE = {0, 1}
-RESIDUAL = {2, 3}
+RESIDUAL = {2}
 VALID_STATUS = DECISIVE | RESIDUAL
 
 
