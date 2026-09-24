@@ -123,9 +123,9 @@ pub struct Machine<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     definitions: Rc<HashMap<NameId, DefinitionBody>>,
-    singleton_recursor_reductions: HashSet<NameId>,
-    recursor_reductions: HashMap<NameId, RecursorReduction>,
-    projection_specs: HashMap<NameId, ProjectionSpec>,
+    singleton_recursor_reductions: Rc<HashSet<NameId>>,
+    recursor_reductions: Rc<HashMap<NameId, RecursorReduction>>,
+    projection_specs: Rc<HashMap<NameId, ProjectionSpec>>,
     nat_primitives: Option<NatPrimitives>,
     bool_primitives: Option<BoolPrimitives>,
     quot_primitives: Option<QuotPrimitives>,
@@ -143,29 +143,35 @@ impl<'a> Machine<'a> {
             expressions,
             levels,
             definitions: definitions.into(),
-            singleton_recursor_reductions: HashSet::new(),
-            recursor_reductions: HashMap::new(),
-            projection_specs: HashMap::new(),
+            singleton_recursor_reductions: Rc::new(HashSet::new()),
+            recursor_reductions: Rc::new(HashMap::new()),
+            projection_specs: Rc::new(HashMap::new()),
             nat_primitives: None,
             bool_primitives: None,
             quot_primitives: None,
         }
     }
 
-    pub fn with_singleton_recursor_reductions(mut self, reductions: HashSet<NameId>) -> Self {
+    pub fn with_singleton_recursor_reductions(
+        mut self,
+        reductions: Rc<HashSet<NameId>>,
+    ) -> Self {
         self.singleton_recursor_reductions = reductions;
         self
     }
 
     pub fn with_recursor_reductions(
         mut self,
-        reductions: HashMap<NameId, RecursorReduction>,
+        reductions: Rc<HashMap<NameId, RecursorReduction>>,
     ) -> Self {
         self.recursor_reductions = reductions;
         self
     }
 
-    pub fn with_projection_specs(mut self, specs: HashMap<NameId, ProjectionSpec>) -> Self {
+    pub fn with_projection_specs(
+        mut self,
+        specs: Rc<HashMap<NameId, ProjectionSpec>>,
+    ) -> Self {
         self.projection_specs = specs;
         self
     }
