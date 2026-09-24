@@ -752,6 +752,11 @@ fn check_single_constructor_inductive(
         check_twobool_structure(export, environment, block, limits, delta_policy)
     } else if name_is_root_str(export, inductive.name, "reduceCtorParam") {
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
+    } else if matches!(
+        check_unrecognized_single_constructor_coherence(export, block),
+        Err(Verdict::Reject)
+    ) {
+        Err(Verdict::Reject)
     } else if generic_field_structure_candidate(export, block) {
         check_generic_field_structure(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
