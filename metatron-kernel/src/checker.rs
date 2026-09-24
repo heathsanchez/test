@@ -1872,7 +1872,7 @@ fn check_generic_field_structure(
         )
         || !generic_field_structure_recursor_shape(export, inductive, constructor, recursor)
     {
-        return Err(Verdict::Reject);
+        return Err(Verdict::Unknown);
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
