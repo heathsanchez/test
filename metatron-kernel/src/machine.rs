@@ -377,8 +377,36 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            let mut constructor_application = self.constructor_application(target);
+                            let direct_is_certified_constructor = constructor_application
+                                .as_ref()
+                                .is_some_and(|(constructor, _)| {
+                                    reduction
+                                        .rules
+                                        .iter()
+                                        .any(|rule| rule.constructor == *constructor)
+                                });
+                            if !direct_is_certified_constructor && budget > 1 {
+                                if let Some(exposure) = self
+                                    .expose_internal(
+                                        target.clone(),
+                                        transparency,
+                                        budget.saturating_sub(1),
+                                        false,
+                                    )
+                                    .proven_value()
+                                {
+                                    if let Value::Neutral(Neutral {
+                                        head: NeutralHead::Const { name, .. },
+                                        spine,
+                                    }) = &exposure.value
+                                    {
+                                        constructor_application = Some((*name, spine.clone()));
+                                    }
+                                }
+                            }
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                constructor_application
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
