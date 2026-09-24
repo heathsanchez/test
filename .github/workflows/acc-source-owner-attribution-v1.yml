@@ -1,0 +1,89 @@
+name: ACC Source Owner Attribution V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths:
+      - ".github/workflows/acc-source-owner-attribution-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  attribute:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Attribute top AC source witnesses from public discovery metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, urllib.request
+          from datetime import datetime, timezone
+          from pathlib import Path
+
+          PUB='https://server-9527.sair.foundation'
+
+          def get(url):
+              req=urllib.request.Request(url,headers={'Accept':'application/json','User-Agent':'Mozilla/5.0'})
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+
+          def data(o):
+              return o.get('data',o) if isinstance(o,dict) else o
+
+          def snap(problem):
+              d=data(get(f'{PUB}/api/acc/discoveries/snapshot?problem={problem}'))
+              out={}
+              for x in d['items']:
+                  cid=x.get('problemId') or x.get('challengeId')
+                  if cid:
+                      out[str(cid)]=x
+              return out
+
+          ac=snap('ac')
+          sac=snap('stable_ac')
+          lift=[]
+          for cid,a in ac.items():
+              if a.get('status')!='solved' or not isinstance(a.get('currentBestLength'),int):
+                  continue
+              sid='sac-'+cid[3:]
+              s=sac.get(sid)
+              if not s:
+                  continue
+              sb=s.get('currentBestLength') if s.get('status')=='solved' else None
+              cand=a['currentBestLength']+2
+              if sb is None or cand < sb:
+                  lift.append((999999 if sb is None else sb-cand, cid, sid, a, s))
+          lift.sort(key=lambda z:(-z[0], z[1]))
+
+          rows=[]
+          for gain,cid,sid,a,s in lift[:25]:
+              # Preserve the public record verbatim so owner/team attribution fields are not guessed.
+              rows.append({
+                  'ac': cid,
+                  'stable': sid,
+                  'gain_if_exact_ac_witness_recovered': None if gain==999999 else gain,
+                  'ac_record': a,
+                  'stable_record': s,
+                  'ac_record_keys': sorted(a.keys()),
+                  'stable_record_keys': sorted(s.keys()),
+              })
+
+          out={
+              'schema':'acc-source-owner-attribution-v1',
+              'utc':datetime.now(timezone.utc).isoformat(),
+              'strict_lift_opportunities':len(lift),
+              'top_public_records':rows,
+          }
+          Path('acc_source_owner_attribution_v1.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print('ACC_SOURCE_OWNER_ATTRIBUTION',json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-source-owner-attribution-v1
+          path: acc_source_owner_attribution_v1.json
+          if-no-files-found: error
