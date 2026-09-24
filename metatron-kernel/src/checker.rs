@@ -4892,7 +4892,10 @@ fn check_exact_decidable(
             "constructors",
             inductive.constructors == [false_ctor.name, true_ctor.name],
         ),
-        ("name", name_is_root_str(export, inductive.name, "Decidable")),
+        (
+            "name",
+            name_is_root_str(export, inductive.name, "Decidable"),
+        ),
         ("type", decidable_type(export, inductive.ty)),
         ("false_index", false_ctor.index == 0),
         ("false_owner", false_ctor.inductive == inductive.name),
