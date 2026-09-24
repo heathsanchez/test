@@ -288,6 +288,24 @@ mod tests {
     }
 
     #[test]
+    fn emits_deterministic_contract_closure_evidence() {
+        let warranted = close_interfaces(seed_interfaces(), false, "lean.verdict@1");
+        let exploratory = close_interfaces(seed_interfaces(), true, "lean.verdict@1");
+
+        eprintln!(
+            "NUCLEUS_CONTRACT_WARRANTED:interfaces={:?}:contracts={:?}",
+            warranted.interfaces, warranted.fired_contracts
+        );
+        eprintln!(
+            "NUCLEUS_CONTRACT_EXPLORATORY:interfaces={:?}:contracts={:?}",
+            exploratory.interfaces, exploratory.fired_contracts
+        );
+
+        assert!(!warranted.interfaces.contains("projection.apply@1"));
+        assert!(exploratory.interfaces.contains("projection.apply@1"));
+    }
+
+    #[test]
     fn contract_status_is_explicit_not_inferred_from_presence() {
         let candidate = super::CONTRACTS
             .iter()
