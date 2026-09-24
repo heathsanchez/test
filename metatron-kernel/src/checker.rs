@@ -1661,6 +1661,7 @@ fn generic_unary_structure_recursor_shape(
     inductive: &crate::syntax::InductiveType,
     constructor: &Constructor,
     recursor: &Recursor,
+    require_syntactic_parameters: bool,
 ) -> bool {
     let (Ok(p), Ok(fields)) = (
         usize::try_from(inductive.num_params),
@@ -1684,7 +1685,7 @@ fn generic_unary_structure_recursor_shape(
     let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
         return false;
     };
-    if params != ind_params.as_slice() {
+    if require_syntactic_parameters && params != ind_params.as_slice() {
         return false;
     }
 
@@ -1894,7 +1895,13 @@ fn check_generic_unary_structure(
             false,
             true,
         )
-        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
+        || !generic_unary_structure_recursor_shape(
+            export,
+            inductive,
+            constructor,
+            recursor,
+            true,
+        )
     {
         return Err(Verdict::Reject);
     }
@@ -2000,6 +2007,53 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
         .all(|field| !expression_contains_constant(export, *field, inductive.name))
 }
 
+fn generic_field_parameter_telescope_convertible(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    let Some((recursor_domains, _)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let recursor_params = &recursor_domains[..p];
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&inductive.level_params),
+    )
+    .with_delta_policy(delta_policy);
+
+    let mut frame = EnvFrame::empty();
+    for (index, (left, right)) in inductive_params.iter().zip(recursor_params).enumerate() {
+        if !matches!(
+            checker.convert(
+                &TypeValue::Term(checker.closure(*left, frame.clone())),
+                &TypeValue::Term(checker.closure(*right, frame.clone())),
+                limits.judgment_steps,
+            ),
+            Judgment::Proven { .. }
+        ) {
+            return false;
+        }
+        let Ok(index) = u64::try_from(index) else {
+            return false;
+        };
+        frame = frame.extend_free(FreeId(30_000 + index));
+    }
+    true
+}
+
 fn check_generic_field_structure(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2032,7 +2086,21 @@ fn check_generic_field_structure(
             false,
             true,
         )
-        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
+        || !generic_field_parameter_telescope_convertible(
+            export,
+            environment,
+            inductive,
+            recursor,
+            limits,
+            delta_policy,
+        )
+        || !generic_unary_structure_recursor_shape(
+            export,
+            inductive,
+            constructor,
+            recursor,
+            false,
+        )
     {
         return Err(Verdict::Unknown);
     }
