@@ -560,6 +560,16 @@ impl<'a> TypeChecker<'a> {
         self.environment.nat_primitives()
     }
 
+    pub(crate) fn distinct_bool_constructors(&self, left: NameId, right: NameId) -> bool {
+        if left == right {
+            return false;
+        }
+        self.environment.bool_primitives().is_some_and(|primitives| {
+            let is_bool = |name| name == primitives.false_ctor || name == primitives.true_ctor;
+            is_bool(left) && is_bool(right)
+        })
+    }
+
     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
         let mut entries: Vec<_> = self
             .level_substitution
