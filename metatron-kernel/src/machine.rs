@@ -371,57 +371,119 @@ impl<'a> Machine<'a> {
                             + reduction.rules.len()
                             + reduction.num_indices
                             + 1;
-                        if pending.len() >= required && reduction.level_params.len() == levels.len()
-                        {
+                        if pending.len() < required {
+                            if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_IOTA_FAIL:name={}:gate=saturation:pending={}:required={}",
+                                    name.0,
+                                    pending.len(),
+                                    required,
+                                );
+                            }
+                        } else if reduction.level_params.len() != levels.len() {
+                            if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_IOTA_FAIL:name={}:gate=level-arity:declared={}:actual={}",
+                                    name.0,
+                                    reduction.level_params.len(),
+                                    levels.len(),
+                                );
+                            }
+                        } else {
                             let offset = pending.len() - required;
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
-                                && let Some(rule) = reduction
+                            {
+                                if let Some(rule) = reduction
                                     .rules
                                     .iter()
                                     .find(|rule| rule.constructor == constructor)
-                                && constructor_arguments.len() == rule.num_params + rule.num_fields
-                            {
-                                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
-                                let mut rule_arguments = arguments[..prefix_len].to_vec();
-                                rule_arguments
-                                    .extend_from_slice(&constructor_arguments[rule.num_params..]);
-
-                                let mut level_substitution = closure.levels.to_map();
-                                let mut levels_ok = true;
-                                for (parameter, level) in reduction.level_params.iter().zip(levels)
                                 {
-                                    let Some(level) = self.resolve_level(*level, &closure, budget)
-                                    else {
-                                        levels_ok = false;
-                                        break;
-                                    };
-                                    level_substitution.insert(*parameter, level);
-                                }
-                                if levels_ok {
-                                    let mut level_substitution =
-                                        level_substitution.into_iter().collect::<Vec<_>>();
-                                    level_substitution.sort_by_key(|(name, _)| name.0);
-                                    pending.truncate(offset);
-                                    for argument in rule_arguments.iter().rev() {
-                                        pending.push(argument.clone());
+                                    if constructor_arguments.len()
+                                        == rule.num_params + rule.num_fields
+                                    {
+                                        let prefix_len =
+                                            reduction.num_params + 1 + reduction.rules.len();
+                                        let mut rule_arguments =
+                                            arguments[..prefix_len].to_vec();
+                                        rule_arguments.extend_from_slice(
+                                            &constructor_arguments[rule.num_params..],
+                                        );
+
+                                        let mut level_substitution = closure.levels.to_map();
+                                        let mut levels_ok = true;
+                                        for (parameter, level) in
+                                            reduction.level_params.iter().zip(levels)
+                                        {
+                                            let Some(level) =
+                                                self.resolve_level(*level, &closure, budget)
+                                            else {
+                                                levels_ok = false;
+                                                break;
+                                            };
+                                            level_substitution.insert(*parameter, level);
+                                        }
+                                        if levels_ok {
+                                            let mut level_substitution = level_substitution
+                                                .into_iter()
+                                                .collect::<Vec<_>>();
+                                            level_substitution
+                                                .sort_by_key(|(name, _)| name.0);
+                                            pending.truncate(offset);
+                                            for argument in rule_arguments.iter().rev() {
+                                                pending.push(argument.clone());
+                                            }
+                                            record_transition(
+                                                &mut transitions,
+                                                record_witnesses,
+                                                TransitionWitness::ConstructorRecursor,
+                                            );
+                                            visited.clear();
+                                            closure = Closure::with_levels(
+                                                rule.rhs,
+                                                EnvFrame::empty(),
+                                                LevelSubstitution::new(level_substitution),
+                                            );
+                                            continue;
+                                        }
+                                        if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
+                                            eprintln!(
+                                                "NUCLEUS_IOTA_FAIL:name={}:gate=level-instantiation",
+                                                name.0,
+                                            );
+                                        }
+                                    } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL")
+                                        .is_some()
+                                    {
+                                        eprintln!(
+                                            "NUCLEUS_IOTA_FAIL:name={}:gate=constructor-arity:constructor={}:actual={}:expected={}",
+                                            name.0,
+                                            constructor.0,
+                                            constructor_arguments.len(),
+                                            rule.num_params + rule.num_fields,
+                                        );
                                     }
-                                    record_transition(
-                                        &mut transitions,
-                                        record_witnesses,
-                                        TransitionWitness::ConstructorRecursor,
+                                } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
+                                    eprintln!(
+                                        "NUCLEUS_IOTA_FAIL:name={}:gate=rule:constructor={}:rules={:?}",
+                                        name.0,
+                                        constructor.0,
+                                        reduction
+                                            .rules
+                                            .iter()
+                                            .map(|rule| rule.constructor.0)
+                                            .collect::<Vec<_>>(),
                                     );
-                                    visited.clear();
-                                    closure = Closure::with_levels(
-                                        rule.rhs,
-                                        EnvFrame::empty(),
-                                        LevelSubstitution::new(level_substitution),
-                                    );
-                                    continue;
                                 }
+                            } else if std::env::var_os("NUCLEUS_TRACE_IOTA_FAIL").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_IOTA_FAIL:name={}:gate=target:required={}",
+                                    name.0,
+                                    required,
+                                );
                             }
                         }
                     }
