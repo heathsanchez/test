@@ -1895,13 +1895,7 @@ fn check_generic_unary_structure(
             false,
             true,
         )
-        || !generic_unary_structure_recursor_shape(
-            export,
-            inductive,
-            constructor,
-            recursor,
-            true,
-        )
+        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor, true)
     {
         return Err(Verdict::Reject);
     }
@@ -2094,13 +2088,7 @@ fn check_generic_field_structure(
             limits,
             delta_policy,
         )
-        || !generic_unary_structure_recursor_shape(
-            export,
-            inductive,
-            constructor,
-            recursor,
-            false,
-        )
+        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor, false)
     {
         return Err(Verdict::Unknown);
     }
