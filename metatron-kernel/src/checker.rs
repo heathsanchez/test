@@ -1681,7 +1681,7 @@ fn generic_unary_structure_recursor_shape(
     let minor = domains[p + 1];
     let target = domains[p + 2];
 
-    let Some((ind_params, _)) = pi_spine(export, inductive.ty, p) else {
+    let Some((_ind_params, _)) = pi_spine(export, inductive.ty, p) else {
         return false;
     };
     // Parameter domains are validated by kernel conversion after the
