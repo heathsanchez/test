@@ -1802,48 +1802,63 @@ fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveB
         return false;
     };
 
-    if inductive.num_params != 1
-        || inductive.num_indices != 0
-        || inductive.num_nested != 0
-        || inductive.is_recursive
-        || inductive.is_reflexive
-        || inductive.is_unsafe
-        || inductive.level_params.len() != 1
-        || constructor.num_params != 1
-        || constructor.num_fields != 1
-        || constructor.is_unsafe
-        || recursor.k
-        || recursor.is_unsafe
-        || recursor.level_params.len() != 2
-    {
-        return false;
+    let trace = std::env::var_os("NUCLEUS_TRACE_UNARY_STAGE").is_some();
+    macro_rules! fail {
+        ($reason:literal) => {{
+            if trace {
+                eprintln!("NUCLEUS_UNARY_STAGE:candidate:false:{}", $reason);
+            }
+            return false;
+        }};
     }
 
+    if inductive.num_params != 1 { fail!("num_params"); }
+    if inductive.num_indices != 0 { fail!("num_indices"); }
+    if inductive.num_nested != 0 { fail!("num_nested"); }
+    if inductive.is_recursive { fail!("recursive"); }
+    if inductive.is_reflexive { fail!("reflexive"); }
+    if inductive.is_unsafe { fail!("inductive_unsafe"); }
+    if inductive.level_params.len() != 1 { fail!("inductive_levels"); }
+    if constructor.num_params != 1 { fail!("ctor_params"); }
+    if constructor.num_fields != 1 { fail!("ctor_fields"); }
+    if constructor.is_unsafe { fail!("ctor_unsafe"); }
+    if recursor.k { fail!("recursor_k"); }
+    if recursor.is_unsafe { fail!("recursor_unsafe"); }
+    if recursor.level_params.len() != 2 { fail!("recursor_levels"); }
+
     let Some((inductive_domains, inductive_result)) = pi_spine(export, inductive.ty, 1) else {
-        return false;
+        fail!("inductive_telescope");
     };
     let [parameter_type] = inductive_domains.as_slice() else {
-        return false;
+        fail!("inductive_parameter_arity");
     };
-    if !matches!(export.exprs.get(*parameter_type), Some(Expr::Sort(_)))
-        || !matches!(
-            export.exprs.get(inductive_result),
-            Some(Expr::Sort(level))
-                if !matches!(export.levels.get(*level), Some(Level::Zero))
-        )
-    {
-        return false;
+    if !matches!(export.exprs.get(*parameter_type), Some(Expr::Sort(_))) {
+        fail!("parameter_not_sort");
+    }
+    if !matches!(
+        export.exprs.get(inductive_result),
+        Some(Expr::Sort(level))
+            if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
+        fail!("result_not_nonprop_sort");
     }
 
     let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 2) else {
-        return false;
+        fail!("constructor_telescope");
     };
-    matches!(
-        constructor_domains.as_slice(),
-        [constructor_parameter, field]
-            if *constructor_parameter == *parameter_type
-                && !expression_contains_constant(export, *field, inductive.name)
-    )
+    let [constructor_parameter, field] = constructor_domains.as_slice() else {
+        fail!("constructor_domain_arity");
+    };
+    if *constructor_parameter != *parameter_type {
+        fail!("constructor_parameter_mismatch");
+    }
+    if expression_contains_constant(export, *field, inductive.name) {
+        fail!("recursive_field");
+    }
+    if trace {
+        eprintln!("NUCLEUS_UNARY_STAGE:candidate:true");
+    }
+    true
 }
 
 fn check_generic_unary_structure(
@@ -1863,6 +1878,7 @@ fn check_generic_unary_structure(
     if !generic_unary_structure_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
+    let trace = std::env::var_os("NUCLEUS_TRACE_UNARY_STAGE").is_some();
 
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
@@ -1881,7 +1897,24 @@ fn check_generic_unary_structure(
         )
         || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
     {
+        if trace {
+            eprintln!(
+                "NUCLEUS_UNARY_STAGE:validation:false:all={}:ctors={}:idx={}:owner={}:levels={}:dup={}:malformed={}:metadata={}:recshape={}",
+                inductive.all == [inductive.name],
+                inductive.constructors == [constructor.name],
+                constructor.index == 0,
+                constructor.inductive == inductive.name,
+                constructor.level_params == inductive.level_params,
+                has_duplicate_parameter(&inductive.level_params),
+                constructor_result_is_definitely_malformed(export, inductive, constructor),
+                recursor_metadata_admissible(export, inductive, &block.constructors, recursor, false, true),
+                generic_unary_structure_recursor_shape(export, inductive, constructor, recursor),
+            );
+        }
         return Err(Verdict::Reject);
+    }
+    if trace {
+        eprintln!("NUCLEUS_UNARY_STAGE:validation:true");
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
