@@ -1,0 +1,212 @@
+name: ACC Fake-Surface Trajectory Basin V1
+
+on:
+  push:
+    branches: [acc-competitive-residual-v1]
+    paths: ['.github/workflows/acc-fake-surface-trajectory-basin-v1.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+
+jobs:
+  screen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-competitive-residual-v1
+      - name: Pin official verifier and free-face source
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout -q "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          curl -fsSLo /tmp/fsac.py https://raw.githubusercontent.com/SauersML/group-approximation/5080b7d3bb4ddd1de98d28c7f8904f48a87be463/experiments/andrews-curtis-fake-surfaces/fsac.py
+          sha256sum /tmp/fsac.py /tmp/acc/competition/tools/verifier/data/stable_move_spec.json > source-sha256.txt
+      - name: Recover owned AC witnesses and scan every intermediate state
+        run: |
+          set -euo pipefail
+          mkdir -p basin
+          PYTHONPATH=/tmp/acc/competition/tools python3 - <<'PY'
+          import importlib.util,json,os,re,time,urllib.parse,urllib.request,urllib.error
+          from pathlib import Path
+          from verifier import stable_core
+          BASE='https://api.sair.foundation/api/public/v1'; KEY=os.environ['SAIR_API_KEY']
+          H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def req(path,accept='application/json'):
+              h=dict(H);h['Accept']=accept;r=urllib.request.Request(BASE+path,headers=h)
+              try:
+                  with urllib.request.urlopen(r,timeout=60) as z:return z.status,z.read()
+              except urllib.error.HTTPError as e:return e.code,e.read()
+          def js(path):
+              st,raw=req(path)
+              if not 200<=st<300:raise RuntimeError(f'GET {path} HTTP {st}: {raw[:300]!r}')
+              return json.loads(raw.decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          def find_int(x,key):
+              if isinstance(x,dict):
+                  if type(x.get(key)) is int:return x[key]
+                  for v in x.values():
+                      z=find_int(v,key)
+                      if z is not None:return z
+              elif isinstance(x,list):
+                  for v in x:
+                      z=find_int(v,key)
+                      if z is not None:return z
+              return None
+          spec=js('/competitions/acc/submission-spec'); maxsol=find_int(spec,'maxSolutions') or 100
+          stable=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          smap={(x.get('problemId') or x.get('challengeId')):x for x in stable['items']}
+          items=[];cursor=None;pages=0
+          while True:
+              q={'limit':'100'}
+              if cursor:q['cursor']=cursor
+              d=data(js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q)))
+              items += d.get('items',[]) if isinstance(d,dict) else []
+              cursor=d.get('nextCursor') if isinstance(d,dict) else None;pages+=1
+              if not cursor or pages>=100:break
+          pat=re.compile(r'^\s*(ac-[0-9]+)\s*:\s*(\[[^\n#]*\])',re.M)
+          owned={};download_errors=[]
+          for rec in items:
+              if not isinstance(rec,dict) or not rec.get('submissionId'):continue
+              subid=str(rec['submissionId']); st,raw=req('/competitions/acc/submissions/'+urllib.parse.quote(subid,safe='')+'/download','text/plain')
+              if st!=200:download_errors.append({'submissionId':subid,'http':st});continue
+              try:txt=raw.decode('utf-8-sig')
+              except Exception:continue
+              for m in pat.finditer(txt):
+                  cid=m.group(1)
+                  try:moves=json.loads(m.group(2))
+                  except Exception:continue
+                  if not isinstance(moves,list) or not all(type(x) is int for x in moves):continue
+                  p=owned.get(cid)
+                  if p is None or len(moves)<len(p['moves']):owned[cid]={'moves':moves,'submissionId':subid}
+          manifest=json.load(open('/tmp/acc/competition/tools/verifier/data/manifest.json')); cmap={c['challenge_id']:c for c in manifest['challenges']}
+          ms=json.load(open('/tmp/acc/competition/tools/verifier/data/stable_move_spec.json'))
+          inv={};mul={};conj={}
+          for m in ms['moves']:
+              if m['category']=='inversion':inv[m['relator']]=m['id']
+              elif m['category']=='multiplication':mul[(m['relator'],m['other'],bool(m['invert_other']))]=m['id']
+              elif m['category']=='conjugation':conj[(m['relator'],m['conjugator'])]=m['id']
+          sp=importlib.util.spec_from_file_location('fsac','/tmp/fsac.py');fsac=importlib.util.module_from_spec(sp);sp.loader.exec_module(fsac)
+          def compile_cert(cert):
+              out=[];dest=False
+              for mv in cert:
+                  op=mv[0]
+                  if op=='destab':dest=True;continue
+                  if dest:raise AssertionError('non-destab after destab')
+                  if op=='inv':out.append(inv[mv[1]])
+                  elif op=='conj':
+                      _,i,u=mv;out.extend(conj[(i,a)] for a in reversed(u))
+                  elif op=='mulc':
+                      _,j,i,u,s=mv;out.extend(conj[(i,a)] for a in reversed(u))
+                      if s==-1:out.append(inv[i])
+                      out.append(mul[(j,i,False)])
+                      if s==-1:out.append(inv[i])
+                      out.extend(conj[(i,-a)] for a in u)
+                  else:raise ValueError(mv)
+              if not dest:raise AssertionError('certificate lacks destabilization')
+              return out+[16,15]
+          t0=time.time();hits=[];best_by_sid={};states=0;replay_errors=[];cert_errors=[]
+          for cid,h in sorted(owned.items()):
+              sid='sac-'+cid[3:];ch=cmap.get(sid);live=smap.get(sid)
+              if not ch or not live:continue
+              state=tuple(tuple(w) for w in ch['initial_relators']);moves=h['moves']
+              for p in range(len(moves)+1):
+                  states+=1
+                  rels=[list(w) for w in state]
+                  cert=fsac.trivialize(rels,2)
+                  if cert is not None:
+                      if not fsac.verify(rels,2,cert):
+                          cert_errors.append({'cid':cid,'prefix_len':p,'kind':'fsac_verify'});break
+                      try:suffix=compile_cert(cert)
+                      except Exception as e:
+                          cert_errors.append({'cid':cid,'prefix_len':p,'kind':'compile','error':repr(e)});break
+                      s=state
+                      bad=None
+                      for mi,mv in enumerate(suffix):
+                          s,reason=stable_core.apply_move(s,mv)
+                          if reason is not None:bad={'index':mi,'move':mv,'reason':reason};break
+                      if bad is not None or s!=():
+                          cert_errors.append({'cid':cid,'prefix_len':p,'kind':'stable_replay','bad':bad,'final':repr(s)});break
+                      cand=moves[:p]+suffix;lb=live.get('currentBestLength') if live.get('status')=='solved' and live.get('kTeams')!=0 else None
+                      rec={'cid':cid,'sid':sid,'prefix_len':p,'source_len':len(moves),'suffix_len':len(suffix),'candidate_len':len(cand),'moves':cand,'live_best':lb,'live_status':live.get('status'),'live_kTeams':live.get('kTeams'),'gain':None if lb is None else lb-len(cand),'source_submissionId':h['submissionId']}
+                      hits.append({k:v for k,v in rec.items() if k!='moves'})
+                      old=best_by_sid.get(sid)
+                      if old is None or (rec['candidate_len'],rec['prefix_len'])<(old['candidate_len'],old['prefix_len']):best_by_sid[sid]=rec
+                  if p==len(moves):break
+                  state,reason=stable_core.apply_move(state,moves[p])
+                  if reason is not None:
+                      replay_errors.append({'cid':cid,'move_index':p,'move':moves[p],'reason':reason});break
+          best=list(best_by_sid.values())
+          strict=[r for r in best if r['live_best'] is None or r['candidate_len']<r['live_best']]
+          strict.sort(key=lambda r:(0 if r['live_best'] is None else 1, -(r['gain'] or 0),r['candidate_len'],r['sid']))
+          sel=strict[:maxsol]
+          Path('basin/hits.json').write_text(json.dumps(hits,indent=2,sort_keys=True)+'\n')
+          Path('basin/best.json').write_text(json.dumps(best,indent=2,sort_keys=True)+'\n')
+          Path('basin/candidates.json').write_text(json.dumps(strict,indent=2,sort_keys=True)+'\n')
+          Path('basin/candidate_batch.txt').write_text(''.join(r['sid']+': '+json.dumps(r['moves'],separators=(',',':'))+'\n' for r in sel))
+          summary={'history_pages':pages,'history_items':len(items),'owned_ac_witnesses':len(owned),'download_errors':download_errors,'replay_errors':replay_errors,'cert_errors':cert_errors,'intermediate_states_scanned':states,'basin_hit_states':len(hits),'basin_hit_trajectories':len(best),'strict_live_gains':len(strict),'selected':len(sel),'elapsed_seconds':round(time.time()-t0,3)}
+          Path('basin/summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n');print('ACC_FAKE_SURFACE_TRAJECTORY_BASIN',json.dumps(summary,sort_keys=True))
+          PY
+      - name: Pinned official verifier replay candidates
+        run: |
+          set -euo pipefail
+          if [ ! -s basin/candidate_batch.txt ]; then echo NO_LIVE_GAIN_CANDIDATES; exit 0; fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier --manifest /tmp/acc/competition/tools/verifier/data/manifest.json --submission basin/candidate_batch.txt --pretty | tee basin/verifier.json
+      - name: Fresh live recheck and quota census
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,os,urllib.parse,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+          BASE='https://api.sair.foundation/api/public/v1';KEY=os.environ['SAIR_API_KEY'];H={'Authorization':f'Bearer {KEY}','Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def js(p):
+              with urllib.request.urlopen(urllib.request.Request(BASE+p,headers=H),timeout=60) as r:return json.loads(r.read().decode())
+          def data(o):return o.get('data',o) if isinstance(o,dict) else o
+          ac=data(js('/competitions/acc/discoveries/snapshot?problem=ac'));st=data(js('/competitions/acc/discoveries/snapshot?problem=stable_ac'))
+          def census(d):
+              items=d['items'];uns=sum(x.get('status')!='solved' or x.get('kTeams')==0 for x in items);return {'items':len(items),'unsolved':uns,'solved':len(items)-uns}
+          smap={(x.get('problemId') or x.get('challengeId')):x for x in st['items']}
+          cands=json.loads(Path('basin/candidates.json').read_text()); survivors=[]
+          verified={}
+          vp=Path('basin/verifier.json')
+          if vp.exists():verified={x['challenge_id']:x for x in json.loads(vp.read_text()).get('results',[])}
+          for c in cands:
+              row=smap.get(c['sid'],{});best=row.get('currentBestLength') if row.get('status')=='solved' and row.get('kTeams')!=0 else None
+              ok=verified.get(c['sid'],{}).get('ok') is True
+              if ok and (best is None or c['candidate_len']<best):survivors.append({'id':c['sid'],'candidate_len':c['candidate_len'],'live_best':best,'gain':None if best is None else best-c['candidate_len']})
+          subs=[];cursor=None
+          while True:
+              q={'limit':'100'}
+              if cursor:q['cursor']=cursor
+              d=data(js('/competitions/acc/submissions/mine?'+urllib.parse.urlencode(q)));subs+=d.get('items',[]);cursor=d.get('nextCursor')
+              if not cursor:break
+          today=datetime.now(timezone.utc).date()
+          def stamp(x):
+              for k in ('receivedAt','createdAt','submittedAt'):
+                  s=x.get(k)
+                  if isinstance(s,str):
+                      try:return datetime.fromisoformat(s.replace('Z','+00:00')).astimezone(timezone.utc)
+                      except:pass
+          used=sum((d:=stamp(x)) is not None and d.date()==today for x in subs)
+          out={'utc':datetime.now(timezone.utc).isoformat(),'ac':census(ac),'stable_ac':census(st),'quota_used':used,'quota_limit':40,'verified_live_gains':survivors}
+          Path('basin/live.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n');print('ACC_BASIN_LIVE',json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-fake-surface-trajectory-basin-v1
+          path: |
+            basin/
+            source-sha256.txt
+          retention-days: 90
+          if-no-files-found: warn
