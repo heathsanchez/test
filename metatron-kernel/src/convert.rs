@@ -605,7 +605,7 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(left, right, budget) {
+            match compare_neutral_heads(checker, left, right, budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
@@ -677,10 +677,30 @@ fn compare_nat_literal_neutral(
     Judgment::refuted("Nat-literal-non-Nat-head")
 }
 
-fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judgment<()> {
+fn compare_neutral_heads(
+    checker: &TypeChecker<'_>,
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+) -> Judgment<()> {
     match (&left.head, &right.head) {
         (NeutralHead::Free(left), NeutralHead::Free(right)) if left == right => {
             Judgment::proven((), "same-free-variable")
+        }
+        (
+            NeutralHead::Const {
+                name: left_name,
+                levels: left_levels,
+            },
+            NeutralHead::Const {
+                name: right_name,
+                levels: right_levels,
+            },
+        ) if left_levels.is_empty()
+            && right_levels.is_empty()
+            && checker.distinct_bool_constructors(*left_name, *right_name) =>
+        {
+            Judgment::refuted("rigid-value-constructor-mismatch")
         }
         (
             NeutralHead::Const {
