@@ -1,0 +1,215 @@
+name: Nucleus Contract Distance v1
+
+on:
+  push:
+    branches: [nucleus-contract-distance-v1]
+    paths:
+      - ".github/workflows/nucleus-contract-distance-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build cumulative shadow world
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+      - name: Build exact semantic base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+      - name: Measure contract distance on original structure frontier
+        working-directory: metatron-kernel
+        env:
+          NUCLEUS_TRACE_INDUCTIVE_EXIT: "1"
+          NUCLEUS_TRACE_SIGNATURE: "1"
+          NUCLEUS_TRACE_RESIDUAL: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/contract-distance-v1
+          python - <<'PY'
+          import collections,json,os,pathlib,re,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+
+          original_structure={
+            'init-prelude',
+            'perf/app-lam',
+            'perf/grind-ring-5',
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+            'tutorial/086_PSigma.snd',
+            'tutorial/089_projProp1',
+            'tutorial/091_projProp3',
+            'tutorial/095_projDataIndexRec',
+            'bugs/proj-of-stuck-prop',
+            'bugs/proj-of-subst-prop',
+            'bugs/rec-missing-ih',
+            'bugs/rec-of-subst-prop',
+            'other/proj-of-prop',
+          }
+
+          def rr(binary,p,trace=False):
+              env=dict(os.environ)
+              if not trace:
+                  for k in ['NUCLEUS_TRACE_INDUCTIVE_EXIT','NUCLEUS_TRACE_SIGNATURE','NUCLEUS_TRACE_RESIDUAL']:
+                      env.pop(k,None)
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,
+                      env=env,timeout=120
+                  )
+              return q.returncode,q.stderr.decode(errors='replace').splitlines()
+
+          def terminal_interface(exit_line,residuals):
+              if exit_line:
+                  payload=exit_line.split('NUCLEUS_INDUCTIVE_EXIT:Unknown:',1)[1]
+                  tm=re.search(r'T=\[(.*?)\]',payload)
+                  cm=re.search(r'C=\[(.*?)\]',payload)
+                  # Newer traces may omit T=/C= labels and use types=/ctors=.
+                  if not tm:
+                      tm=re.search(r'types=\[(.*?)\]',payload)
+                  if not cm:
+                      cm=re.search(r'ctors=\[(.*?)\]',payload)
+                  types=[] if not tm or not tm.group(1) else tm.group(1).split(',')
+                  ctors=[] if not cm or not cm.group(1) else cm.group(1).split(',')
+                  if len(types) != 1:
+                      return 'inductive.mutual@1'
+                  m=re.search(r':p(\d+):i(\d+):n(\d+):r(\d+):x(\d+):u(\d+):l(\d+):c(\d+)',types[0])
+                  if not m:
+                      return 'inductive.admission@1'
+                  p,i,n,r,x,u,l,c=map(int,m.groups())
+                  if n:
+                      return 'inductive.nested@1'
+                  if i and r:
+                      return 'inductive.indexed-recursive@1'
+                  if i:
+                      return 'inductive.indexed@1'
+                  if x:
+                      return 'inductive.reflexive@1'
+                  if r:
+                      return 'inductive.recursive@1'
+                  if len(ctors)==1:
+                      fm=re.search(r':f(\d+):',ctors[0])
+                      if fm and int(fm.group(1))>0:
+                          return 'structure.fields@1'
+                  if c>2:
+                      return 'inductive.multi-constructor@1'
+                  return 'inductive.admission@1'
+              if residuals:
+                  r=residuals[-1]
+                  mapping={
+                    'distinct-neutral-heads':'conversion.rigid-head@1',
+                    'conversion-exposure':'conversion.exposure@1',
+                    'full-conversion-exposure':'conversion.exposure@1',
+                    'application-function-type':'type.application@1',
+                    'unresolved-sort-level-during-reduction':'universe.resolve@1',
+                  }
+                  return mapping.get(r,'semantic.residual@1')
+              return 'unclassified@1'
+
+          rows=[]
+          changes=[]
+          all_cases=0
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  all_cases += 1
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  brc,_=rr(base,p)
+                  crc,stderr=rr(cand,p,True)
+                  if crc!=brc:
+                      changes.append({'test':name,'base':brc,'candidate':crc})
+                  if name not in original_structure:
+                      continue
+                  exits=[x for x in stderr if 'NUCLEUS_INDUCTIVE_EXIT:Unknown:' in x]
+                  residuals=[
+                      x.split('NUCLEUS_RESIDUAL:',1)[1]
+                      for x in stderr if 'NUCLEUS_RESIDUAL:' in x
+                  ]
+                  signatures=[x for x in stderr if 'NUCLEUS_SIGNATURE:' in x]
+                  terminal=terminal_interface(exits[-1] if exits else None,residuals)
+                  rows.append({
+                      'test':name,
+                      'expected':expected,
+                      'base_rc':brc,
+                      'shadow_rc':crc,
+                      'terminal_interface':terminal,
+                      'terminal_exit':exits[-1] if exits else None,
+                      'terminal_residual':residuals[-1] if residuals else None,
+                      'signature_count':len(signatures),
+                      'candidate_exhausted': terminal == 'structure.fields@1',
+                  })
+
+          assert all_cases==193,all_cases
+          assert not changes,changes
+          assert len(rows)==16,len(rows)
+          counts=collections.Counter(r['terminal_interface'] for r in rows)
+          outcomes={}
+          by_interface={}
+          exhausted=[]
+          for r in rows:
+              k=r['terminal_interface']
+              by_interface.setdefault(k,[]).append(r['test'])
+              o=outcomes.setdefault(k,{'accept':0,'reject':0})
+              o['accept' if r['expected']==0 else 'reject'] += 1
+              if r['candidate_exhausted']:
+                  exhausted.append(r['test'])
+
+          out={
+            'schema':'nucleus-contract-distance-v1',
+            'base_sha':os.environ['BASE_SHA'],
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'verdict_identity':True,
+            'original_structure_cases':16,
+            'terminal_interface_counts':dict(counts),
+            'protected_outcomes':outcomes,
+            'by_interface':by_interface,
+            'candidate_exhausted':exhausted,
+            'rows':rows,
+            'changes':changes,
+          }
+          dest=pathlib.Path('evidence-out/contract-distance-v1')
+          (dest/'result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'terminal_interface_counts':out['terminal_interface_counts'],
+              'protected_outcomes':out['protected_outcomes'],
+              'by_interface':out['by_interface'],
+              'candidate_exhausted':out['candidate_exhausted'],
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-contract-distance-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/contract-distance-v1
+          if-no-files-found: error
