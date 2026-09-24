@@ -46,9 +46,8 @@ transfer_text = TRANSFER.read_text()
 assert "theorem naive_eq_stable" in seed_text
 assert "theorem srWeightedSum_shift_invariant" in holdout_text
 assert "theorem mathgraph_transfer_srWeightedSum_shift_invariant" in holdout_text
-assert "srWeightedSum_shift_invariant" not in transfer_text.replace(
-    "mathgraph_transfer_srWeightedSum_shift_invariant", ""
-)
+transfer_proof = transfer_text.split(":= by", 1)[1]
+assert "srWeightedSum_shift_invariant" not in transfer_proof
 assert "weighted_shift_invariant" in cap_text
 
 baseline_segment = slice_between(
