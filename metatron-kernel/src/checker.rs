@@ -4816,7 +4816,7 @@ fn nat_le_recursor_rules(
             || !nat_le_refl_minor_type(export, *refl_minor, refl)
             || !nat_le_step_minor_type(export, *step_minor, nat, succ, le, step)
             || !is_empty_constant(export, *upper, nat)
-            || !nat_le_application(export, *proof, le, 5, 0)
+            || !nat_le_application(export, *proof, le, 4, 0)
         {
             return false;
         }
