@@ -20,6 +20,10 @@ For every completed source in the declared finite corpus:
       OWN_V23    = CONTROL + active defect (v2 excess, v3);
       V2_VECTOR = CONTROL + exact v2 defect valuation against every observed
                   return map at the same anchor;
+      V3_MAX    = CONTROL + maximum 3-adic defect depth;
+      V3_NEAREST = CONTROL + one canonical nearest return fixed point + depth;
+      V3_NEAREST_SET = CONTROL + all nearest fixed points + depth;
+      V3_MULTISET = CONTROL + unlabeled multiset of v3 defect depths;
       V3_VECTOR = CONTROL + exact v3 defect valuation against every observed
                   return map at the same anchor;
       V23_VECTOR = CONTROL + exact (v2,v3) defect valuations against every
@@ -169,8 +173,23 @@ def graph_from_occurrences(occurrences, patterns_by_anchor, mode: str):
         if mode == "V2_VECTOR":
             vals = tuple(v2z(defect(d, m)) for d in order[event["anchor"]])
             return (pid, vals)
-        if mode == "V3_VECTOR":
-            vals = tuple(vpz(defect(d, m), 3) for d in order[event["anchor"]])
+        if mode in ("V3_MAX", "V3_NEAREST", "V3_NEAREST_SET", "V3_MULTISET", "V3_VECTOR"):
+            bank = order[event["anchor"]]
+            vals = tuple(vpz(defect(d, m), 3) for d in bank)
+            if any(v is None for v in vals):
+                nearest_ids = tuple(semantic_id(bank[i]) for i,v in enumerate(vals) if v is None)
+                maxv = None
+            else:
+                maxv = max(vals, default=0)
+                nearest_ids = tuple(semantic_id(bank[i]) for i,v in enumerate(vals) if v == maxv)
+            if mode == "V3_MAX":
+                return (pid, maxv)
+            if mode == "V3_NEAREST":
+                return (pid, nearest_ids[0] if nearest_ids else None, maxv)
+            if mode == "V3_NEAREST_SET":
+                return (pid, nearest_ids, maxv)
+            if mode == "V3_MULTISET":
+                return (pid, tuple(sorted(vals)))
             return (pid, vals)
         if mode == "V23_VECTOR":
             vals = tuple((v2z(defect(d, m)), vpz(defect(d, m), 3))
@@ -335,7 +354,7 @@ def analyze(lo: int, hi: int, K: int, output: Path):
             transport["distinct_switch_checks"] += 1
 
     results = {}
-    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_VECTOR", "V23_VECTOR"):
+    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_MAX", "V3_NEAREST", "V3_NEAREST_SET", "V3_MULTISET", "V3_VECTOR", "V23_VECTOR"):
         nodes, succ, exits, edge_occ = graph_from_occurrences(
             source_sequences, patterns_by_anchor, mode)
         kernel, prune = greatest_kernel(nodes, succ)
@@ -362,6 +381,10 @@ def analyze(lo: int, hi: int, K: int, output: Path):
     own = results["OWN_FUEL"]["future_kernel_classes"]
     own_v23 = results["OWN_V23"]["future_kernel_classes"]
     v2 = results["V2_VECTOR"]["future_kernel_classes"]
+    v3max = results["V3_MAX"]["future_kernel_classes"]
+    v3nearest = results["V3_NEAREST"]["future_kernel_classes"]
+    v3nearestset = results["V3_NEAREST_SET"]["future_kernel_classes"]
+    v3multiset = results["V3_MULTISET"]["future_kernel_classes"]
     v3 = results["V3_VECTOR"]["future_kernel_classes"]
     v23 = results["V23_VECTOR"]["future_kernel_classes"]
 
@@ -371,6 +394,14 @@ def analyze(lo: int, hi: int, K: int, output: Path):
         verdict = "PASS_BOUNDED_LOCAL_V23_RESOURCE_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and v2 == 0:
         verdict = "PASS_BOUNDED_V2_RESOURCE_KILLS_CONTROL_FUTURE_KERNEL"
+    elif control > 0 and v3max == 0:
+        verdict = "PASS_BOUNDED_V3_MAX_KILLS_CONTROL_FUTURE_KERNEL"
+    elif control > 0 and v3nearest == 0:
+        verdict = "PASS_BOUNDED_V3_NEAREST_CENTRE_KILLS_CONTROL_FUTURE_KERNEL"
+    elif control > 0 and v3nearestset == 0:
+        verdict = "PASS_BOUNDED_V3_NEAREST_SET_KILLS_CONTROL_FUTURE_KERNEL"
+    elif control > 0 and v3multiset == 0:
+        verdict = "PASS_BOUNDED_V3_MULTISET_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and v3 == 0:
         verdict = "PASS_BOUNDED_V3_VECTOR_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and v23 == 0:
@@ -408,7 +439,7 @@ def analyze(lo: int, hi: int, K: int, output: Path):
     print("COUNTS", json.dumps(dict(sorted(counts.items())), sort_keys=True))
     print("INCOMPLETE_SOURCES", len(incomplete), incomplete[:40])
     print("TRANSPORT_AUDIT", json.dumps(dict(sorted(transport.items())), sort_keys=True))
-    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_VECTOR", "V23_VECTOR"):
+    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_MAX", "V3_NEAREST", "V3_NEAREST_SET", "V3_MULTISET", "V3_VECTOR", "V23_VECTOR"):
         print("KERNEL", mode, json.dumps(results[mode], sort_keys=True))
     print("VERDICT", verdict)
     print("CLOSURE_CERTIFICATE", evidence["closure_certificate"])
