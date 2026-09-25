@@ -1,0 +1,36 @@
+name: Collatz bi-adic squeeze V0 fast
+
+on:
+  push:
+    branches: [collatz-biadic-squeeze-v0-fast]
+    paths:
+      - '.github/workflows/collatz-biadic-squeeze-v0-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Fast exact squeeze gate
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          import collatz_biadic_squeeze_v0 as sq
+          frontier=sq.threshold_frontier()
+          assert (32,0,1<<32) in frontier
+          assert (0,21,3**21) in frontier
+          assert sq.G==4142380787
+          assert 2*3**20 > sq.G >= 2*3**19
+          band=sq.audit(46081,46591,128)
+          print("FAST_FRONTIER",json.dumps([{"a":a,"b":b,"spacing":m} for a,b,m in frontier],sort_keys=True))
+          print("FAST_BAND",json.dumps(band,sort_keys=True))
+          print("FAST_GLOBAL_LIVE_PAIR_SAME_CELL_PREMISE UNKNOWN_NOT_ASSUMED")
+          print("FAST_GLOBAL_ACTIVE_V3_GE_20_PREMISE UNKNOWN_NOT_ASSUMED")
+          print("FAST_VERDICT PASS_EXACT_SQUEEZE_LEMMA_WITH_NAMED_GLOBAL_PREMISE")
+          PY
