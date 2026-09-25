@@ -1,0 +1,33 @@
+name: Collatz Final Proof Kernel V0
+
+on:
+  push:
+    branches: [collatz-final-proof-kernel-v0]
+    paths:
+      - 'lean-toolchain'
+      - 'lakefile.lean'
+      - 'formal/Collatz/FinalKernel.lean'
+      - '.github/workflows/collatz-final-proof-kernel-v0.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  theorem-gate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FinalKernel.lean
+
+      - name: Build exact proof kernel
+        run: lake build CollatzFinal
