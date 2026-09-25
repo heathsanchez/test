@@ -762,6 +762,8 @@ fn check_single_constructor_inductive(
         check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
+    } else if single_derived_field_structure_candidate(export, block) {
+        check_single_derived_field_structure(export, environment, block, limits, delta_policy)
     } else if inductive.num_params == 1
         && inductive.num_indices == 0
         && inductive.num_nested == 0
@@ -1515,6 +1517,450 @@ fn sort_elim_prop_recursor_rule(
 /// computation rule.  Recognition is name-sealed to `NewSingleton`; the
 /// executable rule is installed only after type, constructor, recursor, and
 /// exported rule shape have all been independently checked.
+fn expression_matches_binder_lift(
+    export: &ResolvedExport,
+    original: ExprId,
+    lifted: ExprId,
+    cutoff: u64,
+    amount: u64,
+) -> bool {
+    let (Some(left), Some(right)) = (export.exprs.get(original), export.exprs.get(lifted)) else {
+        return false;
+    };
+    match (left, right) {
+        (Expr::BVar(left), Expr::BVar(right)) => {
+            *right
+                == if *left >= cutoff {
+                    left.saturating_add(amount)
+                } else {
+                    *left
+                }
+        }
+        (Expr::NatLit(left), Expr::NatLit(right)) => left == right,
+        (Expr::StrLit(left), Expr::StrLit(right)) => left == right,
+        (Expr::Sort(left), Expr::Sort(right)) => left == right,
+        (
+            Expr::Const {
+                name: left_name,
+                levels: left_levels,
+            },
+            Expr::Const {
+                name: right_name,
+                levels: right_levels,
+            },
+        ) => left_name == right_name && left_levels == right_levels,
+        (
+            Expr::App {
+                fun: left_fun,
+                arg: left_arg,
+            },
+            Expr::App {
+                fun: right_fun,
+                arg: right_arg,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_fun, *right_fun, cutoff, amount)
+                && expression_matches_binder_lift(export, *left_arg, *right_arg, cutoff, amount)
+        }
+        (
+            Expr::Lam {
+                domain: left_domain,
+                body: left_body,
+            },
+            Expr::Lam {
+                domain: right_domain,
+                body: right_body,
+            },
+        )
+        | (
+            Expr::Pi {
+                domain: left_domain,
+                body: left_body,
+            },
+            Expr::Pi {
+                domain: right_domain,
+                body: right_body,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_domain, *right_domain, cutoff, amount)
+                && expression_matches_binder_lift(
+                    export,
+                    *left_body,
+                    *right_body,
+                    cutoff.saturating_add(1),
+                    amount,
+                )
+        }
+        (
+            Expr::Let {
+                ty: left_ty,
+                value: left_value,
+                body: left_body,
+            },
+            Expr::Let {
+                ty: right_ty,
+                value: right_value,
+                body: right_body,
+            },
+        ) => {
+            expression_matches_binder_lift(export, *left_ty, *right_ty, cutoff, amount)
+                && expression_matches_binder_lift(export, *left_value, *right_value, cutoff, amount)
+                && expression_matches_binder_lift(
+                    export,
+                    *left_body,
+                    *right_body,
+                    cutoff.saturating_add(1),
+                    amount,
+                )
+        }
+        (
+            Expr::Proj {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            Expr::Proj {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) => {
+            left_type == right_type
+                && left_index == right_index
+                && expression_matches_binder_lift(
+                    export,
+                    *left_structure,
+                    *right_structure,
+                    cutoff,
+                    amount,
+                )
+        }
+        _ => false,
+    }
+}
+
+fn single_derived_field_structure_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    if p == 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.num_params != inductive.num_params
+        || constructor.num_fields != 1
+        || constructor.is_unsafe
+        || recursor.k
+        || recursor.is_unsafe
+        || recursor.level_params.len() != inductive.level_params.len().saturating_add(1)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+    let Some((_, result)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
+        return false;
+    }
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    !expression_contains_constant(export, constructor_domains[p], inductive.name)
+}
+
+fn single_derived_field_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    let field_type = constructor_domains[p];
+
+    let Some((domains, result)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let motive = domains[p];
+    let minor = domains[p + 1];
+    let target = domains[p + 2];
+
+    let Some((motive_domains, motive_result)) = pi_spine(export, motive, 1) else {
+        return false;
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (motive_head, motive_args) = application_spine(export, *motive_target);
+    if motive_args.len() != p
+        || !is_declared_level_constant(export, motive_head, inductive.name, &inductive.level_params)
+        || !motive_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p - 1 - i) as u64))
+    {
+        return false;
+    }
+
+    let motive_level = match export.exprs.get(motive_result) {
+        Some(Expr::Sort(level)) => match export.levels.get(*level) {
+            Some(Level::Param(name)) => *name,
+            _ => return false,
+        },
+        _ => return false,
+    };
+    if recursor.level_params.first().copied() != Some(motive_level)
+        || recursor.level_params.get(1..) != Some(inductive.level_params.as_slice())
+    {
+        return false;
+    }
+
+    let Some((minor_domains, minor_result)) = pi_spine(export, minor, 1) else {
+        return false;
+    };
+    let [minor_field] = minor_domains.as_slice() else {
+        return false;
+    };
+    if !expression_matches_binder_lift(export, field_type, *minor_field, 0, 1) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: minor_motive,
+        arg: constructed,
+    }) = export.exprs.get(minor_result)
+    else {
+        return false;
+    };
+    if !is_bvar(export, *minor_motive, 1) {
+        return false;
+    }
+    let (constructor_head, constructor_args) = application_spine(export, *constructed);
+    if constructor_args.len() != p + 1
+        || !is_declared_level_constant(
+            export,
+            constructor_head,
+            constructor.name,
+            &constructor.level_params,
+        )
+    {
+        return false;
+    }
+    for (i, arg) in constructor_args.iter().take(p).enumerate() {
+        if !is_bvar(export, *arg, (p + 1 - i) as u64) {
+            return false;
+        }
+    }
+    if !is_bvar(export, constructor_args[p], 0) {
+        return false;
+    }
+
+    let (target_head, target_args) = application_spine(export, target);
+    if target_args.len() != p
+        || !is_declared_level_constant(export, target_head, inductive.name, &inductive.level_params)
+        || !target_args
+            .iter()
+            .enumerate()
+            .all(|(i, arg)| is_bvar(export, *arg, (p + 1 - i) as u64))
+        || !is_bvar_application(export, result, 2, 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor.name || rule.num_fields != 1 {
+        return false;
+    }
+    let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 3) else {
+        return false;
+    };
+    if rule_domains[p] != motive || rule_domains[p + 1] != minor {
+        return false;
+    }
+    if !expression_matches_binder_lift(export, *minor_field, rule_domains[p + 2], 0, 1) {
+        return false;
+    }
+    let (rule_head, rule_args) = application_spine(export, rule_result);
+    is_bvar(export, rule_head, 1)
+        && matches!(rule_args.as_slice(), [field] if is_bvar(export, *field, 0))
+}
+
+fn single_derived_field_parameter_telescopes_convert(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return false;
+    };
+    let constructor_params = &constructor_domains[..p];
+    let Some((recursor_domains, _)) = pi_spine(export, recursor.ty, p + 3) else {
+        return false;
+    };
+    let recursor_params = &recursor_domains[..p];
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, p + 3) else {
+        return false;
+    };
+    let rule_params = &rule_domains[..p];
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    let mut frame = EnvFrame::empty();
+    for index in 0..p {
+        let expected = TypeValue::Term(checker.closure(inductive_params[index], frame.clone()));
+        for actual in [
+            constructor_params[index],
+            recursor_params[index],
+            rule_params[index],
+        ] {
+            if !matches!(
+                checker.convert(
+                    &expected,
+                    &TypeValue::Term(checker.closure(actual, frame.clone())),
+                    limits.judgment_steps,
+                ),
+                Judgment::Proven { .. }
+            ) {
+                return false;
+            }
+        }
+        let Ok(index) = u64::try_from(index) else {
+            return false;
+        };
+        frame = frame.extend_free(FreeId(50_000 + index));
+    }
+    true
+}
+
+fn check_single_derived_field_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !single_derived_field_structure_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.level_params != inductive.level_params
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !single_derived_field_recursor_shape(export, inductive, constructor, recursor)
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    if !single_derived_field_parameter_telescopes_convert(
+        export,
+        derivation.environment(),
+        inductive,
+        constructor,
+        recursor,
+        limits,
+        delta_policy,
+    ) {
+        return Err(Verdict::Unknown);
+    }
+    derivation.promote_all(
+        export,
+        [derived_constructor(constructor), derived_recursor(recursor)],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    let Ok(p) = usize::try_from(inductive.num_params) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + 1) else {
+        return Err(Verdict::Reject);
+    };
+    let field_type = constructor_domains[p];
+
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: p,
+                field_types: vec![ProjectionFieldType::Derived(field_type)],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
 fn generic_parameterized_nullary_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
