@@ -1,0 +1,29 @@
+name: Collatz V3 nearest transport law V0
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-transport-law-v0
+    paths:
+      - 'experiments/collatz_v3_nearest_transport_probe.py'
+      - '.github/workflows/collatz-v3-nearest-transport-law-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact bounded transport audit
+        run: |
+          mkdir -p evidence/collatz-v3-nearest-transport-law-v0
+          python experiments/collatz_v3_nearest_transport_probe.py             --lo 3 --hi 32767 --K 128             --out evidence/collatz-v3-nearest-transport-law-v0/result.json             | tee evidence/collatz-v3-nearest-transport-law-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v3-nearest-transport-law-v0
+          path: evidence/collatz-v3-nearest-transport-law-v0
+          if-no-files-found: error
