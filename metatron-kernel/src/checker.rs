@@ -87,10 +87,9 @@ fn check_export_with_policy(
                     "NUCLEUS_DECL:name={}:kind=theorem",
                     trace_name(&export, *name)
                 ),
-                Declaration::Quot { name, .. } => eprintln!(
-                    "NUCLEUS_DECL:name={}:kind=quot",
-                    trace_name(&export, *name)
-                ),
+                Declaration::Quot { name, .. } => {
+                    eprintln!("NUCLEUS_DECL:name={}:kind=quot", trace_name(&export, *name))
+                }
                 Declaration::Inductive(block) => {
                     let name = block
                         .types
