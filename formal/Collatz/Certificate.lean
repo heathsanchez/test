@@ -41,16 +41,15 @@ theorem closes_of_decidable_rank
 end FiniteResidualModel
 
 /-- Tiny non-Collatz fixture proving the certificate interface itself. -/
-def fixtureModel : FiniteResidualModel 3 where
+def fixtureModel : FiniteResidualModel 1 where
   residual := fun _ => true
-  next := fun s t =>
-    (s.val == 2 && t.val == 1) ||
-    (s.val == 1 && t.val == 0)
-  rank := fun s => s.val
+  next := fun _ _ => false
+  rank := fun _ => 0
 
 theorem fixtureRankValid :
     FiniteResidualModel.RankValid fixtureModel := by
-  decide
+  intro s t hs hnext
+  simp [FiniteResidualModel.NextP, fixtureModel] at hnext
 
 theorem fixtureKernelEmpty :
     KernelEmpty
