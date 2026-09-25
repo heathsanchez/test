@@ -1,0 +1,96 @@
+name: Collatz V3 nearest cycle diagnostic V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-cycle-diagnostic-v1
+    paths:
+      - '.github/workflows/collatz-v3-nearest-cycle-diagnostic-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact selected-band cycle diagnostic
+        run: |
+          cd experiments
+          python - <<'PY'
+          from collections import defaultdict
+          import json
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          LO,HI,K=46081,46591,128
+          patterns=defaultdict(dict)
+          seqs_all=[]
+          for n in range(LO|1,HI+1,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID" or not fk.completed_rigid_source(n,K):
+                  continue
+              seqs=fk.return_sequences(n,K)
+              for r,seq in seqs.items():
+                  if not seq: continue
+                  seqs_all.append(seq)
+                  for e in seq:
+                      c=e["cert"]; patterns[r][fk.semantic_id(c)]=c
+          bank={r:tuple(patterns[r][k] for k in sorted(patterns[r])) for r in sorted(patterns)}
+
+          nodes,succ,exits,_=fk.graph_from_occurrences(seqs_all,bank,"CONTROL")
+          classes,qnodes,qsucc,qexits,_=fk.refine_future_quotient(nodes,succ,exits)
+          qkernel,_=fk.greatest_kernel(qnodes,qsucc)
+          print("CONTROL_QKERNEL",sorted(qkernel))
+          raw_kernel=sorted([n for n in nodes if classes[n] in qkernel],key=repr)
+          print("CONTROL_RAW_KERNEL",json.dumps(fk.canonical(raw_kernel),sort_keys=True))
+
+          def nearest(e):
+              c=e["cert"]; m=e["m0"]; arr=bank[e["anchor"]]
+              vals=[fk.vpz(fk.defect(d,m),3) for d in arr]
+              if any(v is None for v in vals):
+                  maxv=None
+                  inds=[i for i,v in enumerate(vals) if v is None]
+              else:
+                  maxv=max(vals,default=0)
+                  inds=[i for i,v in enumerate(vals) if v==maxv]
+              return [(fk.semantic_id(arr[i]),fk.semantic_tuple(arr[i]),maxv) for i in inds]
+
+          rows=[]
+          kernel_pids={x[0] for x in raw_kernel}
+          for seq in seqs_all:
+              for idx,e in enumerate(seq):
+                  pid=fk.semantic_id(e["cert"])
+                  if pid not in kernel_pids: continue
+                  nxt=seq[idx+1] if idx+1<len(seq) else None
+                  rows.append({
+                    "source":e["source"],"anchor":e["anchor"],"k0":e["k0"],
+                    "m0":e["m0"],"m1":e["m1"],
+                    "active_id":pid,"active":fk.semantic_tuple(e["cert"]),
+                    "active_q":e["cert"]["q"],
+                    "nearest":nearest(e),
+                    "next_active_id":fk.semantic_id(nxt["cert"]) if nxt else None,
+                    "next_active":fk.semantic_tuple(nxt["cert"]) if nxt else None,
+                    "next_nearest":nearest(nxt) if nxt else None,
+                  })
+          print("KERNEL_OCCURRENCES",json.dumps(fk.canonical(rows),sort_keys=True))
+
+          # Exact 3-adic centre separation/injection constants for every
+          # active -> nearest-centre pair represented above.
+          seen=set()
+          for row in rows:
+              active=next(c for c in bank[row["anchor"]] if fk.semantic_id(c)==row["active_id"])
+              for nid,ntup,depth in row["nearest"]:
+                  near=next(c for c in bank[row["anchor"]] if fk.semantic_id(c)==nid)
+                  key=(row["active_id"],nid)
+                  if key in seen: continue
+                  seen.add(key)
+                  J=raJ=(near["C"]*active["B"]-active["C"]*near["B"])
+                  print("PAIR",row["active_id"],nid,
+                        "active",fk.semantic_tuple(active),"near",fk.semantic_tuple(near),
+                        "q_active",active["q"],"q_near",near["q"],
+                        "v3_J",fk.vpz(J,3),"J",J)
+          PY
