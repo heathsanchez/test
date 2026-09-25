@@ -150,4 +150,33 @@ theorem reaches_one_of_strict_descent
               rw [iter_add]
               exact hl
 
+
+/-- A strictly decreasing natural rank on residual transitions is a compact
+certificate that the greatest post-fixed residual kernel is empty. -/
+theorem kernel_empty_of_rank
+    {State : Type}
+    (ResidualState : State → Prop)
+    (Next : State → State → Prop)
+    (rank : State → Nat)
+    (hdecrease :
+      ∀ s t,
+        ResidualState s →
+        Next s t →
+        rank t < rank s) :
+    KernelEmpty ResidualState Next := by
+  intro S hsub hpf
+  have aux : ∀ n, ∀ s, rank s = n → ¬ S s := by
+    intro n
+    induction n using Nat.strongRecOn with
+    | ind n ih =>
+        intro s hrs hs
+        obtain ⟨t, hst, ht⟩ := hpf s hs
+        have hlt : rank t < rank s :=
+          hdecrease s t (hsub s hs) hst
+        have htn : rank t < n := by
+          simpa [hrs] using hlt
+        exact ih (rank t) htn t rfl ht
+  intro s
+  exact aux (rank s) s rfl
+
 end CollatzFinal
