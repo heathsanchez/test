@@ -1,0 +1,158 @@
+name: Consequential Quotient Cross-Domain V1
+
+on:
+  push:
+    branches: [consequential-quotient-cross-domain-v1]
+    paths:
+      - "experiments/consequential_quotient_cross_domain_v1/**"
+      - ".github/workflows/consequential-quotient-cross-domain-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  veritile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+      - uses: actions/checkout@v4
+        name: Checkout frozen VeriTile
+        with:
+          repository: Lizn-zn/VeriTile
+          ref: 95a01f598e2cd1cac4052e5e5ff9145c658e18db
+          path: vendor/VeriTile
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build frozen VeriTile surface
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build VeriTile.Triton
+      - name: Compile generic quotient and VeriTile instance
+        run: |
+          set -euo pipefail
+          cp experiments/consequential_quotient_cross_domain_v1/MathGraphConsequentialQuotient.lean             vendor/VeriTile/VeriTile/MathGraphConsequentialQuotient.lean
+          cp experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean             vendor/VeriTile/VeriTile/MathGraphGaugeCapability.lean
+          cp experiments/normalization_gauge_quotient_v4/MathGraphNormalizationQuotient.lean             vendor/VeriTile/VeriTile/MathGraphNormalizationQuotient.lean
+          cp experiments/consequential_quotient_cross_domain_v1/VeriTileAdapter.lean             vendor/VeriTile/VeriTile/MathGraphVeriTileAdapter.lean
+          cd vendor/VeriTile
+          mkdir -p .lake/build/lib/lean/VeriTile
+          lake env lean -o .lake/build/lib/lean/VeriTile/MathGraphConsequentialQuotient.olean             VeriTile/MathGraphConsequentialQuotient.lean
+          lake env lean -o .lake/build/lib/lean/VeriTile/MathGraphGaugeCapability.olean             VeriTile/MathGraphGaugeCapability.lean
+          lake env lean -o .lake/build/lib/lean/VeriTile/MathGraphNormalizationQuotient.olean             VeriTile/MathGraphNormalizationQuotient.lean
+          lake env lean VeriTile/MathGraphVeriTileAdapter.lean
+
+  qlf:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+      - uses: actions/checkout@v4
+        name: Checkout frozen QLF
+        with:
+          repository: rchain-community/quantum-logical-framework
+          ref: 888a4303846000ace1c7ef4c62a8d3e99110d979
+          path: vendor/QLF
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build QLF StateSpace
+        working-directory: vendor/QLF
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          lake build QLF_StateSpace
+      - name: Compile generic quotient and QLF Born instance
+        run: |
+          set -euo pipefail
+          cp experiments/consequential_quotient_cross_domain_v1/MathGraphConsequentialQuotient.lean             vendor/QLF/lean/MathGraphConsequentialQuotient.lean
+          cp experiments/consequential_quotient_cross_domain_v1/QLFBornAdapter.lean             vendor/QLF/lean/MathGraphQLFBornAdapter.lean
+          cd vendor/QLF
+          lake env lean -o .lake/build/lib/lean/MathGraphConsequentialQuotient.olean             lean/MathGraphConsequentialQuotient.lean
+          lake env lean lean/MathGraphQLFBornAdapter.lean
+
+  pythia:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+      - uses: actions/checkout@v4
+        name: Checkout frozen Pythia
+        with:
+          repository: athanor-ai/pythia
+          ref: 65404339b5c6fe8004d91fdd9c0c14ceb0bf7cd3
+          path: vendor/Pythia
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build Pythia information ratio
+        working-directory: vendor/Pythia
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          lake build Pythia.Finance.Portfolio.InformationRatio
+      - name: Compile generic quotient and Pythia instance
+        run: |
+          set -euo pipefail
+          cp experiments/consequential_quotient_cross_domain_v1/MathGraphConsequentialQuotient.lean             vendor/Pythia/Pythia/MathGraphConsequentialQuotient.lean
+          cp experiments/consequential_quotient_cross_domain_v1/PythiaAdapter.lean             vendor/Pythia/Pythia/MathGraphPythiaAdapter.lean
+          cd vendor/Pythia
+          lake env lean -o .lake/build/lib/lean/Pythia/MathGraphConsequentialQuotient.olean             Pythia/MathGraphConsequentialQuotient.lean
+          lake env lean Pythia/MathGraphPythiaAdapter.lean
+
+  seal:
+    runs-on: ubuntu-latest
+    needs: [veritile, qlf, pythia]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Emit cross-domain evidence
+        run: |
+          set -euo pipefail
+          mkdir -p evidence
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          p=Path("experiments/consequential_quotient_cross_domain_v1/MathGraphConsequentialQuotient.lean")
+          ev={
+            "schema":"metalogic.consequential-quotient-cross-domain.v1",
+            "epistemic_state":"CANDIDATE",
+            "generic_module_sha256":hashlib.sha256(p.read_bytes()).hexdigest(),
+            "generic_contract":{
+              "relation":"equivalence relation over source states",
+              "protected_observer":"must be constant on relation classes",
+              "compiled_object":"Quotient setoid",
+              "factorization":"observe = quotientObserve ∘ project"
+            },
+            "domains":[
+              {"name":"VeriTile normalization gauge","revision":"95a01f598e2cd1cac4052e5e5ff9145c658e18db","status":"PASS"},
+              {"name":"QLF Born probability","revision":"888a4303846000ace1c7ef4c62a8d3e99110d979","status":"PASS"},
+              {"name":"Pythia information ratio","revision":"65404339b5c6fe8004d91fdd9c0c14ceb0bf7cd3","status":"PASS"}
+            ],
+            "boundary":{
+              "automatic_relation_discovery":"UNKNOWN",
+              "minimum_quotient_optimality":"UNKNOWN",
+              "claim":"portable consequence-relative quotient compiler interface across three independently pinned Lean domains"
+            }
+          }
+          Path("evidence/consequential-quotient-cross-domain-v1.json").write_text(json.dumps(ev,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(ev,indent=2,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: consequential-quotient-cross-domain-v1
+          path: evidence/consequential-quotient-cross-domain-v1.json
+          if-no-files-found: error
