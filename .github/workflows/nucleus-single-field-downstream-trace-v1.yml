@@ -1,0 +1,121 @@
+name: Nucleus Single Field Downstream Trace v1
+
+on:
+  push:
+    branches: [nucleus-single-field-downstream-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-single-field-downstream-trace-v1.yml"
+      - "metatron-kernel/src/checker.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      ARENA_ARTIFACT: 10712869614
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Build diagnostic
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo build --release --locked
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+
+      - name: Trace first downstream residual
+        env:
+          NUCLEUS_TRACE_SINGLE_FIELD: "1"
+          NUCLEUS_TRACE_DECL: "1"
+          NUCLEUS_TRACE_RESIDUAL: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/single-field-downstream-trace-v1
+          python - <<'PY'
+          import json, pathlib, subprocess, os
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+            ('good','perf/magma-list-deep-n21',0),
+            ('good','perf/magma-list-deep-n36',0),
+            ('bad','bugs/proj-of-stuck-prop',1),
+            ('bad','bugs/proj-of-subst-prop',1),
+            ('bad','bugs/rec-of-subst-prop',1),
+          ]
+          rows=[]
+          for kind,name,expected in targets:
+              p=root/kind/(name+'.ndjson')
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,timeout=180,
+                      env=os.environ.copy(),
+                  )
+              stderr=q.stderr.decode(errors='replace')
+              events=[]
+              active_decl=None
+              terminal_residual=None
+              terminal_decl=None
+              for line in stderr.splitlines():
+                  if line.startswith('NUCLEUS_DECL:'):
+                      active_decl=line
+                      events.append(line)
+                  elif line.startswith('NUCLEUS_RESIDUAL:'):
+                      terminal_residual=line.split(':',1)[1]
+                      terminal_decl=active_decl
+                      events.append(line)
+                  elif line.startswith('NUCLEUS_SINGLE_FIELD:'):
+                      events.append(line)
+              rows.append({
+                  'test':name,
+                  'expected':expected,
+                  'rc':q.returncode,
+                  'terminal_residual':terminal_residual,
+                  'terminal_decl':terminal_decl,
+                  'events':events,
+              })
+          out={
+              'schema':'nucleus-single-field-downstream-trace-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'rows':rows,
+          }
+          path=pathlib.Path(
+              'metatron-kernel/evidence-out/single-field-downstream-trace-v1/result.json'
+          )
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              r['test']:{
+                  'rc':r['rc'],
+                  'terminal_residual':r['terminal_residual'],
+                  'terminal_decl':r['terminal_decl'],
+                  'tail':r['events'][-16:],
+              } for r in rows
+          },sort_keys=True))
+          assert all(r['terminal_residual'] is not None for r in rows), rows
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-single-field-downstream-trace-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/single-field-downstream-trace-v1
+          if-no-files-found: warn
