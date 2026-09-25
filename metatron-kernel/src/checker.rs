@@ -1887,26 +1887,39 @@ fn check_single_derived_field_structure(
     ) else {
         return Err(Verdict::Unknown);
     };
-    if !single_derived_field_structure_candidate(export, block) {
+    let trace = std::env::var_os("NUCLEUS_TRACE_SINGLE_FIELD").is_some();
+    let name = trace_name(export, inductive.name);
+
+    let candidate = single_derived_field_structure_candidate(export, block);
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=candidate:value={candidate}");
+    }
+    if !candidate {
         return Err(Verdict::Unknown);
     }
-    if inductive.all != [inductive.name]
-        || inductive.constructors != [constructor.name]
-        || constructor.index != 0
-        || constructor.inductive != inductive.name
-        || constructor.level_params != inductive.level_params
-        || has_duplicate_parameter(&inductive.level_params)
-        || constructor_result_is_definitely_malformed(export, inductive, constructor)
-        || !recursor_metadata_admissible(
+
+    let metadata_ok = inductive.all == [inductive.name]
+        && inductive.constructors == [constructor.name]
+        && constructor.index == 0
+        && constructor.inductive == inductive.name
+        && constructor.level_params == inductive.level_params
+        && !has_duplicate_parameter(&inductive.level_params)
+        && !constructor_result_is_definitely_malformed(export, inductive, constructor)
+        && recursor_metadata_admissible(
             export,
             inductive,
             &block.constructors,
             recursor,
             false,
             true,
-        )
-        || !single_derived_field_recursor_shape(export, inductive, constructor, recursor)
-    {
+        );
+    let shape_ok = single_derived_field_recursor_shape(export, inductive, constructor, recursor);
+    if trace {
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=precheck:metadata={metadata_ok}:shape={shape_ok}"
+        );
+    }
+    if !metadata_ok || !shape_ok {
         return Err(Verdict::Unknown);
     }
 
@@ -1916,13 +1929,22 @@ fn check_single_derived_field_structure(
     } else {
         derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
     };
-    derivation.promote(
+    if let Err(verdict) = derivation.promote(
         export,
         derived_inductive,
         limits.judgment_steps,
         delta_policy,
-    )?;
-    if !single_derived_field_parameter_telescopes_convert(
+    ) {
+        if trace {
+            eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=type-promotion:verdict={verdict:?}");
+        }
+        return Err(verdict);
+    }
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=type-promotion:verdict=PASS");
+    }
+
+    let telescopes = single_derived_field_parameter_telescopes_convert(
         export,
         derivation.environment(),
         inductive,
@@ -1930,15 +1952,28 @@ fn check_single_derived_field_structure(
         recursor,
         limits,
         delta_policy,
-    ) {
+    );
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=parameter-telescopes:value={telescopes}");
+    }
+    if !telescopes {
         return Err(Verdict::Unknown);
     }
-    derivation.promote_all(
+
+    if let Err(verdict) = derivation.promote_all(
         export,
         [derived_constructor(constructor), derived_recursor(recursor)],
         limits.judgment_steps,
         delta_policy,
-    )?;
+    ) {
+        if trace {
+            eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict={verdict:?}");
+        }
+        return Err(verdict);
+    }
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict=PASS");
+    }
 
     let Ok(p) = usize::try_from(inductive.num_params) else {
         return Err(Verdict::Reject);
@@ -1948,19 +1983,39 @@ fn check_single_derived_field_structure(
     };
     let field_type = constructor_domains[p];
 
-    let environment = derivation
-        .finish()
-        .install_projection_spec(
-            inductive.name,
-            ProjectionSpec {
-                constructor: constructor.name,
-                num_params: p,
-                field_types: vec![ProjectionFieldType::Derived(field_type)],
-            },
-        )
-        .map_err(|_| Verdict::Reject)?;
+    let environment = match derivation.finish().install_projection_spec(
+        inductive.name,
+        ProjectionSpec {
+            constructor: constructor.name,
+            num_params: p,
+            field_types: vec![ProjectionFieldType::Derived(field_type)],
+        },
+    ) {
+        Ok(environment) => environment,
+        Err(_) => {
+            if trace {
+                eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=REJECT");
+            }
+            return Err(Verdict::Reject);
+        }
+    };
+    if trace {
+        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=PASS");
+    }
 
-    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+    let result = install_certified_recursor_reduction(environment, &block.constructors, recursor);
+    if trace {
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=recursor-install:verdict={}",
+            match &result {
+                Ok(_) => "PASS",
+                Err(Verdict::Accept) => "ACCEPT",
+                Err(Verdict::Reject) => "REJECT",
+                Err(Verdict::Unknown) => "UNKNOWN",
+            }
+        );
+    }
+    result
 }
 
 fn generic_parameterized_nullary_candidate(
@@ -7579,6 +7634,33 @@ fn is_constructor_applied_to_two_bvars(
     arguments.len() == 2
         && is_empty_constant(export, head, constructor)
         && are_bvars(export, &arguments, &[first, second])
+}
+
+fn trace_name(export: &ResolvedExport, mut name: NameId) -> String {
+    if name == NameId(0) {
+        return "_root".to_string();
+    }
+    let mut parts = Vec::new();
+    let mut guard = 0usize;
+    while name != NameId(0) && guard < 128 {
+        guard += 1;
+        match export.names.get(name) {
+            Some(Name::Str { prefix, value }) => {
+                parts.push(value.clone());
+                name = *prefix;
+            }
+            Some(Name::Num { prefix, value }) => {
+                parts.push(value.to_string());
+                name = *prefix;
+            }
+            None => {
+                parts.push(format!("#{}", name.0));
+                break;
+            }
+        }
+    }
+    parts.reverse();
+    parts.join(".")
 }
 
 fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
