@@ -62,6 +62,24 @@ fn check_export_with_policy(
     for declaration in declarations {
         #[cfg(feature = "diagnostics")]
         crate::diagnostics::declaration();
+        if std::env::var_os("NUCLEUS_TRACE_DECL_STREAM").is_some() {
+            match &declaration {
+                Declaration::Axiom { name, .. } =>
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=axiom:name={}", name.0),
+                Declaration::Definition { name, .. } =>
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=definition:name={}", name.0),
+                Declaration::Theorem { name, .. } =>
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=theorem:name={}", name.0),
+                Declaration::Quot { name, .. } =>
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=quot:name={}", name.0),
+                Declaration::Inductive(block) => {
+                    let names = block.types.iter().map(|ty| ty.name.0.to_string()).collect::<Vec<_>>().join(",");
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=inductive:names={}", names);
+                }
+                Declaration::Unsupported { .. } =>
+                    eprintln!("NUCLEUS_DECL_STREAM:kind=unsupported"),
+            }
+        }
         let level_parameters = match &declaration {
             Declaration::Axiom { level_params, .. }
             | Declaration::Definition { level_params, .. }
