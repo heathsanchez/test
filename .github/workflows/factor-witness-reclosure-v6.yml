@@ -1,0 +1,138 @@
+name: Factor Witness Reclosure V6
+
+on:
+  push:
+    branches: [factor-witness-reclosure-v6]
+    paths:
+      - "experiments/factor_witness_reclosure_v6/**"
+      - ".github/workflows/factor-witness-reclosure-v6.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: factor-witness-reclosure-v6
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+
+      - uses: actions/checkout@v4
+        name: Checkout frozen QLF
+        with:
+          repository: rchain-community/quantum-logical-framework
+          ref: 888a4303846000ace1c7ef4c62a8d3e99110d979
+          path: vendor/QLF
+
+      - uses: actions/checkout@v4
+        name: Checkout frozen Pythia
+        with:
+          repository: athanor-ai/pythia
+          ref: 65404339b5c6fe8004d91fdd9c0c14ceb0bf7cd3
+          path: vendor/Pythia
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build QLF target surface
+        working-directory: vendor/QLF
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          lake build QLF_StateSpace
+
+      - name: Build Pythia target surface
+        working-directory: vendor/Pythia
+        run: |
+          set -euo pipefail
+          lake exe cache get
+          lake build Pythia.Finance.Portfolio.SharpeRatio
+
+      - name: Install compiled capability in both external repos
+        run: |
+          set -euo pipefail
+          cp experiments/generic_gauge_born_v5/MathGraphGenericGauge.lean vendor/QLF/lean/MathGraphGenericGauge.lean
+          cp experiments/factor_witness_reclosure_v6/MathGraphFactorWitness.lean vendor/QLF/lean/MathGraphFactorWitness.lean
+          (cd vendor/QLF &&             lake env lean -o .lake/build/lib/lean/MathGraphGenericGauge.olean lean/MathGraphGenericGauge.lean &&             lake env lean -o .lake/build/lib/lean/MathGraphFactorWitness.olean lean/MathGraphFactorWitness.lean)
+
+          cp experiments/generic_gauge_born_v5/MathGraphGenericGauge.lean vendor/Pythia/MathGraphGenericGauge.lean
+          cp experiments/factor_witness_reclosure_v6/MathGraphFactorWitness.lean vendor/Pythia/MathGraphFactorWitness.lean
+          (cd vendor/Pythia &&             lake env lean -o .lake/build/lib/lean/MathGraphGenericGauge.olean MathGraphGenericGauge.lean &&             lake env lean -o .lake/build/lib/lean/MathGraphFactorWitness.olean MathGraphFactorWitness.lean)
+
+      - name: QLF ablation must fail
+        run: |
+          set -euo pipefail
+          cp vendor/QLF/lean/QLF_StateSpace.lean /tmp/QLF_StateSpace_V6_Ablation.lean
+          cat experiments/factor_witness_reclosure_v6/BornAppend.lean >> /tmp/QLF_StateSpace_V6_Ablation.lean
+          set +e
+          (cd vendor/QLF && lake env lean /tmp/QLF_StateSpace_V6_Ablation.lean) > /tmp/v6-qlf-ablation.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then cat /tmp/v6-qlf-ablation.log; exit 1; fi
+          grep -q "CommonFactorWitness\|compileObservation\|MathGraphFactorWitness" /tmp/v6-qlf-ablation.log
+          echo "ABLATION_QLF_RC=$rc" >> "$GITHUB_ENV"
+
+      - name: Pythia ablation must fail
+        run: |
+          set -euo pipefail
+          cp vendor/Pythia/Pythia/Finance/Portfolio/SharpeRatio.lean /tmp/SharpeRatio_V6_Ablation.lean
+          cat experiments/factor_witness_reclosure_v6/SharpeAppend.lean >> /tmp/SharpeRatio_V6_Ablation.lean
+          set +e
+          (cd vendor/Pythia && lake env lean /tmp/SharpeRatio_V6_Ablation.lean) > /tmp/v6-pythia-ablation.log 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then cat /tmp/v6-pythia-ablation.log; exit 1; fi
+          grep -q "CommonFactorWitness\|compileObservation\|MathGraphFactorWitness" /tmp/v6-pythia-ablation.log
+          echo "ABLATION_PYTHIA_RC=$rc" >> "$GITHUB_ENV"
+
+      - name: Reclose QLF Born consequence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/QLF/lean/QLF_StateSpace.lean")
+          s=p.read_text().replace("import Mathlib\n","import Mathlib\nimport MathGraphFactorWitness\n",1)
+          s+=Path("experiments/factor_witness_reclosure_v6/BornAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/QLF
+          lake env lean lean/QLF_StateSpace.lean
+
+      - name: Reclose Pythia Sharpe consequence
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/Pythia/Pythia/Finance/Portfolio/SharpeRatio.lean")
+          s=p.read_text().replace("import Mathlib\n","import Mathlib\nimport MathGraphFactorWitness\n",1)
+          s+=Path("experiments/factor_witness_reclosure_v6/SharpeAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/Pythia
+          lake env lean Pythia/Finance/Portfolio/SharpeRatio.lean
+
+      - name: Emit evidence
+        env:
+          QLF_ROOT: vendor/QLF
+          PYTHIA_ROOT: vendor/Pythia
+          EVIDENCE_OUT: evidence/factor-witness-reclosure-v6.json
+        run: python experiments/factor_witness_reclosure_v6/audit.py
+
+      - uses: actions/upload-artifact@v4
+        name: Upload evidence
+        with:
+          name: factor-witness-reclosure-v6
+          path: |
+            evidence/factor-witness-reclosure-v6.json
+            /tmp/v6-qlf-ablation.log
+            /tmp/v6-pythia-ablation.log
+          if-no-files-found: error
