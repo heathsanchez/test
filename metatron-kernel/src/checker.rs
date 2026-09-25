@@ -5086,7 +5086,23 @@ fn check_exact_fin(
         limits.judgment_steps,
         delta_policy,
     )?;
-    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+
+    // Fin.val is the first constructor field and has the exact Nat type
+    // already validated above. Install only this projection; Fin.isLt remains
+    // intentionally unsupported until its dependent result type is derived.
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 1,
+                field_types: vec![ProjectionFieldType::Derived(*value_field)],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn nat_le_application(
