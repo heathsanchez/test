@@ -726,7 +726,6 @@ fn check_inductive(
         return check_exact_decidable(export, environment, block, limits, delta_policy);
     }
 
-
     if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "List")
     {
