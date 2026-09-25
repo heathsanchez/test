@@ -1,0 +1,110 @@
+name: Normalization Gauge Quotient V4
+
+on:
+  push:
+    branches: [normalization-gauge-quotient-v4]
+    paths:
+      - "experiments/normalization_gauge_quotient_v4/**"
+      - ".github/workflows/normalization-gauge-quotient-v4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        name: Checkout experiment
+
+      - uses: actions/checkout@v4
+        name: Checkout frozen VeriTile
+        with:
+          repository: Lizn-zn/VeriTile
+          ref: 95a01f598e2cd1cac4052e5e5ff9145c658e18db
+          path: vendor/VeriTile
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build frozen VeriTile Triton surface
+        working-directory: vendor/VeriTile
+        run: |
+          set -euo pipefail
+          lake update
+          lake exe cache get
+          lake build VeriTile.Triton
+
+      - name: Install frozen gauge and quotient modules
+        run: |
+          set -euo pipefail
+          test "$(sha256sum experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | cut -d' ' -f1)" =             "b4ed3084376771c5fa97da0383dfe86622564f1ee6629ea7dff0e783584afc2f"
+          cp experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean             vendor/VeriTile/VeriTile/MathGraphGaugeCapability.lean
+          cp experiments/normalization_gauge_quotient_v4/MathGraphNormalizationQuotient.lean             vendor/VeriTile/VeriTile/MathGraphNormalizationQuotient.lean
+          cd vendor/VeriTile
+          mkdir -p .lake/build/lib/lean/VeriTile
+          lake env lean -o .lake/build/lib/lean/VeriTile/MathGraphGaugeCapability.olean             VeriTile/MathGraphGaugeCapability.lean
+          lake env lean -o .lake/build/lib/lean/VeriTile/MathGraphNormalizationQuotient.olean             VeriTile/MathGraphNormalizationQuotient.lean
+
+      - name: Factor softmax reduceV
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/VeriTile/bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean")
+          s=p.read_text().replace(
+            "import VeriTile.Triton\n",
+            "import VeriTile.Triton\nimport VeriTile.MathGraphNormalizationQuotient\n",1)
+          s+=Path("experiments/normalization_gauge_quotient_v4/SoftmaxReducevAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/softmax_reducev/SoftmaxReducev.lean
+
+      - name: Factor mixed sparse attention
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/VeriTile/bench/tritonbench_g/mixed_sparse_attention/MixedSparseAttention.lean")
+          s=p.read_text().replace(
+            "import VeriTile.Triton\n",
+            "import VeriTile.Triton\nimport VeriTile.MathGraphNormalizationQuotient\n",1)
+          s+=Path("experiments/normalization_gauge_quotient_v4/MixedSparseAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/mixed_sparse_attention/MixedSparseAttention.lean
+
+      - name: Factor block sparse attention
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path("vendor/VeriTile/bench/tritonbench_g/block_sparse_attn/BlockSparseAttn.lean")
+          s=p.read_text().replace(
+            "import VeriTile.Triton\n",
+            "import VeriTile.Triton\nimport VeriTile.MathGraphNormalizationQuotient\n",1)
+          s+=Path("experiments/normalization_gauge_quotient_v4/BlockSparseAppend.lean").read_text()
+          p.write_text(s)
+          PY
+          cd vendor/VeriTile
+          lake env lean bench/tritonbench_g/block_sparse_attn/BlockSparseAttn.lean
+
+      - name: Emit evidence
+        env:
+          VERITILE_ROOT: vendor/VeriTile
+          EVIDENCE_OUT: evidence/normalization-gauge-quotient-v4.json
+        run: python experiments/normalization_gauge_quotient_v4/audit.py
+
+      - uses: actions/upload-artifact@v4
+        name: Upload evidence
+        with:
+          name: normalization-gauge-quotient-v4
+          path: evidence/normalization-gauge-quotient-v4.json
+          if-no-files-found: error
