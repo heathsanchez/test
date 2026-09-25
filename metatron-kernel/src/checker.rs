@@ -7825,7 +7825,6 @@ fn trace_verdict_boundary(
         }
     }
 }
-
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
