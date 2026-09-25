@@ -1,0 +1,32 @@
+name: Collatz bi-adic centre state V0
+
+on:
+  push:
+    branches:
+      - collatz-biadic-centre-state-v0
+    paths:
+      - 'experiments/collatz_biadic_centre_state_v0.py'
+      - '.github/workflows/collatz-biadic-centre-state-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact broad holdout bi-adic audit
+        run: |
+          mkdir -p evidence/collatz-biadic-centre-state-v0
+          python experiments/collatz_biadic_centre_state_v0.py             --lo 43009 --hi 45055 --K 128             --output evidence/collatz-biadic-centre-state-v0/broad.json             | tee evidence/collatz-biadic-centre-state-v0/broad.log
+      - name: Exact adversarial preselected-band audit
+        run: |
+          python experiments/collatz_biadic_centre_state_v0.py             --lo 46081 --hi 46591 --K 128             --output evidence/collatz-biadic-centre-state-v0/adversarial.json             | tee evidence/collatz-biadic-centre-state-v0/adversarial.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-centre-state-v0
+          path: evidence/collatz-biadic-centre-state-v0
+          if-no-files-found: error
