@@ -5049,10 +5049,11 @@ fn check_exact_fin(
     // The dependent proof field must itself be a proposition.
     let checker = TypeChecker::new(&export.exprs, &export.levels, environment)
         .with_delta_policy(delta_policy);
-    if !matches!(
-        checker.is_proposition(*proof_field, limits.judgment_steps),
-        Judgment::Proven { .. }
-    ) {
+    let proof_judgment = checker.is_proposition(*proof_field, limits.judgment_steps);
+    if std::env::var_os("NUCLEUS_TRACE_FIN").is_some() {
+        eprintln!("NUCLEUS_FIN:stage=proof-field:judgment={proof_judgment:?}");
+    }
+    if !matches!(proof_judgment, Judgment::Proven { .. }) {
         return Err(Verdict::Unknown);
     }
 
