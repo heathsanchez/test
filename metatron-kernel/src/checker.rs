@@ -2125,7 +2125,6 @@ fn exact_fin_recursor_shape(
             .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
 }
 
-
 fn exact_fin_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([inductive], [constructor], [recursor]) = (
         block.types.as_slice(),
