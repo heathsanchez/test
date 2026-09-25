@@ -1783,7 +1783,7 @@ fn generic_unary_structure_recursor_shape(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
         return false;
     };
-    if rule_domains[..p] != ind_params[..]
+    if (require_syntactic_parameters && rule_domains[..p] != ind_params[..])
         || rule_domains[p] != motive
         || rule_domains[p + 1] != minor
     {
