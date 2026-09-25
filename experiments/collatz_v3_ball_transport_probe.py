@@ -78,31 +78,38 @@ def audit(lo,hi,K,out):
             z=apply(c,qstar)
 
             depths=[v3_frac(z-centre(q)) for q in bank]
-            zeros=[i for i,v in enumerate(depths) if v is None]
             ai,ah,_=nearest(bank,e["m1"])
 
-            if zeros:
-                # Canonical equal-centre identity is fixed, depth is only lower-bounded.
-                pi=min(zeros)
-                if ai!=pi or ah<radius:
-                    failures.append((e["source"],e["anchor"],pos,"exact",pi,radius,ai,ah))
+            # m'-z has EXACT 3-adic depth radius. Hence for each centre:
+            #   image depth < radius  => preserved exactly;
+            #   image depth > radius (or z==centre) => actual depth exactly radius;
+            #   image depth = radius => only genuine cancellation ambiguity.
+            pred=[]
+            equal_ties=[]
+            for ii,s in enumerate(depths):
+                if s is None or s>radius:
+                    pred.append(radius)
+                    if s is None:
+                        exact_centre+=1
+                elif s<radius:
+                    pred.append(s)
                 else:
-                    exact_centre+=1
-                continue
+                    pred.append(None)
+                    equal_ties.append(ii)
 
-            g=max(depths); pi=next(i for i,v in enumerate(depths) if v==g)
-            if g<radius:
-                certified+=1
-                if (ai,ah)!=(pi,g):
-                    failures.append((e["source"],e["anchor"],pos,"margin",pi,g,ai,ah,radius))
-            else:
+            if equal_ties:
                 ambiguous.append({
                     "source":e["source"],"anchor":e["anchor"],"position":pos,
                     "nearest_before":fk.semantic_id(bank[ni]),"h":h,
                     "current":fk.semantic_id(c),"radius":radius,
-                    "image_max_depth":g,
+                    "tie_centres":[fk.semantic_id(bank[i]) for i in equal_ties],
                     "actual_nearest":fk.semantic_id(bank[ai]),"actual_h":ah,
                 })
+            else:
+                certified+=1
+                hp=max(pred); pi=next(i for i,v in enumerate(pred) if v==hp)
+                if (ai,ah)!=(pi,hp):
+                    failures.append((e["source"],e["anchor"],pos,"exact_ball",pi,hp,ai,ah,radius))
 
     result={
       "range":[lo,hi],"K":K,"counts":dict(counts),
@@ -114,7 +121,7 @@ def audit(lo,hi,K,out):
       "failures":failures,
     }
     if not incomplete and not failures and not ambiguous:
-        result["verdict"]="PASS_BOUNDED_3ADIC_IMAGE_BALL_DETERMINES_NEXT_NEAREST"
+        result["verdict"]="PASS_BOUNDED_EXACT_3ADIC_BALL_TRANSPORT_DETERMINES_NEXT_NEAREST"
     elif not incomplete and not failures:
         result["verdict"]="SEPARATOR_IMAGE_BALL_OVERLAPS_VORONOI_BOUNDARY"
     else:
