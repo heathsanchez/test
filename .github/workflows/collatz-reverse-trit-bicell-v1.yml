@@ -1,0 +1,30 @@
+name: Collatz reverse trit bi-cell V1
+
+on:
+  push:
+    branches: [collatz-reverse-trit-bicell-v1]
+    paths:
+      - 'experiments/collatz_reverse_trit_bicell_v1.py'
+      - '.github/workflows/collatz-reverse-trit-bicell-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact intrinsic bi-cell separator audit
+        run: |
+          mkdir -p evidence/collatz-reverse-trit-bicell-v1
+          python experiments/collatz_reverse_trit_bicell_v1.py \
+            --output evidence/collatz-reverse-trit-bicell-v1/result.json \
+            | tee evidence/collatz-reverse-trit-bicell-v1/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-reverse-trit-bicell-v1
+          path: evidence/collatz-reverse-trit-bicell-v1
+          if-no-files-found: error
