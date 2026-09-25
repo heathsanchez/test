@@ -1,0 +1,28 @@
+name: Collatz V3 image ball transport V0 broad
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-transport-law-v0-fast
+    paths:
+      - '.github/workflows/collatz-v3-image-ball-transport-v0-broad.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Broad exact no-overcancellation falsifier
+        run: |
+          mkdir -p evidence/collatz-v3-image-ball-transport-v0-broad
+          python experiments/collatz_v3_ball_transport_probe.py             --lo 3 --hi 32767 --K 128             --out evidence/collatz-v3-image-ball-transport-v0-broad/result.json             | tee evidence/collatz-v3-image-ball-transport-v0-broad/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v3-image-ball-transport-v0-broad
+          path: evidence/collatz-v3-image-ball-transport-v0-broad
+          if-no-files-found: error
