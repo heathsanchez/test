@@ -360,28 +360,29 @@ impl<'a> TypeChecker<'a> {
                             field_frame = field_frame.extend(parameter.clone());
                         }
                         for prior_index in 0..index {
-                            let prior_projection = self.expressions.iter_raw().find_map(
-                                |(raw, expression)| match expression {
-                                    Expr::Proj {
-                                        type_name: prior_type,
-                                        index: prior,
-                                        structure: prior_structure,
-                                    } if prior_type == type_name
-                                        && *prior == prior_index as u64
-                                        && prior_structure == structure =>
-                                    {
-                                        Some(ExprId(raw))
+                            let prior_projection =
+                                self.expressions.iter_raw().find_map(|(raw, expression)| {
+                                    match expression {
+                                        Expr::Proj {
+                                            type_name: prior_type,
+                                            index: prior,
+                                            structure: prior_structure,
+                                        } if prior_type == type_name
+                                            && *prior == prior_index as u64
+                                            && prior_structure == structure =>
+                                        {
+                                            Some(ExprId(raw))
+                                        }
+                                        _ => None,
                                     }
-                                    _ => None,
-                                },
-                            );
+                                });
                             let Some(prior_projection) = prior_projection else {
                                 return Judgment::unknown(
                                     "dependent-projection-prior-field-unavailable",
                                 );
                             };
-                            field_frame = field_frame
-                                .extend(self.closure(prior_projection, frame.clone()));
+                            field_frame =
+                                field_frame.extend(self.closure(prior_projection, frame.clone()));
                         }
 
                         let level_substitution = LevelSubstitution::new(
