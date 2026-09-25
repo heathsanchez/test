@@ -5251,13 +5251,7 @@ fn check_exact_fin(
             false,
             true,
         )
-        || !generic_unary_structure_recursor_shape(
-            export,
-            inductive,
-            constructor,
-            recursor,
-            true,
-        )
+        || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor, true)
     {
         return Err(Verdict::Reject);
     }
