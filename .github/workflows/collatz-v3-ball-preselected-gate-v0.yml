@@ -1,0 +1,56 @@
+name: Collatz V3 ball preselected gate V0
+
+on:
+  push:
+    branches:
+      - collatz-v3-ball-preselected-gate-v0
+    paths:
+      - '.github/workflows/collatz-v3-ball-preselected-gate-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze intrinsic ball candidate
+        run: |
+          git diff --exit-code d04e4efff2c3c2e5953d6093624df3b58ef831bd --             experiments/collatz_v3_ball_port_v0.py
+          echo "CANDIDATE_FROZEN_AT d04e4efff2c3c2e5953d6093624df3b58ef831bd"
+      - name: Exact preselected intrinsic-ball gate
+        run: |
+          set -o pipefail
+          mkdir -p evidence/collatz-v3-ball-preselected-gate-v0
+          python experiments/collatz_v3_ball_port_v0.py             --lo 46593 --hi 47103 --K 128             --output evidence/collatz-v3-ball-preselected-gate-v0/result.json             | tee evidence/collatz-v3-ball-preselected-gate-v0/run.log
+      - name: Judge ball quotient
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-v3-ball-preselected-gate-v0/result.json'))
+          r=d['representations']
+          row={
+            'control_kernel':r['CONTROL']['future_kernel'],
+            'ball_kernel':r['BALL']['future_kernel'],
+            'ball_ambiguity':r['BALL']['raw_ambiguous'],
+            'port_kernel':r['PORT']['future_kernel'],
+            'nearest_kernel':r['NEAREST']['future_kernel'],
+          }
+          print('PRESELECTED_BALL',json.dumps(row,sort_keys=True))
+          assert row['control_kernel']>0
+          if row['ball_kernel']==0 and row['ball_ambiguity']==0:
+              print('PRESELECTED_BALL_VERDICT PASS_INTRINSIC_V3_BALL')
+          else:
+              print('PRESELECTED_BALL_VERDICT RESIDUAL_INTRINSIC_V3_BALL')
+              raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v3-ball-preselected-gate-v0
+          path: evidence/collatz-v3-ball-preselected-gate-v0
+          if-no-files-found: error
