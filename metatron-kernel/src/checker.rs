@@ -5143,7 +5143,6 @@ fn check_exact_decidable(
     install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
-
 fn check_exact_acc(
     export: &ResolvedExport,
     environment: &Environment,
