@@ -63,6 +63,7 @@ jobs:
                   line for line in stderr.splitlines()
                   if line.startswith('NUCLEUS_DERIVED_SINGLE:')
                   or line.startswith('NUCLEUS_BOUNDARY_UNKNOWN:')
+                  or line.startswith('NUCLEUS_DECL:')
               ]
               rows.append({'test':name,'expected':expected,'rc':q.returncode,'marks':marks})
           out={'schema':'nucleus-derived-single-field-trace-v1','candidate_sha':os.environ['GITHUB_SHA'],'rows':rows}
