@@ -1,0 +1,68 @@
+{
+  "schema": "acc-acsolverx-10090-atlas-contact-v1",
+  "status": "CANDIDATE_NEGATIVE",
+  "created_utc": "2026-09-25T08:19:00Z",
+  "objective": "Test whether the pinned public ACSolverX substitution-supermove heuristic yields a leaderboard-viable trajectory or reusable Proof Atlas join for ac-10090.",
+  "authority": {
+    "official_verifier_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "acsolverx_repo": "Avi161/ACSolverX",
+    "acsolverx_pin": "e7fef21a5031f44157637e0f23f5760f7a769164",
+    "proof_atlas_run": 36070189102,
+    "proof_atlas_artifact": 10838365781,
+    "proof_atlas_states": 433272,
+    "v5_selector_run": 36087962582,
+    "v5_selector_artifact": 10844507397,
+    "v5_guard": "S7:quad-cycle"
+  },
+  "source_search": {
+    "target": "ac-10090",
+    "last_observed_live_best": 318,
+    "heuristic": "L + 2.53*K + 6.418*MK + 8.458*S + 3.292*xyimb",
+    "max_relator_length": 24,
+    "solved": true,
+    "popped_nodes": 14039,
+    "generated_neighbors": 2484572,
+    "visited_states": 590595,
+    "substitution_supermoves": 322
+  },
+  "atlas_intersection": {
+    "symmetry_orbit_steps_with_exact_hits": 11,
+    "earliest_orbit_hit_step": 297,
+    "minimum_optimistic_source_steps_plus_atlas_distance": 322,
+    "strict_live_win_requires_less_than": 318,
+    "viable_exact_orbit_joins": 0
+  },
+  "v5_guarded_contacts": {
+    "count": 5,
+    "contacts": [
+      {
+        "s_step": 299,
+        "min_atlas_distance": 92,
+        "optimistic_total": 391
+      },
+      {
+        "s_step": 306,
+        "min_atlas_distance": 54,
+        "optimistic_total": 360
+      },
+      {
+        "s_step": 320,
+        "min_atlas_distance": 6,
+        "optimistic_total": 326
+      },
+      {
+        "s_step": 321,
+        "min_atlas_distance": 4,
+        "optimistic_total": 325
+      },
+      {
+        "s_step": 322,
+        "min_atlas_distance": 4,
+        "optimistic_total": 326
+      }
+    ],
+    "viable_under_last_observed_live_best": 0
+  },
+  "conclusion": "The ACSolverX RECOMMENDED substitution trajectory is a real source witness, but it cannot improve ac-10090 through either an exact symmetry-orbit Proof Atlas join or the minimum V5 guarded quotient: even the impossible optimistic cost of one official move per S-move is already above the last observed record. Do not spend effort compiling this trajectory to official moves.",
+  "claim_boundary": "Local exact reproduction against pinned public source semantics plus warranted Atlas/V5 artifacts; not promoted to WARRANTED until hosted exact-head reproduction."
+}
