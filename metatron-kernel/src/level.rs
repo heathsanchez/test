@@ -74,9 +74,15 @@ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment
     }
 
     let Some(left) = canonical(&left, &mut budget) else {
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX:left-unresolved={left:?}:right={right:?}");
+        }
         return Judgment::unknown("unresolved-imax-case");
     };
     let Some(right) = canonical(&right, &mut budget) else {
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX:right-unresolved={right:?}:left={left:?}");
+        }
         return Judgment::unknown("unresolved-imax-case");
     };
     if budget.exhausted {
