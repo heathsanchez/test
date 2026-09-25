@@ -740,7 +740,6 @@ fn check_inductive(
         return check_exact_fin(export, environment, block, limits, delta_policy);
     }
 
-
     if let [inductive] = block.types.as_slice()
         && (name_is_root_str(export, inductive.name, "N")
             || name_is_root_str(export, inductive.name, "Nat"))
@@ -5037,11 +5036,7 @@ fn check_exact_acc(
     install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
 }
 
-fn fin_lt_field_type(
-    export: &ResolvedExport,
-    expression: ExprId,
-    nat: NameId,
-) -> bool {
+fn fin_lt_field_type(export: &ResolvedExport, expression: ExprId, nat: NameId) -> bool {
     let (head, arguments) = application_spine(export, expression);
     let [carrier, instance, value, bound] = arguments.as_slice() else {
         return false;
@@ -5049,7 +5044,11 @@ fn fin_lt_field_type(
     let Some(Expr::Const { name, levels }) = export.exprs.get(head) else {
         return false;
     };
-    let Some(Name::Str { prefix, value: suffix }) = export.names.get(*name) else {
+    let Some(Name::Str {
+        prefix,
+        value: suffix,
+    }) = export.names.get(*name)
+    else {
         return false;
     };
     if suffix != "lt" || !name_is_root_str(export, *prefix, "LT") {
