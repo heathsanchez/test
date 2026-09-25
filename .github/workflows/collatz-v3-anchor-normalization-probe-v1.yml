@@ -1,0 +1,78 @@
+name: Collatz V3 anchor normalization probe V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-anchor-normalization-probe-v1
+    paths:
+      - '.github/workflows/collatz-v3-anchor-normalization-probe-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compare anchor-6 centres to frozen training centre universe
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict
+          from fractions import Fraction
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          train=defaultdict(dict)
+          for n in range(3,8192,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID": continue
+              if not fk.completed_rigid_source(n,K): continue
+              for r,seq in fk.return_sequences(n,K).items():
+                  for e in seq:
+                      c=e["cert"]
+                      train[r][fk.semantic_id(c)]=c
+
+          global_maps={}
+          global_centres=defaultdict(list)
+          for r,d in train.items():
+              for c in d.values():
+                  key=(int(c["A"]),int(c["B"]),int(c["D"]))
+                  global_maps.setdefault(key,[]).append((r,fk.semantic_id(c)))
+                  q=Fraction(int(c["B"]),int(c["C"]))
+                  global_centres[q].append((r,fk.semantic_id(c),key))
+
+          n=50971
+          rs=fk.return_sequences(n,K)
+          rows=[]
+          for r,seq in rs.items():
+              if not seq: continue
+              for e in seq:
+                  c=e["cert"]
+                  key=(int(c["A"]),int(c["B"]),int(c["D"]))
+                  q=Fraction(int(c["B"]),int(c["C"]))
+                  rows.append({
+                    "anchor":r,
+                    "id":fk.semantic_id(c),
+                    "tuple":fk.semantic_tuple(c),
+                    "word":c["word"],
+                    "map_matches":global_maps.get(key,[]),
+                    "centre_matches":global_centres.get(q,[]),
+                    "centre":[q.numerator,q.denominator],
+                  })
+
+          print("ANCHOR_NORMALIZATION",json.dumps({
+            "training_anchor_sizes":{str(r):len(d) for r,d in train.items()},
+            "source":n,
+            "rows":rows,
+          },sort_keys=True))
+          high=[z for z in rows if z["anchor"]>5]
+          print("HIGH_ANCHOR_COUNT",len(high))
+          print("HIGH_ANCHOR_MAP_MATCHES",sum(bool(z["map_matches"]) for z in high))
+          print("HIGH_ANCHOR_CENTRE_MATCHES",sum(bool(z["centre_matches"]) for z in high))
+          PY
