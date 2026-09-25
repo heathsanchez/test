@@ -770,8 +770,6 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
     } else if generic_closed_prop_singleton_candidate(block) {
         check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
-    } else if generic_unary_structure_candidate(export, block) {
-        check_generic_unary_structure(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
     } else if inductive.num_params == 1
@@ -1963,41 +1961,52 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
     ) else {
         return false;
     };
-    let (Ok(p), Ok(fields)) = (
-        usize::try_from(inductive.num_params),
-        usize::try_from(constructor.num_fields),
-    ) else {
-        return false;
-    };
-    if fields == 0
-        || generic_field_structure_is_parameter_product(export, inductive, constructor)
+
+    // First generic dependent-record corridor, discovered by exact residual
+    // reclosure rather than by name: one parameter, one constructor, two
+    // fields, no indices/nesting/recursion/reflexivity and no universe
+    // parameters on the inductive declaration.  This is deliberately much
+    // narrower than the earlier zero-earned generic-field experiment.
+    if inductive.num_params != 1
         || inductive.num_indices != 0
         || inductive.num_nested != 0
         || inductive.is_recursive
         || inductive.is_reflexive
         || inductive.is_unsafe
-        || constructor.num_params != inductive.num_params
+        || !inductive.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
         || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
         || recursor.k
         || recursor.is_unsafe
+        || recursor.level_params.len() != 1
     {
         return false;
     }
-    let Some((_, result)) = pi_spine(export, inductive.ty, p) else {
+
+    let Some((inductive_domains, inductive_result)) = pi_spine(export, inductive.ty, 1) else {
         return false;
     };
-    if !matches!(
-        export.exprs.get(result),
-        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
-    ) {
+    let [parameter_type] = inductive_domains.as_slice() else {
+        return false;
+    };
+    if !matches!(export.exprs.get(inductive_result), Some(Expr::Sort(_))) {
         return false;
     }
-    let Some((ctor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
         return false;
     };
-    ctor_domains[p..]
-        .iter()
-        .all(|field| !expression_contains_constant(export, *field, inductive.name))
+    let [constructor_parameter, first_field, second_field] = constructor_domains.as_slice() else {
+        return false;
+    };
+
+    // The parameter telescope is exact.  Fields must be nonrecursive, but the
+    // second field may depend on the first field (the missing Fin-shaped case).
+    *constructor_parameter == *parameter_type
+        && !expression_contains_constant(export, *first_field, inductive.name)
+        && !expression_contains_constant(export, *second_field, inductive.name)
 }
 
 fn check_generic_field_structure(
@@ -2034,26 +2043,47 @@ fn check_generic_field_structure(
         )
         || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
     {
+        // This corridor grants no rejection merely from failing the positive
+        // structural derivation.  Existing independently warranted negative
+        // laws remain responsible for REJECT.
         return Err(Verdict::Unknown);
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    let derived_inductive = if inductive.level_params.is_empty() {
-        derived_type(inductive.name, inductive.ty)
-    } else {
-        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
-    };
     derivation.promote_all(
         export,
         [
-            derived_inductive,
+            derived_type(inductive.name, inductive.ty),
             derived_constructor(constructor),
             derived_recursor(recursor),
         ],
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        return Err(Verdict::Unknown);
+    };
+    let [_, first_field, second_field] = constructor_domains.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 1,
+                field_types: vec![
+                    ProjectionFieldType::Derived(*first_field),
+                    ProjectionFieldType::Derived(*second_field),
+                ],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn generic_parameterized_nullary_candidate(
