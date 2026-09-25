@@ -1,0 +1,28 @@
+name: Collatz Endpoint Language V4
+
+on:
+  push:
+    branches: [collatz-endpoint-language-v4]
+    paths:
+      - 'experiments/collatz_endpoint_language_v4.py'
+      - '.github/workflows/collatz-endpoint-language-v4.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact endpoint language quotient
+        run: |
+          mkdir -p evidence/collatz-endpoint-language-v4
+          python experiments/collatz_endpoint_language_v4.py             --max-depth 20             --max-lookahead 8             --output evidence/collatz-endpoint-language-v4/result.json             | tee evidence/collatz-endpoint-language-v4/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-endpoint-language-v4
+          path: evidence/collatz-endpoint-language-v4
+          if-no-files-found: error
