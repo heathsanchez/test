@@ -1,0 +1,87 @@
+name: Collatz V3 control-only enrichment V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-control-enrichment-v1
+    paths:
+      - '.github/workflows/collatz-v3-control-enrichment-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze candidate implementation
+        run: |
+          git diff --exit-code fdc3c4f28fabaa3454c78c9ad16633b96462c4ff -- \
+            experiments/collatz_stateful_future_kernel_v0.py \
+            experiments/test_collatz_stateful_future_kernel_v0.py
+      - name: Control-only untouched-band scout
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict, Counter
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          def control_band(lo,hi):
+              patterns=defaultdict(dict)
+              seqs_all=[]
+              incomplete=[]
+              counts=Counter()
+              for n in range(lo|1,hi+1,2):
+                  survives,_=base.survives_to_q0(n)
+                  if not survives or base.birth_status(n)[0]!="RIGID":
+                      continue
+                  counts["hereditary_birth_rigid"]+=1
+                  if not fk.completed_rigid_source(n,K):
+                      incomplete.append(n); continue
+                  counts["completed_sources"]+=1
+                  seqs=fk.return_sequences(n,K)
+                  for r,seq in seqs.items():
+                      if not seq: continue
+                      seqs_all.append(seq)
+                      counts["anchor_sequences"]+=1
+                      counts["return_occurrences"]+=len(seq)
+                      for e in seq:
+                          c=e["cert"]
+                          patterns[r][fk.semantic_id(c)]=c
+              bank={r:tuple(patterns[r][k] for k in sorted(patterns[r])) for r in sorted(patterns)}
+              nodes,succ,exits,edge_occ=fk.graph_from_occurrences(seqs_all,bank,"CONTROL")
+              classes,qnodes,qsucc,qexits,qrounds=fk.refine_future_quotient(nodes,succ,exits)
+              qkernel,qprune=fk.greatest_kernel(qnodes,qsucc)
+              return {
+                  "range":[lo,hi],
+                  "completed_sources":counts["completed_sources"],
+                  "return_occurrences":counts["return_occurrences"],
+                  "semantic_patterns":sum(len(v) for v in bank.values()),
+                  "incomplete":len(incomplete),
+                  "control_future_classes":len(qnodes),
+                  "control_kernel":len(qkernel),
+                  "cycle":fk.canonical(fk.cycle_witness(qkernel,qsucc)),
+              }
+
+          selected=None
+          lo=46081
+          while lo<=65535:
+              hi=min(65535,lo+510)
+              row=control_band(lo,hi)
+              print("CONTROL_SCOUT",json.dumps(row,sort_keys=True))
+              if row["incomplete"]==0 and row["control_kernel"]>0:
+                  selected=row
+                  break
+              lo=hi+2
+          print("CONTROL_SELECTED",json.dumps(selected,sort_keys=True))
+          if selected is None:
+              raise SystemExit(1)
+          PY
