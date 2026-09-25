@@ -5,6 +5,7 @@ from collections import defaultdict,Counter
 from pathlib import Path
 import collatz_stateful_future_kernel_v0 as fk
 import collatz_q0_coalescence_component_audit as base
+import collatz_q0_rigid_recharge_audit as ra
 
 def totalR(c): return fk.vpz(c["A"],3)
 
@@ -40,8 +41,8 @@ def analyze(lo,hi,K,out):
                     p=num//A
                     if p>0:
                         all_valid+=1; valid.append((p,c,v))
-                        assert fk.admissible(c,p)
-                        assert fk.replay(c,p)==m
+                        assert ra.admissible(c,p)
+                        assert ra.replay(c,p)==m
                         assert p-m==fk.defect(c,m)//A
                         exact_checks+=1
                         if p<m:
