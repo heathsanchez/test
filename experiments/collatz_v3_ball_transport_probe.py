@@ -69,7 +69,7 @@ def audit(lo,hi,K,out):
     banks={r:tuple(sorted(patterns[r].values(),key=fk.semantic_tuple)) for r in sorted(patterns)}
     counts["semantic_patterns"]=sum(len(v) for v in banks.values())
 
-    certified=0; exact_centre=0; ambiguous=[]; failures=[]
+    certified=0; exact_centre=0; ambiguous=[]; failures=[]; overcancel=[]; equality_checks=0
     for seq in seqs:
         for pos,e in enumerate(seq[:-1]):
             c=e["cert"]; bank=banks[e["anchor"]]
@@ -98,18 +98,24 @@ def audit(lo,hi,K,out):
                     equal_ties.append(ii)
 
             if equal_ties:
-                ambiguous.append({
-                    "source":e["source"],"anchor":e["anchor"],"position":pos,
-                    "nearest_before":fk.semantic_id(bank[ni]),"h":h,
-                    "current":fk.semantic_id(c),"radius":radius,
-                    "tie_centres":[fk.semantic_id(bank[i]) for i in equal_ties],
-                    "actual_nearest":fk.semantic_id(bank[ai]),"actual_h":ah,
-                })
-            else:
-                certified+=1
-                hp=max(pred); pi=next(i for i,v in enumerate(pred) if v==hp)
-                if (ai,ah)!=(pi,hp):
-                    failures.append((e["source"],e["anchor"],pos,"exact_ball",pi,hp,ai,ah,radius))
+                equality_checks += len(equal_ties)
+                actual_vals=[fk.vpz(fk.defect(q,e["m1"]),3) for q in bank]
+                bad=[i for i in equal_ties if actual_vals[i] > radius]
+                if bad:
+                    overcancel.append({
+                        "source":e["source"],"anchor":e["anchor"],"position":pos,
+                        "nearest_before":fk.semantic_id(bank[ni]),"h":h,
+                        "current":fk.semantic_id(c),"radius":radius,
+                        "overcancel_centres":[fk.semantic_id(bank[i]) for i in bad],
+                        "actual_depths":[actual_vals[i] for i in bad],
+                    })
+                # Candidate no-overcancellation law predicts equality targets at radius.
+                for i in equal_ties:
+                    pred[i]=radius
+            certified+=1
+            hp=max(pred); pi=next(i for i,v in enumerate(pred) if v==hp)
+            if (ai,ah)!=(pi,hp):
+                failures.append((e["source"],e["anchor"],pos,"exact_ball",pi,hp,ai,ah,radius))
 
     result={
       "range":[lo,hi],"K":K,"counts":dict(counts),
@@ -118,12 +124,15 @@ def audit(lo,hi,K,out):
       "exact_centre_cases":exact_centre,
       "ambiguous_count":len(ambiguous),
       "ambiguous_examples":ambiguous[:40],
+      "equality_checks":equality_checks,
+      "overcancellation_count":len(overcancel),
+      "overcancellation_examples":overcancel[:40],
       "failures":failures,
     }
-    if not incomplete and not failures and not ambiguous:
-        result["verdict"]="PASS_BOUNDED_EXACT_3ADIC_BALL_TRANSPORT_DETERMINES_NEXT_NEAREST"
+    if not incomplete and not failures and not overcancel:
+        result["verdict"]="PASS_BOUNDED_NO_3ADIC_OVERCANCELLATION_BALL_TRANSPORT"
     elif not incomplete and not failures:
-        result["verdict"]="SEPARATOR_IMAGE_BALL_OVERLAPS_VORONOI_BOUNDARY"
+        result["verdict"]="SEPARATOR_3ADIC_OVERCANCELLATION"
     else:
         result["verdict"]="SEPARATOR_IMAGE_BALL_TRANSPORT_FAILURE"
     out.parent.mkdir(parents=True,exist_ok=True)
@@ -131,8 +140,9 @@ def audit(lo,hi,K,out):
     print("COUNTS",json.dumps(dict(counts),sort_keys=True))
     print("INCOMPLETE",len(incomplete))
     print("MARGIN_CERTIFIED",certified,"EXACT_CENTRE",exact_centre,
-          "AMBIGUOUS",len(ambiguous),"FAILURES",len(failures))
-    for z in ambiguous[:20]: print("AMBIGUOUS",json.dumps(z,sort_keys=True))
+          "EQUALITY_CHECKS",equality_checks,"OVERCANCELLATION",len(overcancel),
+          "FAILURES",len(failures))
+    for z in overcancel[:20]: print("OVERCANCEL",json.dumps(z,sort_keys=True))
     for z in failures[:20]: print("FAILURE",z)
     print("VERDICT",result["verdict"])
 
