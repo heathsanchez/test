@@ -24,16 +24,16 @@ def ConsequenceSpec.setoid {X : Type u} {Y : Type v}
   r := S.rel
   iseqv := ⟨S.rel_refl, S.rel_symm, S.rel_trans⟩
 
-abbrev ConsequenceSpec.Quotient {X : Type u} {Y : Type v}
-    (S : ConsequenceSpec X Y) := Quotient S.setoid
+abbrev ConsequenceSpec.StateQuotient {X : Type u} {Y : Type v}
+    (S : ConsequenceSpec X Y) := _root_.Quotient S.setoid
 
 def ConsequenceSpec.project {X : Type u} {Y : Type v}
-    (S : ConsequenceSpec X Y) (x : X) : S.Quotient :=
-  Quotient.mk S.setoid x
+    (S : ConsequenceSpec X Y) (x : X) : S.StateQuotient :=
+  _root_.Quotient.mk S.setoid x
 
 noncomputable def ConsequenceSpec.quotientObserve {X : Type u} {Y : Type v}
-    (S : ConsequenceSpec X Y) : S.Quotient → Y :=
-  Quotient.lift S.observe (fun _ _ h => S.observe_respects h)
+    (S : ConsequenceSpec X Y) : S.StateQuotient → Y :=
+  _root_.Quotient.lift S.observe (fun _ _ h => S.observe_respects h)
 
 @[simp] theorem ConsequenceSpec.quotientObserve_project
     {X : Type u} {Y : Type v} (S : ConsequenceSpec X Y) (x : X) :
@@ -43,7 +43,7 @@ theorem ConsequenceSpec.project_eq_of_rel
     {X : Type u} {Y : Type v} (S : ConsequenceSpec X Y)
     {x y : X} (h : S.rel x y) :
     S.project x = S.project y :=
-  Quotient.sound h
+  _root_.Quotient.sound h
 
 /--
 The protected observation factors exactly through the compiled quotient.
