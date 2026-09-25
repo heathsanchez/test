@@ -1,0 +1,68 @@
+name: Collatz V3 ball control preselect V0
+
+on:
+  push:
+    branches:
+      - collatz-v3-ball-control-preselect-v0
+    paths:
+      - '.github/workflows/collatz-v3-ball-control-preselect-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Control-only untouched-band scout
+        run: |
+          set -o pipefail
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict,Counter
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          def band(lo,hi):
+              pats=defaultdict(dict); seqs=[]; incomplete=[]; counts=Counter()
+              for n in range(lo|1,hi+1,2):
+                  survives,_=base.survives_to_q0(n)
+                  if not survives or base.birth_status(n)[0]!="RIGID": continue
+                  if not fk.completed_rigid_source(n,K):
+                      incomplete.append(n); continue
+                  counts["completed"]+=1
+                  for r,seq in fk.return_sequences(n,K).items():
+                      if not seq: continue
+                      seqs.append(seq); counts["returns"]+=len(seq)
+                      for e in seq:
+                          c=e["cert"]; pats[r][fk.semantic_id(c)]=c
+              bank={r:tuple(pats[r][k] for k in sorted(pats[r])) for r in pats}
+              # Use existing control graph helper; patterns_by_anchor must include every anchor.
+              flat=[]
+              for n in range(lo|1,hi+1,2):
+                  survives,_=base.survives_to_q0(n)
+                  if not survives or base.birth_status(n)[0]!="RIGID" or not fk.completed_rigid_source(n,K): continue
+                  for r,seq in fk.return_sequences(n,K).items():
+                      if seq: flat.append(seq)
+              nodes,succ,exits,_=fk.graph_from_occurrences(flat,bank,"CONTROL")
+              _,qnodes,qsucc,_,_=fk.refine_future_quotient(nodes,succ,exits)
+              kern,_=fk.greatest_kernel(qnodes,qsucc)
+              return {"range":[lo,hi],"completed":counts["completed"],"returns":counts["returns"],
+                      "patterns":sum(len(v) for v in bank.values()),"incomplete":len(incomplete),
+                      "control_kernel":len(kern),"cycle":fk.canonical(fk.cycle_witness(kern,qsucc))}
+          selected=None
+          lo=46593
+          while lo<=65535:
+              hi=min(65535,lo+510)
+              x=band(lo,hi); print("CONTROL_SCOUT",json.dumps(x,sort_keys=True))
+              if x["incomplete"]==0 and x["control_kernel"]>0:
+                  selected=x; break
+              lo=hi+2
+          print("CONTROL_SELECTED",json.dumps(selected,sort_keys=True))
+          if selected is None: raise SystemExit(1)
+          PY
