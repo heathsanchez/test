@@ -56,10 +56,16 @@ pub struct RecursorReduction {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ProjectionFieldType {
+    Parameter(usize),
+    Derived(ExprId),
+}
+
+#[derive(Clone, Debug, Eq, PartialEq)]
 pub struct ProjectionSpec {
     pub constructor: NameId,
     pub num_params: usize,
-    pub field_param_indices: Vec<usize>,
+    pub field_types: Vec<ProjectionFieldType>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -476,16 +482,13 @@ impl<'a> Machine<'a> {
                     index,
                     structure,
                 } => {
-                    if !pending.is_empty() {
-                        return Judgment::unknown("projection-applied-as-function");
-                    }
                     let Some(spec) = self.projection_specs.get(type_name) else {
                         return Judgment::unknown("unsupported-projection");
                     };
                     let Ok(index) = usize::try_from(*index) else {
                         return Judgment::unknown("projection-index-overflow");
                     };
-                    if index >= spec.field_param_indices.len() {
+                    if index >= spec.field_types.len() {
                         return Judgment::unknown("projection-index-out-of-range");
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
