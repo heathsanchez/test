@@ -1783,7 +1783,7 @@ fn generic_unary_structure_recursor_shape(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
         return false;
     };
-    if rule_domains[..p] != ind_params[..]
+    if (require_syntactic_parameters && rule_domains[..p] != ind_params[..])
         || rule_domains[p] != motive
         || rule_domains[p + 1] != minor
     {
@@ -2109,7 +2109,40 @@ fn check_generic_field_structure(
         limits.judgment_steps,
         delta_policy,
     )?;
-    Ok(derivation.finish())
+
+    let environment = derivation.finish();
+
+    // Shadow only: the live P3 residual is the certified HAdd-style corridor:
+    // three parameters, one nonrecursive field, no indices/nesting. The field
+    // type is not itself a parameter, so retain the derived constructor-field
+    // expression as projection typing authority rather than guessing a
+    // parameter slot.
+    if inductive.num_params == 3
+        && constructor.num_fields == 1
+        && inductive.num_indices == 0
+        && inductive.num_nested == 0
+        && !inductive.is_recursive
+        && !inductive.is_reflexive
+    {
+        let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 4) else {
+            return Err(Verdict::Unknown);
+        };
+        let Some(field_type) = constructor_domains.get(3).copied() else {
+            return Err(Verdict::Unknown);
+        };
+        return environment
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: 3,
+                    field_types: vec![ProjectionFieldType::Derived(field_type)],
+                },
+            )
+            .map_err(|_| Verdict::Reject);
+    }
+
+    Ok(environment)
 }
 
 fn generic_parameterized_nullary_candidate(
