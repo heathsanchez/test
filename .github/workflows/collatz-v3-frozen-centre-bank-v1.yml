@@ -1,0 +1,113 @@
+name: Collatz V3 frozen centre bank V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-frozen-centre-bank-v1
+    paths:
+      - '.github/workflows/collatz-v3-frozen-centre-bank-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze candidate implementation
+        run: |
+          git diff --exit-code fdc3c4f28fabaa3454c78c9ad16633b96462c4ff -- \
+            experiments/collatz_stateful_future_kernel_v0.py \
+            experiments/test_collatz_stateful_future_kernel_v0.py
+      - name: Freeze 3-8191 centre bank and test untouched holdout
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict,Counter
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          def collect(lo,hi,collect_patterns):
+              patterns=defaultdict(dict)
+              seqs=[]; incomplete=[]; counts=Counter(); anchors=set()
+              for n in range(lo|1,hi+1,2):
+                  survives,_=base.survives_to_q0(n)
+                  if not survives or base.birth_status(n)[0]!="RIGID": continue
+                  counts["hereditary_birth_rigid"]+=1
+                  if not fk.completed_rigid_source(n,K):
+                      incomplete.append(n); continue
+                  counts["completed_sources"]+=1
+                  rs=fk.return_sequences(n,K)
+                  for r,seq in rs.items():
+                      if not seq: continue
+                      seqs.append(seq); anchors.add(r)
+                      counts["anchor_sequences"]+=1
+                      counts["return_occurrences"]+=len(seq)
+                      if collect_patterns:
+                          for e in seq:
+                              c=e["cert"]
+                              patterns[r][fk.semantic_id(c)]=c
+              return patterns,seqs,incomplete,counts,anchors
+
+          train_patterns,_,train_incomplete,train_counts,train_anchors=collect(3,8191,True)
+          bank={r:tuple(sorted(train_patterns[r].values(),key=fk.semantic_tuple))
+                for r in sorted(train_patterns)}
+          train_bank_sizes={str(r):len(v) for r,v in bank.items()}
+
+          hold_patterns,hold_seqs,hold_incomplete,hold_counts,hold_anchors=collect(46593,47103,False)
+          missing_anchors=sorted(set(hold_anchors)-set(bank))
+          active_missing=[]
+          for seq in hold_seqs:
+              for e in seq:
+                  r=e["anchor"]; pid=fk.semantic_id(e["cert"])
+                  if r in bank and all(fk.semantic_id(c)!=pid for c in bank[r]):
+                      active_missing.append((e["source"],r,pid))
+
+          result={
+            "training_range":[3,8191],
+            "holdout_range":[46593,47103],
+            "training_counts":dict(train_counts),
+            "training_bank_sizes":train_bank_sizes,
+            "training_incomplete":train_incomplete,
+            "holdout_counts":dict(hold_counts),
+            "holdout_incomplete":hold_incomplete,
+            "holdout_anchors":sorted(hold_anchors),
+            "missing_anchors":missing_anchors,
+            "active_patterns_not_in_bank":active_missing[:50],
+            "active_patterns_not_in_bank_count":len(active_missing),
+          }
+
+          if not missing_anchors:
+              reps={}
+              for mode in ("CONTROL","V3_NEAREST"):
+                  nodes,succ,exits,edge_occ=fk.graph_from_occurrences(hold_seqs,bank,mode)
+                  classes,qnodes,qsucc,qexits,qrounds=fk.refine_future_quotient(nodes,succ,exits)
+                  qkernel,qprune=fk.greatest_kernel(qnodes,qsucc)
+                  reps[mode]={
+                    "future_classes":len(qnodes),
+                    "future_kernel_classes":len(qkernel),
+                    "future_unique_edges":sum(len(v) for v in qsucc.values()),
+                    "cycle":fk.canonical(fk.cycle_witness(qkernel,qsucc)),
+                  }
+              result["representations"]=reps
+
+          print("FROZEN_BANK_RESULT",json.dumps(result,sort_keys=True))
+          if train_incomplete or hold_incomplete:
+              print("FROZEN_BANK_VERDICT INCOMPLETE")
+              raise SystemExit(1)
+          if missing_anchors:
+              print("FROZEN_BANK_VERDICT RESIDUAL_UNSEEN_ANCHOR")
+              raise SystemExit(1)
+          if result["representations"]["CONTROL"]["future_kernel_classes"]>0 and              result["representations"]["V3_NEAREST"]["future_kernel_classes"]==0:
+              print("FROZEN_BANK_VERDICT PASS_FIXED_BANK_V3_NEAREST_COLLAPSE")
+          else:
+              print("FROZEN_BANK_VERDICT RESIDUAL_FIXED_BANK")
+              raise SystemExit(1)
+          PY
