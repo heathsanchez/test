@@ -85,6 +85,15 @@ def audit(lo,hi,K,out):
                     "cover":fk.semantic_id(bank[bj]),
                     "cover_depth":None if best is None else best,
                     "strict_cover":best is None or best>h,
+                    "active_tuple":fk.semantic_tuple(c),
+                    "active_word":c["word"],
+                    "nearest_tuple":fk.semantic_tuple(bank[ni]),
+                    "nearest_word":bank[ni]["word"],
+                    "tie_tuple":fk.semantic_tuple(qi),
+                    "tie_word":qi["word"],
+                    "cover_tuple":fk.semantic_tuple(bank[bj]),
+                    "cover_word":bank[bj]["word"],
+                    "preimage":[p.numerator,p.denominator],
                 }
                 ties.append(row)
                 if not row["strict_cover"]:uncovered.append(row)
