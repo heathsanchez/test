@@ -1,0 +1,28 @@
+name: Collatz reverse-trit bicell V3 quotient
+
+on:
+  push:
+    branches: [collatz-reverse-trit-bicell-v3-quotient]
+    paths:
+      - 'experiments/collatz_reverse_trit_bicell_v3_quotient.py'
+      - '.github/workflows/collatz-reverse-trit-bicell-v3-quotient.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact future-language quotient
+        run: |
+          mkdir -p evidence/collatz-reverse-trit-bicell-v3-quotient
+          python experiments/collatz_reverse_trit_bicell_v3_quotient.py             --max-q2-depth 14             --output evidence/collatz-reverse-trit-bicell-v3-quotient/result.json             | tee evidence/collatz-reverse-trit-bicell-v3-quotient/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-reverse-trit-bicell-v3-quotient
+          path: evidence/collatz-reverse-trit-bicell-v3-quotient
+          if-no-files-found: error
