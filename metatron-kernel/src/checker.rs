@@ -675,6 +675,12 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "Decidable")
+    {
+        return check_exact_decidable(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "List")
     {
         return check_exact_list(export, environment, block, limits, delta_policy);
@@ -4833,6 +4839,310 @@ fn acc_recursor_rule(
         )
         && is_binary_bvar_application(export, *target_arg, 2, 1, 0)
 }
+
+fn decidable_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+    proposition: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, decidable)
+            && is_bvar(export, *argument, proposition))
+}
+
+fn not_bvar_application(export: &ResolvedExport, expression: ExprId, proposition: u64) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_root_empty_constant_named(export, head, "Not")
+            && is_bvar(export, *argument, proposition))
+}
+
+fn decidable_constructor_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    proposition: u64,
+    witness: u64,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    arguments.len() == 2
+        && is_empty_constant(export, head, constructor)
+        && are_bvars(export, &arguments, &[proposition, witness])
+}
+
+fn decidable_type(export: &ResolvedExport, expression: ExprId) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [proposition] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && matches!(
+            export.exprs.get(result),
+            Some(Expr::Sort(level))
+                if matches!(export.levels.get(*level), Some(Level::Succ(LevelId(0))))
+        )
+}
+
+fn decidable_false_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [proposition, refutation] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && not_bvar_application(export, *refutation, 0)
+        && decidable_application(export, result, decidable, 1)
+}
+
+fn decidable_true_constructor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [proposition, proof] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && is_bvar(export, *proof, 0)
+        && decidable_application(export, result, decidable, 1)
+}
+
+fn decidable_motive_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    decidable: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [target] = domains.as_slice() else {
+        return false;
+    };
+    decidable_application(export, *target, decidable, 0)
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn decidable_false_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    false_ctor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [refutation] = domains.as_slice() else {
+        return false;
+    };
+    if !not_bvar_application(export, *refutation, 1) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 1)
+        && decidable_constructor_application(export, *constructed, false_ctor, 2, 0)
+}
+
+fn decidable_true_minor_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+    true_ctor: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 1) else {
+        return false;
+    };
+    let [proof] = domains.as_slice() else {
+        return false;
+    };
+    // The true minor follows the false minor in Decidable.rec's telescope.
+    // Before the proof binder, p is therefore bvar 2; after the proof binder,
+    // motive is bvar 2 and p is bvar 3.
+    if !is_bvar(export, *proof, 2) {
+        return false;
+    }
+    let Some(Expr::App {
+        fun: motive,
+        arg: constructed,
+    }) = export.exprs.get(result)
+    else {
+        return false;
+    };
+    is_bvar(export, *motive, 2)
+        && decidable_constructor_application(export, *constructed, true_ctor, 3, 0)
+}
+
+fn decidable_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    decidable: NameId,
+    false_ctor: NameId,
+    true_ctor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 5) else {
+        return false;
+    };
+    let [proposition, motive, false_minor, true_minor, target] = domains.as_slice() else {
+        return false;
+    };
+    is_prop_sort(export, *proposition)
+        && decidable_motive_type(export, *motive, decidable, motive_level)
+        && decidable_false_minor_type(export, *false_minor, false_ctor)
+        && decidable_true_minor_type(export, *true_minor, true_ctor)
+        && decidable_application(export, *target, decidable, 3)
+        && is_bvar_application(export, result, 3, 0)
+}
+
+fn decidable_recursor_rules(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    decidable: NameId,
+    false_ctor: NameId,
+    true_ctor: NameId,
+    motive_level: NameId,
+) -> bool {
+    let [false_rule, true_rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+
+    let false_ok = lam_spine(export, false_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [proposition, motive, false_minor, true_minor, refutation] = domains.as_slice() else {
+            return false;
+        };
+        is_prop_sort(export, *proposition)
+            && decidable_motive_type(export, *motive, decidable, motive_level)
+            && decidable_false_minor_type(export, *false_minor, false_ctor)
+            && decidable_true_minor_type(export, *true_minor, true_ctor)
+            && not_bvar_application(export, *refutation, 3)
+            && is_bvar_application(export, result, 2, 0)
+    });
+
+    let true_ok = lam_spine(export, true_rule.rhs, 5).is_some_and(|(domains, result)| {
+        let [proposition, motive, false_minor, true_minor, proof] = domains.as_slice() else {
+            return false;
+        };
+        is_prop_sort(export, *proposition)
+            && decidable_motive_type(export, *motive, decidable, motive_level)
+            && decidable_false_minor_type(export, *false_minor, false_ctor)
+            && decidable_true_minor_type(export, *true_minor, true_ctor)
+            && is_bvar(export, *proof, 3)
+            && is_bvar_application(export, result, 1, 0)
+    });
+
+    false_ok && true_ok
+}
+
+fn check_exact_decidable(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [false_ctor, true_ctor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || false_ctor.is_unsafe
+        || true_ctor.is_unsafe
+        || recursor.is_unsafe
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [false_ctor.name, true_ctor.name]
+        || !name_is_root_str(export, inductive.name, "Decidable")
+        || !decidable_type(export, inductive.ty)
+        || false_ctor.index != 0
+        || false_ctor.inductive != inductive.name
+        || false_ctor.num_params != 1
+        || false_ctor.num_fields != 1
+        || !false_ctor.level_params.is_empty()
+        || !name_is_child_str(export, false_ctor.name, inductive.name, "isFalse")
+        || !decidable_false_constructor_type(export, false_ctor.ty, inductive.name)
+        || true_ctor.index != 1
+        || true_ctor.inductive != inductive.name
+        || true_ctor.num_params != 1
+        || true_ctor.num_fields != 1
+        || !true_ctor.level_params.is_empty()
+        || !name_is_child_str(export, true_ctor.name, inductive.name, "isTrue")
+        || !decidable_true_constructor_type(export, true_ctor.ty, inductive.name)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !decidable_recursor_type(
+            export,
+            recursor,
+            inductive.name,
+            false_ctor.name,
+            true_ctor.name,
+            *motive_level,
+        )
+        || !decidable_recursor_rules(
+            export,
+            recursor,
+            inductive.name,
+            false_ctor.name,
+            true_ctor.name,
+            *motive_level,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(false_ctor),
+            derived_constructor(true_ctor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
 
 fn check_exact_acc(
     export: &ResolvedExport,
