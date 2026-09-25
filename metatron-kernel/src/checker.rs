@@ -73,6 +73,38 @@ fn check_export_with_policy(
             return Verdict::Reject;
         }
 
+        if std::env::var_os("NUCLEUS_TRACE_DECL").is_some() {
+            match &declaration {
+                Declaration::Axiom { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=axiom",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Definition { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=definition",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Theorem { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=theorem",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Quot { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=quot",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Inductive(block) => {
+                    let name = block
+                        .types
+                        .first()
+                        .map(|inductive| trace_name(&export, inductive.name))
+                        .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+                    eprintln!("NUCLEUS_DECL:name={name}:kind=inductive");
+                }
+                Declaration::Unsupported { tag } => {
+                    eprintln!("NUCLEUS_DECL:name=<unsupported>:kind={tag}");
+                }
+            }
+        }
+
         let (name, established) = match declaration {
             Declaration::Axiom {
                 name,
@@ -166,7 +198,14 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
-                    Err(verdict) => return verdict,
+                    Err(verdict) => {
+                        if verdict == Verdict::Unknown
+                            && std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some()
+                        {
+                            eprintln!("NUCLEUS_RESIDUAL:inductive-envelope");
+                        }
+                        return verdict;
+                    }
                 }
             }
             Declaration::Inductive(block) => {
@@ -178,7 +217,12 @@ fn check_export_with_policy(
                     Err(verdict) => return verdict,
                 }
             }
-            Declaration::Unsupported { .. } => return Verdict::Unknown,
+            Declaration::Unsupported { .. } => {
+                if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                    eprintln!("NUCLEUS_RESIDUAL:unsupported-declaration");
+                }
+                return Verdict::Unknown;
+            }
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -7743,7 +7787,12 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
         Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Unknown { residual } => {
+            if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                eprintln!("NUCLEUS_RESIDUAL:{}", residual.0);
+            }
+            Err(Verdict::Unknown)
+        }
     }
 }
 
