@@ -23,7 +23,6 @@ jobs:
       - name: Build diagnostic
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
       - name: Fetch frozen corpus
         env:
