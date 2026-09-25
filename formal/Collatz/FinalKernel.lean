@@ -35,8 +35,8 @@ theorem no_bad_of_no_minimal
     (hNoMin : ∀ n, ¬ MinimalBad Bad n) :
     ∀ n, ¬ Bad n := by
   intro n
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
+  induction n using Nat.strongRecOn with
+  | ind n ih =>
       intro hbad
       have hmin : MinimalBad Bad n := by
         refine ⟨hbad, ?_⟩
@@ -128,8 +128,8 @@ theorem reaches_one_of_strict_descent
     (hdesc : ∀ n, 1 < n → ∃ k, iter f k n < n) :
     ∀ n, 0 < n → ∃ k, iter f k n = 1 := by
   intro n
-  induction n using Nat.strong_induction_on with
-  | h n ih =>
+  induction n using Nat.strongRecOn with
+  | ind n ih =>
       intro hn
       cases n with
       | zero =>
