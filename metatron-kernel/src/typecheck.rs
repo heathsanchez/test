@@ -4,7 +4,7 @@ use crate::environment::Environment;
 use crate::id::{ExprId, IdTable, LevelId, NameId};
 use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
-use crate::machine::{Machine, Transparency};
+use crate::machine::{Machine, ProjectionFieldType, Transparency};
 use crate::syntax::{Expr, Level};
 use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, NeutralHead, Value};
 
@@ -294,7 +294,7 @@ impl<'a> TypeChecker<'a> {
                 let Ok(index) = usize::try_from(*index) else {
                     return Judgment::refuted("projection-index-overflow");
                 };
-                let Some(parameter_index) = spec.field_param_indices.get(index).copied() else {
+                let Some(field_type) = spec.field_types.get(index).cloned() else {
                     return Judgment::refuted("projection-index-out-of-range");
                 };
                 let structure_type = match self.infer_in(*structure, context, frame, remaining) {
@@ -323,16 +323,49 @@ impl<'a> TypeChecker<'a> {
                     }
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 };
-                let NeutralHead::Const { name, .. } = neutral.head else {
+                let NeutralHead::Const { name, levels } = neutral.head else {
                     return Judgment::refuted("projection-not-structure");
                 };
                 if name != *type_name {
                     return Judgment::refuted("projection-type-name-mismatch");
                 }
-                let Some(field_type) = neutral.spine.get(parameter_index).cloned() else {
-                    return Judgment::refuted("projection-parameter-arity");
+
+                let field_type = match field_type {
+                    ProjectionFieldType::Parameter(parameter_index) => {
+                        let Some(field_type) = neutral.spine.get(parameter_index).cloned() else {
+                            return Judgment::refuted("projection-parameter-arity");
+                        };
+                        field_type
+                    }
+                    ProjectionFieldType::Derived(field_expression) => {
+                        if neutral.spine.len() < spec.num_params {
+                            return Judgment::refuted("projection-parameter-arity");
+                        }
+                        let Some(declaration) = self.environment.get(*type_name) else {
+                            return Judgment::unknown("projection-missing-type-authority");
+                        };
+                        if declaration.level_params.len() != levels.len() {
+                            return Judgment::refuted("projection-level-arity");
+                        }
+                        let mut field_frame = EnvFrame::empty();
+                        for parameter in neutral.spine.iter().take(spec.num_params) {
+                            field_frame = field_frame.extend(parameter.clone());
+                        }
+                        let level_substitution = LevelSubstitution::new(
+                            declaration
+                                .level_params
+                                .iter()
+                                .copied()
+                                .zip(levels)
+                                .collect(),
+                        );
+                        Closure::with_levels(field_expression, field_frame, level_substitution)
+                    }
                 };
-                Judgment::proven(TypeValue::Term(field_type), "qualified-product-projection")
+                Judgment::proven(
+                    TypeValue::Term(field_type),
+                    "qualified-structure-projection",
+                )
             }
             Expr::Let { ty, value, body } => {
                 let annotation_type = self.infer_in(*ty, context, frame, remaining);
