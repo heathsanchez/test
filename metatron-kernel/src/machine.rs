@@ -59,6 +59,7 @@ pub struct RecursorReduction {
 pub enum ProjectionFieldType {
     Parameter(usize),
     Derived(ExprId),
+    UnsupportedDependent,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
