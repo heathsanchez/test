@@ -17,7 +17,10 @@ For every completed source in the declared finite corpus:
   * build observed transition graphs at four representation levels:
       CONTROL   = affine return-map identity only;
       OWN_FUEL  = CONTROL + exact active defect excess;
+      OWN_V23    = CONTROL + active defect (v2 excess, v3);
       V2_VECTOR = CONTROL + exact v2 defect valuation against every observed
+                  return map at the same anchor;
+      V3_VECTOR = CONTROL + exact v3 defect valuation against every observed
                   return map at the same anchor;
       V23_VECTOR = CONTROL + exact (v2,v3) defect valuations against every
                    observed return map at the same anchor;
@@ -161,8 +164,13 @@ def graph_from_occurrences(occurrences, patterns_by_anchor, mode: str):
         excess = None if av2 is None else av2 - (c["D"] + 1)
         if mode == "OWN_FUEL":
             return (pid, excess)
+        if mode == "OWN_V23":
+            return (pid, excess, vpz(active, 3))
         if mode == "V2_VECTOR":
             vals = tuple(v2z(defect(d, m)) for d in order[event["anchor"]])
+            return (pid, vals)
+        if mode == "V3_VECTOR":
+            vals = tuple(vpz(defect(d, m), 3) for d in order[event["anchor"]])
             return (pid, vals)
         if mode == "V23_VECTOR":
             vals = tuple((v2z(defect(d, m)), vpz(defect(d, m), 3))
@@ -327,7 +335,7 @@ def analyze(lo: int, hi: int, K: int, output: Path):
             transport["distinct_switch_checks"] += 1
 
     results = {}
-    for mode in ("CONTROL", "OWN_FUEL", "V2_VECTOR", "V23_VECTOR"):
+    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_VECTOR", "V23_VECTOR"):
         nodes, succ, exits, edge_occ = graph_from_occurrences(
             source_sequences, patterns_by_anchor, mode)
         kernel, prune = greatest_kernel(nodes, succ)
@@ -352,13 +360,19 @@ def analyze(lo: int, hi: int, K: int, output: Path):
 
     control = results["CONTROL"]["future_kernel_classes"]
     own = results["OWN_FUEL"]["future_kernel_classes"]
+    own_v23 = results["OWN_V23"]["future_kernel_classes"]
     v2 = results["V2_VECTOR"]["future_kernel_classes"]
+    v3 = results["V3_VECTOR"]["future_kernel_classes"]
     v23 = results["V23_VECTOR"]["future_kernel_classes"]
 
     if incomplete:
         verdict = "RESIDUAL_INCOMPLETE_BOUNDED_CORPUS"
+    elif control > 0 and own_v23 == 0:
+        verdict = "PASS_BOUNDED_LOCAL_V23_RESOURCE_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and v2 == 0:
         verdict = "PASS_BOUNDED_V2_RESOURCE_KILLS_CONTROL_FUTURE_KERNEL"
+    elif control > 0 and v3 == 0:
+        verdict = "PASS_BOUNDED_V3_VECTOR_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and v23 == 0:
         verdict = "PASS_BOUNDED_V23_RESOURCE_KILLS_CONTROL_FUTURE_KERNEL"
     elif control > 0 and own < control:
@@ -394,7 +408,7 @@ def analyze(lo: int, hi: int, K: int, output: Path):
     print("COUNTS", json.dumps(dict(sorted(counts.items())), sort_keys=True))
     print("INCOMPLETE_SOURCES", len(incomplete), incomplete[:40])
     print("TRANSPORT_AUDIT", json.dumps(dict(sorted(transport.items())), sort_keys=True))
-    for mode in ("CONTROL", "OWN_FUEL", "V2_VECTOR", "V23_VECTOR"):
+    for mode in ("CONTROL", "OWN_FUEL", "OWN_V23", "V2_VECTOR", "V3_VECTOR", "V23_VECTOR"):
         print("KERNEL", mode, json.dumps(results[mode], sort_keys=True))
     print("VERDICT", verdict)
     print("CLOSURE_CERTIFICATE", evidence["closure_certificate"])
