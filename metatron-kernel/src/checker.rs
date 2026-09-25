@@ -1814,8 +1814,18 @@ fn generic_unary_structure_recursor_shape(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
         fail!("rule-telescope");
     };
-    if rule_domains[..p] != ind_params[..] {
+    let trace_post_rule_params = std::env::var_os("NUCLEUS_TRACE_P3_POST_RULE_PARAM").is_some()
+        && p == 3
+        && fields == 1
+        && !require_syntactic_parameters;
+    if rule_domains[..p] != ind_params[..] && !trace_post_rule_params {
         fail!("rule-parameters");
+    }
+    if rule_domains[..p] != ind_params[..] && trace_post_rule_params {
+        eprintln!(
+            "NUCLEUS_P3_POST_RULE_PARAM:name={}:stage=rule-parameters-convertible-bypass",
+            inductive.name.0
+        );
     }
     if rule_domains[p] != motive {
         fail!("rule-motive");
