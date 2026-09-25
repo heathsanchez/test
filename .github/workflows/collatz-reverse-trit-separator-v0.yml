@@ -1,0 +1,30 @@
+name: Collatz reverse trit separator V0
+
+on:
+  push:
+    branches: [collatz-reverse-trit-separator-v0]
+    paths:
+      - 'experiments/collatz_reverse_trit_separator_v0.py'
+      - '.github/workflows/collatz-reverse-trit-separator-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact reverse-trit separator audit
+        run: |
+          mkdir -p evidence/collatz-reverse-trit-separator-v0
+          python experiments/collatz_reverse_trit_separator_v0.py \
+            --output evidence/collatz-reverse-trit-separator-v0/result.json \
+            | tee evidence/collatz-reverse-trit-separator-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-reverse-trit-separator-v0
+          path: evidence/collatz-reverse-trit-separator-v0
+          if-no-files-found: error
