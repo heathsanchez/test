@@ -2097,6 +2097,70 @@ fn generic_field_parameter_telescope_convertible(
     true
 }
 
+fn trace_generic_field_rule_parameter_conversion(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) {
+    if std::env::var_os("NUCLEUS_TRACE_P3_RULE_CONV").is_none()
+        || inductive.num_params != 3
+        || constructor.num_fields != 1
+    {
+        return;
+    }
+    let p = 3usize;
+    let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
+        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=inductive-telescope", inductive.name.0);
+        return;
+    };
+    let [rule] = recursor.rules.as_slice() else {
+        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=rule-count", inductive.name.0);
+        return;
+    };
+    let Ok(fields) = usize::try_from(constructor.num_fields) else {
+        return;
+    };
+    let Some((rule_domains, _)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
+        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=rule-telescope", inductive.name.0);
+        return;
+    };
+    let rule_params = &rule_domains[..p];
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&inductive.level_params),
+    )
+    .with_delta_policy(delta_policy);
+    let mut frame = EnvFrame::empty();
+    let mut statuses = Vec::new();
+    for (index, (left, right)) in inductive_params.iter().zip(rule_params).enumerate() {
+        let status = match checker.convert(
+            &TypeValue::Term(checker.closure(*left, frame.clone())),
+            &TypeValue::Term(checker.closure(*right, frame.clone())),
+            limits.judgment_steps,
+        ) {
+            Judgment::Proven { .. } => "proven",
+            Judgment::Refuted { .. } => "refuted",
+            Judgment::Unknown { .. } => "unknown",
+        };
+        statuses.push(format!("{}={}", index, status));
+        let Ok(index) = u64::try_from(index) else {
+            return;
+        };
+        frame = frame.extend_free(FreeId(40_000 + index));
+    }
+    eprintln!(
+        "NUCLEUS_P3_RULE_CONV:name={}:{}",
+        inductive.name.0,
+        statuses.join(",")
+    );
+}
+
 fn check_generic_field_structure(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2114,6 +2178,15 @@ fn check_generic_field_structure(
     if !generic_field_structure_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
+    trace_generic_field_rule_parameter_conversion(
+        export,
+        environment,
+        inductive,
+        constructor,
+        recursor,
+        limits,
+        delta_policy,
+    );
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
         || constructor.index != 0
