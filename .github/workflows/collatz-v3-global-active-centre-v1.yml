@@ -1,0 +1,123 @@
+name: Collatz V3 global plus active centre V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-global-active-centre-v1
+    paths:
+      - '.github/workflows/collatz-v3-global-active-centre-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen global library plus active centre gate
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict,Counter
+          from fractions import Fraction
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          TRAIN=(3,8191)
+          HOLD=(50689,51199)
+
+          def q(c): return Fraction(int(c["B"]),int(c["C"]))
+          def qkey(x): return (x.numerator,x.denominator)
+          def v3frac(x):
+              if x==0:return None
+              assert x.denominator%3!=0
+              return fk.vpz(x.numerator,3)
+
+          # Freeze a global centre library from the original training corpus.
+          centres={}
+          for n in range(TRAIN[0]|1,TRAIN[1]+1,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID":continue
+              if not fk.completed_rigid_source(n,K):continue
+              for r,seq in fk.return_sequences(n,K).items():
+                  for e in seq:
+                      z=q(e["cert"]); centres[qkey(z)]=z
+          frozen=tuple(centres[k] for k in sorted(centres))
+
+          seqs=[]; incomplete=[]; counts=Counter(); anchors=set()
+          for n in range(HOLD[0]|1,HOLD[1]+1,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID":continue
+              counts["hereditary_birth_rigid"]+=1
+              if not fk.completed_rigid_source(n,K):
+                  incomplete.append(n);continue
+              counts["completed_sources"]+=1
+              for r,seq in fk.return_sequences(n,K).items():
+                  if not seq:continue
+                  anchors.add(r);seqs.append(seq)
+                  counts["anchor_sequences"]+=1
+                  counts["return_occurrences"]+=len(seq)
+
+          def graph(mode):
+              nodes=set();succ=defaultdict(set);exits=set()
+              for seq in seqs:
+                  keys=[]
+                  for e in seq:
+                      pid=fk.semantic_id(e["cert"])
+                      if mode=="CONTROL":
+                          key=(pid,)
+                      else:
+                          m=e["m0"]
+                          pool=list(frozen)
+                          if mode=="GLOBAL_PLUS_ACTIVE":
+                              qa=q(e["cert"])
+                              if qkey(qa) not in {qkey(x) for x in pool}: pool.append(qa)
+                          vals=[]
+                          for z in pool:
+                              d=v3frac(Fraction(m,1)-z)
+                              assert d is not None
+                              vals.append((d,qkey(z)))
+                          h=max(v for v,k in vals)
+                          nearest=min(k for v,k in vals if v==h)
+                          key=(pid,nearest,h)
+                      keys.append(key);nodes.add(key)
+                  for a,b in zip(keys,keys[1:]):succ[a].add(b)
+                  if keys:exits.add(keys[-1])
+              for n in nodes:succ.setdefault(n,set())
+              cls,qn,qs,qe,rounds=fk.refine_future_quotient(nodes,succ,exits)
+              ker,pr=fk.greatest_kernel(qn,qs)
+              return {
+                  "raw_nodes":len(nodes),"future_classes":len(qn),
+                  "future_kernel_classes":len(ker),
+                  "future_unique_edges":sum(len(v) for v in qs.values()),
+                  "cycle":fk.canonical(fk.cycle_witness(ker,qs)),
+              }
+
+          control=graph("CONTROL")
+          frozen_only=graph("GLOBAL_FROZEN")
+          plus_active=graph("GLOBAL_PLUS_ACTIVE")
+          result={
+            "training_range":TRAIN,"holdout_range":HOLD,
+            "frozen_global_centres":len(frozen),
+            "holdout_anchors":sorted(anchors),
+            "counts":dict(counts),"incomplete":incomplete,
+            "CONTROL":control,
+            "GLOBAL_FROZEN":frozen_only,
+            "GLOBAL_PLUS_ACTIVE":plus_active,
+          }
+          print("GLOBAL_ACTIVE_RESULT",json.dumps(result,sort_keys=True))
+          assert not incomplete
+          assert 6 in anchors
+          if control["future_kernel_classes"]>0 and plus_active["future_kernel_classes"]==0:
+              print("GLOBAL_ACTIVE_VERDICT PASS_GLOBAL_PLUS_ACTIVE_COLLAPSE")
+          else:
+              print("GLOBAL_ACTIVE_VERDICT RESIDUAL_GLOBAL_PLUS_ACTIVE")
+              raise SystemExit(1)
+          PY
