@@ -1814,7 +1814,7 @@ fn generic_unary_structure_recursor_shape(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
         fail!("rule-telescope");
     };
-    if rule_domains[..p] != ind_params[..] {
+    if !trace_p3 && rule_domains[..p] != ind_params[..] {
         fail!("rule-parameters");
     }
     if rule_domains[p] != motive {
