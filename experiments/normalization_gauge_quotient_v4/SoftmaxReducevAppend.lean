@@ -4,6 +4,7 @@
 namespace VeriTile.Bench.TritonBenchG.SoftmaxReducev
 
 open MathGraphNormalizationQuotient
+open scoped BigOperators
 
 theorem mathgraph_v4_softmax_reducev_gauge
     {S BLOCK_DMODEL : Nat} (qk : Fin S → ℝ) (M : ℝ)
