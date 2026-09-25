@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: normalization-gauge-quotient-v4
+  cancel-in-progress: true
+
 jobs:
   qualify:
     runs-on: ubuntu-latest
