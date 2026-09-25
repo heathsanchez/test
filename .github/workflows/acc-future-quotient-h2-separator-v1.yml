@@ -1,0 +1,35 @@
+name: ACC Future Quotient H2 Separator V1
+
+on:
+  push:
+    branches: [acc-future-quotient-h2-separator-v1]
+    paths:
+      - "acc_competitive/future_quotient_h2_separator_v1.py"
+      - ".github/workflows/acc-future-quotient-h2-separator-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-future-quotient-h2-separator-v1
+      - name: Fetch pinned official verifier
+        run: |
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Verify exact H2 separator
+        run: |
+          python3 acc_competitive/future_quotient_h2_separator_v1.py /tmp/acc | tee h2-separator.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-future-quotient-h2-separator-v1
+          path: |
+            h2-separator-evidence.json
+            h2-separator.log
+          retention-days: 90
