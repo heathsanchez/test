@@ -1,0 +1,30 @@
+name: Collatz bi-adic residual factorization V2
+
+on:
+  push:
+    branches: [collatz-biadic-residual-factorization-v2]
+    paths:
+      - 'experiments/collatz_biadic_residual_factorization_v2.py'
+      - '.github/workflows/collatz-biadic-residual-factorization-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact bi-adic residual factorization
+        run: |
+          mkdir -p evidence/collatz-biadic-residual-factorization-v2
+          python experiments/collatz_biadic_residual_factorization_v2.py \
+            --output evidence/collatz-biadic-residual-factorization-v2/result.json \
+            | tee evidence/collatz-biadic-residual-factorization-v2/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-residual-factorization-v2
+          path: evidence/collatz-biadic-residual-factorization-v2
+          if-no-files-found: error
