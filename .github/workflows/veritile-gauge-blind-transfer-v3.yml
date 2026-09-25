@@ -47,7 +47,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          test "$(git show 9fa6a451eea2cb68004ce0934ee565763ad7c109:experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | sha256sum | cut -d' ' -f1)" =                "$(sha256sum experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | cut -d' ' -f1)"
+          test "$(sha256sum experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean | cut -d' ' -f1)" = "b4ed3084376771c5fa97da0383dfe86622564f1ee6629ea7dff0e783584afc2f"
           cp experiments/veritile_gauge_transfer_v2/MathGraphGaugeCapability.lean              vendor/VeriTile/VeriTile/MathGraphGaugeCapability.lean
           cd vendor/VeriTile
           mkdir -p .lake/build/lib/lean/VeriTile
