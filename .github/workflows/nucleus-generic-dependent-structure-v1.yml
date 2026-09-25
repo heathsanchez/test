@@ -1,0 +1,135 @@
+name: Nucleus Generic Dependent Structure v1
+
+on:
+  push:
+    branches: [nucleus-generic-dependent-structure-v1]
+    paths:
+      - ".github/workflows/nucleus-generic-dependent-structure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-generic-dependent-structure-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt, clippy}
+
+      - name: Prove independent runtime boundary
+        run: |
+          set -euo pipefail
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+
+      - name: Build and test candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --release --locked
+          cargo build --release --locked
+
+      - name: Build exact 41-case independent base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Global 193-case reclosure
+        working-directory: metatron-kernel
+        timeout-minutes: 35
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/generic-dependent-structure-v1
+          python - <<'PY'
+          import json, pathlib, subprocess, os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          targets={
+            'init-prelude',
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+          }
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              def rr(binary):
+                try:
+                  with p.open('rb') as f:
+                    q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=180)
+                  return q.returncode, q.stderr.decode(errors='replace')[-500:]
+                except subprocess.TimeoutExpired:
+                  return 124,'timeout'
+              a,ae=rr(base); b,be=rr(cand)
+              rows.append({'test':name,'expected':expected,'base':a,'candidate':b,
+                           'candidate_stderr':be if b not in (0,1,2,3) else ''})
+          assert len(rows)==193
+          fa=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          fr=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          reg=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong=[r for r in rows if r['base'] in (2,3) and r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          assert not fa,fa
+          assert not fr,fr
+          assert not reg,reg
+          assert not wrong,wrong
+          assert not errors,errors
+          base_res=sum(r['base'] in (2,3) for r in rows)
+          cand_res=sum(r['candidate'] in (2,3) for r in rows)
+          assert base_res==41,base_res
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          target_earned=[r for r in earned if r['test'] in targets]
+          assert target_earned, earned
+          assert cand_res < base_res, (base_res,cand_res,earned)
+          out={
+            'schema':'nucleus-generic-dependent-structure-v1',
+            'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'base_residual':base_res,'candidate_residual':cand_res,
+            'native_accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+            'native_reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+            'earned':[r['test'] for r in earned],
+            'target_earned':[r['test'] for r in target_earned],
+            'changes':[r for r in rows if r['base']!=r['candidate']],
+            'false_accepts':fa,'false_rejects':fr,'regressions':reg,
+            'wrong_deltas':wrong,'errors':errors,
+          }
+          pathlib.Path('evidence-out/generic-dependent-structure-v1/result.json').write_text(
+            json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-generic-dependent-structure-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/generic-dependent-structure-v1
+          if-no-files-found: warn
