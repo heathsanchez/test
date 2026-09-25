@@ -7,6 +7,17 @@ structure RatioState where
   num : ℝ
   den : ℝ
 
+@[ext] theorem RatioState.ext {p q : RatioState}
+    (hnum : p.num = q.num) (hden : p.den = q.den) : p = q := by
+  cases p with
+  | mk pn pd =>
+    cases q with
+    | mk qn qd =>
+      simp only at hnum hden
+      subst qn
+      subst qd
+      rfl
+
 def scale (c : ℝ) (p : RatioState) : RatioState :=
   ⟨c * p.num, c * p.den⟩
 
