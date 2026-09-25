@@ -1,0 +1,28 @@
+name: Collatz reverse-trit mask compiler V4
+
+on:
+  push:
+    branches: [collatz-reverse-trit-mask-compiler-v4]
+    paths:
+      - 'experiments/collatz_reverse_trit_mask_compiler_v4.py'
+      - '.github/workflows/collatz-reverse-trit-mask-compiler-v4.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact compact mask census
+        run: |
+          mkdir -p evidence/collatz-reverse-trit-mask-compiler-v4
+          python experiments/collatz_reverse_trit_mask_compiler_v4.py             --max-depth 20             --output evidence/collatz-reverse-trit-mask-compiler-v4/result.json             | tee evidence/collatz-reverse-trit-mask-compiler-v4/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-reverse-trit-mask-compiler-v4
+          path: evidence/collatz-reverse-trit-mask-compiler-v4
+          if-no-files-found: error
