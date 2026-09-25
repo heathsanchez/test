@@ -1,0 +1,29 @@
+name: Collatz bi-adic word boundary V0
+
+on:
+  push:
+    branches:
+      - collatz-biadic-word-boundary-v0
+    paths:
+      - 'experiments/collatz_biadic_word_boundary_v0.py'
+      - '.github/workflows/collatz-biadic-word-boundary-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact adversarial prefix-suffix audit
+        run: |
+          mkdir -p evidence/collatz-biadic-word-boundary-v0
+          python experiments/collatz_biadic_word_boundary_v0.py             --lo 46081 --hi 46591 --K 128             --output evidence/collatz-biadic-word-boundary-v0/result.json             | tee evidence/collatz-biadic-word-boundary-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-word-boundary-v0
+          path: evidence/collatz-biadic-word-boundary-v0
+          if-no-files-found: error
