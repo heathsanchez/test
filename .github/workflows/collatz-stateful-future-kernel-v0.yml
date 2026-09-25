@@ -51,7 +51,10 @@ jobs:
                   'completed_sources':d['counts'].get('completed_sources',0),
                   'control_kernel':d['representations']['CONTROL']['future_kernel_classes'],
                   'own_fuel_kernel':d['representations']['OWN_FUEL']['future_kernel_classes'],
+                  'own_v23_kernel':d['representations']['OWN_V23']['future_kernel_classes'],
                   'v2_vector_kernel':d['representations']['V2_VECTOR']['future_kernel_classes'],
+                  'v3_vector_kernel':d['representations']['V3_VECTOR']['future_kernel_classes'],
+                  'v23_vector_kernel':d['representations']['V23_VECTOR']['future_kernel_classes'],
                   'certificate':d['closure_certificate'],
               }
           tr=row(train); ho=row(hold)
@@ -59,8 +62,16 @@ jobs:
           print('HOLDOUT',json.dumps(ho,sort_keys=True))
           if (tr['incomplete']==0 and ho['incomplete']==0 and
               tr['control_kernel']>0 and ho['control_kernel']>0 and
-              tr['own_fuel_kernel']==0 and ho['own_fuel_kernel']==0):
-              print('TRANSFER_VERDICT PASS_PROSPECTIVE_OWN_FUEL_KERNEL_COLLAPSE')
+              tr['own_v23_kernel']==0 and ho['own_v23_kernel']==0):
+              print('TRANSFER_VERDICT PASS_PROSPECTIVE_LOCAL_V23_KERNEL_COLLAPSE')
+          elif (tr['incomplete']==0 and ho['incomplete']==0 and
+                tr['control_kernel']>0 and ho['control_kernel']>0 and
+                tr['v3_vector_kernel']==0 and ho['v3_vector_kernel']==0):
+              print('TRANSFER_VERDICT PASS_PROSPECTIVE_V3_VECTOR_KERNEL_COLLAPSE')
+          elif (tr['incomplete']==0 and ho['incomplete']==0 and
+                tr['control_kernel']>0 and ho['control_kernel']>0 and
+                tr['v23_vector_kernel']==0 and ho['v23_vector_kernel']==0):
+              print('TRANSFER_VERDICT PASS_PROSPECTIVE_V23_VECTOR_KERNEL_COLLAPSE')
           else:
               print('TRANSFER_VERDICT RESIDUAL_OR_INCOMPLETE')
           PY
