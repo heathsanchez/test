@@ -708,18 +708,12 @@ def search_target(
             parent[nk] = (k, m)
             states[nk] = nxt
 
-            nfs = None
-            ngs = None
-            # Child's exact guarded class is worth computing once here because
-            # it is the V4 heuristic.  No pruning depends on it.
-            nfs, _ = future_signature(core, nxt, total_cap)
-            ngs = guard_signature(nxt, ctxs)
-            ninfo = guarded_classes.get((nfs, ngs))
-            if ninfo is not None:
-                qh = float(ninfo[1])
-            else:
-                binfo = base_idx.get(child_base[m])
-                qh = float(binfo[1]) if binfo is not None else 256.0
+            # Keep the cheap V1 base heuristic for frontier ordering.
+            # The finite-group product is a portal/continuation guard only;
+            # evaluating it on every generated child would add cost without
+            # changing any pruning or authority boundary.
+            binfo = base_idx.get(child_base[m])
+            qh = float(binfo[1]) if binfo is not None else 256.0
 
             heapq.heappush(
                 pq,
