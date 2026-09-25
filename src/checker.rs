@@ -86,7 +86,12 @@ fn check_export_with_policy(
                     parameter_substitution(&level_params),
                 )
                 .with_delta_policy(delta_policy);
-                if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "axiom.type",
+                    checker.is_type(ty, limits.judgment_steps),
+                ) {
                     return verdict;
                 }
                 (name, ConstantDecl::axiom(level_params, ty))
@@ -105,13 +110,21 @@ fn check_export_with_policy(
                     parameter_substitution(&level_params),
                 )
                 .with_delta_policy(delta_policy);
-                if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "definition.type",
+                    checker.is_type(ty, limits.judgment_steps),
+                ) {
                     return verdict;
                 }
                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
-                if let Err(verdict) =
-                    verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
-                {
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "definition.value",
+                    checker.check(value, &expected, limits.judgment_steps),
+                ) {
                     return verdict;
                 }
                 (
@@ -133,15 +146,21 @@ fn check_export_with_policy(
                     parameter_substitution(&level_params),
                 )
                 .with_delta_policy(delta_policy);
-                if let Err(verdict) =
-                    verdict_boundary(checker.is_proposition(ty, limits.judgment_steps))
-                {
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "theorem.proposition",
+                    checker.is_proposition(ty, limits.judgment_steps),
+                ) {
                     return verdict;
                 }
                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
-                if let Err(verdict) =
-                    verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
-                {
+                if let Err(verdict) = trace_verdict_boundary(
+                    &export,
+                    name,
+                    "theorem.value",
+                    checker.check(value, &expected, limits.judgment_steps),
+                ) {
                     return verdict;
                 }
                 (name, ConstantDecl::theorem(level_params, ty))
@@ -166,7 +185,15 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
-                    Err(verdict) => return verdict,
+                    Err(verdict) => {
+                        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                            eprintln!(
+                                "NUCLEUS_DOWNSTREAM:name={}:stage=quot:verdict={verdict:?}",
+                                trace_name(&export, name)
+                            );
+                        }
+                        return verdict;
+                    },
                 }
             }
             Declaration::Inductive(block) => {
@@ -175,10 +202,29 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
-                    Err(verdict) => return verdict,
+                    Err(verdict) => {
+                        if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                            let name = block
+                                .types
+                                .first()
+                                .map(|inductive| trace_name(&export, inductive.name))
+                                .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+                            eprintln!(
+                                "NUCLEUS_DOWNSTREAM:name={name}:stage=inductive:verdict={verdict:?}"
+                            );
+                        }
+                        return verdict;
+                    },
                 }
             }
-            Declaration::Unsupported { .. } => return Verdict::Unknown,
+            Declaration::Unsupported { tag } => {
+                if std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some() {
+                    eprintln!(
+                        "NUCLEUS_DOWNSTREAM:name=<unsupported>:stage=unsupported:verdict=UNKNOWN:reason={tag}"
+                    );
+                }
+                return Verdict::Unknown;
+            },
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -7747,6 +7793,39 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
         Judgment::Unknown { .. } => Err(Verdict::Unknown),
     }
 }
+
+fn trace_verdict_boundary(
+    export: &ResolvedExport,
+    name: NameId,
+    stage: &'static str,
+    judgment: Judgment<()>,
+) -> Result<(), Verdict> {
+    let trace = std::env::var_os("NUCLEUS_TRACE_DOWNSTREAM").is_some();
+    match judgment {
+        Judgment::Proven { .. } => Ok(()),
+        Judgment::Refuted { obstruction } => {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_DOWNSTREAM:name={}:stage={stage}:verdict=REJECT:reason={}",
+                    trace_name(export, name),
+                    obstruction.0
+                );
+            }
+            Err(Verdict::Reject)
+        }
+        Judgment::Unknown { residual } => {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_DOWNSTREAM:name={}:stage={stage}:verdict=UNKNOWN:reason={}",
+                    trace_name(export, name),
+                    residual.0
+                );
+            }
+            Err(Verdict::Unknown)
+        }
+    }
+}
+
 
 #[cfg(test)]
 mod tests {
