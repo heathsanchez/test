@@ -1,0 +1,67 @@
+name: ACC Future Quotient V5 Selector
+
+on:
+  push:
+    branches: [acc-future-quotient-v5]
+    paths:
+      - "acc_competitive/future_quotient_context_selector_v1.py"
+      - ".github/workflows/acc-future-quotient-v5-selector.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  V3_AUTHORITY_RUN: "36086444449"
+
+jobs:
+  select:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-future-quotient-v5
+      - name: Recover exact V2 index and V3 false-contact evidence
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/v2 /tmp/v3 fq5
+          META="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-future-quotient-v2-input&per_page=1')"
+          ID="$(printf '%s' "$META" | jq -r '.artifacts[0].id // empty')"
+          DIGEST="$(printf '%s' "$META" | jq -r '.artifacts[0].digest // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d /tmp/v2
+          INDEX="$(find /tmp/v2 -name future_quotient.sqlite -print -quit)"
+          test -n "$INDEX"
+          gh run download "$V3_AUTHORITY_RUN"             --pattern 'acc-future-quotient-v3-search-*'             -D /tmp/v3
+          echo "$ID" > fq5/v2_artifact_id.txt
+          echo "$DIGEST" > fq5/v2_artifact_digest.txt
+
+      - name: Select minimum sufficient context subset
+        run: |
+          set -euo pipefail
+          INDEX="$(find /tmp/v2 -name future_quotient.sqlite -print -quit)"
+          python3 acc_competitive/future_quotient_context_selector_v1.py             --v2-index "$INDEX"             --v3-dir /tmp/v3             --out fq5/selector.json             --total-cap 10000             | tee fq5/selector.log
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('fq5/selector.json').read_text())
+          assert r['v3_false_contacts']==56,r
+          assert r['selected']['separated']==56,r['selected']
+          assert r['minimum_context_count'] < 6,r
+          print('FQ5_SELECTOR_GATE',json.dumps({
+              'minimum_context_count':r['minimum_context_count'],
+              'candidate_subsets':len(r['minimum_full_separator_subsets']),
+              'selected':r['selected'],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-future-quotient-v5-selector
+          path: fq5/
+          retention-days: 90
