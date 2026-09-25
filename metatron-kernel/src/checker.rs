@@ -73,6 +73,36 @@ fn check_export_with_policy(
             return Verdict::Reject;
         }
 
+        if std::env::var_os("NUCLEUS_TRACE_DECL").is_some() {
+            match &declaration {
+                Declaration::Axiom { name, .. } => {
+                    eprintln!("NUCLEUS_DECL:name={}:kind=axiom", trace_name(&export, *name))
+                }
+                Declaration::Definition { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=definition",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Theorem { name, .. } => eprintln!(
+                    "NUCLEUS_DECL:name={}:kind=theorem",
+                    trace_name(&export, *name)
+                ),
+                Declaration::Quot { name, .. } => {
+                    eprintln!("NUCLEUS_DECL:name={}:kind=quot", trace_name(&export, *name))
+                }
+                Declaration::Inductive(block) => {
+                    let name = block
+                        .types
+                        .first()
+                        .map(|inductive| trace_name(&export, inductive.name))
+                        .unwrap_or_else(|| "<empty-inductive-block>".to_string());
+                    eprintln!("NUCLEUS_DECL:name={name}:kind=inductive");
+                }
+                Declaration::Unsupported { tag } => {
+                    eprintln!("NUCLEUS_DECL:name=<unsupported>:kind={tag}");
+                }
+            }
+        }
+
         let (name, established) = match declaration {
             Declaration::Axiom {
                 name,
@@ -166,7 +196,14 @@ fn check_export_with_policy(
                         environment = extended;
                         continue;
                     }
-                    Err(verdict) => return verdict,
+                    Err(verdict) => {
+                        if verdict == Verdict::Unknown
+                            && std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some()
+                        {
+                            eprintln!("NUCLEUS_RESIDUAL:inductive-envelope");
+                        }
+                        return verdict;
+                    }
                 }
             }
             Declaration::Inductive(block) => {
@@ -178,7 +215,12 @@ fn check_export_with_policy(
                     Err(verdict) => return verdict,
                 }
             }
-            Declaration::Unsupported { .. } => return Verdict::Unknown,
+            Declaration::Unsupported { .. } => {
+                if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                    eprintln!("NUCLEUS_RESIDUAL:unsupported-declaration");
+                }
+                return Verdict::Unknown;
+            }
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -8199,6 +8241,33 @@ fn is_constructor_applied_to_two_bvars(
         && are_bvars(export, &arguments, &[first, second])
 }
 
+fn trace_name(export: &ResolvedExport, mut name: NameId) -> String {
+    if name == NameId(0) {
+        return "_root".to_string();
+    }
+    let mut parts = Vec::new();
+    let mut guard = 0usize;
+    while name != NameId(0) && guard < 128 {
+        guard += 1;
+        match export.names.get(name) {
+            Some(Name::Str { prefix, value }) => {
+                parts.push(value.clone());
+                name = *prefix;
+            }
+            Some(Name::Num { prefix, value }) => {
+                parts.push(value.to_string());
+                name = *prefix;
+            }
+            None => {
+                parts.push(format!("#{}", name.0));
+                break;
+            }
+        }
+    }
+    parts.reverse();
+    parts.join(".")
+}
+
 fn name_is_root_str(export: &ResolvedExport, name: NameId, value: &str) -> bool {
     matches!(export.names.get(name), Some(Name::Str { prefix: NameId(0), value: actual }) if actual == value)
 }
@@ -8272,7 +8341,12 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
         Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Unknown { residual } => {
+            if std::env::var_os("NUCLEUS_TRACE_RESIDUAL").is_some() {
+                eprintln!("NUCLEUS_RESIDUAL:{}", residual.0);
+            }
+            Err(Verdict::Unknown)
+        }
     }
 }
 
