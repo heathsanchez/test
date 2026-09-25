@@ -1,0 +1,149 @@
+name: Nucleus Decidable Fin Reclosure v1
+
+on:
+  push:
+    branches: [nucleus-decidable-fin-reclosure-v1]
+    paths:
+      - ".github/workflows/nucleus-decidable-fin-reclosure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reclose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 110
+    env:
+      ARENA_ARTIFACT: 10712869614
+      BASE_SHA: aa430901d51f54a3926741bab3a32cac363dc251
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Prove independent runtime boundary
+        run: |
+          set -euo pipefail
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+
+      - name: Build and test candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --release --locked
+          cargo build --release --locked
+
+      - name: Build exact Decidable authority
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Reclose from warranted Decidable authority
+        env:
+          NUCLEUS_TRACE_SINGLE_FIELD: "1"
+          NUCLEUS_TRACE_DOWNSTREAM: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/decidable-fin-reclosure-v1
+          python - <<'PY'
+          import json, pathlib, subprocess, os
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def rr(binary,p,trace=False):
+              env=os.environ.copy()
+              if not trace:
+                  env.pop('NUCLEUS_TRACE_SINGLE_FIELD',None)
+                  env.pop('NUCLEUS_TRACE_DOWNSTREAM',None)
+              try:
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,timeout=180,env=env)
+                  return q.returncode,q.stderr.decode(errors='replace')
+              except subprocess.TimeoutExpired:
+                  return 124,'timeout'
+
+          rows=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/kind)).removesuffix('.ndjson')
+                  a,_=rr(base,p,False); b,_=rr(cand,p,False)
+                  rows.append({'test':name,'expected':expected,'base':a,'candidate':b})
+
+          assert len(rows)==193
+          assert sum(r['base'] in (2,3) for r in rows)==40
+          wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          assert not wrong, wrong
+          assert not regressions, regressions
+          assert not errors, errors
+
+          targets=[
+            ('good','perf/magma-list-deep-n21',0),
+            ('good','perf/magma-list-deep-n36',0),
+            ('bad','bugs/proj-of-stuck-prop',1),
+            ('bad','bugs/proj-of-subst-prop',1),
+            ('bad','bugs/rec-of-subst-prop',1),
+          ]
+          traces=[]
+          for kind,name,expected in targets:
+              p=root/kind/(name+'.ndjson')
+              rc,stderr=rr(cand,p,True)
+              marks=[line for line in stderr.splitlines()
+                     if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line]
+              traces.append({'test':name,'expected':expected,'rc':rc,'marks':marks})
+
+          out={
+              'schema':'nucleus-decidable-fin-reclosure-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'base_residual':sum(r['base'] in (2,3) for r in rows),
+              'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+              'candidate_accept':sum(r['candidate']==0 for r in rows),
+              'candidate_reject':sum(r['candidate']==1 for r in rows),
+              'earned':[r['test'] for r in earned],
+              'changes':changes,
+              'traces':traces,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/decidable-fin-reclosure-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'base_residual':out['base_residual'],
+              'candidate_residual':out['candidate_residual'],
+              'earned':out['earned'],
+              'changes':[(r['test'],r['base'],r['candidate']) for r in changes],
+              'traces':traces,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-decidable-fin-reclosure-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/decidable-fin-reclosure-v1
+          if-no-files-found: warn
