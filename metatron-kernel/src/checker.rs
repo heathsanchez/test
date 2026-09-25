@@ -2018,6 +2018,7 @@ fn check_single_derived_field_structure(
                 Err(Verdict::Accept) => "ACCEPT",
                 Err(Verdict::Reject) => "REJECT",
                 Err(Verdict::Unknown) => "UNKNOWN",
+                Err(Verdict::Error) => "ERROR",
             }
         );
     }
