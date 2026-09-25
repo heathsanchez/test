@@ -1,0 +1,30 @@
+name: Collatz centre reverse cone V0
+
+on:
+  push:
+    branches:
+      - collatz-centre-reverse-cone-v0
+    paths:
+      - 'experiments/collatz_centre_reverse_cone_v0.py'
+      - '.github/workflows/collatz-centre-reverse-cone-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact adversarial reverse-cone search
+        run: |
+          set -o pipefail
+          mkdir -p evidence/collatz-centre-reverse-cone-v0
+          python experiments/collatz_centre_reverse_cone_v0.py             --lo 46081 --hi 46591 --K 128 --max-depth 8 --max-nodes 50000             --output evidence/collatz-centre-reverse-cone-v0/result.json             | tee evidence/collatz-centre-reverse-cone-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-centre-reverse-cone-v0
+          path: evidence/collatz-centre-reverse-cone-v0
+          if-no-files-found: error
