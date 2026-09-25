@@ -276,7 +276,7 @@ def build_index(core, atlas_path, out_db, total_cap, progress_every=10000):
         batch.append((bytes(k), bs, fs, int(d), distance_band(int(d)), None if nm is None else int(nm)))
         n += 1
         if len(batch) >= 2000:
-            qdb.executemany("INSERT INTO observations VALUES(?,?,?,?,?)", batch)
+            qdb.executemany("INSERT INTO observations VALUES(?,?,?,?,?,?)", batch)
             qdb.commit()
             batch.clear()
         if progress_every and n % progress_every == 0:
@@ -286,7 +286,7 @@ def build_index(core, atlas_path, out_db, total_cap, progress_every=10000):
                 flush=True,
             )
     if batch:
-        qdb.executemany("INSERT INTO observations VALUES(?,?,?,?,?)", batch)
+        qdb.executemany("INSERT INTO observations VALUES(?,?,?,?,?,?)", batch)
         qdb.commit()
 
     qdb.executescript(
