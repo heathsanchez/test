@@ -105,13 +105,35 @@ fn check_export_with_policy(
                     parameter_substitution(&level_params),
                 )
                 .with_delta_policy(delta_policy);
-                if let Err(verdict) = verdict_boundary(checker.is_type(ty, limits.judgment_steps)) {
+                let mut terminal = value;
+                while let Some(Expr::Lam { body, .. }) = export.exprs.get(terminal) {
+                    terminal = *body;
+                }
+                let trace_projection_definition =
+                    std::env::var_os("NUCLEUS_TRACE_PROJECTION_DEF").is_some()
+                        && matches!(export.exprs.get(terminal), Some(Expr::Proj { .. }));
+
+                let type_judgment = checker.is_type(ty, limits.judgment_steps);
+                if trace_projection_definition {
+                    eprintln!(
+                        "NUCLEUS_PROJECTION_DEF:name={}:stage=type:judgment={:?}",
+                        name.0,
+                        type_judgment
+                    );
+                }
+                if let Err(verdict) = verdict_boundary(type_judgment) {
                     return verdict;
                 }
                 let expected = TypeValue::Term(checker.closure(ty, EnvFrame::empty()));
-                if let Err(verdict) =
-                    verdict_boundary(checker.check(value, &expected, limits.judgment_steps))
-                {
+                let value_judgment = checker.check(value, &expected, limits.judgment_steps);
+                if trace_projection_definition {
+                    eprintln!(
+                        "NUCLEUS_PROJECTION_DEF:name={}:stage=value:judgment={:?}",
+                        name.0,
+                        value_judgment
+                    );
+                }
+                if let Err(verdict) = verdict_boundary(value_judgment) {
                     return verdict;
                 }
                 (
