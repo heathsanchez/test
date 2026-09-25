@@ -15,16 +15,13 @@ theorem zero_of_squeeze_divisibility
     (hgap : d ≤ liveGapCeiling)
     (hdiv : squeezeModulus ∣ d) :
     d = 0 := by
-  rcases hdiv with ⟨k, rfl⟩
-  cases k with
-  | zero =>
-      simp
-  | succ k =>
-      have hlt : liveGapCeiling < squeezeModulus :=
-        liveGap_lt_squeezeModulus
-      have hpos : 0 < squeezeModulus := by
-        decide
-      omega
+  have hlt : d < squeezeModulus :=
+    lt_of_le_of_lt hgap liveGap_lt_squeezeModulus
+  have hmod0 : d % squeezeModulus = 0 :=
+    Nat.mod_eq_zero_of_dvd hdiv
+  have hmodself : d % squeezeModulus = d :=
+    Nat.mod_eq_of_lt hlt
+  exact hmodself ▸ hmod0.symm
 
 /--
 Certificate-facing form of the exact-return squeeze.  The generator need only
