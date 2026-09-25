@@ -361,6 +361,9 @@ impl<'a> TypeChecker<'a> {
                         );
                         Closure::with_levels(field_expression, field_frame, level_substitution)
                     }
+                    ProjectionFieldType::UnsupportedDependent => {
+                        return Judgment::unknown("dependent-projection-type");
+                    }
                 };
                 Judgment::proven(
                     TypeValue::Term(field_type),
