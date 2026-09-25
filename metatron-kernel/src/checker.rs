@@ -1850,10 +1850,7 @@ fn generic_unary_structure_recursor_shape(
     }
 
     if trace_p3 {
-        eprintln!(
-            "NUCLEUS_P3_POST_PARAM:name={}:stage=pass",
-            inductive.name.0
-        );
+        eprintln!("NUCLEUS_P3_POST_PARAM:name={}:stage=pass", inductive.name.0);
     }
     true
 }
@@ -2114,18 +2111,27 @@ fn trace_generic_field_rule_parameter_conversion(
     }
     let p = 3usize;
     let Some((inductive_params, _)) = pi_spine(export, inductive.ty, p) else {
-        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=inductive-telescope", inductive.name.0);
+        eprintln!(
+            "NUCLEUS_P3_RULE_CONV:name={}:stage=inductive-telescope",
+            inductive.name.0
+        );
         return;
     };
     let [rule] = recursor.rules.as_slice() else {
-        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=rule-count", inductive.name.0);
+        eprintln!(
+            "NUCLEUS_P3_RULE_CONV:name={}:stage=rule-count",
+            inductive.name.0
+        );
         return;
     };
     let Ok(fields) = usize::try_from(constructor.num_fields) else {
         return;
     };
     let Some((rule_domains, _)) = lam_spine(export, rule.rhs, p + 2 + fields) else {
-        eprintln!("NUCLEUS_P3_RULE_CONV:name={}:stage=rule-telescope", inductive.name.0);
+        eprintln!(
+            "NUCLEUS_P3_RULE_CONV:name={}:stage=rule-telescope",
+            inductive.name.0
+        );
         return;
     };
     let rule_params = &rule_domains[..p];
