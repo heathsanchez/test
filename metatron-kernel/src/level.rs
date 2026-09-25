@@ -42,6 +42,16 @@ fn level_is_zero_or_one(level: &LevelTerm) -> bool {
         )
 }
 
+fn level_is_definitely_nonzero(level: &LevelTerm) -> bool {
+    match level {
+        LevelTerm::Succ(_) => true,
+        LevelTerm::Max(left, right) => {
+            level_is_definitely_nonzero(left) || level_is_definitely_nonzero(right)
+        }
+        LevelTerm::Zero | LevelTerm::Param(_) | LevelTerm::IMax(_, _) => false,
+    }
+}
+
 pub fn level_imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
     if level_is_zero_or_one(&left) {
         return right;
@@ -49,9 +59,11 @@ pub fn level_imax(left: LevelTerm, right: LevelTerm) -> LevelTerm {
     if left == right {
         return left;
     }
+    if level_is_definitely_nonzero(&right) {
+        return max(left, right);
+    }
     match right {
         LevelTerm::Zero => LevelTerm::Zero,
-        right @ LevelTerm::Succ(_) => max(left, right),
         right => LevelTerm::IMax(Box::new(left), Box::new(right)),
     }
 }
