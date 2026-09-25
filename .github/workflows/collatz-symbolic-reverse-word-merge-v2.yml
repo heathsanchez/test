@@ -1,0 +1,31 @@
+name: Collatz symbolic reverse-word merge V2
+
+on:
+  push:
+    branches: [collatz-symbolic-reverse-word-merge-v2]
+    paths:
+      - 'experiments/collatz_symbolic_reverse_word_merge_v2.py'
+      - '.github/workflows/collatz-symbolic-reverse-word-merge-v2.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact partial reverse-word qualification
+        run: |
+          mkdir -p evidence/collatz-symbolic-reverse-word-merge-v2
+          python experiments/collatz_symbolic_reverse_word_merge_v2.py \
+            --depth 18 \
+            --output evidence/collatz-symbolic-reverse-word-merge-v2 \
+            | tee evidence/collatz-symbolic-reverse-word-merge-v2/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-symbolic-reverse-word-merge-v2
+          path: evidence/collatz-symbolic-reverse-word-merge-v2
+          if-no-files-found: error
