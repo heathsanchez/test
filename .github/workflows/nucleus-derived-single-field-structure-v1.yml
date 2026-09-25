@@ -1,0 +1,169 @@
+name: Nucleus Derived Single Field Structure v1
+
+on:
+  push:
+    branches: [nucleus-derived-single-field-structure-v1]
+    paths:
+      - ".github/workflows/nucleus-derived-single-field-structure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-derived-single-field-structure-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      ARENA_ARTIFACT: 10712869614
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Prove independent runtime boundary
+        run: |
+          set -euo pipefail
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+
+      - name: Build and test candidate
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --release --locked
+          cargo build --release --locked
+
+      - name: Build exact independent base
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Global 193-case independent reclosure
+        working-directory: metatron-kernel
+        timeout-minutes: 75
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/derived-single-field-structure-v1
+          python - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]
+
+          def rr(binary,p):
+              start=time.perf_counter()
+              try:
+                  with p.open('rb') as f:
+                      q=subprocess.run(
+                          [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                          stderr=subprocess.PIPE,timeout=180
+                      )
+                  return q.returncode,time.perf_counter()-start,q.stderr.decode(errors='replace')[-800:]
+              except subprocess.TimeoutExpired:
+                  return 124,time.perf_counter()-start,'timeout'
+
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/kind)).removesuffix('.ndjson')
+                  a,asec,ae=rr(base,p)
+                  b,bsec,be=rr(cand,p)
+                  rows.append({
+                      'test':name,'expected':expected,
+                      'base':a,'candidate':b,
+                      'base_seconds':asec,'candidate_seconds':bsec,
+                      'base_stderr':ae if a not in (0,1,2,3) else '',
+                      'candidate_stderr':be if b not in (0,1,2,3) else '',
+                  })
+
+          assert len(rows)==193, len(rows)
+          assert sum(r['base'] in (2,3) for r in rows)==41
+          base_wrong=[r for r in rows if r['base'] in (0,1) and r['base']!=r['expected']]
+          false_accept=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_reject=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          wrong_new=[
+              r for r in rows
+              if r['base'] in (2,3)
+              and r['candidate'] in (0,1)
+              and r['candidate']!=r['expected']
+          ]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          earned=[
+              r for r in rows
+              if r['base'] in (2,3) and r['candidate']==r['expected']
+          ]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+
+          assert not base_wrong, base_wrong
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert not regressions, regressions
+          assert not wrong_new, wrong_new
+          assert not errors, errors
+          assert earned, "single-field structure law earned no protected consequence"
+
+          out={
+              'schema':'nucleus-derived-single-field-structure-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'base_residual':sum(r['base'] in (2,3) for r in rows),
+              'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+              'candidate_accept':sum(r['candidate']==0 for r in rows),
+              'candidate_reject':sum(r['candidate']==1 for r in rows),
+              'earned_count':len(earned),
+              'earned':[r['test'] for r in earned],
+              'changes':changes,
+              'false_accepts':false_accept,
+              'false_rejects':false_reject,
+              'regressions':regressions,
+              'wrong_new':wrong_new,
+              'errors':errors,
+              'rows':rows,
+          }
+          pathlib.Path('evidence-out/derived-single-field-structure-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({
+              'base_residual':out['base_residual'],
+              'candidate_residual':out['candidate_residual'],
+              'candidate_accept':out['candidate_accept'],
+              'candidate_reject':out['candidate_reject'],
+              'earned_count':out['earned_count'],
+              'earned':out['earned'],
+              'changes':[(r['test'],r['base'],r['candidate']) for r in changes],
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-derived-single-field-structure-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/derived-single-field-structure-v1
+          if-no-files-found: warn
