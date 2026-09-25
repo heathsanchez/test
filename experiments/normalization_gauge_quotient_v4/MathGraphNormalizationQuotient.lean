@@ -6,12 +6,11 @@ namespace MathGraphNormalizationQuotient
 structure RatioState where
   num : ℝ
   den : ℝ
-deriving Repr
 
 def scale (c : ℝ) (p : RatioState) : RatioState :=
   ⟨c * p.num, c * p.den⟩
 
-def observe (p : RatioState) : ℝ :=
+noncomputable def observe (p : RatioState) : ℝ :=
   p.num / p.den
 
 /-- Representation equivalence under a shared nonzero scalar. -/
@@ -55,7 +54,7 @@ theorem observe_eq_of_gauge {p q : RatioState} (h : GaugeEq p q) :
 
 abbrev GaugeQuotient := Quotient gaugeSetoid
 
-def quotientObserve : GaugeQuotient → ℝ :=
+noncomputable def quotientObserve : GaugeQuotient → ℝ :=
   Quotient.lift observe (fun _ _ h => observe_eq_of_gauge h)
 
 @[simp] theorem quotientObserve_mk (p : RatioState) :
