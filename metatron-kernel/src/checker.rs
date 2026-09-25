@@ -1962,14 +1962,24 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
         block.constructors.as_slice(),
         block.recursors.as_slice(),
     ) else {
+        eprintln!("DEPSTRUCT candidate=no single-block");
         return false;
     };
 
-    // First generic dependent-record corridor, discovered by exact residual
-    // reclosure rather than by name: one parameter, one constructor, two
-    // fields, no indices/nesting/recursion/reflexivity and no universe
-    // parameters on the inductive declaration.  This is deliberately much
-    // narrower than the earlier zero-earned generic-field experiment.
+    eprintln!(
+        "DEPSTRUCT shape p={} i={} nested={} rec={} refl={} ilvls={} fields={} clvls={} k={} rlvls={}",
+        inductive.num_params,
+        inductive.num_indices,
+        inductive.num_nested,
+        inductive.is_recursive,
+        inductive.is_reflexive,
+        inductive.level_params.len(),
+        constructor.num_fields,
+        constructor.level_params.len(),
+        recursor.k,
+        recursor.level_params.len(),
+    );
+
     if inductive.num_params != 1
         || inductive.num_indices != 0
         || inductive.num_nested != 0
@@ -1985,31 +1995,46 @@ fn generic_field_structure_candidate(export: &ResolvedExport, block: &InductiveB
         || recursor.is_unsafe
         || recursor.level_params.len() != 1
     {
+        eprintln!("DEPSTRUCT candidate=shape-mismatch");
         return false;
     }
 
     let Some((inductive_domains, inductive_result)) = pi_spine(export, inductive.ty, 1) else {
+        eprintln!("DEPSTRUCT candidate=inductive-spine");
         return false;
     };
     let [parameter_type] = inductive_domains.as_slice() else {
+        eprintln!("DEPSTRUCT candidate=parameter-telescope");
         return false;
     };
     if !matches!(export.exprs.get(inductive_result), Some(Expr::Sort(_))) {
+        eprintln!("DEPSTRUCT candidate=inductive-result-not-sort");
         return false;
     }
 
     let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        eprintln!("DEPSTRUCT candidate=constructor-spine");
         return false;
     };
     let [constructor_parameter, first_field, second_field] = constructor_domains.as_slice() else {
+        eprintln!("DEPSTRUCT candidate=constructor-telescope");
         return false;
     };
 
-    // The parameter telescope is exact.  Fields must be nonrecursive, but the
-    // second field may depend on the first field (the missing Fin-shaped case).
-    *constructor_parameter == *parameter_type
-        && !expression_contains_constant(export, *first_field, inductive.name)
-        && !expression_contains_constant(export, *second_field, inductive.name)
+    if *constructor_parameter != *parameter_type {
+        eprintln!("DEPSTRUCT candidate=parameter-mismatch");
+        return false;
+    }
+    if expression_contains_constant(export, *first_field, inductive.name) {
+        eprintln!("DEPSTRUCT candidate=recursive-first-field");
+        return false;
+    }
+    if expression_contains_constant(export, *second_field, inductive.name) {
+        eprintln!("DEPSTRUCT candidate=recursive-second-field");
+        return false;
+    }
+    eprintln!("DEPSTRUCT candidate=YES");
+    true
 }
 
 fn check_generic_field_structure(
@@ -2027,8 +2052,10 @@ fn check_generic_field_structure(
         return Err(Verdict::Unknown);
     };
     if !generic_field_structure_candidate(export, block) {
+        eprintln!("DEPSTRUCT check=not-candidate");
         return Err(Verdict::Unknown);
     }
+    eprintln!("DEPSTRUCT check=candidate");
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
         || constructor.index != 0
@@ -2046,14 +2073,22 @@ fn check_generic_field_structure(
         )
         || !generic_unary_structure_recursor_shape(export, inductive, constructor, recursor)
     {
-        // This corridor grants no rejection merely from failing the positive
-        // structural derivation.  Existing independently warranted negative
-        // laws remain responsible for REJECT.
+        eprintln!(
+            "DEPSTRUCT check=prepromotion-fail lineage={} ctorlink={} cidx={} levels={} dup={} malformed={} meta={} recshape={}",
+            inductive.all == [inductive.name],
+            inductive.constructors == [constructor.name],
+            constructor.index == 0,
+            constructor.level_params == inductive.level_params,
+            !has_duplicate_parameter(&inductive.level_params),
+            !constructor_result_is_definitely_malformed(export, inductive, constructor),
+            recursor_metadata_admissible(export, inductive, &block.constructors, recursor, false, true),
+            generic_unary_structure_recursor_shape(export, inductive, constructor, recursor),
+        );
         return Err(Verdict::Unknown);
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
-    derivation.promote_all(
+    if let Err(verdict) = derivation.promote_all(
         export,
         [
             derived_type(inductive.name, inductive.ty),
@@ -2062,7 +2097,11 @@ fn check_generic_field_structure(
         ],
         limits.judgment_steps,
         delta_policy,
-    )?;
+    ) {
+        eprintln!("DEPSTRUCT check=promotion-fail verdict={verdict:?}");
+        return Err(verdict);
+    }
+    eprintln!("DEPSTRUCT check=promoted");
 
     let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
         return Err(Verdict::Unknown);
@@ -2086,7 +2125,9 @@ fn check_generic_field_structure(
         )
         .map_err(|_| Verdict::Reject)?;
 
-    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+    let result = install_certified_recursor_reduction(environment, &block.constructors, recursor);
+    eprintln!("DEPSTRUCT check=finish result={:?}", result.as_ref().map(|_| "ok"));
+    result
 }
 
 fn generic_parameterized_nullary_candidate(
