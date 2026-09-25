@@ -6,7 +6,7 @@ on:
     paths:
       - 'lean-toolchain'
       - 'lakefile.lean'
-      - 'formal/Collatz'
+      - 'formal/Collatz/**'
       - '.github/workflows/collatz-final-proof-kernel-v0.yml'
   workflow_dispatch:
 
@@ -27,7 +27,7 @@ jobs:
       - name: Reject proof placeholders
         run: |
           set -euo pipefail
-          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FinalKernel.lean
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz
 
       - name: Build exact proof kernel
         run: lake build CollatzFinal
