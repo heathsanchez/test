@@ -32,7 +32,11 @@ theorem validWeightGaugeEq_iff_observationEq {n : Nat}
     change normalizedWeights w₁.1 = normalizedWeights w₂.1 at h
     let s₁ : ℚ := ∑ j, w₁.1 j
     let s₂ : ℚ := ∑ j, w₂.1 j
-    refine ⟨s₂ / s₁, div_ne_zero w₂.property w₁.property, ?_⟩
+    have hs₁ : s₁ ≠ 0 := by
+      simpa [s₁] using w₁.property
+    have hs₂ : s₂ ≠ 0 := by
+      simpa [s₂] using w₂.property
+    refine ⟨s₂ / s₁, div_ne_zero hs₂ hs₁, ?_⟩
     funext k
     have hk := congrFun h k
     unfold normalizedWeights at hk
@@ -42,7 +46,7 @@ theorem validWeightGaugeEq_iff_observationEq {n : Nat}
     unfold scaleWeights
     calc
       w₂.1 k = (w₂.1 k * s₁) / s₁ := by
-        field_simp [w₁.property]
+        rw [mul_div_cancel_right₀ _ hs₁]
       _ = (w₁.1 k * s₂) / s₁ := by
         rw [← hcross]
       _ = (s₂ / s₁) * w₁.1 k := by ring
