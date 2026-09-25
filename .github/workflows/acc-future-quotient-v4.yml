@@ -1,0 +1,276 @@
+name: ACC Future Quotient V4
+
+on:
+  push:
+    branches: [acc-future-quotient-v4]
+    paths:
+      - "acc_competitive/future_quotient_v4.py"
+      - ".github/workflows/acc-future-quotient-v4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+env:
+  OFFICIAL_PIN: "99a65377c5c4f412cd9af7b8d31c41464a855736"
+  V3_AUTHORITY_RUN: "36086444449"
+
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 70
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-future-quotient-v4
+
+      - name: Bind pinned verifier, exact V2 representation, and V3 separators
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+          mkdir -p fq4/input /tmp/v2 /tmp/v3
+          META="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-future-quotient-v2-input&per_page=1')"
+          ID="$(printf '%s' "$META" | jq -r '.artifacts[0].id // empty')"
+          DIGEST="$(printf '%s' "$META" | jq -r '.artifacts[0].digest // empty')"
+          test -n "$ID"
+          echo "$ID" > fq4/input/v2_artifact_id.txt
+          echo "$DIGEST" > fq4/input/v2_artifact_digest.txt
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/v2.zip
+          unzip -q /tmp/v2.zip -d /tmp/v2
+
+          ATLAS="$(find /tmp/v2 -name proof_atlas.sqlite -print -quit)"
+          INDEX="$(find /tmp/v2 -name future_quotient.sqlite -print -quit)"
+          test -n "$ATLAS"
+          test -n "$INDEX"
+          cp "$ATLAS" fq4/input/proof_atlas.sqlite
+          cp "$INDEX" fq4/input/future_quotient.sqlite
+          cp "$(find /tmp/v2 -name quotient_report.json -print -quit)" fq4/input/v2_quotient_report.json
+
+          gh run download "$V3_AUTHORITY_RUN"             --pattern 'acc-future-quotient-v3-search-*'             -D /tmp/v3
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          m=json.loads(Path('/tmp/acc/competition/tools/verifier/data/manifest.json').read_text())
+          lim=m['limits']
+          assert lim['max_total_relator_length']==10000,lim
+          Path('fq4/input/official_limits.json').write_text(json.dumps(lim,indent=2,sort_keys=True)+'\n')
+          print('FQ4_INPUT',json.dumps({'v2_artifact':Path('fq4/input/v2_artifact_id.txt').read_text().strip(),
+                                        'v2_digest':Path('fq4/input/v2_artifact_digest.txt').read_text().strip(),
+                                        'v3_authority_run':'36086444449',
+                                        'limits':lim},sort_keys=True))
+          PY
+
+      - name: Compile six-context product guard and replay V3 separators
+        run: |
+          set -euo pipefail
+          python3 acc_competitive/future_quotient_v4.py build             --v2-index fq4/input/future_quotient.sqlite             --out-guard-index fq4/input/future_quotient_v4_guard.sqlite             --out-report fq4/input/guard_report.json             --v3-dir /tmp/v3             --out-audit fq4/input/v3_separator_audit.json             --total-cap 10000             --progress-every 10000             | tee fq4/build.log
+
+      - name: Guard qualification
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          g=json.loads(Path('fq4/input/guard_report.json').read_text())
+          a=json.loads(Path('fq4/input/v3_separator_audit.json').read_text())
+          assert g['atlas_states']==433272,g
+          assert a['v3_false_contacts']==56,a
+          assert a['separated_by_six_context_guard']==56,a
+          assert a['separation_fraction']==1.0,a
+          print('FQ4_GUARD_GATE',json.dumps({
+            'atlas_states':g['atlas_states'],
+            'guarded_classes':g['guarded_classes'],
+            'distance_band_pure_state_fraction':g['distance_band_pure_state_fraction'],
+            'weighted_policy_purity':g['weighted_policy_purity'],
+            'strong_policy_state_fraction':g['strong_policy_state_fraction'],
+            'v3_false_contacts':a['v3_false_contacts'],
+            'separated':a['separated_by_six_context_guard'],
+          },sort_keys=True))
+          PY
+
+      - name: Freeze fresh six largest AC-to-Stable slack gates
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json,urllib.request
+          from datetime import datetime,timezone
+          from pathlib import Path
+
+          H={'Accept':'application/json','User-Agent':'Mozilla/5.0'}
+          def get(problem):
+              u='https://server-9527.sair.foundation/api/acc/discoveries/snapshot?problem='+problem
+              req=urllib.request.Request(u,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:return json.loads(r.read().decode())
+          def rows(o):
+              d=o.get('data',o)
+              return {str(x.get('problemId') or x.get('challengeId')):x for x in d['items']
+                      if x.get('problemId') or x.get('challengeId')}
+
+          ao=get('ac'); so=get('stable_ac'); ac=rows(ao); st=rows(so)
+          gates=[]
+          for cid,a in ac.items():
+              if not cid.startswith('ac-') or a.get('status')!='solved':continue
+              sid='sac-'+cid[3:]; s=st.get(sid)
+              if not s or s.get('status')!='solved':continue
+              ab=a.get('currentBestLength'); sb=s.get('currentBestLength')
+              if type(ab) is not int or type(sb) is not int:continue
+              slack=sb-(ab+2)
+              if slack<=0:continue
+              gates.append({'challenge_id':cid,'stable_challenge_id':sid,
+                            'ac_best':ab,'stable_best':sb,'stable_slack':slack,
+                            'source_bound_exclusive':sb-2,
+                            'ac_kTeams':a.get('kTeams'),'stable_kTeams':s.get('kTeams')})
+          gates.sort(key=lambda x:(-x['stable_slack'],-x['stable_best'],x['challenge_id']))
+          gates=gates[:6]
+          assert gates
+          root=Path('fq4/input')
+          root.joinpath('snapshot_ac.json').write_text(json.dumps(ao,indent=2,sort_keys=True)+'\n')
+          root.joinpath('snapshot_stable.json').write_text(json.dumps(so,indent=2,sort_keys=True)+'\n')
+          root.joinpath('targets.json').write_text(json.dumps(gates,indent=2,sort_keys=True)+'\n')
+          for i,g in enumerate(gates):
+              root.joinpath(f'target_{i}.json').write_text(json.dumps([g['challenge_id']],indent=2)+'\n')
+          root.joinpath('freeze.json').write_text(json.dumps({
+              'utc':datetime.now(timezone.utc).isoformat(),'gates':gates},indent=2,sort_keys=True)+'\n')
+          print('FQ4_GATES',json.dumps(gates,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-future-quotient-v4-input
+          path: |
+            fq4/input/
+            fq4/build.log
+          retention-days: 90
+
+  search:
+    needs: compile
+    strategy:
+      fail-fast: false
+      max-parallel: 6
+      matrix:
+        slot: [0,1,2,3,4,5]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-future-quotient-v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-future-quotient-v4-input
+          path: /tmp/fq4
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+
+      - name: Search future x finite-group guarded continuation
+        run: |
+          set -o pipefail
+          mkdir -p "fq4/search_${{ matrix.slot }}"
+          python3 acc_competitive/future_quotient_v4.py search             --acc-root /tmp/acc             --atlas /tmp/fq4/input/proof_atlas.sqlite             --v2-index /tmp/fq4/input/future_quotient.sqlite             --guard-index /tmp/fq4/input/future_quotient_v4_guard.sqlite             --snapshot-ac /tmp/fq4/input/snapshot_ac.json             --snapshot-stable /tmp/fq4/input/snapshot_stable.json             --targets "/tmp/fq4/input/target_${{ matrix.slot }}.json"             --out-dir "fq4/search_${{ matrix.slot }}"             --node-cap 120000             --time-cap 1200             --rollout-attempt-cap 2000             --min-policy-purity 0.75             | tee "fq4/search_${{ matrix.slot }}.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-future-quotient-v4-search-${{ matrix.slot }}
+          path: |
+            fq4/search_${{ matrix.slot }}/
+            fq4/search_${{ matrix.slot }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  qualify_and_publish:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-future-quotient-v4
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-future-quotient-v4-search-*
+          path: fq4/downloads
+          merge-multiple: false
+
+      - name: Pool exact candidates and diagnostics
+        run: |
+          set -euo pipefail
+          mkdir -p fq4/final
+          python3 - <<'PY'
+          import json
+          from collections import Counter
+          from pathlib import Path
+          best={};reports=[];fail=Counter()
+          for p in Path('fq4/downloads').rglob('candidate_batch.txt'):
+              for line in p.read_text().splitlines():
+                  if ':' not in line:continue
+                  cid,raw=line.split(':',1)
+                  try:m=list(json.loads(raw.strip()))
+                  except Exception:continue
+                  if cid not in best or len(m)<len(best[cid]):best[cid]=m
+          for p in Path('fq4/downloads').rglob('report.json'):
+              try:r=json.loads(p.read_text())
+              except Exception:continue
+              reports.append(r);fail.update(r.get('rollout_failure_histogram',{}))
+          Path('fq4/final/candidate_batch.txt').write_text(''.join(
+              f"{cid}: {json.dumps(m,separators=(',',':'))}\n" for cid,m in sorted(best.items())))
+          summary={
+              'candidate_rows':len(best),
+              'search_reports':len(reports),
+              'strict_winning_targets':sum(int(r.get('strict_winning_targets',0)) for r in reports),
+              'nodes_popped':sum(int(r.get('nodes_popped',0)) for r in reports),
+              'future_class_hits':sum(int(r.get('future_class_hits',0)) for r in reports),
+              'guarded_class_hits':sum(int(r.get('guarded_class_hits',0)) for r in reports),
+              'rollout_attempts':sum(int(r.get('rollout_attempts',0)) for r in reports),
+              'rollout_successes':sum(int(r.get('rollout_successes',0)) for r in reports),
+              'rollout_failure_histogram':dict(sorted(fail.items())),
+          }
+          Path('fq4/final/pool_report.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          Path('fq4/final/search_reports.json').write_text(json.dumps(reports,indent=2,sort_keys=True)+'\n')
+          print('FQ4_POOL',json.dumps(summary,sort_keys=True))
+          PY
+
+      - name: Pinned official replay of every candidate
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet "$OFFICIAL_PIN"
+          test "$(git -C /tmp/acc rev-parse HEAD)" = "$OFFICIAL_PIN"
+          if [ ! -s fq4/final/candidate_batch.txt ]; then
+            echo NO_FQ4_CANDIDATES
+            exit 0
+          fi
+          PYTHONPATH=/tmp/acc/competition/tools python3 -m verifier             --manifest /tmp/acc/competition/tools/verifier/data/manifest.json             --submission fq4/final/candidate_batch.txt --pretty             | tee fq4/final/pinned_verifier.json
+          touch fq4/final/PINNED_VERIFIER_PASS
+
+      - name: Immediate live record and quota gate, then publish strict rows only
+        run: |
+          set -euo pipefail
+          if [ ! -f fq4/final/PINNED_VERIFIER_PASS ]; then
+            echo NO_VERIFIED_FQ4_CANDIDATES
+            exit 0
+          fi
+          ACC_SUBMISSION_FILE=fq4/final/candidate_batch.txt           ACC_SUBMIT_OUT=fq4/final/publish           python3 acc_submit/submit_live_filtered.py             | tee fq4/final/publish.log
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-future-quotient-v4-final
+          path: fq4/final/
+          retention-days: 90
+          if-no-files-found: warn
