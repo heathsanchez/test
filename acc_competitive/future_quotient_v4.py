@@ -941,7 +941,8 @@ def main():
     b.add_argument("--out-report", required=True)
     b.add_argument("--v3-dir")
     b.add_argument("--out-audit", default="fq4_separator_audit.json")
-    b.add_argument("--progress-every", type=int, default=10000)\n    b.add_argument("--total-cap", type=int, default=10000)
+    b.add_argument("--progress-every", type=int, default=10000)
+    b.add_argument("--total-cap", type=int, default=10000)
     b.set_defaults(func=cmd_build)
 
     s = sub.add_parser("search")
