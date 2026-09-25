@@ -1,0 +1,34 @@
+name: Collatz nearest centre order V0
+
+on:
+  push:
+    branches:
+      - collatz-nearest-centre-order-v0
+    paths:
+      - 'experiments/collatz_nearest_centre_order_v0.py'
+      - '.github/workflows/collatz-nearest-centre-order-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact broad centre-order audit
+        run: |
+          set -o pipefail
+          mkdir -p evidence/collatz-nearest-centre-order-v0
+          python experiments/collatz_nearest_centre_order_v0.py             --lo 43009 --hi 45055 --K 128             --output evidence/collatz-nearest-centre-order-v0/broad.json             | tee evidence/collatz-nearest-centre-order-v0/broad.log
+      - name: Exact adversarial centre-order audit
+        run: |
+          set -o pipefail
+          python experiments/collatz_nearest_centre_order_v0.py             --lo 46081 --hi 46591 --K 128             --output evidence/collatz-nearest-centre-order-v0/adversarial.json             | tee evidence/collatz-nearest-centre-order-v0/adversarial.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-nearest-centre-order-v0
+          path: evidence/collatz-nearest-centre-order-v0
+          if-no-files-found: error
