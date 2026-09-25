@@ -76,7 +76,10 @@ fn check_export_with_policy(
         if std::env::var_os("NUCLEUS_TRACE_DECL").is_some() {
             match &declaration {
                 Declaration::Axiom { name, .. } => {
-                    eprintln!("NUCLEUS_DECL:name={}:kind=axiom", trace_name(&export, *name))
+                    eprintln!(
+                        "NUCLEUS_DECL:name={}:kind=axiom",
+                        trace_name(&export, *name)
+                    )
                 }
                 Declaration::Definition { name, .. } => eprintln!(
                     "NUCLEUS_DECL:name={}:kind=definition",
