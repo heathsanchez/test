@@ -193,7 +193,7 @@ fn check_export_with_policy(
                             );
                         }
                         return verdict;
-                    },
+                    }
                 }
             }
             Declaration::Inductive(block) => {
@@ -214,7 +214,7 @@ fn check_export_with_policy(
                             );
                         }
                         return verdict;
-                    },
+                    }
                 }
             }
             Declaration::Unsupported { tag } => {
@@ -224,7 +224,7 @@ fn check_export_with_policy(
                     );
                 }
                 return Verdict::Unknown;
-            },
+            }
         };
 
         let Ok(extended) = environment.extend(name, established) else {
@@ -7825,7 +7825,6 @@ fn trace_verdict_boundary(
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {
