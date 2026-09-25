@@ -30,8 +30,18 @@ theorem mathgraph_transfer_bsaStreaming_eq_bsaAttn
   calc
     _ = oFree qStart gpos Q Kg Vg scale numKVBlocks (le_refl _) idx /
         lFree qStart gpos Q Kg scale numKVBlocks (le_refl _) idx.1 := by
-      exact MathGraphGaugeCapability.common_factor_ratio _ _ _ _ _
-        (Real.exp_ne_zero _) rfl rfl
+      exact (MathGraphGaugeCapability.common_factor_ratio
+        (Real.exp (-(bsaMPartial Bk qStart numKVBlocks gpos Q Kg scale
+          numKVBlocks idx.1).unbotD 0))
+        (oFree qStart gpos Q Kg Vg scale numKVBlocks (le_refl _) idx)
+        (lFree qStart gpos Q Kg scale numKVBlocks (le_refl _) idx.1)
+        (Real.exp (-(bsaMPartial Bk qStart numKVBlocks gpos Q Kg scale
+          numKVBlocks idx.1).unbotD 0) *
+          oFree qStart gpos Q Kg Vg scale numKVBlocks (le_refl _) idx)
+        (Real.exp (-(bsaMPartial Bk qStart numKVBlocks gpos Q Kg scale
+          numKVBlocks idx.1).unbotD 0) *
+          lFree qStart gpos Q Kg scale numKVBlocks (le_refl _) idx.1)
+        (Real.exp_ne_zero _) rfl rfl).symm
     _ = bsaAttn qStart gpos Q Kg Vg scale idx :=
       oFree_div_lFree_eq_bsaAttn qStart gpos Q Kg Vg scale idx
 
