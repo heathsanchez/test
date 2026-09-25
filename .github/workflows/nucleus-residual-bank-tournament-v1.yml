@@ -1,0 +1,183 @@
+name: Nucleus Residual Bank Tournament v1
+
+on:
+  push:
+    branches: [nucleus-residual-bank-tournament-v1]
+    paths:
+      - ".github/workflows/nucleus-residual-bank-tournament-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-residual-bank-tournament-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    env:
+      ARENA_ARTIFACT: 10712869614
+      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      PROBE_BINARY_TREE: fd157c80987f58f4553907f841765943fa9c63c1
+      PROBE_DEFINITE_CONV: 35dfbc340f0b17adb5a496e8d0eda1cb6b6213be
+      PROBE_FUNETA: ebe0d61695c57373875cb84054f37dcd0ce35ed7
+      PROBE_PROOF_IRREL: 063102f1a063965ae81a00129e7b1abec4e51638
+      PROBE_PROP_PROJ: 66f9ff6266ba669fdde7e18d02f7f60fc1446331
+      PROBE_QUALIFIED_COMPOSE: fbf5710c49ed8c09b56ed30acb5d4efdeed530b5
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact current independent base
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel /tmp/nucleus-current
+
+      - name: Build residual capability probes
+        run: |
+          set -euo pipefail
+          build_probe () {
+            label="$1"
+            ref="$2"
+            dir="/tmp/probe-$label"
+            git worktree add --detach "$dir" "$ref"
+            CARGO_TARGET_DIR="/tmp/target-$label" cargo build --release --locked --manifest-path "$dir/metatron-kernel/Cargo.toml"
+            cp "/tmp/target-$label/release/metatron-kernel" "/tmp/nucleus-$label"
+          }
+          build_probe binary_tree "$PROBE_BINARY_TREE"
+          build_probe definite_conv "$PROBE_DEFINITE_CONV"
+          build_probe funeta "$PROBE_FUNETA"
+          build_probe proof_irrel "$PROBE_PROOF_IRREL"
+          build_probe prop_proj "$PROBE_PROP_PROJ"
+          build_probe qualified_compose "$PROBE_QUALIFIED_COMPOSE"
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Tournament on exact 41-case residual frontier
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/residual-bank-tournament-v1
+          python - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          root=pathlib.Path('/tmp/tests')
+          current=pathlib.Path('/tmp/nucleus-current')
+          probes=[
+            ('binary_tree', pathlib.Path('/tmp/nucleus-binary_tree')),
+            ('definite_conv', pathlib.Path('/tmp/nucleus-definite_conv')),
+            ('funeta', pathlib.Path('/tmp/nucleus-funeta')),
+            ('proof_irrel', pathlib.Path('/tmp/nucleus-proof_irrel')),
+            ('prop_proj', pathlib.Path('/tmp/nucleus-prop_proj')),
+            ('qualified_compose', pathlib.Path('/tmp/nucleus-qualified_compose')),
+          ]
+
+          cases=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/kind)).removesuffix('.ndjson')
+                  cases.append((name,p,expected))
+
+          def run(binary,p,timeout=120):
+              start=time.perf_counter()
+              try:
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=timeout)
+                  return q.returncode,time.perf_counter()-start,q.stderr.decode(errors='replace')[-500:]
+              except subprocess.TimeoutExpired:
+                  return 124,time.perf_counter()-start,'timeout'
+
+          residual=[]
+          for name,p,expected in cases:
+              rc,sec,err=run(current,p)
+              if rc in (2,3):
+                  residual.append((name,p,expected))
+              elif rc in (0,1) and rc!=expected:
+                  raise SystemExit(f'current authority wrong on {name}: {rc} != {expected}')
+              elif rc not in (0,1,2,3):
+                  raise SystemExit(f'current authority error on {name}: rc={rc} {err}')
+
+          assert len(residual)==41, len(residual)
+
+          rows=[]
+          stats=[]
+          for label,binary in probes:
+              resolved=[]
+              wrong=[]
+              declines=[]
+              errors=[]
+              total_seconds=0.0
+              for name,p,expected in residual:
+                  rc,sec,err=run(binary,p)
+                  total_seconds+=sec
+                  row={'probe':label,'test':name,'expected':expected,'status':rc,'seconds':sec}
+                  if rc in (0,1):
+                      if rc==expected:
+                          resolved.append(name)
+                          row['class']='correct'
+                      else:
+                          wrong.append(name)
+                          row['class']='wrong'
+                  elif rc in (2,3):
+                      declines.append(name)
+                      row['class']='decline'
+                  else:
+                      errors.append({'test':name,'status':rc,'stderr':err})
+                      row['class']='error'
+                  rows.append(row)
+              stats.append({
+                  'probe':label,
+                  'resolved_correct':len(resolved),
+                  'wrong':len(wrong),
+                  'declined':len(declines),
+                  'errors':len(errors),
+                  'resolved_tests':resolved,
+                  'wrong_tests':wrong,
+                  'error_tests':errors,
+                  'seconds':total_seconds,
+              })
+
+          stats.sort(key=lambda x:(x['wrong']>0 or x['errors']>0,-x['resolved_correct'],x['probe']))
+          safe=[x for x in stats if x['wrong']==0 and x['errors']==0]
+          out={
+              'schema':'nucleus-residual-bank-tournament-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'base_sha':os.environ['BASE_SHA'],
+              'current_residual_count':len(residual),
+              'residual_tests':[x[0] for x in residual],
+              'probe_stats':stats,
+              'best_safe_probe':safe[0]['probe'] if safe else None,
+              'best_safe_resolved':safe[0]['resolved_correct'] if safe else 0,
+              'rows':rows,
+          }
+          path=pathlib.Path('metatron-kernel/evidence-out/residual-bank-tournament-v1/result.json')
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'current_residual_count':out['current_residual_count'],
+              'best_safe_probe':out['best_safe_probe'],
+              'best_safe_resolved':out['best_safe_resolved'],
+              'probe_stats':stats,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-residual-bank-tournament-v1-${{ github.sha }}
+          path: metatron-kernel/evidence-out/residual-bank-tournament-v1
+          if-no-files-found: error
