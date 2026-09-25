@@ -51,7 +51,7 @@ theorem observe_eq_of_gauge {p q : RatioState} (h : GaugeEq p q) :
   rcases h with ⟨c, hc, rfl⟩
   unfold observe scale
   exact (MathGraphGaugeCapability.common_factor_ratio
-    c p.num p.den (c * p.num) (c * p.den) hc rfl rfl).symm
+    c p.num p.den (c * p.num) (c * p.den) hc rfl rfl)
 
 abbrev GaugeQuotient := Quotient gaugeSetoid
 
