@@ -347,10 +347,43 @@ impl<'a> TypeChecker<'a> {
                         if declaration.level_params.len() != levels.len() {
                             return Judgment::refuted("projection-level-arity");
                         }
+
+                        // A constructor field type lives under the parameters
+                        // and every earlier field binder.  The previous
+                        // implementation instantiated only the parameters,
+                        // which is sufficient for nondependent records but
+                        // mis-types a dependent field such as Fin.isLt, whose
+                        // domain mentions Fin.val.  Reconstruct those earlier
+                        // binders from projections of this same structure.
                         let mut field_frame = EnvFrame::empty();
                         for parameter in neutral.spine.iter().take(spec.num_params) {
                             field_frame = field_frame.extend(parameter.clone());
                         }
+                        for prior_index in 0..index {
+                            let prior_projection = self.expressions.iter_raw().find_map(
+                                |(raw, expression)| match expression {
+                                    Expr::Proj {
+                                        type_name: prior_type,
+                                        index: prior,
+                                        structure: prior_structure,
+                                    } if prior_type == type_name
+                                        && *prior == prior_index as u64
+                                        && prior_structure == structure =>
+                                    {
+                                        Some(ExprId(raw))
+                                    }
+                                    _ => None,
+                                },
+                            );
+                            let Some(prior_projection) = prior_projection else {
+                                return Judgment::unknown(
+                                    "dependent-projection-prior-field-unavailable",
+                                );
+                            };
+                            field_frame = field_frame
+                                .extend(self.closure(prior_projection, frame.clone()));
+                        }
+
                         let level_substitution = LevelSubstitution::new(
                             declaration
                                 .level_params
