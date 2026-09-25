@@ -6,7 +6,7 @@ on:
     paths:
       - 'lean-toolchain'
       - 'lakefile.lean'
-      - 'formal/Collatz/FinalKernel.lean'
+      - 'formal/Collatz'
       - '.github/workflows/collatz-final-proof-kernel-v0.yml'
   workflow_dispatch:
 
