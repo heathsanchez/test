@@ -5046,11 +5046,30 @@ fn check_exact_fin(
         return Err(Verdict::Reject);
     }
 
-    // The dependent proof field must itself be a proposition.
+    // The dependent proof field is checked under the constructor's
+    // parameter/value binders, not in an empty context.
     let checker = TypeChecker::new(&export.exprs, &export.levels, environment)
         .with_delta_policy(delta_policy);
+    let mut field_context = Vec::with_capacity(2);
+    let mut field_frame = EnvFrame::empty();
+
+    field_context.push(TypeValue::Term(
+        checker.closure(*ctor_parameter, field_frame.clone()),
+    ));
+    field_frame = field_frame.extend_free(FreeId(60_000));
+
+    field_context.push(TypeValue::Term(
+        checker.closure(*value_field, field_frame.clone()),
+    ));
+    field_frame = field_frame.extend_free(FreeId(60_001));
+
     if !matches!(
-        checker.is_proposition(*proof_field, limits.judgment_steps),
+        checker.is_proposition_in_context(
+            *proof_field,
+            &field_context,
+            &field_frame,
+            limits.judgment_steps,
+        ),
         Judgment::Proven { .. }
     ) {
         return Err(Verdict::Unknown);
