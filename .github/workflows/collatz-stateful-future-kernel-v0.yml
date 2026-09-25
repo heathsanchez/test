@@ -13,7 +13,7 @@ on:
 jobs:
   qualify:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,20 +29,40 @@ jobs:
             --lo 3 --hi 8191 --K 128 \
             --output evidence/collatz-stateful-future-kernel-v0/result.json \
             | tee evidence/collatz-stateful-future-kernel-v0/run.log
+      - name: Prospective disjoint holdout transfer
+        run: |
+          python experiments/collatz_stateful_future_kernel_v0.py \
+            --lo 8193 --hi 32767 --K 128 \
+            --output evidence/collatz-stateful-future-kernel-v0/holdout.json \
+            | tee evidence/collatz-stateful-future-kernel-v0/holdout.log
+      - name: Compare frozen and holdout consequence
+        run: |
           python - <<'PY'
           import json
-          p='evidence/collatz-stateful-future-kernel-v0/result.json'
-          d=json.load(open(p))
-          assert d['schema']=='COLLATZ_STATEFUL_FUTURE_KERNEL_V0'
-          assert d['transport_audit']['active_fuel_consumption_checks'] > 0
-          assert 'CONTROL' in d['representations']
-          assert 'V2_VECTOR' in d['representations']
-          print('SCIENTIFIC_VERDICT', d['verdict'])
-          print('CONTROL_FUTURE_KERNEL', d['representations']['CONTROL']['future_kernel_classes'])
-          print('OWN_FUEL_FUTURE_KERNEL', d['representations']['OWN_FUEL']['future_kernel_classes'])
-          print('V2_VECTOR_FUTURE_KERNEL', d['representations']['V2_VECTOR']['future_kernel_classes'])
-          print('V23_VECTOR_FUTURE_KERNEL', d['representations']['V23_VECTOR']['future_kernel_classes'])
-          print('CLOSURE_CERTIFICATE', d['closure_certificate'])
+          train=json.load(open('evidence/collatz-stateful-future-kernel-v0/result.json'))
+          hold=json.load(open('evidence/collatz-stateful-future-kernel-v0/holdout.json'))
+          for d in (train,hold):
+              assert d['schema']=='COLLATZ_STATEFUL_FUTURE_KERNEL_V0'
+              assert d['transport_audit']['active_fuel_consumption_checks'] > 0
+          def row(d):
+              return {
+                  'verdict':d['verdict'],
+                  'incomplete':len(d['incomplete_sources']),
+                  'completed_sources':d['counts'].get('completed_sources',0),
+                  'control_kernel':d['representations']['CONTROL']['future_kernel_classes'],
+                  'own_fuel_kernel':d['representations']['OWN_FUEL']['future_kernel_classes'],
+                  'v2_vector_kernel':d['representations']['V2_VECTOR']['future_kernel_classes'],
+                  'certificate':d['closure_certificate'],
+              }
+          tr=row(train); ho=row(hold)
+          print('FROZEN',json.dumps(tr,sort_keys=True))
+          print('HOLDOUT',json.dumps(ho,sort_keys=True))
+          if (tr['incomplete']==0 and ho['incomplete']==0 and
+              tr['control_kernel']>0 and ho['control_kernel']>0 and
+              tr['own_fuel_kernel']==0 and ho['own_fuel_kernel']==0):
+              print('TRANSFER_VERDICT PASS_PROSPECTIVE_OWN_FUEL_KERNEL_COLLAPSE')
+          else:
+              print('TRANSFER_VERDICT RESIDUAL_OR_INCOMPLETE')
           PY
       - name: Upload exact evidence
         uses: actions/upload-artifact@v4
