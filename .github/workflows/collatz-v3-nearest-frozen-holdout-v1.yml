@@ -1,0 +1,68 @@
+name: Collatz V3 nearest frozen holdout V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-frozen-holdout-v1
+    paths:
+      - '.github/workflows/collatz-v3-nearest-frozen-holdout-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze nearest-centre candidate
+        run: |
+          git diff --exit-code fdc3c4f28fabaa3454c78c9ad16633b96462c4ff -- \
+            experiments/collatz_stateful_future_kernel_v0.py \
+            experiments/test_collatz_stateful_future_kernel_v0.py
+          echo "CANDIDATE_FROZEN_AT fdc3c4f28fabaa3454c78c9ad16633b96462c4ff"
+      - name: Exact controls
+        run: |
+          python -m unittest discover -s experiments -p 'test_collatz_stateful_future_kernel_v0.py' -v
+      - name: Fresh untouched nearest-centre holdout
+        run: |
+          mkdir -p evidence/collatz-v3-nearest-frozen-holdout-v1
+          python experiments/collatz_stateful_future_kernel_v0.py \
+            --lo 43009 --hi 45055 --K 128 \
+            --output evidence/collatz-v3-nearest-frozen-holdout-v1/result.json \
+            | tee evidence/collatz-v3-nearest-frozen-holdout-v1/run.log
+      - name: Exact nearest-centre gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-v3-nearest-frozen-holdout-v1/result.json'))
+          r=d['representations']
+          row={
+            'incomplete':len(d['incomplete_sources']),
+            'completed_sources':d['counts'].get('completed_sources',0),
+            'control_kernel':r['CONTROL']['future_kernel_classes'],
+            'v3_max_kernel':r['V3_MAX']['future_kernel_classes'],
+            'v3_nearest_kernel':r['V3_NEAREST']['future_kernel_classes'],
+            'v3_nearest_set_kernel':r['V3_NEAREST_SET']['future_kernel_classes'],
+            'v3_multiset_kernel':r['V3_MULTISET']['future_kernel_classes'],
+            'v3_vector_kernel':r['V3_VECTOR']['future_kernel_classes'],
+            'certificate':d['closure_certificate'],
+          }
+          print('FRESH_NEAREST_HOLDOUT',json.dumps(row,sort_keys=True))
+          assert row['incomplete']==0
+          assert row['control_kernel']>0
+          if row['v3_nearest_kernel']==0:
+              print('FRESH_NEAREST_HOLDOUT_VERDICT PASS_V3_NEAREST_KERNEL_COLLAPSE')
+          else:
+              print('FRESH_NEAREST_HOLDOUT_VERDICT RESIDUAL_V3_NEAREST')
+              raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-v3-nearest-frozen-holdout-v1
+          path: evidence/collatz-v3-nearest-frozen-holdout-v1
+          if-no-files-found: error
