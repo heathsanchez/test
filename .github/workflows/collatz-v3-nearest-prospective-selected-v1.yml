@@ -1,0 +1,90 @@
+name: Collatz V3 nearest prospective selected V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-prospective-selected-v1
+    paths:
+      - '.github/workflows/collatz-v3-nearest-prospective-selected-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze nearest-centre implementation
+        run: |
+          git diff --exit-code fdc3c4f28fabaa3454c78c9ad16633b96462c4ff -- \
+            experiments/collatz_stateful_future_kernel_v0.py \
+            experiments/test_collatz_stateful_future_kernel_v0.py
+      - name: Prospective selected-band gate
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict, Counter
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          LO,HI,K=46081,46591,128
+          patterns=defaultdict(dict)
+          source_sequences=[]
+          incomplete=[]
+          counts=Counter()
+
+          for n in range(LO|1,HI+1,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID":
+                  continue
+              counts["hereditary_birth_rigid"]+=1
+              if not fk.completed_rigid_source(n,K):
+                  incomplete.append(n); continue
+              counts["completed_sources"]+=1
+              seqs=fk.return_sequences(n,K)
+              for r,seq in seqs.items():
+                  if not seq: continue
+                  source_sequences.append(seq)
+                  counts["anchor_sequences"]+=1
+                  counts["return_occurrences"]+=len(seq)
+                  for e in seq:
+                      c=e["cert"]
+                      patterns[r][fk.semantic_id(c)]=c
+
+          bank={r:tuple(patterns[r][k] for k in sorted(patterns[r])) for r in sorted(patterns)}
+          counts["semantic_patterns"]=sum(len(v) for v in bank.values())
+
+          out={}
+          for mode in ("CONTROL","V3_MAX","V3_NEAREST","V3_NEAREST_SET","V3_MULTISET","V3_VECTOR"):
+              nodes,succ,exits,edge_occ=fk.graph_from_occurrences(source_sequences,bank,mode)
+              classes,qnodes,qsucc,qexits,qrounds=fk.refine_future_quotient(nodes,succ,exits)
+              qkernel,qprune=fk.greatest_kernel(qnodes,qsucc)
+              out[mode]={
+                  "future_classes":len(qnodes),
+                  "future_kernel_classes":len(qkernel),
+                  "future_unique_edges":sum(len(v) for v in qsucc.values()),
+                  "future_prune_rounds":qprune,
+                  "cycle":fk.canonical(fk.cycle_witness(qkernel,qsucc)),
+              }
+
+          result={
+              "range":[LO,HI],
+              "counts":dict(counts),
+              "incomplete":incomplete,
+              "representations":out,
+          }
+          print("SELECTED_RESULT",json.dumps(result,sort_keys=True))
+          assert not incomplete
+          assert out["CONTROL"]["future_kernel_classes"]==1
+          if out["V3_NEAREST"]["future_kernel_classes"]==0:
+              print("SELECTED_VERDICT PASS_PROSPECTIVE_V3_NEAREST_KERNEL_COLLAPSE")
+          else:
+              print("SELECTED_VERDICT RESIDUAL_V3_NEAREST")
+              raise SystemExit(1)
+          PY
