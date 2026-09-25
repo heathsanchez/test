@@ -351,6 +351,31 @@ impl<'a> TypeChecker<'a> {
                         for parameter in neutral.spine.iter().take(spec.num_params) {
                             field_frame = field_frame.extend(parameter.clone());
                         }
+                        for prior_index in 0..index {
+                            let prior_projection =
+                                self.expressions.iter_raw().find_map(|(raw, expression)| {
+                                    match expression {
+                                        Expr::Proj {
+                                            type_name: prior_type,
+                                            index: prior,
+                                            structure: prior_structure,
+                                        } if prior_type == type_name
+                                            && *prior == prior_index as u64
+                                            && prior_structure == structure =>
+                                        {
+                                            Some(ExprId(raw))
+                                        }
+                                        _ => None,
+                                    }
+                                });
+                            let Some(prior_projection) = prior_projection else {
+                                return Judgment::unknown(
+                                    "dependent-projection-prior-field-unavailable",
+                                );
+                            };
+                            field_frame =
+                                field_frame.extend(self.closure(prior_projection, frame.clone()));
+                        }
                         let level_substitution = LevelSubstitution::new(
                             declaration
                                 .level_params
