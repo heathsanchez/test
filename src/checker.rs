@@ -9,7 +9,7 @@ use crate::id::{ExprId, LevelId};
 use crate::inductive::{ClosedNonrecursiveDerivation, DerivedSignature, OpaqueInductiveKind};
 use crate::judgment::Judgment;
 use crate::level::LevelTerm;
-use crate::machine::{ProjectionSpec, RecursorReduction, RecursorRule, Transparency};
+use crate::machine::{ProjectionFieldType, ProjectionSpec, RecursorReduction, RecursorRule, Transparency};
 use crate::parser::ResolvedExport;
 use crate::syntax::{
     Constructor, Declaration, Expr, InductiveBlock, Level, Name, QuotKind, Recursor,
@@ -880,7 +880,7 @@ fn check_exact_ofnat(
             ProjectionSpec {
                 constructor: constructor.name,
                 num_params: 2,
-                field_param_indices: vec![0],
+                field_types: vec![ProjectionFieldType::Parameter(0)],
             },
         )
         .map_err(|_| Verdict::Reject)
@@ -6428,7 +6428,7 @@ impl ExactBinaryProductDerivation<'_> {
                     ProjectionSpec {
                         constructor: self.constructor.name,
                         num_params: 2,
-                        field_param_indices: vec![0, 1],
+                        field_types: vec![ProjectionFieldType::Parameter(0), ProjectionFieldType::Parameter(1)],
                     },
                 )
                 .map_err(|_| Verdict::Reject)?
