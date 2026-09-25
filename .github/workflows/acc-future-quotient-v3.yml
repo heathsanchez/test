@@ -34,10 +34,8 @@ jobs:
           ID="$(printf '%s' "$META" | jq -r '.artifacts[0].id // empty')"
           DIGEST="$(printf '%s' "$META" | jq -r '.artifacts[0].digest // empty')"
           test -n "$ID"
-          printf '%s
-' "$ID" > fq3/input/v2_artifact_id.txt
-          printf '%s
-' "$DIGEST" > fq3/input/v2_artifact_digest.txt
+          echo "$ID" > fq3/input/v2_artifact_id.txt
+          echo "$DIGEST" > fq3/input/v2_artifact_digest.txt
           gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/v2.zip
           unzip -q /tmp/v2.zip -d /tmp/v2
           ATLAS="$(find /tmp/v2 -name proof_atlas.sqlite -print -quit)"
