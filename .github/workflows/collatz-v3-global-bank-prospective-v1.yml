@@ -1,0 +1,129 @@
+name: Collatz V3 global bank prospective V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-global-bank-prospective-v1
+    paths:
+      - '.github/workflows/collatz-v3-global-bank-prospective-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Control-select fresh band then test frozen global bank
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          from collections import defaultdict,Counter
+          from fractions import Fraction
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+
+          K=128
+          def q(c): return Fraction(int(c["B"]),int(c["C"]))
+          def qkey(x): return (x.numerator,x.denominator)
+          def v3frac(x):
+              if x==0:return None
+              assert x.denominator%3!=0
+              return fk.vpz(x.numerator,3)
+
+          # Freeze global centre library from 3..8191 only.
+          centres={}
+          for n in range(3,8192,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID":continue
+              if not fk.completed_rigid_source(n,K):continue
+              for r,seq in fk.return_sequences(n,K).items():
+                  for e in seq:
+                      z=q(e["cert"]);centres[qkey(z)]=z
+          frozen=tuple(centres[k] for k in sorted(centres))
+
+          def collect(lo,hi):
+              seqs=[]; incomplete=[];counts=Counter()
+              for n in range(lo|1,hi+1,2):
+                  survives,_=base.survives_to_q0(n)
+                  if not survives or base.birth_status(n)[0]!="RIGID":continue
+                  counts["hereditary_birth_rigid"]+=1
+                  if not fk.completed_rigid_source(n,K):
+                      incomplete.append(n);continue
+                  counts["completed_sources"]+=1
+                  for r,seq in fk.return_sequences(n,K).items():
+                      if not seq:continue
+                      seqs.append(seq);counts["anchor_sequences"]+=1
+                      counts["return_occurrences"]+=len(seq)
+              return seqs,incomplete,counts
+
+          def graph(seqs,mode):
+              nodes=set();succ=defaultdict(set);exits=set()
+              for seq in seqs:
+                  keys=[]
+                  for e in seq:
+                      pid=fk.semantic_id(e["cert"])
+                      if mode=="CONTROL":
+                          key=(pid,)
+                      else:
+                          m=e["m0"]
+                          vals=[]
+                          for z in frozen:
+                              d=v3frac(Fraction(m,1)-z)
+                              assert d is not None
+                              vals.append((d,qkey(z)))
+                          h=max(v for v,k in vals)
+                          nearest=min(k for v,k in vals if v==h)
+                          key=(pid,nearest,h)
+                      keys.append(key);nodes.add(key)
+                  for a,b in zip(keys,keys[1:]):succ[a].add(b)
+                  if keys:exits.add(keys[-1])
+              for n in nodes:succ.setdefault(n,set())
+              cls,qn,qs,qe,rounds=fk.refine_future_quotient(nodes,succ,exits)
+              ker,pr=fk.greatest_kernel(qn,qs)
+              return {
+                  "raw_nodes":len(nodes),
+                  "future_classes":len(qn),
+                  "future_kernel_classes":len(ker),
+                  "future_unique_edges":sum(len(v) for v in qs.values()),
+                  "cycle":fk.canonical(fk.cycle_witness(ker,qs)),
+              }
+
+          selected=None
+          lo=51201
+          while lo<=65535:
+              hi=min(65535,lo+510)
+              seqs,inc,cnt=collect(lo,hi)
+              control=graph(seqs,"CONTROL")
+              row={"range":[lo,hi],"incomplete":len(inc),
+                   "completed_sources":cnt["completed_sources"],
+                   "return_occurrences":cnt["return_occurrences"],
+                   "control":control}
+              print("CONTROL_SCOUT",json.dumps(row,sort_keys=True))
+              if not inc and control["future_kernel_classes"]>0:
+                  selected=(lo,hi,seqs,cnt,control);break
+              lo=hi+2
+          assert selected is not None
+          lo,hi,seqs,cnt,control=selected
+          global_bank=graph(seqs,"GLOBAL")
+          result={
+            "training_range":[3,8191],
+            "frozen_global_centres":len(frozen),
+            "selected_range":[lo,hi],
+            "counts":dict(cnt),
+            "CONTROL":control,
+            "GLOBAL_FROZEN":global_bank,
+          }
+          print("GLOBAL_PROSPECTIVE_RESULT",json.dumps(result,sort_keys=True))
+          if control["future_kernel_classes"]>0 and global_bank["future_kernel_classes"]==0:
+              print("GLOBAL_PROSPECTIVE_VERDICT PASS_FIXED_GLOBAL_BANK_COLLAPSE")
+          else:
+              print("GLOBAL_PROSPECTIVE_VERDICT RESIDUAL_FIXED_GLOBAL_BANK")
+              raise SystemExit(1)
+          PY
