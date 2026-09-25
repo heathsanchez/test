@@ -2148,6 +2148,34 @@ fn check_generic_field_structure(
     } else {
         derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
     };
+    if std::env::var_os("NUCLEUS_TRACE_P3_PROMOTION").is_some()
+        && inductive.num_params == 3
+        && constructor.num_fields == 1
+    {
+        for (label, signature) in [
+            ("type", derived_inductive),
+            ("constructor", derived_constructor(constructor)),
+            ("recursor", derived_recursor(recursor)),
+        ] {
+            match derivation.promote(export, signature, limits.judgment_steps, delta_policy) {
+                Ok(()) => eprintln!(
+                    "NUCLEUS_P3_PROMOTION:name={}:stage={}:pass",
+                    inductive.name.0,
+                    label
+                ),
+                Err(verdict) => {
+                    eprintln!(
+                        "NUCLEUS_P3_PROMOTION:name={}:stage={}:verdict={:?}",
+                        inductive.name.0,
+                        label,
+                        verdict
+                    );
+                    return Err(verdict);
+                }
+            }
+        }
+        return Ok(derivation.finish());
+    }
     derivation.promote_all(
         export,
         [
