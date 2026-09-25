@@ -44,6 +44,81 @@ theorem no_bad_of_no_minimal
         exact ih m hm
       exact hNoMin n hmin
 
+
+def Eventually {α : Type} (f : α → α) (P : α → Prop) (x : α) : Prop :=
+  ∃ k, P (iter f k x)
+
+def ForwardInvariant {α : Type} (f : α → α) (P : α → Prop) : Prop :=
+  ∀ x, P x → P (f x)
+
+theorem eventually_step_forward
+    {α : Type}
+    (f : α → α)
+    (P : α → Prop)
+    (hInv : ForwardInvariant f P)
+    {x : α}
+    (h : Eventually f P x) :
+    Eventually f P (f x) := by
+  obtain ⟨k, hk⟩ := h
+  cases k with
+  | zero =>
+      exact ⟨0, hInv x (by simpa [Eventually, iter] using hk)⟩
+  | succ k =>
+      exact ⟨k, by simpa [Eventually, iter] using hk⟩
+
+theorem eventually_iter_forward
+    {α : Type}
+    (f : α → α)
+    (P : α → Prop)
+    (hInv : ForwardInvariant f P)
+    {x : α}
+    (h : Eventually f P x) :
+    ∀ b, Eventually f P (iter f b x) := by
+  intro b
+  induction b generalizing x with
+  | zero =>
+      simpa [iter] using h
+  | succ b ih =>
+      have hstep : Eventually f P (f x) :=
+        eventually_step_forward f P hInv h
+      simpa [iter] using ih (x := f x) hstep
+
+def LowerMerge (f : Nat → Nat) (n p : Nat) : Prop :=
+  p < n ∧ ∃ a b, iter f a n = iter f b p
+
+theorem lower_merge_preserves_eventual
+    (f : Nat → Nat)
+    (P : Nat → Prop)
+    (hInv : ForwardInvariant f P)
+    {n p : Nat}
+    (hm : LowerMerge f n p)
+    (hp : Eventually f P p) :
+    Eventually f P n := by
+  obtain ⟨_, a, b, hab⟩ := hm
+  have hy : Eventually f P (iter f b p) :=
+    eventually_iter_forward f P hInv hp b
+  have hnFuture : Eventually f P (iter f a n) := by
+    simpa [hab] using hy
+  obtain ⟨k, hk⟩ := hnFuture
+  exact ⟨a + k, by simpa [iter_add] using hk⟩
+
+theorem minimal_bad_has_no_lower_merge
+    (f : Nat → Nat)
+    (P : Nat → Prop)
+    (hInv : ForwardInvariant f P)
+    {n : Nat}
+    (hmin : MinimalBad (fun x => ¬ Eventually f P x) n) :
+    ∀ p, ¬ LowerMerge f n p := by
+  intro p hm
+  have hnotBadP : ¬ (¬ Eventually f P p) :=
+    hmin.2 p hm.1
+  have hp : Eventually f P p := by
+    exact Classical.byContradiction hnotBadP
+  have hn : Eventually f P n :=
+    lower_merge_preserves_eventual f P hInv hm hp
+  exact hmin.1 hn
+
+
 structure Exits (State : Type) where
   descent : State → Prop
   lowerMerge : State → Prop
