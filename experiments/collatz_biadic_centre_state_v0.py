@@ -134,7 +134,7 @@ def analyze(lo,hi,K,out):
             assert (1<<c["D"])*d1==c["A"]*d0
             if d0:
                 assert fk.v2z(d1)==fk.v2z(d0)-c["D"]
-                assert fk.vpz(d1,3)==fk.vpz(d0,3)+c["r"]
+                assert fk.vpz(d1,3)==fk.vpz(d0,3)+fk.vpz(c["A"],3)
                 own_transport_checks+=1
 
             # Exact 3-adic reselection law after executing current return.
@@ -148,7 +148,7 @@ def analyze(lo,hi,K,out):
             qj=centre(c)
             active_before=fk.vpz(fk.defect(c,m0),3)
             active_after=fk.vpz(fk.defect(c,m1),3)
-            t=None if active_before is None else active_before+c["r"]
+            t=None if active_before is None else active_before+fk.vpz(c["A"],3)
             assert active_after==t
             if t is None:
                 reselection["zero_active_defect"]+=1
