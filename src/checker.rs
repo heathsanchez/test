@@ -1967,12 +1967,16 @@ fn check_single_derived_field_structure(
         delta_policy,
     ) {
         if trace {
-            eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict={verdict:?}");
+            eprintln!(
+                "NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict={verdict:?}"
+            );
         }
         return Err(verdict);
     }
     if trace {
-        eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict=PASS");
+        eprintln!(
+            "NUCLEUS_SINGLE_FIELD:name={name}:stage=constructor-recursor-promotion:verdict=PASS"
+        );
     }
 
     let Ok(p) = usize::try_from(inductive.num_params) else {
@@ -1994,7 +1998,9 @@ fn check_single_derived_field_structure(
         Ok(environment) => environment,
         Err(_) => {
             if trace {
-                eprintln!("NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=REJECT");
+                eprintln!(
+                    "NUCLEUS_SINGLE_FIELD:name={name}:stage=projection-install:verdict=REJECT"
+                );
             }
             return Err(Verdict::Reject);
         }
