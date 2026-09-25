@@ -1,7 +1,10 @@
+import VeriTile.Triton.Math.Softmax
 import VeriTile.MathGraphConsequentialQuotient
 import VeriTile.MathGraphNormalizationQuotient
 
 namespace MathGraphVeriTileAdapter
+
+#check VeriTile.Triton.TiledSoftmax.naive_eq_stable
 
 open MathGraphConsequentialQuotient
 open MathGraphNormalizationQuotient
