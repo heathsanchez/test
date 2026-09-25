@@ -30,8 +30,8 @@ theorem mathgraph_v4_mixed_sparse_gauge
       exact Real.exp_pos _
   refine ⟨msaE (msaMPartial BM BN score k i), ne_of_gt hEpos, ?_⟩
   apply RatioState.ext
-  · exact hO
-  · exact hL
+  · exact hO.symm
+  · exact hL.symm
 
 theorem mathgraph_v4_mixed_sparse_observation
     (BM BN BD : Nat) (score) (vblk) (k : Nat)
