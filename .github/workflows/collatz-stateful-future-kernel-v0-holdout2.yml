@@ -1,0 +1,59 @@
+name: Collatz stateful future kernel V0 holdout 2
+
+on:
+  push:
+    branches:
+      - collatz-stateful-future-kernel-v0
+    paths:
+      - '.github/workflows/collatz-stateful-future-kernel-v0-holdout2.yml'
+  workflow_dispatch:
+
+jobs:
+  prospective-holdout-2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze candidate implementation
+        run: |
+          git diff --exit-code 46df53bb8a428455f4798c659965b87e33c80f84 --             experiments/collatz_stateful_future_kernel_v0.py             experiments/test_collatz_stateful_future_kernel_v0.py
+          echo "CANDIDATE_FROZEN_AT 46df53bb8a428455f4798c659965b87e33c80f84"
+      - name: Exact unit controls
+        run: |
+          python -m unittest discover -s experiments -p 'test_collatz_stateful_future_kernel_v0.py' -v
+      - name: Genuinely fresh disjoint holdout
+        run: |
+          mkdir -p evidence/collatz-stateful-future-kernel-v0-holdout2
+          python experiments/collatz_stateful_future_kernel_v0.py             --lo 32769 --hi 40959 --K 128             --output evidence/collatz-stateful-future-kernel-v0-holdout2/result.json             | tee evidence/collatz-stateful-future-kernel-v0-holdout2/run.log
+      - name: Prospective V3 separator gate
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-stateful-future-kernel-v0-holdout2/result.json'))
+          row={
+              'incomplete':len(d['incomplete_sources']),
+              'completed_sources':d['counts'].get('completed_sources',0),
+              'control_kernel':d['representations']['CONTROL']['future_kernel_classes'],
+              'own_fuel_kernel':d['representations']['OWN_FUEL']['future_kernel_classes'],
+              'own_v23_kernel':d['representations']['OWN_V23']['future_kernel_classes'],
+              'v2_vector_kernel':d['representations']['V2_VECTOR']['future_kernel_classes'],
+              'v3_vector_kernel':d['representations']['V3_VECTOR']['future_kernel_classes'],
+              'v23_vector_kernel':d['representations']['V23_VECTOR']['future_kernel_classes'],
+              'certificate':d['closure_certificate'],
+          }
+          print('HOLDOUT2',json.dumps(row,sort_keys=True))
+          if row['incomplete']==0 and row['control_kernel']>0 and row['v3_vector_kernel']==0:
+              print('PROSPECTIVE_HOLDOUT2_VERDICT PASS_V3_VECTOR_KERNEL_COLLAPSE')
+          else:
+              print('PROSPECTIVE_HOLDOUT2_VERDICT RESIDUAL_OR_INCOMPLETE')
+              raise SystemExit(1)
+          PY
+      - name: Upload exact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: collatz-stateful-future-kernel-v0-holdout2
+          path: evidence/collatz-stateful-future-kernel-v0-holdout2
+          if-no-files-found: error
