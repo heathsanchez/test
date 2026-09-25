@@ -1,0 +1,30 @@
+name: Collatz bi-adic squeeze V0
+
+on:
+  push:
+    branches: [collatz-biadic-squeeze-v0]
+    paths:
+      - 'experiments/collatz_biadic_squeeze_v0.py'
+      - '.github/workflows/collatz-biadic-squeeze-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact squeeze qualification
+        run: |
+          mkdir -p evidence/collatz-biadic-squeeze-v0
+          python experiments/collatz_biadic_squeeze_v0.py \
+            --output evidence/collatz-biadic-squeeze-v0/result.json \
+            | tee evidence/collatz-biadic-squeeze-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-squeeze-v0
+          path: evidence/collatz-biadic-squeeze-v0
+          if-no-files-found: error
