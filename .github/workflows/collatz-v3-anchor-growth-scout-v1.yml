@@ -1,0 +1,48 @@
+name: Collatz V3 anchor growth scout V1
+
+on:
+  push:
+    branches:
+      - collatz-v3-anchor-growth-scout-v1
+    paths:
+      - '.github/workflows/collatz-v3-anchor-growth-scout-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  scout:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Find first fresh completed source with anchor above training bank
+        run: |
+          cd experiments
+          python - <<'PY'
+          import json
+          import collatz_stateful_future_kernel_v0 as fk
+          import collatz_q0_coalescence_component_audit as base
+          K=128
+          hit=None
+          scanned=0
+          for n in range(47105,65536,2):
+              survives,_=base.survives_to_q0(n)
+              if not survives or base.birth_status(n)[0]!="RIGID":
+                  continue
+              if not fk.completed_rigid_source(n,K):
+                  continue
+              scanned+=1
+              rs=fk.return_sequences(n,K)
+              anchors=sorted(r for r,seq in rs.items() if seq)
+              high=[r for r in anchors if r>5]
+              if high:
+                  hit={"source":n,"anchors":anchors,"new_anchors":high}
+                  break
+          print("ANCHOR_SCOUT",json.dumps({"completed_scanned":scanned,"hit":hit},sort_keys=True))
+          if hit is None:
+              print("ANCHOR_SCOUT_VERDICT NO_NEW_ANCHOR_THROUGH_65535")
+          else:
+              print("ANCHOR_SCOUT_VERDICT NEW_ANCHOR_FOUND")
+          PY
