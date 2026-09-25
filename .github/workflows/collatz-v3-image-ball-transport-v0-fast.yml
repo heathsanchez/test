@@ -1,0 +1,24 @@
+name: Collatz V3 image ball transport V0 fast
+
+on:
+  push:
+    branches:
+      - collatz-v3-nearest-transport-law-v0-fast
+    paths:
+      - 'experiments/collatz_v3_ball_transport_probe.py'
+      - '.github/workflows/collatz-v3-image-ball-transport-v0-fast.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact image-ball transport falsifier
+        run: |
+          mkdir -p evidence/collatz-v3-image-ball-transport-v0-fast
+          python experiments/collatz_v3_ball_transport_probe.py             --lo 3 --hi 8191 --K 128             --out evidence/collatz-v3-image-ball-transport-v0-fast/result.json             | tee evidence/collatz-v3-image-ball-transport-v0-fast/run.log
