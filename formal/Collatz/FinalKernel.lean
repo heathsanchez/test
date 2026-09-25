@@ -2,7 +2,7 @@ import Std
 
 namespace CollatzFinal
 
-def iter (f : Nat → Nat) : Nat → Nat → Nat
+def iter {α : Type} (f : α → α) : Nat → α → α
   | 0, n => n
   | k + 1, n => iter f k (f n)
 
