@@ -71,8 +71,6 @@ theorem gaussian_global_scale_gauge {n : Nat}
   refine ⟨(Zsqrtd.norm g : ℚ), hg, ?_⟩
   funext j
   simp [gaussianWeights, scaleWeights, Zsqrtd.norm_mul]
-  push_cast
-  ring
 
 theorem qlf_scaled_states_collapse {n : Nat}
     (g : GaussianInt) (v : Fin n → GaussianInt)
