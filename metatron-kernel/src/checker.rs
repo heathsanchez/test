@@ -1806,6 +1806,7 @@ fn generic_unary_structure_recursor_shape(
             .all(|(field, arg)| is_bvar(export, *arg, (fields - 1 - field) as u64))
 }
 
+#[allow(dead_code)]
 fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let ([inductive], [constructor], [recursor]) = (
         block.types.as_slice(),
@@ -1859,6 +1860,7 @@ fn generic_unary_structure_candidate(export: &ResolvedExport, block: &InductiveB
     )
 }
 
+#[allow(dead_code)]
 fn check_generic_unary_structure(
     export: &ResolvedExport,
     environment: &Environment,
@@ -1931,6 +1933,7 @@ fn check_generic_unary_structure(
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
+#[allow(dead_code)]
 fn generic_field_structure_is_parameter_product(
     export: &ResolvedExport,
     inductive: &crate::syntax::InductiveType,
