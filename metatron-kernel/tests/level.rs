@@ -24,6 +24,15 @@ fn unresolved_imax_does_not_guess() {
 }
 
 #[test]
+fn imax_with_definitely_nonzero_max_right_is_max() {
+    let u = LevelTerm::param("u");
+    let one = succ(LevelTerm::Zero);
+    let right = max(u.clone(), one);
+
+    assert!(level_equal(imax(u.clone(), right.clone()), max(u, right), 64).is_proven());
+}
+
+#[test]
 fn imax_with_successor_right_is_max() {
     let u = LevelTerm::param("u");
     let v1 = succ(LevelTerm::param("v"));
