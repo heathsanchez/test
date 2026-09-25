@@ -1,0 +1,28 @@
+name: Collatz bi-adic centre state V0 fast2
+
+on:
+  push:
+    branches:
+      - collatz-biadic-centre-state-v0-fast2
+    paths:
+      - '.github/workflows/collatz-biadic-centre-state-v0-fast2.yml'
+  workflow_dispatch:
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact adversarial bi-adic audit
+        run: |
+          mkdir -p evidence/collatz-biadic-centre-state-v0-fast2
+          python experiments/collatz_biadic_centre_state_v0.py             --lo 46081 --hi 46591 --K 128             --output evidence/collatz-biadic-centre-state-v0-fast2/result.json             | tee evidence/collatz-biadic-centre-state-v0-fast2/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-centre-state-v0-fast2
+          path: evidence/collatz-biadic-centre-state-v0-fast2
+          if-no-files-found: error
