@@ -264,7 +264,7 @@ def load_guard_classes(path):
     return out
 
 
-def audit_v3_separators(v2_index, v3_dir):
+def audit_v3_separators(v2_index, v3_dir, total_cap):
     """Reproduce the exact V3 false-contact boundary and test the guard."""
     from future_quotient_v3 import refined_signature2
 
@@ -281,7 +281,7 @@ def audit_v3_separators(v2_index, v3_dir):
                 qkey = bytes.fromhex(ex["query_state"])
                 query = decode_state(qkey)
                 fs = bytes.fromhex(ex["future_sig"])
-                q2 = refined_signature2_for_audit(query)
+                q2 = refined_signature2_for_audit(query, total_cap)
                 qg = guard_signature(query, ctxs)
 
                 matching = []
@@ -295,7 +295,7 @@ def audit_v3_separators(v2_index, v3_dir):
                     (fs,),
                 ):
                     rep = decode_state(rk)
-                    if refined_signature2_for_audit(rep) == q2:
+                    if refined_signature2_for_audit(rep, total_cap) == q2:
                         matching.append(
                             {
                                 "state": bytes(rk),
@@ -340,7 +340,7 @@ def audit_v3_separators(v2_index, v3_dir):
 
 
 # Keep the audit self-contained and source-identical to V3's refinement.
-def refined_signature2_for_audit(state, total_cap=10**9):
+def refined_signature2_for_audit(state, total_cap):
     first, _ = future_signature_for_audit(state, total_cap)
     children = []
     for m in range(14):
@@ -772,7 +772,7 @@ def cmd_build(a):
     print("ACC_FUTURE_QUOTIENT_V4_BUILD", json.dumps(report, sort_keys=True))
 
     if a.v3_dir:
-        audit = audit_v3_separators(a.v2_index, a.v3_dir)
+        audit = audit_v3_separators(a.v2_index, a.v3_dir, a.total_cap)
         Path(a.out_audit).write_text(
             json.dumps(audit, indent=2, sort_keys=True) + "\n"
         )
@@ -947,7 +947,7 @@ def main():
     b.add_argument("--out-report", required=True)
     b.add_argument("--v3-dir")
     b.add_argument("--out-audit", default="fq4_separator_audit.json")
-    b.add_argument("--progress-every", type=int, default=10000)
+    b.add_argument("--progress-every", type=int, default=10000)\n    b.add_argument("--total-cap", type=int, default=10000)
     b.set_defaults(func=cmd_build)
 
     s = sub.add_parser("search")
