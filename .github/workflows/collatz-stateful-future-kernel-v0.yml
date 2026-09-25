@@ -1,0 +1,52 @@
+name: Collatz stateful future kernel V0
+
+on:
+  push:
+    branches:
+      - collatz-stateful-future-kernel-v0
+    paths:
+      - 'experiments/collatz_stateful_future_kernel_v0.py'
+      - 'experiments/test_collatz_stateful_future_kernel_v0.py'
+      - '.github/workflows/collatz-stateful-future-kernel-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact unit and small-corpus controls
+        run: |
+          python -m unittest discover -s experiments -p 'test_collatz_stateful_future_kernel_v0.py' -v
+      - name: Frozen bounded stateful future-kernel experiment
+        run: |
+          mkdir -p evidence/collatz-stateful-future-kernel-v0
+          python experiments/collatz_stateful_future_kernel_v0.py \
+            --lo 3 --hi 8191 --K 128 \
+            --output evidence/collatz-stateful-future-kernel-v0/result.json \
+            | tee evidence/collatz-stateful-future-kernel-v0/run.log
+          python - <<'PY'
+          import json
+          p='evidence/collatz-stateful-future-kernel-v0/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_STATEFUL_FUTURE_KERNEL_V0'
+          assert d['transport_audit']['active_fuel_consumption_checks'] > 0
+          assert 'CONTROL' in d['representations']
+          assert 'V2_VECTOR' in d['representations']
+          print('SCIENTIFIC_VERDICT', d['verdict'])
+          print('CONTROL_FUTURE_KERNEL', d['representations']['CONTROL']['future_kernel_classes'])
+          print('OWN_FUEL_FUTURE_KERNEL', d['representations']['OWN_FUEL']['future_kernel_classes'])
+          print('V2_VECTOR_FUTURE_KERNEL', d['representations']['V2_VECTOR']['future_kernel_classes'])
+          print('V23_VECTOR_FUTURE_KERNEL', d['representations']['V23_VECTOR']['future_kernel_classes'])
+          print('CLOSURE_CERTIFICATE', d['closure_certificate'])
+          PY
+      - name: Upload exact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: collatz-stateful-future-kernel-v0
+          path: evidence/collatz-stateful-future-kernel-v0
+          if-no-files-found: error
