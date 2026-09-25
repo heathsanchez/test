@@ -29,13 +29,13 @@ jobs:
           set -euo pipefail
           curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
-      - name: Build frozen VeriTile surface
+      - name: Build minimal frozen VeriTile theorem surface
         working-directory: vendor/VeriTile
         run: |
           set -euo pipefail
           lake update
           lake exe cache get
-          lake build VeriTile.Triton
+          lake build VeriTile.Triton.Math.Softmax
       - name: Compile generic quotient and VeriTile instance
         run: |
           set -euo pipefail
@@ -137,8 +137,9 @@ jobs:
               "compiled_object":"Quotient setoid",
               "factorization":"observe = quotientObserve ∘ project"
             },
+            "parent_authority":{"v4_run":36095750492,"v4_head":"368b5f5451e17700e45b92f13cf2af02ea79621f","v4_artifact":10846864927},
             "domains":[
-              {"name":"VeriTile normalization gauge","revision":"95a01f598e2cd1cac4052e5e5ff9145c658e18db","status":"PASS"},
+              {"name":"VeriTile normalization gauge","revision":"95a01f598e2cd1cac4052e5e5ff9145c658e18db","source_surface":"VeriTile.Triton.TiledSoftmax.naive_eq_stable","status":"PASS"},
               {"name":"QLF Born probability","revision":"888a4303846000ace1c7ef4c62a8d3e99110d979","status":"PASS"},
               {"name":"Pythia information ratio","revision":"65404339b5c6fe8004d91fdd9c0c14ceb0bf7cd3","status":"PASS"}
             ],
