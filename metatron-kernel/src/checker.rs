@@ -1890,6 +1890,13 @@ fn check_single_derived_field_structure(
     if !single_derived_field_structure_candidate(export, block) {
         return Err(Verdict::Unknown);
     }
+    let trace_single = std::env::var_os("NUCLEUS_TRACE_DERIVED_SINGLE").is_some();
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=candidate",
+            inductive.name.0
+        );
+    }
     if inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
         || constructor.index != 0
@@ -1907,7 +1914,19 @@ fn check_single_derived_field_structure(
         )
         || !single_derived_field_recursor_shape(export, inductive, constructor, recursor)
     {
+        if trace_single {
+            eprintln!(
+                "NUCLEUS_DERIVED_SINGLE:name={}:stage=shape-fail",
+                inductive.name.0
+            );
+        }
         return Err(Verdict::Unknown);
+    }
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=shape-pass",
+            inductive.name.0
+        );
     }
 
     let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
@@ -1922,6 +1941,12 @@ fn check_single_derived_field_structure(
         limits.judgment_steps,
         delta_policy,
     )?;
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=type-promoted",
+            inductive.name.0
+        );
+    }
     if !single_derived_field_parameter_telescopes_convert(
         export,
         derivation.environment(),
@@ -1931,7 +1956,19 @@ fn check_single_derived_field_structure(
         limits,
         delta_policy,
     ) {
+        if trace_single {
+            eprintln!(
+                "NUCLEUS_DERIVED_SINGLE:name={}:stage=parameter-conversion-fail",
+                inductive.name.0
+            );
+        }
         return Err(Verdict::Unknown);
+    }
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=parameter-conversion-pass",
+            inductive.name.0
+        );
     }
     derivation.promote_all(
         export,
@@ -1939,6 +1976,12 @@ fn check_single_derived_field_structure(
         limits.judgment_steps,
         delta_policy,
     )?;
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=signatures-promoted",
+            inductive.name.0
+        );
+    }
 
     let Ok(p) = usize::try_from(inductive.num_params) else {
         return Err(Verdict::Reject);
@@ -1959,8 +2002,22 @@ fn check_single_derived_field_structure(
             },
         )
         .map_err(|_| Verdict::Reject)?;
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=projection-installed",
+            inductive.name.0
+        );
+    }
 
-    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+    let result = install_certified_recursor_reduction(environment, &block.constructors, recursor);
+    if trace_single {
+        eprintln!(
+            "NUCLEUS_DERIVED_SINGLE:name={}:stage=recursor-install-{}",
+            inductive.name.0,
+            if result.is_ok() { "pass" } else { "fail" }
+        );
+    }
+    result
 }
 
 fn generic_parameterized_nullary_candidate(
@@ -7654,7 +7711,12 @@ fn verdict_boundary(judgment: Judgment<()>) -> Result<(), Verdict> {
     match judgment {
         Judgment::Proven { .. } => Ok(()),
         Judgment::Refuted { .. } => Err(Verdict::Reject),
-        Judgment::Unknown { .. } => Err(Verdict::Unknown),
+        Judgment::Unknown { residual } => {
+            if std::env::var_os("NUCLEUS_TRACE_DERIVED_SINGLE").is_some() {
+                eprintln!("NUCLEUS_BOUNDARY_UNKNOWN:{}", residual.0);
+            }
+            Err(Verdict::Unknown)
+        }
     }
 }
 
