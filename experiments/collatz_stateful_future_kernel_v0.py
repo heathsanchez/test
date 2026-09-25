@@ -170,12 +170,14 @@ def graph_from_occurrences(occurrences, patterns_by_anchor, mode: str):
             return (pid, excess)
         if mode == "OWN_V23":
             return (pid, excess, vpz(active, 3))
+        bank = order[event["anchor"]]
+        if "_v2_profile" not in event:
+            event["_v2_profile"] = tuple(v2z(defect(d, m)) for d in bank)
+            event["_v3_profile"] = tuple(vpz(defect(d, m), 3) for d in bank)
         if mode == "V2_VECTOR":
-            vals = tuple(v2z(defect(d, m)) for d in order[event["anchor"]])
-            return (pid, vals)
+            return (pid, event["_v2_profile"])
         if mode in ("V3_MAX", "V3_NEAREST", "V3_NEAREST_SET", "V3_MULTISET", "V3_VECTOR"):
-            bank = order[event["anchor"]]
-            vals = tuple(vpz(defect(d, m), 3) for d in bank)
+            vals = event["_v3_profile"]
             if any(v is None for v in vals):
                 nearest_ids = tuple(semantic_id(bank[i]) for i,v in enumerate(vals) if v is None)
                 maxv = None
@@ -192,8 +194,7 @@ def graph_from_occurrences(occurrences, patterns_by_anchor, mode: str):
                 return (pid, tuple(sorted(vals)))
             return (pid, vals)
         if mode == "V23_VECTOR":
-            vals = tuple((v2z(defect(d, m)), vpz(defect(d, m), 3))
-                         for d in order[event["anchor"]])
+            vals = tuple(zip(event["_v2_profile"], event["_v3_profile"]))
             return (pid, vals)
         raise ValueError(mode)
 
