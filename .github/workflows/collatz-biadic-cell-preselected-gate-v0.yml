@@ -1,0 +1,58 @@
+name: Collatz bi-adic cell preselected gate V0
+
+on:
+  push:
+    branches:
+      - collatz-biadic-cell-preselected-gate-v0
+    paths:
+      - '.github/workflows/collatz-biadic-cell-preselected-gate-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Freeze intrinsic bi-adic cell candidate
+        run: |
+          git diff --exit-code 2f4ee9e006b174814dcc77f8ce1580b5969708f7 --             experiments/collatz_biadic_cell_v0.py
+          echo "CANDIDATE_FROZEN_AT 2f4ee9e006b174814dcc77f8ce1580b5969708f7"
+      - name: Exact preselected bi-adic-cell gate
+        run: |
+          set -o pipefail
+          mkdir -p evidence/collatz-biadic-cell-preselected-gate-v0
+          python experiments/collatz_biadic_cell_v0.py             --lo 46593 --hi 47103 --K 128             --output evidence/collatz-biadic-cell-preselected-gate-v0/result.json             | tee evidence/collatz-biadic-cell-preselected-gate-v0/run.log
+      - name: Judge intrinsic bi-adic cell
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-biadic-cell-preselected-gate-v0/result.json'))
+          r=d['representations']
+          row={
+            'control_kernel':r['CONTROL']['future_kernel'],
+            'bicell_kernel':r['BI_CELL']['future_kernel'],
+            'bicell_ambiguity':r['BI_CELL']['raw_ambiguous'],
+            'bicell_classes':r['BI_CELL']['future_classes'],
+            'full_kernel':r['FULL']['future_kernel'],
+            'full_classes':r['FULL']['future_classes'],
+          }
+          print('PRESELECTED_BICELL',json.dumps(row,sort_keys=True))
+          assert row['control_kernel']>0
+          if (row['bicell_kernel']==0 and row['bicell_ambiguity']==0
+              and row['bicell_classes']==row['full_classes']):
+              print('PRESELECTED_BICELL_VERDICT PASS_INTRINSIC_Q2xQ3_CELL')
+          else:
+              print('PRESELECTED_BICELL_VERDICT RESIDUAL_INTRINSIC_Q2xQ3_CELL')
+              raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-biadic-cell-preselected-gate-v0
+          path: evidence/collatz-biadic-cell-preselected-gate-v0
+          if-no-files-found: error
