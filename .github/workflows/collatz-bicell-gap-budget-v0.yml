@@ -1,0 +1,23 @@
+name: Collatz bicell gap budgets V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_bicell_gap_budget_v0.py'
+      - '.github/workflows/collatz-bicell-gap-budget-v0.yml'
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-bicell-gap-budget-v0
+          python experiments/collatz_bicell_gap_budget_v0.py | tee evidence/collatz-bicell-gap-budget-v0/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-bicell-gap-budget-v0
+          path: evidence/collatz-bicell-gap-budget-v0
