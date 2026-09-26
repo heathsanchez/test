@@ -392,7 +392,7 @@ impl<'a> Machine<'a> {
                                 && self.bool_primitives.is_some()
                             {
                                 let binding = match self.expressions.get(target.expr) {
-                                    Some(Expr::BVar(index)) => target.env.lookup(*index).cloned(),
+                                    Some(Expr::BVar(index)) => target.env.lookup(*index),
                                     _ => None,
                                 };
                                 eprintln!(
