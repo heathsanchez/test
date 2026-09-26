@@ -15,13 +15,11 @@ theorem first_coefficient_crossing_unique
     (hj : FirstCoefficientCrossingAt n j)
     (hk : FirstCoefficientCrossingAt n k) :
     j = k := by
-  apply Nat.le_antisymm
-  · by_contra h
-    have hlt : k < j := Nat.lt_of_not_ge h
-    exact (hj.2 k hlt) hk.1
-  · by_contra h
-    have hlt : j < k := Nat.lt_of_not_ge h
-    exact (hk.2 j hlt) hj.1
+  by_cases hjk : j < k
+  · exact False.elim ((hk.2 j hjk) hj.1)
+  by_cases hkj : k < j
+  · exact False.elim ((hj.2 k hkj) hk.1)
+  omega
 
 theorem no_later_first_coefficient_crossing_same_source
     {n j k : Nat}
