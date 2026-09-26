@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V12",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V13",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -45,7 +45,11 @@
     "V12 Lean combinatorial barrier: any upper bound uniform over translations of a nonempty window on a nonempty cyclic support is at least one",
     "V12 Lean all-depth family: T^k(2^j-1)=3^k*2^(j-k)-1 and oddCount=k for k<=j; different positive source for every positive depth, not one infinite positive path",
     "V12 exact finite controls: 13 full autocorrelation-preserving translated supports with different origin counts; independent live-language DPs at j333 certify the proposed dyadic envelope is subunit and cannot hold uniformly over translations",
-    "V12 written Fourier consequence of the Lean barrier: all-frequency termwise absolute-value inversion bounds are translation uniform and cannot prove an origin count below one; complex Fourier application is not itself Lean formalized"
+    "V12 written Fourier consequence of the Lean barrier: all-frequency termwise absolute-value inversion bounds are translation uniform and cannot prove an origin count below one; complex Fourier application is not itself Lean formalized",
+    "V13 Lean arbitrary-length packing theorem: numerator(xs)*(n-1)<=denominator(xs)*(n+2*length(xs)-1), strict for nonempty Packed lists; exact sixth-power polynomial identity and one-factor majorant",
+    "V13 written elementary orbit application: distinct odd values >= odd n>=3 and prefix coefficients <= fixed integer C imply q<C^2*n; actual-orbit sorting and corridor application not newly Lean formalized",
+    "V13 written elementary infinite consequence: a positive never-coefficient-crossing orbit has unbounded prefix coefficient peaks; no boundedness assumption and no global exclusion inferred",
+    "V13 exact rational replay: 4095 odd sources below8192, 20266 live prefixes, zero failed packing/corridor comparisons; finite probe does not prove universal orbit claims"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -68,7 +72,9 @@
     "published convergence floor alone proves every finite canonical first-crossing cylinder has M<0",
     "P37 same-source off-type competitor graph as a residual-preserving successor system; its edges are parent rejections. This does not reject a different proved witness-changing recursion",
     "external convergence below 2^33 as a necessary assumption for bounded canonical exclusion through271782; V11 directly verifies the stronger coefficient-stopping-time property",
-    "translation-uniform subunit live-origin envelope and its all-frequency phase-blind Fourier/positive-majorant realization; this does not refute the actual fixed-origin candidate or a phase-sensitive argument"
+    "translation-uniform subunit live-origin envelope and its all-frequency phase-blind Fourier/positive-majorant realization; this does not refute the actual fixed-origin candidate or a phase-sensitive argument",
+    "V13 fixed-C budget promoted to a global rank by using a running C: actual source3 increases C^2*n-q from3 to11 at its first step",
+    "V13 packing with repeated odd values or dropping the shifted endpoint: exact rational negative controls preserved"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -86,9 +92,10 @@
     "P11/P17 source-floor direction simplified for the required finite cutoff by a new elementary Lean bias bound and independent type-cap certificate",
     "V11 exact CST source cover replaces eventual convergence with actual first-crossing descent, closing bounded canonical M rather than only minimal counterexamples",
     "P37 semantic correction: rank must act on a proved residual-preserving transformation, not off-type rejection bookkeeping",
-    "V12 origin anchoring barrier: discard phase-blind translation-uniform closure; positive Fourier majorants remain auxiliary only"
+    "V12 origin anchoring barrier: discard phase-blind translation-uniform closure; positive Fourier majorants remain auxiliary only",
+    "V13 actual-value correction-product packing: source anchoring and distinct integer terms give fixed-coefficient corridor exhaustion, not a global rank"
   ],
-  "next": "The universal fixed-origin inequality and unbounded canonical exclusion remain UNKNOWN. Any continued origin argument must preserve absolute origin phase or equivalent source/carry anchoring. Do not repeat a translation-uniform absolute-value Fourier bound, enlarge the finite source cover as a substitute, or rank P37 parent-rejection bookkeeping. No global proof has been obtained.",
+  "next": "The universal fixed-origin inequality and unbounded canonical exclusion remain UNKNOWN. V13 supplies a source-anchored necessary condition: every positive never-crossing orbit must escape every fixed coefficient ceiling. Any global ranking must handle changes of ceiling without replenishing its well-founded budget. Do not treat this necessary escape as a contradiction, repeat phase-blind Fourier closure, enlarge a finite source cover as a substitute, or rank P37 parent-rejection bookkeeping.",
   "stop_condition": "global closure theorem verified OR exact obstruction to the specific proposed closure mechanism, preserving its precise scope and other UNKNOWN routes",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -106,7 +113,7 @@
     "A": [2,1,1,2,1,1,2,2],
     "B": [1,1,2,1,1,2,2,2]
   },
-  "current_irreducible_residual": "canonical terminal M>=0 exclusion at depths greater than271782 remains UNKNOWN. Global coverage additionally requires excluding positive sources that never cross. The fixed-origin bound remains a candidate; V12 rules out its translation-uniform phase-blind proof route, not the fixed-origin assertion.",
+  "current_irreducible_residual": "canonical terminal M>=0 exclusion at depths greater than271782 remains UNKNOWN. Positive never-crossing sources must have unbounded coefficient peaks by V13's written packing argument, but that escape is not excluded. The fixed-origin bound remains a candidate; V12 rejects only its translation-uniform phase-blind proof route. Neither global canonical exclusion nor global Collatz has been proved.",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
@@ -227,5 +234,31 @@
     "shifted_controls": "NOT_ASSERTED_TO_BE_COLLATZ_LANGUAGES",
     "verification_boundary": "Lean proves the generic cyclic-window barrier and the actual all-odd source family; exact Python checks bounded controls; Fourier translation/application remains a written elementary argument, not Lean complex analysis",
     "failed_runs_preserved": [{"run":36229413984,"status":"NUMERICAL_PASS_SINGLE_LEAN_POSITIVE_COUNT_GOAL_INCOMPLETE"}]
+  },
+  "coefficient_corridor_v1": {
+    "status": "WARRANTED_LEAN_PACKING_WRITTEN_ORBIT_APPLICATION_AND_EXACT_FINITE_REPLAY",
+    "parent_state_head": "cb65e7143aded6744f464da00fe98f9dd64af488",
+    "qualified_head": "a970592576f848abbb3ce54d0ba16478b16e2c6e",
+    "run": 36232908276,
+    "job": 108379307965,
+    "conclusion": "SUCCESS",
+    "artifact": 10902867581,
+    "artifact_sha256": "faa7801f5e010075f1ef25ae26c9bb5e3d4556b61e24cd21b460de99592f3365",
+    "source_product_regression_run": 36232908298,
+    "lean_file": "formal/Collatz/CoefficientCorridor.lean",
+    "lean_theorems": ["factor_identity","factor_majorant","packed_sixth_power"],
+    "lean_axioms": ["propext","Classical.choice","Quot.sound"],
+    "experiment": "experiments/collatz_coefficient_corridor_v1.py",
+    "script_sha256": "b5acc20c8faf59878d9bf7b5334dd6a3ee408dc98b42c14d13c6320b13625403",
+    "evidence": "evidence/collatz-coefficient-corridor-v1/result.json",
+    "derivation": "docs/collatz_coefficient_corridor_v1.md",
+    "finite_sources": 4095,
+    "finite_live_prefixes": 20266,
+    "trace_sha256": "4374309f594e41806701cd7a2ddd7a60f376263664258452785c284b838d0d2e",
+    "written_corridor_theorem": "For distinct odd orbit terms >= odd n>=3 and prefix coefficients <= fixed integer C>=1, q<C^2*n",
+    "written_infinite_consequence": "Positive never-crossing sources have unbounded prefix coefficient peaks",
+    "global_rank": "UNKNOWN; running-ceiling budget rejected by n3 reset3->11",
+    "verification_boundary": "Lean checks generic all-length packing algebra; sorting actual odd terms, multiplicative orbit identity, corridor exhaustion and repeated-orbit application have written elementary proofs, not new Lean formalizations. V11 finite closure is inherited, not extended. No literature-priority claim.",
+    "failed_runs_preserved": [{"run":36232765166,"status":"NUMERICAL_PASS_LEAN_SHIFT_NORMALIZATION_AND_CORE_ARGUMENT_NAME_FAILURE"}]
   }
 }
