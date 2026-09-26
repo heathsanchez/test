@@ -684,7 +684,12 @@ impl<'a> Machine<'a> {
                         .value
                         .clone();
                     let second = self
-                        .expose_internal(arguments[1].clone(), Transparency::Reducible, remaining, false)
+                        .expose_internal(
+                            arguments[1].clone(),
+                            Transparency::Reducible,
+                            remaining,
+                            false,
+                        )
                         .proven_value()?
                         .value
                         .clone();
