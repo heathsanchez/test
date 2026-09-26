@@ -385,25 +385,8 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             let observed_target = self
-                                .expose_internal(
-                                    target.clone(),
-                                    transparency,
-                                    budget.saturating_sub(1),
-                                    false,
-                                )
-                                .proven_value()
-                                .and_then(|exposure| match &exposure.value {
-                                    Value::Neutral(neutral) if neutral.spine.is_empty() => {
-                                        match &neutral.head {
-                                            NeutralHead::Const { name, .. } => {
-                                                Some((*name, Vec::new()))
-                                            }
-                                            NeutralHead::Free(_) => None,
-                                        }
-                                    }
-                                    _ => None,
-                                })
-                                .or_else(|| self.constructor_application(target));
+                                .constructor_application(target)
+                                .or_else(|| self.observe_bool_constructor(target, budget));
                             if let Some((constructor, constructor_arguments)) = observed_target
                                 && let Some(rule) = reduction
                                     .rules
@@ -660,6 +643,64 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    fn observe_bool_constructor(
+        &self,
+        target: &Closure,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let bools = self.bool_primitives.as_ref()?;
+        let nat = self.nat_primitives.as_ref()?;
+        let mut closure = target.clone();
+        let mut arguments = Vec::new();
+        let mut remaining = budget.min(64);
+        loop {
+            if remaining == 0 {
+                return None;
+            }
+            remaining -= 1;
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Free(_) => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
+                }
+                Expr::Const { name, levels } if Some(*name) == nat.beq => {
+                    if !levels.is_empty() || arguments.len() != 2 {
+                        return None;
+                    }
+                    arguments.reverse();
+                    let first = self
+                        .expose_internal(arguments[0].clone(), Transparency::Reducible, remaining, false)
+                        .proven_value()?
+                        .value
+                        .clone();
+                    let second = self
+                        .expose_internal(arguments[1].clone(), Transparency::Reducible, remaining, false)
+                        .proven_value()?
+                        .value
+                        .clone();
+                    let (Value::NatLit(first), Value::NatLit(second)) = (first, second) else {
+                        return None;
+                    };
+                    let ctor = if first == second {
+                        bools.true_ctor
+                    } else {
+                        bools.false_ctor
+                    };
+                    return Some((ctor, Vec::new()));
+                }
+                _ => return None,
+            }
+        }
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
