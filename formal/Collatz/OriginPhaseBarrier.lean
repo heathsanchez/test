@@ -18,7 +18,8 @@ theorem count_positive_of_member {N W a r : Nat} {rs : List Nat}
       simp only [List.mem_cons] at hr
       rcases hr with he | ht
       · subst s
-        simp [windowCount, hw]
+        simp only [windowCount, hw, ite_true]
+        omega
       · have hp := ih ht
         simp only [windowCount]
         split <;> omega
@@ -112,8 +113,8 @@ theorem all_ones_odd_count (j k : Nat) (hk : k ≤ j) :
       simp only [oddCount, hn, ite_false]
       rw [ih (by omega)]
 
-/-- Every depth has an actual positive all-odd source cylinder. This is a
-    different source at each depth, not a never-crossing positive orbit. -/
+/-- Every positive depth has an actual positive all-odd source cylinder.
+    This is a different source at each depth, not a never-crossing positive orbit. -/
 theorem all_ones_no_coefficient_crossing (j k : Nat) (hk : k ≤ j) :
     2 ^ k ≤ 3 ^ oddCount (2 ^ j - 1) k := by
   rw [all_ones_odd_count j k hk]
