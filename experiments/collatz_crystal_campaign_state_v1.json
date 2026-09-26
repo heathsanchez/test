@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V11",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V12",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -41,7 +41,11 @@
     "first-crossing uniqueness and no later first crossing for the same source explicitly Lean checked in run 36224119410",
     "V11 exact computational source cover: every 1<n<2^33 strictly descends at its finite first coefficient crossing; largest crossing 447; full K20/K24 histograms agree",
     "V11 bounded canonical consequence: every nontrivial legal first-crossing cylinder through j=271782 has M<0, combining exact source cover with the elementary type cap; no external convergence assumption; not a full Lean finite proof term",
-    "Lean all-depth P37 semantic audit: same-source off-type first crossings reject parent membership, not residual-preserving successors; concrete 45127 rejection at depth111 uses no axioms"
+    "Lean all-depth P37 semantic audit: same-source off-type first crossings reject parent membership, not residual-preserving successors; concrete 45127 rejection at depth111 uses no axioms",
+    "V12 Lean combinatorial barrier: any upper bound uniform over translations of a nonempty window on a nonempty cyclic support is at least one",
+    "V12 Lean all-depth family: T^k(2^j-1)=3^k*2^(j-k)-1 and oddCount=k for k<=j; different positive source for every positive depth, not one infinite positive path",
+    "V12 exact finite controls: 13 full autocorrelation-preserving translated supports with different origin counts; independent live-language DPs at j333 certify the proposed dyadic envelope is subunit and cannot hold uniformly over translations",
+    "V12 written Fourier consequence of the Lean barrier: all-frequency termwise absolute-value inversion bounds are translation uniform and cannot prove an origin count below one; complex Fourier application is not itself Lean formalized"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -63,7 +67,8 @@
     "P14/P16/DK/source-tail/P36 as necessary dependencies of the live-origin polynomial source-cap implication; elementary bias plus Rhin suffices instead",
     "published convergence floor alone proves every finite canonical first-crossing cylinder has M<0",
     "P37 same-source off-type competitor graph as a residual-preserving successor system; its edges are parent rejections. This does not reject a different proved witness-changing recursion",
-    "external convergence below 2^33 as a necessary assumption for bounded canonical exclusion through271782; V11 directly verifies the stronger coefficient-stopping-time property"
+    "external convergence below 2^33 as a necessary assumption for bounded canonical exclusion through271782; V11 directly verifies the stronger coefficient-stopping-time property",
+    "translation-uniform subunit live-origin envelope and its all-frequency phase-blind Fourier/positive-majorant realization; this does not refute the actual fixed-origin candidate or a phase-sensitive argument"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -80,9 +85,10 @@
     "P35 integer-lattice refinement and exact P37 scalar-rank counterexamples",
     "P11/P17 source-floor direction simplified for the required finite cutoff by a new elementary Lean bias bound and independent type-cap certificate",
     "V11 exact CST source cover replaces eventual convergence with actual first-crossing descent, closing bounded canonical M rather than only minimal counterexamples",
-    "P37 semantic correction: rank must act on a proved residual-preserving transformation, not off-type rejection bookkeeping"
+    "P37 semantic correction: rank must act on a proved residual-preserving transformation, not off-type rejection bookkeeping",
+    "V12 origin anchoring barrier: discard phase-blind translation-uniform closure; positive Fourier majorants remain auxiliary only"
   ],
-  "next": "prove or decisively refute the all-depth live-origin inequality P_j((j+1)^15)<=2*2^(6j/125)*F_j*(j+1)^15/2^j for j>=271782, or produce another sound unbounded closure law. Do not treat the finite source cover, graph acyclicity, or off-type parent rejections as that law. Canonical M-negativity through271782 is now directly covered; every larger depth and never-crossing positive sources remain UNKNOWN.",
+  "next": "The universal fixed-origin inequality and unbounded canonical exclusion remain UNKNOWN. Any continued origin argument must preserve absolute origin phase or equivalent source/carry anchoring. Do not repeat a translation-uniform absolute-value Fourier bound, enlarge the finite source cover as a substitute, or rank P37 parent-rejection bookkeeping. No global proof has been obtained.",
   "stop_condition": "global closure theorem verified OR exact obstruction to the specific proposed closure mechanism, preserving its precise scope and other UNKNOWN routes",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -100,7 +106,7 @@
     "A": [2,1,1,2,1,1,2,2],
     "B": [1,1,2,1,1,2,2,2]
   },
-  "current_irreducible_residual": "canonical terminal M>=0 exclusion at depths greater than271782 remains UNKNOWN. Global coverage additionally requires excluding positive sources that never cross. The universal live-origin bound is a candidate and is not supplied by finite entropy, finite source coverage, or P37 off-type graphs.",
+  "current_irreducible_residual": "canonical terminal M>=0 exclusion at depths greater than271782 remains UNKNOWN. Global coverage additionally requires excluding positive sources that never cross. The fixed-origin bound remains a candidate; V12 rules out its translation-uniform phase-blind proof route, not the fixed-origin assertion.",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
@@ -108,7 +114,7 @@
     "status": "WARRANTED_LEAN"
   },
   "archive_reconciliation": {
-    "revived": "P7/P8 marginal residue anti-concentration, previously insufficient for joint M but now sufficient for eventual terminal exclusion after P28/source-product reduction; not by itself global crossing existence",
+    "revived": "P7/P8 marginal canonical origin anti-concentration remains sufficient for eventual terminal exclusion after the polynomial source cap, but V12 proves translation-uniform phase-blind discrepancy bounds cannot supply the needed subunit count; phase-sensitive carry/Fourier work is not rejected",
     "sufficient_eta_demo": 0.04,
     "entropy_loss": 0.05004447281166946,
     "implication_threshold_demo": "computed by qualified script; finite coverage to any actual theorem onset remains explicit"
@@ -129,7 +135,8 @@
     "onset": "UNKNOWN",
     "all_depth_origin_bound": "UNKNOWN",
     "finite_gap": "V9 P36-only gap was superseded for minimal counterexamples by V10; V11 now directly closes every nontrivial canonical M>=0 cylinder through271782 using a verified CST source floor, without external convergence. A later origin onset still requires additional coverage.",
-    "new_lean_formalization": "LIVE_COUNT_BRIDGE_NOT_DONE; ACTUAL_SOURCE_BIAS_INTERFACE_QUALIFIED_IN_V10"
+    "new_lean_formalization": "LIVE_COUNT_BRIDGE_NOT_DONE; ACTUAL_SOURCE_BIAS_INTERFACE_QUALIFIED_IN_V10",
+    "phase_blind_proof_route": "REJECTED_BY_V12_TRANSLATION_UNIFORM_SUBUNIT_BARRIER"
   },
   "source_floor_gap_v1": {
     "status": "WARRANTED_LEAN_BRIDGE_AND_INDEPENDENT_EXACT_FINITE_REPLAY",
@@ -197,5 +204,28 @@
       {"run":36226612025,"status":"CONCRETE_PREDICATE_DECIDABILITY_FAILURE"},
       {"run":36226649447,"status":"CONCRETE_KERNEL_RECURSION_BUDGET_FAILURE"}
     ]
+  },
+  "origin_phase_barrier_v1": {
+    "status": "WARRANTED_LEAN_GENERIC_BARRIER_AND_EXACT_FINITE_CONTROLS",
+    "parent_state_head": "52175c9239cf63c806fc4f1ad4ff76a4f691508e",
+    "qualified_head": "8c50a6cf6dc5e564b2bc92d536dba00b8a5e259a",
+    "run": 36229491205,
+    "job": 108369809394,
+    "conclusion": "SUCCESS",
+    "artifact": 10901613257,
+    "artifact_sha256": "e5952f42f9c1607bc427b327968021d66028f24634ec952ec7390a66272145eb",
+    "source_product_regression_run": 36229491168,
+    "lean_file": "formal/Collatz/OriginPhaseBarrier.lean",
+    "lean_axioms": ["propext","Quot.sound"],
+    "experiment": "experiments/collatz_origin_phase_barrier_v1.py",
+    "script_sha256": "fceb547cc781492df5f7f962ab1f028b9bdcb0ee7cb23e7338058075a0540850",
+    "evidence": "evidence/collatz-origin-phase-barrier-v1/result.json",
+    "derivation": "docs/collatz_origin_phase_barrier_v1.md",
+    "small_controls": "full integer circular autocorrelation equality and different anchored counts at all depths4..16",
+    "deep_control": "j333 X512 exact subunit envelope; actual origin count0; shifted control count>=1; independent forward/backward language DP",
+    "fixed_origin_candidate": "UNKNOWN_NOT_REFUTED",
+    "shifted_controls": "NOT_ASSERTED_TO_BE_COLLATZ_LANGUAGES",
+    "verification_boundary": "Lean proves the generic cyclic-window barrier and the actual all-odd source family; exact Python checks bounded controls; Fourier translation/application remains a written elementary argument, not Lean complex analysis",
+    "failed_runs_preserved": [{"run":36229413984,"status":"NUMERICAL_PASS_SINGLE_LEAN_POSITIVE_COUNT_GOAL_INCOMPLETE"}]
   }
 }
