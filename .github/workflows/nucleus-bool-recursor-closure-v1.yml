@@ -43,6 +43,18 @@ jobs:
                   rows.append((str(p.relative_to(root)),expected,124)); continue
                 if env is not None:
                   print('TRACE',p.name); print(q.stderr.decode(errors='replace')[-12000:])
+                  name_records={}
+                  for raw in p.read_text().splitlines():
+                    try: obj=json.loads(raw)
+                    except Exception: continue
+                    if 'in' not in obj: continue
+                    rec=obj.get('in')
+                    if isinstance(rec,dict):
+                      ident=rec.get('id',rec.get('i'))
+                    else:
+                      ident=obj.get('id',obj.get('i'))
+                    if ident in (295,375): name_records[ident]=obj
+                  print('FOCUS_NAMES',json.dumps(name_records,sort_keys=True))
               rows.append((str(p.relative_to(root)),expected,q.returncode))
           wrong=[x for x in rows if x[2] in (0,1) and x[2]!=x[1]]
           errors=[x for x in rows if x[2] not in (0,1,2)]
