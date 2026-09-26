@@ -1,0 +1,42 @@
+{
+  "all_source_first_crossings_at_most": 447,
+  "bounded_canonical_residual_depth_inclusive": 271782,
+  "consequence": "Every nontrivial legal first-crossing canonical cylinder with j<=271782 has M<0.",
+  "continued_sources_by_prefix_width": {"20":223870976,"24":146729472},
+  "cpp_sha256": "fcd3d70a2fc0a7e734588481670482e00cfe57526f6c9afe45b8fc5ecb93b8c8",
+  "deduction": "M>=0 implies R<=7216089270<2^33 by the V10 elementary bound and exact type-cap replay; the source cover proves strict descent at the first crossing for every 1<R<2^33, contradiction.",
+  "external_convergence_assumption": "NONE_FOR_THIS_BOUNDED_CONSEQUENCE",
+  "failed_local_attempts": [
+    "Unaccelerated direct 2^33 scan exceeded a 120-second runtime limit and supplied no certificate; it is not counted as an independent full-range replay.",
+    "An initial aggregate rerun exceeded 120 seconds after the source covers, during the redundant Python large-depth cap replay; final aggregation reuses the qualified V10 C++ checker."
+  ],
+  "full_cover_prefix_widths": [20,24],
+  "full_histogram_sha256": "51fcdcce2c81ddae9cea127e2c68c4282eae7718a15020db9eab2da5660217b5",
+  "global_collatz": "UNKNOWN",
+  "independent_direct_regression_exclusive": 1048576,
+  "max_source_cap": 7216089270,
+  "max_source_cap_type": {"j":125743,"q":79335},
+  "necessary_coefficient_types": 171476,
+  "nontrivial_nondescending_sources": 0,
+  "not_proved": ["canonical M<0 at all greater depths","universal live-origin estimate","absence of a positive never-crossing source"],
+  "odd_sources_accounted_in_each_cover": 4294967296,
+  "overflow_or_unresolved": 0,
+  "parent_state_head": "5242a12a17fadf50a028fde5eb7817230971e6bf",
+  "prior_qualified_type_rows_sha256": "8216be5be97304bc66f6ae6b5f94c04ed93b083768cf0ea4140642b840dfb663",
+  "python_sha256": "76e86d83622b872d7823dad3171462220c02887d9af9bac335353c97005d0a3c",
+  "schema": "COLLATZ_BOUNDED_CANONICAL_CLOSURE_V1",
+  "source_floor_exclusive": 8589934592,
+  "status": "EXACT_COMPUTATIONAL_BOUNDED_CLOSURE",
+  "verification_boundary": "Exact C++ computations with overflow rejection; two full prefix partitions share code; independent Python/direct-C++ regression is bounded to 2^20; coefficient checker replays the V10 C++ cap; the earlier Python/C++ qualification is retained rather than presented as a fresh Python large-depth replay. This finite computation is not emitted as a full Lean proof term.",
+  "qualification": {
+    "head":"04714672d4eb53ef1ab169c0823e82e83b42f984",
+    "run":36227106830,
+    "job":108363128252,
+    "conclusion":"SUCCESS",
+    "artifact":10901058141,
+    "artifact_sha256":"cef86992e1aad4d6f247f5375ee0bedb4951604c6e9a99556bec4effb792cbb5",
+    "lean_axioms":["propext","Quot.sound"],
+    "source_cap_and_p37_general_theorems_rechecked":true,
+    "concrete_p37_witness_uses_no_axioms":true
+  }
+}
