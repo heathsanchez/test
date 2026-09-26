@@ -1,0 +1,24 @@
+name: Collatz terminal lift carry V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_terminal_lift_carry_v0.py'
+      - '.github/workflows/collatz-terminal-lift-carry-v0.yml'
+  workflow_dispatch:
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-terminal-lift-carry-v0
+          python experiments/collatz_terminal_lift_carry_v0.py | tee evidence/collatz-terminal-lift-carry-v0/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-terminal-lift-carry-v0
+          path: evidence/collatz-terminal-lift-carry-v0
