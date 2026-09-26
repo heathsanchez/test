@@ -59,16 +59,21 @@ theorem no_same_source_off_type_progress
     (off_type_gives_parent_rejection hk hne) hj
 
 -- The previously reported increasing-depth dependency 111 -> 129 is already
--- rejected at parent depth 111. These are kernel computations, not native_decide.
-example : ¬ CoefficientCrossingAt 45127 111 := by decide
+-- rejected at parent depth 111. This is a kernel computation, not native_decide.
+theorem competitor_45127_rejected_at_111 :
+    ¬ CoefficientCrossingAt 45127 111 := by
+  unfold CoefficientCrossingAt
+  decide
+
 example : ¬ FirstCoefficientCrossingAt 45127 111 := by
   intro h
-  exact (show ¬ CoefficientCrossingAt 45127 111 by decide) h.1
+  exact competitor_45127_rejected_at_111 h.1
 
 #print axioms parent_rejection_excludes_first
 #print axioms off_type_gives_parent_rejection
 #print axioms off_type_excludes_parent_residual
 #print axioms no_same_source_off_type_progress
+#print axioms competitor_45127_rejected_at_111
 
 end SourceProduct
 end CollatzFinal
