@@ -1,0 +1,130 @@
+name: Nucleus dependency closure execution v1
+
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-dependency-closure-exec-v1.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  execute:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      SOURCE_SHA: e180bac0161a78ae7b8425c2389c03b92d2b312f
+      CORPUS_ARTIFACT: 10712869614
+      CORPUS_SHA256: e979e7dc437fdbdac6555d4bd78649dfa0307b3bda5c812c0d7a484a775a14d8
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: "rustfmt, clippy"}
+      - name: Build pinned candidate and retain exact sources
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          git diff "$SOURCE_SHA" HEAD -- metatron-kernel/src metatron-kernel/tests metatron-kernel/Cargo.toml metatron-kernel/Cargo.lock > evidence-out/source-identity.diff
+          test ! -s evidence-out/source-identity.diff
+          git archive "$SOURCE_SHA" metatron-kernel | gzip > evidence-out/source.tar.gz
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml > evidence-out/tests.log 2>&1
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel evidence-out/nucleus-original
+      - name: Add diagnostic-only exposure and output observability
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('metatron-kernel/src/checker.rs'); s=p.read_text()
+          old='    if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {'
+          assert s.count(old)==1
+          s=s.replace(old, '''    if std::env::var_os("NUCLEUS_TRACE_OUTPUT").is_some() {
+                  eprintln!("NUCLEUS_OUTPUT:literal_mask={has_unqualified_string_literal}:inner={verdict:?}");
+              }
+          '''+old)
+          p.write_text(s)
+          p=Path('metatron-kernel/src/convert.rs'); s=p.read_text()
+          old='''                let (Some(cheap_left), Some(cheap_right)) =
+                              (cheap_left.proven_value(), cheap_right.proven_value())'''
+          # Match the literal Rust indentation, not YAML indentation.
+          old='                let (Some(cheap_left), Some(cheap_right)) =\n                    (cheap_left.proven_value(), cheap_right.proven_value())'
+          assert s.count(old)==1
+          s=s.replace(old, '''                if std::env::var_os("NUCLEUS_TRACE_EXPOSURE").is_some()
+                              && (cheap_left.proven_value().is_none() || cheap_right.proven_value().is_none())
+                          {
+                              eprintln!("NUCLEUS_EXPOSURE:left_expr={:?}:right_expr={:?}:left={:?}:right={:?}", left.expr, right.expr, cheap_left, cheap_right);
+                          }
+          '''+old)
+          p.write_text(s)
+          PY
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          git diff -- metatron-kernel/src > evidence-out/diagnostic.diff
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel evidence-out/nucleus-trace
+          sha256sum evidence-out/nucleus-* evidence-out/source.tar.gz > evidence-out/SHA256SUMS
+      - name: Retrieve exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$CORPUS_ARTIFACT/zip" > /tmp/corpus.zip
+          echo "$CORPUS_SHA256  /tmp/corpus.zip" | sha256sum -c -
+          mkdir -p /tmp/corpus-archive /tmp/corpus
+          unzip -q /tmp/corpus.zip -d /tmp/corpus-archive
+          tar -xzf /tmp/corpus-archive/lean-arena-tests.tar.gz -C /tmp/corpus
+      - name: Execute strict full-corpus reclosure and both residual paths
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections,hashlib,json,os,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/corpus'); outdir=pathlib.Path('evidence-out')
+          original=(outdir/'nucleus-original').resolve(); trace=(outdir/'nucleus-trace').resolve()
+          status={0:'ACCEPT',1:'REJECT',2:'UNKNOWN',3:'ERROR'}
+          def execute(binary,path,diagnostic=False):
+              env=os.environ.copy()
+              for k in ['NUCLEUS_TRACE_SINGLE_FIELD','NUCLEUS_TRACE_DOWNSTREAM','NUCLEUS_TRACE_OUTPUT','NUCLEUS_TRACE_EXPOSURE']:
+                  if diagnostic: env[k]='1'
+                  else: env.pop(k,None)
+              start=time.perf_counter()
+              try:
+                  with path.open('rb') as f:
+                      r=subprocess.run([str(binary)],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=90,env=env)
+                  rc=r.returncode; stderr=r.stderr.decode(errors='replace')
+              except subprocess.TimeoutExpired:
+                  rc=124; stderr='TIMEOUT'
+              return {'rc':rc,'status':status.get(rc,'TIMEOUT' if rc==124 else 'CRASH'),'seconds':time.perf_counter()-start,'stderr':stderr}
+          rows=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for path in sorted((root/kind).rglob('*.ndjson')):
+                  name=kind+'/'+str(path.relative_to(root/kind))
+                  a=execute(original,path); b=execute(trace,path)
+                  row={'file':name,'expected':expected,'original':a,'diagnostic':b}
+                  rows.append(row)
+                  with (outdir/'rows.jsonl').open('a') as f:f.write(json.dumps(row)+'\n')
+          counts=dict(collections.Counter(r['original']['status'] for r in rows))
+          errors=[r['file'] for r in rows if r['original']['rc'] not in (0,1,2) or r['diagnostic']['rc'] not in (0,1,2)]
+          wrong=[r['file'] for r in rows if r['original']['rc'] in (0,1) and r['original']['rc']!=r['expected']]
+          changes=[r['file'] for r in rows if r['original']['rc']!=r['diagnostic']['rc']]
+          targets=['good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson','bad/bugs/proj-of-stuck-prop.ndjson','bad/bugs/proj-of-subst-prop.ndjson','bad/bugs/rec-of-subst-prop.ndjson']
+          focused=[]
+          for name in targets:
+              r=execute(trace,root/name,True)
+              (outdir/(name.replace('/','_')+'.log')).write_text(r['stderr'])
+              focused.append({'file':name,**r})
+          result={'schema':'nucleus-dependency-closure-exec-v1','workflow_sha':os.environ['GITHUB_SHA'],'source_sha':os.environ['SOURCE_SHA'],'corpus_sha256':os.environ['CORPUS_SHA256'],'total':len(rows),'counts':counts,'errors':errors,'wrong':wrong,'diagnostic_changes':changes,'focused':focused,'semantic_promotion':False,'boundary':'diagnostic parity only; production acceptance guard unchanged'}
+          (outdir/'result.json').write_text(json.dumps(result,indent=2)+'\n')
+          print(json.dumps(result,indent=2))
+          assert len(rows)==193,len(rows)
+          assert not errors,errors
+          assert not wrong,wrong
+          assert not changes,changes
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dependency-closure-exec-${{ github.run_id }}
+          path: evidence-out
+          if-no-files-found: error
