@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V5",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V6",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -29,7 +29,8 @@
     "identity frontier has no recurrent symbolic I-only SCC",
     "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin",
     "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin",
-    "any exact infinitely repeated superunit odd-valuation block forces a negative rational block fixed point and cannot be realized by a positive integer"
+    "any exact infinitely repeated superunit odd-valuation block forces a negative rational block fixed point and cannot be realized by a positive integer",
+    "historical two-block recurrent core {A,B} is empty over positive naturals: B has no exact A/B successor and A^infinity has negative rational b-adic source"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -40,7 +41,8 @@
     "tightening near-return gap activates old reverse grammar",
     "old P44 finite portal corpus as evidence for universal M>=0 states",
     "terminal carry-1 branch of the first-crossing M>=0 residual",
-    "separate source-admission layer at the first coefficient crossing"
+    "separate source-admission layer at the first coefficient crossing",
+    "historical recurrent two-block core as a possible positive-natural infinite obstruction"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -52,7 +54,7 @@
     "first-crossing zero-tail canonicalization",
     "aperiodic mixed-base lift coherence on historical recurrent block core"
   ],
-  "next": "decide whether the historical two-block survivor core admits unbounded zero-lift runs under exact canonical lifting; only a uniform bound would exclude finite natural seeds",
+  "next": "prove the universal entry theorem: every canonical zero-tail zero-carry M>=0 first-crossing cylinder maps under P35/P37 reduction into the now-empty exact two-block core; otherwise preserve the first exact cylinder outside that reduction",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -64,5 +66,28 @@
     "asymptotic_start": 94,
     "finite_negative_coverage": 447
   },
-  "periodic_recurrent_block_status": "REJECTED_FOR_POSITIVE_INTEGER_BY_NEGATIVE_BLOCK_FIXED_POINT"
+  "periodic_recurrent_block_status": "REJECTED_FOR_POSITIVE_INTEGER_BY_NEGATIVE_BLOCK_FIXED_POINT",
+  "two_block_core": {
+    "status": "EMPTY_OVER_POSITIVE_NATURALS",
+    "A": [
+      2,
+      1,
+      1,
+      2,
+      1,
+      1,
+      2,
+      2
+    ],
+    "B": [
+      1,
+      1,
+      2,
+      1,
+      1,
+      2,
+      2,
+      2
+    ]
+  }
 }
