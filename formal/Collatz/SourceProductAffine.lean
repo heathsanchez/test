@@ -153,8 +153,6 @@ theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
       2 ^ k * s.endpointResidue =
         3 ^ s.odds * s.sourceResidue + bias n k := by
     simpa [s] using residue_cocycle hn k
-  by_contra ht
-  have htpos : 1 <= s.tail := Nat.one_le_iff_ne_zero.mpr ht
   have hcross' : 3 ^ s.odds < 2 ^ k := by simpa [s] using hcross
   have htail :
       2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail <= bias n k := by
@@ -162,15 +160,19 @@ theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
     have hscaled := Nat.mul_le_mul_left (2 ^ k) hnd'
     simp only [Nat.mul_add] at hscaled
     omega
-  have hone :
-      2 ^ k * (2 ^ k - 3 ^ s.odds) <=
-        2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail := by
-    have := Nat.mul_le_mul_left (2 ^ k * (2 ^ k - 3 ^ s.odds)) htpos
-    simpa [Nat.mul_assoc] using this
   have hbias' :
       bias n k < 2 ^ k * (2 ^ k - 3 ^ s.odds) := by
     simpa [s] using hbias
-  omega
+  cases Nat.eq_zero_or_pos s.tail with
+  | inl hz => exact hz
+  | inr htpos =>
+      have hone :
+          2 ^ k * (2 ^ k - 3 ^ s.odds) <=
+            2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail := by
+        have hmul := Nat.mul_le_mul_left
+          (2 ^ k * (2 ^ k - 3 ^ s.odds)) htpos
+        simpa [Nat.mul_assoc] using hmul
+      omega
 
 
 #print axioms at_odds
