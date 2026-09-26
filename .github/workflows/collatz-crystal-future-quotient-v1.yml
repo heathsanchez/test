@@ -1,18 +1,16 @@
 name: Collatz Crystal future quotient V1
-
 on:
   push:
     branches: [collatz-universal-source-product-v1]
     paths:
       - 'experiments/collatz_crystal_future_quotient_v1.py'
-      - 'experiments/test_collatz_crystal_future_quotient_v1.py'\n      - 'experiments/test_collatz_crystal_separator_refinement_v1.py'
+      - 'experiments/test_collatz_crystal_future_quotient_v1.py'
+      - 'experiments/test_collatz_crystal_separator_refinement_v1.py'
       - '.github/workflows/collatz-crystal-future-quotient-v1.yml'
       - 'formal/Collatz/CrystalFutureCertificate.lean'
   workflow_dispatch:
-
 permissions:
   contents: read
-
 jobs:
   qualify:
     runs-on: ubuntu-24.04
