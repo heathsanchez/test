@@ -5,7 +5,7 @@ on:
     branches: [nucleus-dependency-closure-exec-v1]
     paths: [".github/workflows/nucleus-post-heq-application-trace-v1.yml"]
   workflow_dispatch:
-# resolve exact mismatched names
+# resolve exact mismatched names corrected
 
 permissions:
   contents: read
@@ -47,7 +47,15 @@ jobs:
           for name in targets:
               p=root/name
               with p.open('rb') as f:q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=os.environ,timeout=120)
-              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_DOWNSTREAM:' in x or 'NUCLEUS_CONV_HEAD_MISMATCH' in x]\n              names={}\n              for line in p.read_text().splitlines():\n                  try:\n                      o=json.loads(line)\n                  except Exception:\n                      continue\n                  if o.get('tag')=='name' and o.get('i') in (295,375): names[o['i']]=o
+              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_DOWNSTREAM:' in x or 'NUCLEUS_CONV_HEAD_MISMATCH' in x]
+              names={}
+              for line in p.read_text().splitlines():
+                  try:
+                      o=json.loads(line)
+                  except Exception:
+                      continue
+                  if o.get('tag')=='name' and o.get('i') in (295,375):
+                      names[o['i']]=o
               rows.append({'test':name,'rc':q.returncode,'names':names,'marks':marks[-80:]})
           print(json.dumps({'schema':'nucleus-post-heq-application-trace-v1','sha':os.environ['GITHUB_SHA'],'rows':rows},indent=2))
           PY
