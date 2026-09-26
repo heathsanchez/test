@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V3",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V4",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -27,7 +27,8 @@
     "P35 local-window margin compression algebra",
     "complete local 12-odd <=19-cost reverse-context language",
     "identity frontier has no recurrent symbolic I-only SCC",
-    "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin"
+    "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin",
+    "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -37,7 +38,8 @@
     "3-adic context alone forces eventual contraction",
     "tightening near-return gap activates old reverse grammar",
     "old P44 finite portal corpus as evidence for universal M>=0 states",
-    "terminal carry-1 branch of the first-crossing M>=0 residual"
+    "terminal carry-1 branch of the first-crossing M>=0 residual",
+    "separate source-admission layer at the first coefficient crossing"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -45,13 +47,19 @@
     "P35 local-window compression",
     "P37 residual-depth recursion",
     "local K/I/B chamber rewrite",
-    "terminal zero-carry recursion"
+    "terminal zero-carry recursion",
+    "first-crossing zero-tail canonicalization"
   ],
-  "next": "derive and rank the zero-carry parent recursion: at first crossing R is unchanged and Y_terminal=Y_parent/2; M>=0 forces Y_parent>=2R",
+  "next": "on canonical zero-carry cylinders, derive a well-founded recursion for the preterminal doubling gap G0=Y_parent-2R, since terminal M=2^(j-1)*G0",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
     "carry0": "ONLY_LIVE_BRANCH",
     "finite_discovery_run": 36217133343
+  },
+  "first_crossing_tail": {
+    "status": "ZERO_FOR_ANY_HYPOTHETICAL_M_GE_0",
+    "asymptotic_start": 94,
+    "finite_negative_coverage": 447
   }
 }
