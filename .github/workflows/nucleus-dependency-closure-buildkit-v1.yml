@@ -1,0 +1,49 @@
+name: Nucleus dependency closure buildkit v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-v1]
+    paths: [.github/workflows/nucleus-dependency-closure-buildkit-v1.yml]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  buildkit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Build exact native source and vendor dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/nucleus-buildkit/source /tmp/nucleus-buildkit/toolchain
+          git archive HEAD metatron-kernel | tar -x -C /tmp/nucleus-buildkit/source
+          cd /tmp/nucleus-buildkit/source/metatron-kernel
+          mkdir -p .cargo
+          cargo vendor --locked vendor > .cargo/config.toml
+          cargo test --release --locked --offline
+          cargo build --release --locked --offline
+          rustc --version --verbose > /tmp/nucleus-buildkit/compiler.txt
+          sha256sum target/release/metatron-kernel > /tmp/nucleus-buildkit/binary.sha256
+          rm -rf target/release/incremental target/release/build target/release/deps target/release/.fingerprint
+          tar -C /tmp/nucleus-buildkit -czf /tmp/nucleus-source.tgz source compiler.txt binary.sha256
+      - name: Package isolated compiler without credentials or user configuration
+        run: |
+          set -euo pipefail
+          sysroot="$(rustc --print sysroot)"
+          tar -C "$sysroot" -czf /tmp/nucleus-rust-toolchain.tgz bin lib
+          sha256sum /tmp/nucleus-source.tgz /tmp/nucleus-rust-toolchain.tgz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-dependency-source-${{ github.sha }}
+          path: /tmp/nucleus-source.tgz
+          compression-level: 0
+          retention-days: 7
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-dependency-toolchain-${{ github.sha }}
+          path: /tmp/nucleus-rust-toolchain.tgz
+          compression-level: 0
+          retention-days: 7
