@@ -126,10 +126,58 @@ theorem canonical_margin_nonnegative_of_nondescending
   omega
 
 
+/-- If the affine bias is smaller than one full tail unit across a coefficient
+    crossing, a nondescending source cannot carry any nonzero product tail.
+    This is the algebraic core of the first-crossing zero-tail reduction. -/
+theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
+    {n k : Nat} (hn : 0 < n)
+    (hcross : 3 ^ (stateAt n k).odds < 2 ^ k)
+    (hnd : n <= iter shortcut k n)
+    (hbias :
+      bias n k <
+        2 ^ k * (2 ^ k - 3 ^ (stateAt n k).odds)) :
+    (stateAt n k).tail = 0 := by
+  let s := stateAt n k
+  have hs : Valid s := at_valid hn k
+  have hdepth : s.depth = k := by simpa [s] using at_depth n k
+  have hsource : s.source = n := by simpa [s] using at_source n k
+  have hendpoint : endpoint s = iter shortcut k n := by
+    simpa [s] using at_endpoint n k
+  have hnd' : s.source <= endpoint s := by
+    simpa [hsource, hendpoint] using hnd
+  have hsrc := hs.2.2.2
+  rw [hdepth] at hsrc
+  simp only [endpoint] at hnd'
+  rw [hsrc] at hnd'
+  have hc :
+      2 ^ k * s.endpointResidue =
+        3 ^ s.odds * s.sourceResidue + bias n k := by
+    simpa [s] using residue_cocycle hn k
+  by_contra ht
+  have htpos : 1 <= s.tail := Nat.one_le_iff_ne_zero.mpr ht
+  have hcross' : 3 ^ s.odds < 2 ^ k := by simpa [s] using hcross
+  have htail :
+      2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail <= bias n k := by
+    rw [Nat.sub_mul]
+    have hscaled := Nat.mul_le_mul_left (2 ^ k) hnd'
+    simp only [Nat.mul_add] at hscaled
+    omega
+  have hone :
+      2 ^ k * (2 ^ k - 3 ^ s.odds) <=
+        2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail := by
+    have := Nat.mul_le_mul_left (2 ^ k * (2 ^ k - 3 ^ s.odds)) htpos
+    simpa [Nat.mul_assoc] using this
+  have hbias' :
+      bias n k < 2 ^ k * (2 ^ k - 3 ^ s.odds) := by
+    simpa [s] using hbias
+  omega
+
+
 #print axioms at_odds
 #print axioms exact_affine
 #print axioms residue_cocycle
 #print axioms canonical_margin_nonnegative_of_nondescending
+#print axioms tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
 
 end SourceProduct
 end CollatzFinal
