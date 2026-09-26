@@ -277,8 +277,8 @@ theorem positive_minimal_bad_odd {n : Nat}
     apply False.elim
     apply positive_minimal_no_lower_merge hmin (shortcut n) hp
     refine ⟨?_, 1, 0, ?_⟩
-    · simp [shortcut, he]
-      omega
+    · have hlt : n / 2 < n := Nat.div_lt_self hmin.1.1 (by omega)
+      simpa [shortcut, he] using hlt
     · simp [iter]
   · exact ho
 
