@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V10",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V11",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -38,7 +38,10 @@
     "Lean all-depth elementary bias bound before first crossing: 3B<=q*3^q; exact actual-source floor interface; first-crossing type lower bound",
     "Python/C++ exact agreement on 171476 necessary crossing types through j=271782: maximum source cap 7216089270<2^33, at j=125743 q=79335",
     "P35 lattice strict-beater cap floor((Bstar-M0-2^j)/D), elementary consequence of M in 2^j Z; not a theorem about ties",
-    "first-crossing uniqueness and no later first crossing for the same source explicitly Lean checked in run 36224119410"
+    "first-crossing uniqueness and no later first crossing for the same source explicitly Lean checked in run 36224119410",
+    "V11 exact computational source cover: every 1<n<2^33 strictly descends at its finite first coefficient crossing; largest crossing 447; full K20/K24 histograms agree",
+    "V11 bounded canonical consequence: every nontrivial legal first-crossing cylinder through j=271782 has M<0, combining exact source cover with the elementary type cap; no external convergence assumption; not a full Lean finite proof term",
+    "Lean all-depth P37 semantic audit: same-source off-type first crossings reject parent membership, not residual-preserving successors; concrete 45127 rejection at depth111 uses no axioms"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -58,7 +61,9 @@
     "P37 competitor-type depth as a strictly decreasing rank: 111->129 via source 45127",
     "P37 lattice-window cap as a strictly decreasing rank: 54->42 via source 103 increases cap 103->105; 40->21 ties at 160",
     "P14/P16/DK/source-tail/P36 as necessary dependencies of the live-origin polynomial source-cap implication; elementary bias plus Rhin suffices instead",
-    "published convergence floor alone proves every finite canonical first-crossing cylinder has M<0"
+    "published convergence floor alone proves every finite canonical first-crossing cylinder has M<0",
+    "P37 same-source off-type competitor graph as a residual-preserving successor system; its edges are parent rejections. This does not reject a different proved witness-changing recursion",
+    "external convergence below 2^33 as a necessary assumption for bounded canonical exclusion through271782; V11 directly verifies the stronger coefficient-stopping-time property"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -73,10 +78,12 @@
     "revived P4-P8 origin anti-concentration under P28/source-product boundary",
     "live-origin carry operator: one conditional exhaustion theorem covers both late M>=0 terminals and never-crossing sources",
     "P35 integer-lattice refinement and exact P37 scalar-rank counterexamples",
-    "P11/P17 source-floor direction simplified for the required finite cutoff by a new elementary Lean bias bound and independent type-cap certificate"
+    "P11/P17 source-floor direction simplified for the required finite cutoff by a new elementary Lean bias bound and independent type-cap certificate",
+    "V11 exact CST source cover replaces eventual convergence with actual first-crossing descent, closing bounded canonical M rather than only minimal counterexamples",
+    "P37 semantic correction: rank must act on a proved residual-preserving transformation, not off-type rejection bookkeeping"
   ],
-  "next": "prove or decisively refute the all-depth live-origin inequality P_j((j+1)^15)<=2*2^(6j/125)*F_j*(j+1)^15/2^j for j>=271782, or with another explicitly covered onset. Use exact carry/joint structure; do not reuse the rejected depth or lattice-cap ranks. Finite minimal-counterexample coverage through 271782 uses the declared published convergence floor, not a claim of universal finite M<0.",
-  "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
+  "next": "prove or decisively refute the all-depth live-origin inequality P_j((j+1)^15)<=2*2^(6j/125)*F_j*(j+1)^15/2^j for j>=271782, or produce another sound unbounded closure law. Do not treat the finite source cover, graph acyclicity, or off-type parent rejections as that law. Canonical M-negativity through271782 is now directly covered; every larger depth and never-crossing positive sources remain UNKNOWN.",
+  "stop_condition": "global closure theorem verified OR exact obstruction to the specific proposed closure mechanism, preserving its precise scope and other UNKNOWN routes",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
     "carry0": "ONLY_LIVE_BRANCH",
@@ -93,7 +100,7 @@
     "A": [2,1,1,2,1,1,2,2],
     "B": [1,1,2,1,1,2,2,2]
   },
-  "current_irreducible_residual": "canonical terminal M>=0 exclusion remains UNKNOWN. The coverage-complete live-origin route still needs its universal origin bound and explicit onset. Its elementary source cap is now Lean verified, and the finite minimal-counterexample range through 271782 is covered conditional on published convergence below 2^33; this is not a universal finite-cylinder negativity certificate.",
+  "current_irreducible_residual": "canonical terminal M>=0 exclusion at depths greater than271782 remains UNKNOWN. Global coverage additionally requires excluding positive sources that never cross. The universal live-origin bound is a candidate and is not supplied by finite entropy, finite source coverage, or P37 off-type graphs.",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
@@ -121,7 +128,7 @@
     "conditional_cutoff_K2": 271782,
     "onset": "UNKNOWN",
     "all_depth_origin_bound": "UNKNOWN",
-    "finite_gap": "V9 P36-only gap superseded for minimal-counterexample coverage through 271782 by the V10 source-floor certificate, conditional on published convergence below 2^33. A later origin onset still needs additional coverage; universal finite canonical M<0 is not established by this replacement.",
+    "finite_gap": "V9 P36-only gap was superseded for minimal counterexamples by V10; V11 now directly closes every nontrivial canonical M>=0 cylinder through271782 using a verified CST source floor, without external convergence. A later origin onset still requires additional coverage.",
     "new_lean_formalization": "LIVE_COUNT_BRIDGE_NOT_DONE; ACTUAL_SOURCE_BIAS_INTERFACE_QUALIFIED_IN_V10"
   },
   "source_floor_gap_v1": {
@@ -144,13 +151,51 @@
     "max_source_cap": 7216089270,
     "maximizing_type": {"j": 125743, "q": 79335},
     "required_convergence_floor": "2^33",
-    "external_convergence_authority": "Barina 2025, DOI 10.1007/s11227-025-07337-0 reports convergence below 2^71; full external computation not replayed here",
+    "external_convergence_authority": "Barina 2025, DOI 10.1007/s11227-025-07337-0 reports convergence below 2^71; full external computation not replayed here; V11 makes this unnecessary for the bounded canonical result",
     "finite_checker_boundary": "Python depth-indexed and C++ odd-count-indexed big-integer enumeration, not a Lean proof term",
     "polynomial_cap": "n<j^15 follows from elementary 3B<=q3^q and declared Rhin Lambda>=j^(-13.3); real-analysis/Rhin not newly Lean formalized",
-    "p37_obstruction_scope": "two scalar ranks on competitor-type recursion only; no rejection of every possible P37 ranking",
+    "p37_obstruction_scope": "two scalar ranks on competitor-type recursion only; V11 additionally clarifies that same-source off-type edges are parent rejections, not residual successors",
     "failed_runs_preserved": [
       {"run": 36223928027, "status": "HARNESS_FAILURE_MISSING_BOOST"},
       {"run": 36223997463, "status": "NUMERICAL_REPLAY_PASS_LEAN_RENDERING_FAILURE"}
+    ]
+  },
+  "bounded_canonical_closure_v1": {
+    "status": "WARRANTED_EXACT_COMPUTATIONAL_BOUNDED_CLOSURE",
+    "parent_state_head": "5242a12a17fadf50a028fde5eb7817230971e6bf",
+    "qualified_head": "04714672d4eb53ef1ab169c0823e82e83b42f984",
+    "run": 36227106830,
+    "job": 108363128252,
+    "conclusion": "SUCCESS",
+    "artifact": 10901058141,
+    "artifact_sha256": "cef86992e1aad4d6f247f5375ee0bedb4951604c6e9a99556bec4effb792cbb5",
+    "depth_inclusive": 271782,
+    "source_floor_exclusive": 8589934592,
+    "odd_sources_per_full_cover": 4294967296,
+    "prefix_widths": [20,24],
+    "max_first_crossing_in_source_floor": 447,
+    "nontrivial_nondescending": 0,
+    "overflow_or_unresolved": 0,
+    "full_histogram_sha256": "51fcdcce2c81ddae9cea127e2c68c4282eae7718a15020db9eab2da5660217b5",
+    "derivation": "docs/collatz_bounded_canonical_closure_v1.md",
+    "evidence": "evidence/collatz-bounded-canonical-closure-v1/result.json",
+    "external_convergence_assumption": "NONE_FOR_THIS_BOUNDED_RESULT",
+    "boundary": "two full C++ prefix covers share code; independent direct Python and direct C++ regression through2^20; V10 C++ coefficient cap replayed and earlier Python authority retained. Elementary bias and P37 semantic theorems rechecked in Lean. Full finite computation is not a Lean proof term.",
+    "local_failures": ["direct2^33 exceeded120s with no certificate", "initial aggregation exceeded120s during redundant Python deep coefficient replay"]
+  },
+  "p37_rejection_semantics_v1": {
+    "status": "WARRANTED_LEAN",
+    "qualified_head": "4db2890a20b2b22b1dd53de8253563e6fc097421",
+    "run": 36226898784,
+    "combined_recheck_run": 36227106830,
+    "file": "formal/Collatz/P37Rejection.lean",
+    "theorem": "off_type_excludes_parent_residual",
+    "scope": "same-source off-type relation cannot be a residual-preserving successor; a witness-changing recursion remains UNKNOWN",
+    "general_axioms": ["propext","Quot.sound"],
+    "concrete_witness_axioms": [],
+    "failed_runs_preserved": [
+      {"run":36226612025,"status":"CONCRETE_PREDICATE_DECIDABILITY_FAILURE"},
+      {"run":36226649447,"status":"CONCRETE_KERNEL_RECURSION_BUDGET_FAILURE"}
     ]
   }
 }
