@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V8",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V9",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -31,7 +31,10 @@
     "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin",
     "any exact infinitely repeated superunit odd-valuation block forces a negative rational block fixed point and cannot be realized by a positive integer",
     "historical two-block recurrent core {A,B} is empty over positive naturals: B has no exact A/B successor and A^infinity has negative rational b-adic source",
-    "Lean theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit qualified at commit bbe821c56b07946f2bd4e9ac003991d6ba958ba0 run 36218076917"
+    "Lean theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit qualified at commit bbe821c56b07946f2bd4e9ac003991d6ba958ba0 run 36218076917",
+    "elementary live-origin conservation P_(j-1)(X)=P_j(X)+C_j(X) for j>=2 and 0<X<=2^(j-1); new identity not yet Lean formalized",
+    "exact rational live-language entropy upper bound F_j<2^(951j/1000); conditional eta=6/125 K=2 polynomial-window cutoff 271782",
+    "hosted finite live-origin replay: 524288 sources, 635 nonempty windows, zero envelope violations, 342 independent symbolic checks"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -46,7 +49,8 @@
     "historical recurrent two-block core as a possible positive-natural infinite obstruction",
     "Ansari automatic 4*3^44+2 interval extension as proof authority",
     "generic p-adic two-log bound applied directly to moving Collatz cocycle B",
-    "global mechanical-itinerary exclusion without a coverage theorem"
+    "global mechanical-itinerary exclusion without a coverage theorem",
+    "terminal-origin estimate alone as global closure without crossing existence and finite-cutoff coverage"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -58,9 +62,10 @@
     "first-crossing zero-tail canonicalization",
     "aperiodic mixed-base lift coherence on historical recurrent block core",
     "P30/P31 cross-scale joint 2-adic/3-adic coherence",
-    "revived P4-P8 origin anti-concentration under P28/source-product boundary"
+    "revived P4-P8 origin anti-concentration under P28/source-product boundary",
+    "live-origin carry operator: one conditional exhaustion theorem covers both late M>=0 terminals and never-crossing sources"
   ],
-  "next": "prove the origin distortion bound C_j(X) <= 2^(eta j)|L_j|X/2^j for some eta<~0.0485 on the legal critical-ballot inverse-parity carry operator; full uniform discrepancy is unnecessary",
+  "next": "attack the all-depth live-prefix origin bound P_j((j+1)^15)<=K*2^(eta*j)*F_j*(j+1)^15/2^j using P35/P37 and the exact carry operator, or produce an exact obstruction; retain explicit crossing-existence and finite-cutoff obligations",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -75,28 +80,10 @@
   "periodic_recurrent_block_status": "REJECTED_FOR_POSITIVE_INTEGER_BY_NEGATIVE_BLOCK_FIXED_POINT",
   "two_block_core": {
     "status": "EMPTY_OVER_POSITIVE_NATURALS",
-    "A": [
-      2,
-      1,
-      1,
-      2,
-      1,
-      1,
-      2,
-      2
-    ],
-    "B": [
-      1,
-      1,
-      2,
-      1,
-      1,
-      2,
-      2,
-      2
-    ]
+    "A": [2,1,1,2,1,1,2,2],
+    "B": [1,1,2,1,1,2,2,2]
   },
-  "current_irreducible_residual": "origin-sensitive anti-concentration of canonical 2-adic residues in the legal first-crossing ballot language; any eventual distortion exponent below the entropy gap 1-H(log_3 2) closes P28",
+  "current_irreducible_residual": "canonical terminal M>=0 exclusion remains the mathematical residual; global closure additionally requires finite crossing existence and complete finite-cutoff coverage. A live-origin polynomial-window exhaustion theorem is a coverage-complete candidate, not a proved consequence of the terminal-origin bound.",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
@@ -104,9 +91,27 @@
     "status": "WARRANTED_LEAN"
   },
   "archive_reconciliation": {
-    "revived": "P7/P8 marginal residue anti-concentration, previously insufficient for joint M but now sufficient after P28/source-product reduction",
+    "revived": "P7/P8 marginal residue anti-concentration, previously insufficient for joint M but now sufficient for eventual terminal exclusion after P28/source-product reduction; not by itself global crossing existence",
     "sufficient_eta_demo": 0.04,
     "entropy_loss": 0.05004447281166946,
-    "implication_threshold_demo": "computed by qualified script"
+    "implication_threshold_demo": "computed by qualified script; finite coverage to threshold still required"
+  },
+  "live_origin_coverage_bridge": {
+    "status": "ELEMENTARY_CONDITIONAL_BRIDGE_AND_EXACT_FINITE_REPLAY",
+    "evidence_head": "72fafcd12e85cb0f597cd27e4ca794e212bb568f",
+    "run": 36221841049,
+    "job": 108348440291,
+    "conclusion": "SUCCESS",
+    "derivation": "docs/collatz_live_origin_bridge_v1.md",
+    "experiment": "experiments/collatz_live_origin_bridge_v1.py",
+    "evidence": "evidence/collatz-live-origin-bridge-v1/result.json",
+    "script_sha256": "75df2f2590f53777bc3a7d9a2a198553059512eb4adfad2976d57b968be02168",
+    "conditional_origin_eta": "6/125",
+    "exact_entropy_exponent": "951/1000",
+    "conditional_cutoff_K2": 271782,
+    "onset": "UNKNOWN",
+    "all_depth_origin_bound": "UNKNOWN",
+    "finite_gap": "P36 covers 447, not max(onset,271782)",
+    "new_lean_formalization": "NOT_DONE"
   }
 }
