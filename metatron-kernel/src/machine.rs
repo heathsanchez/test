@@ -387,6 +387,17 @@ impl<'a> Machine<'a> {
                             let observed_target = self
                                 .constructor_application(target)
                                 .or_else(|| self.observe_bool_constructor(target, budget));
+                            if observed_target.is_none()
+                                && std::env::var_os("NUCLEUS_TRACE_BOOL_TARGET").is_some()
+                                && self.bool_primitives.is_some()
+                            {
+                                eprintln!(
+                                    "NUCLEUS_BOOL_TARGET recursor={:?} target_expr={:?} target_node={:?}",
+                                    name,
+                                    target.expr,
+                                    self.expressions.get(target.expr)
+                                );
+                            }
                             if let Some((constructor, constructor_arguments)) = observed_target
                                 && let Some(rule) = reduction
                                     .rules
