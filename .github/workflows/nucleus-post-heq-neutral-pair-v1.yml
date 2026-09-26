@@ -1,0 +1,30 @@
+name: Nucleus post-HEq neutral pair v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-post-heq-neutral-pair-v1.yml"]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - env:
+          NUCLEUS_TRACE_CONVERSION: "1"
+          NUCLEUS_TRACE_DOWNSTREAM: "1"
+        run: |
+          for f in good/perf/magma-list-deep-n21.ndjson good/perf/magma-list-deep-n36.ndjson; do
+            echo "=== $f ==="
+            metatron-kernel/target/release/metatron-kernel < /tmp/tests/$f 2>&1 | grep -E 'NUCLEUS_CONV_HEAD_MISMATCH|NUCLEUS_CONV_SPINES|NUCLEUS_DOWNSTREAM' | tail -20 || true
+          done
