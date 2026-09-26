@@ -44,7 +44,8 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean -DautoImplicit=false formal/Collatz/SourceProductZeroTail.lean | tee evidence/source-product-v1/zero-tail.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProductZeroTail.olean formal/Collatz/SourceProductZeroTail.lean | tee evidence/source-product-v1/zero-tail.log
+          lake env lean -DautoImplicit=false formal/Collatz/ZeroTailEquivalenceRegression.lean | tee evidence/source-product-v1/zero-tail-equivalence.log
           ! grep -q 'sorryAx' evidence/source-product-v1/zero-tail.log
       - name: Independent exact replay tests
         shell: bash
