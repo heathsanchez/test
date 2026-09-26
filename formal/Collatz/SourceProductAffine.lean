@@ -83,9 +83,53 @@ theorem residue_cocycle {n : Nat} (hn : 0 < n) (k : Nat) :
       3 ^ s.odds * s.sourceResidue + bias n k := by omega
   simpa only [s, at_depth] using hc
 
+/-- At a coefficient crossing, non-descent of an actual source forces the
+    canonical residue cylinder to have nonnegative exact joint margin.
+    This is the universal bridge from the source-product representation to
+    the archived M-verifier problem. -/
+theorem canonical_margin_nonnegative_of_nondescending
+    {n k : Nat} (hn : 0 < n)
+    (hcross : 3 ^ (stateAt n k).odds < 2 ^ k)
+    (hnd : n <= iter shortcut k n) :
+    (2 ^ k - 3 ^ (stateAt n k).odds) * (stateAt n k).sourceResidue
+      <= bias n k := by
+  let s := stateAt n k
+  have hs : Valid s := at_valid hn k
+  have hdepth : s.depth = k := by simpa [s] using at_depth n k
+  have hsource : s.source = n := by simpa [s] using at_source n k
+  have hendpoint : endpoint s = iter shortcut k n := by
+    simpa [s] using at_endpoint n k
+  have hnd' : s.source <= endpoint s := by
+    simpa [hsource, hendpoint] using hnd
+  have hscale :
+      3 ^ s.odds * s.tail <= 2 ^ k * s.tail := by
+    exact Nat.mul_le_mul_right s.tail (Nat.le_of_lt (by simpa [s] using hcross))
+  have hres : s.sourceResidue <= s.endpointResidue := by
+    have hsrc := hs.2.2.2
+    rw [hdepth] at hsrc
+    simp only [endpoint] at hnd'
+    rw [hsrc] at hnd'
+    omega
+  have hc :
+      2 ^ k * s.endpointResidue =
+        3 ^ s.odds * s.sourceResidue + bias n k := by
+    simpa [s] using residue_cocycle hn k
+  have hmul :
+      2 ^ k * s.sourceResidue <=
+        3 ^ s.odds * s.sourceResidue + bias n k := by
+    calc
+      2 ^ k * s.sourceResidue <= 2 ^ k * s.endpointResidue :=
+        Nat.mul_le_mul_left (2 ^ k) hres
+      _ = _ := hc
+  change (2 ^ k - 3 ^ s.odds) * s.sourceResidue <= bias n k
+  rw [Nat.sub_mul]
+  omega
+
+
 #print axioms at_odds
 #print axioms exact_affine
 #print axioms residue_cocycle
+#print axioms canonical_margin_nonnegative_of_nondescending
 
 end SourceProduct
 end CollatzFinal
