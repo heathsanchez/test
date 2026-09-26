@@ -723,8 +723,6 @@ fn compare_neutral_heads(
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => Judgment::refuted("distinct-neutral-heads"),
-    }
 }
 
 fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
