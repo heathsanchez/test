@@ -1,0 +1,78 @@
+{
+  "schema": "nucleus-terminal-mask-audit-v1",
+  "audit_date": "2026-09-26",
+  "status": "WARRANTED",
+  "verification_boundary": "Static inspection of pinned Rust source and exact JSON inventory of 193 frozen NDJSON files. No new Rust execution, semantic promotion, completeness proof, or performance claim.",
+  "source": {
+    "repository": "heathsanchez/test",
+    "sha": "a673f68b49cba42c5a1f33c87fe3fb2546e5a522",
+    "checker_path": "metatron-kernel/src/checker.rs",
+    "function": "check_export",
+    "parser_path": "metatron-kernel/src/parser.rs",
+    "parser_mapping": "parse_expr maps strVal to Expr::StrLit",
+    "guard": "Any Expr::StrLit anywhere in export.exprs causes an inner Accept or Reject to be returned as Unknown.",
+    "guard_scope": "Entire expression table, not just expressions visited by checking.",
+    "mask_when_literal_present": {
+      "Accept": "Unknown",
+      "Reject": "Unknown",
+      "Unknown": "Unknown",
+      "Error": "Error"
+    }
+  },
+  "corpus": {
+    "repository": "leanprover/lean-kernel-arena",
+    "artifact_id": 10712869614,
+    "zip_sha256": "e979e7dc437fdbdac6555d4bd78649dfa0307b3bda5c812c0d7a484a775a14d8",
+    "case_count": 193,
+    "inventory_predicate": "JSON object has keys ie and strVal",
+    "affected_file_count": 4,
+    "files": [
+      {"path": "good/init-prelude.ndjson", "literal_count": 25, "sha256": "fc440bd35aa4ecb244836eef0c2e31c578ac4460f42665f4e8305cbc2cd2104d"},
+      {"path": "good/perf/grind-ring-5.ndjson", "literal_count": 33, "sha256": "f0fd36e8ad0f6e224c4be968a991d4f0643280230abe0275578e018aff0ac0f8"},
+      {"path": "good/perf/magma-list-deep-n21.ndjson", "literal_count": 8, "sha256": "2283048c8f82883fd5a7a59a20601b58256568c82561dff3304f38ad4d57fc75"},
+      {"path": "good/perf/magma-list-deep-n36.ndjson", "literal_count": 8, "sha256": "8adb6a65960f41fd8fdc8447b70b942075448ecd5155c1c3ed0b7adb954da34f"}
+    ]
+  },
+  "consequences": [
+    "HEq admission alone cannot yield final Accept on either targeted magma-deep file while the guard remains.",
+    "This does not show that earlier candidates would otherwise finish: the observed inner HEq and conversion-exposure residuals remain real.",
+    "Zero terminal delta is not by itself evidence that a successfully checked prerequisite has no causal value.",
+    "Do not remove the guard without qualified literal semantics or a separately checked applicability/preservation contract."
+  ],
+  "existing_unqualified_candidate": {
+    "branch": "nucleus-native-strlit-v1",
+    "sha": "273e3bba3ff35293211ea7805894ea895b8dd421",
+    "run_id": 35923674892,
+    "job_id": 107393551438,
+    "observed_failure": "cargo fmt --check: two match arms in capability.rs required multiline formatting",
+    "compiler_and_semantic_tests_executed": false,
+    "semantic_status": "UNKNOWN",
+    "reuse_status": "CANDIDATE; inspect and test before transfer, not a qualified string-semantics implementation"
+  },
+  "latest_existing_replay": {
+    "candidate_sha": "a673f68b49cba42c5a1f33c87fe3fb2546e5a522",
+    "base_sha": "aa430901d51f54a3926741bab3a32cac363dc251",
+    "run_id": 36198625741,
+    "job_id": 108280086375,
+    "artifact_id": 10891035978,
+    "artifact_digest": "sha256:0ff8b952af656cfd7a61df9d88f6fc3bbbcf712bba1a9b78fab99e28187e31f7",
+    "accept": 98,
+    "reject": 55,
+    "residual_rc2_or_rc3": 40,
+    "earned": 0,
+    "changes": 0,
+    "promotion": "NOT_PROMOTED",
+    "gate_limitations": [
+      "No assert earned was present in the executed workflow.",
+      "The workflow grouped rc=3 with residuals and only classified codes outside 0,1,2,3 as errors; it is not a separate zero-ERROR gate.",
+      "Cargo.toml/main.rs grep is a runtime-entrypoint screen, not a full semantic-independence audit."
+    ]
+  },
+  "proposed_next_boundary": {
+    "status": "CANDIDATE",
+    "unit": "Smallest complete dependency closure for a protected terminal judgment",
+    "local_gate": "Exact semantic obligation plus preserved context/universes, independent checks and nearest malformed controls",
+    "terminal_gate": "All required local contracts composed, unchanged authoritative public verdict boundary, full corpus rows saved, rc2 and rc3 separate, zero wrong/regressions/errors and explicit terminal gain",
+    "release_gate": "No publication/release/submission before independent current-Arena completeness and separately evidenced matched competitive performance. Frozen 193/193 alone is not universal kernel correctness."
+  }
+}
