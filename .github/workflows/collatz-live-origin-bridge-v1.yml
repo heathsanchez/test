@@ -1,0 +1,48 @@
+name: Collatz live origin bridge V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_live_origin_bridge_v1.py'
+      - 'evidence/collatz-live-origin-bridge-v1/result.json'
+      - 'docs/collatz_live_origin_bridge_v1.md'
+      - '.github/workflows/collatz-live-origin-bridge-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-finite-replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Replay exact live-prefix probe and integer implication certificate
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -S experiments/collatz_live_origin_bridge_v1.py > evidence/collatz-live-origin-bridge-v1/replay.json
+          python -S - <<'PY'
+          import json
+          from pathlib import Path
+          base=Path('evidence/collatz-live-origin-bridge-v1')
+          expected=json.loads((base/'result.json').read_text())
+          actual=json.loads((base/'replay.json').read_text())
+          e=expected['worst_observed'].pop('diagnostic_exponent')
+          a=actual['worst_observed'].pop('diagnostic_exponent')
+          assert abs(a-e)<1e-12, (a,e)
+          assert actual==expected
+          assert actual['global_collatz']=='UNKNOWN'
+          assert actual['lean_status']=='NEW_BRIDGE_NOT_FORMALIZED_IN_LEAN'
+          print('PASS: exact finite report reproduced; universal origin theorem remains UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-live-origin-bridge-v1/commit.txt
+          cat evidence/collatz-live-origin-bridge-v1/replay.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-live-origin-bridge-v1
+          path: evidence/collatz-live-origin-bridge-v1
+          if-no-files-found: error
