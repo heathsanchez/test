@@ -1,0 +1,28 @@
+name: Collatz Farey Rung Normalization V0
+
+on:
+  push:
+    branches: [collatz-farey-rung-normalization-v0]
+    paths:
+      - 'experiments/collatz_farey_rung_normalization_v0.py'
+      - '.github/workflows/collatz-farey-rung-normalization-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Compare first two Farey endpoint quotients
+        run: |
+          mkdir -p evidence/collatz-farey-rung-normalization-v0
+          python experiments/collatz_farey_rung_normalization_v0.py             --max-q2-depth 14             --output evidence/collatz-farey-rung-normalization-v0/result.json             | tee evidence/collatz-farey-rung-normalization-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-farey-rung-normalization-v0
+          path: evidence/collatz-farey-rung-normalization-v0
+          if-no-files-found: error
