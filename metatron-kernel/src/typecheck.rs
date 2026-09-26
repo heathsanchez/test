@@ -310,7 +310,12 @@ impl<'a> TypeChecker<'a> {
                             eprintln!("NUCLEUS_APP_INFER:refuted:{}", obstruction.0);
                         }
                         Judgment::Unknown { residual } => {
-                            eprintln!("NUCLEUS_APP_INFER:unknown:{}:fun_expr={:?}:fun_node={:?}", residual.0, fun, self.expressions.get(*fun));
+                            eprintln!(
+                                "NUCLEUS_APP_INFER:unknown:{}:fun_expr={:?}:fun_node={:?}",
+                                residual.0,
+                                fun,
+                                self.expressions.get(*fun)
+                            );
                         }
                     }
                 }
