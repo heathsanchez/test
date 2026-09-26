@@ -5,7 +5,7 @@ on:
     branches: [nucleus-dependency-closure-exec-v1]
     paths: [".github/workflows/nucleus-post-heq-application-trace-v1.yml"]
   workflow_dispatch:
-# retrace after newline correction
+# retrace after rustfmt correction
 
 permissions:
   contents: read
