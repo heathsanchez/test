@@ -40,6 +40,48 @@ theorem kernel_empty_of_zero_tail
   have hRank := kernel_empty_of_rank S Next (fun t => t.tail) hDrop
   exact hRank S (fun _ ht => ht) hPost s hs
 
+theorem endpoint_iter_step (j : Nat) (s : State) :
+    endpoint (iter step j s) = iter shortcut j (endpoint s) := by
+  induction j generalizing s with
+  | zero => rfl
+  | succ j ih =>
+      simpa [iter, step_endpoint] using ih (step s)
+
+theorem postfixed_iter_mem
+    (S : State → Prop)
+    (hPost : PostFixed Next S) :
+    ∀ j s, S s → S (iter step j s) := by
+  intro j
+  induction j with
+  | zero =>
+      intro s hs
+      simpa [iter] using hs
+  | succ j ih =>
+      intro s hs
+      obtain ⟨t, ht, hSt⟩ := hPost s hs
+      change t = step s at ht
+      simpa [iter, ← ht] using ih t hSt
+
+/-- If positive Collatz termination is assumed, no zero-tail live post-fixed
+    kernel can exist. This is the converse of the conditional closure below. -/
+theorem zero_tail_kernel_empty_of_collatz
+    (hgood : ∀ n, 0 < n → CollatzGood n) :
+    KernelEmpty ZeroTailLive Next := by
+  intro S hsub hPost s hs
+  have hLive : Live s := (hsub s hs).1
+  obtain ⟨n, k, hn, hstate⟩ := hLive.1
+  have hnGood : CollatzGood n := hgood n hn
+  have hEndpointGood : CollatzGood (endpoint s) := by
+    have hkGood : CollatzGood (iter shortcut k n) :=
+      eventually_iter_forward shortcut Terminal terminal_forward_invariant hnGood k
+    simpa [hstate, at_endpoint] using hkGood
+  obtain ⟨j, hj⟩ := hEndpointGood
+  have hSj : S (iter step j s) := postfixed_iter_mem S hPost j s hs
+  have hLivej : Live (iter step j s) := (hsub _ hSj).1
+  apply hLivej.2
+  left
+  simpa [endpoint_iter_step] using hj
+
 /-- Conditional closure: zero-tail kernel emptiness remains an explicit premise. -/
 theorem collatz_of_zero_tail_kernel_empty
     (hempty : KernelEmpty ZeroTailLive Next) :
