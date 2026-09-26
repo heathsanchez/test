@@ -632,6 +632,12 @@ fn check_inductive(
         return Err(Verdict::Reject);
     }
 
+    if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "HEq")
+    {
+        return check_exact_heq(export, environment, block, limits, delta_policy);
+    }
+
     // G16-001 is deliberately routed by its earned name before constructor
     // cardinality dispatch. This lets missing/extra constructors remain
     // malformed claims inside the PUnit envelope (REJECT), while broader
@@ -9199,3 +9205,5 @@ mod tests {
         ));
     }
 }
+
+include!("heq_admission.rs");

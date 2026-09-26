@@ -11,7 +11,12 @@ fn fixture() -> Vec<Value> {
 }
 
 fn check(rows: &[Value]) -> Verdict {
-    let text = rows.iter().map(Value::to_string).collect::<Vec<_>>().join("\n") + "\n";
+    let text = rows
+        .iter()
+        .map(Value::to_string)
+        .collect::<Vec<_>>()
+        .join("\n")
+        + "\n";
     metatron_kernel::run(Cursor::new(text))
 }
 
@@ -59,7 +64,10 @@ fn heq_malformed_metadata_never_gains_acceptance() {
         let block = &mut rows.last_mut().unwrap()["inductive"];
         *block.pointer_mut(path).unwrap() = value;
         let verdict = check(&rows);
-        assert!(matches!(verdict, Verdict::Reject | Verdict::Unknown), "{path}: {verdict:?}");
+        assert!(
+            matches!(verdict, Verdict::Reject | Verdict::Unknown),
+            "{path}: {verdict:?}"
+        );
     }
 }
 
@@ -78,9 +86,15 @@ fn heq_dependent_telescope_and_rule_mutations_never_gain_acceptance() {
     ];
     for (id, tag, key, value) in mutations {
         let mut rows = fixture();
-        let row = rows.iter_mut().find(|r| r.get("ie").and_then(Value::as_u64) == Some(id)).unwrap();
+        let row = rows
+            .iter_mut()
+            .find(|r| r.get("ie").and_then(Value::as_u64) == Some(id))
+            .unwrap();
         row[tag][key] = json!(value);
         let verdict = check(&rows);
-        assert!(matches!(verdict, Verdict::Reject | Verdict::Unknown), "{id}/{tag}/{key}: {verdict:?}");
+        assert!(
+            matches!(verdict, Verdict::Reject | Verdict::Unknown),
+            "{id}/{tag}/{key}: {verdict:?}"
+        );
     }
 }

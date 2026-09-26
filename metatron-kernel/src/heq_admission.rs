@@ -28,8 +28,12 @@ fn check_exact_heq(
     ) else {
         return Err(Verdict::Unknown);
     };
-    if inductive.is_unsafe || constructor.is_unsafe || recursor.is_unsafe
-        || inductive.is_recursive || inductive.is_reflexive || inductive.num_nested != 0
+    if inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.num_nested != 0
     {
         return Err(Verdict::Unknown);
     }
@@ -39,15 +43,26 @@ fn check_exact_heq(
     let [v, rec_u] = recursor.level_params.as_slice() else {
         return Err(Verdict::Unknown);
     };
-    if u != rec_u || u == v
-        || inductive.num_params != 2 || inductive.num_indices != 2
+    if u != rec_u
+        || u == v
+        || inductive.num_params != 2
+        || inductive.num_indices != 2
         || inductive.all != [inductive.name]
         || inductive.constructors != [constructor.name]
-        || constructor.inductive != inductive.name || constructor.index != 0
-        || constructor.num_params != 2 || constructor.num_fields != 0
+        || constructor.inductive != inductive.name
+        || constructor.index != 0
+        || constructor.num_params != 2
+        || constructor.num_fields != 0
         || constructor.level_params != inductive.level_params
         || !name_is_child_str(export, constructor.name, inductive.name, "refl")
-        || !recursor_metadata_admissible(export, inductive, &block.constructors, recursor, true, true)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            true,
+            true,
+        )
     {
         return Err(Verdict::Reject);
     }
@@ -93,16 +108,15 @@ fn check_exact_heq(
         return Err(Verdict::Reject);
     }
     let (minor_head, minor_args) = application_spine(export, rec_domains[3]);
-    if !is_bvar(export, minor_head, 0) || minor_args.len() != 3
+    if !is_bvar(export, minor_head, 0)
+        || minor_args.len() != 3
         || !are_bvars(export, &minor_args[..2], &[2, 1])
         || !heq_application(export, minor_args[2], constructor.name, *u, &[2, 1])
     {
         return Err(Verdict::Reject);
     }
     let (result_head, result_args) = application_spine(export, rec_result);
-    if !is_bvar(export, result_head, 4)
-        || !are_bvars(export, &result_args, &[2, 1, 0])
-    {
+    if !is_bvar(export, result_head, 4) || !are_bvars(export, &result_args, &[2, 1, 0]) {
         return Err(Verdict::Reject);
     }
     let [rule] = recursor.rules.as_slice() else {
@@ -111,7 +125,8 @@ fn check_exact_heq(
     let Some((rule_domains, rule_result)) = lam_spine(export, rule.rhs, 4) else {
         return Err(Verdict::Reject);
     };
-    if rule.constructor != constructor.name || rule.num_fields != 0
+    if rule.constructor != constructor.name
+        || rule.num_fields != 0
         || rule_domains.as_slice() != &rec_domains[..4]
         || !is_bvar(export, rule_result, 0)
     {
