@@ -36,7 +36,7 @@ jobs:
                 env=None
                 if 'magma-list-deep-n21' in str(p) or 'magma-list-deep-n36' in str(p):
                   import os
-                  env=os.environ.copy(); env['NUCLEUS_TRACE_APPLICATION_INFER']='1'; env['NUCLEUS_TRACE_CONVERSION']='1'
+                  env=os.environ.copy(); env['NUCLEUS_TRACE_APPLICATION_INFER']='1'; env['NUCLEUS_TRACE_CONVERSION']='1'; env['NUCLEUS_TRACE_BOOL_TARGET']='1'
                 try:
                   q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
                 except subprocess.TimeoutExpired:
