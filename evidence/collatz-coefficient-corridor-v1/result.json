@@ -1,0 +1,45 @@
+{
+  "coefficient_live_prefixes_checked": 20266,
+  "corridor": "If all prefix coefficients are <= integer C>=1, then q<C^2*n, under the distinct-odd/no-descent hypotheses.",
+  "finite_odd_sources": 4095,
+  "global_collatz": "UNKNOWN",
+  "infinite_consequence": "A positive never-coefficient-crossing orbit has unbounded prefix coefficients.",
+  "largest_first_crossing_in_probe": 81,
+  "largest_odd_count_at_first_crossing": 51,
+  "not_proved": [
+    "a source-dependent global upper bound on coefficients",
+    "global exclusion of never-crossing sources",
+    "unbounded canonical M-negativity"
+  ],
+  "parent_head": "cb65e7143aded6744f464da00fe98f9dd64af488",
+  "polynomial_identity_coefficients_low_to_high": [1,17,117,405,675,243,0,0],
+  "rank_boundary": "C is fixed. Raising C replenishes the budget; no global rank is obtained.",
+  "reset_counterexample": {
+    "after": {"C":2,"budget":11,"q":1},
+    "before": {"C":1,"budget":3,"q":0},
+    "source": 3
+  },
+  "schema": "COLLATZ_COEFFICIENT_CORRIDOR_V1",
+  "script_sha256": "b5acc20c8faf59878d9bf7b5334dd6a3ee408dc98b42c14d13c6320b13625403",
+  "source_interval": "3<=n<8192, odd",
+  "status": "ELEMENTARY_ALL_DEPTH_CONDITIONAL_THEOREM_AND_EXACT_FINITE_CHECKS",
+  "telescoping": "P^6 < (n+2q-1)/(n-1) for distinct odd terms >= odd n>=3",
+  "trace_sha256": "4374309f594e41806701cd7a2ddd7a60f376263664258452785c284b838d0d2e",
+  "verification_boundary": "Full corridor and infinite consequence have written elementary proofs. Lean checks the polynomial identity, one-factor comparison and arbitrary-length Packed-list telescoping theorem. The actual-orbit sorting, multiplicative identity and corridor/periodicity applications are not newly Lean formalized. Exact rational arithmetic checks the stated finite orbit prefixes. Global Collatz is not proved.",
+  "qualification": {
+    "head": "a970592576f848abbb3ce54d0ba16478b16e2c6e",
+    "run": 36232908276,
+    "job": 108379307965,
+    "conclusion": "SUCCESS",
+    "artifact": 10902867581,
+    "artifact_sha256": "faa7801f5e010075f1ef25ae26c9bb5e3d4556b61e24cd21b460de99592f3365",
+    "source_product_regression_run": 36232908298,
+    "source_product_regression_conclusion": "SUCCESS",
+    "lean_file": "formal/Collatz/CoefficientCorridor.lean",
+    "lean_theorems": ["factor_identity","factor_majorant","packed_sixth_power"],
+    "lean_axioms": ["propext","Classical.choice","Quot.sound"],
+    "failed_run": 36232765166,
+    "failed_run_scope": "Numerical replay passed; Lean needed explicit normalization of u+2+1=u+3 and the correct core transitivity argument name. Statements unchanged.",
+    "local_lean_boundary": "No local Lean execution: container network/DNS unavailable. Hosted pinned-Lean result is the formal authority."
+  }
+}
