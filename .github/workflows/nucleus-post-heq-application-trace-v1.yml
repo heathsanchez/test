@@ -5,7 +5,7 @@ on:
     branches: [nucleus-dependency-closure-exec-v1]
     paths: [".github/workflows/nucleus-post-heq-application-trace-v1.yml"]
   workflow_dispatch:
-# expose OfNat mismatch spines
+# rerun formatted OfNat mismatch spines
 
 permissions:
   contents: read
