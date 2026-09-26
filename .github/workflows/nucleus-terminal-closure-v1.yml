@@ -1,0 +1,97 @@
+name: Nucleus Terminal Closure v1
+on:
+  push:
+    branches: [nucleus-terminal-closure-v1]
+    paths: ['.github/workflows/nucleus-terminal-closure-v1.yml', 'metatron-kernel/**', 'tools/nucleus_terminal/**']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: nucleus-terminal-closure-v1
+  cancel-in-progress: true
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      BASE_SHA: aa430901d51f54a3926741bab3a32cac363dc251
+      ARENA_ARTIFACT: '10712869614'
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: 'rustfmt,clippy'}
+      - name: Preserve exact source and toolchain identity
+        run: |
+          mkdir -p evidence-out/terminal-closure
+          git rev-parse HEAD > evidence-out/terminal-closure/source-sha.txt
+          rustc --version --verbose > evidence-out/terminal-closure/rustc.txt
+          tar -czf evidence-out/terminal-closure/source.tar.gz metatron-kernel .github/workflows/nucleus-terminal-closure-v1.yml
+      - name: Build and test native checker
+        run: |
+          set -euo pipefail
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo clippy --locked --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel evidence-out/terminal-closure/candidate
+          cargo tree --locked --manifest-path metatron-kernel/Cargo.toml > evidence-out/terminal-closure/dependencies.txt
+          sha256sum evidence-out/terminal-closure/candidate > evidence-out/terminal-closure/binary.sha256
+      - name: Replay frozen public verdict boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/corpus.zip
+          echo 'e979e7dc437fdbdac6555d4bd78649dfa0307b3bda5c812c0d7a484a775a14d8  /tmp/corpus.zip' | sha256sum -c -
+          mkdir -p /tmp/corpus
+          unzip -q /tmp/corpus.zip -d /tmp/corpus
+          tar -xzf /tmp/corpus/lean-arena-tests.tar.gz -C /tmp/corpus
+          git worktree add --detach /tmp/nucleus-base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/nucleus-base/metatron-kernel/Cargo.toml
+          cp /tmp/nucleus-base/metatron-kernel/target/release/metatron-kernel evidence-out/terminal-closure/base
+          python - <<'PY'
+          import collections, hashlib, json, os, pathlib, subprocess, time
+          root=pathlib.Path('/tmp/corpus')
+          out=pathlib.Path('evidence-out/terminal-closure')
+          bins={k:(out/k).resolve() for k in ('base','candidate')}
+          rows=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  r={'test':str(p.relative_to(root)), 'expected':expected,'sha256':hashlib.sha256(p.read_bytes()).hexdigest()}
+                  for label,b in bins.items():
+                      start=time.perf_counter()
+                      env=os.environ.copy(); env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                      try:
+                          with p.open('rb') as f: q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+                          rc=q.returncode; err=q.stderr.decode(errors='replace')
+                      except subprocess.TimeoutExpired: rc=124; err='timeout'
+                      r[label]={'rc':rc,'seconds':time.perf_counter()-start,'trace':err[-3000:]}
+                  rows.append(r)
+          counts={k:dict(collections.Counter(r[k]['rc'] for r in rows)) for k in bins}
+          wrong=[r['test'] for r in rows if r['candidate']['rc'] in (0,1) and r['candidate']['rc']!=r['expected']]
+          regressions=[r['test'] for r in rows if r['base']['rc'] in (0,1) and r['candidate']['rc']!=r['base']['rc']]
+          errors=[r['test'] for r in rows if r['candidate']['rc'] not in (0,1,2)]
+          earned=[r['test'] for r in rows if r['base']['rc']==2 and r['candidate']['rc']==r['expected']]
+          report={'schema':'nucleus-terminal-closure-v1','source_sha':os.environ['GITHUB_SHA'],'base_sha':os.environ['BASE_SHA'],'counts':counts,'wrong':wrong,'regressions':regressions,'errors':errors,'earned':earned,'terminal_gain':bool(earned),'promoted':False,'rows':rows}
+          (out/'replay.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps({k:v for k,v in report.items() if k!='rows'}))
+          assert len(rows)==193, len(rows)
+          assert not wrong,wrong
+          assert not regressions,regressions
+          assert not errors,errors
+          # This job measures and preserves all rows. Promotion is an explicit separate gate.
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-terminal-closure-${{ github.sha }}
+          path: evidence-out/terminal-closure
+          if-no-files-found: error
+      - name: Require terminal gain for promotion eligibility
+        run: |
+          python - <<'PY'
+          import json
+          r=json.load(open('evidence-out/terminal-closure/replay.json'))
+          assert r['terminal_gain'], 'No terminal gain: retained diagnostic, NOT promotion eligible'
+          PY
