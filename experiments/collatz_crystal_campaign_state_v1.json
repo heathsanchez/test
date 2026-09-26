@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V9",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V10",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -34,7 +34,11 @@
     "Lean theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit qualified at commit bbe821c56b07946f2bd4e9ac003991d6ba958ba0 run 36218076917",
     "elementary live-origin conservation P_(j-1)(X)=P_j(X)+C_j(X) for j>=2 and 0<X<=2^(j-1); new identity not yet Lean formalized",
     "exact rational live-language entropy upper bound F_j<2^(951j/1000); conditional eta=6/125 K=2 polynomial-window cutoff 271782",
-    "hosted finite live-origin replay: 524288 sources, 635 nonempty windows, zero envelope violations, 342 independent symbolic checks"
+    "hosted finite live-origin replay: 524288 sources, 635 nonempty windows, zero envelope violations, 342 independent symbolic checks",
+    "Lean all-depth elementary bias bound before first crossing: 3B<=q*3^q; exact actual-source floor interface; first-crossing type lower bound",
+    "Python/C++ exact agreement on 171476 necessary crossing types through j=271782: maximum source cap 7216089270<2^33, at j=125743 q=79335",
+    "P35 lattice strict-beater cap floor((Bstar-M0-2^j)/D), elementary consequence of M in 2^j Z; not a theorem about ties",
+    "first-crossing uniqueness and no later first crossing for the same source explicitly Lean checked in run 36224119410"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -50,7 +54,11 @@
     "Ansari automatic 4*3^44+2 interval extension as proof authority",
     "generic p-adic two-log bound applied directly to moving Collatz cocycle B",
     "global mechanical-itinerary exclusion without a coverage theorem",
-    "terminal-origin estimate alone as global closure without crossing existence and finite-cutoff coverage"
+    "terminal-origin estimate alone as global closure without crossing existence and finite-cutoff coverage",
+    "P37 competitor-type depth as a strictly decreasing rank: 111->129 via source 45127",
+    "P37 lattice-window cap as a strictly decreasing rank: 54->42 via source 103 increases cap 103->105; 40->21 ties at 160",
+    "P14/P16/DK/source-tail/P36 as necessary dependencies of the live-origin polynomial source-cap implication; elementary bias plus Rhin suffices instead",
+    "published convergence floor alone proves every finite canonical first-crossing cylinder has M<0"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
@@ -63,9 +71,11 @@
     "aperiodic mixed-base lift coherence on historical recurrent block core",
     "P30/P31 cross-scale joint 2-adic/3-adic coherence",
     "revived P4-P8 origin anti-concentration under P28/source-product boundary",
-    "live-origin carry operator: one conditional exhaustion theorem covers both late M>=0 terminals and never-crossing sources"
+    "live-origin carry operator: one conditional exhaustion theorem covers both late M>=0 terminals and never-crossing sources",
+    "P35 integer-lattice refinement and exact P37 scalar-rank counterexamples",
+    "P11/P17 source-floor direction simplified for the required finite cutoff by a new elementary Lean bias bound and independent type-cap certificate"
   ],
-  "next": "attack the all-depth live-prefix origin bound P_j((j+1)^15)<=K*2^(eta*j)*F_j*(j+1)^15/2^j using P35/P37 and the exact carry operator, or produce an exact obstruction; retain explicit crossing-existence and finite-cutoff obligations",
+  "next": "prove or decisively refute the all-depth live-origin inequality P_j((j+1)^15)<=2*2^(6j/125)*F_j*(j+1)^15/2^j for j>=271782, or with another explicitly covered onset. Use exact carry/joint structure; do not reuse the rejected depth or lattice-cap ranks. Finite minimal-counterexample coverage through 271782 uses the declared published convergence floor, not a claim of universal finite M<0.",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -83,7 +93,7 @@
     "A": [2,1,1,2,1,1,2,2],
     "B": [1,1,2,1,1,2,2,2]
   },
-  "current_irreducible_residual": "canonical terminal M>=0 exclusion remains the mathematical residual; global closure additionally requires finite crossing existence and complete finite-cutoff coverage. A live-origin polynomial-window exhaustion theorem is a coverage-complete candidate, not a proved consequence of the terminal-origin bound.",
+  "current_irreducible_residual": "canonical terminal M>=0 exclusion remains UNKNOWN. The coverage-complete live-origin route still needs its universal origin bound and explicit onset. Its elementary source cap is now Lean verified, and the finite minimal-counterexample range through 271782 is covered conditional on published convergence below 2^33; this is not a universal finite-cylinder negativity certificate.",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
@@ -94,7 +104,7 @@
     "revived": "P7/P8 marginal residue anti-concentration, previously insufficient for joint M but now sufficient for eventual terminal exclusion after P28/source-product reduction; not by itself global crossing existence",
     "sufficient_eta_demo": 0.04,
     "entropy_loss": 0.05004447281166946,
-    "implication_threshold_demo": "computed by qualified script; finite coverage to threshold still required"
+    "implication_threshold_demo": "computed by qualified script; finite coverage to any actual theorem onset remains explicit"
   },
   "live_origin_coverage_bridge": {
     "status": "ELEMENTARY_CONDITIONAL_BRIDGE_AND_EXACT_FINITE_REPLAY",
@@ -111,7 +121,36 @@
     "conditional_cutoff_K2": 271782,
     "onset": "UNKNOWN",
     "all_depth_origin_bound": "UNKNOWN",
-    "finite_gap": "P36 covers 447, not max(onset,271782)",
-    "new_lean_formalization": "NOT_DONE"
+    "finite_gap": "V9 P36-only gap superseded for minimal-counterexample coverage through 271782 by the V10 source-floor certificate, conditional on published convergence below 2^33. A later origin onset still needs additional coverage; universal finite canonical M<0 is not established by this replacement.",
+    "new_lean_formalization": "LIVE_COUNT_BRIDGE_NOT_DONE; ACTUAL_SOURCE_BIAS_INTERFACE_QUALIFIED_IN_V10"
+  },
+  "source_floor_gap_v1": {
+    "status": "WARRANTED_LEAN_BRIDGE_AND_INDEPENDENT_EXACT_FINITE_REPLAY",
+    "parent_head": "3ae1c9023b7883977132655ba771c9239828b9b0",
+    "qualified_head": "d1c8c36d016fa444e613a0b3553c8948d8790a65",
+    "run": 36224119410,
+    "job": 108354738591,
+    "conclusion": "SUCCESS",
+    "artifact": 10899609146,
+    "artifact_sha256": "79c5b0aaca9c4df4662bab47965e567de5e913775249141caa7ceda99f1f4ff2",
+    "source_product_regression_run": 36224119443,
+    "lean_file": "formal/Collatz/FirstCrossingBias.lean",
+    "lean_axioms": ["propext", "Quot.sound"],
+    "derivation": "docs/collatz_source_floor_gap_v1.md",
+    "evidence": "evidence/collatz-source-floor-gap-v1/result.json",
+    "python_script_sha256": "1a3b0bac355f00552c253a208dd8dfbdba0b72a7257476bc9e542933d0c1037b",
+    "depth": 271782,
+    "necessary_types": 171476,
+    "max_source_cap": 7216089270,
+    "maximizing_type": {"j": 125743, "q": 79335},
+    "required_convergence_floor": "2^33",
+    "external_convergence_authority": "Barina 2025, DOI 10.1007/s11227-025-07337-0 reports convergence below 2^71; full external computation not replayed here",
+    "finite_checker_boundary": "Python depth-indexed and C++ odd-count-indexed big-integer enumeration, not a Lean proof term",
+    "polynomial_cap": "n<j^15 follows from elementary 3B<=q3^q and declared Rhin Lambda>=j^(-13.3); real-analysis/Rhin not newly Lean formalized",
+    "p37_obstruction_scope": "two scalar ranks on competitor-type recursion only; no rejection of every possible P37 ranking",
+    "failed_runs_preserved": [
+      {"run": 36223928027, "status": "HARNESS_FAILURE_MISSING_BOOST"},
+      {"run": 36223997463, "status": "NUMERICAL_REPLAY_PASS_LEAN_RENDERING_FAILURE"}
+    ]
   }
 }
