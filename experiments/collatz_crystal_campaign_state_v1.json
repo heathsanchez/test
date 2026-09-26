@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V4",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V5",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -28,7 +28,8 @@
     "complete local 12-odd <=19-cost reverse-context language",
     "identity frontier has no recurrent symbolic I-only SCC",
     "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin",
-    "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin"
+    "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin",
+    "any exact infinitely repeated superunit odd-valuation block forces a negative rational block fixed point and cannot be realized by a positive integer"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -48,9 +49,10 @@
     "P37 residual-depth recursion",
     "local K/I/B chamber rewrite",
     "terminal zero-carry recursion",
-    "first-crossing zero-tail canonicalization"
+    "first-crossing zero-tail canonicalization",
+    "aperiodic mixed-base lift coherence on historical recurrent block core"
   ],
-  "next": "on canonical zero-carry cylinders, derive a well-founded recursion for the preterminal doubling gap G0=Y_parent-2R, since terminal M=2^(j-1)*G0",
+  "next": "decide whether the historical two-block survivor core admits unbounded zero-lift runs under exact canonical lifting; only a uniform bound would exclude finite natural seeds",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -61,5 +63,6 @@
     "status": "ZERO_FOR_ANY_HYPOTHETICAL_M_GE_0",
     "asymptotic_start": 94,
     "finite_negative_coverage": 447
-  }
+  },
+  "periodic_recurrent_block_status": "REJECTED_FOR_POSITIVE_INTEGER_BY_NEGATIVE_BLOCK_FIXED_POINT"
 }
