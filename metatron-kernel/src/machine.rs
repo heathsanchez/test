@@ -385,13 +385,22 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             let observed_target = self
-                                .expose_internal(target.clone(), transparency, budget.saturating_sub(1), false)
+                                .expose_internal(
+                                    target.clone(),
+                                    transparency,
+                                    budget.saturating_sub(1),
+                                    false,
+                                )
                                 .proven_value()
                                 .and_then(|exposure| match &exposure.value {
-                                    Value::Neutral(neutral) if neutral.spine.is_empty() => match &neutral.head {
-                                        NeutralHead::Const { name, .. } => Some((*name, Vec::new())),
-                                        NeutralHead::Free(_) => None,
-                                    },
+                                    Value::Neutral(neutral) if neutral.spine.is_empty() => {
+                                        match &neutral.head {
+                                            NeutralHead::Const { name, .. } => {
+                                                Some((*name, Vec::new()))
+                                            }
+                                            NeutralHead::Free(_) => None,
+                                        }
+                                    }
                                     _ => None,
                                 })
                                 .or_else(|| self.constructor_application(target));
