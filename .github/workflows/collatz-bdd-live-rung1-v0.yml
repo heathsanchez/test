@@ -1,0 +1,30 @@
+name: Collatz BDD Live Rung1 V0
+
+on:
+  push:
+    branches: [collatz-bdd-live-rung1-v0]
+    paths:
+      - '.github/workflows/collatz-bdd-live-rung1-v0.yml'
+      - 'experiments/collatz_exact_bdd.py'
+  workflow_dispatch:
+
+jobs:
+  exact:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --disable-pip-version-check dd
+      - name: Exact tightened 72-bit no-descent BDD
+        run: |
+          mkdir -p evidence/collatz-bdd-live-rung1-v0
+          python experiments/collatz_exact_bdd.py             --bits 72             --lower 2392312122059207475200             --upper 3143983941795894239301             --horizon 2000             --checkpoint 50             --out evidence/collatz-bdd-live-rung1-v0/result.json             | tee evidence/collatz-bdd-live-rung1-v0/run.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-bdd-live-rung1-v0
+          path: evidence/collatz-bdd-live-rung1-v0
+          if-no-files-found: warn
