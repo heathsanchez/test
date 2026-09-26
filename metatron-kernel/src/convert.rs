@@ -725,7 +725,13 @@ fn compare_neutral_heads(
         }
         _ => {
             if std::env::var_os("NUCLEUS_TRACE_CONVERSION").is_some() {
-                eprintln!("NUCLEUS_CONV_HEAD_MISMATCH left={:?} right={:?} left_spine={} right_spine={}", left.head, right.head, left.spine.len(), right.spine.len());
+                eprintln!(
+                    "NUCLEUS_CONV_HEAD_MISMATCH left={:?} right={:?} left_spine={} right_spine={}",
+                    left.head,
+                    right.head,
+                    left.spine.len(),
+                    right.spine.len()
+                );
             }
             Judgment::refuted("distinct-neutral-heads")
         }
