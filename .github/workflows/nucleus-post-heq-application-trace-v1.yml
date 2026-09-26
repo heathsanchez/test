@@ -1,0 +1,51 @@
+name: Nucleus post-HEq application trace v1
+
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-post-heq-application-trace-v1.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build exact head
+        run: |
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace post-HEq frontier
+        env:
+          NUCLEUS_TRACE_APPLICATION_INFER: "1"
+          NUCLEUS_TRACE_DOWNSTREAM: "1"
+        run: |
+          python - <<'PY'
+          import json,pathlib,subprocess,os
+          root=pathlib.Path('/tmp/tests'); binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=['good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson']
+          rows=[]
+          for name in targets:
+              p=root/name
+              with p.open('rb') as f:q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=os.environ,timeout=120)
+              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_DOWNSTREAM:' in x]
+              rows.append({'test':name,'rc':q.returncode,'marks':marks[-80:]})
+          print(json.dumps({'schema':'nucleus-post-heq-application-trace-v1','sha':os.environ['GITHUB_SHA'],'rows':rows},indent=2))
+          PY
