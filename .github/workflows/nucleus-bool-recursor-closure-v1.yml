@@ -43,18 +43,22 @@ jobs:
                   rows.append((str(p.relative_to(root)),expected,124)); continue
                 if env is not None:
                   print('TRACE',p.name); print(q.stderr.decode(errors='replace')[-12000:])
-                  name_records={}
+                  names={}
                   for raw in p.read_text().splitlines():
                     try: obj=json.loads(raw)
                     except Exception: continue
-                    if 'in' not in obj: continue
-                    rec=obj.get('in')
-                    if isinstance(rec,dict):
-                      ident=rec.get('id',rec.get('i'))
-                    else:
-                      ident=obj.get('id',obj.get('i'))
-                    if ident in (295,375): name_records[ident]=obj
-                  print('FOCUS_NAMES',json.dumps(name_records,sort_keys=True))
+                    if isinstance(obj.get('in'),int):
+                      ident=obj['in']
+                      if 'str' in obj:
+                        names[ident]=(obj['str']['pre'],obj['str']['str'])
+                      elif 'num' in obj:
+                        names[ident]=(obj['num']['pre'],str(obj['num']['i']))
+                  def full_name(ident):
+                    parts=[]; seen=set()
+                    while ident in names and ident not in seen:
+                      seen.add(ident); pre,part=names[ident]; parts.append(part); ident=pre
+                    return '.'.join(reversed(parts))
+                  print('FOCUS_NAMES',json.dumps({str(i):full_name(i) for i in (295,375)},sort_keys=True))
               rows.append((str(p.relative_to(root)),expected,q.returncode))
           wrong=[x for x in rows if x[2] in (0,1) and x[2]!=x[1]]
           errors=[x for x in rows if x[2] not in (0,1,2)]
