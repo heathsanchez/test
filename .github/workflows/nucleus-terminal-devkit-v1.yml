@@ -1,0 +1,35 @@
+name: Nucleus Terminal Development Kit
+on:
+  push:
+    branches: [nucleus-terminal-closure-v1]
+    paths: ['.github/workflows/nucleus-terminal-devkit-v1.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  devkit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: 'rustfmt,clippy'}
+      - name: Export toolchain and locked dependencies
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/devkit/toolchain /tmp/devkit/cargo
+          cp -a "$(rustc --print sysroot)/bin" /tmp/devkit/toolchain/
+          cp -a "$(rustc --print sysroot)/lib" /tmp/devkit/toolchain/
+          rm -rf /tmp/devkit/toolchain/lib/rustlib/src /tmp/devkit/toolchain/lib/rustlib/etc
+          cargo vendor --locked --versioned-dirs --manifest-path metatron-kernel/Cargo.toml /tmp/devkit/vendor > /tmp/devkit/vendor-config.toml
+          rustc --version --verbose > /tmp/devkit/rustc.txt
+          mkdir -p evidence-out/devkit
+          tar -czf evidence-out/devkit/offline-devkit.tar.gz -C /tmp/devkit .
+          sha256sum evidence-out/devkit/offline-devkit.tar.gz > evidence-out/devkit/offline-devkit.sha256
+          du -h evidence-out/devkit/offline-devkit.tar.gz
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-terminal-offline-devkit-${{ github.sha }}
+          path: evidence-out/devkit
+          compression-level: 0
+          if-no-files-found: error
