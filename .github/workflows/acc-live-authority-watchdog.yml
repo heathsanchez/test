@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/acc-live-authority-watchdog.yml"
   schedule:
+    # Keep the public/authenticated authority path alive even when GitHub drops scheduled runs.
     - cron: "17 * * * *"
   workflow_dispatch:
 
