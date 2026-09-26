@@ -1,4 +1,4 @@
-import Collatz.Shortcut
+import Collatz.SourceProduct
 
 namespace CollatzFinal
 
@@ -18,11 +18,9 @@ theorem regression_old_minimal_is_zero {n : Nat}
   have hp : 0 < n := by omega
   exact h.2 0 hp regression_zero_not_good
 
--- This deliberately fails before the positive-domain bridge is implemented.
 example {n : Nat}
     (hmin : MinimalBad (fun x => 0 < x ∧ ¬ CollatzGood x) n) :
     ∀ p, 0 < p → ¬ LowerMerge shortcut n p := by
-  intro p hp
-  exact lower_merge_closes_minimal_collatz_bad hmin p
+  exact SourceProduct.positive_minimal_no_lower_merge hmin
 
 end CollatzFinal

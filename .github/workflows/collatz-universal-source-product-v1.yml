@@ -4,6 +4,7 @@ on:
     branches: [collatz-universal-source-product-v1]
     paths:
       - 'formal/Collatz/**'
+      - 'experiments/source_product_v1/**'
       - '.github/workflows/collatz-universal-source-product-v1.yml'
   workflow_dispatch:
 permissions:
@@ -22,8 +23,19 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Build existing kernel
         run: lake build CollatzFinal
-      - name: Check normalization regression
+      - name: Check universal normalization and positive-source regression
         shell: bash
         run: |
           set -euo pipefail
-          lake env lean -DautoImplicit=false formal/Collatz/NormalizationRegression.lean
+          mkdir -p evidence/source-product-v1
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProduct.olean formal/Collatz/SourceProduct.lean | tee evidence/source-product-v1/proof.log
+          lake env lean -DautoImplicit=false formal/Collatz/NormalizationRegression.lean | tee evidence/source-product-v1/regression.log
+          git rev-parse HEAD > evidence/source-product-v1/commit.txt
+          lake env lean --version > evidence/source-product-v1/toolchain.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-universal-source-product-v1
+          path: evidence/source-product-v1
+          if-no-files-found: error
