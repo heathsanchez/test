@@ -1,0 +1,21 @@
+name: Collatz origin power window V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_origin_power_window_v1.cpp'
+      - '.github/workflows/collatz-origin-power-window-v1.yml'
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          mkdir -p evidence/collatz-origin-power-window-v1
+          g++ -O3 -std=c++17 experiments/collatz_origin_power_window_v1.cpp -o /tmp/origin_v1
+          /tmp/origin_v1 30 512 | tee evidence/collatz-origin-power-window-v1/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-origin-power-window-v1
+          path: evidence/collatz-origin-power-window-v1
