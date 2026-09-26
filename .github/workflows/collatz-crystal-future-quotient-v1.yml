@@ -28,6 +28,13 @@ jobs:
         run: |
           python experiments/collatz_stateful_future_kernel_v0.py --lo 3 --hi 8191 --K 128 --output /tmp/future.json >/tmp/future.log
           python -c "import json;d=json.load(open('/tmp/future.json'));assert d['representations']['CONTROL']['future_kernel_classes']>0;assert d['representations']['V3_VECTOR']['future_kernel_classes']==0;assert len(d['incomplete_sources'])==0;print('PASS_BOUNDED_V3_SEPARATOR_REPLAY')"
+      - name: Crystal finite certificate Lean gate
+        run: |
+          if command -v lake >/dev/null 2>&1; then
+            lake env lean formal/Collatz/CrystalFutureCertificate.lean
+          else
+            echo "lake unavailable"; exit 1
+          fi
       - name: Reject universal promotion without proof authorities
         if: success()
         run: |
