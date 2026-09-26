@@ -14,7 +14,8 @@ theorem regression_zero_not_good : ¬ CollatzGood 0 := by
 
 theorem regression_old_minimal_is_zero {n : Nat}
     (h : MinimalBad (fun x => ¬ CollatzGood x) n) : n = 0 := by
-  by_contra hn
+  apply Classical.byContradiction
+  intro hn
   have hp : 0 < n := by omega
   exact h.2 0 hp regression_zero_not_good
 

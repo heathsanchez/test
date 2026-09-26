@@ -28,11 +28,24 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p evidence/source-product-v1
+          git rev-parse HEAD > evidence/source-product-v1/commit.txt
+          lake env lean --version > evidence/source-product-v1/toolchain.txt
           ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz
           lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProduct.olean formal/Collatz/SourceProduct.lean | tee evidence/source-product-v1/proof.log
           lake env lean -DautoImplicit=false formal/Collatz/NormalizationRegression.lean | tee evidence/source-product-v1/regression.log
-          git rev-parse HEAD > evidence/source-product-v1/commit.txt
-          lake env lean --version > evidence/source-product-v1/toolchain.txt
+          ! grep -q 'sorryAx' evidence/source-product-v1/proof.log
+      - name: Check full affine provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false formal/Collatz/SourceProductAffine.lean | tee evidence/source-product-v1/affine.log
+          ! grep -q 'sorryAx' evidence/source-product-v1/affine.log
+      - name: Independent exact replay tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m unittest discover -s experiments/source_product_v1 -v 2>&1 | tee evidence/source-product-v1/python-tests.log
+          python experiments/source_product_v1/source_product.py > evidence/source-product-v1/result.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
