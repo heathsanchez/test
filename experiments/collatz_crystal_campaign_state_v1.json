@@ -1,25 +1,49 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V1",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V2",
   "global_status": "UNKNOWN",
-  "canonical_residual": "universal nontrivial legal first-coefficient-crossing cylinder with joint margin M >= 0",
+  "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
-  "warranted": [
-    "exact symbolic lift state (k,q,R,Y)",
-    "all-depth source-product normalization",
-    "finite exact absence of nontrivial M>=0 through J=35",
-    "certified negative margin maxima for 241 feasible classes through J=447",
-    "minimal-positive-bad source bridge"
-  ],
-  "superseded": [
-    "zero-tail simplification",
-    "fixed bounded residue quotient",
-    "endpoint-only source admission",
-    "recursive-sufficiency rung2 handoff previously used on this branch",
-    "finite portal corpus as evidence for the M>=0 region"
-  ],
-  "candidate_bridge": {
-    "facts": ["2^19 < 3^12", "3^5 < 2^8", "8*12 - 19*5 = 1"],
-    "meaning": "old S-unit chamber scales are consecutive continued-fraction block scales also visible in the reverse mechanical word"
+  "universal_bridge": {
+    "theorem": "CollatzFinal.SourceProduct.canonical_margin_nonnegative_of_nondescending",
+    "commit": "22910274253cc1d63e977ba4a526d6c49db7de02",
+    "run": 36216024968,
+    "status": "WARRANTED_LEAN"
   },
-  "next": "derive chamber structure directly from exact M cylinders and seek a well-founded reduction"
+  "local_rewrite_state": {
+    "modulus": "3^12",
+    "cheaper_contexts": 11522,
+    "identity_contexts": 15947,
+    "blocked_contexts": 326825,
+    "cheaper_threshold_max": 86,
+    "identity_recurrent_sccs": 0,
+    "forced_residual_transition": "I --even--> B unless a cheaper K contraction occurs"
+  },
+  "warranted": [
+    "exact symbolic lift (k,q,R,Y) and M verifier",
+    "all-depth source-product normalization",
+    "non-descent at coefficient crossing -> canonical M>=0 (Lean)",
+    "finite exact no nontrivial M>=0 through J=35",
+    "certified negative global margin maxima for 241 feasible classes through J=447",
+    "P35 local-window margin compression algebra",
+    "complete local 12-odd <=19-cost reverse-context language",
+    "identity frontier has no recurrent symbolic I-only SCC"
+  ],
+  "rejected_or_superseded": [
+    "zero-tail as simplification",
+    "fixed bounded residue quotient / raw SCC proof",
+    "endpoint-only or static source admission",
+    "Farey-rung-specific residual as global frontier",
+    "3-adic context alone forces eventual contraction",
+    "tightening near-return gap activates old reverse grammar",
+    "old P44 finite portal corpus as evidence for universal M>=0 states"
+  ],
+  "active_lineage": [
+    "P10/P12 joint M verifier",
+    "September source-product bridge",
+    "P35 local-window compression",
+    "P37 residual-depth recursion",
+    "local K/I/B chamber rewrite"
+  ],
+  "next": "derive the exact effect of the forced identity-to-blocked even transition on canonical M / first-crossing depth and prove a well-founded reduction, or produce an exact counterexample to that ranking",
+  "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders"
 }
