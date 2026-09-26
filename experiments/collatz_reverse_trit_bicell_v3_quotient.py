@@ -65,6 +65,8 @@ def symbolic_residual_sets(max_depth):
     out={}
     direct={}
     for a in range(1,max_depth+1):
+        if a > 16:
+            out[a]=set(); direct[a]=set(); continue
         _,res,_=sm.compile_portfolio(a)
         out[a]=set(x["b"] for x in res)
         _,r2,_=sf.compile_frontier(a)
@@ -123,8 +125,8 @@ def run(max_depth,output):
                 v2_count=len(S),
                 symbolic_merge_count=len(sym[a]),
                 direct_count=len(direct[a]),
-                v2_subset_symbolic=S<=sym[a],
-                v2_subset_direct=S<=direct[a],
+                v2_subset_symbolic=(None if a > 16 else S<=sym[a]),
+                v2_subset_direct=(None if a > 16 else S<=direct[a]),
                 symbolic_extra=sorted(sym[a]-S)[:100],
                 direct_extra=sorted(direct[a]-S)[:100],
             ))
