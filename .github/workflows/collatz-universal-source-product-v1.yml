@@ -1,0 +1,29 @@
+name: Collatz universal source product V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/**'
+      - '.github/workflows/collatz-universal-source-product-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  theorem-gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build existing kernel
+        run: lake build CollatzFinal
+      - name: Check normalization regression
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false formal/Collatz/NormalizationRegression.lean
