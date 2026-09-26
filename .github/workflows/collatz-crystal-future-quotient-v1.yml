@@ -24,6 +24,10 @@ jobs:
         run: |
           cd experiments
           python -m unittest -v test_collatz_crystal_future_quotient_v1.py test_collatz_crystal_separator_refinement_v1.py
+      - name: Replay qualified Collatz future separator
+        run: |
+          python experiments/collatz_stateful_future_kernel_v0.py --lo 3 --hi 8191 --K 128 --output /tmp/future.json >/tmp/future.log
+          python -c "import json;d=json.load(open('/tmp/future.json'));assert d['representations']['CONTROL']['future_kernel_classes']>0;assert d['representations']['V3_VECTOR']['future_kernel_classes']==0;assert len(d['incomplete_sources'])==0;print('PASS_BOUNDED_V3_SEPARATOR_REPLAY')"
       - name: Reject universal promotion without proof authorities
         if: success()
         run: |
