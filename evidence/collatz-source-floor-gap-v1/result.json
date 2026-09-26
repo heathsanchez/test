@@ -1,0 +1,47 @@
+{
+  "elementary_bound": "3*B <= q*3^q; non-descent implies 3*D*n <= q*3^q",
+  "external_boundary": "Published convergence below 2^33 is sufficient but not recomputed here.",
+  "finite_caps": {
+    "below_convenient_floor": true,
+    "convenient_floor": 8589934592,
+    "depth": 271782,
+    "max_nondescending_source_cap": 7216089270,
+    "maximizing_record": {"cap": 7216089270, "j": 125743, "q": 79335},
+    "minimal_required_published_floor": 7216089271,
+    "possible_first_crossing_types": 171476,
+    "record_count": 36,
+    "records": [
+      {"cap":1,"j":2,"q":1},{"cap":5,"j":5,"q":3},{"cap":31,"j":8,"q":5},
+      {"cap":144,"j":27,"q":17},{"cap":381,"j":46,"q":29},{"cap":1185,"j":65,"q":41},
+      {"cap":3326,"j":149,"q":94},{"cap":6700,"j":233,"q":147},{"cap":12790,"j":317,"q":200},
+      {"cap":27071,"j":401,"q":253},{"cap":99729,"j":485,"q":306},{"cap":330587,"j":1539,"q":971},
+      {"cap":583014,"j":2593,"q":1636},{"cap":860179,"j":3647,"q":2301},{"cap":1165905,"j":4701,"q":2966},
+      {"cap":1504843,"j":5755,"q":3631},{"cap":1882715,"j":6809,"q":4296},{"cap":2306635,"j":7863,"q":4961},
+      {"cap":2785564,"j":8917,"q":5626},{"cap":3330949,"j":9971,"q":6291},{"cap":3957649,"j":11025,"q":6956},
+      {"cap":4685312,"j":12079,"q":7621},{"cap":5540466,"j":13133,"q":8286},{"cap":6559828,"j":14187,"q":8951},
+      {"cap":7795714,"j":15241,"q":9616},{"cap":9325297,"j":16295,"q":10281},{"cap":11267375,"j":17349,"q":10946},
+      {"cap":13814799,"j":18403,"q":11611},{"cap":17302830,"j":19457,"q":12276},{"cap":22370352,"j":20511,"q":12941},
+      {"cap":30404188,"j":21565,"q":13606},{"cap":45086468,"j":22619,"q":14271},{"cap":80495027,"j":23673,"q":14936},
+      {"cap":285814986,"j":24727,"q":15601},{"cap":1447674321,"j":75235,"q":47468},{"cap":7216089270,"j":125743,"q":79335}
+    ],
+    "type_rows_sha256": "8216be5be97304bc66f6ae6b5f94c04ed93b083768cf0ea4140642b840dfb663"
+  },
+  "global_collatz": "UNKNOWN",
+  "not_proved": ["universal live-origin estimate and its onset", "universal canonical M>=0 cylinder exclusion", "a universal P37 residual-preserving decreasing rank"],
+  "onset_boundary": "Finite minimal-counterexample gap removed only through the explicit scanned depth.",
+  "p35_p37": {
+    "counts": {"lattice_base_exits":1918,"lattice_competitors":3785,"lattice_distinct_type_edges":1866,"lattice_same_type_comparisons":1,"old_competitors":4174},
+    "depth_rank_counterexamples": [{"child_j":129,"child_lattice_cap":45154,"competitor_endpoint":29405,"parent_endpoint":43444,"parent_incumbent":45055,"parent_j":111,"parent_lattice_cap":45406,"parent_old_cap":45434,"source":45127}],
+    "disposition": "Depth rank and lattice-cap rank rejected; P37 as a whole remains UNKNOWN.",
+    "lattice_cap_rank_counterexamples": [
+      {"child_j":21,"child_lattice_cap":160,"competitor_endpoint":122,"parent_endpoint":122,"parent_incumbent":155,"parent_j":40,"parent_lattice_cap":160,"parent_old_cap":164,"source":159},
+      {"child_j":42,"child_lattice_cap":105,"competitor_endpoint":61,"parent_endpoint":46,"parent_incumbent":47,"parent_j":54,"parent_lattice_cap":103,"parent_old_cap":117,"source":103}
+    ],
+    "nontrivial_observed_types":104,
+    "source_scan":524288
+  },
+  "parent_head": "3ae1c9023b7883977132655ba771c9239828b9b0",
+  "schema": "COLLATZ_SOURCE_FLOOR_GAP_V1",
+  "script_sha256": "1a3b0bac355f00552c253a208dd8dfbdba0b72a7257476bc9e542933d0c1037b",
+  "small_word_audit": {"affine_and_elementary_bias_checks":18492,"depth":18}
+}
