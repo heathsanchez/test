@@ -5,7 +5,7 @@ on:
     branches: [nucleus-dependency-closure-exec-v1]
     paths: [".github/workflows/nucleus-post-heq-application-trace-v1.yml"]
   workflow_dispatch:
-# inspect name record schema
+# inspect raw records carrying mismatched ids
 
 permissions:
   contents: read
@@ -54,7 +54,7 @@ jobs:
                       o=json.loads(line)
                   except Exception:
                       continue
-                  if (o.get('tag')=='name' or o.get('kind')=='name') and (o.get('i') in (295,375) or o.get('id') in (295,375)):
+                  if 295 in o.values() or 375 in o.values():
                       names[o.get('i',o.get('id'))]=o
               rows.append({'test':name,'rc':q.returncode,'names':names,'marks':marks[-80:]})
           print(json.dumps({'schema':'nucleus-post-heq-application-trace-v1','sha':os.environ['GITHUB_SHA'],'rows':rows},indent=2))
