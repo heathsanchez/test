@@ -628,18 +628,25 @@ impl<'a> Machine<'a> {
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
+        let mut remaining = 256usize;
         loop {
+            if remaining == 0 {
+                return None;
+            }
+            remaining -= 1;
             match self.expressions.get(closure.expr)? {
                 Expr::App { fun, arg } => {
                     arguments.push(closure.sibling(*arg, closure.env.clone()));
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::BVar(index) => match closure.env.lookup(*index)? {
-                    EnvBinding::Closure(bound) => {
-                        closure = bound;
-                    }
+                    EnvBinding::Closure(bound) => closure = bound,
                     EnvBinding::Free(_) => return None,
                 },
+                Expr::Let { value, body, .. } => {
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
+                }
                 Expr::Const { name, .. } => {
                     arguments.reverse();
                     return Some((*name, arguments));
