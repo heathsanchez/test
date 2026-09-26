@@ -384,6 +384,9 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
+                            if std::env::var_os("NUCLEUS_TRACE_RECURSOR_TARGET").is_some() {
+                                eprintln!("NUCLEUS_RECURSOR_TARGET:name={}:required={}:pending={}:arguments={:?}:target_ctor={:?}", name.0, required, pending.len(), arguments, self.constructor_application(target));
+                            }
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
                                 && let Some(rule) = reduction
