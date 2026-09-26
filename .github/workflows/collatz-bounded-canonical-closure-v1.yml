@@ -1,0 +1,64 @@
+name: Collatz bounded canonical closure V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_cst_floor_v1.*'
+      - '.github/workflows/collatz-bounded-canonical-closure-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-bounded-closure:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install exact-integer dependency
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libboost-dev
+      - name: Replay full source covers and exact coefficient cap
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-bounded-canonical-closure-v1
+          g++ -O3 -std=c++17 experiments/collatz_cst_floor_v1.cpp -o /tmp/cst-floor
+          g++ -O3 -std=c++17 experiments/collatz_source_floor_gap_v1.cpp -o /tmp/type-cap
+          python -S experiments/collatz_cst_floor_v1.py --binary /tmp/cst-floor --cap-binary /tmp/type-cap --out evidence/collatz-bounded-canonical-closure-v1
+          python -S - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/collatz-bounded-canonical-closure-v1/result.json').read_text())
+          assert r['full_histogram_sha256']=='51fcdcce2c81ddae9cea127e2c68c4282eae7718a15020db9eab2da5660217b5'
+          assert r['bounded_canonical_residual_depth_inclusive']==271782
+          assert r['global_collatz']=='UNKNOWN'
+          print('PASS: bounded canonical exclusion only; unbounded closure remains UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-bounded-canonical-closure-v1/commit.txt
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Recheck elementary bias bridge and P37 rejection boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean --version > evidence/collatz-bounded-canonical-closure-v1/toolchain.txt
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz
+          for module in SourceProduct SourceProductAffine CoefficientCrossing; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/collatz-bounded-canonical-closure-v1/$module.log"
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/FirstCrossingBias.lean | tee evidence/collatz-bounded-canonical-closure-v1/bias.log
+          lake env lean -DautoImplicit=false formal/Collatz/P37Rejection.lean | tee evidence/collatz-bounded-canonical-closure-v1/P37Rejection.log
+          ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-bounded-canonical-closure-v1/*.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-bounded-canonical-closure-v1
+          path: evidence/collatz-bounded-canonical-closure-v1
+          if-no-files-found: error
