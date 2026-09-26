@@ -281,9 +281,32 @@ example : endpoint (stateAt 3 1) = endpoint (stateAt 6 2) ∧
 #print axioms universal_normalization
 #print axioms all_depth_common_tail
 #print axioms step_endpoint
+#print axioms positive_minimal_bad_odd
+#print axioms odd_difference_even
 #print axioms minimal_path_live
 #print axioms collatz_of_product_kernel_empty
 #print axioms collatz_of_ranked_simulation
 
 end SourceProduct
 end CollatzFinal
+
+/-- Every minimal positive bad source is odd: an even source immediately merges
+    with its smaller positive shortcut successor. -/
+theorem positive_minimal_bad_odd {n : Nat}
+    (hmin : MinimalBad PositiveBad n) : n % 2 = 1 := by
+  have hpar : n % 2 = 0 ∨ n % 2 = 1 := by omega
+  rcases hpar with he | ho
+  · have hp : 0 < shortcut n := shortcut_positive n hmin.1.1
+    apply False.elim
+    apply positive_minimal_no_lower_merge hmin (shortcut n) hp
+    refine ⟨?_, 1, 0, ?_⟩
+    · simp [shortcut, he]
+      omega
+    · simp [iter]
+  · exact ho
+
+theorem odd_difference_even {n y : Nat}
+    (hn : n % 2 = 1) (hy : y % 2 = 1) :
+    (y - n) % 2 = 0 := by
+  omega
+
