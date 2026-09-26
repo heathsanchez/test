@@ -1,0 +1,23 @@
+name: Nucleus neutral names v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-neutral-names-v1.yml"]
+permissions: {contents: read}
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/t.zip
+          mkdir -p /tmp/a /tmp/t
+          unzip -q /tmp/t.zip -d /tmp/a
+          tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - env: {NUCLEUS_TRACE_NAME_IDS: "1", NUCLEUS_TRACE_CONVERSION: "1"}
+        run: metatron-kernel/target/release/metatron-kernel < /tmp/t/good/perf/magma-list-deep-n21.ndjson 2>&1 | grep -E 'NUCLEUS_NAME_ID|NUCLEUS_CONV_HEAD_MISMATCH' | tail -10 || true
