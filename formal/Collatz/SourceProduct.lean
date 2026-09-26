@@ -267,6 +267,26 @@ theorem collatz_of_ranked_simulation
   intro s t hs hst
   exact hdecrease s t hs (hstep s t hs hst)
 
+/-- Every minimal positive bad source is odd: an even source immediately merges
+    with its smaller positive shortcut successor. -/
+theorem positive_minimal_bad_odd {n : Nat}
+    (hmin : MinimalBad PositiveBad n) : n % 2 = 1 := by
+  have hpar : n % 2 = 0 ∨ n % 2 = 1 := by omega
+  rcases hpar with he | ho
+  · have hp : 0 < shortcut n := shortcut_positive n hmin.1.1
+    apply False.elim
+    apply positive_minimal_no_lower_merge hmin (shortcut n) hp
+    refine ⟨?_, 1, 0, ?_⟩
+    · simp [shortcut, he]
+      omega
+    · simp [iter]
+  · exact ho
+
+theorem odd_difference_even {n y : Nat}
+    (hn : n % 2 = 1) (hy : y % 2 = 1) :
+    (y - n) % 2 = 0 := by
+  omega
+
 -- A zero tail is not a terminal witness and is not a global strict rank.
 example : (stateAt 27 5).tail = 0 ∧ (stateAt 27 6).tail = 0 ∧
     endpoint (stateAt 27 5) = 71 ∧ endpoint (stateAt 27 6) = 107 := by
@@ -289,24 +309,4 @@ example : endpoint (stateAt 3 1) = endpoint (stateAt 6 2) ∧
 
 end SourceProduct
 end CollatzFinal
-
-/-- Every minimal positive bad source is odd: an even source immediately merges
-    with its smaller positive shortcut successor. -/
-theorem positive_minimal_bad_odd {n : Nat}
-    (hmin : MinimalBad PositiveBad n) : n % 2 = 1 := by
-  have hpar : n % 2 = 0 ∨ n % 2 = 1 := by omega
-  rcases hpar with he | ho
-  · have hp : 0 < shortcut n := shortcut_positive n hmin.1.1
-    apply False.elim
-    apply positive_minimal_no_lower_merge hmin (shortcut n) hp
-    refine ⟨?_, 1, 0, ?_⟩
-    · simp [shortcut, he]
-      omega
-    · simp [iter]
-  · exact ho
-
-theorem odd_difference_even {n y : Nat}
-    (hn : n % 2 = 1) (hy : y % 2 = 1) :
-    (y - n) % 2 = 0 := by
-  omega
 
