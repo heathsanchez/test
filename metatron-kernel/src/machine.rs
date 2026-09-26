@@ -391,11 +391,18 @@ impl<'a> Machine<'a> {
                                 && std::env::var_os("NUCLEUS_TRACE_BOOL_TARGET").is_some()
                                 && self.bool_primitives.is_some()
                             {
+                                let binding = match self.expressions.get(target.expr) {
+                                    Some(Expr::BVar(index)) => target.env.lookup(*index).cloned(),
+                                    _ => None,
+                                };
                                 eprintln!(
-                                    "NUCLEUS_BOOL_TARGET recursor={:?} target_expr={:?} target_node={:?}",
+                                    "NUCLEUS_BOOL_TARGET recursor={:?} levels={:?} args={:?} target_expr={:?} target_node={:?} target_binding={:?}",
                                     name,
+                                    levels,
+                                    arguments,
                                     target.expr,
-                                    self.expressions.get(target.expr)
+                                    self.expressions.get(target.expr),
+                                    binding
                                 );
                             }
                             if let Some((constructor, constructor_arguments)) = observed_target
