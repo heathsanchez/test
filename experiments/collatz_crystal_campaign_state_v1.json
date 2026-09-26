@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V2",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V3",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -26,7 +26,8 @@
     "certified negative global margin maxima for 241 feasible classes through J=447",
     "P35 local-window margin compression algebra",
     "complete local 12-odd <=19-cost reverse-context language",
-    "identity frontier has no recurrent symbolic I-only SCC"
+    "identity frontier has no recurrent symbolic I-only SCC",
+    "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -35,15 +36,22 @@
     "Farey-rung-specific residual as global frontier",
     "3-adic context alone forces eventual contraction",
     "tightening near-return gap activates old reverse grammar",
-    "old P44 finite portal corpus as evidence for universal M>=0 states"
+    "old P44 finite portal corpus as evidence for universal M>=0 states",
+    "terminal carry-1 branch of the first-crossing M>=0 residual"
   ],
   "active_lineage": [
     "P10/P12 joint M verifier",
     "September source-product bridge",
     "P35 local-window compression",
     "P37 residual-depth recursion",
-    "local K/I/B chamber rewrite"
+    "local K/I/B chamber rewrite",
+    "terminal zero-carry recursion"
   ],
-  "next": "derive the exact effect of the forced identity-to-blocked even transition on canonical M / first-crossing depth and prove a well-founded reduction, or produce an exact counterexample to that ranking",
-  "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders"
+  "next": "derive and rank the zero-carry parent recursion: at first crossing R is unchanged and Y_terminal=Y_parent/2; M>=0 forces Y_parent>=2R",
+  "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
+  "terminal_carry_split": {
+    "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
+    "carry0": "ONLY_LIVE_BRANCH",
+    "finite_discovery_run": 36217133343
+  }
 }
