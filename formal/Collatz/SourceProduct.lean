@@ -41,17 +41,17 @@ theorem split_mul (a u : Nat) :
   calc
     a * u = a * (u % 2 + 2 * (u / 2)) :=
       congrArg (fun x => a * x) (Nat.mod_add_div u 2).symm
-    _ = _ := by simp [Nat.mul_add, Nat.mul_assoc, Nat.mul_left_comm]
+    _ = _ := by simp [Nat.mul_add, Nat.mul_left_comm]
 
 theorem shortcut_shift (x z : Nat) :
     shortcut (x + 2 * z) =
       shortcut x + (if x % 2 = 0 then z else 3 * z) := by
   by_cases hx : x % 2 = 0
   · have hp : (x + 2 * z) % 2 = 0 := by omega
-    simp only [shortcut, hx, hp, if_true]
+    simp only [shortcut, hx, hp, ite_true]
     omega
   · have hp : ¬ (x + 2 * z) % 2 = 0 := by omega
-    simp only [shortcut, hx, hp, if_false]
+    simp only [shortcut, hx, hp, ite_false]
     omega
 
 theorem step_endpoint (s : State) :
@@ -65,7 +65,7 @@ theorem step_endpoint (s : State) :
     3 ^ (if v % 2 = 0 then s.odds else s.odds + 1) * (s.tail / 2) = _
   rw [hy, shortcut_shift]
   by_cases h : v % 2 = 0 <;>
-    simp [h, Nat.pow_succ, Nat.mul_assoc, Nat.mul_left_comm, Nat.mul_comm]
+    simp [h, Nat.pow_succ, Nat.mul_left_comm, Nat.mul_comm]
 
 theorem start_valid {n : Nat} (hn : 0 < n) : Valid (start n) := by
   simpa [Valid, start] using hn
@@ -92,11 +92,9 @@ theorem step_valid {s : State} (hs : Valid s) : Valid (step s) := by
       simp only [hb, Nat.mul_zero, Nat.mul_one, Nat.add_zero, Nat.pow_succ] <;>
       omega
   · by_cases h : v % 2 = 0
-    · simp only [h, if_true, shortcut]
-      simp only [h, if_true]
+    · simp only [h, ite_true, shortcut]
       omega
-    · simp only [h, if_false, shortcut, Nat.pow_succ]
-      simp only [h, if_false]
+    · simp only [h, ite_false, shortcut, Nat.pow_succ]
       omega
   · calc
       s.source = s.sourceResidue + 2 ^ s.depth * s.tail := he
@@ -143,6 +141,41 @@ theorem universal_normalization {n : Nat} (hn : 0 < n) (k : Nat) :
   · simpa [s, at_source, at_depth] using hs.2.2.2
   · exact (at_endpoint n k).symm
 
+theorem common_tail {s : State} (hs : Valid s) :
+    s.source / 2 ^ s.depth = s.tail ∧
+    endpoint s / 3 ^ s.odds = s.tail := by
+  rcases hs with ⟨_, hr, hd, he⟩
+  constructor
+  · rw [he, Nat.add_mul_div_left _ _ (by omega), Nat.div_eq_of_lt hr]
+    simp
+  · change (s.endpointResidue + 3 ^ s.odds * s.tail) / 3 ^ s.odds = s.tail
+    rw [Nat.add_mul_div_left _ _ (by omega), Nat.div_eq_of_lt hd]
+    simp
+
+theorem all_depth_common_tail {n : Nat} (hn : 0 < n) (k : Nat) :
+    iter shortcut k n / 3 ^ (stateAt n k).odds = n / 2 ^ k := by
+  have h := common_tail (at_valid hn k)
+  have e := h.2.trans h.1.symm
+  simpa only [at_endpoint, at_source, at_depth] using e
+
+theorem tail_strict_until_zero (s : State) (h : 0 < s.tail) :
+    (step s).tail < s.tail := by
+  change s.tail / 2 < s.tail
+  omega
+
+theorem tail_zero_persists (s : State) (h : s.tail = 0) :
+    (step s).tail = 0 := by
+  simp [step, h]
+
+/-- This presentation quotient is exact but still has an unbounded state space. -/
+def projection (s : State) : Nat × Nat := (s.source, endpoint s)
+
+theorem projection_step (s : State) :
+    projection (step s) = (s.source, shortcut (endpoint s)) := by
+  change ((step s).source, endpoint (step s)) = (s.source, shortcut (endpoint s))
+  rw [step_endpoint]
+  rfl
+
 /-- Zero is excluded from the counterexample domain. -/
 def PositiveBad (n : Nat) : Prop := 0 < n ∧ ¬ CollatzGood n
 
@@ -164,7 +197,7 @@ theorem positive_minimal_no_lower_merge {n : Nat}
   exact hmin.1.2
     (lower_merge_preserves_eventual shortcut Terminal terminal_forward_invariant hm hpGood)
 
-/-- An exit must independently establish the original source's goodness. -/
+/-- Exit candidates; a minimal positive bad source excludes all three. -/
 def Exit (s : State) : Prop :=
   Terminal (endpoint s) ∨
   (0 < endpoint s ∧ endpoint s < s.source) ∨
@@ -239,7 +272,14 @@ example : (stateAt 27 5).tail = 0 ∧ (stateAt 27 6).tail = 0 ∧
     endpoint (stateAt 27 5) = 71 ∧ endpoint (stateAt 27 6) = 107 := by
   decide
 
+-- Equal endpoints need not have equal source-relative descent outcomes.
+example : endpoint (stateAt 3 1) = endpoint (stateAt 6 2) ∧
+    ¬ endpoint (stateAt 3 1) < (stateAt 3 1).source ∧
+    endpoint (stateAt 6 2) < (stateAt 6 2).source := by
+  decide
+
 #print axioms universal_normalization
+#print axioms all_depth_common_tail
 #print axioms step_endpoint
 #print axioms minimal_path_live
 #print axioms collatz_of_product_kernel_empty
