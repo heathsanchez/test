@@ -1,0 +1,24 @@
+name: Collatz blocked 3adic SCC V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_blocked_3adic_scc_v0.py'
+      - '.github/workflows/collatz-blocked-3adic-scc-v0.yml'
+  workflow_dispatch:
+jobs:
+  scc:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-blocked-3adic-scc-v0
+          python experiments/collatz_blocked_3adic_scc_v0.py | tee evidence/collatz-blocked-3adic-scc-v0/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-blocked-3adic-scc-v0
+          path: evidence/collatz-blocked-3adic-scc-v0
