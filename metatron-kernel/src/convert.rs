@@ -732,6 +732,7 @@ fn compare_neutral_heads(
                     left.spine.len(),
                     right.spine.len()
                 );
+                eprintln!("NUCLEUS_CONV_SPINES left={:?} right={:?}", left.spine, right.spine);
             }
             Judgment::refuted("distinct-neutral-heads")
         }
