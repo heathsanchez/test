@@ -166,5 +166,5 @@ if __name__=="__main__":
     ap.add_argument("--max-q2-depth",type=int,default=14)
     ap.add_argument("--output",type=Path,required=True)
     a=ap.parse_args()
-    assert 2<=a.max_q2_depth<=16
+    assert 2<=a.max_q2_depth<=24
     run(a.max_q2_depth,a.output)
