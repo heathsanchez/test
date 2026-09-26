@@ -1,0 +1,125 @@
+{
+  "challenge_id": "ac-05274",
+  "epistemic_status": "REJECTED",
+  "rejection_scope": "fixed pinned ACSolverX GS-Sub quotient route under existing V3 carry-symmetry exact compiler language",
+  "live_authority": {
+    "run_id": 36258008790,
+    "artifact_id": 10915926978,
+    "utc": "2026-09-26T21:08:42.523311+00:00",
+    "live_best": 158,
+    "quota_used": 0,
+    "quota_limit": 40,
+    "live_state_sha256": "ef344bf4f8aa683b858a85a2d07bd1597f29955c113b245333e2d2af280e0df0"
+  },
+  "source_alignment": {
+    "map_run_id": 34727788755,
+    "map_artifact_id": 10847946381,
+    "ac1m_index": 383724,
+    "ac19_index": null,
+    "canonical_pair": [
+      "YXyXyXXyx",
+      "YXXXyXyXyXyXyxYx"
+    ],
+    "canonical_total_length": 25
+  },
+  "pinned_authority": {
+    "official_verifier_commit": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "acsolverx_commit": "6a12515fe1d95178a483b76d5553266e61122417",
+    "move_spec_version": "ac-r2-v1"
+  },
+  "exact_initial_relators": [
+    [
+      -2,
+      -1,
+      2,
+      -1,
+      2,
+      -1,
+      -1,
+      2,
+      1
+    ],
+    [
+      -2,
+      -1,
+      -1,
+      -1,
+      2,
+      -1,
+      2,
+      -1,
+      2,
+      -1,
+      2,
+      -1,
+      2,
+      1,
+      -2,
+      1
+    ]
+  ],
+  "gssub_replay": {
+    "popped_nodes": 4864,
+    "seen_states": 361933,
+    "quotient_steps": 119,
+    "quotient_depth_gate": "PASS",
+    "reason": "119 < 158"
+  },
+  "exact_prefix_compiler": {
+    "compiler": "carry-symmetry-exact-v3",
+    "exhaustive_no_beam": true,
+    "prefix_layers": [
+      {
+        "quotient_step": 1,
+        "exact_states": 30,
+        "min_atomic_cost": 7,
+        "residual_steps": 118,
+        "fixed_route_lower_bound": 125
+      },
+      {
+        "quotient_step": 2,
+        "exact_states": 114,
+        "min_atomic_cost": 20,
+        "residual_steps": 117,
+        "fixed_route_lower_bound": 137
+      },
+      {
+        "quotient_step": 3,
+        "exact_states": 144,
+        "min_atomic_cost": 27,
+        "residual_steps": 116,
+        "fixed_route_lower_bound": 143
+      },
+      {
+        "quotient_step": 4,
+        "exact_states": 180,
+        "min_atomic_cost": 35,
+        "residual_steps": 115,
+        "fixed_route_lower_bound": 150
+      },
+      {
+        "quotient_step": 5,
+        "exact_states": 180,
+        "min_atomic_cost": 41,
+        "residual_steps": 114,
+        "fixed_route_lower_bound": 155
+      },
+      {
+        "quotient_step": 6,
+        "exact_states": 252,
+        "min_atomic_cost": 45,
+        "residual_steps": 113,
+        "fixed_route_lower_bound": 158
+      }
+    ],
+    "proof": "Every remaining state-changing quotient transition requires at least one official atomic move; after six transitions the minimum exact prefix cost is 45, hence every continuation of this fixed 119-step route costs at least 45+113=158 official moves.",
+    "admission_result": "REJECTED",
+    "strict_improvement_required": true,
+    "reason": "fixed-route lower bound equals live best; cannot produce a strict leaderboard improvement"
+  },
+  "publication": {
+    "official_full_candidate_replay_required": false,
+    "reason": "no candidate can beat the live record within the verified fixed-route/compiler scope",
+    "submitted": false
+  }
+}
