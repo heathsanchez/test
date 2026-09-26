@@ -36,6 +36,7 @@ jobs:
         env:
           NUCLEUS_TRACE_APPLICATION_INFER: "1"
           NUCLEUS_TRACE_DOWNSTREAM: "1"
+          NUCLEUS_TRACE_CONVERSION: "1"
         run: |
           python - <<'PY'
           import json,pathlib,subprocess,os
@@ -45,7 +46,7 @@ jobs:
           for name in targets:
               p=root/name
               with p.open('rb') as f:q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,env=os.environ,timeout=120)
-              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_DOWNSTREAM:' in x]
+              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_DOWNSTREAM:' in x or 'NUCLEUS_CONV_HEAD_MISMATCH' in x]
               rows.append({'test':name,'rc':q.returncode,'marks':marks[-80:]})
           print(json.dumps({'schema':'nucleus-post-heq-application-trace-v1','sha':os.environ['GITHUB_SHA'],'rows':rows},indent=2))
           PY
