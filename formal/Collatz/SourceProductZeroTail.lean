@@ -46,10 +46,21 @@ theorem collatz_of_zero_tail_kernel_empty
     ∀ n, 0 < n → CollatzGood n := by
   exact collatz_of_product_kernel_empty (kernel_empty_of_zero_tail hempty)
 
+/-- Exact boundary: the remaining zero-tail kernel problem is equivalent to the
+    original positive Collatz termination statement. The normalization has not
+    by itself supplied the missing termination invariant. -/
+theorem zero_tail_kernel_empty_iff_collatz :
+    KernelEmpty ZeroTailLive Next ↔
+      (∀ n, 0 < n → CollatzGood n) := by
+  constructor
+  · exact collatz_of_zero_tail_kernel_empty
+  · exact zero_tail_kernel_empty_of_collatz
+
 #print axioms zero_tail_source_residue
 #print axioms zero_tail_endpoint_residue_step
 #print axioms kernel_empty_of_zero_tail
 #print axioms collatz_of_zero_tail_kernel_empty
+#print axioms zero_tail_kernel_empty_iff_collatz
 
 end SourceProduct
 end CollatzFinal
