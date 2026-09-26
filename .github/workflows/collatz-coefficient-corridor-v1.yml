@@ -1,0 +1,57 @@
+name: Collatz coefficient corridor V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/CoefficientCorridor.lean'
+      - 'experiments/collatz_coefficient_corridor_v1.py'
+      - '.github/workflows/collatz-coefficient-corridor-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-packing:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Replay exact polynomial and actual-orbit inequalities
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-coefficient-corridor-v1
+          python -S experiments/collatz_coefficient_corridor_v1.py > evidence/collatz-coefficient-corridor-v1/result.json
+          python -S - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/collatz-coefficient-corridor-v1/result.json').read_text())
+          assert r['script_sha256']=='b5acc20c8faf59878d9bf7b5334dd6a3ee408dc98b42c14d13c6320b13625403'
+          assert r['trace_sha256']=='4374309f594e41806701cd7a2ddd7a60f376263664258452785c284b838d0d2e'
+          assert r['finite_odd_sources']==4095
+          assert r['coefficient_live_prefixes_checked']==20266
+          assert r['global_collatz']=='UNKNOWN'
+          print('PASS: exact packing checks; no source-dependent global coefficient ceiling proved')
+          PY
+          git rev-parse HEAD > evidence/collatz-coefficient-corridor-v1/commit.txt
+          cat evidence/collatz-coefficient-corridor-v1/result.json
+      - name: Install pinned Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check all-length packing algebra with kernel proof terms
+        run: |
+          set -euo pipefail
+          lake env lean --version > evidence/collatz-coefficient-corridor-v1/toolchain.txt
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/CoefficientCorridor.lean
+          lake env lean -DautoImplicit=false formal/Collatz/CoefficientCorridor.lean | tee evidence/collatz-coefficient-corridor-v1/packing.log
+          ! grep 'sorryAx\|Lean.ofReduceBool' evidence/collatz-coefficient-corridor-v1/packing.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coefficient-corridor-v1
+          path: evidence/collatz-coefficient-corridor-v1
+          if-no-files-found: error
