@@ -8926,6 +8926,8 @@ fn trace_verdict_boundary(
     }
 }
 
+include!("heq_admission.rs");
+
 #[cfg(test)]
 mod tests {
     use std::io::Cursor;
@@ -9206,4 +9208,3 @@ mod tests {
     }
 }
 
-include!("heq_admission.rs");
