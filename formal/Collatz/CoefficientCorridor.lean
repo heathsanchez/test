@@ -28,7 +28,8 @@ theorem factor_majorant (a x : Nat) (ha : 2 ≤ a) (hx : a ≤ x) :
   have hi := factor_identity u d
   rw [heA, heX]
   have he : u+2-1 = u+1 := by omega
-  rw [he]
+  have he2 : u+2+1 = u+3 := by omega
+  rw [he, he2]
   omega
 
 /-- A sorted list of distinct odd values above n has this packing property.
@@ -71,7 +72,7 @@ theorem packed_sixth_power (xs : List Nat) (n : Nat)
       rw [hb] at hi'
       have hchain : (3*x+1)^6 * numerator xs * (n-1) <
           (3*x)^6 * denominator xs * (n+2+2*xs.length-1) := by
-        apply Nat.lt_of_lt_of_le (b := (3*x)^6 * (numerator xs * (n+1)))
+        apply Nat.lt_of_lt_of_le (m := (3*x)^6 * (numerator xs * (n+1)))
         · simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hs
         · simpa [Nat.mul_assoc] using hi'
       have he : n+2*(x::xs).length-1 = n+2+2*xs.length-1 := by
