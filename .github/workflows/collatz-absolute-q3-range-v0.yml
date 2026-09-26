@@ -1,0 +1,29 @@
+name: Collatz Absolute Q3 Range V0
+
+on:
+  push:
+    branches: [collatz-absolute-q3-range-v0]
+    paths:
+      - 'experiments/collatz_absolute_q3_range_v0.py'
+      - '.github/workflows/collatz-absolute-q3-range-v0.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit finite absolute Q3 endpoint range
+        run: |
+          mkdir -p evidence/collatz-absolute-q3-range-v0
+          python experiments/collatz_absolute_q3_range_v0.py             --output evidence/collatz-absolute-q3-range-v0/result.json             | tee evidence/collatz-absolute-q3-range-v0/run.log
+          grep -q 'PASS_FINITE_ABSOLUTE_Q3_RANGE_WITH_RESIDUAL' evidence/collatz-absolute-q3-range-v0/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-absolute-q3-range-v0
+          path: evidence/collatz-absolute-q3-range-v0
+          if-no-files-found: error
