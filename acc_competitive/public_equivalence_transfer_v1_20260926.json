@@ -1,0 +1,117 @@
+{
+  "schema": "acc-public-equivalence-transfer-v1",
+  "utc": "2026-09-25T23:41:10Z",
+  "epistemic_status": "CANDIDATE_REUSABLE",
+  "official_verifier_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "source_repo": "joe-carr-data/ac-certificates",
+  "source_commit": "d347fc4764ee55de6fc779fe697769127dde48e3",
+  "live_authority": {
+    "run_id": 36196520529,
+    "artifact_id": 10889864375,
+    "snapshot_utc": "2026-09-25T22:24:13.954062+00:00",
+    "live_state_digest": "02c966f39a258f312d3115463285e5de2a5dff5999ab2eab721901ee4fd452f0",
+    "ac_unsolved": 2672,
+    "stable_unsolved": 2672,
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    }
+  },
+  "live_unsolved_components": [
+    [
+      "ac-06556",
+      "ac-00399",
+      "ac-02842"
+    ],
+    [
+      "ac-02089",
+      "ac-00413"
+    ],
+    [
+      "ac-03467",
+      "ac-08126"
+    ]
+  ],
+  "official_transfer_edges": [
+    {
+      "source": "ac-06556",
+      "target": "ac-00399",
+      "source_certificate": "cert_ms3_yinvx2yinv_equiv_ak3.json",
+      "packaged_moves": 13,
+      "compiled_certificate_moves": 22,
+      "source_orientation_cost": 11,
+      "target_orientation_cost": 4,
+      "exact_official_transfer_moves": 37,
+      "forward_exact": true,
+      "reverse_exact": true
+    },
+    {
+      "source": "ac-00399",
+      "target": "ac-02842",
+      "source_certificate": "bottleneck_ak_f3_cert.json",
+      "packaged_moves": 66,
+      "compiled_certificate_moves": 101,
+      "source_orientation_cost": 6,
+      "target_orientation_cost": 6,
+      "exact_official_transfer_moves": 113,
+      "forward_exact": true,
+      "reverse_exact": true
+    },
+    {
+      "source": "ac-02842",
+      "target": "ac-00399",
+      "source_certificate": "cert_ms3_yx2y_equiv_ak3.json",
+      "packaged_moves": 71,
+      "compiled_certificate_moves": 106,
+      "source_orientation_cost": 11,
+      "target_orientation_cost": 9,
+      "exact_official_transfer_moves": 126,
+      "forward_exact": true,
+      "reverse_exact": true
+    },
+    {
+      "source": "ac-02089",
+      "target": "ac-00413",
+      "source_certificate": "cert_sym_equiv_orphan1.json",
+      "packaged_moves": 36,
+      "compiled_certificate_moves": 58,
+      "source_orientation_cost": 7,
+      "target_orientation_cost": 4,
+      "exact_official_transfer_moves": 69,
+      "forward_exact": true,
+      "reverse_exact": true
+    },
+    {
+      "source": "ac-03467",
+      "target": "ac-08126",
+      "source_certificate": "cert_idx0_equiv_mirror.json",
+      "packaged_moves": 85,
+      "compiled_certificate_moves": 155,
+      "source_orientation_cost": 6,
+      "target_orientation_cost": 2,
+      "exact_official_transfer_moves": 163,
+      "forward_exact": true,
+      "reverse_exact": true
+    }
+  ],
+  "proof_atlas_check": {
+    "artifact_id": 10838365781,
+    "atlas_states": 433272,
+    "endpoint_orbit_contacts": 0,
+    "shortest_transfer": "ac-06556->ac-00399",
+    "shortest_transfer_states": 38,
+    "shortest_transfer_exact_contacts": 0,
+    "shortest_transfer_orbit_contacts": 0
+  },
+  "consequence": "One future AC trivialization of any node in a component can be transported to every node in that component with bounded official ac-r2-v1 overhead; each resulting AC witness can then receive the exact +2 Stable finish. The three-node component therefore turns one new AC solve into up to six scored rows.",
+  "publication": {
+    "submission_attempted": false,
+    "quota_consumed": 0
+  }
+}
