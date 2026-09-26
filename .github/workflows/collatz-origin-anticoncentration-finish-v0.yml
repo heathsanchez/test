@@ -1,0 +1,25 @@
+name: Collatz origin anti concentration finish V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_origin_anticoncentration_finish_v0.py'
+      - 'experiments/collatz_crystal_campaign_state_v1.json'
+      - '.github/workflows/collatz-origin-anticoncentration-finish-v0.yml'
+  workflow_dispatch:
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-origin-anticoncentration-finish-v0
+          python experiments/collatz_origin_anticoncentration_finish_v0.py | tee evidence/collatz-origin-anticoncentration-finish-v0/result.json
+          cp experiments/collatz_crystal_campaign_state_v1.json evidence/collatz-origin-anticoncentration-finish-v0/state.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-origin-anticoncentration-finish-v0
+          path: evidence/collatz-origin-anticoncentration-finish-v0

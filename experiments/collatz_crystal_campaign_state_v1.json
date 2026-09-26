@@ -1,5 +1,5 @@
 {
-  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V7",
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V8",
   "global_status": "UNKNOWN",
   "canonical_residual": "exclude every nontrivial legal first-coefficient-crossing cylinder with canonical joint margin M >= 0",
   "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
@@ -57,9 +57,10 @@
     "terminal zero-carry recursion",
     "first-crossing zero-tail canonicalization",
     "aperiodic mixed-base lift coherence on historical recurrent block core",
-    "P30/P31 cross-scale joint 2-adic/3-adic coherence"
+    "P30/P31 cross-scale joint 2-adic/3-adic coherence",
+    "revived P4-P8 origin anti-concentration under P28/source-product boundary"
   ],
-  "next": "construct the universal joint transducer whose infinite paths encode one fixed positive integer across all scales; prove its counterexample-compatible kernel empty, or preserve an exact infinite-path obstruction",
+  "next": "prove the origin distortion bound C_j(X) <= 2^(eta j)|L_j|X/2^j for some eta<~0.0485 on the legal critical-ballot inverse-parity carry operator; full uniform discrepancy is unnecessary",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -95,11 +96,17 @@
       2
     ]
   },
-  "current_irreducible_residual": "exclude an infinite coherent positive-integer path through the joint low-R/high-B 2-adic/3-adic survivor system; finite-prefix, finite-state, static-source, and historical-core shortcuts are rejected",
+  "current_irreducible_residual": "origin-sensitive anti-concentration of canonical 2-adic residues in the legal first-crossing ballot language; any eventual distortion exponent below the entropy gap 1-H(log_3 2) closes P28",
   "lean_zero_tail": {
     "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
     "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
     "run": 36218076917,
     "status": "WARRANTED_LEAN"
+  },
+  "archive_reconciliation": {
+    "revived": "P7/P8 marginal residue anti-concentration, previously insufficient for joint M but now sufficient after P28/source-product reduction",
+    "sufficient_eta_demo": 0.04,
+    "entropy_loss": 0.05004447281166946,
+    "implication_threshold_demo": "computed by qualified script"
   }
 }
