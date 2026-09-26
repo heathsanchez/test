@@ -15,11 +15,11 @@
   ],
   "open_obligations": [
     {
-      "id": "COMPACT_FAREY_ADMISSION_AND_RANK",
+      "id": "SOURCE_ADMISSION_AND_RANK",
       "status": "UNKNOWN",
-      "statement": "Construct and prove an all-depth projection from every relevant reachable source-product/Farey continuation to a protected quotient preserving actual successors and source-relative certified exits, and prove that quotient has empty post-fixed kernel (for example by an earned well-founded rank).",
-      "bounded_authority": "c138b08a5b2e4fabfe8473badaa2eec399b14f0e: first two certified Farey rungs, Q2 depth <= 14; second rung conditional on lower closure.",
-      "warning": "The unrestricted product is not an established compact quotient. Equal bounded endpoint languages do not prove universal admission or termination."
+      "statement": "Derive the exact coefficient-persistent/minimal-positive-bad source language at a live Farey resonance, prove its source→endpoint image lies in the protected endpoint quotient, and prove the resulting source↔endpoint future quotient has empty post-fixed kernel / an earned well-founded rank.",
+      "evidence": "Run 36211245662 proves that through the qualified endpoint depth 14 the near-return gap 0<=y-n<=4,142,380,787 leaves every source residue modulo 2^a possible because 2^a<=G+1. Endpoint language plus the real gap therefore cannot supply source admission.",
+      "warning": "Do not replace source admission by endpoint-only Q2 deepening or tail continuation."
     }
   ],
   "superseded_residuals": [
@@ -28,6 +28,11 @@
       "status": "SUPERSEDED_AS_SIMPLIFICATION",
       "lean_theorem": "CollatzFinal.SourceProduct.zero_tail_kernel_empty_iff_collatz",
       "reason": "Lean proves this kernel-emptiness statement iff every positive source is CollatzGood. It is an exact restatement of the global theorem, not a smaller independent closeout lemma."
+    },
+    {
+      "id": "COMPACT_FAREY_ADMISSION_AND_RANK",
+      "status": "SUPERSEDED_BY_SHARPER_RESIDUAL",
+      "reason": "The qualified endpoint quotient and real gap do not constrain source residues at depths <=14; the missing consequential datum is exact source admission, not another endpoint/rung label."
     }
   ],
   "excluded_shortcuts": [
