@@ -1,0 +1,64 @@
+{
+  "version": "acc-ac02870-true-carry-prefix-lb-v1",
+  "status": "WARRANTED_REUSABLE_BOUNDED",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "acsolverx_pin": "6a12515fe1d95178a483b76d5553266e61122417",
+  "source_map_run": 34727788755,
+  "source_map_artifact_id": 10847946381,
+  "source_map_ac1m_index": 976384,
+  "challenge_id": "ac-02870",
+  "exact_initial": [
+    "YXyXyx",
+    "YYYYXyxxyXyyX"
+  ],
+  "quotient_replay": {
+    "popped_nodes": 608,
+    "seen_states": 23439,
+    "quotient_steps": 58,
+    "quotient_path_sha256": "5d7208f5599de96855af4af624404646e3cd40f1e34cc27903a0c1c755476eae",
+    "terminal_quotient": [
+      "Y",
+      "X"
+    ]
+  },
+  "live_authority": {
+    "utc": "2026-09-26T14:41:45.445113+00:00",
+    "run_id": 36243924891,
+    "artifact_id": 10908412834,
+    "ac_best": 71,
+    "stable_best": 73,
+    "quota_used": 0,
+    "quota_remaining": 40
+  },
+  "exact_prefix_enumeration": {
+    "compiler_language": "union of V2 signed exact candidates and V3 persistent-source-symmetry carry candidates",
+    "beam": null,
+    "total_relator_cap": 100,
+    "layers": [
+      {
+        "quotient_step": 1,
+        "input_exact_states": 1,
+        "output_exact_states": 17,
+        "min_cumulative_atomic_cost": 6
+      },
+      {
+        "quotient_step": 2,
+        "input_exact_states": 17,
+        "output_exact_states": 50,
+        "min_cumulative_atomic_cost": 11
+      },
+      {
+        "quotient_step": 3,
+        "input_exact_states": 50,
+        "output_exact_states": 60,
+        "min_cumulative_atomic_cost": 18
+      }
+    ],
+    "remaining_quotient_transitions_after_step_3": 55,
+    "per_remaining_transition_atomic_lower_bound": 1,
+    "fixed_route_atomic_lower_bound": 73
+  },
+  "claim": "For the pinned 58-transition GS-Sub quotient trajectory of ac-02870, exhaustive beam-free enumeration of every exact representative reachable through the existing V2 signed compiler plus V3 true carry-symmetry compiler for the first three quotient transitions has minimum cumulative official atomic cost 18. Each of the remaining 55 distinct quotient transitions requires at least one official atomic move, so every completion of this fixed quotient trajectory in that compiler language has length at least 73. This cannot beat the authenticated live AC record 71.",
+  "boundary": "This is a lower bound only for this fixed GS-Sub quotient trajectory under the existing V2/V3 exact transition language. It is not a global AC distance lower bound and does not exclude a different quotient route or a genuinely different exact transition representation.",
+  "reuse_rule": "Before full compilation of a source-aligned quotient hit, propagate exact-prefix costs only until min_prefix_cost + remaining_quotient_steps >= live_best. If that inequality holds under an exhaustively enumerated transition language, reject the route immediately; beam widening and further compilation are then zero-EV."
+}
