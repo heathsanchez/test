@@ -723,19 +723,9 @@ fn compare_neutral_heads(
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => {
-            if std::env::var_os("NUCLEUS_TRACE_CONVERSION").is_some() {
-                eprintln!(
-                    "NUCLEUS_CONV_HEAD_MISMATCH left={:?} right={:?} left_spine={} right_spine={}",
-                    left.head,
-                    right.head,
-                    left.spine.len(),
-                    right.spine.len()
-                );
-            }
-            Judgment::refuted("distinct-neutral-heads")
-        }
+        _ => {\n            if std::env::var_os("NUCLEUS_TRACE_CONVERSION").is_some() {\n                eprintln!("NUCLEUS_CONV_HEAD_MISMATCH left={:?} right={:?} left_spine={} right_spine={}", left.head, right.head, left.spine.len(), right.spine.len());\n            }\n            Judgment::refuted("distinct-neutral-heads")\n        }
     }
+}
 
 fn value_as_type(value: &Value, depth: usize) -> Option<TypeValue> {
     match value {
