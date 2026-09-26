@@ -156,9 +156,9 @@ theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
   have hcross' : 3 ^ s.odds < 2 ^ k := by simpa [s] using hcross
   have htail :
       2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail <= bias n k := by
-    rw [Nat.mul_sub_left_distrib]
+    rw [Nat.mul_sub_left_distrib, Nat.sub_mul]
     have hscaled := Nat.mul_le_mul_left (2 ^ k) hnd'
-    simp only [Nat.mul_add] at hscaled
+    simp only [Nat.mul_add, Nat.mul_assoc] at hscaled
     omega
   have hbias' :
       bias n k < 2 ^ k * (2 ^ k - 3 ^ s.odds) := by
