@@ -1,0 +1,24 @@
+name: Collatz rung2 reverse trit V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_rung2_reverse_trit_v0.py'
+      - '.github/workflows/collatz-rung2-reverse-trit-v0.yml'
+  workflow_dispatch:
+jobs:
+  separator:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-rung2-reverse-trit-v0
+          python experiments/collatz_rung2_reverse_trit_v0.py | tee evidence/collatz-rung2-reverse-trit-v0/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-rung2-reverse-trit-v0
+          path: evidence/collatz-rung2-reverse-trit-v0
