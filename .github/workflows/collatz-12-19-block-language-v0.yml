@@ -1,0 +1,24 @@
+name: Collatz 12-19 block language V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_12_19_block_language_v0.py'
+      - '.github/workflows/collatz-12-19-block-language-v0.yml'
+  workflow_dispatch:
+jobs:
+  compile:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-12-19-block-language-v0
+          python experiments/collatz_12_19_block_language_v0.py | tee evidence/collatz-12-19-block-language-v0/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-12-19-block-language-v0
+          path: evidence/collatz-12-19-block-language-v0
