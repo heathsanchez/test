@@ -73,10 +73,6 @@ fn check_export_with_policy(
             return Verdict::Reject;
         }
 
-        if std::env::var_os("NUCLEUS_TRACE_TARGET_NAME").is_some() {
-            let id = NameId(378);
-            eprintln!("NUCLEUS_TARGET_NAME:id=378:name={}", trace_name(&export, id));
-        }
         let (name, established) = match declaration {
             Declaration::Axiom {
                 name,
