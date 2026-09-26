@@ -5,7 +5,7 @@ on:
     branches: [collatz-universal-source-product-v1]
     paths:
       - 'experiments/collatz_crystal_future_quotient_v1.py'
-      - 'experiments/test_collatz_crystal_future_quotient_v1.py'
+      - 'experiments/test_collatz_crystal_future_quotient_v1.py'\n      - 'experiments/test_collatz_crystal_separator_refinement_v1.py'
       - '.github/workflows/collatz-crystal-future-quotient-v1.yml'
       - 'formal/Collatz/CrystalFutureCertificate.lean'
   workflow_dispatch:
@@ -25,7 +25,7 @@ jobs:
       - name: Future quotient tests
         run: |
           cd experiments
-          python -m unittest -v test_collatz_crystal_future_quotient_v1.py
+          python -m unittest -v test_collatz_crystal_future_quotient_v1.py test_collatz_crystal_separator_refinement_v1.py
       - name: Reject universal promotion without proof authorities
         if: success()
         run: |
