@@ -4,6 +4,7 @@ on:
     branches: [nucleus-dependency-closure-exec-v1]
     paths: [".github/workflows/nucleus-heq-qualified-v1.yml"]
   workflow_dispatch:
+# Requalification trigger after source-only layout repair.
 permissions:
   contents: read
 jobs:
