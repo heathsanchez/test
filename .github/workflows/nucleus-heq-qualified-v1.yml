@@ -1,0 +1,170 @@
+name: Nucleus exact HEq qualification v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-heq-qualified-v1.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    outputs:
+      source_sha: ${{ steps.seal.outputs.source_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Verify the exact HEq fixture fails before integration
+        run: |
+          set -euo pipefail
+          if grep -q 'include!("heq_admission.rs")' metatron-kernel/src/checker.rs; then
+            echo 'Integration already sealed; original red test retained in initial run.'
+          else
+            set +e
+            cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml --test heq_admission exact_heq_admission -- --exact > /tmp/heq-red.log 2>&1
+            rc=$?
+            set -e
+            cat /tmp/heq-red.log
+            test "$rc" -ne 0
+            grep -q 'left: Unknown' /tmp/heq-red.log
+            grep -q 'right: Accept' /tmp/heq-red.log
+          fi
+      - name: Integrate only the exact checked family and format locally
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('metatron-kernel/src/checker.rs'); s=p.read_text()
+          marker='    // G16-001 is deliberately routed by its earned name before constructor'
+          if 'include!("heq_admission.rs")' not in s:
+              assert s.count(marker)==1
+              route='''    if let [inductive] = block.types.as_slice()
+                  && name_is_root_str(export, inductive.name, "HEq")
+              {
+                  return check_exact_heq(export, environment, block, limits, delta_policy);
+              }
+
+          '''
+              s=s.replace(marker,route+marker)
+              s+='\ninclude!("heq_admission.rs");\n'
+              p.write_text(s)
+          PY
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          rustfmt --edition 2024 metatron-kernel/src/heq_admission.rs
+          git diff --check
+      - name: Seal exact tested source on the working branch only
+        id: seal
+        env:
+          WORK_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          test "$WORK_BRANCH" = nucleus-dependency-closure-exec-v1
+          remote=$(git ls-remote origin "refs/heads/$WORK_BRANCH" | cut -f1)
+          test "$remote" = "$GITHUB_SHA"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add metatron-kernel/src/checker.rs metatron-kernel/src/heq_admission.rs metatron-kernel/tests/heq_admission.rs
+          if ! git diff --cached --quiet; then
+            git commit -m 'feat(nucleus): wire exact HEq admission after red-test reproduction'
+            git push origin "HEAD:refs/heads/$WORK_BRANCH"
+          fi
+          echo "source_sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+  qualify:
+    needs: prepare
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      TESTED_SOURCE_SHA: ${{ needs.prepare.outputs.source_sha }}
+      BASE_SHA: e180bac0161a78ae7b8425c2389c03b92d2b312f
+      CORPUS_SHA256: e979e7dc437fdbdac6555d4bd78649dfa0307b3bda5c812c0d7a484a775a14d8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ needs.prepare.outputs.source_sha }}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: 'rustfmt, clippy'}
+      - name: Qualify exact source and local HEq contracts
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          test "$(git rev-parse HEAD)" = "$TESTED_SOURCE_SHA"
+          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          rustfmt --check --edition 2024 metatron-kernel/src/heq_admission.rs
+          cargo clippy --all-targets --locked --manifest-path metatron-kernel/Cargo.toml -- -D warnings
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml 2>&1 | tee evidence-out/tests.log
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cp metatron-kernel/target/release/metatron-kernel evidence-out/nucleus-heq
+          git archive HEAD metatron-kernel | gzip > evidence-out/source.tar.gz
+          git diff "$BASE_SHA" HEAD -- metatron-kernel/src metatron-kernel/tests > evidence-out/source.diff
+          sha256sum evidence-out/nucleus-heq evidence-out/source.tar.gz > evidence-out/SHA256SUMS
+      - name: Build exact experimental parent
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+      - name: Retrieve exact corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/corpus.zip
+          echo "$CORPUS_SHA256  /tmp/corpus.zip" | sha256sum -c -
+          mkdir -p /tmp/art /tmp/corpus
+          unzip -q /tmp/corpus.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/corpus
+      - name: Strict public verdict reclosure and downstream traces
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import collections,json,os,pathlib,subprocess,time
+          root=pathlib.Path('/tmp/corpus'); out=pathlib.Path('evidence-out')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel'); candidate=(out/'nucleus-heq').resolve()
+          def run(binary,p,trace=False):
+              env=os.environ.copy()
+              for key in ['NUCLEUS_TRACE_DOWNSTREAM','NUCLEUS_TRACE_SINGLE_FIELD']:
+                  if trace:env[key]='1'
+                  else:env.pop(key,None)
+              t=time.perf_counter()
+              try:
+                  with p.open('rb') as f:q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.PIPE,stderr=subprocess.PIPE,timeout=90,env=env)
+                  return {'rc':q.returncode,'seconds':time.perf_counter()-t,'stderr':q.stderr.decode(errors='replace')}
+              except subprocess.TimeoutExpired:return {'rc':124,'seconds':time.perf_counter()-t,'stderr':'TIMEOUT'}
+          rows=[]
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  row={'file':str(p.relative_to(root)),'expected':expected,'base':run(base,p),'candidate':run(candidate,p)}
+                  rows.append(row)
+                  with (out/'rows.jsonl').open('a') as f:f.write(json.dumps(row)+'\n')
+          errors=[r['file'] for r in rows if r['base']['rc'] not in (0,1,2) or r['candidate']['rc'] not in (0,1,2)]
+          wrong=[r['file'] for r in rows if r['candidate']['rc'] in (0,1) and r['candidate']['rc']!=r['expected']]
+          regressed=[r['file'] for r in rows if r['base']['rc'] in (0,1) and r['candidate']['rc']!=r['base']['rc']]
+          earned=[r['file'] for r in rows if r['base']['rc']==2 and r['candidate']['rc']==r['expected']]
+          focused=[]
+          for name in ['good/perf/magma-list-deep-n21.ndjson','good/perf/magma-list-deep-n36.ndjson','bad/bugs/proj-of-stuck-prop.ndjson','bad/bugs/proj-of-subst-prop.ndjson','bad/bugs/rec-of-subst-prop.ndjson']:
+              x=run(candidate,root/name,True);(out/(name.replace('/','_')+'.log')).write_text(x['stderr']);focused.append({'file':name,**x})
+          result={'schema':'nucleus-exact-heq-v1','source_sha':os.environ['TESTED_SOURCE_SHA'],'workflow_sha':os.environ['GITHUB_SHA'],'base_sha':os.environ['BASE_SHA'],'total':len(rows),'base_counts':dict(collections.Counter(str(r['base']['rc']) for r in rows)),'candidate_counts':dict(collections.Counter(str(r['candidate']['rc']) for r in rows)),'errors':errors,'wrong':wrong,'regressed':regressed,'earned':earned,'focused':focused,'terminal_promotion':bool(earned) and not(errors or wrong or regressed),'local_contract':'exact HEq admission plus 25 malformed/unsupported neighbors; not full HEq or Lean completeness'}
+          (out/'result.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
+          assert len(rows)==193
+          assert not errors,errors
+          assert not wrong,wrong
+          assert not regressed,regressed
+          PY
+      - name: Terminal promotion requires actual new public verdicts
+        run: |
+          python - <<'PY'
+          import json
+          result=json.load(open('evidence-out/result.json'))
+          assert result['terminal_promotion'], 'Local HEq contract qualified, but no new public verdict: terminal promotion withheld.'
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-exact-heq-${{ github.run_id }}
+          path: evidence-out
+          if-no-files-found: error
