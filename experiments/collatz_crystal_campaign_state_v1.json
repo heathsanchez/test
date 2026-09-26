@@ -1,0 +1,25 @@
+{
+  "schema": "COLLATZ_CRYSTAL_CAMPAIGN_STATE_V1",
+  "global_status": "UNKNOWN",
+  "canonical_residual": "universal nontrivial legal first-coefficient-crossing cylinder with joint margin M >= 0",
+  "joint_verifier": "M = B - (2^k - 3^q) R = 2^k (Y - R)",
+  "warranted": [
+    "exact symbolic lift state (k,q,R,Y)",
+    "all-depth source-product normalization",
+    "finite exact absence of nontrivial M>=0 through J=35",
+    "certified negative margin maxima for 241 feasible classes through J=447",
+    "minimal-positive-bad source bridge"
+  ],
+  "superseded": [
+    "zero-tail simplification",
+    "fixed bounded residue quotient",
+    "endpoint-only source admission",
+    "recursive-sufficiency rung2 handoff previously used on this branch",
+    "finite portal corpus as evidence for the M>=0 region"
+  ],
+  "candidate_bridge": {
+    "facts": ["2^19 < 3^12", "3^5 < 2^8", "8*12 - 19*5 = 1"],
+    "meaning": "old S-unit chamber scales are consecutive continued-fraction block scales also visible in the reverse mechanical word"
+  },
+  "next": "derive chamber structure directly from exact M cylinders and seek a well-founded reduction"
+}
