@@ -1,7 +1,7 @@
 name: Collatz origin power window V1
 on:
   push:
-    branches: [collatz-universal-source-product-v1]
+    branches: [collatz-origin-power-window-qualified-v1]
     paths:
       - 'experiments/collatz_origin_power_window_v1.cpp'
       - '.github/workflows/collatz-origin-power-window-v1.yml'
