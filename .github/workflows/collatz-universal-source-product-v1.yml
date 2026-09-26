@@ -40,12 +40,19 @@ jobs:
           set -euo pipefail
           lake env lean -DautoImplicit=false formal/Collatz/SourceProductAffine.lean | tee evidence/source-product-v1/affine.log
           ! grep -q 'sorryAx' evidence/source-product-v1/affine.log
+      - name: Check zero-tail subkernel reduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false formal/Collatz/SourceProductZeroTail.lean | tee evidence/source-product-v1/zero-tail.log
+          ! grep -q 'sorryAx' evidence/source-product-v1/zero-tail.log
       - name: Independent exact replay tests
         shell: bash
         run: |
           set -euo pipefail
           python -m unittest discover -s experiments/source_product_v1 -v 2>&1 | tee evidence/source-product-v1/python-tests.log
           python experiments/source_product_v1/source_product.py > evidence/source-product-v1/result.json
+          cp experiments/source_product_v1/residual.json evidence/source-product-v1/residual.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:

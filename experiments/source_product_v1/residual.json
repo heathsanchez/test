@@ -1,0 +1,39 @@
+{
+  "schema": "COLLATZ_UNIVERSAL_SOURCE_PRODUCT_RESIDUAL_V1",
+  "goal": "For every positive natural n, iterating shortcut eventually reaches 1",
+  "source_map": "T(n) = n/2 when even; (3*n+1)/2 when odd",
+  "proved_structural_obligations": [
+    "Every positive source and every finite depth has a canonical common-tail product",
+    "step_endpoint: endpoint(step(s)) = T(endpoint(s))",
+    "The original source remains fixed at every continuation depth",
+    "Product odd count equals independently counted orbit odd steps",
+    "Exact source affine cocycle and residue cocycle are preserved",
+    "Every hypothetical minimal positive bad source produces a nonempty post-fixed live path"
+  ],
+  "open_obligations": [
+    {
+      "id": "COMPACT_FAREY_ADMISSION_AND_SIMULATION",
+      "status": "UNKNOWN",
+      "statement": "Construct and prove a projection from every relevant reachable source-product continuation to the same protected Farey survivor quotient, preserving actual successors and source-relative certified exits at all required rungs and depths.",
+      "bounded_authority": "c138b08a5b2e4fabfe8473badaa2eec399b14f0e: two certified rungs, Q2 depth <= 14; second rung conditional on lower closure.",
+      "warning": "The unrestricted product is not an established compact quotient. Equal bounded endpoint languages do not prove universal admission."
+    },
+    {
+      "id": "ZERO_TAIL_LIVE_KERNEL_EMPTY",
+      "status": "UNKNOWN",
+      "lean_goal": "CollatzFinal.KernelEmpty CollatzFinal.SourceProduct.ZeroTailLive CollatzFinal.SourceProduct.Next",
+      "state_domain": "Unbounded reachable source-product states with tail=0 and no terminal, positive source-descent, or lower-source merge exit",
+      "warning": "This goal has not been proved. The conditional theorem taking it as a premise is not a proof of Collatz."
+    }
+  ],
+  "excluded_shortcuts": [
+    "Treating zero tail as terminal or a globally strictly decreasing rank",
+    "Dropping the fixed original source because endpoints coincide",
+    "Transferring minimality from the original source to later endpoints",
+    "Assuming every one-step no-exit state has a no-exit successor",
+    "Treating recurrence as an unconditional good exit",
+    "Replacing positive bad sources by all natural bad sources, which includes zero",
+    "Promoting two-rung bounded agreement to all-depth compact quotient coverage"
+  ],
+  "global_collatz": "UNKNOWN"
+}
