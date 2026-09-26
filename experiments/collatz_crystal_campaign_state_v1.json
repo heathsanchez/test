@@ -30,7 +30,8 @@
     "terminal lift carry e=1 is excluded for universal M>=0 cylinders, conditional on P16/P36/Rhin",
     "counterexample-compatible first crossing has common tail u=0 and actual source equals canonical residue R, conditional on P14/P16/P36/Rhin",
     "any exact infinitely repeated superunit odd-valuation block forces a negative rational block fixed point and cannot be realized by a positive integer",
-    "historical two-block recurrent core {A,B} is empty over positive naturals: B has no exact A/B successor and A^infinity has negative rational b-adic source"
+    "historical two-block recurrent core {A,B} is empty over positive naturals: B has no exact A/B successor and A^infinity has negative rational b-adic source",
+    "Lean theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit qualified at commit bbe821c56b07946f2bd4e9ac003991d6ba958ba0 run 36218076917"
   ],
   "rejected_or_superseded": [
     "zero-tail as simplification",
@@ -54,7 +55,7 @@
     "first-crossing zero-tail canonicalization",
     "aperiodic mixed-base lift coherence on historical recurrent block core"
   ],
-  "next": "prove the universal entry theorem: every canonical zero-tail zero-carry M>=0 first-crossing cylinder maps under P35/P37 reduction into the now-empty exact two-block core; otherwise preserve the first exact cylinder outside that reduction",
+  "next": "attack P28 directly as a mixed-base canonical-residue lower bound, preserving near-rational spike families; do not return to finite quotients, static source admission, bounded exchanges, or 3-adic-only SCCs",
   "stop_condition": "global closure theorem verified OR exact obstruction showing the current P35/P37 local rewrite family cannot rank universal M>=0 cylinders",
   "terminal_carry_split": {
     "carry1": "EXCLUDED_CONDITIONAL_P16_P36_RHIN",
@@ -89,5 +90,12 @@
       2,
       2
     ]
+  },
+  "current_irreducible_residual": "all-depth realizability exclusion: no nontrivial legal first-crossing canonical residue with M>=0 can satisfy R < (3/4) j^14.3; equivalently prove a sufficient lower bound on canonical realizability beyond the finite certified range",
+  "lean_zero_tail": {
+    "theorem": "CollatzFinal.SourceProduct.tail_eq_zero_of_nondescending_of_bias_lt_tail_unit",
+    "commit": "bbe821c56b07946f2bd4e9ac003991d6ba958ba0",
+    "run": 36218076917,
+    "status": "WARRANTED_LEAN"
   }
 }
