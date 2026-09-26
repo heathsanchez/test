@@ -1,0 +1,63 @@
+name: Collatz origin phase barrier V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/OriginPhaseBarrier.lean'
+      - 'experiments/collatz_origin_phase_barrier_v1.py'
+      - '.github/workflows/collatz-origin-phase-barrier-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exact-origin-barrier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Replay exact anchored versus shifted controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-origin-phase-barrier-v1
+          python -S experiments/collatz_origin_phase_barrier_v1.py > evidence/collatz-origin-phase-barrier-v1/result.json
+          python -S - <<'PY'
+          import json
+          from pathlib import Path
+          r=json.loads(Path('evidence/collatz-origin-phase-barrier-v1/result.json').read_text())
+          assert r['script_sha256']=='fceb547cc781492df5f7f962ab1f028b9bdcb0ee7cb23e7338058075a0540850'
+          assert len(r['small_exact_controls'])==13
+          assert r['deep_witness']['exact_125th_power_subunit_check']
+          assert r['fixed_origin_candidate']=='UNKNOWN_NOT_REFUTED'
+          assert r['global_collatz']=='UNKNOWN'
+          print('PASS: translation-uniform envelope obstructed; fixed-origin theorem still UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-origin-phase-barrier-v1/commit.txt
+          cat evidence/collatz-origin-phase-barrier-v1/result.json
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check generic no-go and actual all-odd source family
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean --version > evidence/collatz-origin-phase-barrier-v1/toolchain.txt
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz
+          for module in SourceProduct SourceProductAffine; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" > "evidence/collatz-origin-phase-barrier-v1/$module.log"
+          done
+          lake env lean -DautoImplicit=false formal/Collatz/OriginPhaseBarrier.lean | tee evidence/collatz-origin-phase-barrier-v1/OriginPhaseBarrier.log
+          ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-origin-phase-barrier-v1/*.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-origin-phase-barrier-v1
+          path: evidence/collatz-origin-phase-barrier-v1
+          if-no-files-found: error
