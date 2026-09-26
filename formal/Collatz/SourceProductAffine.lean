@@ -158,7 +158,20 @@ theorem tail_eq_zero_of_nondescending_of_bias_lt_tail_unit
       2 ^ k * (2 ^ k - 3 ^ s.odds) * s.tail <= bias n k := by
     rw [Nat.mul_sub_left_distrib, Nat.sub_mul]
     have hscaled := Nat.mul_le_mul_left (2 ^ k) hnd'
-    simp only [Nat.mul_add, Nat.mul_assoc] at hscaled
+    simp only [Nat.mul_add] at hscaled
+    have hAA :
+        2 ^ k * (2 ^ k * s.tail) =
+          (2 ^ k * 2 ^ k) * s.tail := by
+      simp [Nat.mul_assoc]
+    have hAQ :
+        2 ^ k * (3 ^ s.odds * s.tail) =
+          (2 ^ k * 3 ^ s.odds) * s.tail := by
+      simp [Nat.mul_assoc]
+    rw [hAA, hAQ, hc] at hscaled
+    have hRQ :
+        3 ^ s.odds * s.sourceResidue <=
+          2 ^ k * s.sourceResidue := by
+      exact Nat.mul_le_mul_right s.sourceResidue (Nat.le_of_lt hcross')
     omega
   have hbias' :
       bias n k < 2 ^ k * (2 ^ k - 3 ^ s.odds) := by
