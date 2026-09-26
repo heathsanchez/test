@@ -1,0 +1,28 @@
+name: Collatz Q3 Residual Refinement V1
+
+on:
+  push:
+    branches: [collatz-q3-residual-refinement-v1]
+    paths:
+      - 'experiments/collatz_q3_residual_refinement_v1.py'
+      - '.github/workflows/collatz-q3-residual-refinement-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Refine all residual Q3 cylinders
+        run: |
+          mkdir -p evidence/collatz-q3-residual-refinement-v1
+          python experiments/collatz_q3_residual_refinement_v1.py             --output evidence/collatz-q3-residual-refinement-v1/result.json             --max-nodes 2000000             | tee evidence/collatz-q3-residual-refinement-v1/run.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-q3-residual-refinement-v1
+          path: evidence/collatz-q3-residual-refinement-v1
+          if-no-files-found: error
