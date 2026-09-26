@@ -19,6 +19,8 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+      - name: Install exact-integer checker dependency
+        run: sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends libboost-dev
       - name: Two independently indexed exact source-cap replays
         shell: bash
         run: |
