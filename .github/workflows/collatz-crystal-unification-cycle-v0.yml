@@ -1,0 +1,25 @@
+name: Collatz Crystal unification cycle V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_crystal_campaign_state_v1.json'
+      - 'experiments/collatz_crystal_unification_cycle_v0.py'
+      - '.github/workflows/collatz-crystal-unification-cycle-v0.yml'
+  workflow_dispatch:
+jobs:
+  unify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          mkdir -p evidence/collatz-crystal-unification-cycle-v0
+          python experiments/collatz_crystal_unification_cycle_v0.py | tee evidence/collatz-crystal-unification-cycle-v0/result.json
+          cp experiments/collatz_crystal_campaign_state_v1.json evidence/collatz-crystal-unification-cycle-v0/input-state.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-unification-cycle-v0
+          path: evidence/collatz-crystal-unification-cycle-v0
