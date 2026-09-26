@@ -630,8 +630,18 @@ impl<'a> Machine<'a> {
             }
             Operation::Beq => {
                 let bools = self.bool_primitives.as_ref()?;
-                let ctor = if first == second { bools.true_ctor } else { bools.false_ctor };
-                Value::Neutral(Neutral { head: NeutralHead::Const { name: ctor, levels: Vec::new() }, spine: Vec::new() })
+                let ctor = if first == second {
+                    bools.true_ctor
+                } else {
+                    bools.false_ctor
+                };
+                Value::Neutral(Neutral {
+                    head: NeutralHead::Const {
+                        name: ctor,
+                        levels: Vec::new(),
+                    },
+                    spine: Vec::new(),
+                })
             }
         })
     }
