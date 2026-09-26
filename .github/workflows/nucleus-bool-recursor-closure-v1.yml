@@ -2,7 +2,7 @@ name: Nucleus Bool recursor closure v1
 on:
   push:
     branches: [nucleus-dependency-closure-exec-v1]
-    paths: [".github/workflows/nucleus-bool-recursor-closure-v1.yml", "metatron-kernel/src/checker.rs"]
+    paths: [".github/workflows/nucleus-bool-recursor-closure-v1.yml", "metatron-kernel/src/checker.rs", "metatron-kernel/src/environment.rs", "metatron-kernel/src/machine.rs"]
 permissions: {contents: read}
 jobs:
   qualify:
