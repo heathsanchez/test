@@ -1,0 +1,83 @@
+name: Collatz reverse target audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_reverse_target_audit.py'
+      - 'experiments/test_reverse_target_audit.py'
+      - 'experiments/collatz_reverse_predecessor_tree.py'
+      - 'formal/Collatz/ReverseTargetBoundary.lean'
+      - '.github/workflows/collatz-reverse-target-audit.yml'
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact target and legacy controls
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-reverse-target-audit
+          (cd experiments && python -m unittest -v test_reverse_target_audit) 2>&1 | tee evidence/collatz-reverse-target-audit/tests.txt
+          python experiments/collatz_reverse_target_audit.py --q 14 | tee evidence/collatz-reverse-target-audit/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-reverse-target-audit/result.json'
+          r=json.load(open(p))
+          assert r['target_directed_coverage']['covered']==278808
+          assert r['additional_covered_residues']==245085
+          assert r['target_directed_coverage']['uncovered']==1315515
+          assert r['symbolically_verified_residue_families']==5287
+          assert r['certificate_sha256']=='dfd7d52064653df807b05c4b256d88901d40cc5278afd029874e73d3a0003e8c'
+          assert r['global_collatz']=='UNKNOWN'
+          PY
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile source-relative and periodic boundary lemmas
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-reverse-target-audit/toolchain.txt
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity OrdinaryExitReduction OrdinaryInverseOdd HardFirstCrossing ThreeAdicReverseBarrier FirstCrossingBias FirstCrossingGap; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-reverse-target-audit/$module.log"
+          done
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/ReverseTargetBoundary.lean; then
+            echo 'Forbidden source token' >&2; exit 1
+          fi
+          lake env lean -DautoImplicit=false formal/Collatz/ReverseTargetBoundary.lean | tee evidence/collatz-reverse-target-audit/ReverseTargetBoundary.log
+          python - <<'PY'
+          import pathlib,re
+          folder=pathlib.Path('evidence/collatz-reverse-target-audit')
+          allowed={'propext','Classical.choice','Quot.sound'}
+          text=(folder/'ReverseTargetBoundary.log').read_text()
+          names=['first_crossing_three_y_lt_four_n','ordinary_exit_of_three_quarter_predecessor','first_crossing_exit_of_three_quarter_predecessor','periodic_lower_sieve_excludes_one_class','scalar_large_signature_iff_mod12']
+          for name in names: assert "'CollatzFinal.SourceProduct."+name+"'" in text, name
+          for path in folder.glob('*.log'):
+            log=path.read_text()
+            assert 'sorryAx' not in log and 'Lean.ofReduceBool' not in log, path
+            for block in re.findall(r'depends on axioms:\s*\[([^]]*)\]',log):
+              axioms={x.strip() for x in block.split(',') if x.strip()}
+              assert axioms <= allowed, (path,axioms)
+          print('QUALIFIED_NATIVE_TARGET_BOUNDARY; GLOBAL_COLLATZ=UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-reverse-target-audit/commit.txt
+          sha256sum formal/Collatz/ReverseTargetBoundary.lean experiments/collatz_reverse_target_audit.py experiments/test_reverse_target_audit.py > evidence/collatz-reverse-target-audit/source-sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-reverse-target-audit
+          path: evidence/collatz-reverse-target-audit
+          if-no-files-found: error
