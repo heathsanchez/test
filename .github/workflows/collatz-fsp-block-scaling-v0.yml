@@ -1,0 +1,29 @@
+name: Collatz Crystal FSP block scaling V0
+on:
+  push:
+    branches: [collatz-crystal-fsp-rank-v1]
+    paths:
+      - 'experiments/collatz_fsp_block_scaling_v0.py'
+      - '.github/workflows/collatz-fsp-block-scaling-v0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  adversarial:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-fsp-block-scaling-v0
+          git rev-parse HEAD > evidence/collatz-fsp-block-scaling-v0/commit.txt
+          python -u experiments/collatz_fsp_block_scaling_v0.py | tee evidence/collatz-fsp-block-scaling-v0/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-fsp-block-scaling-v0
+          path: evidence/collatz-fsp-block-scaling-v0
+          if-no-files-found: error
