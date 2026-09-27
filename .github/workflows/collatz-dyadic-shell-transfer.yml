@@ -1,0 +1,20 @@
+name: Collatz dyadic shell transfer
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - experiments/collatz_dyadic_shell_transfer_v0.py
+      - .github/workflows/collatz-dyadic-shell-transfer.yml
+permissions:
+  contents: read
+jobs:
+  shell:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -u experiments/collatz_dyadic_shell_transfer_v0.py
