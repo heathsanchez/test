@@ -8,6 +8,23 @@ coefficient survival persists at every depth. -/
 def EternalCoefficientSurvival (n : Nat) : Prop :=
   ∀ k, CoefficientSurvives n k
 
+/-- From any witnessed coefficient crossing, strong recursion extracts a least
+one without relying on a separate minimization primitive. -/
+theorem first_crossing_of_crossing
+    (n : Nat) :
+    ∀ k, CoefficientCrossingAt n k →
+      ∃ j, FirstCoefficientCrossingAt n j := by
+  intro k
+  induction k using Nat.strongRecOn with
+  | ind k ih =>
+      intro hk
+      by_cases hprev : ∃ i, i < k ∧ CoefficientCrossingAt n i
+      · obtain ⟨i, hi, hic⟩ := hprev
+        exact ih i hi hic
+      · refine ⟨k, hk, ?_⟩
+        intro i hi hic
+        exact hprev ⟨i, hi, hic⟩
+
 /-- Every source either survives the coefficient test forever or has a unique
 least (first) coefficient crossing. -/
 theorem coefficient_survival_or_first_crossing (n : Nat) :
@@ -17,19 +34,18 @@ theorem coefficient_survival_or_first_crossing (n : Nat) :
   by_cases h : EternalCoefficientSurvival n
   · exact Or.inl h
   · right
-    have hex : ∃ k, CoefficientCrossingAt n k := by
-      unfold EternalCoefficientSurvival at h
-      push_neg at h
-      obtain ⟨k, hk⟩ := h
-      exact ⟨k, (coefficientCrossingAt_iff_not_survives n k).2 hk⟩
-    let k := Nat.find hex
-    have hk : CoefficientCrossingAt n k := by
-      simpa [k] using Nat.find_spec hex
-    refine ⟨k, hk, ?_⟩
-    intro i hi hci
-    have hle : k ≤ i := by
-      simpa [k] using Nat.find_min' hex hci
-    omega
+    have hexNot : ∃ k, ¬ CoefficientSurvives n k := by
+      apply Classical.byContradiction
+      intro hnone
+      apply h
+      intro k
+      apply Classical.byContradiction
+      intro hk
+      exact hnone ⟨k, hk⟩
+    obtain ⟨k, hk⟩ := hexNot
+    have hcross : CoefficientCrossingAt n k :=
+      (coefficientCrossingAt_iff_not_survives n k).2 hk
+    exact first_crossing_of_crossing n k hcross
 
 /-- If an orbit has not descended by depth k, its exact affine joint margin is
 nonnegative. This is the ordinary-orbit form of the archived M obstruction. -/
@@ -111,6 +127,7 @@ theorem reaches_one_of_no_survival_and_negative_first_margin
   · exact ⟨k, strict_descent_of_negative_margin
       (hNegativeFirstMargin n k hn hk)⟩
 
+#print axioms first_crossing_of_crossing
 #print axioms coefficient_survival_or_first_crossing
 #print axioms margin_nonnegative_of_nondescending
 #print axioms strict_descent_of_negative_margin
