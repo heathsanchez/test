@@ -1,116 +1,120 @@
-"""Crystal V1: source-coupled Collatz residual discovery.
+"""Crystal V2: source-coupled Collatz no-exit residual discovery.
 
-Discovery only. Protected observation is an exact bounded witness of OrdinaryExit:
-terminal/descent, or intersection with a smaller positive source orbit.
-No bounded miss is promoted to a universal no-exit claim.
+Only states strictly before the first bounded OrdinaryExit witness enter the
+census. Protected future is only the bounded exit outcome (kind and delay);
+raw residues are candidate observables, never labels. A bounded miss is UNKNOWN.
 """
-from dataclasses import dataclass
 from collections import defaultdict
-import json, math, random
+import json, random
 
-def T(n):
-    return n//2 if n%2==0 else (3*n+1)//2
-
-def orbit_prefix(n,h):
-    out=[n]
-    for _ in range(h): out.append(T(out[-1]))
-    return out
-
-def zero_tail_depth(n):
-    return max(0,n.bit_length())
+def T(n): return n//2 if n%2==0 else (3*n+1)//2
+def zero_tail_depth(n): return max(0,n.bit_length())
 
 def lower_basin(n,h):
     hit={}
     for p in range(1,n):
         x=p
         for r in range(h+1):
-            hit.setdefault(x,(p,r))
-            x=T(x)
+            hit.setdefault(x,(p,r)); x=T(x)
     return hit
 
-def first_exit(n,forward_h=160,reverse_h=160):
-    basin=lower_basin(n,reverse_h)
-    x=n
-    for k in range(forward_h+1):
-        if x in (1,2): return k,("terminal",x)
-        if x<n: return k,("descent",x)
-        if x in basin:
-            p,r=basin[x]
-            return k,("merge",p,r,x)
-        x=T(x)
-    return None
-
-def trace_features(n,h=96):
-    K=zero_tail_depth(n); xs=orbit_prefix(n,K+h)
-    q=0; b=0; rows=[]
-    # exact affine cocycle: 2^k*y = 3^q*n+b
+def actual_trace(n,h):
+    xs=[n]
+    for _ in range(h): xs.append(T(xs[-1]))
+    q=b=0; rows=[]
     for k,y in enumerate(xs):
-        if k>=K:
-            rows.append((k-K,y,q,b,y%3,y%9,y%12,y%27))
-        if k<len(xs)-1:
-            if y%2:
-                b=3*b+2**k; q+=1
+        rows.append((k,y,q,b,y%2,y%3,y%9,y%12,y%27))
+        if k<h and y%2:
+            b=3*b+2**k; q+=1
     return rows
 
-def future_signature(n,k,h,basin):
-    x=orbit_prefix(n,k)[-1]
-    sig=[]
+def exit_at(n,y,basin):
+    if y in (1,2): return ("terminal",)
+    if y<n: return ("descent",)
+    if y in basin:
+        p,r=basin[y]; return ("merge",p,r)
+    return None
+
+def protected_future(n,x,h,basin):
     for j in range(h+1):
-        if x in (1,2): sig.append(("T",j)); break
-        if x<n: sig.append(("D",j)); break
-        if x in basin:
-            p,r=basin[x]; sig.append(("M",j,p,r)); break
-        sig.append(("N", x%2, x%3, x%9, x%12))
+        e=exit_at(n,x,basin)
+        if e is not None: return ("EXIT",j,e[0])
         x=T(x)
-    return tuple(sig)
+    return ("UNKNOWN",)
 
-def coarse(row):
-    _,y,q,b,m3,m9,m12,m27=row
-    # Deliberately small initial interface. Separators must earn refinements.
-    return (m3,y%2)
-
-def refined(row):
-    _,y,q,b,m3,m9,m12,m27=row
-    return (m12,m27,q%2,b%3)
-
-def census(sources,post=24,future=24,reverse=96):
-    coarse_groups=defaultdict(list); records=[]
-    for n in sources:
-        basin=lower_basin(n,reverse)
-        K=zero_tail_depth(n)
-        rows=trace_features(n,post)
-        for row in rows:
-            k=K+row[0]
-            sig=future_signature(n,k,future,basin)
-            coarse_groups[coarse(row)].append((n,row,sig))
-            records.append((n,row,sig))
-    separators=[]
-    for key,items in coarse_groups.items():
-        bysig=defaultdict(list)
-        for item in items: bysig[item[2]].append(item)
-        if len(bysig)>1:
-            vals=list(bysig.values())
-            a,b=vals[0][0],vals[1][0]
-            separators.append({
-                "coarse_class":key,
-                "a":{"n":a[0],"row":a[1],"refined":refined(a[1])},
-                "b":{"n":b[0],"row":b[1],"refined":refined(b[1])},
-                "different_protected_futures":True})
+def candidate(row,name):
+    k,y,q,b,p2,m3,m9,m12,m27=row
     return {
-      "schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V1",
-      "epistemic":"DISCOVERY_ONLY_BOUNDED",
-      "sources":len(sources),"states":len(records),
-      "coarse_classes":len(coarse_groups),
-      "separator_count":len(separators),
-      "first_separators":separators[:20],
-      "boundary":"A bounded miss is UNKNOWN, never no-exit. Global Collatz UNKNOWN."
-    }
+      "parity":p2, "mod3":m3, "mod9":m9, "mod12":m12, "mod27":m27,
+      "q_parity":q%2, "b_mod3":b%3, "b_mod9":b%9,
+      "endpoint_vs_source":None, # filled source-relatively below
+    }[name]
+
+FEATURES=["parity","mod3","mod9","mod12","mod27","q_parity","b_mod3","b_mod9"]
+
+def key_for(n,row,features):
+    vals=[]
+    for f in features:
+        vals.append(candidate(row,f))
+    # source-relative sign is consequential candidate, but not source identity.
+    if "rel" in features:
+        vals.append(-1 if row[1]<n else (0 if row[1]==n else 1))
+    return tuple(vals)
+
+def build_records(sources,post=48,future=48,reverse=128):
+    rec=[]
+    for n in sources:
+        basin=lower_basin(n,reverse); K=zero_tail_depth(n)
+        rows=actual_trace(n,K+post)
+        # only actual no-exit states; once exit occurs, persistence makes later
+        # states irrelevant to the residual.
+        for row in rows[K:]:
+            if exit_at(n,row[1],basin) is not None: break
+            lab=protected_future(n,row[1],future,basin)
+            rec.append((n,row,lab))
+    return rec
+
+def impurity(records,features):
+    groups=defaultdict(set)
+    examples=defaultdict(list)
+    for n,row,lab in records:
+        k=key_for(n,row,features); groups[k].add(lab); examples[k].append((n,row,lab))
+    bad=[k for k,v in groups.items() if len(v)>1]
+    return groups,bad,examples
+
+def greedy_crystal(records):
+    chosen=["parity","mod3"]; history=[]
+    groups,bad,ex=impurity(records,chosen)
+    history.append((list(chosen),len(groups),len(bad)))
+    while bad:
+        best=None
+        for f in FEATURES+["rel"]:
+            if f in chosen: continue
+            g,b,e=impurity(records,chosen+[f])
+            score=(len(b),len(g))
+            if best is None or score<best[0]: best=(score,f,g,b,e)
+        if best is None or best[0][0]>=len(bad): break
+        _,f,groups,bad,ex=best; chosen.append(f)
+        history.append((list(chosen),len(groups),len(bad)))
+    sep=[]
+    for k in bad[:10]:
+        vals=ex[k]; a=vals[0]
+        b=next(z for z in vals[1:] if z[2]!=a[2])
+        sep.append({"class":k,"a":{"n":a[0],"row":a[1],"future":a[2]},
+                    "b":{"n":b[0],"row":b[1],"future":b[2]}})
+    return {"chosen":chosen,"history":history,"classes":len(groups),
+            "impure_classes":len(bad),"first_unresolved_separators":sep}
+
+def run(sources):
+    records=build_records(sources)
+    return {"sources":len(sources),"actual_pre_exit_states":len(records),
+            "crystal":greedy_crystal(records)}
 
 if __name__=="__main__":
-    train=list(range(3,513))
     rng=random.Random(28092026)
-    prospective=[rng.randrange(513,4097) for _ in range(256)]
-    print(json.dumps({
-      "train":census(train),
-      "prospective":census(prospective),
-    },indent=2))
+    train=list(range(3,1025))
+    prospective=[rng.randrange(1025,8193) for _ in range(512)]
+    print(json.dumps({"schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V2",
+      "epistemic":"DISCOVERY_ONLY_BOUNDED",
+      "train":run(train),"prospective":run(prospective),
+      "boundary":"UNKNOWN labels are bounded misses; global Collatz UNKNOWN."},indent=2))
