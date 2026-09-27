@@ -17,6 +17,11 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
+      - name: Install exact-integer build dependency
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y libboost-dev
       - name: Extract exact 24-bit late sources
         run: |
           set -euo pipefail
