@@ -65,7 +65,8 @@ theorem strict_descent_of_negative_margin
     {n k : Nat}
     (hneg : bias n k < (2 ^ k - 3 ^ oddCount n k) * n) :
     iter shortcut k n < n := by
-  by_contra h
+  apply Classical.byContradiction
+  intro h
   have hnd : n ≤ iter shortcut k n := by omega
   have hm := margin_nonnegative_of_nondescending hnd
   omega
@@ -77,7 +78,8 @@ theorem minimal_bad_nondescending_all_depths
     (hmin : MinimalBad PositiveBad n) :
     ∀ k, n ≤ iter shortcut k n := by
   intro k
-  by_contra h
+  apply Classical.byContradiction
+  intro h
   have hlt : iter shortcut k n < n := by omega
   have hp : 0 < iter shortcut k n :=
     iter_positive shortcut shortcut_positive k n hmin.1.1
