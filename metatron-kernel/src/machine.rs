@@ -700,7 +700,44 @@ impl<'a> Machine<'a> {
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
                 Expr::BVar(index) => match closure.env.lookup(*index)? {
-                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Closure(bound) => {
+                        if arguments.is_empty() {
+                            closure = bound;
+                        } else {
+                            let exposed = self
+                                .expose_internal(
+                                    bound,
+                                    Transparency::Reducible,
+                                    remaining,
+                                    false,
+                                )
+                                .proven_value()?
+                                .value
+                                .clone();
+                            let Value::Neutral(mut neutral) = exposed else {
+                                return None;
+                            };
+                            arguments.reverse();
+                            neutral.spine.extend(arguments);
+                            let closed = self.close_neutral_consequence(
+                                &neutral,
+                                remaining.saturating_sub(1),
+                            )?;
+                            return match closed {
+                                Value::Neutral(closed_neutral) => {
+                                    let NeutralHead::Const { name, levels } = closed_neutral.head else {
+                                        None
+                                    };
+                                    if !levels.is_empty() || !closed_neutral.spine.is_empty() {
+                                        None
+                                    } else {
+                                        Some((name, Vec::new()))
+                                    }
+                                }
+                                _ => None,
+                            };
+                        }
+                    }
                     EnvBinding::Free(free) => {
                         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
                             eprintln!("NUCLEUS_BINDING_FREE:free={:?}:args={:?}", free, arguments);
