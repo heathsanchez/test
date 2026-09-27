@@ -752,6 +752,34 @@ impl<'a> Machine<'a> {
                             left_exposed.proven_value().map(|x| &x.value),
                             right_exposed.proven_value().map(|x| &x.value)
                         );
+                        if let (
+                            Some(crate::machine::Exposure { value: Value::Neutral(left_neutral), .. }),
+                            Some(crate::machine::Exposure { value: Value::Neutral(right_neutral), .. }),
+                        ) = (left_exposed.proven_value(), right_exposed.proven_value())
+                        {
+                            if left_neutral.head == right_neutral.head
+                                && left_neutral.spine.len() == 1
+                                && right_neutral.spine.len() == 1
+                            {
+                                let left_arg = self.expose_internal(
+                                    left_neutral.spine[0].clone(),
+                                    Transparency::Reducible,
+                                    remaining,
+                                    false,
+                                );
+                                let right_arg = self.expose_internal(
+                                    right_neutral.spine[0].clone(),
+                                    Transparency::Reducible,
+                                    remaining,
+                                    false,
+                                );
+                                eprintln!(
+                                    "NUCLEUS_BEQ_SPINE_EXPOSED:left={:?}:right={:?}",
+                                    left_arg.proven_value().map(|x| &x.value),
+                                    right_arg.proven_value().map(|x| &x.value)
+                                );
+                            }
+                        }
                     }
                     let same_argument = arguments[0] == arguments[1]
                         || match (
