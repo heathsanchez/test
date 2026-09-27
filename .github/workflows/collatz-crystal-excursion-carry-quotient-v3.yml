@@ -1,0 +1,29 @@
+name: Collatz Crystal excursion-carry quotient V3
+on:
+  push:
+    branches: [collatz-crystal-owner-frontier-cycles-v1]
+    paths:
+      - 'experiments/collatz_crystal_excursion_carry_quotient_v3.py'
+      - '.github/workflows/collatz-crystal-excursion-carry-quotient-v3.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Build exact excursion carry quotient
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-excursion-carry-quotient-v3
+          python -u experiments/collatz_crystal_excursion_carry_quotient_v3.py | tee evidence/collatz-crystal-excursion-carry-quotient-v3/result.json
+          grep -q '"universal_status": "UNKNOWN"' evidence/collatz-crystal-excursion-carry-quotient-v3/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-excursion-carry-quotient-v3
+          path: evidence/collatz-crystal-excursion-carry-quotient-v3
+          if-no-files-found: error
