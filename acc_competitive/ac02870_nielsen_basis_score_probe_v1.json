@@ -1,0 +1,43 @@
+{
+  "version": "acc-nielsen-basis-score-probe-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL",
+  "challenge_id": "ac-02870",
+  "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "proof_atlas_artifact_id": 10589688184,
+  "proof_atlas_states": 433272,
+  "live_authority": {
+    "run_id": 36286144243,
+    "utc": "2026-09-27T01:38:31.083577+00:00",
+    "ac_best": 71,
+    "stable_best": 73,
+    "quota_used": 0,
+    "quota_remaining": 40
+  },
+  "experiment": {
+    "node_cap": 250000,
+    "total_relator_cap": 59,
+    "depth_weight": 0.15,
+    "transitions": "pinned 14 official ac-r2-v1 moves only",
+    "atlas_join": true,
+    "baseline": {
+      "found_strict_candidate": false,
+      "nodes": 250000,
+      "visited": 1549633,
+      "frontier": 1880306,
+      "seconds_local": 13.488
+    },
+    "basis_score": {
+      "found_strict_candidate": false,
+      "nodes": 250000,
+      "visited": 1673417,
+      "frontier": 1947777,
+      "seconds_local": 49.728,
+      "score_orbit": "raw exact state plus eight signed-permutation conjugates of the four public Nielsen maps x->xy, x->xY, y->yx, y->yX",
+      "search_state_changed": false
+    }
+  },
+  "calibration": "The baseline reproduces exactly the prior 250000-node ac-02870 official-best-first boundary: 1549633 visited and 1880306 frontier states.",
+  "claim": "At the same 250000-node exact official-search boundary, one-step Nielsen-coordinate scoring changes expansion order and increases unique exact states reached, but still yields no path shorter than live AC 71. This rejects scoring-only transfer at this boundary; it does not reject real Nielsen basis edges with elementary-AC carry.",
+  "next_residual": "actual basis-edge carry/transport, not another fixed-basis scoring variant",
+  "submission_attempted": false
+}
