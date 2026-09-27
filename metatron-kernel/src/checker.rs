@@ -818,6 +818,8 @@ fn check_single_constructor_inductive(
         check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
+    } else if fin_like_structure_candidate(export, block) {
+        check_fin_like_structure(export, environment, block, limits, delta_policy)
     } else if single_derived_field_structure_candidate(export, block) {
         check_single_derived_field_structure(export, environment, block, limits, delta_policy)
     } else if inductive.num_params == 1
@@ -1693,6 +1695,96 @@ fn expression_matches_binder_lift(
         }
         _ => false,
     }
+}
+
+fn fin_like_structure_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 1
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.num_params != 1
+        || constructor.num_fields != 2
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.k
+        || recursor.is_unsafe
+        || recursor.num_params != 1
+        || recursor.num_indices != 0
+        || recursor.rules.len() != 1
+        || recursor.rules[0].num_fields != 2
+        || recursor.level_params.len() != 1
+    {
+        return false;
+    }
+    let Some((_, result)) = pi_spine(export, inductive.ty, 1) else {
+        return false;
+    };
+    if !matches!(export.exprs.get(result), Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero))) {
+        return false;
+    }
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        return false;
+    };
+    let first = constructor_domains[1];
+    let second = constructor_domains[2];
+    !expression_contains_constant(export, first, inductive.name)
+        && !expression_contains_constant(export, second, inductive.name)
+        && expression_contains_bvar_at_or_above(export, second, 0)
+}
+
+fn check_fin_like_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
+        return Err(Verdict::Unknown);
+    };
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 1,
+                field_types: vec![
+                    ProjectionFieldType::Derived(constructor_domains[1]),
+                    ProjectionFieldType::Derived(constructor_domains[2]),
+                ],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn single_derived_field_structure_candidate(
