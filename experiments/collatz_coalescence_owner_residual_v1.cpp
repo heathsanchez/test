@@ -1,7 +1,5 @@
 #include <bits/stdc++.h>
-#include <boost/multiprecision/cpp_int.hpp>
 using namespace std;
-using boost::multiprecision::cpp_int;
 struct Own { uint32_t src; uint32_t dep; };
 static inline uint64_t T(uint64_t x){ return (x&1)?(3*x+1)/2:x/2; }
 int main(){
