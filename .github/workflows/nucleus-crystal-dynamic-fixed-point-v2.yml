@@ -56,7 +56,7 @@ jobs:
             rows.append({'path':str(p.relative_to(root)),'expected':expected,'obs':obs})
           assert len(rows)==40,len(rows)
 
-          active=['down','app','conv','proven_multiset','binding_normalized','rulek','bool_target','bool_flow']
+          active=['down','app','conv','proven_multiset','binding_normalized','rulek','bool_target','bool_flow','typed_judgments']
           rejected=set()
           history=[]
           previous_semantic=None
