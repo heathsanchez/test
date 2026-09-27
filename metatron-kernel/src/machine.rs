@@ -712,6 +712,9 @@ impl<'a> Machine<'a> {
                         return None;
                     }
                     arguments.reverse();
+                    if arguments[0] == arguments[1] {
+                        return Some((bools.true_ctor, Vec::new()));
+                    }
                     let first = self
                         .expose_internal(
                             arguments[0].clone(),
