@@ -126,11 +126,10 @@ theorem source_lt_qmin_double (n : Nat) (hn : 0 < n) :
   have hp := three_pow_lt_four_pow_succ m
   have hfour : 4 ^ (m + 1) = 2 ^ (2 * (m + 1)) := by
     rw [show 4 = 2 ^ 2 by decide, ← Nat.pow_mul]
-    congr 1
-    omega
   rw [hfour] at hp
-  by_contra hnot
-  have hq : qmin (2 * (m + 1)) ≤ m + 1 := by omega
+  apply Nat.lt_of_not_ge
+  intro hnot
+  have hq : qmin (2 * (m + 1)) ≤ m + 1 := hnot
   have hpow :
       3 ^ qmin (2 * (m + 1)) ≤ 3 ^ (m + 1) :=
     Nat.pow_le_pow_right (by decide) hq
