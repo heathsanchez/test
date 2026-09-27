@@ -201,6 +201,29 @@ theorem eternal_survival_enters_high_odd
   have hstrict := source_lt_qmin_double n hn
   exact ⟨hs, by omega⟩
 
+/-- Constructor coverage needed only on the eternal-survival branch. -/
+def EternalConstructorCoverage : Prop :=
+  ∀ n, 1 < n → EternalCoefficientSurvival n →
+    ∃ k, OrdinaryExit n (iter shortcut k n)
+
+/-- Constructor coverage needed only on hard first crossings in the origin
+branch.  Coverage may fire at any later depth and may be direct descent,
+terminal reach, or any lower-source coalescence. -/
+def OriginCrossingConstructorCoverage : Prop :=
+  ∀ n k, 1 < n → HardFirstCrossing n k →
+    n ≤ oddCount n (k + 1) →
+    ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
+
+/-- Constructor coverage needed only on the rigid large-source hard-crossing
+branch.  The residue/window assumptions are consequences of minimal badness,
+not extra conjectures. -/
+def LargeCrossingConstructorCoverage : Prop :=
+  ∀ n k, 1 < n → HardFirstCrossing n k →
+    oddCount n (k + 1) < n →
+    3 * iter shortcut (k + 1) n < 4 * n →
+    iter shortcut (k + 1) n % 12 = 7 →
+    ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
+
 /-- The genuinely separate large-crossing residual begins only when the
 odd-count deficit is at least three.  Deficits one and two are automatically
 reabsorbed into HighOddConstructorCoverage by the two forced odd recovery
@@ -264,29 +287,6 @@ theorem reaches_one_of_high_odd_and_deep_large
 
 #print axioms large_crossing_coverage_of_high_or_deep
 #print axioms reaches_one_of_high_odd_and_deep_large
-
-/-- Constructor coverage needed only on the eternal-survival branch. -/
-def EternalConstructorCoverage : Prop :=
-  ∀ n, 1 < n → EternalCoefficientSurvival n →
-    ∃ k, OrdinaryExit n (iter shortcut k n)
-
-/-- Constructor coverage needed only on hard first crossings in the origin
-branch.  Coverage may fire at any later depth and may be direct descent,
-terminal reach, or any lower-source coalescence. -/
-def OriginCrossingConstructorCoverage : Prop :=
-  ∀ n k, 1 < n → HardFirstCrossing n k →
-    n ≤ oddCount n (k + 1) →
-    ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
-
-/-- Constructor coverage needed only on the rigid large-source hard-crossing
-branch.  The residue/window assumptions are consequences of minimal badness,
-not extra conjectures. -/
-def LargeCrossingConstructorCoverage : Prop :=
-  ∀ n k, 1 < n → HardFirstCrossing n k →
-    oddCount n (k + 1) < n →
-    3 * iter shortcut (k + 1) n < 4 * n →
-    iter shortcut (k + 1) n % 12 = 7 →
-    ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
 
 /-- Full assembly theorem.
 
