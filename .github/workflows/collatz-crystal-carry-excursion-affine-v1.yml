@@ -5,6 +5,7 @@ on:
     branches: [collatz-crystal-carry-excursion-affine-v1]
     paths:
       - 'experiments/collatz_crystal_carry_excursion_affine_v1.py'
+      - 'experiments/collatz_crystal_carry_excursion_center_v1.py'
       - '.github/workflows/collatz-crystal-carry-excursion-affine-v1.yml'
   workflow_dispatch:
 
@@ -20,17 +21,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Run exact carry-excursion affine audit
+      - name: Run exact carry-excursion Crystal audits
         run: |
           set -euo pipefail
           mkdir -p evidence/collatz-crystal-carry-excursion-affine-v1
           git rev-parse HEAD > evidence/collatz-crystal-carry-excursion-affine-v1/commit.txt
+
+          python -u experiments/collatz_crystal_carry_excursion_center_v1.py \
+            | tee evidence/collatz-crystal-carry-excursion-affine-v1/center.json
+          grep -q '"status": "BOUNDED_SINGLE_EXCURSION_CENTER_SEPARATOR_SURVIVES"' \
+            evidence/collatz-crystal-carry-excursion-affine-v1/center.json
+
           python -u experiments/collatz_crystal_carry_excursion_affine_v1.py \
-            | tee evidence/collatz-crystal-carry-excursion-affine-v1/result.json
+            | tee evidence/collatz-crystal-carry-excursion-affine-v1/cycles.json
           grep -q '"status": "BOUNDED_AFFINE_CYCLE_SEPARATOR_SURVIVES"' \
-            evidence/collatz-crystal-carry-excursion-affine-v1/result.json
+            evidence/collatz-crystal-carry-excursion-affine-v1/cycles.json
           grep -q '"global_collatz": "UNKNOWN"' \
-            evidence/collatz-crystal-carry-excursion-affine-v1/result.json
+            evidence/collatz-crystal-carry-excursion-affine-v1/cycles.json
       - uses: actions/upload-artifact@v4
         if: always()
         with:
