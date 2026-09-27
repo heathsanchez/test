@@ -31,3 +31,5 @@ print(json.dumps({"schema":"COLLATZ_SOURCE_VALID_REVERSE_ENTROPY_V0",
  "candidate_margin":budget-eta_target,
  "critical_note":"Q-level residue coverage is nested certificate-family evidence, not proof that 14-block pruning multiplies along one source-coupled path.",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# qualification trigger
