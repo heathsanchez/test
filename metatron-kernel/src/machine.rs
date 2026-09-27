@@ -765,6 +765,59 @@ impl<'a> Machine<'a> {
         }
     }
 
+    pub(crate) fn close_neutral_consequence(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Option<Value> {
+        if budget == 0 {
+            return None;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return None;
+        };
+        if let Some(reduction) = self.recursor_reductions.get(name) {
+            let required = reduction.num_params
+                + 1
+                + reduction.rules.len()
+                + reduction.num_indices
+                + 1;
+            if neutral.spine.len() >= required && reduction.level_params.len() == levels.len() {
+                let offset = neutral.spine.len() - required;
+                let arguments = neutral.spine[offset..].to_vec();
+                let target = arguments.last()?;
+                let observed = self
+                    .observe_bool_constructor(target, budget.saturating_sub(1))
+                    .or_else(|| self.constructor_application(target));
+                if let Some((constructor, constructor_arguments)) = observed
+                    && let Some(rule) = reduction.rules.iter().find(|r| r.constructor == constructor)
+                    && constructor_arguments.len() == rule.num_params + rule.num_fields
+                {
+                    let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                    let mut env = EnvFrame::empty();
+                    let mut rule_arguments = arguments[..prefix_len].to_vec();
+                    rule_arguments.extend_from_slice(&constructor_arguments[rule.num_params..]);
+                    for argument in rule_arguments {
+                        env = env.extend(argument);
+                    }
+                    let mut substitution = Vec::with_capacity(levels.len());
+                    for (parameter, level) in reduction.level_params.iter().zip(levels) {
+                        substitution.push((*parameter, level.clone()));
+                    }
+                    let closure = Closure::with_levels(
+                        rule.rhs,
+                        env,
+                        LevelSubstitution::new(substitution),
+                    );
+                    return self
+                        .expose(closure, Transparency::Reducible, budget.saturating_sub(1))
+                        .proven_value()
+                        .cloned();
+                }
+            }
+        }
+        self.reexpose_neutral(neutral, budget.saturating_sub(1))
+    }
     pub(crate) fn reexpose_neutral(&self, neutral: &Neutral, budget: usize) -> Option<Value> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
