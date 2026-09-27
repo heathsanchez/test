@@ -1,0 +1,22 @@
+name: Collatz Crystal Future Consequence V2
+on:
+  push:
+    branches: [collatz-crystal-future-consequence-v2]
+    paths:
+      - 'experiments/collatz_crystal_future_consequence_v2.py'
+      - '.github/workflows/collatz-crystal-future-consequence-v2.yml'
+permissions: {contents: read}
+jobs:
+  crystal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_crystal_future_consequence_v2.py | tee result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-future-consequence-v2
+          path: result.json
