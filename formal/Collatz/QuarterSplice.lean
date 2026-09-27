@@ -157,6 +157,49 @@ theorem reaches_one_of_odd_quarter_splice_coverage
     exact hnone n ⟨hn, hbad⟩
   exact collatzGood_eventually_one hgood
 
+/-- Consequence-pruned fixed-origin target.  A source need not itself
+realize the quarter splice if it has already descended below its starting
+source: either event contradicts minimal badness. -/
+def DescentOrQuarterSpliceCoverage : Prop :=
+  ∀ n, 1 < n → n % 2 = 1 →
+    ∃ r, let x := iter shortcut r n
+      (0 < x ∧ x < n) ∨ (x % 8 = 5 ∧ x ≤ 4 * n)
+
+/-- The fixed-origin consequence quotient is sufficient for Collatz.
+This is strictly weaker as an interface than requiring every source itself
+to realize a quarter splice before any descent. -/
+theorem reaches_one_of_descent_or_quarter_splice_coverage
+    (hQ : DescentOrQuarterSpliceCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  have hnone : ∀ n, ¬ PositiveBad n := by
+    apply no_bad_of_no_minimal PositiveBad
+    intro n hmin
+    have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
+      omega
+    have hodd : n % 2 = 1 := positive_minimal_bad_odd hmin
+    obtain ⟨r, hdesc | hsplice⟩ := hQ n hgt hodd
+    · have hexit : OrdinaryExit n (iter shortcut r n) :=
+        Or.inr (Or.inl hdesc)
+      exact minimal_bad_has_no_ordinary_exit hmin r hexit
+    · have hexit : OrdinaryExit n (iter shortcut (r + 3) n) := by
+        rw [iter_add]
+        exact ordinary_exit_after_quarter_splice hsplice.1 hsplice.2
+      exact minimal_bad_has_no_ordinary_exit hmin (r + 3) hexit
+  intro n hn
+  have hgood : CollatzGood n := by
+    apply Classical.byContradiction
+    intro hbad
+    exact hnone n ⟨hn, hbad⟩
+  exact collatzGood_eventually_one hgood
+
+#print axioms reaches_one_of_descent_or_quarter_splice_coverage
+
 #print axioms quarter_splice_of_mod8_five
 #print axioms ordinary_exit_after_quarter_splice
 #print axioms three_quarter_coalescence7_of_quarter_splice_future7
