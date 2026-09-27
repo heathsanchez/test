@@ -184,6 +184,69 @@ theorem minimal_bad_ownerLift_owner_ge
     ordinary_exit_of_ownerLift_on_orbit hp hpodd hlt horbit
   exact minimal_bad_has_no_ordinary_exit hmin a hexit
 
+/-- Every odd state on a hypothetical minimal bad orbit has a normalized
+owner core that is itself source-anchored.  All redundant quarter-splice
+layers are presentation: the consequential core is positive odd, not 5 mod 8,
+and cannot lie below the minimal bad source. -/
+theorem minimal_bad_odd_owner_core
+    {n j : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hodd : iter shortcut j n % 2 = 1) :
+    ∃ k p, 0 < p ∧ p % 2 = 1 ∧ p % 8 ≠ 5 ∧
+      n ≤ p ∧ iter shortcut j n = ownerLift k p := by
+  let x := iter shortcut j n
+  have hxpos : 0 < x := by
+    dsimp [x]
+    exact iter_positive shortcut shortcut_positive j n hmin.1.1
+  obtain ⟨k, p, hp, hpodd, hp5, hxform⟩ :=
+    ownerLift_normal_form x hxpos (by simpa [x] using hodd)
+  have horbit : iter shortcut j n = ownerLift k p := by
+    simpa [x] using hxform
+  have hge := minimal_bad_ownerLift_owner_ge hmin hp hpodd horbit
+  exact ⟨k, p, hp, hpodd, hp5, hge, horbit⟩
+
+/-- A normalized positive odd owner has exactly the low local shape: either
+its first shortcut step is already odd (residue 3 or 7 mod 8), or it is
+1 mod 8 and the second shortcut step is odd. -/
+theorem owner_core_low_step
+    {p : Nat}
+    (hpodd : p % 2 = 1)
+    (hp5 : p % 8 ≠ 5) :
+    (shortcut p % 2 = 1) ∨
+      (p % 8 = 1 ∧ shortcut p % 2 = 0 ∧
+        iter shortcut 2 p % 2 = 1) := by
+  have hr : p % 8 = 1 ∨ p % 8 = 3 ∨ p % 8 = 5 ∨ p % 8 = 7 := by
+    omega
+  rcases hr with h1 | h3 | h5 | h7
+  · right
+    have hpne : p % 2 ≠ 0 := by omega
+    have hfirst : shortcut p = (3 * p + 1) / 2 := by
+      unfold shortcut
+      simp only [hpne, ite_false]
+    have hfirstEven : shortcut p % 2 = 0 := by
+      rw [hfirst]
+      omega
+    have hsecond : iter shortcut 2 p = shortcut (shortcut p) := by
+      simp [iter]
+    have hsecondOdd : iter shortcut 2 p % 2 = 1 := by
+      rw [hsecond]
+      unfold shortcut
+      simp only [hfirstEven, ite_true]
+      rw [hfirst]
+      omega
+    exact ⟨h1, hfirstEven, hsecondOdd⟩
+  · left
+    unfold shortcut
+    have hpne : p % 2 ≠ 0 := by omega
+    simp only [hpne, ite_false]
+    omega
+  · exact False.elim (hp5 h5)
+  · left
+    unfold shortcut
+    have hpne : p % 2 ≠ 0 := by omega
+    simp only [hpne, ite_false]
+    omega
+
 /-- Parametric source-relative valuation barrier.  On a hypothetical
 minimal positive bad orbit, an owner lift of depth k must lie at or above the
 same lift of the original source.  In particular it is at least 4^k*n. -/
