@@ -1,0 +1,33 @@
+name: Collatz HighOdd Source-Order Census V1
+on:
+  push:
+    branches: [collatz-highodd-source-order-census-v1]
+    paths:
+      - 'experiments/collatz_highodd_source_order_census_v1.cpp'
+      - '.github/workflows/collatz-highodd-source-order-census-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build census
+        run: |
+          set -euo pipefail
+          g++ -O3 -std=c++20 -Wall -Wextra -pedantic             experiments/collatz_highodd_source_order_census_v1.cpp             -o /tmp/highodd_census
+      - name: Run exact bounded census
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-highodd-source-order-census-v1
+          git rev-parse HEAD > evidence/collatz-highodd-source-order-census-v1/commit.txt
+          /tmp/highodd_census 16777215 | tee evidence/collatz-highodd-source-order-census-v1/result.json
+          grep -q '"global_collatz":"UNKNOWN"' evidence/collatz-highodd-source-order-census-v1/result.json
+          grep -q '"epistemic_state":"BOUNDED_EVIDENCE_ONLY"' evidence/collatz-highodd-source-order-census-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-highodd-source-order-census-v1
+          path: evidence/collatz-highodd-source-order-census-v1
+          if-no-files-found: error
