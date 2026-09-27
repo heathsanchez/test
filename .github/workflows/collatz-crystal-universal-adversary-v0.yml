@@ -1,0 +1,15 @@
+name: Collatz Crystal universal adversary V0
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths: ['experiments/collatz_crystal_universal_adversary_v0.py','.github/workflows/collatz-crystal-universal-adversary-v0.yml']
+permissions: {contents: read}
+jobs:
+  adversary:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: cd experiments && python collatz_crystal_universal_adversary_v0.py
