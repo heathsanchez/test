@@ -56,3 +56,5 @@ if __name__=="__main__":
     main()
 
 # qualification trigger after workflow install
+
+# retrigger compact discovery
