@@ -1,0 +1,42 @@
+name: Collatz three-adic reverse barrier
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/ThreeAdicReverseBarrier.lean'
+      - '.github/workflows/collatz-three-adic-reverse-barrier.yml'
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile closed three-adic reverse barrier
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-three-adic-reverse-barrier .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-three-adic-reverse-barrier/toolchain.txt
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity OrdinaryExitReduction OrdinaryInverseOdd HardFirstCrossing; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-three-adic-reverse-barrier/$module.log"
+          done
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/ThreeAdicReverseBarrier.lean
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeAdicReverseBarrier.lean | tee evidence/collatz-three-adic-reverse-barrier/ThreeAdicReverseBarrier.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-three-adic-reverse-barrier/*.log
+          git rev-parse HEAD > evidence/collatz-three-adic-reverse-barrier/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-three-adic-reverse-barrier
+          path: evidence/collatz-three-adic-reverse-barrier
+          if-no-files-found: error
