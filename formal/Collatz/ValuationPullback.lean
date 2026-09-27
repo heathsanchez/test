@@ -19,6 +19,44 @@ theorem ownerLift_odd
       change (4 * ownerLift k p + 1) % 2 = 1
       omega
 
+/-- Every positive odd integer has a finite owner-lift normal form whose
+core is positive odd and no longer exposes a quarter-splice layer (5 mod 8).
+This is a structural normalization theorem, not a bounded residue bank. -/
+theorem ownerLift_normal_form :
+    ∀ x, 0 < x → x % 2 = 1 →
+      ∃ k p, 0 < p ∧ p % 2 = 1 ∧ p % 8 ≠ 5 ∧
+        x = ownerLift k p := by
+  intro x
+  induction x using Nat.strong_induction_on with
+  | h x ih =>
+      intro hx hodd
+      by_cases h5 : x % 8 = 5
+      · let a := x / 8
+        let q := 2 * a + 1
+        have hxform : x = 8 * a + 5 := by
+          have hd := Nat.mod_add_div x 8
+          dsimp [a]
+          omega
+        have hqpos : 0 < q := by
+          dsimp [q]
+          omega
+        have hqodd : q % 2 = 1 := by
+          dsimp [q]
+          omega
+        have hqlt : q < x := by
+          dsimp [q]
+          omega
+        obtain ⟨k, p, hp, hpodd, hp5, hqform⟩ :=
+          ih q hqlt hqpos hqodd
+        refine ⟨k + 1, p, hp, hpodd, hp5, ?_⟩
+        calc
+          x = 4 * q + 1 := by
+            dsimp [q]
+            omega
+          _ = 4 * ownerLift k p + 1 := by rw [hqform]
+          _ = ownerLift (k + 1) p := by simp [ownerLift]
+      · exact ⟨0, x, hx, hodd, h5, by simp [ownerLift]⟩
+
 /-- Exact all-depth arithmetic identity for the valuation-pullback lift.
 Each owner-lift layer contributes exactly a factor 4 to 3*x+1. -/
 theorem ownerLift_three_mul_add_one
