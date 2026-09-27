@@ -72,25 +72,24 @@ theorem hard_large_previous_coefficient_gt_three_halves
   have hqn :
       oddCount n k * 3 ^ oddCount n k <
         n * 3 ^ oddCount n k := by
-    exact Nat.mul_lt_mul_right (3 ^ oddCount n k) hqk
-  by_contra hnot
-  have hcoef : 2 * 3 ^ oddCount n k ≤ 3 * 2 ^ k := by
+    exact (Nat.mul_lt_mul_right hpowpos).2 hqk
+  by_cases hcoef : 2 * 3 ^ oddCount n k ≤ 3 * 2 ^ k
+  · have hcoefN := Nat.mul_le_mul_right n hcoef
+    have hs3 := Nat.mul_le_mul_left 3 hs
+    have hqn' :
+        oddCount n k * 3 ^ oddCount n k <
+          3 ^ oddCount n k * n := by
+      simpa [Nat.mul_comm] using hqn
+    have hcoefN' :
+        2 * (3 ^ oddCount n k * n) ≤
+          3 * (2 ^ k * n) := by
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hcoefN
+    have hs3' :
+        3 * (2 * (2 ^ k * n)) ≤
+          3 * (3 ^ oddCount n k * n + bias n k) := by
+      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hs3
     omega
-  have hcoefN := Nat.mul_le_mul_right n hcoef
-  have hs3 := Nat.mul_le_mul_left 3 hs
-  have hqn' :
-      oddCount n k * 3 ^ oddCount n k <
-        3 ^ oddCount n k * n := by
-    simpa [Nat.mul_comm] using hqn
-  have hcoefN' :
-      2 * (3 ^ oddCount n k * n) ≤
-        3 * (2 ^ k * n) := by
-    simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hcoefN
-  have hs3' :
-      3 * (2 * (2 ^ k * n)) ≤
-        3 * (3 ^ oddCount n k * n + bias n k) := by
-    simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hs3
-  omega
+  · omega
 
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
