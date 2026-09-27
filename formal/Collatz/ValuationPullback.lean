@@ -19,6 +19,42 @@ theorem ownerLift_odd
       change (4 * ownerLift k p + 1) % 2 = 1
       omega
 
+/-- Exact all-depth arithmetic identity for the valuation-pullback lift.
+Each owner-lift layer contributes exactly a factor 4 to 3*x+1. -/
+theorem ownerLift_three_mul_add_one
+    (k p : Nat) :
+    3 * ownerLift k p + 1 = 4 ^ k * (3 * p + 1) := by
+  induction k with
+  | zero =>
+      simp [ownerLift]
+  | succ k ih =>
+      simp only [ownerLift, Nat.pow_succ]
+      rw [show 3 * (4 * ownerLift k p + 1) + 1 =
+          4 * (3 * ownerLift k p + 1) by omega, ih]
+      simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+
+/-- ownerLift is monotone in its owner. -/
+theorem ownerLift_mono
+    {a b : Nat} (hab : a ≤ b) :
+    ∀ k, ownerLift k a ≤ ownerLift k b := by
+  intro k
+  induction k with
+  | zero => simpa [ownerLift] using hab
+  | succ k ih =>
+      simp only [ownerLift]
+      omega
+
+/-- Every owner lift dominates the pure 4^k scaling of its owner. -/
+theorem four_pow_mul_le_ownerLift
+    (k p : Nat) :
+    4 ^ k * p ≤ ownerLift k p := by
+  induction k with
+  | zero => simp [ownerLift]
+  | succ k ih =>
+      simp only [ownerLift, Nat.pow_succ]
+      have h := Nat.mul_le_mul_left 4 ih
+      omega
+
 /-- One lift layer adds exactly two redundant shortcut steps:
 three steps from 4*x+1 coalesce with one step from odd x. -/
 theorem iter_three_four_mul_add_one
