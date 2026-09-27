@@ -31,11 +31,11 @@ theorem large_source_signature_mod24
   rcases hs with ⟨h3, h2, hnext2⟩
   have hodd : iter shortcut (k + 1) n % 2 ≠ 0 := by
     omega
-  have hdouble := double_shortcut (iter shortcut (k + 1) n)
-  rw [if_neg hodd] at hdouble
   have hnextmod :
       ((3 * iter shortcut (k + 1) n + 1) / 2) % 2 = 1 := by
-    simpa [hdouble] using hnext2
+    unfold shortcut at hnext2
+    rw [if_neg hodd] at hnext2
+    exact hnext2
   have hmod24 := Nat.mod_lt (iter shortcut (k + 1) n) (by omega : 0 < 24)
   omega
 
