@@ -18,4 +18,4 @@ jobs:
           gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
           mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
       - env: {NUCLEUS_TRACE_BINDING: "1", NUCLEUS_TRACE_CONVERSION: "1"}
-        run: metatron-kernel/target/release/metatron-kernel < /tmp/t/good/perf/magma-list-deep-n21.ndjson 2>&1 | grep -E 'NUCLEUS_BINDING|NUCLEUS_CONV_HEAD_MISMATCH' | tail -40 || true
+        run: metatron-kernel/target/release/metatron-kernel < /tmp/t/good/perf/magma-list-deep-n21.ndjson 2>&1 | grep -E 'NUCLEUS_BINDING|NUCLEUS_BINDING_TARGET|NUCLEUS_CONV_HEAD_MISMATCH' | tail -40 || true
