@@ -7563,7 +7563,7 @@ fn check_binary_enum(
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
             level_params: recursor.level_params.clone(),
             rules,
-        k_index_parameter_pairs: Vec::new(),
+            k_index_parameter_pairs: Vec::new(),
         };
         let environment = environment
             .install_recursor_reduction(recursor.name, reduction)
