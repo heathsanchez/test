@@ -1,0 +1,58 @@
+name: Crystal Chess Guard Genesis V6
+
+on:
+  push:
+    branches:
+      - crystal-chess-cross-material-fast-v1
+    paths:
+      - ".github/workflows/crystal-chess-guard-genesis-v6.yml"
+  workflow_dispatch:
+
+jobs:
+  source-guard-census:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Checkout pinned V6 source
+        run: |
+          git clone --depth 1 --branch crystal-chess-guard-genesis-v6 https://github.com/metalogiclabs/mathgraph.git /tmp/mathgraph
+          cd /tmp/mathgraph
+          test "$(git rev-parse HEAD)" = "1f274960773e2ec2575496c94e29b497e8ed4863"
+
+      - name: Install verifier dependencies
+        run: |
+          cd /tmp/mathgraph
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw > /tmp/SHA256SUMS
+
+      - name: Discover exact source-only guards on b-c target boundary
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph
+          mkdir -p /tmp/evidence
+          python experiments/crystal_chess_guard_genesis_v6.py             --tablebase-dir /tmp/syzygy             --pawn-files b,c             --output /tmp/evidence/crystal_chess_guard_genesis_v6.json             | tee /tmp/evidence/run.log
+          grep -q "CRYSTAL_CHESS_GUARD_GENESIS_V6=PASS" /tmp/evidence/run.log
+          cp /tmp/SHA256SUMS /tmp/evidence/
+
+      - name: Upload V6 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-guard-genesis-v6
+          path: /tmp/evidence/
+          if-no-files-found: error
