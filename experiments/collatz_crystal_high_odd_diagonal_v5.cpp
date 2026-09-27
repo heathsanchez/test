@@ -40,7 +40,7 @@ struct Rec {
 int main(int argc,char**argv){
   u64 limit = argc>1 ? std::stoull(argv[1]) : (1ULL<<22);
   size_t H = argc>2 ? std::stoull(argv[2]) : 4096;
-  auto qmin=qmin_table(H);
+  if(H>4096){ std::cerr<<"H>4096 unsupported by pinned exact qmin table\\n"; return 2; }
   std::vector<Rec> recs;
   u64 crossed_before=0,desc_before=0,censored=0,max_delay=0;
   for(u64 n=3;n<limit;n+=2){
@@ -61,7 +61,7 @@ int main(int argc,char**argv){
       if(odd) ++q;
       y=T(y);
       size_t jp=j+1;
-      if(!entered && q < qmin[jp]){
+      if(!entered && q < QMIN[jp]){
         ++crossed_before; closed=true; break;
       }
     }
