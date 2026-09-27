@@ -15,5 +15,6 @@ lean_lib CollatzFinal where
     `Collatz.SourceProduct,
     `Collatz.FixedSourceProgress,
     `Collatz.CoalescenceDescent,
+    `Collatz.SurvivalDeficit,
     `Collatz.BoundaryExcursionContraction
   ]
