@@ -1,0 +1,44 @@
+name: Collatz Crystal Three Quarter Coalescence V4
+on:
+  push:
+    branches: [collatz-crystal-three-quarter-coalescence-v4]
+    paths:
+      - 'formal/Collatz/ThreeQuarterCoalescence.lean'
+      - 'experiments/collatz_crystal_three_quarter_coalescence_v4.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-three-quarter-coalescence-v4.yml'
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/ThreeQuarterCoalescence.lean
+      - name: Build consequence-pruned closeout
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeQuarterCoalescence.lean
+      - name: Sweep consequence-pruned large branch
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-three-quarter-coalescence-v4
+          g++ -O3 -std=c++17 experiments/collatz_crystal_three_quarter_coalescence_v4.cpp -o /tmp/v4
+          /tmp/v4 67108864 | tee evidence/collatz-crystal-three-quarter-coalescence-v4/result.json
+          grep -q '"unresolved":0' evidence/collatz-crystal-three-quarter-coalescence-v4/result.json
+          grep -q '"universal_status":"UNKNOWN"' evidence/collatz-crystal-three-quarter-coalescence-v4/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-three-quarter-coalescence-v4
+          path: evidence/collatz-crystal-three-quarter-coalescence-v4
+          if-no-files-found: error
