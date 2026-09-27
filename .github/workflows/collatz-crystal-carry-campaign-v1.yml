@@ -32,6 +32,7 @@ jobs:
           python -u experiments/collatz_crystal_singleton_affine_margin_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/singleton-affine-margin.json
           python -u experiments/collatz_crystal_deficit_one_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/deficit-one.json
           python -u experiments/collatz_crystal_fixed_source_map_bank_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/fixed-source-map-bank.json
+          python -u experiments/collatz_crystal_global_map_bank_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/global-map-bank.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
