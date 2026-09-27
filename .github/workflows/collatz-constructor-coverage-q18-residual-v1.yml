@@ -1,0 +1,29 @@
+name: Collatz Constructor Coverage Q18 Residual V1
+on:
+  push:
+    branches: [collatz-constructor-coverage-q18-residual-v1]
+    paths:
+      - 'experiments/collatz_constructor_coverage_q18_residual_v1.py'
+      - '.github/workflows/collatz-constructor-coverage-q18-residual-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  residual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Probe exact Q18 residual
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_constructor_coverage_q18_residual_v1.py | tee q18-result.json
+          grep -q '"status": "Q18_RESIDUAL_PROBE"' q18-result.json
+          grep -q '"global_collatz": "UNKNOWN"' q18-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-constructor-coverage-q18-residual-v1
+          path: q18-result.json
+          if-no-files-found: error
