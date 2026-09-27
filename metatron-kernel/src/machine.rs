@@ -794,20 +794,36 @@ impl<'a> Machine<'a> {
                     && constructor_arguments.len() == rule.num_params + rule.num_fields
                 {
                     let prefix_len = reduction.num_params + 1 + reduction.rules.len();
-                    let mut env = EnvFrame::empty();
+                    let mut pending = Vec::new();
                     let mut rule_arguments = arguments[..prefix_len].to_vec();
                     rule_arguments.extend_from_slice(&constructor_arguments[rule.num_params..]);
-                    for argument in rule_arguments {
-                        env = env.extend(argument);
+                    for argument in rule_arguments.iter().rev() {
+                        pending.push(argument.clone());
                     }
                     let mut substitution = Vec::with_capacity(levels.len());
                     for (parameter, level) in reduction.level_params.iter().zip(levels) {
                         substitution.push((*parameter, level.clone()));
                     }
-                    let closure =
-                        Closure::with_levels(rule.rhs, env, LevelSubstitution::new(substitution));
+                    let mut closure = Closure::with_levels(
+                        rule.rhs,
+                        EnvFrame::empty(),
+                        LevelSubstitution::new(substitution),
+                    );
+                    let mut remaining = budget.saturating_sub(1);
+                    while let Some(argument) = pending.pop() {
+                        if remaining == 0 {
+                            return None;
+                        }
+                        remaining -= 1;
+                        match self.expressions.get(closure.expr)? {
+                            Expr::Lam { body, .. } => {
+                                closure = closure.sibling(*body, closure.env.extend(argument));
+                            }
+                            _ => return None,
+                        }
+                    }
                     return self
-                        .expose(closure, Transparency::Reducible, budget.saturating_sub(1))
+                        .expose(closure, Transparency::Reducible, remaining)
                         .proven_value()
                         .cloned();
                 }
