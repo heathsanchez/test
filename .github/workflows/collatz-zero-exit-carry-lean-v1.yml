@@ -3,6 +3,9 @@ on:
   push:
     branches: [collatz-crystal-zero-exit-carry-v1]
     paths:
+      - 'lean-toolchain'
+      - 'lakefile.lean'
+      - 'formal/Collatz/SourceProduct.lean'
       - 'formal/Collatz/CarryProgress.lean'
       - '.github/workflows/collatz-zero-exit-carry-lean-v1.yml'
   workflow_dispatch:
@@ -24,10 +27,10 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/CarryProgress.lean
-      - name: Check fixed-source carry lemmas
+      - name: Build fixed-source carry proof
         run: |
           set -euo pipefail
-          lake env lean formal/Collatz/CarryProgress.lean | tee carry-progress.log
+          lake build CollatzFinal 2>&1 | tee carry-progress.log
           ! grep -q 'sorryAx' carry-progress.log
       - uses: actions/upload-artifact@v4
         with:
