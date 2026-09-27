@@ -65,3 +65,5 @@ def main():
       "verdict":"FINITE_PASS" if all(x["violations"]==0 for x in rows) else "RANK_FALSIFIED",
       "global_collatz":"UNKNOWN"},indent=2,default=list))
 if __name__=="__main__":main()
+
+# trigger
