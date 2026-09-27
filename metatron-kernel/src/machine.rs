@@ -785,6 +785,12 @@ impl<'a> Machine<'a> {
         let arguments = neutral.spine[offset..].to_vec();
         let target = arguments.last()?;
         let observed = self.observe_bool_constructor(target, budget.saturating_sub(1))?;
+        if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
+            eprintln!(
+                "NUCLEUS_BINDING:recursor={}:target={:?}:observed={:?}:spine={:?}",
+                name.0, target, observed, neutral.spine
+            );
+        }
         let (constructor, constructor_arguments) = observed;
         let rule = reduction
             .rules
