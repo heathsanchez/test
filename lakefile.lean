@@ -31,5 +31,6 @@ lean_lib CollatzFinal where
     `Collatz.FinalExcursion,
     `Collatz.AssembledConstructorCloseout,
     `Collatz.ConstructorTournament,
+    `Collatz.ValuationPullback,
     `Collatz.ThreeQuarterCoalescence
   ]
