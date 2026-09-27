@@ -1,0 +1,44 @@
+name: Collatz hard first crossing
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/HardFirstCrossing.lean'
+      - 'formal/Collatz/FirstCrossingRigidity.lean'
+      - 'formal/Collatz/OrdinaryInverseOdd.lean'
+      - '.github/workflows/collatz-hard-first-crossing.yml'
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile hard first-crossing residual
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-hard-first-crossing .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-hard-first-crossing/toolchain.txt
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity OrdinaryExitReduction OrdinaryInverseOdd; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-hard-first-crossing/$module.log"
+          done
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/HardFirstCrossing.lean
+          lake env lean -DautoImplicit=false formal/Collatz/HardFirstCrossing.lean | tee evidence/collatz-hard-first-crossing/HardFirstCrossing.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-hard-first-crossing/*.log
+          git rev-parse HEAD > evidence/collatz-hard-first-crossing/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-hard-first-crossing
+          path: evidence/collatz-hard-first-crossing
+          if-no-files-found: error
