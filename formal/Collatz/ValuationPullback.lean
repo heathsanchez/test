@@ -51,9 +51,12 @@ theorem four_pow_mul_le_ownerLift
   induction k with
   | zero => simp [ownerLift]
   | succ k ih =>
-      simp only [ownerLift, Nat.pow_succ]
-      have h := Nat.mul_le_mul_left 4 ih
-      omega
+      change 4 ^ (k + 1) * p ≤ 4 * ownerLift k p + 1
+      calc
+        4 ^ (k + 1) * p = 4 * (4 ^ k * p) := by
+          simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+        _ ≤ 4 * ownerLift k p := Nat.mul_le_mul_left 4 ih
+        _ ≤ 4 * ownerLift k p + 1 := Nat.le_add_right _ _
 
 /-- One lift layer adds exactly two redundant shortcut steps:
 three steps from 4*x+1 coalesce with one step from odd x. -/
