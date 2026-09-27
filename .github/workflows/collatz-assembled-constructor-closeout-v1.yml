@@ -4,6 +4,8 @@ on:
     branches: [collatz-assembled-constructor-closeout-v1]
     paths:
       - 'formal/Collatz/AssembledConstructorCloseout.lean'
+      - 'formal/Collatz/ConstructorTournament.lean'
+      - 'formal/Collatz/ValuationPullback.lean'
       - 'lakefile.lean'
       - '.github/workflows/collatz-assembled-constructor-closeout-v1.yml'
   workflow_dispatch:
