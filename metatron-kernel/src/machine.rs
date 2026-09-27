@@ -402,8 +402,8 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
-                            let level_substitution =
-                                self.recursor_level_substitution(reduction, levels, &closure, budget);
+                            let level_substitution = self
+                                .recursor_level_substitution(reduction, levels, &closure, budget);
 
                             if let Some(level_substitution) = level_substitution.clone()
                                 && let Some((constructor, constructor_arguments)) =
@@ -549,11 +549,7 @@ impl<'a> Machine<'a> {
                     // A projection of a neutral structure is itself neutral.  Keeping
                     // it explicit lets the eta-expanded recursor compare against the
                     // ordinary exported projection without normalizing the major.
-                    record_transition(
-                        &mut transitions,
-                        record_witnesses,
-                        TransitionWitness::Rigid,
-                    );
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
                     return exposed(
                         Value::Neutral(Neutral {
                             head: NeutralHead::Projection {
