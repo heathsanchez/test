@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -24,6 +25,7 @@ pub struct TypeChecker<'a> {
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    proven_types: RefCell<HashMap<(ExprId, usize, u64), TypeValue>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +40,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            proven_types: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +56,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            proven_types: RefCell::new(HashMap::new()),
         }
     }
 
@@ -323,17 +327,20 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
-                    Judgment::Proven { .. } => Judgment::proven(
-                        match body {
+                    Judgment::Proven { .. } => {
+                        let result = match body {
                             PiBody::Fixed(body) => body,
                             PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
                                 body.expr,
                                 body.env.extend(self.closure(*arg, frame.clone())),
                                 body.levels,
                             )),
-                        },
-                        "application-type-instantiation",
-                    ),
+                        };
+                        self.proven_types
+                            .borrow_mut()
+                            .insert((expression, context.len(), frame.id()), result.clone());
+                        Judgment::proven(result, "application-type-instantiation")
+                    },
                     Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
@@ -460,7 +467,12 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
     ) -> Judgment<()> {
-        let inferred = self.infer_in(expression, context, frame, remaining);
+        let key = (expression, context.len(), frame.id());
+        let inferred = if let Some(value) = self.proven_types.borrow().get(&key).cloned() {
+            Judgment::proven(value, "compiled-proven-type")
+        } else {
+            self.infer_in(expression, context, frame, remaining)
+        };
         if std::env::var_os("NUCLEUS_TRACE_GENERIC_CHECK").is_some() {
             match &inferred {
                 Judgment::Proven { value, .. } => eprintln!(
