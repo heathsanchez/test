@@ -107,6 +107,53 @@ theorem minimal_bad_ownerLift_owner_ge
     ordinary_exit_of_ownerLift_on_orbit hp hpodd hlt horbit
   exact minimal_bad_has_no_ordinary_exit hmin a hexit
 
+
+/-- ownerLift is monotone in its owner coordinate at every lift depth. -/
+theorem ownerLift_mono
+    (k : Nat) {a b : Nat} (hab : a ≤ b) :
+    ownerLift k a ≤ ownerLift k b := by
+  induction k with
+  | zero =>
+      simpa [ownerLift] using hab
+  | succ k ih =>
+      simp only [ownerLift]
+      exact Nat.add_le_add_right (Nat.mul_le_mul_left 4 ih) 1
+
+/-- Universal source-relative owner-lift barrier.
+
+On a hypothetical minimal bad source n, an orbit occurrence of ownerLift k p
+cannot sit below ownerLift k n: the coalescing owner p is forced to be at least
+n, and ownerLift preserves source order.  This packages every finite
+mod-8/mod-2^m valuation exclusion into one parametric height inequality. -/
+theorem minimal_bad_ownerLift_height_ge
+    {n p j k : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hp : 0 < p)
+    (hpodd : p % 2 = 1)
+    (horbit : iter shortcut j n = ownerLift k p) :
+    ownerLift k n ≤ iter shortcut j n := by
+  have hpn : n ≤ p :=
+    minimal_bad_ownerLift_owner_ge hmin hp hpodd horbit
+  rw [horbit]
+  exact ownerLift_mono k hpn
+
+/-- Contrapositive constructor form: any represented owner lift below the
+source-matched lift height is already an ordinary exit. -/
+theorem ordinary_exit_of_ownerLift_below_source_height
+    {n p j k : Nat}
+    (hp : 0 < p)
+    (hpodd : p % 2 = 1)
+    (horbit : iter shortcut j n = ownerLift k p)
+    (hlt : iter shortcut j n < ownerLift k n) :
+    ∃ a, OrdinaryExit n (iter shortcut a n) := by
+  have hpn : p < n := by
+    apply Nat.lt_of_not_ge
+    intro hnp
+    have hmono := ownerLift_mono k hnp
+    rw [← horbit] at hmono
+    exact (Nat.not_le_of_gt hlt) hmono
+  exact ordinary_exit_of_ownerLift_on_orbit hp hpodd hpn horbit
+
 /-- First concrete valuation barrier.  Below 4*n+1 a minimal-bad orbit cannot
 occupy residue 5 modulo 8, because every such value is exactly ownerLift 1 p
 for an odd p<n. -/
@@ -245,6 +292,9 @@ theorem minimal_bad_large_crossing_not_mod96_fiftyfive
 
 #print axioms minimal_bad_large_crossing_not_mod48_nineteen
 
+#print axioms ownerLift_mono
+#print axioms minimal_bad_ownerLift_height_ge
+#print axioms ordinary_exit_of_ownerLift_below_source_height
 #print axioms minimal_bad_ownerLift_owner_ge
 #print axioms minimal_bad_below_four_source_not_mod8_five
 
