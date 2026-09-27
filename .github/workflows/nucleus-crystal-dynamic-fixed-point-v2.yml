@@ -53,12 +53,12 @@ jobs:
             obs['unknown_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'UNKNOWN' in e).items()))
             obs['depth_language']=tuple(sorted(set(re.findall(r'depth=(\d+)', '\n'.join(gen)))))
             obs['event_language']=tuple(sorted(set(re.sub(r'depth=\d+','depth=*',e) for e in gen)))
-            obs['typed_judgments','type_pairs']=tuple(sorted(set(e for e in gen if e.startswith('infer=') or e.startswith('convert='))))
+            obs['typed_judgments']=tuple(sorted(set(e for e in gen if e.startswith('infer=') or e.startswith('convert='))))
             obs['type_pairs']=tuple(sorted(set(re.findall(r'NUCLEUS_TYPE_PAIR:([^\\n]+)',log))))
             rows.append({'path':str(p.relative_to(root)),'expected':expected,'obs':obs})
           assert len(rows)==40,len(rows)
 
-          active=['down','app','conv','proven_multiset','binding_normalized','rulek','bool_target','bool_flow','typed_judgments']
+          active=['down','app','conv','proven_multiset','binding_normalized','rulek','bool_target','bool_flow','typed_judgments','type_pairs']
           rejected=set()
           history=[]
           previous_semantic=None
