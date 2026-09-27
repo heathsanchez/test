@@ -64,7 +64,8 @@ theorem all_ones_tail_oddCount_lower (j t : Nat) :
     j ≤ oddCount (2 ^ j - 1) (j + t) := by
   induction t with
   | zero =>
-      simpa using all_ones_odd_count j j (Nat.le_refl j)
+      have heq := all_ones_odd_count j j (Nat.le_refl j)
+      omega
   | succ t ih =>
       have hs := oddCount_le_succ (2 ^ j - 1) (j + t)
       rw [show j + (t + 1) = (j + t) + 1 by omega]
@@ -75,18 +76,11 @@ ternary credits provide 9. -/
 private theorem two_pow_three_mul_le_three_pow_two_mul (r : Nat) :
     2 ^ (3 * r) ≤ 3 ^ (2 * r) := by
   induction r with
-  | zero => norm_num
+  | zero => decide
   | succ r ih =>
       have hm : 2 ^ (3 * r) * 8 ≤ 3 ^ (2 * r) * 9 :=
-        Nat.mul_le_mul ih (by norm_num)
-      calc
-        2 ^ (3 * (r + 1)) = 2 ^ (3 * r + 3) := by congr 1 <;> omega
-        _ = 2 ^ (3 * r) * 2 ^ 3 := by rw [Nat.pow_add]
-        _ = 2 ^ (3 * r) * 8 := by norm_num
-        _ ≤ 3 ^ (2 * r) * 9 := hm
-        _ = 3 ^ (2 * r) * 3 ^ 2 := by norm_num
-        _ = 3 ^ (2 * r + 2) := by rw [Nat.pow_add]
-        _ = 3 ^ (2 * (r + 1)) := by congr 1 <;> omega
+        Nat.mul_le_mul ih (by decide : 8 ≤ 9)
+      simpa [Nat.mul_add, Nat.pow_add] using hm
 
 /-- Exact adversarial family against any constant post-origin block bound.
 For n=2^(2r)-1, after the 2r source bits are exhausted the coefficient still
@@ -133,7 +127,7 @@ theorem no_uniform_fixed_origin_block (B : Nat) :
   have hjexp : j = 2 * B + 2 := by simp [j, r]; omega
   have hjpow : 2 ^ j = 2 ^ (2 * B) * 4 := by
     rw [hjexp, Nat.pow_add]
-    norm_num
+    rfl
   have hn : 0 < n := by
     simp only [n]
     rw [hjpow]
