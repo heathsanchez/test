@@ -405,6 +405,16 @@ impl<'a> Machine<'a> {
                                     binding
                                 );
                             }
+                            if let Some((constructor, constructor_arguments)) = &observed_target
+                                && std::env::var_os("NUCLEUS_TRACE_BOOL_FLOW").is_some()
+                            {
+                                eprintln!(
+                                    "NUCLEUS_BOOL_FLOW:observed:recursor={}:constructor={}:fields={}",
+                                    name.0,
+                                    constructor.0,
+                                    constructor_arguments.len()
+                                );
+                            }
                             if let Some((constructor, constructor_arguments)) = observed_target
                                 && let Some(rule) = reduction
                                     .rules
@@ -429,6 +439,14 @@ impl<'a> Machine<'a> {
                                     level_substitution.insert(*parameter, level);
                                 }
                                 if levels_ok {
+                                    if std::env::var_os("NUCLEUS_TRACE_BOOL_FLOW").is_some() {
+                                        eprintln!(
+                                            "NUCLEUS_BOOL_FLOW:reduce:recursor={}:constructor={}:rhs={}",
+                                            name.0,
+                                            constructor.0,
+                                            rule.rhs.0
+                                        );
+                                    }
                                     let mut level_substitution =
                                         level_substitution.into_iter().collect::<Vec<_>>();
                                     level_substitution.sort_by_key(|(name, _)| name.0);
