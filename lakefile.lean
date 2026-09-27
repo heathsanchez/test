@@ -29,5 +29,6 @@ lean_lib CollatzFinal where
     `Collatz.ReverseTargetBoundary,
     `Collatz.SourceCoherenceAudit,
     `Collatz.FinalExcursion,
-    `Collatz.AssembledConstructorCloseout
+    `Collatz.AssembledConstructorCloseout,
+    `Collatz.ConstructorTournament
   ]
