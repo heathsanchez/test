@@ -702,9 +702,6 @@ impl<'a> Machine<'a> {
                 Expr::BVar(index) => match closure.env.lookup(*index)? {
                     EnvBinding::Closure(bound) => closure = bound,
                     EnvBinding::Free(free) => {
-                        if arguments.len() == 2 && arguments[0] == arguments[1] {
-                            return Some((bools.true_ctor, Vec::new()));
-                        }
                         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
                             eprintln!("NUCLEUS_BINDING_FREE:free={:?}:args={:?}", free, arguments);
                         }
@@ -720,7 +717,29 @@ impl<'a> Machine<'a> {
                         return None;
                     }
                     arguments.reverse();
-                    if arguments[0] == arguments[1] {
+                    let same_argument = arguments[0] == arguments[1]
+                        || match (
+                            self.expressions.get(arguments[0].expr),
+                            self.expressions.get(arguments[1].expr),
+                        ) {
+                            (Some(Expr::BVar(left)), Some(Expr::BVar(right)))
+                                if left == right
+                                    && arguments[0].levels == arguments[1].levels =>
+                            {
+                                matches!(
+                                    (
+                                        arguments[0].env.lookup(*left),
+                                        arguments[1].env.lookup(*right),
+                                    ),
+                                    (
+                                        Some(EnvBinding::Free(left_free)),
+                                        Some(EnvBinding::Free(right_free))
+                                    ) if left_free == right_free
+                                )
+                            }
+                            _ => false,
+                        };
+                    if same_argument {
                         return Some((bools.true_ctor, Vec::new()));
                     }
                     let first = self
