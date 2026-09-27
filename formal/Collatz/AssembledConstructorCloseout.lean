@@ -1,5 +1,5 @@
 import Collatz.SourceCoherenceAudit
-import Collatz.HardCrossingSplit
+import Collatz.HardCrossingFuture
 import Collatz.FinalExcursion
 
 namespace CollatzFinal
@@ -12,7 +12,7 @@ Nothing is abstracted away:
 * the crossing is hard (no exit at the crossing);
 * either the source lies in the origin branch n <= q;
 * or q < n, in which case the endpoint is in the rigid large-source window
-  3*y < 4*n and residue class y = 7 mod 24.
+  3*y < 4*n and the warranted scalar signature y = 7 mod 12.
 
 This is the domain split that a lower-source constructor compiler must cover. -/
 theorem minimal_bad_first_crossing_constructor_domains
@@ -23,20 +23,24 @@ theorem minimal_bad_first_crossing_constructor_domains
     let y := iter shortcut (k + 1) n
     HardFirstCrossing n k ∧
       (n ≤ q ∨
-        (q < n ∧ 3 * y < 4 * n ∧ y % 24 = 7)) := by
+        (q < n ∧ 3 * y < 4 * n ∧ y % 12 = 7)) := by
   let q := oddCount n (k + 1)
   let y := iter shortcut (k + 1) n
   have hhard : HardFirstCrossing n k :=
     minimal_bad_first_crossing_is_hard hmin hfirst
   refine ⟨hhard, ?_⟩
-  rcases minimal_bad_first_crossing_origin_or_large_signature
-    hmin hfirst with horigin | hlarge
+  by_cases horigin : n ≤ q
   · exact Or.inl horigin
-  · rcases hlarge with ⟨hq, hmod⟩
+  · have hq : q < n := by omega
     have hwin : 3 * y < 4 * n := by
       dsimp [y]
       exact first_crossing_three_y_lt_four_n hmin.1.1 hfirst hq
-    exact Or.inr ⟨hq, hwin, by simpa [y] using hmod⟩
+    have hsig := minimal_bad_hard_crossing_large_source_signature
+      hmin hfirst hq
+    have hmod : y % 12 = 7 := by
+      apply (scalar_large_signature_iff_mod12 y).1
+      simpa [y] using hsig
+    exact Or.inr ⟨hq, hwin, hmod⟩
 
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
@@ -58,7 +62,7 @@ def LargeCrossingConstructorCoverage : Prop :=
   ∀ n k, 1 < n → HardFirstCrossing n k →
     oddCount n (k + 1) < n →
     3 * iter shortcut (k + 1) n < 4 * n →
-    iter shortcut (k + 1) n % 24 = 7 →
+    iter shortcut (k + 1) n % 12 = 7 →
     ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
 
 /-- Full assembly theorem.
