@@ -340,7 +340,7 @@ impl<'a> TypeChecker<'a> {
                             .borrow_mut()
                             .insert((expression, context.len(), frame.id()), result.clone());
                         Judgment::proven(result, "application-type-instantiation")
-                    },
+                    }
                     Judgment::Refuted { obstruction } => Judgment::Refuted { obstruction },
                     Judgment::Unknown { residual } => Judgment::Unknown { residual },
                 }
