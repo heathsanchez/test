@@ -1,0 +1,14 @@
+name: Collatz singleton zero-loss extremal
+on:
+  push:
+    branches: [collatz-crystal-zero-loss-tail-v1]
+jobs:
+  extract:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_singleton_zero_loss_extremal_v0.py | tee /tmp/out.json
+      - uses: actions/upload-artifact@v4
+        with: {name: collatz-singleton-zero-loss-extremal-v0, path: /tmp/out.json}
