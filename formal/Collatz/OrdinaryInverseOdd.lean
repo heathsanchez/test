@@ -14,12 +14,9 @@ theorem inverse_odd_predecessor_of_mod3_two
   have hy' : y = 3 * a + 2 := by
     dsimp [a]
     omega
-  let p := (2 * y - 1) / 3
-  have hp : p = 2 * a + 1 := by
-    dsimp [p]
+  have hp : (2 * y - 1) / 3 = 2 * a + 1 := by
     rw [hy']
     omega
-  change 0 < p ∧ p % 2 = 1 ∧ shortcut p = y
   refine ⟨?_, ?_, ?_⟩
   · rw [hp]
     omega
