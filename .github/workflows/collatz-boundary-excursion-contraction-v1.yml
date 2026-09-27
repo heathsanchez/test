@@ -22,10 +22,10 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/BoundaryExcursionContraction.lean
-          lake env lean -DautoImplicit=false formal/Collatz/BoundaryExcursionContraction.lean | tee boundary-excursion.log
-          ! grep -q 'sorryAx' boundary-excursion.log
           lake build CollatzFinal | tee build.log
           ! grep -q 'sorryAx' build.log
+          lake env lean -DautoImplicit=false formal/Collatz/BoundaryExcursionContraction.lean | tee boundary-excursion.log
+          ! grep -q 'sorryAx' boundary-excursion.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
