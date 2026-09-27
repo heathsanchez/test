@@ -1,0 +1,27 @@
+name: Collatz Programme Meta Crystal V1
+
+on:
+  push:
+    branches:
+      - collatz-programme-meta-crystal-v1
+    paths:
+      - experiments/collatz_programme_meta_crystal_v1.py
+      - .github/workflows/collatz-programme-meta-crystal-v1.yml
+  workflow_dispatch:
+
+jobs:
+  meta-crystal:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Run programme-level Crystal
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_programme_meta_crystal_v1.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-programme-meta-crystal-v1
+          path: /tmp/result.json
