@@ -27,6 +27,8 @@ jobs:
           mkdir -p evidence/collatz-fixed-origin-transfer
           lake build CollatzFinal
           lake env lean --version | tee evidence/collatz-fixed-origin-transfer/toolchain.txt
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProduct.olean formal/Collatz/SourceProduct.lean | tee evidence/collatz-fixed-origin-transfer/SourceProduct.log
           ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FixedOriginTransfer.lean
           lake env lean -DautoImplicit=false formal/Collatz/FixedOriginTransfer.lean | tee evidence/collatz-fixed-origin-transfer/FixedOriginTransfer.log
           ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-fixed-origin-transfer/FixedOriginTransfer.log
