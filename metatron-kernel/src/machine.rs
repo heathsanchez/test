@@ -766,18 +766,18 @@ impl<'a> Machine<'a> {
                             && left_neutral.spine.len() == 1
                             && right_neutral.spine.len() == 1
                         {
-                                let left_arg = self.expose_internal(
-                                    left_neutral.spine[0].clone(),
-                                    Transparency::Reducible,
-                                    remaining,
-                                    false,
-                                );
-                                let right_arg = self.expose_internal(
-                                    right_neutral.spine[0].clone(),
-                                    Transparency::Reducible,
-                                    remaining,
-                                    false,
-                                );
+                            let left_arg = self.expose_internal(
+                                left_neutral.spine[0].clone(),
+                                Transparency::Reducible,
+                                remaining,
+                                false,
+                            );
+                            let right_arg = self.expose_internal(
+                                right_neutral.spine[0].clone(),
+                                Transparency::Reducible,
+                                remaining,
+                                false,
+                            );
                             eprintln!(
                                 "NUCLEUS_BEQ_SPINE_EXPOSED:left={:?}:right={:?}",
                                 left_arg.proven_value().map(|x| &x.value),
