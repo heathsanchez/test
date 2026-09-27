@@ -1,0 +1,47 @@
+name: Collatz Constructor Tournament V1
+on:
+  push:
+    branches: [collatz-constructor-tournament-v1]
+    paths:
+      - 'formal/Collatz/ConstructorTournament.lean'
+      - 'experiments/collatz_constructor_tournament_large_v1.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-constructor-tournament-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/ConstructorTournament.lean
+      - name: Build formal reduction
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-constructor-tournament-v1
+          git rev-parse HEAD > evidence/collatz-constructor-tournament-v1/commit.txt
+          lake build CollatzFinal | tee evidence/collatz-constructor-tournament-v1/build.log
+          lake env lean -DautoImplicit=false formal/Collatz/ConstructorTournament.lean | tee evidence/collatz-constructor-tournament-v1/theorems.log
+          ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-constructor-tournament-v1/*.log
+      - name: Sweep large-branch constructor
+        run: |
+          set -euo pipefail
+          g++ -O3 -std=c++17 experiments/collatz_constructor_tournament_large_v1.cpp -o /tmp/tournament
+          /usr/bin/time -v /tmp/tournament 67108864 4096 2> evidence/collatz-constructor-tournament-v1/time.txt | tee evidence/collatz-constructor-tournament-v1/large.json
+          grep -q '"unresolved":0' evidence/collatz-constructor-tournament-v1/large.json
+          grep -q '"universal_status":"UNKNOWN"' evidence/collatz-constructor-tournament-v1/large.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-constructor-tournament-v1
+          path: evidence/collatz-constructor-tournament-v1
+          if-no-files-found: error
