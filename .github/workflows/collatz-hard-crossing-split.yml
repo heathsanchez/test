@@ -1,0 +1,42 @@
+name: Collatz hard crossing split
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/HardCrossingSplit.lean'
+      - '.github/workflows/collatz-hard-crossing-split.yml'
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile hard-crossing split
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-hard-crossing-split .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-hard-crossing-split/toolchain.txt
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity OrdinaryExitReduction OrdinaryInverseOdd HardFirstCrossing ThreeAdicReverseBarrier FirstCrossingBias FirstCrossingGap StrictDescentReduction HardCrossingFuture; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-hard-crossing-split/$module.log"
+          done
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/HardCrossingSplit.lean
+          lake env lean -DautoImplicit=false formal/Collatz/HardCrossingSplit.lean | tee evidence/collatz-hard-crossing-split/HardCrossingSplit.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-hard-crossing-split/*.log
+          git rev-parse HEAD > evidence/collatz-hard-crossing-split/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-hard-crossing-split
+          path: evidence/collatz-hard-crossing-split
+          if-no-files-found: error
