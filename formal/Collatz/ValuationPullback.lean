@@ -229,9 +229,15 @@ theorem owner_core_low_step
       simp [iter]
     have hsecondOdd : iter shortcut 2 p % 2 = 1 := by
       rw [hsecond]
+      let q := shortcut p
+      have hqeven : q % 2 = 0 := by
+        simpa [q] using hfirstEven
+      have hqval : q = (3 * p + 1) / 2 := by
+        simpa [q] using hfirst
+      change shortcut q % 2 = 1
       unfold shortcut
-      simp only [hfirstEven, ite_true]
-      rw [hfirst]
+      simp only [hqeven, ite_true]
+      rw [hqval]
       omega
     exact ⟨h1, hfirstEven, hsecondOdd⟩
   · left
