@@ -56,6 +56,38 @@ theorem first_crossing_last_step_even
   · exact h
   · simp [h] at hbit
 
+/-- At a first crossing the endpoint is literally half of the preceding
+ordinary-orbit value. -/
+theorem first_crossing_endpoint_eq_half_previous
+    {n k : Nat}
+    (hfirst : FirstCoefficientCrossingAt n (k + 1)) :
+    iter shortcut (k + 1) n = iter shortcut k n / 2 := by
+  rw [iter_succ_last]
+  unfold shortcut
+  simp [first_crossing_last_step_even hfirst]
+
+/-- First-crossing strict descent is exactly failure to reach twice the source
+immediately before the forced final even step. -/
+theorem first_crossing_descends_iff_previous_lt_double
+    {n k : Nat}
+    (hfirst : FirstCoefficientCrossingAt n (k + 1)) :
+    iter shortcut (k + 1) n < n ↔
+      iter shortcut k n < 2 * n := by
+  rw [first_crossing_endpoint_eq_half_previous hfirst]
+  have heven := first_crossing_last_step_even hfirst
+  omega
+
+/-- Dually, a nondescending first crossing is exactly a pre-crossing value at
+least twice the source. This is the ordinary-orbit form of the M>=0 branch. -/
+theorem first_crossing_nondescending_iff_previous_ge_double
+    {n k : Nat}
+    (hfirst : FirstCoefficientCrossingAt n (k + 1)) :
+    n ≤ iter shortcut (k + 1) n ↔
+      2 * n ≤ iter shortcut k n := by
+  rw [first_crossing_endpoint_eq_half_previous hfirst]
+  have heven := first_crossing_last_step_even hfirst
+  omega
+
 /-- Universally, the odd count at first crossing is exactly one below the
 native dyadic threshold qmin. This promotes the old finite q=floor(alpha*k)
 phenomenon to an exact all-depth statement without real logarithms. -/
@@ -98,6 +130,9 @@ theorem first_crossing_exact_band
 #print axioms orbitOddBit_lt_two
 #print axioms first_crossing_rigidity
 #print axioms first_crossing_last_step_even
+#print axioms first_crossing_endpoint_eq_half_previous
+#print axioms first_crossing_descends_iff_previous_lt_double
+#print axioms first_crossing_nondescending_iff_previous_ge_double
 #print axioms first_crossing_oddCount_eq_threshold_minus_one
 #print axioms first_crossing_previous_oddCount_eq_qmin
 #print axioms first_crossing_exact_band
