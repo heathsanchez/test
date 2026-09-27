@@ -717,6 +717,15 @@ impl<'a> Machine<'a> {
                         return None;
                     }
                     arguments.reverse();
+                    if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
+                        eprintln!(
+                            "NUCLEUS_BEQ_ARGS:left={:?}:right={:?}:left_node={:?}:right_node={:?}",
+                            arguments[0],
+                            arguments[1],
+                            self.expressions.get(arguments[0].expr),
+                            self.expressions.get(arguments[1].expr)
+                        );
+                    }
                     let same_argument = arguments[0] == arguments[1]
                         || match (
                             self.expressions.get(arguments[0].expr),
