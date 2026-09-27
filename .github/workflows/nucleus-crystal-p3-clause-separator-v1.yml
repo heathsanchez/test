@@ -1,0 +1,51 @@
+name: Nucleus Crystal P3 clause separator v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-p3-clause-separator-v1.yml"]
+permissions: {contents: read}
+jobs:
+  separate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Run P3 clause separator over residual frontier
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          env=os.environ.copy(); env['NUCLEUS_TRACE_P3_CLAUSES']='1'
+          rows=[]
+          for p in sorted(root.rglob('*.ndjson')):
+            expected=0 if p.relative_to(root).parts[0]=='good' else 1
+            with p.open('rb') as f:
+              try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+              except subprocess.TimeoutExpired: continue
+            if q.returncode!=2: continue
+            clauses=re.findall(r'NUCLEUS_P3_CLAUSE:([^:]+):(PASS|FAIL)',q.stderr.decode(errors='replace'))
+            rows.append({'path':str(p.relative_to(root)),'expected':expected,'clauses':clauses})
+          atoms=collections.defaultdict(lambda:{0:[],1:[]})
+          for r in rows:
+            for a in set(r['clauses']): atoms[a][r['expected']].append(r['path'])
+          ranked=[]
+          for a,by in atoms.items():
+            outs=[o for o in (0,1) if by[o]]
+            ranked.append({'clause':a[0],'result':a[1],'pure':len(outs)==1,'outcomes':outs,'coverage':sum(map(len,by.values())),'accept':by[0],'reject':by[1]})
+          ranked.sort(key=lambda x:(not x['pure'],-x['coverage'],x['clause'],x['result']))
+          out={'unknown_count':len(rows),'ranked':ranked,'rows':[r for r in rows if r['clauses']]}
+          pathlib.Path('/tmp/nucleus-crystal-p3-clause-separator-v1.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          assert len(rows)==40
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-p3-clause-separator-v1
+          path: /tmp/nucleus-crystal-p3-clause-separator-v1.json
