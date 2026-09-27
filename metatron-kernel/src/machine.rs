@@ -819,9 +819,16 @@ impl<'a> Machine<'a> {
         if constructor != true_ctor {
             return None;
         }
-        let true_rule = reduction.rules.iter().find(|rule| rule.constructor == true_ctor)?;
-        let true_minor_index = reduction.num_params + 1
-            + reduction.rules.iter().position(|rule| rule.constructor == true_ctor)?;
+        let _true_rule = reduction
+            .rules
+            .iter()
+            .find(|rule| rule.constructor == true_ctor)?;
+        let true_minor_index = reduction.num_params
+            + 1
+            + reduction
+                .rules
+                .iter()
+                .position(|rule| rule.constructor == true_ctor)?;
         arguments.get(true_minor_index).map(|minor| {
             self.expose(
                 minor.clone(),
