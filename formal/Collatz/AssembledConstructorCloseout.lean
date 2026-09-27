@@ -128,8 +128,10 @@ theorem hard_large_recovers_two_survival_steps
     simpa [y] using hyodd
   have hs1 : CoefficientSurvives n (k + 2) := by
     rw [coefficientSurvives_succ_odd n (k + 1) hpar1]
-    simpa [coefficientDenominator, coefficientNumerator, Nat.pow_succ,
-      Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hrestore
+    unfold coefficientDenominator coefficientNumerator
+    rw [show 2 ^ (k + 1) = 2 * 2 ^ k by
+      simp [Nat.pow_succ, Nat.mul_comm]]
+    omega
   have hnext :
       iter shortcut (k + 2) n = shortcut y := by
     simpa [y] using iter_succ_last n (k + 1)
