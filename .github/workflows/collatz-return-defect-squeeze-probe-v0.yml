@@ -1,0 +1,16 @@
+name: Collatz return defect squeeze probe V0
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths: ['experiments/collatz_return_defect_squeeze_probe_v0.py','.github/workflows/collatz-return-defect-squeeze-probe-v0.yml']
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: cd experiments && python -u collatz_return_defect_squeeze_probe_v0.py
