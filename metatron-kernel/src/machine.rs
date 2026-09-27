@@ -705,12 +705,7 @@ impl<'a> Machine<'a> {
                             closure = bound;
                         } else {
                             let exposed = self
-                                .expose_internal(
-                                    bound,
-                                    Transparency::Reducible,
-                                    remaining,
-                                    false,
-                                )
+                                .expose_internal(bound, Transparency::Reducible, remaining, false)
                                 .proven_value()?
                                 .value
                                 .clone();
@@ -719,13 +714,12 @@ impl<'a> Machine<'a> {
                             };
                             arguments.reverse();
                             neutral.spine.extend(arguments);
-                            let closed = self.close_neutral_consequence(
-                                &neutral,
-                                remaining.saturating_sub(1),
-                            )?;
+                            let closed = self
+                                .close_neutral_consequence(&neutral, remaining.saturating_sub(1))?;
                             return match closed {
                                 Value::Neutral(closed_neutral) => {
-                                    let NeutralHead::Const { name, levels } = closed_neutral.head else {
+                                    let NeutralHead::Const { name, levels } = closed_neutral.head
+                                    else {
                                         None
                                     };
                                     if !levels.is_empty() || !closed_neutral.spine.is_empty() {
