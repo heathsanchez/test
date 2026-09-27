@@ -715,6 +715,12 @@ fn check_inductive(
     }
 
     if let [inductive] = block.types.as_slice()
+        && name_is_root_str(export, inductive.name, "HEq")
+    {
+        return check_exact_heq(export, environment, block, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
         && name_is_root_str(export, inductive.name, "Acc")
     {
         return check_exact_acc(export, environment, block, limits, delta_policy);
@@ -5084,6 +5090,71 @@ fn check_exact_decidable(
             derived_type(inductive.name, inductive.ty),
             derived_constructor(false_ctor),
             derived_constructor(true_ctor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(derivation.finish(), &block.constructors, recursor)
+}
+
+fn check_exact_heq(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    if inductive.num_params != 2
+        || inductive.num_indices != 2
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || inductive.level_params.len() != 1
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 2
+        || constructor.num_fields != 0
+        || constructor.is_unsafe
+        || constructor.level_params != inductive.level_params
+        || !name_is_child_str(export, constructor.name, inductive.name, "refl")
+        || recursor.is_unsafe
+        || !recursor.k
+        || recursor.num_params != 2
+        || recursor.num_indices != 2
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || recursor.rules[0].num_fields != 0
+        || recursor.level_params.len() != 2
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            true,
+            true,
+        )
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
             derived_recursor(recursor),
         ],
         limits.judgment_steps,
