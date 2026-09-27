@@ -804,11 +804,8 @@ impl<'a> Machine<'a> {
                     for (parameter, level) in reduction.level_params.iter().zip(levels) {
                         substitution.push((*parameter, level.clone()));
                     }
-                    let closure = Closure::with_levels(
-                        rule.rhs,
-                        env,
-                        LevelSubstitution::new(substitution),
-                    );
+                    let closure =
+                        Closure::with_levels(rule.rhs, env, LevelSubstitution::new(substitution));
                     return self
                         .expose(closure, Transparency::Reducible, budget.saturating_sub(1))
                         .proven_value()
