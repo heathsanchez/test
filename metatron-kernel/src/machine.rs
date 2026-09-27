@@ -716,6 +716,9 @@ impl<'a> Machine<'a> {
                         .proven_value()?
                         .value
                         .clone();
+                    if first == second {
+                        return Some((bools.true_ctor, Vec::new()));
+                    }
                     let (Value::NatLit(first), Value::NatLit(second)) = (first, second) else {
                         return None;
                     };
