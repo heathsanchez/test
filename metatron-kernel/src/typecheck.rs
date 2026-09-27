@@ -461,6 +461,29 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
+        if std::env::var_os("NUCLEUS_TRACE_GENERIC_CHECK").is_some() {
+            match &inferred {
+                Judgment::Proven { value, .. } => eprintln!(
+                    "NUCLEUS_GENERIC_CHECK:infer=PROVEN:shape={}:depth={}",
+                    match value {
+                        TypeValue::Sort(_) => "sort",
+                        TypeValue::Pi { .. } => "pi",
+                        TypeValue::Term(_) => "term",
+                    },
+                    context.len()
+                ),
+                Judgment::Refuted { obstruction } => eprintln!(
+                    "NUCLEUS_GENERIC_CHECK:infer=REFUTED:reason={}:depth={}",
+                    obstruction.0,
+                    context.len()
+                ),
+                Judgment::Unknown { residual } => eprintln!(
+                    "NUCLEUS_GENERIC_CHECK:infer=UNKNOWN:reason={}:depth={}",
+                    residual.0,
+                    context.len()
+                ),
+            }
+        }
         if std::env::var_os("NUCLEUS_TRACE_POST_CAPABILITY").is_some()
             && let Judgment::Unknown { residual } = &inferred
         {
@@ -483,6 +506,24 @@ impl<'a> TypeChecker<'a> {
                     context.len(),
                     context,
                 );
+                if std::env::var_os("NUCLEUS_TRACE_GENERIC_CHECK").is_some() {
+                    match &conversion {
+                        Judgment::Proven { .. } => eprintln!(
+                            "NUCLEUS_GENERIC_CHECK:convert=PROVEN:depth={}",
+                            context.len()
+                        ),
+                        Judgment::Refuted { obstruction } => eprintln!(
+                            "NUCLEUS_GENERIC_CHECK:convert=REFUTED:reason={}:depth={}",
+                            obstruction.0,
+                            context.len()
+                        ),
+                        Judgment::Unknown { residual } => eprintln!(
+                            "NUCLEUS_GENERIC_CHECK:convert=UNKNOWN:reason={}:depth={}",
+                            residual.0,
+                            context.len()
+                        ),
+                    }
+                }
                 match conversion {
                     Judgment::Refuted { obstruction }
                         if conversion_refutation_is_unknown
