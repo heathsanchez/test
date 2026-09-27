@@ -26,7 +26,8 @@ theorem safeBelowSeven_small {x : Nat} (hx : 0 < x) (hsmall : x < 7) :
 theorem safeBelowSeven_step {x : Nat} (hx : SafeBelowSeven x) :
     SafeBelowSeven (shortcut x) := by
   unfold SafeBelowSeven at hx
-  rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;> decide
+  rcases hx with rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    unfold SafeBelowSeven <;> decide
 
 theorem safeBelowSeven_iter {x : Nat} (hx : SafeBelowSeven x) (k : Nat) :
     SafeBelowSeven (iter shortcut k x) := by
@@ -51,7 +52,7 @@ theorem no_smaller_source_ever_reaches_seven :
 theorem seven_has_no_endpoint_exit : ¬ OrdinaryExit 7 7 := by
   intro h
   rcases h with ht | hd | hm
-  · exact (by decide : ¬ Terminal 7) ht
+  · simp [Terminal] at ht
   · omega
   · obtain ⟨p, k, hp, hsmall, heq⟩ := hm
     exact no_smaller_source_ever_reaches_seven p k hp hsmall heq
