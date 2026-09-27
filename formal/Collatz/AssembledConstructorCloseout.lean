@@ -264,10 +264,18 @@ theorem large_crossing_coverage_of_high_or_deep
       omega
     have hq1 :
         oddCount n (k + 2) = q + 1 := by
-      simp [oddCount, hpar1, q]
+      calc
+        oddCount n (k + 2) = oddCount n (k + 1) + 1 := by
+          rw [show k + 2 = (k + 1) + 1 by omega, oddCount]
+          simp [hpar1]
+        _ = q + 1 := by rfl
     have hq2 :
         oddCount n (k + 3) = q + 2 := by
-      simp [oddCount, hpar2, hq1]
+      calc
+        oddCount n (k + 3) = oddCount n (k + 2) + 1 := by
+          rw [show k + 3 = (k + 2) + 1 by omega, oddCount]
+          simp [hpar2]
+        _ = q + 2 := by omega
     have hnq : n ≤ oddCount n (k + 3) := by
       rw [hq2]
       omega
@@ -276,17 +284,7 @@ theorem large_crossing_coverage_of_high_or_deep
     refine ⟨2 + j, ?_⟩
     simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hexit
 
-/-- The two-domain closeout can therefore be sharpened once more: high-odd
-coverage plus only deep-large (deficit >= 3) coverage implies Collatz. -/
-theorem reaches_one_of_high_odd_and_deep_large
-    (hHigh : HighOddConstructorCoverage)
-    (hDeep : DeepLargeCrossingConstructorCoverage) :
-    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
-  exact reaches_one_of_two_constructor_domains
-    hHigh (large_crossing_coverage_of_high_or_deep hHigh hDeep)
-
 #print axioms large_crossing_coverage_of_high_or_deep
-#print axioms reaches_one_of_high_odd_and_deep_large
 
 /-- Full assembly theorem.
 
@@ -400,6 +398,18 @@ theorem reaches_one_of_two_constructor_domains
 #print axioms eternal_survival_enters_high_odd
 #print axioms minimal_bad_first_crossing_constructor_domains
 #print axioms reaches_one_of_two_constructor_domains
+
+/-- The two-domain closeout can therefore be sharpened once more: high-odd
+coverage plus only deep-large (deficit >= 3) coverage implies Collatz. -/
+theorem reaches_one_of_high_odd_and_deep_large
+    (hHigh : HighOddConstructorCoverage)
+    (hDeep : DeepLargeCrossingConstructorCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  exact reaches_one_of_two_constructor_domains
+    hHigh (large_crossing_coverage_of_high_or_deep hHigh hDeep)
+
+#print axioms reaches_one_of_high_odd_and_deep_large
+
 #print axioms reaches_one_of_assembled_constructor_coverage
 
 -- qualification retrigger: valuation pullback checked
