@@ -26,7 +26,6 @@ lean_lib CollatzFinal where
     `Collatz.FirstCrossingGap,
     `Collatz.StrictDescentReduction,
     `Collatz.HardCrossingFuture,
-    `Collatz.HardCrossingSplit,
     `Collatz.ReverseTargetBoundary,
     `Collatz.SourceCoherenceAudit,
     `Collatz.FinalExcursion,
