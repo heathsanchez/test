@@ -1,0 +1,22 @@
+name: Collatz Crystal Valuation Pullback V3
+on:
+  push:
+    branches: [collatz-crystal-valuation-pullback-v3]
+    paths:
+      - 'experiments/collatz_crystal_valuation_pullback_v3.py'
+      - '.github/workflows/collatz-crystal-valuation-pullback-v3.yml'
+permissions: {contents: read}
+jobs:
+  crystal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_crystal_valuation_pullback_v3.py | tee result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-valuation-pullback-v3
+          path: result.json
