@@ -1,4 +1,4 @@
-import Collatz.OrdinaryInverseOdd
+import Collatz.HardFirstCrossing
 
 namespace CollatzFinal
 namespace SourceProduct
