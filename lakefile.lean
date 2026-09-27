@@ -7,4 +7,15 @@ package collatzFinal where
 @[default_target]
 lean_lib CollatzFinal where
   srcDir := "formal"
-  roots := #[`Collatz.FinalKernel, `Collatz.Certificate, `Collatz.Shortcut, `Collatz.Squeeze, `Collatz.SurvivalDeficit, `Collatz.FinalExcursion]
+  roots := #[
+    `Collatz.FinalKernel,
+    `Collatz.Certificate,
+    `Collatz.Shortcut,
+    `Collatz.Squeeze,
+    `Collatz.SourceProduct,
+    `Collatz.SourceProductAffine,
+    `Collatz.CoefficientCrossing,
+    `Collatz.CoefficientDynamics,
+    `Collatz.SurvivalDeficit,
+    `Collatz.FinalExcursion
+  ]
