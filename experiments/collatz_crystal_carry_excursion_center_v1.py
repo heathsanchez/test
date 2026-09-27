@@ -244,3 +244,5 @@ result = {
     "global_collatz": "UNKNOWN",
 }
 print(json.dumps(result, indent=2))
+
+# qualification-trigger: 1
