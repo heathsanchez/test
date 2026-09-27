@@ -24,3 +24,5 @@ print(json.dumps({
  "interpretation":"same state cannot lie in both return cylinders" if not compatible else "overlap requires deeper audit",
  "global_collatz":"UNKNOWN"},indent=2,default=list))
 assert not compatible
+
+# trigger
