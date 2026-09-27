@@ -1,0 +1,189 @@
+name: LKA G23Q Upstream Arena Differential v0
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [lka-g23q-obligation-core-v1]
+    paths:
+      - ".github/workflows/lka-g23q-upstream-arena-v0.yml"
+      - "metatron-kernel/src/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g23q-upstream-arena-v0-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  arena:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      G23_SHA: 7975697a23091ee72abbfe6e68042f0e079f8738
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Arena runtime dependencies
+        run: |
+          set -euo pipefail
+          python -m pip install --disable-pip-version-check \
+            'jinja2>=3.1.6' 'jsonschema>=4.26.0' 'markdown>=3.10' 'pyyaml>=6.0.3'
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          sudo apt-get update
+          sudo apt-get install -y time
+
+      - name: Prepare pinned Arena and local checker pair
+        run: |
+          set -euo pipefail
+          git clone https://github.com/leanprover/lean-kernel-arena.git /tmp/lka
+          git -C /tmp/lka checkout --detach "$ARENA_SHA"
+
+          git worktree add --detach /tmp/g23-oracle "$G23_SHA"
+
+          cp -a metatron-kernel /tmp/lka/checkers/g23q-src
+          cp -a /tmp/g23-oracle/metatron-kernel /tmp/lka/checkers/g23-oracle-src
+
+          cat > /tmp/lka/checkers/g23q.yaml <<'YAML'
+          description: G23Q zero-authority compressed developmental checker.
+          version: "g23q"
+          dir: g23q-src
+          build: cargo build --release --locked
+          run: target/release/metatron-kernel < "$IN"
+          YAML
+
+          cat > /tmp/lka/checkers/g23-oracle.yaml <<'YAML'
+          description: Exact G23 executable oracle.
+          version: "g23"
+          dir: g23-oracle-src
+          build: cargo build --release --locked
+          run: target/release/metatron-kernel < "$IN"
+          YAML
+
+          cd /tmp/lka
+          python lka.py list-checkers | grep -E '^g23(q|-oracle)$'
+
+      - name: Build upstream test groups
+        run: |
+          set -euo pipefail
+          cd /tmp/lka
+          python lka.py build-test 'bugs/*'
+          python lka.py build-test 'corner-cases/*'
+          python lka.py build-test 'other/*'
+          python lka.py build-test 'perf/*'
+          python lka.py build-test init-prelude
+
+      - name: Build G23 and G23Q through Arena
+        run: |
+          set -euo pipefail
+          cd /tmp/lka
+          python lka.py build-checker g23-oracle
+          python lka.py build-checker g23q
+
+      - name: Run upstream groups through both checkers
+        run: |
+          set -euo pipefail
+          # GitHub-hosted runners expose the perf binary but deny PMU events.
+          # Arena's measurement wrapper interprets that perf exit as the checker
+          # exit instead of falling back. Shadow perf so the runner takes its
+          # documented wall-time-only fallback and executes the checker itself.
+          mkdir -p /tmp/lka-no-perf
+          cat > /tmp/lka-no-perf/perf <<'SH'
+          #!/bin/sh
+          exit 1
+          SH
+          chmod +x /tmp/lka-no-perf/perf
+          export PATH="/tmp/lka-no-perf:$PATH"
+
+          cd /tmp/lka
+          for checker in g23-oracle g23q; do
+            for test in 'bugs/*' 'corner-cases/*' 'other/*' 'perf/*' init-prelude; do
+              python lka.py run --checker "$checker" --test "$test"
+            done
+          done
+          python lka.py write-results --out _build/g23q-upstream-results.json
+
+      - name: Compare Arena statuses
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/upstream-arena-evidence
+          python - <<'PY'
+          import json, pathlib
+
+          data=json.load(open("/tmp/lka/_build/g23q-upstream-results.json"))
+          rows=data["results"]
+          by={(r["checker"],r["test"]):r for r in rows}
+          selected=sorted({
+              test
+              for checker,test in by
+              if checker in {"g23-oracle","g23q"}
+          })
+
+          diffs=[]
+          pairs=[]
+          status_counts={"g23-oracle":{},"g23q":{}}
+          for test in selected:
+              a=by.get(("g23-oracle",test))
+              b=by.get(("g23q",test))
+              if a is None or b is None:
+                  diffs.append({"test":test,"oracle":a,"candidate":b,"reason":"missing"})
+                  continue
+              for name,row in [("g23-oracle",a),("g23q",b)]:
+                  status=row.get("status")
+                  status_counts[name][status]=status_counts[name].get(status,0)+1
+              pair={
+                  "test":test,
+                  "oracle_status":a.get("status"),
+                  "candidate_status":b.get("status"),
+              }
+              pairs.append(pair)
+              if a.get("status") != b.get("status"):
+                  diffs.append(pair)
+
+          out={
+              "schema":"lka-g23q-upstream-arena-differential-v0",
+              "arena_sha":"f5e1bce6e2dc9c60479b3001b76e01722b403799",
+              "g23_sha":"7975697a23091ee72abbfe6e68042f0e079f8738",
+              "candidate_sha":"${{ github.sha }}",
+              "selected_tests":len(selected),
+              "equal_statuses":len(selected)-len(diffs),
+              "diffs":diffs,
+              "status_counts":status_counts,
+              "pairs":pairs,
+          }
+          path=pathlib.Path("metatron-kernel/upstream-arena-evidence/differential.json")
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps({
+              "selected_tests":out["selected_tests"],
+              "equal_statuses":out["equal_statuses"],
+              "diffs":out["diffs"],
+              "status_counts":out["status_counts"],
+          },sort_keys=True))
+          assert len(selected) >= 68, len(selected)
+          assert diffs == [], diffs
+          # This is a representation-equivalence gate, not a claim that G23
+          # already supports every upstream semantic family. Require real
+          # executions and forbid any candidate-only error drift.
+          assert sum(
+              count for status,count in status_counts["g23-oracle"].items()
+              if status != "error"
+          ) > 0, status_counts
+          assert status_counts["g23q"].get("error", 0) == status_counts["g23-oracle"].get("error", 0), status_counts
+          PY
+
+      - name: Upload upstream Arena evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g23q-upstream-arena-${{ github.sha }}
+          path: metatron-kernel/upstream-arena-evidence
+          if-no-files-found: error

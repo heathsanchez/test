@@ -1,0 +1,66 @@
+name: Nucleus Warranted Reject Prefix Trace v4
+
+on:
+  push:
+    branches: [nucleus-warranted-reject-v4]
+    paths:
+      - ".github/workflows/nucleus-warranted-reject-prefix-v4.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Build v4
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo build --release --locked
+      - name: Fetch exact 193-file corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Find first rejecting declaration
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          root=pathlib.Path('/tmp/arena-tests/good')
+          bin=str(pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve())
+          tests=[
+            'perf/args-before-unfold','perf/discarded-argument-match','perf/discarded-argument',
+            'perf/folded-constant-first','perf/folded-constant-last','perf/identical-nesting',
+            'perf/shared-subterm','perf/unroll-versus-evaluate'
+          ]
+          for name in tests:
+              p=root/(name+'.ndjson')
+              raw=p.read_bytes().splitlines(keepends=True)
+              decls=[]
+              for i,line in enumerate(raw):
+                  try:o=json.loads(line)
+                  except:continue
+                  kind=next((k for k in ('axiom','def','thm','inductive') if k in o),None)
+                  if kind: decls.append((i,kind,o[kind]))
+              first=None
+              for i,kind,payload in decls:
+                  pr=subprocess.run([bin],input=b''.join(raw[:i+1]),stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+                  if pr.returncode!=0:
+                      first={'line':i+1,'kind':kind,'rc':pr.returncode,'payload':payload}
+                      break
+              print('PREFIX',name,json.dumps(first,sort_keys=True))
+          PY

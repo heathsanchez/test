@@ -1,0 +1,59 @@
+name: Nucleus Warranted Reject Trace v4
+
+on:
+  push:
+    branches: [nucleus-warranted-reject-v4]
+    paths:
+      - ".github/workflows/nucleus-warranted-reject-trace-v4.yml"
+      - "metatron-kernel/src/checker.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - name: Build diagnostic v4
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo build --release --locked
+      - name: Fetch exact 193-file corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+      - name: Trace eight surviving false rejects
+        env:
+          NUCLEUS_TRACE_REJECT: "1"
+        run: |
+          set +e
+          bin=metatron-kernel/target/release/metatron-kernel
+          for name in \
+            perf/args-before-unfold \
+            perf/discarded-argument-match \
+            perf/discarded-argument \
+            perf/folded-constant-first \
+            perf/folded-constant-last \
+            perf/identical-nesting \
+            perf/shared-subterm \
+            perf/unroll-versus-evaluate
+          do
+            echo "=== $name ==="
+            "$bin" < "/tmp/arena-tests/good/$name.ndjson" >/tmp/out.txt 2>/tmp/err.txt
+            echo "RC=$?"
+            grep -E 'NUCLEUS_TRACE_(REJECT|UNKNOWN)' /tmp/err.txt | tail -n 20
+          done

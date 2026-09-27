@@ -1,0 +1,25 @@
+{
+  "id": "G2-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "d107a3eb1fdd9ac593b6a05cda1d5c7fbd8cc53d",
+    "fixture_sha256": "3ab79d5676f0e70523b67c083e35c8a2322d1f5b476c081069d2a039f0e0023d"
+  },
+  "obstruction": "The Metatron law permits promotion only after an exact positive judgment recurs under the same authority and support.",
+  "measurement": {
+    "command": "cargo test --lib checker::tests::good_beta_definition_has_one_trusted_conversion_call -- --exact",
+    "trusted_conversion_calls": 1,
+    "repeated_positive_calls": 0
+  },
+  "least_candidate_capability": null,
+  "competing_explanation": "The apparent repeated Pi domain/body shape occurs inside one relational worklist, not as a repeated trusted conversion call at the promotion boundary.",
+  "falsifier": "Two or more identical positive trusted conversion calls under the exact authority, support, subjects, transparency, and semantic epoch.",
+  "ablation": "Not run because no capability was implemented; enabled and disabled arms would be identical.",
+  "protected_suite": [
+    "all G0-G2 Rust tests",
+    "exact Lean 4.29.1 oracle files",
+    "six-case end-to-end verdict cohort"
+  ],
+  "primary_metric": "retired_instructions",
+  "decision": "UNKNOWN_NO_RECURRENCE"
+}

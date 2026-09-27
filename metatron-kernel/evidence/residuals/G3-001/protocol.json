@@ -1,0 +1,49 @@
+{
+  "id": "G3-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "111c492b5811810cc921685fb5ba0cbb1ce38a65",
+    "lean_githash": "f72c35b3f637c8c6571d353742168ab66cc22c00",
+    "fixture_sha256": "3320f6f67cd55b2bae9112ea9b0d002f231e88ec4fb3c3f3c8fd4e750b13ce78",
+    "upstream_path": "tutorial output good/006_betaReduction.ndjson",
+    "tutorial_ordinal": 6
+  },
+  "obstruction": "The checker rejects a valid beta-conversion whose expected type exposes an earlier definition recorded with an opaque reducibility hint.",
+  "residual_class": "conversion",
+  "observed": {
+    "expected_exit": 0,
+    "actual_exit": 1,
+    "preceding_tutorial_cases_matched": [
+      "001_basicDef",
+      "002_badDef",
+      "003_arrowType",
+      "004_dependentType",
+      "005_constType"
+    ]
+  },
+  "least_candidate_capability": "Preserve every definition body as semantically available to conversion, while treating reducibility hints only as search-cost guidance; after a rigid mismatch, conversion may request a guarded delta step at the same authority.",
+  "strongest_competing_explanation": "Application inference or dependent instantiation is defective independently of transparency.",
+  "deciding_experiment": {
+    "change": "In the input stream only, replace the first definition's opaque hint with a regular hint; make no term, type, or checker change.",
+    "transformed_fixture_sha256": "9cf00781abace9a028062e29730d16b6e3edbfe5c974600d9bdd86750a899006",
+    "transformed_exit": 0,
+    "conclusion": "The existing application and beta machinery decides the fixture when delta is permitted; the obstruction is the false semantic treatment of a cost hint as opacity."
+  },
+  "falsifier": "Reject the capability if guarded full-transparency conversion still fails this exact fixture, changes any prior G0-G2 verdict, accepts a frozen bad case, unfolds across an authority boundary, or turns a cycle/budget edge into ACCEPT or REJECT instead of UNKNOWN.",
+  "causal_ablation": "Compare the same implementation with post-mismatch full-transparency delta enabled versus disabled. The enabled arm must change only 006_betaReduction from REJECT to ACCEPT on the protected ordered prefix.",
+  "protected_suite": [
+    "all G0-G2 Rust and Python tests",
+    "exact Lean 4.29.1 oracle files",
+    "six-case external G2 cohort",
+    "tutorial cases 001 through 005 retain their exact exits",
+    "delta cycles and budget exhaustion remain UNKNOWN"
+  ],
+  "performance_plan": {
+    "primary_metric": "retired_instructions",
+    "metric": "perf instructions:u",
+    "cohort": "the identical ordered qualified tutorial prefix through 006 plus the unchanged G2 cohort",
+    "control": "flash at 78c7502bac8a5ba000057b3f083bc0595ac65750 on the same runner, build profile, Arena SHA, and case order",
+    "promotion_rule": "No performance claim unless candidate and control counters are both available under the same measurement identity; wall time cannot promote."
+  },
+  "decision": "OPEN_RESIDUAL_NO_MECHANISM_IMPLEMENTED"
+}

@@ -1,0 +1,26 @@
+{
+  "schema": "metatron-diagnostic-baseline-v1",
+  "candidate_local_sha": "b0f3176695d55ec0963a41874bd3c034372cb4b3",
+  "cohort": [
+    "evidence/residuals/G11-001/fixture.ndjson",
+    "evidence/residuals/G12-001/fixture.ndjson"
+  ],
+  "build": "cargo build --release --locked --features diagnostics",
+  "operation_counts": {
+    "G11-001": {"exit": 0, "declarations": 3, "inductive_signatures": 7, "type_judgments": 8, "conversions": 8},
+    "G12-001": {"exit": 0, "declarations": 2, "inductive_signatures": 3, "type_judgments": 4, "conversions": 13}
+  },
+  "callgrind": {
+    "command": "scripts/profile_callgrind.sh",
+    "status": "UNAVAILABLE_LOCAL_VALGRIND_NOT_INSTALLED",
+    "local_exit": 127,
+    "instruction_counts": null
+  },
+  "retired_instructions": {
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "candidate": null,
+    "control": null,
+    "promotion_eligible": false
+  },
+  "interpretation": "Diagnostic baseline only. Deterministic operation counts and Callgrind are not the official Arena retired-instruction metric and authorize no performance promotion."
+}

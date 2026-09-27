@@ -1,0 +1,198 @@
+name: Nucleus P4 Composed Hotpaths v1
+
+on:
+  push:
+    branches: [nucleus-p4-composed-hotpaths-v1]
+    paths:
+      - ".github/workflows/nucleus-p4-composed-hotpaths-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-p4-composed-hotpaths-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      G25_SHA: 4b257ea8442a7905af8b894144288864b16fb81a
+      P2_SHA: 411c5a38ee29885a533dd03219ba0b7f17cfdaf9
+      P3_SHA: 41a52eb5b21d11616a09e8d41ec8bbd66fe4426d
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: "rustfmt, clippy"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+
+      - name: Verify source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build baselines and candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/g25 "$G25_SHA"
+          git worktree add --detach /tmp/p2 "$P2_SHA"
+          git worktree add --detach /tmp/p3 "$P3_SHA"
+          for root in /tmp/g25 /tmp/p2 /tmp/p3; do
+            cargo build --release --locked --manifest-path "$root/metatron-kernel/Cargo.toml"
+          done
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Exact semantic differential
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/p4
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial')
+          base=pathlib.Path('/tmp/g25/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]; manifest=[]
+          for d,e in [('good',0),('bad',1)]:
+              for p in sorted((root/d).glob('*.ndjson')):
+                  try:n=int(p.name.split('_',1)[0])
+                  except ValueError:continue
+                  def run(b):
+                      with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(base),run(cand)
+                  rows.append({'n':n,'path':str(p),'expected':e,'base':a,'candidate':b})
+                  if a==e:manifest.append(f'{e}\t{p}')
+          rows.sort(key=lambda r:r['n'])
+          diffs=[r for r in rows if r['base']!=r['candidate']]
+          assert not diffs,diffs
+          assert len(manifest)==78,len(manifest)
+          pathlib.Path('/tmp/correct78.tsv').write_text('\n'.join(manifest)+'\n')
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set(); cdiffs=[]; count=0
+          for p in paths:
+              rp=str(p)
+              if rp in seen:continue
+              seen.add(rp);count+=1
+              def rr(b):
+                  with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              a,b=rr(base),rr(cand)
+              if a!=b:cdiffs.append({'path':rp,'base':a,'candidate':b})
+          assert not cdiffs,cdiffs
+          out={'schema':'nucleus-p4-semantic-v1','candidate_sha':os.environ['GITHUB_SHA'],'tutorial_count':len(rows),'tutorial_diffs':diffs,'committed_count':count,'committed_diffs':cdiffs,'correct_cohort':78}
+          pathlib.Path('evidence-out/p4/semantic.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Four-way in-process cohort
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          for root in . /tmp/g25/metatron-kernel /tmp/p2/metatron-kernel /tmp/p3/metatron-kernel; do mkdir -p "$root/examples"; done
+          cat >/tmp/cohort.rs <<'RS'
+          use std::{env,fs,io::Cursor};
+          use metatron_kernel::run;
+          fn main(){
+            let m=env::var("NUCLEUS_MANIFEST").unwrap();
+            let iters:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap().parse().unwrap();
+            let cases:Vec<(i32,Vec<u8>)>=fs::read_to_string(m).unwrap().lines().map(|l|{let(e,p)=l.split_once('\t').unwrap();(e.parse().unwrap(),fs::read(p).unwrap())}).collect();
+            let mut sum=0usize;
+            for _ in 0..iters{for(e,b)in &cases{let v=run(Cursor::new(b.as_slice()));assert_eq!(v.exit_code(),*e);sum=sum.wrapping_add(v.exit_code() as usize+1);}}
+            println!("{sum}");
+          }
+          RS
+          for root in . /tmp/g25/metatron-kernel /tmp/p2/metatron-kernel /tmp/p3/metatron-kernel; do cp /tmp/cohort.rs "$root/examples/nucleus_cohort.rs"; cargo build --release --locked --manifest-path "$root/Cargo.toml" --example nucleus_cohort; done
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'g25':pathlib.Path('/tmp/g25/metatron-kernel/target/release/examples/nucleus_cohort'),'p2':pathlib.Path('/tmp/p2/metatron-kernel/target/release/examples/nucleus_cohort'),'p3':pathlib.Path('/tmp/p3/metatron-kernel/target/release/examples/nucleus_cohort'),'p4':pathlib.Path('target/release/examples/nucleus_cohort').resolve()}
+          env=dict(os.environ);env['NUCLEUS_MANIFEST']='/tmp/correct78.tsv';env['NUCLEUS_BENCH_ITERS']='200'
+          orders=[['g25','p2','p3','p4'],['p4','p3','p2','g25'],['p2','g25','p4','p3'],['p3','p4','g25','p2'],['g25','p3','p2','p4'],['p4','p2','p3','g25'],['p3','g25','p4','p2']]
+          rows=[]
+          for i,o in enumerate(orders,1):
+            vals={}
+            for n in o:
+              t=time.perf_counter_ns();subprocess.check_output([str(bins[n])],env=env);vals[n]=time.perf_counter_ns()-t
+            row={'round':i,**{f'{k}_ns':v for k,v in vals.items()}};rows.append(row);print(row)
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins}
+          out={'schema':'nucleus-p4-cohort-v1','cases':78,'iterations':200,'medians_ns':med,'p4_over_g25':med['p4']/med['g25'],'p4_over_p2':med['p4']/med['p2'],'p4_over_p3':med['p4']/med['p3'],'rounds':rows}
+          pathlib.Path('evidence-out/p4/cohort.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n');print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Verify parent hotpaths survive composition
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cat >/tmp/hotpaths.rs <<'RS'
+          use std::{collections::HashMap,env,hint::black_box};
+          use metatron_kernel::environment::Environment;
+          use metatron_kernel::id::{ExprId,IdTable,LevelId,NameId};
+          use metatron_kernel::level::LevelTerm;
+          use metatron_kernel::machine::{AuthorityId,Machine,Transparency};
+          use metatron_kernel::syntax::{Expr,Level};
+          use metatron_kernel::typecheck::{TypeChecker,TypeValue};
+          use metatron_kernel::value::{Closure,EnvFrame,LevelSubstitution,Value};
+          fn universe(iters:usize){
+            let mut ls=IdTable::default();ls.insert(LevelId(0),Level::Zero).unwrap();ls.insert(LevelId(1),Level::Param(NameId(1))).unwrap();ls.insert(LevelId(2),Level::Succ(LevelId(1))).unwrap();ls.insert(LevelId(3),Level::Max(LevelId(2),LevelId(1))).unwrap();ls.insert(LevelId(4),Level::Succ(LevelId(3))).unwrap();
+            let mut es=IdTable::default();es.insert(ExprId(0),Expr::Sort(LevelId(4))).unwrap();
+            let m=Machine::new(AuthorityId(0),&es,&ls,HashMap::new());
+            let root=Closure::with_levels(ExprId(0),EnvFrame::empty(),LevelSubstitution::new(vec![(NameId(1),LevelTerm::Zero)]));
+            let mut s=0;for _ in 0..iters{let j=black_box(m.expose(root.clone(),Transparency::Opaque,64));if matches!(j.proven_value(),Some(Value::Sort(_))){s+=1}else{panic!()}};println!("{s}");
+          }
+          fn conversion(iters:usize){
+            let mut ls=IdTable::default();ls.insert(LevelId(0),Level::Zero).unwrap();let mut es=IdTable::default();es.insert(ExprId(0),Expr::Sort(LevelId(0))).unwrap();es.insert(ExprId(1),Expr::Sort(LevelId(0))).unwrap();let(mut l,mut r,mut n)=(ExprId(0),ExprId(1),2u64);for _ in 0..6{let a=ExprId(n);n+=1;let b=ExprId(n);n+=1;es.insert(a,Expr::Pi{domain:ExprId(0),body:l}).unwrap();es.insert(b,Expr::Pi{domain:ExprId(1),body:r}).unwrap();l=a;r=b;}let e=Environment::empty();let c=TypeChecker::new(&es,&ls,&e);let a=TypeValue::Term(Closure::new(l,EnvFrame::empty()));let b=TypeValue::Term(Closure::new(r,EnvFrame::empty()));let mut s=0;for _ in 0..iters{assert!(c.convert(&a,&b,256).is_proven());s+=1};println!("{s}");
+          }
+          fn main(){let mode=env::args().nth(1).unwrap();let n:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap().parse().unwrap();if mode=="u"{universe(n)}else{conversion(n)}}
+          RS
+          cp /tmp/hotpaths.rs examples/nucleus_hotpaths.rs
+          cp /tmp/hotpaths.rs /tmp/p2/metatron-kernel/examples/nucleus_hotpaths.rs
+          cp /tmp/hotpaths.rs /tmp/p3/metatron-kernel/examples/nucleus_hotpaths.rs
+          cargo build --release --locked --example nucleus_hotpaths
+          cargo build --release --locked --manifest-path /tmp/p2/metatron-kernel/Cargo.toml --example nucleus_hotpaths
+          cargo build --release --locked --manifest-path /tmp/p3/metatron-kernel/Cargo.toml --example nucleus_hotpaths
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'p2':pathlib.Path('/tmp/p2/metatron-kernel/target/release/examples/nucleus_hotpaths'),'p3':pathlib.Path('/tmp/p3/metatron-kernel/target/release/examples/nucleus_hotpaths'),'p4':pathlib.Path('target/release/examples/nucleus_hotpaths').resolve()}
+          results={}
+          for mode,iters,arms in [('u',2000000,['p2','p4']),('c',500000,['p3','p4'])]:
+            env=dict(os.environ);env['NUCLEUS_BENCH_ITERS']=str(iters);rows=[]
+            orders=[arms,arms[::-1],arms,arms[::-1],arms,arms[::-1],arms]
+            for i,o in enumerate(orders,1):
+              vals={}
+              for n in o:
+                t=time.perf_counter_ns();subprocess.check_output([str(bins[n]),mode],env=env);vals[n]=time.perf_counter_ns()-t
+              rows.append({'round':i,**{f'{k}_ns':v for k,v in vals.items()}})
+            med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in arms}
+            results[mode]={'medians_ns':med,'p4_over_parent':med['p4']/med[arms[0]],'rows':rows}
+          pathlib.Path('evidence-out/p4/hotpaths.json').write_text(json.dumps(results,indent=2,sort_keys=True)+'\n');print(json.dumps(results,sort_keys=True))
+          PY
+
+      - name: Upload P4 evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-p4-composed-${{ github.sha }}
+          path: metatron-kernel/evidence-out/p4
+          if-no-files-found: error

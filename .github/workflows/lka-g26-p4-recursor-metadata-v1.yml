@@ -1,0 +1,160 @@
+name: LKA G26 on P4 Qualification v1
+
+on:
+  push:
+    branches: [lka-g26-p4-recursor-metadata-v1]
+    paths:
+      - ".github/workflows/lka-g26-p4-recursor-metadata-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lka-g26-p4-recursor-metadata-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      BASE_SHA: 55d4ecea29bd1ed6e85226076d5c09bfb6f0a291
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: "rustfmt, clippy"}
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+
+      - name: Verify source
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Build exact P4 oracle and G26 candidate
+        run: |
+          set -euo pipefail
+          git worktree add --detach /tmp/p4-oracle "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/p4-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned Arena tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+
+      - name: Global tutorial reclosure
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g26-p4
+          python - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tutorial')
+          oracle=pathlib.Path('/tmp/p4-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          rows=[]; frozen=[]
+          for d,e in [('good',0),('bad',1)]:
+              for p in sorted((root/d).glob('*.ndjson')):
+                  try:n=int(p.name.split('_',1)[0])
+                  except ValueError:continue
+                  def run(b):
+                      with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+                  a,b=run(oracle),run(candidate)
+                  status=('earned_delta' if b==e and a!=e else 'mismatch') if a!=b else ('equal_correct' if b==e else 'equal_residual')
+                  rows.append({'number':n,'input':f'{d}/{p.name}','path':str(p),'expected_exit':e,'oracle_exit':a,'candidate_exit':b,'status':status})
+                  if a==e:frozen.append(f'{e}\t{p}')
+          rows.sort(key=lambda r:r['number'])
+          by={r['number']:r for r in rows}
+          changes=[r for r in rows if r['oracle_exit']!=r['candidate_exit']]
+          mismatches=[r for r in rows if r['status']=='mismatch']
+          assert by[73]['oracle_exit']==2 and by[73]['candidate_exit']==1 and by[73]['status']=='earned_delta',by[73]
+          assert changes==[by[73]],changes
+          assert not mismatches,mismatches
+          assert len(frozen)==78,len(frozen)
+          residuals=[r for r in rows if r['candidate_exit']!=r['expected_exit']]
+          pathlib.Path('/tmp/p4-correct78.tsv').write_text('\n'.join(frozen)+'\n')
+          out={'schema':'metatron-kernel-g26-p4-qualification-v1','arena_sha':os.environ['ARENA_SHA'],'oracle_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],'changes':changes,'mismatches':mismatches,'counts':{'earned_delta':sum(r['status']=='earned_delta' for r in rows),'equal_correct':sum(r['status']=='equal_correct' for r in rows),'equal_residual':sum(r['status']=='equal_residual' for r in rows),'mismatch':len(mismatches)},'first_remaining_residual':residuals[0] if residuals else None}
+          pathlib.Path('evidence-out/g26-p4/tutorial-reclosure.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Replay committed corpus
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json,pathlib,subprocess
+          oracle=pathlib.Path('/tmp/p4-oracle/metatron-kernel/target/release/metatron-kernel')
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          paths=sorted(pathlib.Path('tests/fixtures').glob('*.ndjson'))+sorted(pathlib.Path('evidence/residuals').glob('**/*.ndjson'))
+          seen=set();rows=[]
+          for p in paths:
+              rp=str(p)
+              if rp in seen:continue
+              seen.add(rp)
+              def run(b):
+                  with p.open('rb') as f:return subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              rows.append({'path':rp,'oracle':run(oracle),'candidate':run(candidate)})
+          diffs=[r for r in rows if r['oracle']!=r['candidate']]
+          expected='evidence/residuals/G25-001/073_BogusRecursor.ndjson'
+          assert diffs==[{'path':expected,'oracle':2,'candidate':1}],diffs
+          out={'schema':'metatron-kernel-g26-p4-committed-differential-v1','count':len(rows),'diffs':diffs}
+          pathlib.Path('evidence-out/g26-p4/committed-differential.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: P4 performance retention
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          for root in . /tmp/p4-oracle/metatron-kernel; do mkdir -p "$root/examples"; done
+          cat >/tmp/cohort.rs <<'RS'
+          use std::{env,fs,io::Cursor};use metatron_kernel::run;
+          fn main(){let m=env::var("NUCLEUS_MANIFEST").unwrap();let n:usize=env::var("NUCLEUS_BENCH_ITERS").unwrap().parse().unwrap();let cs:Vec<(i32,Vec<u8>)>=fs::read_to_string(m).unwrap().lines().map(|l|{let(e,p)=l.split_once('\t').unwrap();(e.parse().unwrap(),fs::read(p).unwrap())}).collect();let mut s=0usize;for _ in 0..n{for(e,b)in &cs{let v=run(Cursor::new(b.as_slice()));assert_eq!(v.exit_code(),*e);s=s.wrapping_add(v.exit_code() as usize+1)}}println!("{s}");}
+          RS
+          cp /tmp/cohort.rs examples/g26_perf.rs
+          cp /tmp/cohort.rs /tmp/p4-oracle/metatron-kernel/examples/g26_perf.rs
+          cargo build --release --locked --example g26_perf
+          cargo build --release --locked --manifest-path /tmp/p4-oracle/metatron-kernel/Cargo.toml --example g26_perf
+          python - <<'PY'
+          import json,os,pathlib,statistics,subprocess,time
+          bins={'p4':pathlib.Path('/tmp/p4-oracle/metatron-kernel/target/release/examples/g26_perf'),'g26':pathlib.Path('target/release/examples/g26_perf').resolve()}
+          env=dict(os.environ);env['NUCLEUS_MANIFEST']='/tmp/p4-correct78.tsv';env['NUCLEUS_BENCH_ITERS']='200'
+          orders=[['p4','g26'],['g26','p4'],['p4','g26'],['g26','p4'],['p4','g26'],['g26','p4'],['p4','g26']]
+          rows=[]
+          for i,o in enumerate(orders,1):
+              vals={}
+              for k in o:
+                  t=time.perf_counter_ns();subprocess.check_output([str(bins[k])],env=env);vals[k]=time.perf_counter_ns()-t
+              rows.append({'round':i,**{f'{k}_ns':v for k,v in vals.items()},'g26_over_p4':vals['g26']/vals['p4']})
+          med={k:statistics.median(r[f'{k}_ns'] for r in rows) for k in bins}
+          out={'schema':'metatron-kernel-g26-p4-performance-v1','cases':78,'iterations':200,'medians_ns':med,'g26_over_p4':med['g26']/med['p4'],'paired_median_ratio':statistics.median(r['g26_over_p4'] for r in rows),'rows':rows}
+          pathlib.Path('evidence-out/g26-p4/performance.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: lka-g26-p4-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g26-p4
+          if-no-files-found: error

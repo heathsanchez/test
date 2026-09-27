@@ -1,0 +1,76 @@
+name: Nucleus G34 Recursive Reuse Census v0
+
+on:
+  push:
+    branches: [nucleus-g34-recursive-reuse-v1]
+    paths:
+      - ".github/workflows/nucleus-g34-recursive-reuse-census-v0.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build candidate
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Build pinned tutorial
+        run: |
+          set -euo pipefail
+          git init /tmp/arena
+          git -C /tmp/arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/arena checkout --detach FETCH_HEAD
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/tutorial
+          cd /tmp/arena/tutorial
+          lake clean
+          OUT=/tmp/tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+      - name: Capture 081 and 082 exact exports
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/g34
+          cp /tmp/tutorial/good/081_listRecReduction.ndjson evidence-out/g34/
+          cp /tmp/tutorial/good/082_RBTree.id_spec.ndjson evidence-out/g34/
+          python - <<'PY'
+          import json,pathlib,subprocess,hashlib
+          binary=pathlib.Path('target/release/metatron-kernel').resolve()
+          for name in ['081_listRecReduction.ndjson','082_RBTree.id_spec.ndjson']:
+              p=pathlib.Path('evidence-out/g34')/name
+              with p.open('rb') as f:
+                  rc=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+              rows=[json.loads(x) for x in p.read_text().splitlines() if x.strip()]
+              names={}
+              for row in rows:
+                  if 'in' in row and ('str' in row or 'num' in row):
+                      names[row['in']]=row.get('str',row.get('num'))
+              blocks=[row['inductive'] for row in rows if 'inductive' in row]
+              print('===',name,'sha',hashlib.sha256(p.read_bytes()).hexdigest(),'lines',len(rows),'exit',rc)
+              for bi,b in enumerate(blocks):
+                  def nm(i):
+                      seen=[]
+                      while i and i in names and i not in seen:
+                          seen.append(i); x=names[i]
+                          if 'str' in x: return (nm(x.get('pre',0))+'.' if x.get('pre',0) else '')+x['str']
+                          if 'i' in x: return (nm(x.get('pre',0))+'.' if x.get('pre',0) else '')+str(x['i'])
+                          break
+                      return str(i)
+                  print('BLOCK',bi)
+                  print(' TYPES',[(nm(t['name']),t) for t in b['types']])
+                  print(' CTORS',[(nm(c['name']),c) for c in b['ctors']])
+                  print(' RECS',[(nm(r['name']),r) for r in b['recs']])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-g34-recursive-reuse-census-${{ github.sha }}
+          path: metatron-kernel/evidence-out/g34
+          if-no-files-found: error

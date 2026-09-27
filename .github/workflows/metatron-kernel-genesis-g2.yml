@@ -1,0 +1,320 @@
+name: Metatron Kernel Genesis G2
+
+on:
+  push:
+    branches: [metatron-kernel-genesis-v1]
+    paths:
+      - ".github/workflows/metatron-kernel-genesis-g2.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: metatron-kernel-genesis-g2-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_SHA: f5e1bce6e2dc9c60479b3001b76e01722b403799
+      G15_SHA: f45b49a6989c09317635c790615ca63c617c84c7
+      G16_SHA: 7b57cc7834b2f7eee34e762fbc23009cd65d6be7
+      G17_SHA: 3a4bb85a06f6434bca27f72e82dc682570123c99
+      G18_SHA: ce4c2f50ab649e60ee09a19c50f04c7769c5ad19
+      G19_SHA: 5c51781af6ede78e435b756b7aa75490d10d49c9
+      G20_SHA: 80c99cfdce1e9a5349ef4b300f506c92677dc6ce
+      G21_SHA: fc2e64a0e43676d283e202b7c9b1cbb262360e79
+      G22_SHA: 917566dd7c91fdda1f32e85aaf5ab65a19973923
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Verify source and evidence ledger
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          python -m unittest discover -s tests_py -p 'test_*.py' -v
+          python scripts/check_ledger.py
+
+      - name: Fetch pinned Arena contract
+        run: |
+          set -euo pipefail
+          git init /tmp/lean-kernel-arena
+          git -C /tmp/lean-kernel-arena remote add origin https://github.com/leanprover/lean-kernel-arena.git
+          git -C /tmp/lean-kernel-arena fetch --depth 1 origin "$ARENA_SHA"
+          git -C /tmp/lean-kernel-arena checkout --detach FETCH_HEAD
+          test "$(git -C /tmp/lean-kernel-arena rev-parse HEAD)" = "$ARENA_SHA"
+          test "$(sha256sum /tmp/lean-kernel-arena/tests/other/sparse-name-index.ndjson | cut -d' ' -f1)" = "3279c9c8ae24d5b3a8433ddee5d4a421c4e15e3cd84117fb4873d1284112b96d"
+          test "$(sha256sum /tmp/lean-kernel-arena/tests/other/level-index-out-of-order.ndjson | cut -d' ' -f1)" = "7db8148079e2e8160a1a4c71258ad11b17ce18edfa84ab1e12eae937ec9538d1"
+
+      - name: Build pinned Arena tutorial cases
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          mkdir -p /tmp/lean-kernel-tutorial
+          cd /tmp/lean-kernel-arena/tutorial
+          lake clean
+          OUT=/tmp/lean-kernel-tutorial LEAN_ABORT_ON_PANIC=1 lake build Tutorial
+          cd "$GITHUB_WORKSPACE/metatron-kernel/formal"
+          lake build
+
+      - name: Run deterministic G2 qualification
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out
+          python scripts/qualify_arena.py \
+            --checker target/release/metatron-kernel \
+            --arena /tmp/lean-kernel-arena \
+            --candidate-sha "$GITHUB_SHA" \
+            --arena-sha "$ARENA_SHA" \
+            --output evidence-out/qualification.json
+          python - <<'PY'
+          import json
+          q=json.load(open('evidence-out/qualification.json'))
+          assert q['qualified'] is True, q
+          assert q['counts']=={'error':0,'incomplete':0,'incorrect':0,'matched':6}, q
+          PY
+
+      - name: Run exact tutorial qualification
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          git fetch --depth 1 origin "$G15_SHA"
+          git fetch --depth 1 origin "$G16_SHA"
+          git fetch --depth 1 origin "$G17_SHA"
+          git fetch --depth 1 origin "$G21_SHA"
+          git fetch --depth 1 origin "$G22_SHA"
+          git worktree add --detach /tmp/metatron-g15-oracle "$G15_SHA"
+          git worktree add --detach /tmp/metatron-g16-oracle "$G16_SHA"
+          git worktree add --detach /tmp/metatron-g17-oracle "$G17_SHA"
+          git worktree add --detach /tmp/metatron-g21-oracle "$G21_SHA"
+          git worktree add --detach /tmp/metatron-g22-oracle "$G22_SHA"
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g15-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g16-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g17-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g21-oracle/metatron-kernel/Cargo.toml
+          cargo build --release --locked \
+            --manifest-path /tmp/metatron-g22-oracle/metatron-kernel/Cargo.toml
+          METATRON_G15_ORACLE=/tmp/metatron-g15-oracle/metatron-kernel/target/release/metatron-kernel \
+          METATRON_G16_ORACLE=/tmp/metatron-g16-oracle/metatron-kernel/target/release/metatron-kernel \
+          METATRON_G17_ORACLE=/tmp/metatron-g17-oracle/metatron-kernel/target/release/metatron-kernel \
+          METATRON_G21_ORACLE=/tmp/metatron-g21-oracle/metatron-kernel/target/release/metatron-kernel \
+          METATRON_G22_ORACLE=/tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel \
+            cargo test --release --test end_to_end
+          python - <<'PY'
+          import json, pathlib, subprocess
+          candidate=pathlib.Path('target/release/metatron-kernel').resolve()
+          oracle=pathlib.Path('/tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel').resolve()
+          fixture=pathlib.Path('evidence/residuals/G23-001/fixture.ndjson')
+          with fixture.open('rb') as stream:
+            candidate_exit=subprocess.run([candidate],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+          with fixture.open('rb') as stream:
+            oracle_exit=subprocess.run([oracle],stdin=stream,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL).returncode
+          assert candidate_exit == 0, candidate_exit
+          assert oracle_exit == 2, oracle_exit
+          pathlib.Path('evidence-out/g23-supplemental.json').write_text(
+            json.dumps({
+              'schema':'metatron-kernel-g23-supplemental-v1',
+              'oracle_sha':'917566dd7c91fdda1f32e85aaf5ab65a19973923',
+              '055':{'candidate_exit':candidate_exit,'oracle_exit':oracle_exit},
+              'conversion':'kernel conversion under staged inductive authority',
+            },indent=2,sort_keys=True)+'\n'
+          )
+          PY
+          python scripts/qualify_tutorial.py \
+            --checker target/release/metatron-kernel \
+            --tutorial-output /tmp/lean-kernel-tutorial \
+            --candidate-sha "$GITHUB_SHA" \
+            --arena-sha "$ARENA_SHA" \
+            --output evidence-out/tutorial-qualification.json \
+            --oracle /tmp/metatron-g22-oracle/metatron-kernel/target/release/metatron-kernel \
+            --oracle-sha "$G22_SHA" \
+            --earned-case 055 \
+            --earned-oracle-exit 2 \
+            --earned-candidate-exit 0 \
+            --differential-output evidence-out/tutorial-differential.json
+          python - <<'PY'
+          import json
+          q=json.load(open('evidence-out/tutorial-qualification.json'))
+          assert q['qualified'] is True, q
+          assert q['counts']=={'incorrect':0,'matched':55}, q
+          d=json.load(open('evidence-out/tutorial-differential.json'))
+          assert d['qualified'] is True, d
+          assert d['counts']=={'earned_delta':1,'equal':54,'mismatch':0}, d
+          assert d['mode']=='earned_delta', d
+          assert d['earned_case']=='055', d
+          assert d['earned_cases']==['055'], d
+          assert d['oracle_sha']=='917566dd7c91fdda1f32e85aaf5ab65a19973923', d
+          PY
+
+      - name: Audit untouched tutorial suffix
+        working-directory: metatron-kernel
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root = pathlib.Path('/tmp/lean-kernel-tutorial')
+          checker = pathlib.Path('target/release/metatron-kernel').resolve()
+          rows = []
+          for expected_dir, expected_exit in [('good', 0), ('bad', 1)]:
+              for path in sorted((root / expected_dir).glob('*.ndjson')):
+                  try:
+                      number = int(path.name.split('_', 1)[0])
+                  except ValueError:
+                      continue
+                  if number < 46:
+                      continue
+                  with path.open('rb') as stream:
+                      run = subprocess.run(
+                          [str(checker)],
+                          stdin=stream,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      )
+                  rows.append({
+                      'number': number,
+                      'input': f'{expected_dir}/{path.name}',
+                      'expected_exit': expected_exit,
+                      'actual_exit': run.returncode,
+                      'matched': run.returncode == expected_exit,
+                  })
+          rows.sort(key=lambda row: row['number'])
+          first = next((row for row in rows if not row['matched']), None)
+          out = {
+              'schema': 'metatron-kernel-tutorial-suffix-atlas-v1',
+              'candidate_sha': os.environ['GITHUB_SHA'],
+              'start_case': 46,
+              'count': len(rows),
+              'matched': sum(row['matched'] for row in rows),
+              'first_mismatch': first,
+              'rows': rows,
+              'authority': 'diagnostic-only; cannot grant or revoke semantic authority',
+          }
+          pathlib.Path('evidence-out/tutorial-suffix-atlas.json').write_text(
+              json.dumps(out, indent=2, sort_keys=True) + '\n'
+          )
+          print(json.dumps({
+              'count': out['count'],
+              'matched': out['matched'],
+              'first_mismatch': out['first_mismatch'],
+          }, sort_keys=True))
+          PY
+
+      - name: Attempt same-cohort retired-instruction measurement
+        working-directory: metatron-kernel
+        run: |
+          python - <<'PY'
+          import json, os, pathlib, shutil, subprocess, tempfile
+
+          root=pathlib.Path.cwd()
+          arena=pathlib.Path('/tmp/lean-kernel-arena')
+          checker=(root/'target/release/metatron-kernel').resolve()
+          cases=[
+            ('arena/level-index-out-of-order',arena/'tests/other/level-index-out-of-order.ndjson'),
+            ('arena/sparse-name-index',arena/'tests/other/sparse-name-index.ndjson'),
+            ('local/bad-self-proof',root/'tests/fixtures/bad-self-proof.ndjson'),
+            ('local/bad-unbound-axiom',root/'tests/fixtures/bad-unbound-axiom.ndjson'),
+            ('local/good-beta-definition',root/'tests/fixtures/good-beta-definition.ndjson'),
+            ('local/unsupported-inductive',root/'tests/fixtures/unsupported-inductive.ndjson'),
+          ]
+          rows=[]
+          perf=shutil.which('perf')
+          for name,path in cases:
+            if perf is None:
+              rows.append({'name':name,'exit_code':None,'instructions':None})
+              continue
+            with tempfile.NamedTemporaryFile() as stats, path.open('rb') as stdin:
+              run=subprocess.run(
+                [perf,'stat','-j','-o',stats.name,'-e','instructions:u','--',str(checker)],
+                stdin=stdin,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,check=False,
+              )
+              stats.seek(0)
+              raw=stats.read().decode(errors='replace')
+            count=None
+            for line in raw.splitlines():
+              try: item=json.loads(line)
+              except json.JSONDecodeError: continue
+              if item.get('event') in ('instructions:u','instructions'):
+                value=str(item.get('counter-value','')).replace(',','').strip()
+                if value.isdigit(): count=int(value)
+            rows.append({'name':name,'exit_code':run.returncode,'instructions':count})
+          available=all(row['instructions'] is not None for row in rows)
+          out={
+            'schema':'metatron-kernel-g2-retired-instructions-v1',
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'arena_sha':os.environ['ARENA_SHA'],
+            'metric':'perf instructions:u',
+            'cohort':[row['name'] for row in rows],
+            'cases':rows,
+            'status':'measured' if available else 'unavailable',
+            'total_instructions':sum(row['instructions'] for row in rows) if available else None,
+            'promotion_eligible':available,
+            'control':{
+              'repository':'metalogiclabs/mathgraph-lean-kernel',
+              'sha':'78c7502bac8a5ba000057b3f083bc0595ac65750',
+              'status':'untouched; not measured in this G2 contract-only cohort',
+              'total_instructions':None,
+            },
+            'performance_decision':'unknown_without_same-cohort-control',
+          }
+          pathlib.Path('evidence-out/instructions.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Write exact-run attestation
+        working-directory: metatron-kernel
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          JOB_ID="$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/jobs" --jq '.jobs[] | select(.name == "qualify") | .id' | head -1)"
+          export JOB_ID
+          python - <<'PY'
+          import json, os, pathlib
+          root=pathlib.Path('evidence-out')
+          out={
+            'schema':'metatron-kernel-genesis-g2-attestation-v2',
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'arena_sha':os.environ['ARENA_SHA'],
+            'workflow_run':{
+              'id':int(os.environ['GITHUB_RUN_ID']),
+              'job_id':int(os.environ['JOB_ID']),
+              'url':f"{os.environ['GITHUB_SERVER_URL']}/{os.environ['GITHUB_REPOSITORY']}/actions/runs/{os.environ['GITHUB_RUN_ID']}",
+            },
+            'qualification':json.loads((root/'qualification.json').read_text()),
+            'tutorial_qualification':json.loads((root/'tutorial-qualification.json').read_text()),
+            'tutorial_differential':json.loads((root/'tutorial-differential.json').read_text()),
+            'supplemental':json.loads((root/'g23-supplemental.json').read_text()),
+            'retired_instructions':json.loads((root/'instructions.json').read_text()),
+          }
+          (root/'attestation.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - name: Upload exact-run evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: metatron-kernel-genesis-g2-${{ github.sha }}
+          path: metatron-kernel/evidence-out
+          if-no-files-found: error

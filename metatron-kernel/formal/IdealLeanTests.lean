@@ -1,0 +1,18 @@
+import IdealLean.Semantics
+
+/-! Compile-time interface tests for the portable semantic specification. -/
+
+#check IdealLean.openBinder_bvar_zero
+#check IdealLean.openBinder_bvar_succ
+#check IdealLean.openBinder_const
+#check IdealLean.Install.installed_theorem_has_no_body
+#check IdealLean.Install.type_correct_in_prior_environment
+#check IdealLean.Install.theorem_type_is_prop_in_prior_environment
+#check IdealLean.Install.prior_environment_is_prefix
+#check IdealLean.Install.checked_proof_uses_prior_environment
+#check IdealLean.Install.checked_theorem_is_not_self_referential
+#check IdealLean.InductivePromotion.promote_preserves_environment_validity
+#check IdealLean.InductivePromotion.promoted_signatures_are_opaque
+#check IdealLean.ParameterizedInductivePromotion.promote_preserves_environment_validity
+#check IdealLean.ProdUniversePromotion.promote_preserves_environment_validity
+#check IdealLean.PProdSortPromotion.promote_preserves_environment_validity

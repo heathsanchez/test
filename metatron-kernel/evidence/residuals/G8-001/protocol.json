@@ -1,0 +1,19 @@
+{
+  "id": "G8-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "bccc88de26c167f0ec1680fbf420523ce65db4da",
+    "fixture_sha256": "fe92f67341850f0c222c43cd99e9f17904cdb003654f394890f49df431ceaf7d",
+    "tutorial_ordinal": 30
+  },
+  "obstruction": "The first PN definition requires the certified identity imax u u = u while inferring nested Pi sorts; the conservative universe constructor preserves it as unresolved and the valid case returns UNKNOWN.",
+  "residual_class": "universe equality / imax case analysis",
+  "observed": {"expected_exit": 0, "actual_exit": 2, "preceding_cases_matched": 29, "first_failing_declaration_line": 22},
+  "least_candidate_capability": "Add the unconditional syntactic identity imax u u = u to cheap universe simplification, without general Boolean case enumeration.",
+  "strongest_competing_explanation": "The larger theorem or delta search is exhausting its budget; truncating at the first PN definition preserves UNKNOWN and isolates the obstruction before those declarations exist.",
+  "falsifier": "Reject if the first PN definition or exact case 030 remains UNKNOWN, unresolved imax u v is guessed, any unequal universe becomes equal, or protected verdicts change.",
+  "causal_ablation": "Compare identical authority with and without the imax-idempotence constructor rule; only the enabled arm may turn the first declaration and case 030 from UNKNOWN to ACCEPT.",
+  "protected_suite": ["all G0-G7 tests", "exact tutorial cases 001-019", "unresolved imax u v remains UNKNOWN", "cycles and budgets remain UNKNOWN"],
+  "performance_plan": {"primary_metric":"retired_instructions", "promotion_rule":"same-identity candidate and flash counters only"},
+  "decision": "OPEN_RESIDUAL_NO_MECHANISM_IMPLEMENTED"
+}

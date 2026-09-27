@@ -1,0 +1,51 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G22-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "fc2e64a0e43676d283e202b7c9b1cbb262360e79",
+    "tutorial_ordinal": 54,
+    "fixture": {
+      "path": "bad/054_indNeg.ndjson",
+      "sha256": "89592d2e05e7ea518cf550eb18b99d1172b63b96b90abf1454b7102300eda843"
+    },
+    "conversion_control": {
+      "path": "good/055_reduceCtorParam.mk.ndjson",
+      "sha256": "16d146c5ef39743b6a95f21043a43b890e22d72792fd9436e37396765124a7a2"
+    }
+  },
+  "obstruction": "The classic negative-recursive constructor field (indNeg → indNeg) is structurally malformed but sealed G21 leaves it UNKNOWN.",
+  "expected": "REJECT",
+  "observed": "REJECT",
+  "least_capability": "A rejection-only definite-negative-occurrence law on constructor field domains: traverse Pi polarity and reject only when the inductive constant occurs under a negative Pi-domain position. Direct positive recursive fields and conversion-heavy non-Pi occurrences remain outside this law.",
+  "falsifier": "Any tutorial 001-053 changes; tutorial 055 becomes REJECT; a direct positive recursive field is rejected merely for containing the inductive; or tutorial 054 remains non-REJECT.",
+  "protected_suite": [
+    "all G0-G21 tests and falsifiers",
+    "exact tutorial prefix 001-053",
+    "tutorial 055 conversion-sensitive control remains UNKNOWN",
+    "G22 grants no ACCEPT authority",
+    "only definite negative Pi-domain occurrence is refuted"
+  ],
+  "decision": "retained",
+  "implementation_note": "Semantic G22 law introduced at a3906ed1aecc187f9466e41ab53ea7575fd6685a; 4c1d43e69b34aa42a418714ba968e35d84bc93ff is formatting-only.",
+  "qualification": {
+    "candidate_sha": "cc5063c372f72be4bbd8caffa25f5770b055462b",
+    "oracle_sha": "fc2e64a0e43676d283e202b7c9b1cbb262360e79",
+    "run_id": 35765424875,
+    "job_id": 106873615908,
+    "artifact_id": 10711439094,
+    "artifact_digest": "sha256:d7a17f265897ab3afb8e58134a70038addfb9b26d0803ccc8193d33a30db87f6",
+    "tutorial_differential": {
+      "equal": 53,
+      "earned_delta": 1,
+      "earned_cases": [
+        "054"
+      ],
+      "mismatch": 0
+    },
+    "suffix_atlas": {
+      "matched": 27,
+      "first_mismatch": 55
+    }
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Metatron kernel experiment record",
+  "type": "object",
+  "required": [
+    "id", "date", "arena_sha", "baseline", "obstruction",
+    "residual_class", "capability", "competing_explanation", "falsifier",
+    "ablation", "protected_suite", "primary_metric", "decision_rule",
+    "implementation_commit", "qualification", "performance", "decision"
+  ],
+  "properties": {
+    "id": {"type": "string", "minLength": 1},
+    "arena_sha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "decision": {"enum": ["open", "retained", "rejected", "unknown"]}
+  },
+  "additionalProperties": true
+}

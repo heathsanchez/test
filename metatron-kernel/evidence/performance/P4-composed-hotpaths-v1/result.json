@@ -1,0 +1,46 @@
+{
+  "schema": "nucleus-performance-champion-v1",
+  "id": "P4-composed-hotpaths-v1",
+  "candidate_sha": "ea6beb0d8f09b57efa4304f926a51bc9e112e206",
+  "parents": {
+    "p2": "411c5a38ee29885a533dd03219ba0b7f17cfdaf9",
+    "p3": "41a52eb5b21d11616a09e8d41ec8bbd66fe4426d"
+  },
+  "semantic": {
+    "tutorial_count": 141,
+    "tutorial_diffs": 0,
+    "committed_count": 45,
+    "committed_diffs": 0,
+    "correct_cohort": 78
+  },
+  "cohort": {
+    "medians_ns": {
+      "g25": 683752192,
+      "p2": 566481039,
+      "p3": 565129097,
+      "p4": 531579517
+    },
+    "p4_over_g25": 0.777444698853704,
+    "p4_over_p2": 0.9383888963669268,
+    "p4_over_p3": 0.9406337769934362
+  },
+  "parent_hotpaths": {
+    "universe": {
+      "p2_ns": 308406691,
+      "p4_ns": 307115106,
+      "p4_over_p2": 0.9958120720539101
+    },
+    "conversion": {
+      "p3_ns": 1383457494,
+      "p4_ns": 1108090650,
+      "p4_over_p3": 0.8009574958433815
+    }
+  },
+  "evidence": {
+    "run": 35853604160,
+    "job": 107156800516,
+    "artifact": 10746816664,
+    "artifact_digest": "sha256:309eaee0086f8cf80663b5d79e14f5cab1b622fb31fea1baa26597589e0b5639"
+  },
+  "decision": "promote as current Nucleus performance base; not yet a full-Arena authority claim"
+}

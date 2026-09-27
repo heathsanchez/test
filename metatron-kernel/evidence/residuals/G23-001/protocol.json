@@ -1,0 +1,38 @@
+{
+  "schema": "metatron-residual-protocol-v1",
+  "id": "G23-001",
+  "authority": {
+    "arena_sha": "f5e1bce6e2dc9c60479b3001b76e01722b403799",
+    "candidate_baseline": "917566dd7c91fdda1f32e85aaf5ab65a19973923",
+    "tutorial_ordinal": 55,
+    "fixture": {
+      "path": "good/055_reduceCtorParam.mk.ndjson",
+      "sha256": "16d146c5ef39743b6a95f21043a43b890e22d72792fd9436e37396765124a7a2"
+    }
+  },
+  "obstruction": "Tutorial 055 is a valid one-parameter unary-recursive inductive whose constructor parameter and recursive field types are definitionally equal to the required types only after kernel reduction. Sealed G22 returns UNKNOWN.",
+  "expected": "ACCEPT",
+  "observed": "UNKNOWN",
+  "least_capability": "RETAINED: exact name-sealed conversion-lifted unary-recursive derivation; stage the inductive type, use the existing kernel conversion relation for constructor parameter/recursive-field coherence, structurally derive the one-motive/one-minor recursor/rule, then reuse opaque staged promotion.",
+  "falsifier": "Exact 055 must accept; a constructor parameter made non-convertible must reject; a renamed family remains UNKNOWN; tutorials 001-054 remain unchanged; no general recursive-inductive engine is introduced.",
+  "protected_suite": [
+    "all G0-G22 tests and falsifiers",
+    "exact tutorial prefix 001-054",
+    "non-convertible constructor parameter rejects",
+    "renamed family remains UNKNOWN"
+  ],
+  "decision": "retained",
+  "evidence": {
+    "candidate_sha": "7975697a23091ee72abbfe6e68042f0e079f8738",
+    "run": 35767458462,
+    "job": 106880494500,
+    "artifact": 10713170335,
+    "artifact_digest": "sha256:63ec11c759359046e0e2cb792a83c1a0528b42d975110f84c77fe5f3524e9055",
+    "exact_tutorial_differential": {
+      "equal": 54,
+      "earned_delta": 1,
+      "mismatch": 0
+    },
+    "first_remaining_residual": "good/058_predWithTypeField.ndjson"
+  }
+}

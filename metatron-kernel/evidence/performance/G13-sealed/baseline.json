@@ -1,0 +1,24 @@
+{
+  "schema": "metatron-diagnostic-baseline-v1",
+  "candidate_local_sha": "b1e0ce6c2dffa90b7da3171faa4f457784de5d2e",
+  "cohort": [
+    "evidence/residuals/G13-001/fixture.ndjson"
+  ],
+  "build": "cargo build --release --locked --features diagnostics",
+  "operation_counts": {
+    "G13-001": {
+      "exit": 0,
+      "declarations": 2,
+      "inductive_signatures": 3,
+      "type_judgments": 4,
+      "conversions": 13
+    }
+  },
+  "retired_instructions": {
+    "status": "UNKNOWN_NO_SAME_COHORT_HARDWARE_COUNTERS",
+    "candidate": null,
+    "control": null,
+    "promotion_eligible": false
+  },
+  "interpretation": "Diagnostic operation counts only. They are not the official Arena retired-instruction metric and authorize no performance promotion."
+}
