@@ -8125,8 +8125,11 @@ impl ExactBinaryProductDerivation<'_> {
         };
 
         // G32 reuses G31's already-qualified constructor-iota machine. Only
-        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        // exact Prod and exact Rule-K Eq opt in here after their full contracts pass.
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }
+        ) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
