@@ -734,6 +734,37 @@ impl<'a> Machine<'a> {
         }
     }
 
+    pub(crate) fn reexpose_neutral(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Option<Value> {
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return None;
+        };
+        let declaration = self.definitions.get(name)?;
+        if declaration.level_params.len() != levels.len() {
+            return None;
+        }
+        let mut substitution = Vec::with_capacity(levels.len());
+        for (parameter, level) in declaration.level_params.iter().zip(levels) {
+            substitution.push((*parameter, level.clone()));
+        }
+        let mut closure = Closure::with_levels(
+            declaration.value,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitution),
+        );
+        let mut env = closure.env.clone();
+        for argument in &neutral.spine {
+            env = env.extend(argument.clone());
+        }
+        closure.env = env;
+        self.expose(closure, Transparency::Reducible, budget)
+            .proven_value()
+            .cloned()
+    }
+
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
