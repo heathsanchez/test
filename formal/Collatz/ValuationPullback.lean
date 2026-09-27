@@ -90,6 +90,60 @@ theorem ordinary_exit_of_ownerLift_on_orbit
   rw [iter_add, horbit]
   simpa [iter] using (ownerLift_coalesces hpodd k).symm
 
+/-- On a hypothetical minimal positive bad orbit, every exact owner-lift
+representation is source-anchored: its odd owner cannot lie below the source.
+Otherwise the valuation-pullback constructor gives a lower-source ordinary
+exit. -/
+theorem minimal_bad_ownerLift_owner_ge
+    {n p j k : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hp : 0 < p)
+    (hpodd : p % 2 = 1)
+    (horbit : iter shortcut j n = ownerLift k p) :
+    n ≤ p := by
+  apply Nat.le_of_not_gt
+  intro hlt
+  obtain ⟨a, hexit⟩ :=
+    ordinary_exit_of_ownerLift_on_orbit hp hpodd hlt horbit
+  exact minimal_bad_has_no_ordinary_exit hmin a hexit
+
+/-- First concrete valuation barrier.  Below 4*n+1 a minimal-bad orbit cannot
+occupy residue 5 modulo 8, because every such value is exactly ownerLift 1 p
+for an odd p<n. -/
+theorem minimal_bad_below_four_source_not_mod8_five
+    {n j : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hlt : iter shortcut j n < 4 * n + 1) :
+    iter shortcut j n % 8 ≠ 5 := by
+  intro hmod
+  let x := iter shortcut j n
+  let a := x / 8
+  let p := 2 * a + 1
+  have hx : x = 8 * a + 5 := by
+    have hd := Nat.mod_add_div x 8
+    dsimp [a]
+    omega
+  have hp : 0 < p := by
+    dsimp [p]
+    omega
+  have hpodd : p % 2 = 1 := by
+    dsimp [p]
+    omega
+  have hlift : ownerLift 1 p = x := by
+    simp [ownerLift, p, hx, a]
+    omega
+  have horbit : iter shortcut j n = ownerLift 1 p := by
+    simpa [x] using hlift.symm
+  have hge := minimal_bad_ownerLift_owner_ge hmin hp hpodd horbit
+  have hxp : x = 4 * p + 1 := by
+    rw [← hlift]
+    simp [ownerLift]
+  dsimp [x] at hlt
+  omega
+
+#print axioms minimal_bad_ownerLift_owner_ge
+#print axioms minimal_bad_below_four_source_not_mod8_five
+
 #print axioms ownerLift_coalesces
 #print axioms lower_merge_of_ownerLift_on_orbit
 #print axioms ordinary_exit_of_ownerLift_on_orbit
