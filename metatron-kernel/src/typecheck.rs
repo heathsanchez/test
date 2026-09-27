@@ -509,6 +509,14 @@ impl<'a> TypeChecker<'a> {
         }
         match inferred {
             Judgment::Proven { value, .. } => {
+                if std::env::var_os("NUCLEUS_TRACE_TYPE_PAIR").is_some() {
+                    eprintln!(
+                        "NUCLEUS_TYPE_PAIR:depth={}:inferred={:?}:expected={:?}",
+                        context.len(),
+                        value,
+                        expected
+                    );
+                }
                 let conversion = crate::convert::convert_with_policy_in_context(
                     self,
                     &value,
