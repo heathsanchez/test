@@ -44,6 +44,8 @@ def main():
         base_fields=[],
         separator_bank=[
             "endpoint_parity",
+            "endpoint_mod3",
+            "source_bits",
         ],
     )
     print("ROWS",len(rows))
