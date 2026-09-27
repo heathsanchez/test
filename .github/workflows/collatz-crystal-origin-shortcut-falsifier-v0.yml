@@ -1,0 +1,15 @@
+name: Collatz Crystal origin shortcut falsifier
+on:
+  push:
+    branches: [collatz-crystal-zero-loss-tail-v1]
+jobs:
+  falsifier:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_crystal_origin_shortcut_falsifier_v0.py --depth 24 | tee /tmp/out.json
+      - uses: actions/upload-artifact@v4
+        with: {name: collatz-crystal-origin-shortcut-falsifier-v0, path: /tmp/out.json}
