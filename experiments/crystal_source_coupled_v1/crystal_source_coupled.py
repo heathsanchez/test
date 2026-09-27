@@ -38,7 +38,7 @@ def exit_at(n,y,basin):
 def protected_future(n,x,h,basin):
     for j in range(h+1):
         e=exit_at(n,x,basin)
-        if e is not None: return ("EXIT",j,e[0])
+        if e is not None: return ("EXIT",)
         x=T(x)
     return ("UNKNOWN",)
 
@@ -61,7 +61,7 @@ def key_for(n,row,features):
             vals.append(candidate(row,f))
     return tuple(vals)
 
-def build_records(sources,post=48,future=48,reverse=128):
+def build_records(sources,post=96,future=512,reverse=256):
     rec=[]
     for n in sources:
         basin=lower_basin(n,reverse); K=zero_tail_depth(n)
@@ -112,9 +112,9 @@ def run(sources):
 
 if __name__=="__main__":
     rng=random.Random(28092026)
-    train=list(range(3,1025))
-    prospective=[rng.randrange(1025,8193) for _ in range(512)]
-    print(json.dumps({"schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V2",
+    train=list(range(3,2049))
+    prospective=[rng.randrange(2049,16385) for _ in range(512)]
+    print(json.dumps({"schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V3",
       "epistemic":"DISCOVERY_ONLY_BOUNDED",
       "train":run(train),"prospective":run(prospective),
       "boundary":"UNKNOWN labels are bounded misses; global Collatz UNKNOWN."},indent=2))
