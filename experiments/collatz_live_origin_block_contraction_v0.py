@@ -49,6 +49,23 @@ for j in range(60,DEPTH-BMAX+1):
         worst_b=found;worst={"j":j,"m":m,"live":P[j][m],"block":found,
           "live_after":P[j+found][m],"exits_in_block":P[j][m]-P[j+found][m]}
       rows.append((j,m,found))
+# Adversarial record-survivor resource extraction.
+# For each live state define debt numerator/denominator D=P*2^j/(F*2^(1+floor(6j/125)+m)).
+# A universal proof may use the natural live mass P as the well-founded resource
+# provided every nonempty state has a bounded future block with a strict loss.
+record=[]
+for j in range(60,DEPTH-BMAX+1):
+  for m in range(1,BITS+1):
+    if not P[j][m]: continue
+    life=0
+    while j+life<=DEPTH and P[j+life][m]:
+      life+=1
+    exits21=P[j][m]-P[min(DEPTH,j+21)][m]
+    debt_num=P[j][m]<<j
+    debt_den=F[j] << (1+(6*j)//125+m)
+    record.append({"survival":life,"j":j,"m":m,"live":P[j][m],
+      "exits21":exits21,"debt_num":str(debt_num),"debt_den":str(debt_den)})
+record.sort(key=lambda r:(-r["survival"],-r["j"],-r["m"]))
 result={"schema":"COLLATZ_LIVE_ORIGIN_BLOCK_CONTRACTION_V0",
  "source_bits":BITS,"depth":DEPTH,"max_block":BMAX,
  "checked_states":len(rows)+len(no_block),"states_without_block":len(no_block),
@@ -56,5 +73,7 @@ result={"schema":"COLLATZ_LIVE_ORIGIN_BLOCK_CONTRACTION_V0",
  "status":"FINITE_UNIFORM_BLOCK_FOUND" if not no_block else "FINITE_BLOCK_OBSTRUCTION",
  "theorem_target":("prove the same block contraction from exact carry state for all depths/windows"
                    if not no_block else "refine consequential state using first no-block separator"),
+ "record_survivors":record[:40],
+ "resource_candidate":{"name":"live_mass","value":"P_j(X)","order":"Nat","progress_obligation":"for every nonempty actual live-origin state, some lawful finite block has P strictly decrease; envelope contraction supplies quantitative strengthening"},
  "global_collatz":"UNKNOWN"}
 print(json.dumps(result,indent=2))
