@@ -17,5 +17,18 @@ lean_lib CollatzFinal where
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
     `Collatz.SurvivalDeficit,
-    `Collatz.FinalExcursion
+    `Collatz.OrdinaryExitReduction,
+    `Collatz.OrdinaryInverseOdd,
+    `Collatz.FirstCrossingRigidity,
+    `Collatz.HardFirstCrossing,
+    `Collatz.ThreeAdicReverseBarrier,
+    `Collatz.FirstCrossingBias,
+    `Collatz.FirstCrossingGap,
+    `Collatz.StrictDescentReduction,
+    `Collatz.HardCrossingFuture,
+    `Collatz.HardCrossingSplit,
+    `Collatz.ReverseTargetBoundary,
+    `Collatz.SourceCoherenceAudit,
+    `Collatz.FinalExcursion,
+    `Collatz.AssembledConstructorCloseout
   ]
