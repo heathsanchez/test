@@ -122,7 +122,7 @@ theorem hard_large_recovers_two_survival_steps
   have hyodd : y % 2 ≠ 0 := by omega
   have hpowpos : 0 < 2 ^ k := Nat.pow_pos (by decide)
   have hrestore :
-      4 * 2 ^ k ≤ 3 * 3 ^ oddCount n (k + 1) := by
+      2 * (2 * 2 ^ k) ≤ 3 * 3 ^ oddCount n (k + 1) := by
     omega
   have hpar1 : iter shortcut (k + 1) n % 2 ≠ 0 := by
     simpa [y] using hyodd
