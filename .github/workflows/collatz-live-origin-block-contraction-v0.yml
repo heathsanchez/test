@@ -1,7 +1,7 @@
-name: Collatz Crystal record survivor resource V1
+name: Collatz Crystal single source resource V1
 on:
   push:
-    branches: [collatz-crystal-record-survivor-resource-v1]
+    branches: [collatz-crystal-single-source-resource-v1]
     paths:
       - 'experiments/collatz_live_origin_block_contraction_v0.py'
       - '.github/workflows/collatz-live-origin-block-contraction-v0.yml'
@@ -19,9 +19,11 @@ jobs:
           set -euo pipefail
           python -u experiments/collatz_live_origin_block_contraction_v0.py | tee /tmp/block.json
           python -u experiments/collatz_live_origin_exit_hazard_v0.py | tee /tmp/hazard.json
+          python -u experiments/collatz_crystal_single_source_resource_v1.py | tee /tmp/single-source.json
       - uses: actions/upload-artifact@v4
         with:
           name: collatz-live-origin-block-contraction-v0
           path: |
             /tmp/block.json
             /tmp/hazard.json
+            /tmp/single-source.json
