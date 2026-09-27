@@ -1,0 +1,90 @@
+{
+  "schema": "acc-ak3-public-stable-route-v1",
+  "utc": "2026-09-27T19:41:41.523959Z",
+  "epistemic_status": "CANDIDATE_BOUNDED_LOCAL",
+  "official_semantics_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "public_source": {
+    "repository": "SauersML/group-approximation",
+    "commit": "5080b7d3bb4ddd1de98d28c7f8904f48a87be463",
+    "experiment": "experiments/ak3-stable-primitive-search-2026-09-17",
+    "criterion": "research/one-stabilization-primitive-relator-criterion-proof.md",
+    "ak3_pair_compact": [
+      "xxxYYYY",
+      "xyxYXY"
+    ]
+  },
+  "live_authority": {
+    "run_id": 36340407632,
+    "run_attempt": 3,
+    "artifact_id": 10939609227,
+    "snapshot_utc": "2026-09-27T19:41:41.523959+00:00",
+    "state_sha256": "57ea360516514c331238de05749aa697a947917934eee237883cd999825d2714",
+    "ac_unsolved": 2672,
+    "stable_unsolved": 2672,
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "quota_used": 0,
+    "quota_limit": 40
+  },
+  "exact_official_class_match": {
+    "quotient": "cyclic rotation and relator inversion, relator order, signed permutation of x/y",
+    "stable_ids": [
+      "sac-00399",
+      "sac-06279",
+      "sac-06945"
+    ],
+    "all_three_live_unsolved": true,
+    "simplest_target": {
+      "id": "sac-00399",
+      "relation": "AK(3) r1 rotated to YYYYxxx = official r1 after relator swap; AK(3) r2 rotated to YXYxyx = official r0 after relator swap; no generator signed permutation required"
+    }
+  },
+  "public_search_boundary": {
+    "rank3_caps_exhausted": {
+      "21": {
+        "states": 23638,
+        "depth": 35
+      },
+      "22": {
+        "states": 42161,
+        "depth": 35
+      },
+      "23": {
+        "states": 146954,
+        "depth": 35
+      },
+      "24": {
+        "states": 280213,
+        "depth": 37
+      }
+    },
+    "cap25": "terminated at 1200s",
+    "best_first_cap38": {
+      "states_reached": 2001236,
+      "processed": 2661,
+      "current_total_length": 19,
+      "result": "incomplete_no_goal"
+    },
+    "primitive_goal_found": false,
+    "cap24_projection_count": 162
+  },
+  "proof_atlas_bridge_test": {
+    "proof_atlas_artifact_id": 10589688184,
+    "proof_atlas_states": 433272,
+    "projection_source": "ak3-proj-caps22-24.log cap24 PROJ rows",
+    "projections": 162,
+    "exact_transformed_rank2_states_tested": 583232,
+    "equivalences": "all cyclic rotations and individual relator inversions, relator swap, all 8 signed x/y permutations",
+    "proof_atlas_contacts": 0,
+    "candidates": 0
+  },
+  "consequence": "The public AK(3) one-stabilization primitive-relator quotient is a newly identified native-Stable route shared by three still-unsolved official rows. Its complete logged cap-24 projection boundary does not rejoin the existing 433272-state rank-2 Proof Atlas under the tested exact equivalence closure. Do not spend on another rank-2 Atlas reconnect at this boundary. Positive-EV work is to continue the public rank-3 primitive-relator/future quotient itself, preferably on the simplest official representative sac-00399, and only compile/replay after an actual primitive or other certified exit is found.",
+  "publication": {
+    "candidate_found": false,
+    "submission_attempted": false,
+    "quota_consumed": 0
+  }
+}
