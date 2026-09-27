@@ -53,6 +53,7 @@ jobs:
             obs['unknown_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'UNKNOWN' in e).items()))
             obs['depth_language']=tuple(sorted(set(re.findall(r'depth=(\d+)', '\n'.join(gen)))))
             obs['event_language']=tuple(sorted(set(re.sub(r'depth=\d+','depth=*',e) for e in gen)))
+            obs['typed_judgments']=tuple(sorted(set(e for e in gen if e.startswith('infer=') or e.startswith('convert='))))
             rows.append({'path':str(p.relative_to(root)),'expected':expected,'obs':obs})
           assert len(rows)==40,len(rows)
 
