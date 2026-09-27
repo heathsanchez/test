@@ -141,6 +141,52 @@ theorem minimal_bad_below_four_source_not_mod8_five
       _ = 4 * p + 1 := by simp [ownerLift]
   omega
 
+/-- The old mod-12 large-crossing signature refines immediately once the
+valuation barrier is joined with the first forced odd step.  The 19 mod 48
+subclass would send the next orbit value into residue 5 mod 8 while it is still
+below 4*n+1, which the owner-lift barrier forbids. -/
+theorem minimal_bad_large_crossing_not_mod48_nineteen
+    {n k : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hfirst : FirstCoefficientCrossingAt n (k + 1))
+    (hq : oddCount n (k + 1) < n) :
+    iter shortcut (k + 1) n % 48 ≠ 19 := by
+  let y := iter shortcut (k + 1) n
+  let z := iter shortcut (k + 2) n
+  have hsig :=
+    minimal_bad_hard_crossing_large_source_signature hmin hfirst hq
+  have hyodd : y % 2 ≠ 0 := by
+    have hy : y % 2 = 1 := by
+      simpa [y] using hsig.2.1
+    omega
+  have hzrel : 2 * z = 3 * y + 1 := by
+    have hs := iter_succ_last n (k + 1)
+    have hd := double_shortcut y
+    rw [if_neg hyodd] at hd
+    dsimp [z]
+    rw [hs]
+    simpa [y] using hd
+  have hwin :
+      3 * y < 4 * n := by
+    simpa [y] using
+      first_crossing_three_y_lt_four_n hmin.1.1 hfirst hq
+  have hzlt : z < 4 * n + 1 := by
+    have hn : 0 < n := hmin.1.1
+    omega
+  have hznot :
+      z % 8 ≠ 5 := by
+    simpa [z] using
+      minimal_bad_below_four_source_not_mod8_five
+        (j := k + 2) hmin (by simpa [z] using hzlt)
+  intro h19
+  have hy19 : y % 48 = 19 := by
+    simpa [y] using h19
+  have hz5 : z % 8 = 5 := by
+    omega
+  exact hznot hz5
+
+#print axioms minimal_bad_large_crossing_not_mod48_nineteen
+
 #print axioms minimal_bad_ownerLift_owner_ge
 #print axioms minimal_bad_below_four_source_not_mod8_five
 
