@@ -734,7 +734,23 @@ impl<'a> Machine<'a> {
                     }
                     EnvBinding::Free(free) => {
                         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
-                            eprintln!("NUCLEUS_BINDING_FREE:free={:?}:args={:?}", free, arguments);
+                            let mut normalized = Vec::with_capacity(arguments.len());
+                            for argument in arguments.iter().rev() {
+                                normalized.push(
+                                    self.expose_internal(
+                                        argument.clone(),
+                                        Transparency::Reducible,
+                                        remaining,
+                                        false,
+                                    )
+                                    .proven_value()
+                                    .map(|exposure| exposure.value.clone()),
+                                );
+                            }
+                            eprintln!(
+                                "NUCLEUS_BINDING_FREE:free={:?}:args={:?}:normalized={:?}",
+                                free, arguments, normalized
+                            );
                         }
                         return None;
                     }
