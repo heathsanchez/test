@@ -118,10 +118,45 @@ theorem reaches_one_of_prefix_high_odd_and_quarter_splice_future7
   exact reaches_one_of_prefix_high_odd_and_three_quarter_coalescence7
     hHigh (three_quarter_coalescence7_of_quarter_splice_future7 hQ)
 
+/-- Unified Crystal target: every odd source above one eventually reaches a
+5 mod 8 value before exceeding four times the original source. -/
+def OddQuarterSpliceCoverage : Prop :=
+  ∀ n, 1 < n → n % 2 = 1 →
+    ∃ r, let x := iter shortcut r n
+      x % 8 = 5 ∧ x ≤ 4 * n
+
+/-- One-premise source-order closeout.  The quarter-splice event constructs
+p=(x-1)/4<n with a common future, contradicting minimal badness. -/
+theorem reaches_one_of_odd_quarter_splice_coverage
+    (hQ : OddQuarterSpliceCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  have hnone : ∀ n, ¬ PositiveBad n := by
+    apply no_bad_of_no_minimal PositiveBad
+    intro n hmin
+    have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
+      omega
+    have hodd : n % 2 = 1 := positive_minimal_bad_odd hmin
+    obtain ⟨r, hxmod, hxband⟩ := hQ n hgt hodd
+    have hexit : OrdinaryExit n (iter shortcut r n) :=
+      ordinary_exit_of_quarter_splice hxmod hxband
+    exact minimal_bad_has_no_ordinary_exit hmin r hexit
+  intro n hn
+  have hgood : CollatzGood n := by
+    apply Classical.byContradiction
+    intro hbad
+    exact hnone n ⟨hn, hbad⟩
+  exact collatzGood_eventually_one hgood
+
 #print axioms quarter_splice_of_mod8_five
 #print axioms ordinary_exit_of_quarter_splice
 #print axioms three_quarter_coalescence7_of_quarter_splice_future7
-#print axioms reaches_one_of_prefix_high_odd_and_quarter_splice_future7
+#print axioms reaches_one_of_prefix_high_odd_and_quarter_splice_future7\n#print axioms reaches_one_of_odd_quarter_splice_coverage
 
 end SourceProduct
 end CollatzFinal
