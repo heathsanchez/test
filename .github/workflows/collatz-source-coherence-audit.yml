@@ -1,0 +1,73 @@
+name: Collatz source coherence audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/SourceCoherenceAudit.lean'
+      - 'experiments/test_source_coherence_audit.py'
+      - '.github/workflows/collatz-source-coherence-audit.yml'
+permissions:
+  contents: read
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run source, reverse-target, and coherence regressions
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-source-coherence-audit
+          python -m unittest discover -s experiments/source_product_v1 -p 'test_*.py' -v 2>&1 | tee evidence/collatz-source-coherence-audit/source-tests.txt
+          (cd experiments && python -m unittest -v test_reverse_target_audit test_source_coherence_audit) 2>&1 | tee evidence/collatz-source-coherence-audit/join-tests.txt
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile actual-source joined boundary
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-source-coherence-audit/toolchain.txt
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity OrdinaryExitReduction OrdinaryInverseOdd HardFirstCrossing ThreeAdicReverseBarrier FirstCrossingBias FirstCrossingGap ReverseTargetBoundary StrictDescentReduction; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-source-coherence-audit/$module.log"
+          done
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/SourceCoherenceAudit.lean; then
+            echo 'Forbidden source token' >&2; exit 1
+          fi
+          lake env lean -DautoImplicit=false formal/Collatz/SourceCoherenceAudit.lean | tee evidence/collatz-source-coherence-audit/SourceCoherenceAudit.log
+          python - <<'PY'
+          import pathlib,re,json
+          folder=pathlib.Path('evidence/collatz-source-coherence-audit')
+          allowed={'propext','Classical.choice','Quot.sound'}
+          names=['no_smaller_source_ever_reaches_seven','joined_source_coupling_separator','numeric_envelope_alone_cannot_force_exit','joined_ordinary_exit_step','joined_ordinary_exit_persists','joined_no_exit_later_excludes_earlier','no_exit_is_not_forward_invariant','reaches_one_of_anchored_branch_exits']
+          log=(folder/'SourceCoherenceAudit.log').read_text()
+          for name in names:
+              assert "'CollatzFinal.SourceProduct."+name+"'" in log, name
+          for path in folder.glob('*.log'):
+              text=path.read_text()
+              assert 'sorryAx' not in text and 'Lean.ofReduceBool' not in text, path
+              for block in re.findall(r'depends on axioms:\s*\[([^]]*)\]',text):
+                  deps={x.strip() for x in block.split(',') if x.strip()}
+                  assert deps <= allowed, (path,deps)
+          report={'schema':'COLLATZ_SOURCE_COHERENCE_AUDIT_V1','qualified_declarations':names,'separator':{'source':7,'claimed_endpoint':7,'depth':8,'odd_count':5,'claimed_bias':91,'actual_endpoint':8,'actual_bias':347,'actual_first_crossing':7,'no_smaller_predecessor':'all-depth finite-invariant Lean proof'},'conditional_closeout_premises':['hSurvivingPathExit','hCrossingPathExit'],'global_collatz':'UNKNOWN','boundary':'Numerical envelope is not actual source realizability; proof composition does not establish either coverage premise.'}
+          (folder/'result.json').write_text(json.dumps(report,indent=2)+'\n')
+          print(json.dumps(report,sort_keys=True))
+          PY
+          git rev-parse HEAD > evidence/collatz-source-coherence-audit/commit.txt
+          sha256sum formal/Collatz/SourceCoherenceAudit.lean experiments/test_source_coherence_audit.py > evidence/collatz-source-coherence-audit/source-sha256.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-source-coherence-audit
+          path: evidence/collatz-source-coherence-audit
+          if-no-files-found: error
