@@ -15,14 +15,16 @@ theorem qmin_spec : ∀ k : Nat, 2 ^ k ≤ 3 ^ qmin k
   | 0 => by simp [qmin]
   | k + 1 => by
       by_cases h : 2 ^ (k + 1) ≤ 3 ^ qmin k
-      · simpa [qmin, h] using h
-      · have ih := qmin_spec k
+      · rw [qmin, if_pos h]
+        exact h
+      · rw [qmin, if_neg h]
+        have ih := qmin_spec k
         have h2 : 2 * 2 ^ k ≤ 2 * 3 ^ qmin k :=
           Nat.mul_le_mul_left 2 ih
         have h3 : 2 * 3 ^ qmin k ≤ 3 * 3 ^ qmin k := by
           omega
         have hh := Nat.le_trans h2 h3
-        simpa [qmin, h, Nat.pow_succ, Nat.mul_comm] using hh
+        simpa [Nat.pow_succ, Nat.mul_comm] using hh
 
 /-- Every exponent below qmin fails to cover the dyadic coefficient. -/
 theorem lt_qmin_fails {k q : Nat} (h : q < qmin k) :
@@ -33,14 +35,18 @@ theorem lt_qmin_fails {k q : Nat} (h : q < qmin k) :
   | succ k ih =>
       by_cases hb : 2 ^ (k + 1) ≤ 3 ^ qmin k
       · have hq : q < qmin k := by
-          simpa [qmin, hb] using h
+          rw [qmin, if_pos hb] at h
+          exact h
         have hh := ih hq
+        have hpos : 0 < 2 ^ k := Nat.pow_pos (by omega)
         have hp : 2 ^ k < 2 ^ (k + 1) := by
-          simp [Nat.pow_succ]
+          rw [Nat.pow_succ]
+          omega
         exact Nat.lt_trans hh hp
       · have hq : q ≤ qmin k := by
           have hlt : q < qmin k + 1 := by
-            simpa [qmin, hb] using h
+            rw [qmin, if_neg hb] at h
+            exact h
           omega
         have hp : 3 ^ q ≤ 3 ^ qmin k :=
           Nat.pow_le_pow_right (by omega) hq
