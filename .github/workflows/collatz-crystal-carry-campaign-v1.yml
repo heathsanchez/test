@@ -17,6 +17,7 @@ jobs:
         run: |
           mkdir -p evidence/collatz-crystal-carry-campaign-v1
           python -u experiments/collatz_crystal_carry_campaign_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/result.json
+          python -u experiments/collatz_crystal_macro_productivity_adaptive_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/productivity.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
