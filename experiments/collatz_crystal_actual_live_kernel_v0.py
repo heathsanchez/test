@@ -69,3 +69,5 @@ if __name__=="__main__":
 # retrigger compact discovery
 
 # trigger parity-only holdout
+
+# trigger earned-separator cycle
