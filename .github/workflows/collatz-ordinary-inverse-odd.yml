@@ -1,0 +1,42 @@
+name: Collatz ordinary inverse odd
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/OrdinaryInverseOdd.lean'
+      - 'formal/Collatz/OrdinaryExitReduction.lean'
+      - '.github/workflows/collatz-ordinary-inverse-odd.yml'
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile ordinary inverse-odd window
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-ordinary-inverse-odd .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-ordinary-inverse-odd/toolchain.txt
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProduct.olean formal/Collatz/SourceProduct.lean | tee evidence/collatz-ordinary-inverse-odd/SourceProduct.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/OrdinaryExitReduction.olean formal/Collatz/OrdinaryExitReduction.lean | tee evidence/collatz-ordinary-inverse-odd/OrdinaryExitReduction.log
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/OrdinaryInverseOdd.lean
+          lake env lean -DautoImplicit=false formal/Collatz/OrdinaryInverseOdd.lean | tee evidence/collatz-ordinary-inverse-odd/OrdinaryInverseOdd.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-ordinary-inverse-odd/*.log
+          git rev-parse HEAD > evidence/collatz-ordinary-inverse-odd/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-ordinary-inverse-odd
+          path: evidence/collatz-ordinary-inverse-odd
+          if-no-files-found: error
