@@ -22,7 +22,7 @@ jobs:
           echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Build Lean dependencies and local exchange
         run: |
-          lake build Collatz.FirstCrossingGap
+          lake build CollatzFinal
           lake env lean formal/Collatz/BoundaryBiasMajorization.lean | tee evidence/collatz-boundary-bias-majorization-v1/lean.txt
           ! grep -E 'sorryAx|declaration uses .sorry|declaration has metavariables' evidence/collatz-boundary-bias-majorization-v1/lean.txt
       - uses: actions/upload-artifact@v4
