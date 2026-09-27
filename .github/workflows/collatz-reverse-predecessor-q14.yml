@@ -1,0 +1,30 @@
+name: Collatz reverse predecessor Q14 gate
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - '.github/workflows/collatz-reverse-predecessor-q14.yml'
+      - 'experiments/collatz_reverse_predecessor_tree.py'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  q14:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact first-contracting predecessor quotient
+        run: |
+          python -u experiments/collatz_reverse_predecessor_tree.py --q 14 | tee /tmp/q14.txt
+      - name: Seal summary
+        run: |
+          grep -E 'REVERSE_TREE_Q|FIRST_CONTRACTION_CERTIFICATES|NONREDUNDANT_CERTIFICATES|KILLED_RESIDUES|TOTAL_RESIDUES|KILL_FRACTION|LIVE_FRACTION|VERIFIED' /tmp/q14.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-reverse-predecessor-q14
+          path: /tmp/q14.txt
+          if-no-files-found: error
