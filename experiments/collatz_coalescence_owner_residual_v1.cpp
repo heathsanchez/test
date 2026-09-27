@@ -36,8 +36,7 @@ int main(){
     uint64_t xn=n,xp=p; for(uint32_t z=0;z<a;z++) xn=T(xn); for(uint32_t z=0;z<b;z++) xp=T(xp);
     if(xn!=y||xp!=y||!(p<n)) return 4;
     cout<<"    {\"n\":"<<n<<",\"coalescence_depth\":"<<a<<",\"meeting\":"<<y
-        <<",\"p\":"<<p<<",\"p_depth\":"<<b<<",\"first_crossing\":"<<c.k
-        <<",\"cross_endpoint\":"<<c.y<<",\"before_crossing\":"<<(a<c.k?"true":"false")<<"}";
+        <<",\"p\":"<<p<<",\"p_depth\":"<<b<<" }";
     if(i+1<targets.size()) cout<<",";
     cout<<"\n";
   }
