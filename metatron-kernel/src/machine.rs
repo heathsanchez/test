@@ -776,11 +776,14 @@ impl<'a> Machine<'a> {
             EnvFrame::empty(),
             LevelSubstitution::new(substitution),
         );
-        let mut env = closure.env.clone();
-        for argument in &neutral.spine {
-            env = env.extend(argument.clone());
+        let mut pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
+        for argument in pending.drain(..) {
+            closure = Closure::new(
+                self.expressions
+                    .application(closure.expr, argument.expr),
+                closure.env.clone(),
+            );
         }
-        closure.env = env;
         self.expose(closure, Transparency::Reducible, budget)
             .proven_value()
             .cloned()
