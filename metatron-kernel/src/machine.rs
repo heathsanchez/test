@@ -784,6 +784,14 @@ impl<'a> Machine<'a> {
         let offset = neutral.spine.len() - required;
         let arguments = neutral.spine[offset..].to_vec();
         let target = arguments.last()?;
+        if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
+            eprintln!(
+                "NUCLEUS_BINDING_TARGET:recursor={}:target={:?}:node={:?}",
+                name.0,
+                target,
+                self.expressions.get(target.expr)
+            );
+        }
         let observed = self.observe_bool_constructor(target, budget.saturating_sub(1))?;
         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
             eprintln!(
