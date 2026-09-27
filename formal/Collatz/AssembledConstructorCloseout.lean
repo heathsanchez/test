@@ -266,15 +266,15 @@ theorem large_crossing_coverage_of_high_or_deep
         oddCount n (k + 2) = q + 1 := by
       calc
         oddCount n (k + 2) = oddCount n (k + 1) + 1 := by
-          rw [show k + 2 = (k + 1) + 1 by omega, oddCount]
-          simp [hpar1]
+          rw [show k + 2 = (k + 1) + 1 by omega]
+          simp only [oddCount, hpar1, if_false]
         _ = q + 1 := by rfl
     have hq2 :
         oddCount n (k + 3) = q + 2 := by
       calc
         oddCount n (k + 3) = oddCount n (k + 2) + 1 := by
-          rw [show k + 3 = (k + 2) + 1 by omega, oddCount]
-          simp [hpar2]
+          rw [show k + 3 = (k + 2) + 1 by omega]
+          simp only [oddCount, hpar2, if_false]
         _ = q + 2 := by omega
     have hnq : n ≤ oddCount n (k + 3) := by
       rw [hq2]
