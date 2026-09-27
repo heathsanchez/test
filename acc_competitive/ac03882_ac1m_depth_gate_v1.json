@@ -1,0 +1,84 @@
+{
+  "schema": "acc-ac1m-depth-gate-v1",
+  "epistemic_state": "CANDIDATE_BOUNDED_LOCAL",
+  "challenge_id": "ac-03882",
+  "source_alignment": {
+    "authority_run": 34727788755,
+    "artifact_id": 10847946381,
+    "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "acsolverx_pin": "6a12515fe1d95178a483b76d5553266e61122417",
+    "ac19_index": null,
+    "ac1m_index": 299552,
+    "canonical": [
+      "YYYxYXYYX",
+      "YYYYYXyyyyx"
+    ],
+    "total_len": 20
+  },
+  "live_authority": {
+    "run_id": 36354256756,
+    "artifact_id": 10943670327,
+    "utc": "2026-09-27T22:08:50.790785+00:00",
+    "live_state_sha256": "55de4026b83a3827f6c62685a7be3a3cd42627532f162ef3f5769d14ef46760a",
+    "ac_best": 109,
+    "stable_best": 111,
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    }
+  },
+  "calibration": {
+    "challenge_id": "ac-09331",
+    "boundary": {
+      "max_nodes": 25000,
+      "quotient_total_lt": 62
+    },
+    "result": {
+      "popped": 1095,
+      "seen": 41431,
+      "quotient_steps": 132
+    },
+    "matches_prior_authority": true
+  },
+  "fixed_route": {
+    "boundary": {
+      "max_nodes": 25000,
+      "quotient_total_lt": 62
+    },
+    "result": {
+      "popped": 1348,
+      "seen": 69797,
+      "quotient_steps": 82
+    },
+    "exact_compiler_prefix_exhaustive_through_step": 4,
+    "minimum_atomic_prefix_cost_at_step_4": 46,
+    "remaining_quotient_transitions": 78,
+    "rigorous_fixed_route_lower_bound": 124,
+    "live_ac_best": 109,
+    "verdict": "REJECTED_FIXED_ROUTE"
+  },
+  "atomic_cost_followup": {
+    "representation": "existing exact representative / official atomic-cost GS-Sub; no new move language",
+    "boundary": {
+      "alpha": 1,
+      "max_nodes": 5000,
+      "max_seconds": 20,
+      "total_cap": 100,
+      "strict_candidate_limit": 109
+    },
+    "result": {
+      "candidate_found": false,
+      "nodes_popped": 1029,
+      "frontier_states": 129309,
+      "min_total_relator_length_reached": 19
+    },
+    "interpretation": "bounded negative only; not an exhaustion theorem"
+  },
+  "conclusion": "The fresh public-source-aligned row is not stealable via the first pinned GS-Sub quotient route: its exact atomic lower bound is already 124 > live 109 by quotient step 4. The existing atomic-cost representation has not yet produced a <109 certificate at the stated bounded follow-up. Do not publish or spend quota from this lineage without a newly verifier-clean strict improvement and fresh live recheck."
+}
