@@ -1,0 +1,28 @@
+name: Collatz Crystal Splice Free Return V7
+on:
+  push:
+    branches: [collatz-crystal-splice-free-return-v7]
+    paths:
+      - 'experiments/collatz_crystal_splice_free_return_v7.py'
+      - '.github/workflows/collatz-crystal-splice-free-return-v7.yml'
+permissions: {contents: read}
+jobs:
+  crystal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Compile splice-free source-changing quotient
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-splice-free-return-v7
+          python -u experiments/collatz_crystal_splice_free_return_v7.py | tee evidence/collatz-crystal-splice-free-return-v7/result.json
+          grep -q '"global_collatz": "UNKNOWN"' evidence/collatz-crystal-splice-free-return-v7/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-splice-free-return-v7
+          path: evidence/collatz-crystal-splice-free-return-v7
+          if-no-files-found: error
