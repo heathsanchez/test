@@ -753,8 +753,14 @@ impl<'a> Machine<'a> {
                             right_exposed.proven_value().map(|x| &x.value)
                         );
                         if let (
-                            Some(crate::machine::Exposure { value: Value::Neutral(left_neutral), .. }),
-                            Some(crate::machine::Exposure { value: Value::Neutral(right_neutral), .. }),
+                            Some(crate::machine::Exposure {
+                                value: Value::Neutral(left_neutral),
+                                ..
+                            }),
+                            Some(crate::machine::Exposure {
+                                value: Value::Neutral(right_neutral),
+                                ..
+                            }),
                         ) = (left_exposed.proven_value(), right_exposed.proven_value())
                         {
                             if left_neutral.head == right_neutral.head
