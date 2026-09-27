@@ -1,0 +1,15 @@
+name: Collatz Crystal direct lower-merge hazard
+on:
+  push:
+    branches: [collatz-crystal-zero-loss-tail-v1]
+jobs:
+  hazard:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_crystal_direct_lower_merge_hazard_v0.py | tee /tmp/out.json
+      - uses: actions/upload-artifact@v4
+        with: {name: collatz-crystal-direct-lower-merge-hazard-v0, path: /tmp/out.json}
