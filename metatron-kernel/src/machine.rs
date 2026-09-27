@@ -362,7 +362,31 @@ impl<'a> Machine<'a> {
                     if self.singleton_recursor_reductions.contains(name) && pending.len() >= 3 {
                         let _motive = pending.pop().expect("length checked");
                         let minor = pending.pop().expect("length checked");
-                        let _target = pending.pop().expect("length checked");
+                        let target = pending.pop().expect("length checked");
+                        if std::env::var_os("NUCLEUS_TRACE_RULEK").is_some() {
+                            let target_value = self
+                                .expose_internal(
+                                    target.clone(),
+                                    Transparency::Reducible,
+                                    budget,
+                                    false,
+                                )
+                                .proven_value()
+                                .map(|exposure| exposure.value.clone());
+                            let minor_value = self
+                                .expose_internal(
+                                    minor.clone(),
+                                    Transparency::Reducible,
+                                    budget,
+                                    false,
+                                )
+                                .proven_value()
+                                .map(|exposure| exposure.value.clone());
+                            eprintln!(
+                                "NUCLEUS_RULEK:recursor={}:target={:?}:target_value={:?}:minor={:?}:minor_value={:?}",
+                                name.0, target, target_value, minor, minor_value
+                            );
+                        }
                         record_transition(
                             &mut transitions,
                             record_witnesses,
