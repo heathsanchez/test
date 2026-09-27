@@ -5,6 +5,7 @@ on:
     branches: [nucleus-p3-post-param-hosted-v1]
     paths:
       - ".github/workflows/nucleus-p3-post-param-hosted-v1.yml"
+      - "metatron-kernel/src/checker.rs"
   workflow_dispatch:
 
 permissions:
