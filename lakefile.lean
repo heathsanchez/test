@@ -32,5 +32,6 @@ lean_lib CollatzFinal where
     `Collatz.AssembledConstructorCloseout,
     `Collatz.ConstructorTournament,
     `Collatz.ThreeQuarterCoalescence,
-    `Collatz.PrefixHighOddCloseout
+    `Collatz.PrefixHighOddCloseout,
+    `Collatz.QuarterSplice
   ]
