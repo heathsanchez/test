@@ -226,7 +226,7 @@ theorem owner_core_low_step
       rw [hfirst]
       omega
     have hsecond : iter shortcut 2 p = shortcut (shortcut p) := by
-      simp [iter]
+      rfl
     have hsecondOdd : iter shortcut 2 p % 2 = 1 := by
       rw [hsecond]
       let q := shortcut p
