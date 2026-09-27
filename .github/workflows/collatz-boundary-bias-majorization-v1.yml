@@ -1,0 +1,26 @@
+name: Collatz Boundary Bias Majorization V1
+on:
+  push:
+    branches: [collatz-boundary-bias-majorization-v1]
+jobs:
+  crystal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          mkdir -p evidence/collatz-boundary-bias-majorization-v1
+          python -u experiments/collatz_boundary_bias_majorization_v1.py \
+            --depth 500000 --exhaustive-depth 18 \
+            --out evidence/collatz-boundary-bias-majorization-v1/result.json
+      - name: Build Lean dependencies and local exchange
+        run: |
+          lake build Collatz.FirstCrossingGap
+          lake env lean formal/Collatz/BoundaryBiasMajorization.lean | tee evidence/collatz-boundary-bias-majorization-v1/lean.txt
+          ! grep -E 'sorryAx|declaration uses .sorry|declaration has metavariables' evidence/collatz-boundary-bias-majorization-v1/lean.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-boundary-bias-majorization-v1
+          path: evidence/collatz-boundary-bias-majorization-v1
