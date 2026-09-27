@@ -80,7 +80,14 @@ theorem reaches_one_of_assembled_constructor_coverage
   have hnone : ∀ n, ¬ PositiveBad n := by
     apply no_bad_of_no_minimal PositiveBad
     intro n hmin
-    have hgt : 1 < n := minimal_positive_bad_gt_one hmin
+    have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
+      omega
     rcases coefficient_survival_or_first_crossing n with hsurv | ⟨d, hfirst⟩
     · obtain ⟨k, hexit⟩ := hEternal n hgt hsurv
       exact minimal_bad_has_no_ordinary_exit hmin k hexit
