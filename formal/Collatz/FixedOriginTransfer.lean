@@ -1,52 +1,51 @@
 import Collatz.SourceProduct
 
-namespace CollatzOriginTransfer
-
-/-- One symbolic live source-product state at depth j. -/
-structure State where
-  q : Nat
-  R : Nat
-  Y : Nat
-deriving DecidableEq, Repr
-
-/-- Source coordinate of the child obtained with lift ell. -/
-def childSource (j : Nat) (s : State) (ell : Nat) : Nat :=
-  s.R + ell * 2^j
-
-/-- The unique parity bit which gives zero source lift is the endpoint parity. -/
-theorem zeroLift_bit_unique (j : Nat) (s : State) (bit : Nat)
-    (hbit : bit < 2) :
-    ((bit - s.Y) % 2 = 0) ↔ bit = s.Y % 2 := by
-  omega
-
-/-- A positive lift leaves every fixed origin window X <= 2^j. -/
-theorem positiveLift_outside_origin
-    (j X : Nat) (s : State)
-    (hR : s.R < X) (hX : X ≤ 2^j) :
-    X ≤ childSource j s 1 := by
-  simp [childSource]
-  omega
-
-/-- Consequently, any child which remains below X must use zero lift. -/
-theorem inside_origin_forces_zero_lift
-    (j X ell : Nat) (s : State)
-    (hX : X ≤ 2^j) (hell : ell < 2)
-    (hin : childSource j s ell < X) :
-    ell = 0 := by
-  interval_cases ell <;> simp_all [childSource]
-  omega
+namespace CollatzFinal
+namespace SourceProduct
 
 /--
-Fixed-origin transfer principle: once X <= 2^j, source lifting cannot import a
-new parent into [0,X). Any child in the origin window is the zero-lift child.
-This is the structural theorem needed before adding the legal q-threshold.
+Once the protected origin window lies below the next source-lift scale,
+a source-product child that remains in that window must have zero tail bit.
+-/
+theorem inside_origin_forces_zero_tail_bit
+    (s : State) (X : Nat)
+    (hX : X ≤ 2 ^ s.depth)
+    (hin : (step s).sourceResidue < X) :
+    s.tail % 2 = 0 := by
+  have hb : s.tail % 2 = 0 ∨ s.tail % 2 = 1 := by
+    omega
+  rcases hb with h0 | h1
+  · exact h0
+  · change s.sourceResidue + 2 ^ s.depth * (s.tail % 2) < X at hin
+    simp only [h1, Nat.mul_one] at hin
+    omega
+
+/--
+Fixed-origin no-import law: a child that remains below X≤2^depth cannot
+arrive by the positive 2^depth source lift, so its source residue is unchanged.
 -/
 theorem fixed_origin_no_import
-    (j X : Nat) (s : State) (ell : Nat)
-    (hX : X ≤ 2^j) (hell : ell < 2)
-    (hin : childSource j s ell < X) :
-    childSource j s ell = s.R := by
-  have h0 := inside_origin_forces_zero_lift j X ell s hX hell hin
-  simp [h0, childSource]
+    (s : State) (X : Nat)
+    (hX : X ≤ 2 ^ s.depth)
+    (hin : (step s).sourceResidue < X) :
+    (step s).sourceResidue = s.sourceResidue := by
+  have h0 := inside_origin_forces_zero_tail_bit s X hX hin
+  change s.sourceResidue + 2 ^ s.depth * (s.tail % 2) = s.sourceResidue
+  simp [h0]
 
-end CollatzOriginTransfer
+/-- Any child remaining in the protected origin window came from a parent
+    already in that same window. -/
+theorem fixed_origin_parent_inside
+    (s : State) (X : Nat)
+    (hX : X ≤ 2 ^ s.depth)
+    (hin : (step s).sourceResidue < X) :
+    s.sourceResidue < X := by
+  rw [← fixed_origin_no_import s X hX hin]
+  exact hin
+
+#print axioms inside_origin_forces_zero_tail_bit
+#print axioms fixed_origin_no_import
+#print axioms fixed_origin_parent_inside
+
+end SourceProduct
+end CollatzFinal
