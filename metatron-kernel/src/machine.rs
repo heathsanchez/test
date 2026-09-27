@@ -750,7 +750,10 @@ impl<'a> Machine<'a> {
                 {
                     eprintln!(
                         "NUCLEUS_BOOL_OBSERVER:const={}:beq={:?}:levels={:?}:args={:?}",
-                        name.0, nat.beq.map(|n| n.0), levels, arguments
+                        name.0,
+                        nat.beq.map(|n| n.0),
+                        levels,
+                        arguments
                     );
                     return None;
                 }
