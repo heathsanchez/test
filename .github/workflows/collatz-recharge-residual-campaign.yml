@@ -1,0 +1,34 @@
+name: Collatz recharge residual campaign
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths: ['.github/workflows/collatz-recharge-residual-campaign.yml']
+permissions: {contents: read}
+jobs:
+  frozen:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          cd experiments
+          python -u collatz_q0_rigid_recharge_audit.py --source-lo 3 --source-N 8191 --depth 128 | tee /tmp/frozen.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: recharge-frozen, path: /tmp/frozen.txt}
+  prospective:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: |
+          cd experiments
+          python -u collatz_q0_rigid_recharge_audit.py --source-lo 8193 --source-N 32767 --depth 128 | tee /tmp/prospective.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: {name: recharge-prospective, path: /tmp/prospective.txt}
