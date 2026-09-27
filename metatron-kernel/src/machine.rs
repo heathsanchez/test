@@ -762,11 +762,10 @@ impl<'a> Machine<'a> {
                                 ..
                             }),
                         ) = (left_exposed.proven_value(), right_exposed.proven_value())
+                            && left_neutral.head == right_neutral.head
+                            && left_neutral.spine.len() == 1
+                            && right_neutral.spine.len() == 1
                         {
-                            if left_neutral.head == right_neutral.head
-                                && left_neutral.spine.len() == 1
-                                && right_neutral.spine.len() == 1
-                            {
                                 let left_arg = self.expose_internal(
                                     left_neutral.spine[0].clone(),
                                     Transparency::Reducible,
@@ -779,12 +778,11 @@ impl<'a> Machine<'a> {
                                     remaining,
                                     false,
                                 );
-                                eprintln!(
-                                    "NUCLEUS_BEQ_SPINE_EXPOSED:left={:?}:right={:?}",
-                                    left_arg.proven_value().map(|x| &x.value),
-                                    right_arg.proven_value().map(|x| &x.value)
-                                );
-                            }
+                            eprintln!(
+                                "NUCLEUS_BEQ_SPINE_EXPOSED:left={:?}:right={:?}",
+                                left_arg.proven_value().map(|x| &x.value),
+                                right_arg.proven_value().map(|x| &x.value)
+                            );
                         }
                     }
                     let same_argument = arguments[0] == arguments[1]
