@@ -725,6 +725,33 @@ impl<'a> Machine<'a> {
                             self.expressions.get(arguments[0].expr),
                             self.expressions.get(arguments[1].expr)
                         );
+                        if let (Some(Expr::BVar(left)), Some(Expr::BVar(right))) = (
+                            self.expressions.get(arguments[0].expr),
+                            self.expressions.get(arguments[1].expr),
+                        ) {
+                            eprintln!(
+                                "NUCLEUS_BEQ_BINDINGS:left={:?}:right={:?}",
+                                arguments[0].env.lookup(*left),
+                                arguments[1].env.lookup(*right)
+                            );
+                        }
+                        let left_exposed = self.expose_internal(
+                            arguments[0].clone(),
+                            Transparency::Reducible,
+                            remaining,
+                            false,
+                        );
+                        let right_exposed = self.expose_internal(
+                            arguments[1].clone(),
+                            Transparency::Reducible,
+                            remaining,
+                            false,
+                        );
+                        eprintln!(
+                            "NUCLEUS_BEQ_EXPOSED:left={:?}:right={:?}",
+                            left_exposed.proven_value().map(|x| &x.value),
+                            right_exposed.proven_value().map(|x| &x.value)
+                        );
                     }
                     let same_argument = arguments[0] == arguments[1]
                         || match (
