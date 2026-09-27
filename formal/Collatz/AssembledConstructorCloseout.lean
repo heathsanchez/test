@@ -201,6 +201,70 @@ theorem eternal_survival_enters_high_odd
   have hstrict := source_lt_qmin_double n hn
   exact ⟨hs, by omega⟩
 
+/-- The genuinely separate large-crossing residual begins only when the
+odd-count deficit is at least three.  Deficits one and two are automatically
+reabsorbed into HighOddConstructorCoverage by the two forced odd recovery
+steps. -/
+def DeepLargeCrossingConstructorCoverage : Prop :=
+  ∀ n k, 1 < n → HardFirstCrossing n k →
+    oddCount n (k + 1) + 2 < n →
+    3 * iter shortcut (k + 1) n < 4 * n →
+    iter shortcut (k + 1) n % 12 = 7 →
+    ∃ j, OrdinaryExit n (iter shortcut ((k + 1) + j) n)
+
+/-- High-odd coverage plus only the deficit-at-least-three part of the large
+branch supplies the old full LargeCrossingConstructorCoverage interface. -/
+theorem large_crossing_coverage_of_high_or_deep
+    (hHigh : HighOddConstructorCoverage)
+    (hDeep : DeepLargeCrossingConstructorCoverage) :
+    LargeCrossingConstructorCoverage := by
+  intro n k hgt hhard hq hwin hmod
+  let q := oddCount n (k + 1)
+  by_cases hdeep : q + 2 < n
+  · exact hDeep n k hgt hhard (by simpa [q] using hdeep) hwin hmod
+  · have hrec :=
+      hard_large_recovers_two_survival_steps (by omega : 0 < n)
+        hhard hq hmod
+    let y := iter shortcut (k + 1) n
+    have hsig :
+        y % 3 = 1 ∧ y % 2 = 1 ∧ shortcut y % 2 = 1 :=
+      (scalar_large_signature_iff_mod12 y).2 (by simpa [y] using hmod)
+    have hpar1 : iter shortcut (k + 1) n % 2 ≠ 0 := by
+      have hy : y % 2 = 1 := hsig.2.1
+      simpa [y] using (show y % 2 ≠ 0 by omega)
+    have hnext :
+        iter shortcut (k + 2) n = shortcut y := by
+      simpa [y] using iter_succ_last n (k + 1)
+    have hpar2 : iter shortcut (k + 2) n % 2 ≠ 0 := by
+      rw [hnext]
+      have hz : shortcut y % 2 = 1 := hsig.2.2
+      omega
+    have hq1 :
+        oddCount n (k + 2) = q + 1 := by
+      simp [oddCount, hpar1, q]
+    have hq2 :
+        oddCount n (k + 3) = q + 2 := by
+      simp [oddCount, hpar2, hq1]
+    have hnq : n ≤ oddCount n (k + 3) := by
+      rw [hq2]
+      omega
+    obtain ⟨j, hexit⟩ :=
+      hHigh n (k + 3) hgt hrec.2 hnq
+    refine ⟨2 + j, ?_⟩
+    simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hexit
+
+/-- The two-domain closeout can therefore be sharpened once more: high-odd
+coverage plus only deep-large (deficit >= 3) coverage implies Collatz. -/
+theorem reaches_one_of_high_odd_and_deep_large
+    (hHigh : HighOddConstructorCoverage)
+    (hDeep : DeepLargeCrossingConstructorCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  exact reaches_one_of_two_constructor_domains
+    hHigh (large_crossing_coverage_of_high_or_deep hHigh hDeep)
+
+#print axioms large_crossing_coverage_of_high_or_deep
+#print axioms reaches_one_of_high_odd_and_deep_large
+
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
   ∀ n, 1 < n → EternalCoefficientSurvival n →
