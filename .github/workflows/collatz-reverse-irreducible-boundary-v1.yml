@@ -28,7 +28,11 @@ jobs:
           mkdir -p evidence/collatz-reverse-irreducible-boundary-v1
           git rev-parse HEAD > evidence/collatz-reverse-irreducible-boundary-v1/commit.txt
           lake env lean --version > evidence/collatz-reverse-irreducible-boundary-v1/toolchain.txt
+          mkdir -p .lake/build/lib/lean/Collatz
           lake build CollatzFinal | tee evidence/collatz-reverse-irreducible-boundary-v1/build.log
+          for module in SourceProduct SourceProductAffine CoefficientCrossing CoefficientDynamics SurvivalDeficit FirstCrossingRigidity; do
+            lake env lean -DautoImplicit=false -o ".lake/build/lib/lean/Collatz/$module.olean" "formal/Collatz/$module.lean" | tee "evidence/collatz-reverse-irreducible-boundary-v1/$module.log"
+          done
           lake env lean -DautoImplicit=false formal/Collatz/BoundaryExcursion.lean | tee evidence/collatz-reverse-irreducible-boundary-v1/theorems.log
           ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-reverse-irreducible-boundary-v1/*.log
       - uses: actions/upload-artifact@v4
