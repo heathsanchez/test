@@ -67,6 +67,23 @@ jobs:
                     if isinstance(obj.get('ie'),int) and obj['ie'] in focus_exprs:
                       expr_records[obj['ie']]=obj
                   print('DECISIVE_REC_ARGS',json.dumps(expr_records,sort_keys=True))
+                  exprs={}
+                  for raw in p.read_text().splitlines():
+                    try: obj=json.loads(raw)
+                    except Exception: continue
+                    if isinstance(obj.get('ie'),int): exprs[obj['ie']]=obj
+                  def app_spine(eid):
+                    args=[]; seen=set()
+                    while eid in exprs and eid not in seen:
+                      seen.add(eid); obj=exprs[eid]
+                      if 'app' not in obj: break
+                      args.append(obj['app']['arg']); eid=obj['app']['fn']
+                    return eid,list(reversed(args))
+                  head,args=app_spine(1667)
+                  head_obj=exprs.get(head,{})
+                  head_name=None
+                  if 'const' in head_obj: head_name=full_name(head_obj['const']['name'])
+                  print('DECISIVE_TARGET_SPINE',json.dumps({'head':head,'head_name':head_name,'head_record':head_obj,'args':args,'arg_records':{str(i):exprs.get(i) for i in args}},sort_keys=True))
               rows.append((str(p.relative_to(root)),expected,q.returncode))
           wrong=[x for x in rows if x[2] in (0,1) and x[2]!=x[1]]
           errors=[x for x in rows if x[2] not in (0,1,2)]
