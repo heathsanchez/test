@@ -6,6 +6,7 @@ on:
     paths:
       - ".github/workflows/nucleus-structure-natle-reclosure-v1.yml"
       - "metatron-kernel/src/checker.rs"
+      - "metatron-kernel/src/level.rs"
   workflow_dispatch:
 
 permissions:
