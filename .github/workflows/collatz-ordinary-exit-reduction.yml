@@ -1,0 +1,40 @@
+name: Collatz ordinary exit reduction
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'formal/Collatz/OrdinaryExitReduction.lean'
+      - '.github/workflows/collatz-ordinary-exit-reduction.yml'
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Compile ordinary exit reduction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-ordinary-exit-reduction .lake/build/lib/lean/Collatz
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-ordinary-exit-reduction/toolchain.txt
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceProduct.olean formal/Collatz/SourceProduct.lean | tee evidence/collatz-ordinary-exit-reduction/SourceProduct.log
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/OrdinaryExitReduction.lean
+          lake env lean -DautoImplicit=false formal/Collatz/OrdinaryExitReduction.lean | tee evidence/collatz-ordinary-exit-reduction/OrdinaryExitReduction.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-ordinary-exit-reduction/*.log
+          git rev-parse HEAD > evidence/collatz-ordinary-exit-reduction/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-ordinary-exit-reduction
+          path: evidence/collatz-ordinary-exit-reduction
+          if-no-files-found: error
