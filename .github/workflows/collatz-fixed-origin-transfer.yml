@@ -1,0 +1,22 @@
+name: Collatz fixed-origin transfer theorem
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - formal/Collatz/FixedOriginTransfer.lean
+      - .github/workflows/collatz-fixed-origin-transfer.yml
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+        with:
+          lake-package-directory: .
+      - run: |
+          lake env lean formal/Collatz/FixedOriginTransfer.lean
+          ! grep -R -nE 'sorry|admit|axiom' formal/Collatz/FixedOriginTransfer.lean
