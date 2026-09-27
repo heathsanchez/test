@@ -1,0 +1,36 @@
+name: Collatz Boundary Excursion Contraction V1
+on:
+  push:
+    branches: [collatz-boundary-excursion-contraction-v1]
+    paths:
+      - 'formal/Collatz/BoundaryExcursionContraction.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-boundary-excursion-contraction-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install elan
+        run: |
+          curl https://elan.lean-lang.org/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check theorem and build
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/BoundaryExcursionContraction.lean
+          lake env lean -DautoImplicit=false formal/Collatz/BoundaryExcursionContraction.lean | tee boundary-excursion.log
+          ! grep -q 'sorryAx' boundary-excursion.log
+          lake build CollatzFinal | tee build.log
+          ! grep -q 'sorryAx' build.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-boundary-excursion-contraction-v1
+          path: |
+            boundary-excursion.log
+            build.log
+          if-no-files-found: error
