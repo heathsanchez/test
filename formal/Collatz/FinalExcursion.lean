@@ -15,35 +15,34 @@ theorem boundary_excursion_coefficient_contracts
     (hstart : 2 ^ (s + 1) ≤ 3 ^ q)
     (hend : 3 ^ (q + r) < 2 ^ (s + L + 1)) :
     3 ^ r < 2 ^ L := by
-  by_contra hnot
-  have hge : 2 ^ L ≤ 3 ^ r := by omega
-  have hmul :
-      2 ^ (s + 1) * 2 ^ L ≤ 3 ^ q * 3 ^ r :=
-    Nat.mul_le_mul hstart hge
-  have hcontra :
-      2 ^ (s + L + 1) ≤ 3 ^ (q + r) := by
-    calc
-      2 ^ (s + L + 1) = 2 ^ ((s + 1) + L) := by
-        congr 1
-        omega
-      _ = 2 ^ (s + 1) * 2 ^ L := by
-        rw [pow_add]
-      _ ≤ 3 ^ q * 3 ^ r := hmul
-      _ = 3 ^ (q + r) := by
-        rw [pow_add]
-  omega
+  by_cases hlt : 3 ^ r < 2 ^ L
+  · exact hlt
+  · have hge : 2 ^ L ≤ 3 ^ r := by omega
+    have hmul :
+        2 ^ (s + 1) * 2 ^ L ≤ 3 ^ q * 3 ^ r :=
+      Nat.mul_le_mul hstart hge
+    have hexp : s + L + 1 = (s + 1) + L := by omega
+    have hcontra :
+        2 ^ (s + L + 1) ≤ 3 ^ (q + r) := by
+      calc
+        2 ^ (s + L + 1) = 2 ^ ((s + 1) + L) := by rw [hexp]
+        _ = 2 ^ (s + 1) * 2 ^ L := by rw [pow_add]
+        _ ≤ 3 ^ q * 3 ^ r := hmul
+        _ = 3 ^ (q + r) := by rw [pow_add]
+    omega
 
 /-- Equivalent block-language form with explicit start/end depths. -/
 theorem boundary_excursion_depth_contracts
     {s e q r : Nat}
     (hse : s ≤ e)
     (hstart : 2 ^ (s + 1) ≤ 3 ^ q)
-    (hend : 3 ^ (q + r) < 2 ^ (e + 1))
-    (hlen : e = s + (e - s)) :
+    (hend : 3 ^ (q + r) < 2 ^ (e + 1)) :
     3 ^ r < 2 ^ (e - s) := by
+  have hdepth : s + (e - s) + 1 = e + 1 := by omega
   apply boundary_excursion_coefficient_contracts
     (s := s) (L := e - s) (q := q) (r := r) hstart
-  simpa [hlen, Nat.add_assoc] using hend
+  rw [hdepth]
+  exact hend
 
 /-- A flat threshold step means the current qmin coefficient already covers
 the next dyadic threshold. -/
@@ -59,15 +58,10 @@ next dyadic threshold. -/
 theorem boundaryBit_one_fails_next
     {k : Nat} (hone : boundaryBit k = 1) :
     3 ^ qmin k < 2 ^ (k + 1) := by
-  by_contra hnot
-  have hcover : 2 ^ (k + 1) ≤ 3 ^ qmin k := by omega
-  have hsame : qmin (k + 1) = qmin k := by
-    simp [qmin, hcover]
-  have hzero : boundaryBit k = 0 := by
-    unfold boundaryBit
-    rw [hsame]
+  have hlt : qmin k < qmin (k + 1) := by
+    rw [qmin_succ_eq k, hone]
     omega
-  omega
+  exact lt_qmin_fails hlt
 
 /-- Exact qmin boundary-phase form. Any interval beginning at a flat threshold
 boundary and ending just before a rising threshold is multiplicatively
