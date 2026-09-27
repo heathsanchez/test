@@ -1,0 +1,30 @@
+name: Collatz Owner Normal Form V1
+on:
+  push:
+    branches: [collatz-owner-normal-form-v1]
+    paths:
+      - 'formal/Collatz/ValuationPullback.lean'
+      - '.github/workflows/collatz-owner-normal-form-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/ValuationPullback.lean
+      - name: Build and audit
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/ValuationPullback.lean | tee /tmp/theorems.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/theorems.log
