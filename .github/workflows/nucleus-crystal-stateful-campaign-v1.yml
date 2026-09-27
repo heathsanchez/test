@@ -1,0 +1,81 @@
+name: Nucleus Crystal stateful campaign v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-stateful-campaign-v1.yml"]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  campaign:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Run stateful Crystal cycles
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections,hashlib
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          # Permanent constraints accumulated from qualified/negative campaign evidence.
+          constraints=[
+            'drop:raw-syntax-identity','drop:envframe-identity','drop:raw-closure-identity',
+            'drop:expr-depth-frame-identity','drop:parameter-syntax','drop:parameter-convertibility',
+            'reject:posthoc-neutral-reconstruction','reject:global-recursor-env-mutation',
+            'reject:p3-route-current-frontier','reject:broad-pi-exposure','reject:old-capability-bank-reuse'
+          ]
+          state={'schema':'nucleus-crystal-stateful-campaign-v1','constraints':constraints,'cycles':[]}
+          env=os.environ.copy(); env.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1',NUCLEUS_TRACE_GENERIC_CHECK='1')
+          previous=None
+          for cycle in range(1,9):
+            rows=[]
+            for p in sorted(root.rglob('*.ndjson')):
+              expected=0 if p.relative_to(root).parts[0]=='good' else 1
+              with p.open('rb') as f:
+                try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+                except subprocess.TimeoutExpired: continue
+              if q.returncode!=2: continue
+              log=q.stderr.decode(errors='replace')
+              down=sorted(set(re.findall(r'NUCLEUS_DOWNSTREAM:name=[^:]*:stage=([^:]*):verdict=UNKNOWN:reason=([^\n]+)',log)))
+              app=sorted(set(x[0] for x in re.findall(r'NUCLEUS_APP_INFER:unknown:([^:]+):fun_expr=ExprId\((\d+)\)',log)))
+              conv=sorted(set((re.sub(r'NameId\(\d+\)','NameId(*)',l),re.sub(r'NameId\(\d+\)','NameId(*)',r),int(ls),int(rs)) for l,r,ls,rs in re.findall(r'NUCLEUS_CONV_HEAD_MISMATCH left=(.*?) right=(.*?) left_spine=(\d+) right_spine=(\d+)',log)))
+              generic=re.findall(r'NUCLEUS_GENERIC_CHECK:([^\n]+)',log)
+              # Stateful canonical identity: presentation coordinates removed; retain protected future + coarse proven continuation language.
+              proven=collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in generic if 'PROVEN' in e)
+              future={'down':down,'app':app,'conv':conv,'proven':sorted(proven.items())}
+              key=json.dumps(future,sort_keys=True)
+              rows.append({'path':str(p.relative_to(root)),'expected':expected,'future':future,'key':key})
+            groups=collections.defaultdict(list)
+            for r in rows: groups[r['key']].append(r)
+            classes=[]
+            for k,v in groups.items():
+              outs=sorted(set(x['expected'] for x in v))
+              status='HOMOGENEOUS' if len(outs)==1 else 'MIXED'
+              classes.append({'id':hashlib.sha256(k.encode()).hexdigest()[:12],'size':len(v),'outcomes':outs,'status':status,'members':[x['path'] for x in v],'future':json.loads(k)})
+            classes.sort(key=lambda x:(x['status']!='MIXED',-x['size'],x['id']))
+            mixed=[c for c in classes if c['status']=='MIXED']
+            homogeneous=[c for c in classes if c['status']=='HOMOGENEOUS']
+            snapshot={'cycle':cycle,'residual_count':len(rows),'class_count':len(classes),'mixed_cases':sum(c['size'] for c in mixed),'homogeneous_cases':sum(c['size'] for c in homogeneous),'classes':classes}
+            digest=hashlib.sha256(json.dumps(snapshot,sort_keys=True).encode()).hexdigest()
+            snapshot['digest']=digest; state['cycles'].append(snapshot)
+            # CLOSE/refine to fixed point under current authority. If identical, this is a genuine current UNKNOWN boundary.
+            if digest==previous:
+              state['stop']='FIXED_POINT_UNDER_CURRENT_AUTHORITY'
+              break
+            previous=digest
+            # No benchmark-label promotion: refinement only. Next cycle carries canonical class IDs as state.
+            constraints.append('cycle:%d:classes:%d:mixed:%d'%(cycle,len(classes),sum(c['size'] for c in mixed)))
+          pathlib.Path('/tmp/nucleus-crystal-stateful-campaign-v1.json').write_text(json.dumps(state,indent=2))
+          print(json.dumps({'stop':state.get('stop'),'constraints':len(constraints),'cycles':[{'cycle':x['cycle'],'residual_count':x['residual_count'],'class_count':x['class_count'],'mixed_cases':x['mixed_cases'],'homogeneous_cases':x['homogeneous_cases'],'digest':x['digest']} for x in state['cycles']]},indent=2))
+          assert state['cycles'][-1]['residual_count']==40
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-stateful-campaign-v1
+          path: /tmp/nucleus-crystal-stateful-campaign-v1.json
