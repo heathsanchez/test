@@ -20,5 +20,6 @@ lean_lib CollatzFinal where
     `Collatz.FirstCrossingRigidity,
     `Collatz.FixedSourceProgress,
     `Collatz.CoalescenceDescent,
-    `Collatz.FinalExcursionContraction
+    `Collatz.FinalExcursionContraction,
+    `Collatz.BoundaryBiasMajorization
   ]
