@@ -1,0 +1,22 @@
+name: Collatz Crystal macro policy V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_crystal_macro_policy_v0.py'
+      - '.github/workflows/collatz-crystal-macro-policy-v0.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  policy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_crystal_macro_policy_v0.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-macro-policy-v0
+          path: /tmp/result.json
