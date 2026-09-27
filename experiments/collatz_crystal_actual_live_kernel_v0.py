@@ -10,7 +10,7 @@ from collatz_crystal_future_quotient_v1 import compile_with_separators
 def T(n):
     return n//2 if n%2==0 else (3*n+1)//2
 
-def build(N=1<<12,K=128):
+def build(N=1<<14,K=256):
     rows=[]
     for n in range(1,N):
         y=n
@@ -44,8 +44,6 @@ def main():
         base_fields=[],
         separator_bank=[
             "endpoint_parity",
-            "endpoint_mod3",
-            "source_bits",
         ],
     )
     print("ROWS",len(rows))
