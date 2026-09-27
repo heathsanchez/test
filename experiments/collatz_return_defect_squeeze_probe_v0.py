@@ -33,3 +33,5 @@ print(json.dumps({"schema":"COLLATZ_RETURN_DEFECT_SQUEEZE_PROBE_V0",
  "rows":[audit(3,8191),audit(8193,32767)],
  "interpretation":"nonzero exact-domain defect is at least 2^(D+1); need independent magnitude bound below modulus to force zero",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
