@@ -64,7 +64,7 @@ theorem first_crossing_endpoint_eq_half_previous
     iter shortcut (k + 1) n = iter shortcut k n / 2 := by
   rw [iter_succ_last]
   unfold shortcut
-  simp [first_crossing_last_step_even hfirst]
+  rw [if_pos (first_crossing_last_step_even hfirst)]
 
 /-- First-crossing strict descent is exactly failure to reach twice the source
 immediately before the forced final even step. -/
