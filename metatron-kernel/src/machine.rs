@@ -777,8 +777,7 @@ impl<'a> Machine<'a> {
             return None;
         };
         let reduction = self.recursor_reductions.get(name)?;
-        let required =
-            reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
+        let required = reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
         if neutral.spine.len() < required || reduction.level_params.len() != levels.len() {
             return None;
         }
