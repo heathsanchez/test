@@ -23,30 +23,6 @@ pub(crate) struct SemanticContract {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) struct SemanticObjectEnvelope {
-    pub(crate) type_id: &'static str,
-    pub(crate) contract_version: u32,
-    pub(crate) canonical_payload_digest: &'static str,
-    pub(crate) interfaces: BTreeSet<&'static str>,
-}
-
-impl SemanticObjectEnvelope {
-    pub(crate) fn new(
-        type_id: &'static str,
-        contract_version: u32,
-        canonical_payload_digest: &'static str,
-        interfaces: impl IntoIterator<Item = &'static str>,
-    ) -> Self {
-        Self {
-            type_id,
-            contract_version,
-            canonical_payload_digest,
-            interfaces: interfaces.into_iter().collect(),
-        }
-    }
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
 pub(crate) struct ClosureResult {
     pub(crate) interfaces: BTreeSet<&'static str>,
     pub(crate) fired_contracts: Vec<&'static str>,
