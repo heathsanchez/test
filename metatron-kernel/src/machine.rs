@@ -745,6 +745,15 @@ impl<'a> Machine<'a> {
                     };
                     return Some((ctor, Vec::new()));
                 }
+                Expr::Const { name, levels }
+                    if std::env::var_os("NUCLEUS_TRACE_BOOL_OBSERVER").is_some() =>
+                {
+                    eprintln!(
+                        "NUCLEUS_BOOL_OBSERVER:const={}:beq={:?}:levels={:?}:args={:?}",
+                        name.0, nat.beq.map(|n| n.0), levels, arguments
+                    );
+                    return None;
+                }
                 _ => return None,
             }
         }
