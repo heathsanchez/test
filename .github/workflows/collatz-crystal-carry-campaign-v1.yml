@@ -15,6 +15,7 @@ jobs:
         run: python -m unittest experiments/test_collatz_crystal_carry_campaign_v1.py -v
       - name: Stateful Crystal cycles
         run: |
+          set -euo pipefail
           mkdir -p evidence/collatz-crystal-carry-campaign-v1
           python -u experiments/collatz_crystal_carry_campaign_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/result.json
           python -u experiments/collatz_crystal_macro_productivity_adaptive_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/productivity.json
