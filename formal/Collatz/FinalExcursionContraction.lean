@@ -9,13 +9,13 @@ next dyadic scale. -/
 theorem boundaryBit_zero_next_covered
     {k : Nat} (hzero : boundaryBit k = 0) :
     2 ^ (k + 1) ≤ 3 ^ qmin k := by
-  by_contra hnot
-  have hfail : ¬ 2 ^ (k + 1) ≤ 3 ^ qmin k := hnot
-  have hsucc : qmin (k + 1) = qmin k + 1 := by
-    simp [qmin, hfail]
-  unfold boundaryBit at hzero
-  rw [hsucc] at hzero
-  omega
+  by_cases hcover : 2 ^ (k + 1) ≤ 3 ^ qmin k
+  · exact hcover
+  · have hsucc : qmin (k + 1) = qmin k + 1 := by
+      simp [qmin, hcover]
+    unfold boundaryBit at hzero
+    rw [hsucc] at hzero
+    omega
 
 /-- A unit threshold bit means the existing qmin exponent fails at the next
 dyadic scale. -/
