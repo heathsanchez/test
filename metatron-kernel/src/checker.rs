@@ -39,6 +39,12 @@ pub fn check_export(export: ResolvedExport, limits: Limits) -> Verdict {
         .values()
         .any(|expression| matches!(expression, Expr::StrLit(_)));
     let verdict = check_export_with_policy(export, limits, DeltaPolicy::GuardedSemanticFallback);
+    if std::env::var_os("NUCLEUS_TRACE_INNER_VERDICT").is_some() {
+        eprintln!(
+            "NUCLEUS_INNER_VERDICT verdict={:?} string_guard={}",
+            verdict, has_unqualified_string_literal
+        );
+    }
     if has_unqualified_string_literal && matches!(verdict, Verdict::Accept | Verdict::Reject) {
         Verdict::Unknown
     } else {
