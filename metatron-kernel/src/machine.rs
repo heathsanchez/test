@@ -412,9 +412,47 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
-                            let observed_target = self
+                            let mut observed_target = self
                                 .observe_bool_constructor(target, budget)
                                 .or_else(|| self.constructor_application(target));
+                            if observed_target.is_none()
+                                && !reduction.k_index_parameter_pairs.is_empty()
+                                && reduction.rules.len() == 1
+                                && reduction.rules[0].num_fields == 0
+                            {
+                                let index_base = reduction.num_params + 1 + reduction.rules.len();
+                                let k_admissible = reduction.k_index_parameter_pairs.iter().all(
+                                    |(index, parameter)| {
+                                        let Some(index_arg) = arguments.get(index_base + index)
+                                        else {
+                                            return false;
+                                        };
+                                        let Some(parameter_arg) = arguments.get(*parameter) else {
+                                            return false;
+                                        };
+                                        let index_value = self.expose_internal(
+                                            index_arg.clone(),
+                                            Transparency::Reducible,
+                                            budget,
+                                            false,
+                                        );
+                                        let parameter_value = self.expose_internal(
+                                            parameter_arg.clone(),
+                                            Transparency::Reducible,
+                                            budget,
+                                            false,
+                                        );
+                                        matches!(
+                                            (index_value.proven_value(), parameter_value.proven_value()),
+                                            (Some(left), Some(right)) if left.value == right.value
+                                        )
+                                    },
+                                );
+                                if k_admissible {
+                                    observed_target =
+                                        Some((reduction.rules[0].constructor, Vec::new()));
+                                }
+                            }
                             if observed_target.is_none()
                                 && std::env::var_os("NUCLEUS_TRACE_BOOL_TARGET").is_some()
                                 && self.bool_primitives.is_some()
