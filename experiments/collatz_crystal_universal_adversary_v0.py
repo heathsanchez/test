@@ -34,3 +34,5 @@ def main():
     out=compile_with_separators(rows(),[],bank)
     print(out)
 if __name__=="__main__":main()
+
+# trigger
