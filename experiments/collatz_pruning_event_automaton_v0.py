@@ -62,3 +62,5 @@ print(json.dumps({"schema":"COLLATZ_PRUNING_EVENT_AUTOMATON_V0",
  "transitions":trans,"child_masks":masks,
  "interpretation":"exact nested source-valid reverse-survivor language under ternary refinement; forward source/origin coupling still separate",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# qualification trigger
