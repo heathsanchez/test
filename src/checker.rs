@@ -1740,7 +1740,7 @@ fn fin_like_structure_candidate(export: &ResolvedExport, block: &InductiveBlock)
     let second = constructor_domains[2];
     !expression_contains_constant(export, first, inductive.name)
         && !expression_contains_constant(export, second, inductive.name)
-        && expression_contains_bvar_at_or_above(export, second, 0)
+        && expression_contains_bvar(export, second, 0)
 }
 
 fn check_fin_like_structure(
@@ -3906,6 +3906,27 @@ fn inductive_constant_uses_declared_levels(
         && levels.iter().zip(level_params).all(|(level, expected)| {
             matches!(export.levels.get(*level), Some(Level::Param(name)) if name == expected)
         })
+}
+
+fn expression_contains_bvar(export: &ResolvedExport, expression: ExprId, target: u64) -> bool {
+    match export.exprs.get(expression) {
+        Some(Expr::BVar(index)) => *index == target,
+        Some(Expr::App { fun, arg }) => {
+            expression_contains_bvar(export, *fun, target)
+                || expression_contains_bvar(export, *arg, target)
+        }
+        Some(Expr::Lam { domain, body }) | Some(Expr::Pi { domain, body }) => {
+            expression_contains_bvar(export, *domain, target)
+                || expression_contains_bvar(export, *body, target.saturating_add(1))
+        }
+        Some(Expr::Let { ty, value, body }) => {
+            expression_contains_bvar(export, *ty, target)
+                || expression_contains_bvar(export, *value, target)
+                || expression_contains_bvar(export, *body, target.saturating_add(1))
+        }
+        Some(Expr::Proj { structure, .. }) => expression_contains_bvar(export, *structure, target),
+        Some(Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => false,
+    }
 }
 
 fn expression_contains_constant(
