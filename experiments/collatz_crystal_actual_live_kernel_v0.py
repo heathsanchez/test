@@ -20,7 +20,7 @@ def build(N=1<<12,K=128):
             exit_now=(y in (1,2)) or (0<y<n)
             rows.append({
                 "id":i,
-                "next":() if k==K else ((n,k+1),),
+                "next":() if (k==K or exit_now) else ((n,k+1),),
                 "exit":exit_now,
                 "source":n,
                 "depth":k,
@@ -30,6 +30,8 @@ def build(N=1<<12,K=128):
                 "endpoint_parity":y%2,
             })
             ids.append(i)
+            if exit_now:
+                break
             y=T(y)
     return rows
 
