@@ -3,6 +3,9 @@ on:
   push:
     branches: [collatz-crystal-fsp-rank-v1]
     paths:
+      - 'lean-toolchain'
+      - 'lakefile.lean'
+      - 'formal/Collatz/SourceProduct.lean'
       - 'formal/Collatz/FixedSourceProgress.lean'
       - '.github/workflows/collatz-fixed-source-progress.yml'
   workflow_dispatch:
@@ -14,6 +17,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Reject placeholders
         run: |
           set -euo pipefail
@@ -29,3 +36,4 @@ jobs:
           name: collatz-fixed-source-progress
           path: fixed-source-progress.log
           if-no-files-found: error
+          retention-days: 90
