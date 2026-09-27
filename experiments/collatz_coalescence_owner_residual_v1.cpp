@@ -4,15 +4,6 @@ using namespace std;
 using boost::multiprecision::cpp_int;
 struct Own { uint32_t src; uint32_t dep; };
 static inline uint64_t T(uint64_t x){ return (x&1)?(3*x+1)/2:x/2; }
-struct Cross{uint32_t k,q; uint64_t y;};
-Cross crossing(uint64_t n){
-  uint64_t y=n; uint32_t q=0; cpp_int a=1,b=1;
-  for(uint32_t k=1;k<10000;k++){
-    bool odd=y&1; y=T(y); b <<= 1; if(odd){q++;a*=3;}
-    if(a<b) return {k,q,y};
-  }
-  throw runtime_error("cross cap");
-}
 int main(){
   const uint32_t LIMIT=13421671;
   vector<uint32_t> targets={8088063,13421671};
@@ -42,7 +33,7 @@ int main(){
   cout<<"  \"processed_through\":"<<LIMIT<<",\n  \"owner_states\":"<<owner.size()<<",\n";
   cout<<"  \"max_state\":\""<<maxState<<"\",\n  \"targets\":[\n";
   for(size_t i=0;i<targets.size();i++){
-    auto n=targets[i]; auto [a,y,p,b]=out[n]; auto c=crossing(n);
+    auto n=targets[i]; auto [a,y,p,b]=out[n];
     // replay certificate
     uint64_t xn=n,xp=p; for(uint32_t z=0;z<a;z++) xn=T(xn); for(uint32_t z=0;z<b;z++) xp=T(xp);
     if(xn!=y||xp!=y||!(p<n)) return 4;
