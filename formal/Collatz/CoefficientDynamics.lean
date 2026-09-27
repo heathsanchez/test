@@ -1,11 +1,14 @@
-import Collatz.SourceProductAffine
+import Collatz.CoefficientCrossing
 
 namespace CollatzFinal
 namespace SourceProduct
 
-/-- The two positive quantities whose comparison defines coefficient survival. -/
+/-- The two positive quantities whose comparison is coefficient survival. -/
 def coefficientNumerator (n k : Nat) : Nat := 3 ^ oddCount n k
 def coefficientDenominator (k : Nat) : Nat := 2 ^ k
+
+def CoefficientSurvives (n k : Nat) : Prop :=
+  coefficientDenominator k ≤ coefficientNumerator n k
 
 theorem coefficientNumerator_succ_even
     (n k : Nat) (h : iter shortcut k n % 2 = 0) :
@@ -21,39 +24,35 @@ theorem coefficientDenominator_succ (k : Nat) :
     coefficientDenominator (k + 1) = 2 * coefficientDenominator k := by
   simp [coefficientDenominator, Nat.pow_succ, Nat.mul_comm]
 
-/-- Signed coefficient gap: nonnegative means no coefficient crossing yet. -/
-def coefficientGap (n k : Nat) : Int :=
-  (coefficientNumerator n k : Int) - (coefficientDenominator k : Int)
-
-theorem coefficientGap_succ_even
+/-- On an even orbit step, survival asks whether the unchanged numerator still
+    covers the doubled dyadic denominator. -/
+theorem coefficientSurvives_succ_even
     (n k : Nat) (h : iter shortcut k n % 2 = 0) :
-    coefficientGap n (k + 1) =
-      coefficientGap n k - coefficientDenominator k := by
-  rw [coefficientGap, coefficientGap,
-      coefficientNumerator_succ_even n k h,
-      coefficientDenominator_succ]
-  push_cast
-  ring
+    CoefficientSurvives n (k + 1) ↔
+      2 * coefficientDenominator k ≤ coefficientNumerator n k := by
+  simp [CoefficientSurvives, coefficientNumerator_succ_even n k h,
+    coefficientDenominator_succ]
 
-theorem coefficientGap_succ_odd
+/-- On an odd orbit step, numerator and denominator are multiplied by 3 and 2. -/
+theorem coefficientSurvives_succ_odd
     (n k : Nat) (h : iter shortcut k n % 2 ≠ 0) :
-    coefficientGap n (k + 1) =
-      3 * coefficientGap n k + coefficientDenominator k := by
-  rw [coefficientGap, coefficientGap,
-      coefficientNumerator_succ_odd n k h,
-      coefficientDenominator_succ]
-  push_cast
-  ring
+    CoefficientSurvives n (k + 1) ↔
+      2 * coefficientDenominator k ≤ 3 * coefficientNumerator n k := by
+  simp [CoefficientSurvives, coefficientNumerator_succ_odd n k h,
+    coefficientDenominator_succ]
 
-theorem coefficientCrossingAt_iff_gap_negative
+theorem coefficientCrossingAt_iff_not_survives
     (n k : Nat) :
-    CoefficientCrossingAt n k ↔ coefficientGap n k < 0 := by
-  unfold CoefficientCrossingAt coefficientGap coefficientNumerator coefficientDenominator
+    CoefficientCrossingAt n k ↔ ¬ CoefficientSurvives n k := by
+  unfold CoefficientCrossingAt CoefficientSurvives
+  simp [coefficientNumerator, coefficientDenominator]
   omega
 
-#print axioms coefficientGap_succ_even
-#print axioms coefficientGap_succ_odd
-#print axioms coefficientCrossingAt_iff_gap_negative
+#print axioms coefficientNumerator_succ_even
+#print axioms coefficientNumerator_succ_odd
+#print axioms coefficientSurvives_succ_even
+#print axioms coefficientSurvives_succ_odd
+#print axioms coefficientCrossingAt_iff_not_survives
 
 end SourceProduct
 end CollatzFinal
