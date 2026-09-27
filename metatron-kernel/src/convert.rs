@@ -605,7 +605,37 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
+            let head_comparison = compare_neutral_heads(checker, left, right, budget);
+            if matches!(head_comparison, Judgment::Refuted { .. }) {
+                let machine = checker.machine();
+                if let Some(reexposed) = machine.reexpose_neutral(left, budget)
+                    && &reexposed != left
+                {
+                    return compare_values(
+                        checker,
+                        &reexposed,
+                        right,
+                        budget.saturating_sub(1),
+                        depth,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                if let Some(reexposed) = machine.reexpose_neutral(right, budget)
+                    && &reexposed != right
+                {
+                    return compare_values(
+                        checker,
+                        left,
+                        &reexposed,
+                        budget.saturating_sub(1),
+                        depth,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+            }
+            match head_comparison {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
