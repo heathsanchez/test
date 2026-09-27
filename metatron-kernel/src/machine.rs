@@ -707,7 +707,6 @@ impl<'a> Machine<'a> {
                         }
                         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
                             eprintln!("NUCLEUS_BINDING_FREE:free={:?}:args={:?}", free, arguments);
-
                         }
                         return None;
                     }
