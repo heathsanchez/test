@@ -26,6 +26,10 @@ def build(N=1<<14,K=256):
                 "depth":k,
                 "endpoint":y,
                 "source_bits":n.bit_length(),
+                "lt2source": y < 2*n,
+                "lt4source": y < 4*n,
+                "lt8source": y < 8*n,
+                "odd_v2_3y1": ((3*y+1)&-(3*y+1)).bit_length()-1 if y%2 else None,
                 "endpoint_mod3":y%3,
                 "endpoint_parity":y%2,
             })
@@ -44,8 +48,11 @@ def main():
         base_fields=[],
         separator_bank=[
             "endpoint_parity",
+            "lt2source",
+            "lt4source",
+            "lt8source",
+            "odd_v2_3y1",
             "endpoint_mod3",
-            "source_bits",
         ],
     )
     print("ROWS",len(rows))
