@@ -55,10 +55,10 @@ FEATURES=["parity","mod3","mod9","mod12","mod27","q_parity","b_mod3","b_mod9"]
 def key_for(n,row,features):
     vals=[]
     for f in features:
-        vals.append(candidate(row,f))
-    # source-relative sign is consequential candidate, but not source identity.
-    if "rel" in features:
-        vals.append(-1 if row[1]<n else (0 if row[1]==n else 1))
+        if f == "rel":
+            vals.append(-1 if row[1]<n else (0 if row[1]==n else 1))
+        else:
+            vals.append(candidate(row,f))
     return tuple(vals)
 
 def build_records(sources,post=48,future=48,reverse=128):
