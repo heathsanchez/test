@@ -766,13 +766,6 @@ impl<'a> Machine<'a> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
         };
-        let level_ids = self.levels.iter_raw().find_map(|(raw, _)| {
-            let id = LevelId(raw);
-            instantiate_level(self.levels, id, &LevelSubstitution::default(), 1)
-                .ok()
-                .and_then(|_| None::<Vec<LevelId>>)
-        });
-        let _ = level_ids;
         let mut pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
         if let Some(value) = self.try_native_nat_reduction(
             *name,
