@@ -777,11 +777,8 @@ impl<'a> Machine<'a> {
             return None;
         };
         if let Some(reduction) = self.recursor_reductions.get(name) {
-            let required = reduction.num_params
-                + 1
-                + reduction.rules.len()
-                + reduction.num_indices
-                + 1;
+            let required =
+                reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
             if neutral.spine.len() >= required && reduction.level_params.len() == levels.len() {
                 let offset = neutral.spine.len() - required;
                 let arguments = neutral.spine[offset..].to_vec();
@@ -790,7 +787,10 @@ impl<'a> Machine<'a> {
                     .observe_bool_constructor(target, budget.saturating_sub(1))
                     .or_else(|| self.constructor_application(target));
                 if let Some((constructor, constructor_arguments)) = observed
-                    && let Some(rule) = reduction.rules.iter().find(|r| r.constructor == constructor)
+                    && let Some(rule) = reduction
+                        .rules
+                        .iter()
+                        .find(|r| r.constructor == constructor)
                     && constructor_arguments.len() == rule.num_params + rule.num_fields
                 {
                     let prefix_len = reduction.num_params + 1 + reduction.rules.len();
