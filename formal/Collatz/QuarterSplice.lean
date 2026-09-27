@@ -47,12 +47,12 @@ theorem quarter_splice_of_mod8_five
     simp [iter, h1, h2, h3, hp1]
 
 /-- Source-relative form: a 5 mod 8 endpoint at height at most 4*n
-already supplies an exact lower-source coalescence certificate. -/
-theorem ordinary_exit_of_quarter_splice
+supplies an exact lower-source coalescence exit three steps later. -/
+theorem ordinary_exit_after_quarter_splice
     {n x : Nat}
     (hx : x % 8 = 5)
     (hband : x ≤ 4 * n) :
-    OrdinaryExit n x := by
+    OrdinaryExit n (iter shortcut 3 x) := by
   let p := (x - 1) / 4
   have hs := quarter_splice_of_mod8_five hx
   have hp : 0 < p := by
@@ -66,10 +66,12 @@ theorem ordinary_exit_of_quarter_splice
       dsimp [p]
       rw [hx']
       omega
-    rw [hx', hp'] at hband ⊢
+    rw [hp']
+    rw [hx'] at hband
     omega
-  exact Or.inr (Or.inr
-    ⟨p, 1, hp, hlt, by simpa [p] using hs.2.2.symm⟩)
+  have heq : iter shortcut 1 p = iter shortcut 3 x := by
+    simpa [p] using hs.2.2.symm
+  exact Or.inr (Or.inr ⟨p, 1, hp, hlt, heq⟩)
 
 /-- The exact future event sufficient for the large branch:
 hit a 5 mod 8 value before exceeding 3*y+1. -/
@@ -101,7 +103,8 @@ theorem three_quarter_coalescence7_of_quarter_splice_future7
       rw [hx']
       omega
     have hb : x ≤ 3 * y + 1 := by simpa [x] using hxband
-    rw [hx', hp'] at hb ⊢
+    rw [hp']
+    rw [hx'] at hb
     omega
   refine ⟨p, r + 3, 1, hs.1, h4p, ?_⟩
   calc
@@ -143,9 +146,10 @@ theorem reaches_one_of_odd_quarter_splice_coverage
       omega
     have hodd : n % 2 = 1 := positive_minimal_bad_odd hmin
     obtain ⟨r, hxmod, hxband⟩ := hQ n hgt hodd
-    have hexit : OrdinaryExit n (iter shortcut r n) :=
-      ordinary_exit_of_quarter_splice hxmod hxband
-    exact minimal_bad_has_no_ordinary_exit hmin r hexit
+    have hexit : OrdinaryExit n (iter shortcut (r + 3) n) := by
+      rw [iter_add]
+      exact ordinary_exit_after_quarter_splice hxmod hxband
+    exact minimal_bad_has_no_ordinary_exit hmin (r + 3) hexit
   intro n hn
   have hgood : CollatzGood n := by
     apply Classical.byContradiction
@@ -154,9 +158,10 @@ theorem reaches_one_of_odd_quarter_splice_coverage
   exact collatzGood_eventually_one hgood
 
 #print axioms quarter_splice_of_mod8_five
-#print axioms ordinary_exit_of_quarter_splice
+#print axioms ordinary_exit_after_quarter_splice
 #print axioms three_quarter_coalescence7_of_quarter_splice_future7
-#print axioms reaches_one_of_prefix_high_odd_and_quarter_splice_future7\n#print axioms reaches_one_of_odd_quarter_splice_coverage
+#print axioms reaches_one_of_prefix_high_odd_and_quarter_splice_future7
+#print axioms reaches_one_of_odd_quarter_splice_coverage
 
 end SourceProduct
 end CollatzFinal
