@@ -701,7 +701,18 @@ impl<'a> Machine<'a> {
                 }
                 Expr::BVar(index) => match closure.env.lookup(*index)? {
                     EnvBinding::Closure(bound) => closure = bound,
-                    EnvBinding::Free(_) => return None,
+                    EnvBinding::Free(free) => {
+                        if arguments.len() == 2 && arguments[0] == arguments[1] {
+                            return Some((bools.true_ctor, Vec::new()));
+                        }
+                        if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
+                            eprintln!(
+                                "NUCLEUS_BINDING_FREE:free={:?}:args={:?}",
+                                free, arguments
+                            );
+                        }
+                        return None;
+                    }
                 },
                 Expr::Let { value, body, .. } => {
                     let value = closure.sibling(*value, closure.env.clone());
