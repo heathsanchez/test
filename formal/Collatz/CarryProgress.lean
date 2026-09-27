@@ -13,6 +13,14 @@ theorem source_tail_zero_of_lt_pow
   rw [at_source, at_depth, Nat.div_eq_of_lt hlt] at htail
   exact htail.symm
 
+/-- At zero tail the canonical source residue is the actual fixed source. -/
+theorem sourceResidue_eq_source_of_tail_zero
+    {s : State} (hs : Valid s) (hzero : s.tail = 0) :
+    s.sourceResidue = s.source := by
+  have he := hs.2.2.2
+  simp [hzero] at he
+  exact he.symm
+
 /-- A zero source tail freezes the canonical source residue on the next step. -/
 theorem sourceResidue_frozen_of_tail_zero
     (s : State) (hzero : s.tail = 0) :
@@ -44,6 +52,7 @@ theorem crossing_of_boundary_even_carry
   omega
 
 #print axioms source_tail_zero_of_lt_pow
+#print axioms sourceResidue_eq_source_of_tail_zero
 #print axioms sourceResidue_frozen_of_tail_zero
 #print axioms first_crossing_carry_shape
 #print axioms crossing_of_boundary_even_carry
