@@ -59,6 +59,14 @@ jobs:
                       seen.add(ident); pre,part=names[ident]; parts.append(part); ident=pre
                     return '.'.join(reversed(parts))
                   print('FOCUS_NAMES',json.dumps({str(i):full_name(i) for i in (295,375)},sort_keys=True))
+                  focus_exprs={163,162,1558,1557,1667,1666}
+                  expr_records={}
+                  for raw in p.read_text().splitlines():
+                    try: obj=json.loads(raw)
+                    except Exception: continue
+                    if isinstance(obj.get('ie'),int) and obj['ie'] in focus_exprs:
+                      expr_records[obj['ie']]=obj
+                  print('DECISIVE_REC_ARGS',json.dumps(expr_records,sort_keys=True))
               rows.append((str(p.relative_to(root)),expected,q.returncode))
           wrong=[x for x in rows if x[2] in (0,1) and x[2]!=x[1]]
           errors=[x for x in rows if x[2] not in (0,1,2)]
