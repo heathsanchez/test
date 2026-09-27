@@ -720,7 +720,7 @@ impl<'a> Machine<'a> {
                                 Value::Neutral(closed_neutral) => {
                                     let NeutralHead::Const { name, levels } = closed_neutral.head
                                     else {
-                                        None
+                                        return None;
                                     };
                                     if !levels.is_empty() || !closed_neutral.spine.is_empty() {
                                         None
