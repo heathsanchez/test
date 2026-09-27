@@ -55,6 +55,7 @@ jobs:
         env:
           NUCLEUS_TRACE_SINGLE_FIELD: "1"
           NUCLEUS_TRACE_DOWNSTREAM: "1"
+          NUCLEUS_TRACE_IMAX: "1"
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/structure-natle-reclosure-v1
@@ -69,6 +70,7 @@ jobs:
               if not trace:
                   env.pop('NUCLEUS_TRACE_SINGLE_FIELD',None)
                   env.pop('NUCLEUS_TRACE_DOWNSTREAM',None)
+                  env.pop('NUCLEUS_TRACE_IMAX',None)
               try:
                   with p.open('rb') as f:
                       q=subprocess.run(
