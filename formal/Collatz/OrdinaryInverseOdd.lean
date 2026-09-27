@@ -19,7 +19,7 @@ theorem inverse_odd_predecessor_of_mod3_two
     dsimp [p]
     rw [hy']
     omega
-  dsimp
+  change 0 < p ∧ p % 2 = 1 ∧ shortcut p = y
   refine ⟨?_, ?_, ?_⟩
   · rw [hp]
     omega
