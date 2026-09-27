@@ -1,0 +1,60 @@
+name: Nucleus Crystal residual quotient v2
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-residual-quotient-v2.yml"]
+permissions: {contents: read}
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Compile outcome-aware Crystal quotient
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          env=os.environ.copy(); env.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1')
+          unknown=[]
+          for p in sorted(root.rglob('*.ndjson')):
+            expected=0 if p.relative_to(root).parts[0]=='good' else 1
+            with p.open('rb') as f:
+              try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+              except subprocess.TimeoutExpired: continue
+            if q.returncode!=2: continue
+            log=q.stderr.decode(errors='replace')
+            downstream=re.findall(r'NUCLEUS_DOWNSTREAM:name=([^:]*):stage=([^:]*):verdict=UNKNOWN:reason=([^\n]+)',log)
+            app=re.findall(r'NUCLEUS_APP_INFER:unknown:([^:]+):fun_expr=ExprId\((\d+)\)',log)
+            conv=re.findall(r'NUCLEUS_CONV_HEAD_MISMATCH left=(.*?) right=(.*?) left_spine=(\d+) right_spine=(\d+)',log)
+            sig={'downstream':sorted(set((stage,reason) for _,stage,reason in downstream)),
+                 'app':sorted(set(reason for reason,_ in app)),
+                 'conv':sorted(set((re.sub(r'NameId\(\d+\)','NameId(*)',l),re.sub(r'NameId\(\d+\)','NameId(*)',r),int(ls),int(rs)) for l,r,ls,rs in conv))}
+            unknown.append({'path':str(p.relative_to(root)),'expected':expected,'signature':sig})
+          groups=collections.defaultdict(list)
+          for x in unknown: groups[json.dumps(x['signature'],sort_keys=True)].append(x)
+          classes=[]
+          for i,(k,v) in enumerate(sorted(groups.items(),key=lambda kv:(-len(kv[1]),kv[0])),1):
+            outcomes=sorted(set(x['expected'] for x in v))
+            status='HOMOGENEOUS_ACCEPT' if outcomes==[0] else 'HOMOGENEOUS_REJECT' if outcomes==[1] else 'MIXED_REFINE'
+            classes.append({'class':i,'size':len(v),'status':status,'outcomes':outcomes,'members':[x['path'] for x in v],'signature':json.loads(k)})
+          summary={'unknown_count':len(unknown),'class_count':len(classes),
+                   'homogeneous_accept':sum(c['size'] for c in classes if c['status']=='HOMOGENEOUS_ACCEPT'),
+                   'homogeneous_reject':sum(c['size'] for c in classes if c['status']=='HOMOGENEOUS_REJECT'),
+                   'mixed':sum(c['size'] for c in classes if c['status']=='MIXED_REFINE'),
+                   'classes':classes}
+          pathlib.Path('/tmp/nucleus-crystal-residual-quotient-v2.json').write_text(json.dumps(summary,indent=2))
+          print(json.dumps(summary,indent=2))
+          assert len(unknown)==40 and len(classes)<=17
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-residual-quotient-v2
+          path: /tmp/nucleus-crystal-residual-quotient-v2.json
