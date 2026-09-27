@@ -832,6 +832,33 @@ impl<'a> Machine<'a> {
                     if first == second {
                         return Some((bools.true_ctor, Vec::new()));
                     }
+                    if let (Value::Neutral(first_neutral), Value::Neutral(second_neutral)) =
+                        (&first, &second)
+                        && first_neutral.head == second_neutral.head
+                        && first_neutral.spine.len() == second_neutral.spine.len()
+                        && first_neutral.spine.iter().zip(&second_neutral.spine).all(
+                            |(left, right)| {
+                                let left = self.expose_internal(
+                                    left.clone(),
+                                    Transparency::Reducible,
+                                    remaining,
+                                    false,
+                                );
+                                let right = self.expose_internal(
+                                    right.clone(),
+                                    Transparency::Reducible,
+                                    remaining,
+                                    false,
+                                );
+                                matches!(
+                                    (left.proven_value(), right.proven_value()),
+                                    (Some(left), Some(right)) if left.value == right.value
+                                )
+                            },
+                        )
+                    {
+                        return Some((bools.true_ctor, Vec::new()));
+                    }
                     let (Value::NatLit(first), Value::NatLit(second)) = (first, second) else {
                         return None;
                     };
