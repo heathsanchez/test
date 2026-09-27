@@ -23,3 +23,5 @@ print(json.dumps({"schema":"COLLATZ_RETURN_CYCLE_REPEATABILITY_LAW_V0",
  "law":"r repeats require v2(Delta_entry) >= r*D + 1",
  "checks":len(tests),"status":"EXACT_INTEGER_ALGEBRA_PASS",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
