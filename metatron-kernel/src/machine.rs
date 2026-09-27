@@ -27,6 +27,7 @@ pub enum TransitionWitness {
     Delta,
     SingletonRecursor,
     ConstructorRecursor,
+    StructureEtaRecursor,
     NatExtension,
     Rigid,
 }
@@ -59,6 +60,13 @@ pub struct ProjectionSpec {
     pub constructor: NameId,
     pub num_params: usize,
     pub field_param_indices: Vec<usize>,
+    pub eta_expandable: bool,
+}
+
+#[derive(Clone, Debug)]
+enum RuntimeArgument {
+    Closure(Closure),
+    Value(Value),
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -228,6 +236,45 @@ impl<'a> Machine<'a> {
                                 closure = bound;
                                 continue;
                             }
+                            EnvBinding::Value(mut value) => match &mut value {
+                                Value::Neutral(neutral) => {
+                                    append_pending(&mut neutral.spine, &mut pending);
+                                    record_transition(
+                                        &mut transitions,
+                                        record_witnesses,
+                                        TransitionWitness::Rigid,
+                                    );
+                                    return exposed(value, transitions);
+                                }
+                                Value::Lam { body, .. } if !pending.is_empty() => {
+                                    let argument = pending.pop().expect("checked non-empty");
+                                    record_transition(
+                                        &mut transitions,
+                                        record_witnesses,
+                                        TransitionWitness::Beta,
+                                    );
+                                    visited.clear();
+                                    closure = Closure::with_levels(
+                                        body.expr,
+                                        body.env.extend(argument),
+                                        body.levels.clone(),
+                                    );
+                                    continue;
+                                }
+                                _ if pending.is_empty() => {
+                                    record_transition(
+                                        &mut transitions,
+                                        record_witnesses,
+                                        TransitionWitness::Rigid,
+                                    );
+                                    return exposed(value, transitions);
+                                }
+                                _ => {
+                                    return Judgment::unknown(
+                                        "bound-semantic-value-applied-as-function",
+                                    );
+                                }
+                            },
                             EnvBinding::Free(free) => {
                                 let mut spine = Vec::new();
                                 append_pending(&mut spine, &mut pending);
@@ -355,8 +402,12 @@ impl<'a> Machine<'a> {
                             let arguments =
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
-                            if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                            let level_substitution = self
+                                .recursor_level_substitution(reduction, levels, &closure, budget);
+
+                            if let Some(level_substitution) = level_substitution.clone()
+                                && let Some((constructor, constructor_arguments)) =
+                                    self.constructor_application(target)
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -368,38 +419,45 @@ impl<'a> Machine<'a> {
                                 rule_arguments
                                     .extend_from_slice(&constructor_arguments[rule.num_params..]);
 
-                                let mut level_substitution = closure.levels.to_map();
-                                let mut levels_ok = true;
-                                for (parameter, level) in reduction.level_params.iter().zip(levels)
-                                {
-                                    let Some(level) = self.resolve_level(*level, &closure, budget)
-                                    else {
-                                        levels_ok = false;
-                                        break;
-                                    };
-                                    level_substitution.insert(*parameter, level);
+                                pending.truncate(offset);
+                                for argument in rule_arguments.iter().rev() {
+                                    pending.push(argument.clone());
                                 }
-                                if levels_ok {
-                                    let mut level_substitution =
-                                        level_substitution.into_iter().collect::<Vec<_>>();
-                                    level_substitution.sort_by_key(|(name, _)| name.0);
-                                    pending.truncate(offset);
-                                    for argument in rule_arguments.iter().rev() {
-                                        pending.push(argument.clone());
-                                    }
-                                    record_transition(
-                                        &mut transitions,
-                                        record_witnesses,
-                                        TransitionWitness::ConstructorRecursor,
-                                    );
-                                    visited.clear();
-                                    closure = Closure::with_levels(
-                                        rule.rhs,
-                                        EnvFrame::empty(),
-                                        LevelSubstitution::new(level_substitution),
-                                    );
-                                    continue;
-                                }
+                                record_transition(
+                                    &mut transitions,
+                                    record_witnesses,
+                                    TransitionWitness::ConstructorRecursor,
+                                );
+                                visited.clear();
+                                closure = Closure::with_levels(
+                                    rule.rhs,
+                                    EnvFrame::empty(),
+                                    level_substitution,
+                                );
+                                continue;
+                            }
+
+                            // Lean #15351 moves structure-major eta expansion before WHNF.
+                            // Mirror only authority that Nucleus has independently certified:
+                            // a single-constructor recursor whose projection spec explicitly
+                            // permits eta.  No target WHNF is attempted on this path.
+                            if let Some(level_substitution) = level_substitution
+                                && let Some(eta_reduction) = self.structure_eta_recursor(
+                                    reduction,
+                                    &arguments,
+                                    target,
+                                    level_substitution,
+                                )
+                            {
+                                pending.truncate(offset);
+                                record_transition(
+                                    &mut transitions,
+                                    record_witnesses,
+                                    TransitionWitness::StructureEtaRecursor,
+                                );
+                                visited.clear();
+                                closure = eta_reduction;
+                                continue;
                             }
                         }
                     }
@@ -460,7 +518,8 @@ impl<'a> Machine<'a> {
                     let Some(spec) = self.projection_specs.get(type_name) else {
                         return Judgment::unknown("unsupported-projection");
                     };
-                    let Ok(index) = usize::try_from(*index) else {
+                    let projection_index = *index;
+                    let Ok(index) = usize::try_from(projection_index) else {
                         return Judgment::unknown("projection-index-overflow");
                     };
                     if index >= spec.field_param_indices.len() {
@@ -468,26 +527,40 @@ impl<'a> Machine<'a> {
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
-                        self.expose_internal(structure, transparency, budget, false);
+                        self.expose_internal(structure.clone(), transparency, budget, false);
                     let Some(exposure) = exposed_structure.proven_value() else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
-                    let NeutralHead::Const { name, .. } = &neutral.head else {
-                        return Judgment::unknown("projection-structure-neutral");
-                    };
-                    if *name != spec.constructor {
-                        return Judgment::unknown("projection-constructor-mismatch");
+                    if let NeutralHead::Const { name, .. } = &neutral.head
+                        && *name == spec.constructor
+                    {
+                        let field_offset = spec.num_params + index;
+                        let Some(field) = neutral.spine.get(field_offset).cloned() else {
+                            return Judgment::unknown("projection-constructor-arity");
+                        };
+                        visited.clear();
+                        closure = field;
+                        continue;
                     }
-                    let field_offset = spec.num_params + index;
-                    let Some(field) = neutral.spine.get(field_offset).cloned() else {
-                        return Judgment::unknown("projection-constructor-arity");
-                    };
-                    visited.clear();
-                    closure = field;
-                    continue;
+
+                    // A projection of a neutral structure is itself neutral.  Keeping
+                    // it explicit lets the eta-expanded recursor compare against the
+                    // ordinary exported projection without normalizing the major.
+                    record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
+                    return exposed(
+                        Value::Neutral(Neutral {
+                            head: NeutralHead::Projection {
+                                type_name: *type_name,
+                                index: projection_index,
+                                structure,
+                            },
+                            spine: Vec::new(),
+                        }),
+                        transitions,
+                    );
                 }
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
@@ -578,7 +651,7 @@ impl<'a> Machine<'a> {
                     EnvBinding::Closure(bound) => {
                         closure = bound;
                     }
-                    EnvBinding::Free(_) => return None,
+                    EnvBinding::Value(_) | EnvBinding::Free(_) => return None,
                 },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
@@ -587,6 +660,89 @@ impl<'a> Machine<'a> {
                 _ => return None,
             }
         }
+    }
+
+    fn recursor_level_substitution(
+        &self,
+        reduction: &RecursorReduction,
+        levels: &[LevelId],
+        closure: &Closure,
+        budget: usize,
+    ) -> Option<LevelSubstitution> {
+        if reduction.level_params.len() != levels.len() {
+            return None;
+        }
+        let mut substitution = closure.levels.to_map();
+        for (parameter, level) in reduction.level_params.iter().zip(levels) {
+            substitution.insert(*parameter, self.resolve_level(*level, closure, budget)?);
+        }
+        let mut substitution = substitution.into_iter().collect::<Vec<_>>();
+        substitution.sort_by_key(|(name, _)| name.0);
+        Some(LevelSubstitution::new(substitution))
+    }
+
+    fn structure_eta_recursor(
+        &self,
+        reduction: &RecursorReduction,
+        arguments: &[Closure],
+        target: &Closure,
+        levels: LevelSubstitution,
+    ) -> Option<Closure> {
+        if reduction.num_indices != 0 || reduction.rules.len() != 1 {
+            return None;
+        }
+        let rule = &reduction.rules[0];
+        let mut matching_specs = self.projection_specs.iter().filter(|(_, spec)| {
+            spec.eta_expandable
+                && spec.constructor == rule.constructor
+                && spec.num_params == rule.num_params
+                && spec.field_param_indices.len() == rule.num_fields
+        });
+        let (type_name, _spec) = matching_specs.next()?;
+        if matching_specs.next().is_some() {
+            return None;
+        }
+
+        let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+        if arguments.len() != prefix_len + 1 {
+            return None;
+        }
+        let mut runtime_arguments = arguments[..prefix_len]
+            .iter()
+            .cloned()
+            .map(RuntimeArgument::Closure)
+            .collect::<Vec<_>>();
+        for index in 0..rule.num_fields {
+            runtime_arguments.push(RuntimeArgument::Value(Value::Neutral(Neutral {
+                head: NeutralHead::Projection {
+                    type_name: *type_name,
+                    index: u64::try_from(index).ok()?,
+                    structure: target.clone(),
+                },
+                spine: Vec::new(),
+            })));
+        }
+        self.instantiate_rule_lambdas(rule.rhs, levels, &runtime_arguments)
+    }
+
+    fn instantiate_rule_lambdas(
+        &self,
+        rhs: ExprId,
+        levels: LevelSubstitution,
+        arguments: &[RuntimeArgument],
+    ) -> Option<Closure> {
+        let mut closure = Closure::with_levels(rhs, EnvFrame::empty(), levels);
+        for argument in arguments {
+            let Expr::Lam { body, .. } = self.expressions.get(closure.expr)? else {
+                return None;
+            };
+            let env = match argument {
+                RuntimeArgument::Closure(argument) => closure.env.extend(argument.clone()),
+                RuntimeArgument::Value(argument) => closure.env.extend_value(argument.clone()),
+            };
+            closure = closure.sibling(*body, env);
+        }
+        Some(closure)
     }
 
     fn resolve_level(

@@ -294,7 +294,7 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(left, right, budget) {
+            match compare_neutral_heads(left, right, budget, depth, work) {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
@@ -364,7 +364,13 @@ fn compare_nat_literal_neutral(
     Judgment::refuted("Nat-literal-non-Nat-head")
 }
 
-fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judgment<()> {
+fn compare_neutral_heads(
+    left: &Neutral,
+    right: &Neutral,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+) -> Judgment<()> {
     match (&left.head, &right.head) {
         (NeutralHead::Free(left), NeutralHead::Free(right)) if left == right => {
             Judgment::proven((), "same-free-variable")
@@ -389,6 +395,25 @@ fn compare_neutral_heads(left: &Neutral, right: &Neutral, budget: usize) -> Judg
                 }
             }
             Judgment::proven((), "same-rigid-constant")
+        }
+        (
+            NeutralHead::Projection {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            NeutralHead::Projection {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) if left_type == right_type && left_index == right_index => {
+            work.push((
+                TypeValue::Term(left_structure.clone()),
+                TypeValue::Term(right_structure.clone()),
+                depth,
+            ));
+            Judgment::proven((), "same-structure-projection")
         }
         _ => Judgment::refuted("distinct-neutral-heads"),
     }

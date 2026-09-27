@@ -518,6 +518,7 @@ fn check_exact_ofnat(
                 constructor: constructor.name,
                 num_params: 2,
                 field_param_indices: vec![0],
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)
@@ -4433,6 +4434,10 @@ impl ExactBinaryProductDerivation<'_> {
                         constructor: self.constructor.name,
                         num_params: 2,
                         field_param_indices: vec![0, 1],
+                        eta_expandable: matches!(
+                            self.law,
+                            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. }
+                        ),
                     },
                 )
                 .map_err(|_| Verdict::Reject)?
