@@ -1,0 +1,24 @@
+name: Collatz source product oriented join V1
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_source_product_oriented_join_v1.py'
+      - '.github/workflows/collatz-source-product-oriented-join-v1.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  join:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_source_product_oriented_join_v1.py
+      - run: cat evidence/collatz-source-product-oriented-join-v1/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-source-product-oriented-join-v1
+          path: evidence/collatz-source-product-oriented-join-v1
