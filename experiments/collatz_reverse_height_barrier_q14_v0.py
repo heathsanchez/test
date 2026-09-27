@@ -38,3 +38,5 @@ print(json.dumps({"schema":"COLLATZ_REVERSE_HEIGHT_BARRIER_Q14_V0",
  "max_ratio_cert":best_cert[best.index(max(best))],
  "interpretation":"no-exit requires y/n at least d/a (plus positive c/(a*n)) on every applicable certificate residue",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
