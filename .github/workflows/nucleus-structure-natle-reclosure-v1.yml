@@ -133,32 +133,6 @@ jobs:
           pathlib.Path(
               'metatron-kernel/evidence-out/structure-natle-reclosure-v1/result.json'
           ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
-          # Exact HEq telescope decoder: evidence only.
-          heq_exact=[]
-          for kind,name,_ in targets[:2]:
-              p=root/kind/(name+'.ndjson')
-              records,full=name_table(p)
-              em=expr_map(p)
-              decls=[o['inductive'] for o in records if 'inductive' in o and any(full(t['name'])=='HEq' for t in o['inductive']['types'])]
-              if decls:
-                  heq=decls[0]
-                  typ=next(t for t in heq['types'] if full(t['name'])=='HEq')
-                  ctor=next(c for c in heq['ctors'] if full(c['name']).startswith('HEq.'))
-                  rec=next(x for x in heq['recs'] if full(x['name']).startswith('HEq.'))
-                  roots=[typ['type'],ctor['type'],rec['type']]+[rule['rhs'] for rule in rec['rules']]
-                  seen=set(); stack=list(roots)
-                  while stack:
-                      eid=stack.pop()
-                      if eid in seen or eid not in em: continue
-                      seen.add(eid); stack.extend(children(em[eid]))
-                  heq_exact.append({
-                      'test':name,
-                      'meta':{'type':typ,'ctor':ctor,'rec':rec},
-                      'roots':roots,
-                      'exprs':{str(i):em[i] for i in sorted(seen)}
-                  })
-          pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/heq-exact.json').write_text(json.dumps(heq_exact,indent=2,sort_keys=True)+'\n')
-          print('HEQ_EXACT',json.dumps(heq_exact,sort_keys=True))
           # Fin source census: representation only, zero semantic authority.
           def name_table(p):
               names={}
@@ -211,6 +185,32 @@ jobs:
               fin_exact.append({'test':name,'roots':roots,'exprs':{str(i):em[i] for i in sorted(seen)}})
           pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/fin-exact.json').write_text(json.dumps(fin_exact,indent=2,sort_keys=True)+'\n')
           print('FIN_EXACT',json.dumps(fin_exact,sort_keys=True))
+          # Exact HEq telescope decoder: evidence only.
+          heq_exact=[]
+          for kind,name,_ in targets[:2]:
+              p=root/kind/(name+'.ndjson')
+              records,full=name_table(p)
+              em=expr_map(p)
+              decls=[o['inductive'] for o in records if 'inductive' in o and any(full(t['name'])=='HEq' for t in o['inductive']['types'])]
+              if decls:
+                  heq=decls[0]
+                  typ=next(t for t in heq['types'] if full(t['name'])=='HEq')
+                  ctor=next(c for c in heq['ctors'] if full(c['name']).startswith('HEq.'))
+                  rec=next(x for x in heq['recs'] if full(x['name']).startswith('HEq.'))
+                  roots=[typ['type'],ctor['type'],rec['type']]+[rule['rhs'] for rule in rec['rules']]
+                  seen=set(); stack=list(roots)
+                  while stack:
+                      eid=stack.pop()
+                      if eid in seen or eid not in em: continue
+                      seen.add(eid); stack.extend(children(em[eid]))
+                  heq_exact.append({
+                      'test':name,
+                      'meta':{'type':typ,'ctor':ctor,'rec':rec},
+                      'roots':roots,
+                      'exprs':{str(i):em[i] for i in sorted(seen)}
+                  })
+          pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/heq-exact.json').write_text(json.dumps(heq_exact,indent=2,sort_keys=True)+'\n')
+          print('HEQ_EXACT',json.dumps(heq_exact,sort_keys=True))
           fin_census=[]
           for kind,name,_ in targets[:2]:
               p=root/kind/(name+'.ndjson')
