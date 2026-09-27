@@ -1,0 +1,43 @@
+name: Collatz Crystal Literature Source Affine V7
+on:
+  push:
+    branches: [collatz-crystal-literature-source-affine-v7]
+    paths:
+      - 'experiments/collatz_crystal_literature_source_affine_v7.py'
+      - 'formal/Collatz/QuarterSplice.lean'
+      - '.github/workflows/collatz-crystal-literature-source-affine-v7.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Requalify quarter-splice kernel
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/QuarterSplice.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/QuarterSplice.lean
+      - name: Compile literature source-affine residual
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-literature-source-affine-v7
+          git rev-parse HEAD > evidence/collatz-crystal-literature-source-affine-v7/commit.txt
+          python -u experiments/collatz_crystal_literature_source_affine_v7.py | tee evidence/collatz-crystal-literature-source-affine-v7/result.json
+          grep -q '"global_collatz": "UNKNOWN"' evidence/collatz-crystal-literature-source-affine-v7/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-literature-source-affine-v7
+          path: evidence/collatz-crystal-literature-source-affine-v7
+          if-no-files-found: error
