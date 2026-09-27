@@ -56,3 +56,5 @@ print(json.dumps({
  "decision":"LOWER_HEIGHT_BARRIERS_ALONE_CANNOT_PRUNE_POSTFIXED_KERNEL",
  "residual":"need an earned upper/resource constraint on normalized height, or a certificate whose applicability grows with height; lower bounds alone allow arbitrarily large h",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
