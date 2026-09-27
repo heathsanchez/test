@@ -1,0 +1,50 @@
+name: Collatz Constructor Unified V5
+on:
+  push:
+    branches: [collatz-constructor-unified-v5]
+    paths:
+      - 'formal/Collatz/AssembledConstructorCloseout.lean'
+      - 'formal/Collatz/ValuationPullback.lean'
+      - 'formal/Collatz/ThreeQuarterCoalescence.lean'
+      - 'experiments/collatz_crystal_three_quarter_coalescence_v4.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-constructor-unified-v5.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)'             formal/Collatz/AssembledConstructorCloseout.lean             formal/Collatz/ValuationPullback.lean             formal/Collatz/ThreeQuarterCoalescence.lean
+      - name: Build unified closeout
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/AssembledConstructorCloseout.lean
+          lake env lean -DautoImplicit=false formal/Collatz/ValuationPullback.lean
+          lake env lean -DautoImplicit=false formal/Collatz/ThreeQuarterCoalescence.lean
+      - name: Replay V4 bounded coalescence authority
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-constructor-unified-v5
+          git rev-parse HEAD > evidence/collatz-constructor-unified-v5/commit.txt
+          g++ -O3 -std=c++17 experiments/collatz_crystal_three_quarter_coalescence_v4.cpp -o /tmp/v4
+          /tmp/v4 67108864 | tee evidence/collatz-constructor-unified-v5/v4-result.json
+          grep -q '"unresolved":0' evidence/collatz-constructor-unified-v5/v4-result.json
+          grep -q '"universal_status":"UNKNOWN"' evidence/collatz-constructor-unified-v5/v4-result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-constructor-unified-v5
+          path: evidence/collatz-constructor-unified-v5
+          if-no-files-found: error
