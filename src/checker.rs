@@ -5153,7 +5153,7 @@ fn check_exact_heq(
     derivation.promote_all(
         export,
         [
-            derived_type(inductive.name, inductive.ty),
+            derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty),
             derived_constructor(constructor),
             derived_recursor(recursor),
         ],
