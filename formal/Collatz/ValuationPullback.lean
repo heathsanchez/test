@@ -16,7 +16,8 @@ theorem ownerLift_odd
   induction k with
   | zero => simpa [ownerLift] using hpodd
   | succ k =>
-      simp [ownerLift]
+      change (4 * ownerLift k p + 1) % 2 = 1
+      omega
 
 /-- One lift layer adds exactly two redundant shortcut steps:
 three steps from 4*x+1 coalesce with one step from odd x. -/
@@ -38,7 +39,6 @@ theorem iter_three_four_mul_add_one
     unfold shortcut
     have he : (3 * x + 1) % 2 = 0 := by omega
     simp only [he, ite_true, hxne, ite_false]
-    omega
   simp [iter, h1, h2, h3]
 
 /-- Exact parametric coalescence law for every owner lift. -/
@@ -86,11 +86,9 @@ theorem ordinary_exit_of_ownerLift_on_orbit
     (horbit : iter shortcut j n = ownerLift k p) :
     ∃ a, OrdinaryExit n (iter shortcut a n) := by
   refine ⟨j + (2 * k + 1), ?_⟩
-  have hm := lower_merge_of_ownerLift_on_orbit hpodd hlt horbit
-  rcases hm with ⟨_, a, b, hab⟩
-  have ha : a = j + (2 * k + 1) := rfl
-  subst a
-  exact Or.inr (Or.inr ⟨p, b, hp, hlt, hab.symm⟩)
+  refine Or.inr (Or.inr ⟨p, 1, hp, hlt, ?_⟩)
+  rw [iter_add, horbit]
+  simpa [iter] using (ownerLift_coalesces hpodd k).symm
 
 #print axioms ownerLift_coalesces
 #print axioms lower_merge_of_ownerLift_on_orbit
