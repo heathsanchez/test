@@ -1,4 +1,4 @@
-import Std
+import Collatz.SurvivalDeficit
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -44,6 +44,46 @@ theorem boundary_excursion_depth_contracts
   apply boundary_excursion_coefficient_contracts
     (s := s) (L := e - s) (q := q) (r := r) hstart
   simpa [hlen, Nat.add_assoc] using hend
+
+/-- A flat threshold step means the current qmin coefficient already covers
+the next dyadic threshold. -/
+theorem boundaryBit_zero_covers_next
+    {k : Nat} (hzero : boundaryBit k = 0) :
+    2 ^ (k + 1) ≤ 3 ^ qmin k := by
+  have h := qmin_spec (k + 1)
+  rw [qmin_succ_eq k, hzero, Nat.add_zero] at h
+  exact h
+
+/-- A rising threshold bit means the old qmin coefficient strictly fails the
+next dyadic threshold. -/
+theorem boundaryBit_one_fails_next
+    {k : Nat} (hone : boundaryBit k = 1) :
+    3 ^ qmin k < 2 ^ (k + 1) := by
+  by_contra hnot
+  have hcover : 2 ^ (k + 1) ≤ 3 ^ qmin k := by omega
+  have hsame : qmin (k + 1) = qmin k := by
+    simp [qmin, hcover]
+  have hzero : boundaryBit k = 0 := by
+    unfold boundaryBit
+    rw [hsame]
+    omega
+  omega
+
+/-- Exact qmin boundary-phase form. Any interval beginning at a flat threshold
+boundary and ending just before a rising threshold is multiplicatively
+contractive once its qmin increment is named r. -/
+theorem qmin_boundary_phase_contracts
+    {s L r : Nat}
+    (hstart : boundaryBit s = 0)
+    (hend : boundaryBit (s + L) = 1)
+    (hq : qmin (s + L) = qmin s + r) :
+    3 ^ r < 2 ^ L := by
+  apply boundary_excursion_coefficient_contracts
+    (s := s) (L := L) (q := qmin s) (r := r)
+  · exact boundaryBit_zero_covers_next hstart
+  · have h := boundaryBit_one_fails_next hend
+    rw [hq] at h
+    simpa [Nat.add_assoc] using h
 
 /-- For an affine shortcut block with a contractive multiplicative coefficient,
 failure of strict decrease is exactly paid for by the additive bias.  This
