@@ -767,13 +767,9 @@ impl<'a> Machine<'a> {
             return None;
         };
         let mut pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
-        if let Some(value) = self.try_native_nat_reduction(
-            *name,
-            &[],
-            &mut pending,
-            Transparency::Reducible,
-            budget,
-        ) {
+        if let Some(value) =
+            self.try_native_nat_reduction(*name, &[], &mut pending, Transparency::Reducible, budget)
+        {
             return Some(value);
         }
         let declaration = self.definitions.get(name)?;
