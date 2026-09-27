@@ -302,6 +302,11 @@ theorem minimal_bad_large_crossing_not_mod96_fiftyfive
     omega
   exact hwnot hw5
 
+#print axioms ownerLift_three_mul_add_one
+#print axioms ownerLift_mono
+#print axioms four_pow_mul_le_ownerLift
+#print axioms minimal_bad_ownerLift_source_barrier
+
 #print axioms minimal_bad_large_crossing_not_mod96_fiftyfive
 
 #print axioms minimal_bad_large_crossing_not_mod48_nineteen
