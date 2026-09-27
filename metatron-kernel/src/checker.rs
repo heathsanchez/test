@@ -4436,8 +4436,7 @@ impl ExactBinaryProductDerivation<'_> {
                         field_param_indices: vec![0, 1],
                         eta_expandable: matches!(
                             self.law,
-                            BinaryProductSortLaw::Prod { .. }
-                                | BinaryProductSortLaw::PProd { .. }
+                            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. }
                         ),
                     },
                 )
