@@ -1,0 +1,44 @@
+name: Collatz Crystal Quarter Splice V6
+on:
+  push:
+    branches: [collatz-crystal-quarter-splice-v6]
+    paths:
+      - 'formal/Collatz/QuarterSplice.lean'
+      - 'experiments/collatz_crystal_odd_quarter_splice_v6.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-quarter-splice-v6.yml'
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/QuarterSplice.lean
+      - name: Build one-premise closeout
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/QuarterSplice.lean
+      - name: Sweep unified odd quarter-splice law
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-quarter-splice-v6
+          g++ -O3 -std=c++17 experiments/collatz_crystal_odd_quarter_splice_v6.cpp -o /tmp/v6
+          /tmp/v6 67108864 4096 | tee evidence/collatz-crystal-quarter-splice-v6/result.json
+          grep -q '"unresolved":0' evidence/collatz-crystal-quarter-splice-v6/result.json
+          grep -q '"universal_status":"UNKNOWN"' evidence/collatz-crystal-quarter-splice-v6/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-quarter-splice-v6
+          path: evidence/collatz-crystal-quarter-splice-v6
+          if-no-files-found: error
