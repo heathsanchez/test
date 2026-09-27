@@ -1,0 +1,40 @@
+name: Collatz bi-adic depth20 closure gate
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_reverse_trit_bicell_v3_quotient.py'
+      - '.github/workflows/collatz-biadic-depth20-closure.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  depth20:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact depth-20 bi-adic quotient audit
+        run: |
+          mkdir -p evidence/collatz-biadic-depth20
+          python experiments/collatz_reverse_trit_bicell_v3_quotient.py --max-q2-depth 20 --output evidence/collatz-biadic-depth20/result.json | tee evidence/collatz-biadic-depth20/run.log
+      - name: Judge depth-20 residual
+        run: |
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-biadic-depth20/result.json'))
+          assert d['max_q2_depth']==20
+          assert d['parent_languages_equal_all_depths']
+          row=d['rows'][-1]
+          print('DEPTH20',json.dumps(row,sort_keys=True))
+          print('VERDICT',d['verdict'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-biadic-depth20
+          path: evidence/collatz-biadic-depth20
+          if-no-files-found: error
