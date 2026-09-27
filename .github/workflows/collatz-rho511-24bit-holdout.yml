@@ -1,0 +1,40 @@
+name: Collatz rho511 24-bit holdout
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_rho511_source_cover_holdout_v0.py'
+      - '.github/workflows/collatz-rho511-24bit-holdout.yml'
+permissions:
+  contents: read
+jobs:
+  holdout:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Compile exact source cover
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends libboost-dev
+          g++ -O3 -std=c++17 experiments/collatz_cst_floor_v1.cpp -o /tmp/cst
+      - name: Generate independent 24-bit source histogram
+        run: |
+          set -euo pipefail
+          /tmp/cst prefix 24 20 512 > /tmp/source.json
+          cat /tmp/source.json
+      - name: Test rho511 law on holdout window
+        run: |
+          set -euo pipefail
+          python experiments/collatz_rho511_source_cover_holdout_v0.py < /tmp/source.json | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-rho511-24bit-holdout
+          path: |
+            /tmp/source.json
+            /tmp/result.json
+          if-no-files-found: error
