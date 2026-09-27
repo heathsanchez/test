@@ -1,0 +1,65 @@
+name: Collatz Crystal Band Return V7
+
+on:
+  push:
+    branches: [collatz-crystal-band-return-v7]
+    paths:
+      - 'experiments/collatz_crystal_band_return_v7.py'
+      - 'formal/Collatz/QuarterSplice.lean'
+      - '.github/workflows/collatz-crystal-band-return-v7.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Recheck quarter-splice authority
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/QuarterSplice.lean
+          lake env lean -DautoImplicit=false formal/Collatz/QuarterSplice.lean
+
+      - name: Run exact band-return Crystal gate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-band-return-v7
+          python experiments/collatz_crystal_band_return_v7.py             --limit 1048576 --cap 4096             --output evidence/collatz-crystal-band-return-v7/result.json             | tee evidence/collatz-crystal-band-return-v7/run.log
+
+      - name: Judge bounded separator
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-band-return-v7/result.json'
+          d=json.load(open(p))
+          r=d['representations']
+          assert d['counts'].get('resolved_cap',0)==0
+          assert d['counts'].get('resolved_internal_error',0)==0
+          assert r['CONTROL']['kernel_nodes']>0
+          assert r['OWN_V23']['kernel_nodes']>0
+          assert r['ENDPOINT']['kernel_nodes']==0
+          assert r['SOURCE_ENDPOINT']['kernel_nodes']==0
+          assert d['verdict']=='PASS_BOUNDED_ENDPOINT_DAG_SEPARATOR'
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V7_VERDICT',d['verdict'])
+          print('ENDPOINT_MAX_RANK',r['ENDPOINT']['max_rank'])
+          print('CLOSURE_CERTIFICATE',d['closure_certificate'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-band-return-v7
+          path: evidence/collatz-crystal-band-return-v7
+          if-no-files-found: error
