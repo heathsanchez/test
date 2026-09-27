@@ -28,7 +28,7 @@ jobs:
       - name: Build fixed-source progress closeout
         run: |
           set -euo pipefail
-          lake env lean formal/Collatz/FixedSourceProgress.lean 2>&1 | tee fixed-source-progress.log
+          lake build CollatzFinal 2>&1 | tee fixed-source-progress.log
           ! grep -q 'sorryAx' fixed-source-progress.log
       - uses: actions/upload-artifact@v4
         if: always()
