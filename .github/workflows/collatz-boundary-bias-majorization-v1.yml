@@ -15,6 +15,11 @@ jobs:
           python -u experiments/collatz_boundary_bias_majorization_v1.py \
             --depth 500000 --exhaustive-depth 18 \
             --out evidence/collatz-boundary-bias-majorization-v1/result.json
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Build Lean dependencies and local exchange
         run: |
           lake build Collatz.FirstCrossingGap
