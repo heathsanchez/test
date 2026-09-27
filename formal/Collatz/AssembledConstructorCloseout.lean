@@ -124,11 +124,12 @@ theorem hard_large_recovers_two_survival_steps
   have hrestore :
       4 * 2 ^ k ≤ 3 * 3 ^ oddCount n (k + 1) := by
     omega
+  have hpar1 : iter shortcut (k + 1) n % 2 ≠ 0 := by
+    simpa [y] using hyodd
   have hs1 : CoefficientSurvives n (k + 2) := by
-    apply (coefficientSurvives_succ_odd n (k + 1) ?_).2
-    · simpa [y] using hyodd
-    · simpa [coefficientDenominator, coefficientNumerator, Nat.pow_succ,
-        Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hrestore
+    rw [coefficientSurvives_succ_odd n (k + 1) hpar1]
+    simpa [coefficientDenominator, coefficientNumerator, Nat.pow_succ,
+      Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hrestore
   have hnext :
       iter shortcut (k + 2) n = shortcut y := by
     simpa [y] using iter_succ_last n (k + 1)
