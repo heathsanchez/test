@@ -26,9 +26,9 @@ theorem boundary_excursion_coefficient_contracts
         2 ^ (s + L + 1) ≤ 3 ^ (q + r) := by
       calc
         2 ^ (s + L + 1) = 2 ^ ((s + 1) + L) := by rw [hexp]
-        _ = 2 ^ (s + 1) * 2 ^ L := by rw [pow_add]
+        _ = 2 ^ (s + 1) * 2 ^ L := by rw [Nat.pow_add]
         _ ≤ 3 ^ q * 3 ^ r := hmul
-        _ = 3 ^ (q + r) := by rw [pow_add]
+        _ = 3 ^ (q + r) := by rw [Nat.pow_add]
     omega
 
 /-- Equivalent block-language form with explicit start/end depths. -/
@@ -84,7 +84,6 @@ failure of strict decrease is exactly paid for by the additive bias.  This
 isolates the only quantity contraction alone does not control. -/
 theorem affine_contracting_block_nondescending_forces_bias
     {A B D x y : Nat}
-    (hA : A < 2 ^ D)
     (hxy : 2 ^ D * y = A * x + B)
     (hnd : x ≤ y) :
     (2 ^ D - A) * x ≤ B := by
@@ -106,7 +105,7 @@ theorem affine_contracting_block_descends_of_bias_lt
   intro hnot
   have hnd : x ≤ y := by omega
   have hforced :=
-    affine_contracting_block_nondescending_forces_bias hA hxy hnd
+    affine_contracting_block_nondescending_forces_bias hxy hnd
   omega
 
 #print axioms boundary_excursion_coefficient_contracts
