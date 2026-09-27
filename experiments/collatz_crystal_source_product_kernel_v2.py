@@ -18,7 +18,7 @@ from __future__ import annotations
 import sys,json
 from pathlib import Path
 from collections import defaultdict,Counter
-ROOT=Path(__file__).resolve().parents[1]
+ROOT=Path(__file__).resolve().parent
 sys.path.insert(0,str(ROOT/"source_product_v1"))
 from source_product import initial,advance
 from collatz_live_origin_bridge_v1 import language_counts
