@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Independent rho=511/512 live-origin contraction check from a CST histogram.
+"""Independent rho=511/512 live-origin adaptive-horizon contraction check from a CST histogram.
 
 Reads one exact full source-cover JSON for all odd sources < 2^B.  This tests
 only the single origin window X=2^B, but B is deliberately larger than the
@@ -9,7 +9,7 @@ import json,sys
 from fractions import Fraction
 
 RHO=Fraction(511,512)
-BMAX=21
+BMAX=64
 obj=json.load(sys.stdin)
 B=obj["source_bits"]
 hist=obj["first_crossing_histogram"]
