@@ -1,0 +1,40 @@
+name: Collatz Coalescence Exit Bridge V1
+on:
+  push:
+    branches: [collatz-coalescence-exit-bridge-v1]
+    paths:
+      - 'formal/Collatz/CoalescenceExitBridge.lean'
+      - '.github/workflows/collatz-coalescence-exit-bridge-v1.yml'
+      - 'lakefile.lean'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|unsafe)([^[:alnum:]_]|$)' formal/Collatz/CoalescenceExitBridge.lean
+      - name: Build and check exit/coalescence equivalence
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-coalescence-exit-bridge-v1
+          git rev-parse HEAD > evidence/collatz-coalescence-exit-bridge-v1/commit.txt
+          lake env lean --version > evidence/collatz-coalescence-exit-bridge-v1/toolchain.txt
+          lake build CollatzFinal | tee evidence/collatz-coalescence-exit-bridge-v1/build.log
+          lake env lean -DautoImplicit=false formal/Collatz/CoalescenceExitBridge.lean | tee evidence/collatz-coalescence-exit-bridge-v1/theorems.log
+          ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-coalescence-exit-bridge-v1/*.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coalescence-exit-bridge-v1
+          path: evidence/collatz-coalescence-exit-bridge-v1
+          if-no-files-found: error
