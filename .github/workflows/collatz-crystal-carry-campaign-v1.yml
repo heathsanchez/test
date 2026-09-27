@@ -34,7 +34,7 @@ jobs:
           python -u experiments/collatz_crystal_deficit_one_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/deficit-one.json
           python -u experiments/collatz_crystal_first_crossing_split_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/first-crossing-split.json
           python -u experiments/collatz_crystal_first_crossing_theorem_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/first-crossing-theorem.json
-          python -u experiments/collatz_crystal_source_product_kernel_v2.py | tee evidence/collatz-crystal-carry-campaign-v1/source-product-kernel-v2.json\n          python -u experiments/collatz_actual_orbit_inequality_closure_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/actual-orbit-inequality-closure-v0.json
+          python -u experiments/collatz_crystal_source_product_kernel_v2.py | tee evidence/collatz-crystal-carry-campaign-v1/source-product-kernel-v2.json\n          python -u experiments/collatz_crystal_reverse_bound_closure_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/reverse-bound-closure-v0.json\n          python -u experiments/collatz_actual_orbit_inequality_closure_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/actual-orbit-inequality-closure-v0.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
