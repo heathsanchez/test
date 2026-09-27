@@ -14,5 +14,6 @@ lean_lib CollatzFinal where
     `Collatz.Squeeze,
     `Collatz.SourceProduct,
     `Collatz.FixedSourceProgress,
-    `Collatz.CoalescenceDescent
+    `Collatz.CoalescenceDescent,
+    `Collatz.CoalescenceExitBridge
   ]
