@@ -1,0 +1,35 @@
+name: V24 SAIR Raw Adequacy Bridge
+
+on:
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'scripts/sair_raw_adequacy_v24.py'
+      - 'experiments/V24_SAIR_RAW_ADEQUACY_PRECOMMIT.md'
+      - '.github/workflows/v24-sair-raw-adequacy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sair-raw-adequacy:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Clone frozen external SAIR Stage-2 corpus
+        run: |
+          git clone --depth 1 https://github.com/SAIRcompetition/equational-theories-lean-stage2.git /tmp/sair-stage2
+          git -C /tmp/sair-stage2 rev-parse HEAD | tee /tmp/sair-stage2-commit.txt
+      - name: Run raw-domain adequacy bridge
+        run: |
+          rm -rf results/v24-sair-raw-adequacy
+          mkdir -p results/v24-sair-raw-adequacy
+          cp /tmp/sair-stage2-commit.txt results/v24-sair-raw-adequacy/SAIR_COMMIT.txt
+          python3 scripts/sair_raw_adequacy_v24.py \
+            --sair-root /tmp/sair-stage2 \
+            --out-dir results/v24-sair-raw-adequacy
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v24-sair-raw-adequacy
+          path: results/v24-sair-raw-adequacy/
