@@ -27,6 +27,7 @@ jobs:
           python -u experiments/collatz_crystal_equality_id_refined_v2.py | tee evidence/collatz-crystal-carry-campaign-v1/equality-id-refined.json
           python -u experiments/collatz_crystal_fixed_origin_hit_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/fixed-origin-hit.json
           python -u experiments/collatz_crystal_origin_separator_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/origin-separator.json
+          python -u experiments/collatz_crystal_singleton_residual_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/singleton-residual.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
