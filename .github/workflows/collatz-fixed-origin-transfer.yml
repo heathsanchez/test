@@ -4,19 +4,36 @@ on:
   push:
     branches: [collatz-universal-source-product-v1]
     paths:
-      - formal/Collatz/FixedOriginTransfer.lean
-      - .github/workflows/collatz-fixed-origin-transfer.yml
+      - 'formal/Collatz/FixedOriginTransfer.lean'
+      - '.github/workflows/collatz-fixed-origin-transfer.yml'
 permissions:
   contents: read
 jobs:
   lean:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Build project and check fixed-origin theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-fixed-origin-transfer
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-fixed-origin-transfer/toolchain.txt
+          ! grep -RInE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FixedOriginTransfer.lean
+          lake env lean -DautoImplicit=false formal/Collatz/FixedOriginTransfer.lean | tee evidence/collatz-fixed-origin-transfer/FixedOriginTransfer.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-fixed-origin-transfer/FixedOriginTransfer.log
+          git rev-parse HEAD > evidence/collatz-fixed-origin-transfer/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          lake-package-directory: .
-      - run: |
-          lake env lean formal/Collatz/FixedOriginTransfer.lean
-          ! grep -R -nE 'sorry|admit|axiom' formal/Collatz/FixedOriginTransfer.lean
+          name: collatz-fixed-origin-transfer
+          path: evidence/collatz-fixed-origin-transfer
+          if-no-files-found: error
