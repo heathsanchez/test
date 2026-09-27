@@ -2,7 +2,7 @@ name: Nucleus Bool flow trace v1
 on:
   push:
     branches: [nucleus-dependency-closure-exec-v1]
-    paths: [".github/workflows/nucleus-bool-flow-trace-v1.yml"]
+    paths: [".github/workflows/nucleus-bool-flow-trace-v1.yml", "metatron-kernel/src/convert.rs"]
 permissions: {contents: read}
 jobs:
   trace:
