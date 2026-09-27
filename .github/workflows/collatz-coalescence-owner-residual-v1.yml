@@ -1,0 +1,29 @@
+name: Collatz Coalescence Owner Residual V1
+on:
+  push:
+    branches: [collatz-coalescence-owner-residual-v1]
+    paths:
+      - 'experiments/collatz_coalescence_owner_residual_v1.cpp'
+      - '.github/workflows/collatz-coalescence-owner-residual-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  census:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run full owner census to Q18 residual
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-coalescence-owner-residual-v1
+          git rev-parse HEAD > evidence/collatz-coalescence-owner-residual-v1/commit.txt
+          g++ -O3 -std=c++17 experiments/collatz_coalescence_owner_residual_v1.cpp -o /tmp/owner
+          /usr/bin/time -v /tmp/owner 2> evidence/collatz-coalescence-owner-residual-v1/time.txt | tee evidence/collatz-coalescence-owner-residual-v1/result.json
+          grep -q 'EXACT_BOUNDED_OWNER_CENSUS' evidence/collatz-coalescence-owner-residual-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-coalescence-owner-residual-v1
+          path: evidence/collatz-coalescence-owner-residual-v1
+          if-no-files-found: error
