@@ -19,7 +19,9 @@ static u64 T(u64 x) {
   return x/2;
 }
 
-#include "collatz_qmin_4096.inc"\n\nstruct Rec {
+#include "collatz_qmin_4096.inc"
+
+struct Rec {
   u64 n,entry_depth,entry_q,entry_y,exit_depth,exit_y;
 };
 
