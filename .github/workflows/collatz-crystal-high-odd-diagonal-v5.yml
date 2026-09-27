@@ -1,0 +1,44 @@
+name: Collatz Crystal High Odd Diagonal V5
+on:
+  push:
+    branches: [collatz-crystal-high-odd-diagonal-v5]
+    paths:
+      - 'formal/Collatz/PrefixHighOddCloseout.lean'
+      - 'experiments/collatz_crystal_high_odd_diagonal_v5.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-high-odd-diagonal-v5.yml'
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/PrefixHighOddCloseout.lean
+      - name: Build consequence-pruned closeout
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/PrefixHighOddCloseout.lean
+      - name: Sweep exact high-odd diagonal
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-high-odd-diagonal-v5
+          g++ -O3 -std=c++17 experiments/collatz_crystal_high_odd_diagonal_v5.cpp -o /tmp/v5
+          /tmp/v5 4194304 4096 | tee evidence/collatz-crystal-high-odd-diagonal-v5/result.json
+          grep -q '"censored":0' evidence/collatz-crystal-high-odd-diagonal-v5/result.json
+          grep -q '"universal_status":"UNKNOWN"' evidence/collatz-crystal-high-odd-diagonal-v5/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-high-odd-diagonal-v5
+          path: evidence/collatz-crystal-high-odd-diagonal-v5
+          if-no-files-found: error
