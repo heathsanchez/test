@@ -1,7 +1,7 @@
-name: Collatz live origin block contraction V0
+name: Collatz Crystal cofinal origin closure V1
 on:
   push:
-    branches: [collatz-universal-source-product-v1]
+    branches: [collatz-crystal-cofinal-origin-closure-v1]
     paths:
       - 'experiments/collatz_live_origin_block_contraction_v0.py'
       - '.github/workflows/collatz-live-origin-block-contraction-v0.yml'
@@ -15,8 +15,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with: {python-version: '3.11'}
-      - run: python -u experiments/collatz_live_origin_block_contraction_v0.py | tee /tmp/result.json
+      - run: |
+          set -euo pipefail
+          python -u experiments/collatz_live_origin_block_contraction_v0.py | tee /tmp/block.json
+          python -u experiments/collatz_live_origin_exit_hazard_v0.py | tee /tmp/hazard.json
       - uses: actions/upload-artifact@v4
         with:
           name: collatz-live-origin-block-contraction-v0
-          path: /tmp/result.json
+          path: |
+            /tmp/block.json
+            /tmp/hazard.json
