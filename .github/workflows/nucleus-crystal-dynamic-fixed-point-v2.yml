@@ -1,0 +1,112 @@
+name: Nucleus Crystal dynamic fixed point v2
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-dynamic-fixed-point-v2.yml"]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  crystal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Stateful CLOSE SPLIT RECLOSE to semantic fixed point
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections,hashlib,itertools
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          permanent=set([
+            'drop:raw-syntax','drop:envframe','drop:raw-closure','drop:expr-depth-frame',
+            'drop:parameter-syntax','drop:parameter-convertibility',
+            'reject:posthoc-neutral','reject:global-recursor-env','reject:p3-live-route',
+            'reject:broad-pi','reject:old-bank','reject:raw-proven-type-cache'
+          ])
+          env=os.environ.copy(); env.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1',NUCLEUS_TRACE_GENERIC_CHECK='1')
+          rows=[]
+          for p in sorted(root.rglob('*.ndjson')):
+            expected=0 if p.relative_to(root).parts[0]=='good' else 1
+            with p.open('rb') as f:
+              try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+              except subprocess.TimeoutExpired: continue
+            if q.returncode!=2: continue
+            log=q.stderr.decode(errors='replace')
+            down=tuple(sorted(set(re.findall(r'NUCLEUS_DOWNSTREAM:name=[^:]*:stage=([^:]*):verdict=UNKNOWN:reason=([^\n]+)',log))))
+            app=tuple(sorted(set(x[0] for x in re.findall(r'NUCLEUS_APP_INFER:unknown:([^:]+):fun_expr=ExprId\((\d+)\)',log))))
+            conv=tuple(sorted(set((re.sub(r'NameId\(\d+\)','NameId(*)',l),re.sub(r'NameId\(\d+\)','NameId(*)',r),int(ls),int(rs)) for l,r,ls,rs in re.findall(r'NUCLEUS_CONV_HEAD_MISMATCH left=(.*?) right=(.*?) left_spine=(\d+) right_spine=(\d+)',log))))
+            gen=tuple(re.findall(r'NUCLEUS_GENERIC_CHECK:([^\n]+)',log))
+            # Observation bank. Coordinates already rejected as identity are absent.
+            obs={}
+            obs['down']=down; obs['app']=app; obs['conv']=conv
+            obs['proven_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'PROVEN' in e).items()))
+            obs['unknown_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'UNKNOWN' in e).items()))
+            obs['depth_language']=tuple(sorted(set(re.findall(r'depth=(\d+)', '\n'.join(gen)))))
+            obs['event_language']=tuple(sorted(set(re.sub(r'depth=\d+','depth=*',e) for e in gen)))
+            rows.append({'path':str(p.relative_to(root)),'expected':expected,'obs':obs})
+          assert len(rows)==40,len(rows)
+
+          active=['down','app','conv','proven_multiset']
+          rejected=set()
+          history=[]
+          previous_semantic=None
+          stop=None
+          for cycle in range(1,17):
+            def key(r): return json.dumps({k:r['obs'][k] for k in active},sort_keys=True,default=list)
+            groups=collections.defaultdict(list)
+            for r in rows: groups[key(r)].append(r)
+            classes=[]
+            for k,v in groups.items():
+              outs=sorted(set(x['expected'] for x in v))
+              classes.append({'id':hashlib.sha256(k.encode()).hexdigest()[:12],'size':len(v),'outcomes':outs,'members':[x['path'] for x in v],'mixed':len(outs)>1})
+            classes.sort(key=lambda c:(not c['mixed'],-c['size'],c['id']))
+            semantic={'active':active,'rejected':sorted(rejected),'classes':classes}
+            digest=hashlib.sha256(json.dumps(semantic,sort_keys=True).encode()).hexdigest()
+            mixed=[c for c in classes if c['mixed']]
+            snap={'cycle':cycle,'active':list(active),'class_count':len(classes),'mixed_cases':sum(c['size'] for c in mixed),'homogeneous_cases':40-sum(c['size'] for c in mixed),'mixed':mixed,'digest':digest}
+            history.append(snap)
+            if not mixed:
+              stop='ALL_RESIDUAL_STATES_OUTCOME_SEPARATED'
+              break
+            # SPLIT: choose cheapest unused observation maximizing reduction of mixed impurity.
+            candidates=[k for k in ['unknown_multiset','depth_language','event_language'] if k not in active and k not in rejected]
+            scored=[]
+            mixed_members=set(itertools.chain.from_iterable(c['members'] for c in mixed))
+            base_imp=sum(c['size'] for c in mixed)
+            for cand in candidates:
+              test=active+[cand]; gg=collections.defaultdict(list)
+              for r in rows:
+                if r['path'] in mixed_members:
+                  kk=json.dumps({k:r['obs'][k] for k in test},sort_keys=True,default=list); gg[kk].append(r)
+              imp=sum(len(v) for v in gg.values() if len(set(x['expected'] for x in v))>1)
+              scored.append((imp,cand))
+            if not scored:
+              stop='IRREDUCIBLE_UNKNOWN_NO_AVAILABLE_OBSERVATION'
+              break
+            scored.sort()
+            best_imp,best=scored[0]
+            if best_imp>=base_imp:
+              rejected.add(best)
+              permanent.add('reject:separator:'+best)
+              # continue in same run with remaining candidate bank
+              if len(rejected)==len(candidates):
+                stop='IRREDUCIBLE_UNKNOWN_NO_CONSEQUENTIAL_SEPARATOR'
+                break
+              continue
+            active.append(best)
+            permanent.add('promote:observation:'+best)
+            previous_semantic=digest
+          state={'schema':'nucleus-crystal-dynamic-fixed-point-v2','permanent_constraints':sorted(permanent),'history':history,'stop':stop,'final_active':active}
+          pathlib.Path('/tmp/nucleus-crystal-dynamic-fixed-point-v2.json').write_text(json.dumps(state,indent=2))
+          print(json.dumps({'stop':stop,'final_active':active,'constraints':len(permanent),'cycles':history},indent=2))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-dynamic-fixed-point-v2
+          path: /tmp/nucleus-crystal-dynamic-fixed-point-v2.json
