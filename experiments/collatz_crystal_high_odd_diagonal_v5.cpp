@@ -1,4 +1,3 @@
-#include <boost/multiprecision/cpp_int.hpp>
 #include <cstdint>
 #include <iostream>
 #include <limits>
@@ -6,7 +5,6 @@
 #include <vector>
 #include <algorithm>
 
-using boost::multiprecision::cpp_int;
 using u64 = std::uint64_t;
 using u128 = __uint128_t;
 
@@ -21,19 +19,7 @@ static u64 T(u64 x) {
   return x/2;
 }
 
-static std::vector<u64> qmin_table(size_t H) {
-  std::vector<u64> qmin(H+1);
-  cpp_int p2=1,p3=1;
-  u64 q=0;
-  for(size_t j=0;j<=H;++j){
-    if(j>0) p2 <<= 1;
-    while(p3 < p2){ p3 *= 3; ++q; }
-    qmin[j]=q;
-  }
-  return qmin;
-}
-
-struct Rec {
+#include "collatz_qmin_4096.inc"\n\nstruct Rec {
   u64 n,entry_depth,entry_q,entry_y,exit_depth,exit_y;
 };
 
