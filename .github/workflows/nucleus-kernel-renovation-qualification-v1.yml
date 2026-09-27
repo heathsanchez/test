@@ -1,0 +1,253 @@
+name: Nucleus Kernel Renovation Qualification v1
+
+on:
+  push:
+    branches: [nucleus-kernel-renovation-eta-major-v1]
+    paths:
+      - ".github/workflows/nucleus-kernel-renovation-qualification-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  LEAN4EXPORT_SHA: 66f1fb4bc256072069767fce52d39480e4524869
+  FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+  ARENA_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Verify and build repaired Nucleus
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          bash -n scripts/nucleus-semantic-closure
+
+      - name: Install exporter toolchain
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0-rc3
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned lean4export
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/lean4export
+          git -C /tmp/lean4export checkout -q "$LEAN4EXPORT_SHA"
+          (cd /tmp/lean4export && lake build)
+          grep -F '# Lean 4 export format: version 3.1.0' /tmp/lean4export/format_ndjson.md
+
+      - name: Export eta-major positive and derive malformed neighbor
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          rm -rf /tmp/eta-major
+          mkdir -p /tmp/eta-major
+          cp metatron-kernel/evidence/kernel-renovation-eta-major/positive.lean /tmp/eta-major/EtaMajor.lean
+          cat >/tmp/eta-major/lean-toolchain <<'EOF'
+          leanprover/lean4:v4.35.0-rc3
+          EOF
+          cat >/tmp/eta-major/lakefile.toml <<'EOF'
+          name = "eta_major_fixture"
+
+          [[lean_lib]]
+          name = "EtaMajor"
+          EOF
+          (cd /tmp/eta-major && lake build EtaMajor)
+          (cd /tmp/eta-major && lake env /tmp/lean4export/.lake/build/bin/lean4export EtaMajor -- nucleusEtaMajor > positive.ndjson)
+          python3 - <<'PY'
+          import json, pathlib
+
+          src = pathlib.Path("/tmp/eta-major/positive.ndjson")
+          rows = [json.loads(line) for line in src.read_text().splitlines()]
+          assert rows[0]["meta"]["format"]["version"] == "3.1.0"
+
+          raw_names = {}
+          for row in rows:
+              if "in" not in row:
+                  continue
+              if "str" in row:
+                  raw_names[row["in"]] = ("str", row["str"]["pre"], row["str"]["str"])
+              elif "num" in row:
+                  raw_names[row["in"]] = ("num", row["num"]["pre"], str(row["num"]["i"]))
+
+          memo = {0: ""}
+          def full_name(i):
+              if i in memo:
+                  return memo[i]
+              kind, pre, suffix = raw_names[i]
+              prefix = full_name(pre)
+              value = suffix if not prefix else prefix + "." + suffix
+              memo[i] = value
+              return value
+
+          prod_ids = {i for i in raw_names if full_name(i) == "Prod"}
+          assert len(prod_ids) == 1
+          prod_id = next(iter(prod_ids))
+          candidates = [
+              row for row in rows
+              if "proj" in row
+              and row["proj"]["typeName"] == prod_id
+              and row["proj"]["idx"] == 0
+          ]
+          assert len(candidates) == 1, candidates
+          candidates[0]["proj"]["idx"] = 1
+          pathlib.Path("/tmp/eta-major/negative.ndjson").write_text(
+              "\n".join(json.dumps(row, separators=(",", ":")) for row in rows) + "\n"
+          )
+          print(json.dumps({
+              "format": rows[0]["meta"]["format"]["version"],
+              "records": len(rows),
+              "mutated_expr": candidates[0]["ie"],
+          }, sort_keys=True))
+          PY
+
+      - name: Strict eta-major compatibility gate
+        run: |
+          set -euo pipefail
+          NUCLEUS="$PWD/metatron-kernel/target/release/metatron-kernel"
+          set +e
+          "$NUCLEUS" </tmp/eta-major/positive.ndjson
+          pos=$?
+          "$NUCLEUS" </tmp/eta-major/negative.ndjson
+          neg=$?
+          set -e
+          echo "nucleus_eta_positive_rc=$pos"
+          echo "nucleus_eta_negative_rc=$neg"
+          test "$pos" -eq 0
+          test "$neg" -ne 0
+
+      - name: Build pinned Arena fallback
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$FLASH_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+
+      - name: Fetch exact protected 193-file Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/10712869614/zip > /tmp/test-tarball.zip
+          mkdir -p /tmp/test-artifact /tmp/arena-tests
+          unzip -q /tmp/test-tarball.zip -d /tmp/test-artifact
+          tar -xzf /tmp/test-artifact/lean-arena-tests.tar.gz -C /tmp/arena-tests
+          test "$(find /tmp/arena-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          sha256sum /tmp/test-artifact/lean-arena-tests.tar.gz
+
+      - name: Preserve exact Arena verdict boundary
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/kernel-renovation-qualification
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root=pathlib.Path('/tmp/arena-tests')
+          nucleus=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          wrapper=pathlib.Path('metatron-kernel/scripts/nucleus-semantic-closure').resolve()
+          flash=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
+          config=pathlib.Path('/tmp/mathgraph/config.json')
+          env=dict(os.environ)
+          env.update({
+              'NUCLEUS_BIN':str(nucleus),
+              'FLASH_BIN':str(flash),
+              'FLASH_CONFIG':str(config),
+          })
+
+          rows=[]
+          for directory, expected_rc in [('good',0),('bad',1)]:
+              for p in sorted((root/directory).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/directory)).removesuffix('.ndjson')
+                  def run(cmd):
+                      with p.open('rb') as f:
+                          return subprocess.run(
+                              cmd, stdin=f, stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL, env=env
+                          ).returncode
+                  nrc=run([str(nucleus)])
+                  frc=run([str(flash),str(config)])
+                  hrc=run(['bash',str(wrapper),str(p)])
+                  fcanon=0 if frc==0 else 1
+                  hcanon=0 if hrc==0 else 1
+                  rows.append({
+                      'test':name,'expected_rc':expected_rc,
+                      'nucleus_rc':nrc,'flash_raw_rc':frc,'flash_rc':fcanon,
+                      'hybrid_raw_rc':hrc,'hybrid_rc':hcanon,
+                  })
+
+          assert len(rows)==193
+          false_accept=[r for r in rows if r['expected_rc']==1 and r['nucleus_rc']==0]
+          false_reject=[r for r in rows if r['expected_rc']==0 and r['nucleus_rc']==1]
+          native_accept=[r for r in rows if r['expected_rc']==0 and r['nucleus_rc']==0]
+          native_reject=[r for r in rows if r['expected_rc']==1 and r['nucleus_rc']==1]
+          fallback=[r for r in rows if r['nucleus_rc'] in (2,3)]
+          flash_bad=[r for r in rows if r['flash_rc']!=r['expected_rc']]
+          hybrid_bad=[r for r in rows if r['hybrid_rc']!=r['expected_rc']]
+          routing_bad=[
+              r for r in rows
+              if (r['nucleus_rc'] in (0,1) and r['hybrid_raw_rc']!=r['nucleus_rc'])
+              or (r['nucleus_rc'] in (2,3) and r['hybrid_rc']!=r['flash_rc'])
+          ]
+
+          summary={
+              'schema':'nucleus-kernel-renovation-qualification-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'arena_sha':os.environ['ARENA_SHA'],
+              'flash_sha':os.environ['FLASH_SHA'],
+              'fixed_outcome_tests':len(rows),
+              'native_accept':len(native_accept),
+              'native_reject':len(native_reject),
+              'native_decisions':len(native_accept)+len(native_reject),
+              'fallback_invocations':len(fallback),
+              'false_accepts':false_accept,
+              'false_rejects':false_reject,
+              'flash_bad':flash_bad,
+              'hybrid_bad':hybrid_bad,
+              'routing_bad':routing_bad,
+          }
+          out=pathlib.Path('metatron-kernel/evidence-out/kernel-renovation-qualification/result.json')
+          out.write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,sort_keys=True))
+
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert not flash_bad, flash_bad
+          assert not hybrid_bad, hybrid_bad
+          assert not routing_bad, routing_bad
+          assert len(native_accept)==77, len(native_accept)
+          assert len(native_reject)==31, len(native_reject)
+          assert len(fallback)==85, len(fallback)
+          PY
+
+      - name: Upload qualification evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-kernel-renovation-qualification-${{ github.sha }}
+          path: metatron-kernel/evidence-out/kernel-renovation-qualification
+          if-no-files-found: warn
