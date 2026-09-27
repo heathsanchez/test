@@ -706,10 +706,8 @@ impl<'a> Machine<'a> {
                             return Some((bools.true_ctor, Vec::new()));
                         }
                         if std::env::var_os("NUCLEUS_TRACE_BINDING").is_some() {
-                            eprintln!(
-                                "NUCLEUS_BINDING_FREE:free={:?}:args={:?}",
-                                free, arguments
-                            );
+                            eprintln!("NUCLEUS_BINDING_FREE:free={:?}:args={:?}", free, arguments);
+
                         }
                         return None;
                     }
