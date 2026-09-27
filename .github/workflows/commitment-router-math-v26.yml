@@ -1,0 +1,21 @@
+name: Commitment Router Math V26
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  property-suite:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run frozen 14-test commitment router suite
+        run: python scripts/commitment_router_math_v26.py | tee commitment_router_math_v26_result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: commitment-router-math-v26
+          path: commitment_router_math_v26_result.json
