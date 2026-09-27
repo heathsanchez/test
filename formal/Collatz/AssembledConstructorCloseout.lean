@@ -101,6 +101,48 @@ theorem hard_large_previous_coefficient_gt_three_halves
   · change 3 * 2 ^ k < 2 * P
     exact Nat.lt_of_not_ge hcoef
 
+/-- A rigid large-source first crossing is not a persistent coefficient failure.
+The mod-12 signature forces two odd orbit steps after the crossing, while the
+large-source bias inequality puts the coefficient high enough that the first
+odd step already restores coefficient survival.  The second odd step preserves
+it. -/
+theorem hard_large_recovers_two_survival_steps
+    {n k : Nat}
+    (hn : 0 < n)
+    (hhard : HardFirstCrossing n k)
+    (hq : oddCount n (k + 1) < n)
+    (hmod : iter shortcut (k + 1) n % 12 = 7) :
+    CoefficientSurvives n (k + 2) ∧
+      CoefficientSurvives n (k + 3) := by
+  let y := iter shortcut (k + 1) n
+  have hband :=
+    hard_large_previous_coefficient_gt_three_halves hn hhard hq
+  have hsig : y % 3 = 1 ∧ y % 2 = 1 ∧ shortcut y % 2 = 1 :=
+    (scalar_large_signature_iff_mod12 y).2 (by simpa [y] using hmod)
+  have hyodd : y % 2 ≠ 0 := by omega
+  have hpowpos : 0 < 2 ^ k := Nat.pow_pos (by decide)
+  have hrestore :
+      4 * 2 ^ k ≤ 3 * 3 ^ oddCount n (k + 1) := by
+    omega
+  have hs1 : CoefficientSurvives n (k + 2) := by
+    apply (coefficientSurvives_succ_odd n (k + 1) ?_).2
+    · simpa [y] using hyodd
+    · simpa [coefficientDenominator, coefficientNumerator, Nat.pow_succ,
+        Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hrestore
+  have hnext :
+      iter shortcut (k + 2) n = shortcut y := by
+    simpa [y] using iter_succ_last n (k + 1)
+  have hnextodd : iter shortcut (k + 2) n % 2 ≠ 0 := by
+    rw [hnext]
+    omega
+  have hs2 : CoefficientSurvives n (k + 3) := by
+    apply (coefficientSurvives_succ_odd n (k + 2) hnextodd).2
+    unfold CoefficientSurvives at hs1
+    omega
+  exact ⟨hs1, hs2⟩
+
+#print axioms hard_large_recovers_two_survival_steps
+
 /-- Elementary exponential separation used to force a fixed source into
 the high-odd regime under eternal coefficient survival. -/
 theorem three_pow_lt_four_pow_succ (m : Nat) :
