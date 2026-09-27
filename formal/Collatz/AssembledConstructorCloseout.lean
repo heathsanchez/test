@@ -338,5 +338,7 @@ theorem reaches_one_of_two_constructor_domains
 #print axioms reaches_one_of_two_constructor_domains
 #print axioms reaches_one_of_assembled_constructor_coverage
 
+-- qualification retrigger: valuation pullback checked
+
 end SourceProduct
 end CollatzFinal
