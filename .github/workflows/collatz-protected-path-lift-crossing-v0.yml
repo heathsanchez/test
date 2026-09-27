@@ -1,0 +1,29 @@
+name: Collatz protected path lift crossing V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_protected_path_lift_crossing_v0.py'
+      - '.github/workflows/collatz-protected-path-lift-crossing-v0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lift:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Exact protected path lift
+        run: |
+          python -u experiments/collatz_protected_path_lift_crossing_v0.py --max-depth 64 --output evidence/collatz-protected-path-lift-crossing-v0/result.json
+      - name: Show certificate boundary
+        run: cat evidence/collatz-protected-path-lift-crossing-v0/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-protected-path-lift-crossing-v0
+          path: evidence/collatz-protected-path-lift-crossing-v0
+          if-no-files-found: error
