@@ -1,0 +1,58 @@
+name: Crystal Chess Relative Guard V6B
+
+on:
+  push:
+    branches:
+      - crystal-chess-cross-material-fast-v1
+    paths:
+      - ".github/workflows/crystal-chess-relative-guard-v6b.yml"
+  workflow_dispatch:
+
+jobs:
+  relative-transfer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Checkout pinned V6B source
+        run: |
+          git clone --depth 1 --branch crystal-chess-relative-guard-transfer-v6b https://github.com/metalogiclabs/mathgraph.git /tmp/mathgraph
+          cd /tmp/mathgraph
+          test "$(git rev-parse HEAD)" = "221338ad9d6a58c11d0d5f471db43d131de4048a"
+
+      - name: Install verifier dependencies
+        run: |
+          cd /tmp/mathgraph
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw > /tmp/SHA256SUMS
+
+      - name: Acquire b-c relative guards then test a-d prospectively
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph
+          mkdir -p /tmp/evidence
+          python experiments/crystal_chess_relative_guard_v6b.py             --tablebase-dir /tmp/syzygy             --min-support 8             --output /tmp/evidence/crystal_chess_relative_guard_v6b.json             | tee /tmp/evidence/run.log
+          grep -q "CRYSTAL_CHESS_RELATIVE_GUARD_V6B=PASS" /tmp/evidence/run.log
+          cp /tmp/SHA256SUMS /tmp/evidence/
+
+      - name: Upload V6B evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-relative-guard-v6b
+          path: /tmp/evidence/
+          if-no-files-found: error
