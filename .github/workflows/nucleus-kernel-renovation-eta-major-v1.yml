@@ -1,0 +1,278 @@
+name: Nucleus Kernel Renovation Eta Major v1
+
+on:
+  push:
+    branches: [nucleus-kernel-renovation-eta-major-v1]
+    paths:
+      - ".github/workflows/nucleus-kernel-renovation-eta-major-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-kernel-renovation-eta-major-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  LEAN_BASE_SHA: 0518648ae8883a689da564b7bb0c9db7e4e706c7
+  LEAN_PR_SHA: edbdc1e966191b7c300fad2b0457b9a5000ece55
+  LEAN4EXPORT_SHA: 66f1fb4bc256072069767fce52d39480e4524869
+  FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+  EXPORT_FORMAT: 3.1.0
+
+jobs:
+  official-kernel:
+    name: Official kernel ${{ matrix.label }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: base-before-15351
+            repository: leanprover/lean4
+            ref: 0518648ae8883a689da564b7bb0c9db7e4e706c7
+          - label: pr-15351-head
+            repository: arthur-adjedj/lean4
+            ref: edbdc1e966191b7c300fad2b0457b9a5000ece55
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: harness
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.repository }}
+          ref: ${{ matrix.ref }}
+          path: lean4
+      - name: Build exact Lean kernel
+        working-directory: lean4
+        run: |
+          set -euo pipefail
+          cmake --preset release -DUSE_GMP=OFF
+          make -C build/release -j2
+      - name: Check eta-major positive and malformed neighbor
+        run: |
+          set -euo pipefail
+          LEAN="$PWD/lean4/build/release/stage1/bin/lean"
+          POS="$PWD/harness/metatron-kernel/evidence/kernel-renovation-eta-major/positive.lean"
+          NEG="$PWD/harness/metatron-kernel/evidence/kernel-renovation-eta-major/negative.lean"
+          "$LEAN" "$POS"
+          set +e
+          "$LEAN" "$NEG" >/tmp/negative.out 2>/tmp/negative.err
+          neg_rc=$?
+          set -e
+          test "$neg_rc" -ne 0
+          mkdir -p harness/metatron-kernel/evidence-out/kernel-renovation-eta-major
+          python3 - <<PY
+          import json, os, pathlib
+          out = {
+              "schema": "nucleus-kernel-renovation-eta-major-v1",
+              "kernel_label": "${{ matrix.label }}",
+              "lean_sha": "${{ matrix.ref }}",
+              "positive": "accept",
+              "negative": "reject",
+              "negative_rc": int("$neg_rc"),
+              "lean_base_sha": os.environ["LEAN_BASE_SHA"],
+              "lean_pr_sha": os.environ["LEAN_PR_SHA"],
+          }
+          p = pathlib.Path("harness/metatron-kernel/evidence-out/kernel-renovation-eta-major/official-${{ matrix.label }}.json")
+          p.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(out, sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: official-kernel-${{ matrix.label }}-${{ github.sha }}
+          path: harness/metatron-kernel/evidence-out/kernel-renovation-eta-major
+          if-no-files-found: warn
+
+  nucleus-export-differential:
+    name: NDJSON 3.1.0 / Nucleus differential
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Build exact Nucleus branch state
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Install exporter toolchain
+        run: |
+          set -euo pipefail
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh | sh -s -- -y --default-toolchain leanprover/lean4:v4.35.0-rc3
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Build pinned lean4export
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          git clone -q https://github.com/leanprover/lean4export /tmp/lean4export
+          git -C /tmp/lean4export checkout -q "$LEAN4EXPORT_SHA"
+          (cd /tmp/lean4export && lake build)
+          grep -F '# Lean 4 export format: version 3.1.0' /tmp/lean4export/format_ndjson.md
+
+      - name: Export exact eta-major fixture
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.elan/bin:$PATH"
+          rm -rf /tmp/eta-major
+          mkdir -p /tmp/eta-major
+          cp metatron-kernel/evidence/kernel-renovation-eta-major/positive.lean /tmp/eta-major/EtaMajor.lean
+          cat >/tmp/eta-major/lean-toolchain <<'EOF'
+          leanprover/lean4:v4.35.0-rc3
+          EOF
+          cat >/tmp/eta-major/lakefile.toml <<'EOF'
+          name = "eta_major_fixture"
+
+          [[lean_lib]]
+          name = "EtaMajor"
+          EOF
+          (cd /tmp/eta-major && lake build EtaMajor)
+          (cd /tmp/eta-major && lake env /tmp/lean4export/.lake/build/bin/lean4export EtaMajor -- nucleusEtaMajor > positive.ndjson)
+          python3 - <<'PY'
+          import json, pathlib
+          p = pathlib.Path("/tmp/eta-major/positive.ndjson")
+          rows = [json.loads(line) for line in p.read_text().splitlines()]
+          assert rows[0]["meta"]["format"]["version"] == "3.1.0"
+          print(json.dumps({
+              "records": len(rows),
+              "format": rows[0]["meta"]["format"]["version"],
+              "lean": rows[0]["meta"]["lean"],
+          }, sort_keys=True))
+          PY
+
+      - name: Derive malformed neighboring NDJSON control
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import json, pathlib
+
+          src = pathlib.Path("/tmp/eta-major/positive.ndjson")
+          rows = [json.loads(line) for line in src.read_text().splitlines()]
+
+          raw_names = {}
+          for row in rows:
+              if "in" not in row:
+                  continue
+              if "str" in row:
+                  raw_names[row["in"]] = ("str", row["str"]["pre"], row["str"]["str"])
+              elif "num" in row:
+                  raw_names[row["in"]] = ("num", row["num"]["pre"], str(row["num"]["i"]))
+
+          memo = {0: ""}
+          def full_name(i):
+              if i in memo:
+                  return memo[i]
+              kind, pre, suffix = raw_names[i]
+              prefix = full_name(pre)
+              value = suffix if not prefix else prefix + "." + suffix
+              memo[i] = value
+              return value
+
+          prod_ids = {i for i in raw_names if full_name(i) == "Prod"}
+          assert len(prod_ids) == 1, prod_ids
+          prod_id = next(iter(prod_ids))
+
+          candidates = [
+              row for row in rows
+              if "proj" in row
+              and row["proj"]["typeName"] == prod_id
+              and row["proj"]["idx"] == 0
+          ]
+          assert candidates, "expected a Prod.fst projection in target definition"
+          victim = max(candidates, key=lambda row: row["ie"])
+          victim["proj"]["idx"] = 1
+
+          dst = pathlib.Path("/tmp/eta-major/negative.ndjson")
+          dst.write_text("\n".join(json.dumps(row, separators=(",", ":")) for row in rows) + "\n")
+          print(json.dumps({
+              "mutation": "Prod projection idx 0 -> 1",
+              "expr_id": victim["ie"],
+              "candidate_count": len(candidates),
+          }, sort_keys=True))
+          PY
+
+      - name: Build pinned MathGraph fallback
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$FLASH_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+
+      - name: Run Nucleus and fallback differential
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/kernel-renovation-eta-major
+          NUCLEUS="$PWD/metatron-kernel/target/release/metatron-kernel"
+          FLASH="/tmp/mathgraph/target/release/sokonanoda"
+          CONFIG="/tmp/mathgraph/config.json"
+
+          set +e
+          "$NUCLEUS" </tmp/eta-major/positive.ndjson
+          nucleus_pos=$?
+          "$NUCLEUS" </tmp/eta-major/negative.ndjson
+          nucleus_neg=$?
+          "$FLASH" "$CONFIG" </tmp/eta-major/positive.ndjson
+          flash_pos_raw=$?
+          "$FLASH" "$CONFIG" </tmp/eta-major/negative.ndjson
+          flash_neg_raw=$?
+          set -e
+
+          # MathGraph uses 0 for accept and nonzero for non-accept.
+          test "$flash_pos_raw" -eq 0
+          test "$flash_neg_raw" -ne 0
+          # Safety control: Nucleus must never accept the malformed neighbor.
+          test "$nucleus_neg" -ne 0
+
+          cp /tmp/eta-major/positive.ndjson metatron-kernel/evidence-out/kernel-renovation-eta-major/positive.ndjson
+          cp /tmp/eta-major/negative.ndjson metatron-kernel/evidence-out/kernel-renovation-eta-major/negative.ndjson
+
+          python3 - <<PY
+          import json, os, pathlib
+          out = {
+              "schema": "nucleus-kernel-renovation-eta-major-v1",
+              "candidate_sha": os.environ["GITHUB_SHA"],
+              "lean_base_sha": os.environ["LEAN_BASE_SHA"],
+              "lean_pr_sha": os.environ["LEAN_PR_SHA"],
+              "lean4export_sha": os.environ["LEAN4EXPORT_SHA"],
+              "export_format": os.environ["EXPORT_FORMAT"],
+              "flash_sha": os.environ["FLASH_SHA"],
+              "nucleus_positive_rc": int("$nucleus_pos"),
+              "nucleus_negative_rc": int("$nucleus_neg"),
+              "flash_positive_raw_rc": int("$flash_pos_raw"),
+              "flash_negative_raw_rc": int("$flash_neg_raw"),
+              "nucleus_positive_accepts": int("$nucleus_pos") == 0,
+              "malformed_neighbor_nonaccept": int("$nucleus_neg") != 0,
+          }
+          p = pathlib.Path("metatron-kernel/evidence-out/kernel-renovation-eta-major/differential.json")
+          p.write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(out, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-kernel-renovation-eta-major-${{ github.sha }}
+          path: metatron-kernel/evidence-out/kernel-renovation-eta-major
+          if-no-files-found: warn
