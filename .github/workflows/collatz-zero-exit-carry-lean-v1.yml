@@ -1,0 +1,36 @@
+name: Collatz Crystal zero-exit carry Lean V1
+on:
+  push:
+    branches: [collatz-crystal-zero-exit-carry-v1]
+    paths:
+      - 'formal/Collatz/CarryProgress.lean'
+      - '.github/workflows/collatz-zero-exit-carry-lean-v1.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lean-carry:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Reject proof placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/CarryProgress.lean
+      - name: Check fixed-source carry lemmas
+        run: |
+          set -euo pipefail
+          lake env lean formal/Collatz/CarryProgress.lean | tee carry-progress.log
+          ! grep -q 'sorryAx' carry-progress.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-zero-exit-carry-lean-v1
+          path: carry-progress.log
+          retention-days: 90
