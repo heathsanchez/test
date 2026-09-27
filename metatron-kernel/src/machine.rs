@@ -385,8 +385,8 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             let observed_target = self
-                                .constructor_application(target)
-                                .or_else(|| self.observe_bool_constructor(target, budget));
+                                .observe_bool_constructor(target, budget)
+                                .or_else(|| self.constructor_application(target));
                             if observed_target.is_none()
                                 && std::env::var_os("NUCLEUS_TRACE_BOOL_TARGET").is_some()
                                 && self.bool_primitives.is_some()
