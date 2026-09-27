@@ -13,6 +13,11 @@ lean_lib CollatzFinal where
     `Collatz.Shortcut,
     `Collatz.Squeeze,
     `Collatz.SourceProduct,
+    `Collatz.SourceProductAffine,
+    `Collatz.CoefficientCrossing,
+    `Collatz.CoefficientDynamics,
+    `Collatz.SurvivalDeficit,
+    `Collatz.FirstCrossingRigidity,
     `Collatz.FixedSourceProgress,
     `Collatz.CoalescenceDescent,
     `Collatz.FinalExcursionContraction
