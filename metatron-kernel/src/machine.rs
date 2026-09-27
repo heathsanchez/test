@@ -449,8 +449,9 @@ impl<'a> Machine<'a> {
                                         level_substitution.into_iter().collect::<Vec<_>>();
                                     level_substitution.sort_by_key(|(name, _)| name.0);
                                     pending.truncate(offset);
-                                    for argument in rule_arguments.iter().rev() {
-                                        pending.push(argument.clone());
+                                    let mut rule_env = EnvFrame::empty();
+                                    for argument in &rule_arguments {
+                                        rule_env = rule_env.extend(argument.clone());
                                     }
                                     record_transition(
                                         &mut transitions,
@@ -460,7 +461,7 @@ impl<'a> Machine<'a> {
                                     visited.clear();
                                     closure = Closure::with_levels(
                                         rule.rhs,
-                                        EnvFrame::empty(),
+                                        rule_env,
                                         LevelSubstitution::new(level_substitution),
                                     );
                                     continue;
