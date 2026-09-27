@@ -185,6 +185,64 @@ theorem minimal_bad_large_crossing_not_mod48_nineteen
     omega
   exact hznot hz5
 
+/-- Pushing the same source-anchored valuation barrier through the second
+forced odd step removes a second 2-adic refinement: y = 55 mod 96 would put
+the depth-(k+3) value in residue 5 mod 8 while it is still at most 3*n. -/
+theorem minimal_bad_large_crossing_not_mod96_fiftyfive
+    {n k : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hfirst : FirstCoefficientCrossingAt n (k + 1))
+    (hq : oddCount n (k + 1) < n) :
+    iter shortcut (k + 1) n % 96 ≠ 55 := by
+  let y := iter shortcut (k + 1) n
+  let z := iter shortcut (k + 2) n
+  let w := iter shortcut (k + 3) n
+  have hsig :=
+    minimal_bad_hard_crossing_large_source_signature hmin hfirst hq
+  have hyodd : y % 2 ≠ 0 := by
+    have hy : y % 2 = 1 := by
+      simpa [y] using hsig.2.1
+    omega
+  have hzodd : z % 2 ≠ 0 := by
+    have hz : shortcut y % 2 = 1 := hsig.2.2
+    have hzy : z = shortcut y := by
+      dsimp [z, y]
+      exact iter_succ_last n (k + 1)
+    rw [hzy]
+    omega
+  have hzrel : 2 * z = 3 * y + 1 := by
+    have hs := iter_succ_last n (k + 1)
+    have hd := double_shortcut y
+    rw [if_neg hyodd] at hd
+    dsimp [z]
+    rw [hs]
+    simpa [y] using hd
+  have hwrel : 2 * w = 3 * z + 1 := by
+    have hs := iter_succ_last n (k + 2)
+    have hd := double_shortcut z
+    rw [if_neg hzodd] at hd
+    dsimp [w]
+    rw [hs]
+    simpa [z] using hd
+  have hwin : 3 * y < 4 * n := by
+    simpa [y] using
+      first_crossing_three_y_lt_four_n hmin.1.1 hfirst hq
+  have hwlt : w < 4 * n + 1 := by
+    have hn : 0 < n := hmin.1.1
+    omega
+  have hwnot : w % 8 ≠ 5 := by
+    simpa [w] using
+      minimal_bad_below_four_source_not_mod8_five
+        (j := k + 3) hmin (by simpa [w] using hwlt)
+  intro h55
+  have hy55 : y % 96 = 55 := by
+    simpa [y] using h55
+  have hw5 : w % 8 = 5 := by
+    omega
+  exact hwnot hw5
+
+#print axioms minimal_bad_large_crossing_not_mod96_fiftyfive
+
 #print axioms minimal_bad_large_crossing_not_mod48_nineteen
 
 #print axioms minimal_bad_ownerLift_owner_ge
