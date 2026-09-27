@@ -1,0 +1,35 @@
+name: Collatz q14 ratio robust audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_hard_endpoint_q14_ratio_audit.py'
+      - 'experiments/collatz_reverse_predecessor_tree.py'
+      - '.github/workflows/collatz-q14-ratio-robust-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run exact ratio-robust q14 audit
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-q14-ratio-robust-audit
+          cd experiments
+          python -u collatz_hard_endpoint_q14_ratio_audit.py | tee ../evidence/collatz-q14-ratio-robust-audit/result.txt
+          cd ..
+          grep -q 'DECISION Q14_RATIO_ROBUST_REVERSE_BANK_FAR_FROM_COMPLETE' evidence/collatz-q14-ratio-robust-audit/result.txt
+          git rev-parse HEAD > evidence/collatz-q14-ratio-robust-audit/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-q14-ratio-robust-audit
+          path: evidence/collatz-q14-ratio-robust-audit
+          if-no-files-found: error
