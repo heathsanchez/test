@@ -1,7 +1,7 @@
-name: Collatz Crystal Source Equality Escape V1
+name: Collatz Crystal Source Carry Realizability V1
 on:
   push:
-    branches: [collatz-crystal-source-equality-escape-v1]
+    branches: [collatz-crystal-source-carry-realizability-v1]
     paths: ['experiments/collatz_crystal_carry_campaign_v1.py','experiments/test_collatz_crystal_carry_campaign_v1.py','.github/workflows/collatz-crystal-carry-campaign-v1.yml']
   workflow_dispatch:
 permissions: {contents: read}
@@ -19,6 +19,7 @@ jobs:
           python -u experiments/collatz_crystal_carry_campaign_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/result.json
           python -u experiments/collatz_crystal_macro_productivity_adaptive_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/productivity.json
           python -u experiments/collatz_crystal_source_equality_escape_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/source-equality-escape.json
+          python -u experiments/collatz_crystal_source_carry_realizability_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/source-carry-realizability.json
           python -u experiments/collatz_crystal_equality_credit_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/equality-credit.json
           python -u experiments/collatz_crystal_two_equality_symbolic_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/two-equality-symbolic.json
           python -u experiments/collatz_crystal_two_equality_integer_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/two-equality-integer.json
