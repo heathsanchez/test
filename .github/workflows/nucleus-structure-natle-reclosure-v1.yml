@@ -113,7 +113,7 @@ jobs:
               rc,stderr=rr(cand,p,True)
               marks=[
                   line for line in stderr.splitlines()
-                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line
+                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line or 'NUCLEUS_IMAX ' in line
               ]
               traces.append({'test':name,'expected':expected,'rc':rc,'marks':marks})
 
