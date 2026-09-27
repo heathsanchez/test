@@ -2,7 +2,7 @@ name: Nucleus Crystal dynamic fixed point v2
 on:
   push:
     branches: [nucleus-dependency-closure-exec-v1]
-    paths: [".github/workflows/nucleus-crystal-dynamic-fixed-point-v2.yml"]
+    paths: [".github/workflows/nucleus-crystal-dynamic-fixed-point-v2.yml", "metatron-kernel/src/**"]
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
@@ -29,7 +29,7 @@ jobs:
             'reject:posthoc-neutral','reject:global-recursor-env','reject:p3-live-route',
             'reject:broad-pi','reject:old-bank','reject:raw-proven-type-cache'
           ])
-          env=os.environ.copy(); env.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1',NUCLEUS_TRACE_GENERIC_CHECK='1')
+          env=os.environ.copy(); env.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1',NUCLEUS_TRACE_GENERIC_CHECK='1',NUCLEUS_TRACE_BINDING='1')
           rows=[]
           for p in sorted(root.rglob('*.ndjson')):
             expected=0 if p.relative_to(root).parts[0]=='good' else 1
@@ -45,6 +45,7 @@ jobs:
             # Observation bank. Coordinates already rejected as identity are absent.
             obs={}
             obs['down']=down; obs['app']=app; obs['conv']=conv
+            obs['binding_normalized']=tuple(sorted(set(re.findall(r'NUCLEUS_BINDING_FREE:free=([^:]+):args=.*?:normalized=([^\\n]+)',log))))
             obs['proven_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'PROVEN' in e).items()))
             obs['unknown_multiset']=tuple(sorted(collections.Counter(re.sub(r'depth=\d+','depth=*',e) for e in gen if 'UNKNOWN' in e).items()))
             obs['depth_language']=tuple(sorted(set(re.findall(r'depth=(\d+)', '\n'.join(gen)))))
@@ -52,7 +53,7 @@ jobs:
             rows.append({'path':str(p.relative_to(root)),'expected':expected,'obs':obs})
           assert len(rows)==40,len(rows)
 
-          active=['down','app','conv','proven_multiset']
+          active=['down','app','conv','proven_multiset','binding_normalized']
           rejected=set()
           history=[]
           previous_semantic=None
