@@ -1,0 +1,56 @@
+name: Nucleus Crystal residual quotient v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-residual-quotient-v1.yml"]
+permissions: {contents: read}
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Compile protected residual quotient
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          rows=[]
+          env0=os.environ.copy()
+          env0.update(NUCLEUS_TRACE_DOWNSTREAM='1',NUCLEUS_TRACE_APPLICATION_INFER='1',NUCLEUS_TRACE_CONVERSION='1',NUCLEUS_TRACE_POST_CAPABILITY='1')
+          for p in sorted(root.rglob('*.ndjson')):
+            kind=p.relative_to(root).parts[0]; expected=0 if kind=='good' else 1
+            with p.open('rb') as f:
+              try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env0)
+              except subprocess.TimeoutExpired: rows.append((str(p.relative_to(root)),expected,124,'timeout',[])); continue
+            if q.returncode!=2: continue
+            log=q.stderr.decode(errors='replace')
+            downstream=re.findall(r'NUCLEUS_DOWNSTREAM:name=([^:]*):stage=([^:]*):verdict=UNKNOWN:reason=([^\n]+)',log)
+            app=re.findall(r'NUCLEUS_APP_INFER:unknown:([^:]+):fun_expr=ExprId\((\d+)\)',log)
+            conv=re.findall(r'NUCLEUS_CONV_HEAD_MISMATCH left=(.*?) right=(.*?) left_spine=(\d+) right_spine=(\d+)',log)
+            # Protected signature deliberately drops expr IDs, env IDs and declaration names.
+            sig={
+              'downstream':sorted(set((stage,reason) for _,stage,reason in downstream)),
+              'app':sorted(set(reason for reason,_ in app)),
+              'conv':sorted(set((re.sub(r'NameId\(\d+\)','NameId(*)',l),re.sub(r'NameId\(\d+\)','NameId(*)',r),int(ls),int(rs)) for l,r,ls,rs in conv)),
+            }
+            rows.append((str(p.relative_to(root)),expected,q.returncode,json.dumps(sig,sort_keys=True),downstream[-4:]))
+          unknown=[x for x in rows if x[2]==2]
+          groups=collections.defaultdict(list)
+          for x in unknown: groups[x[3]].append(x[0])
+          out={'unknown_count':len(unknown),'class_count':len(groups),'classes':[{'size':len(v),'members':v,'signature':json.loads(k)} for k,v in sorted(groups.items(),key=lambda kv:(-len(kv[1]),kv[0]))]}
+          pathlib.Path('/tmp/nucleus-crystal-residual-quotient.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          assert len(unknown)==40
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-residual-quotient-v1
+          path: /tmp/nucleus-crystal-residual-quotient.json
