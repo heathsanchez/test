@@ -130,6 +130,23 @@ jobs:
           pathlib.Path(
               'metatron-kernel/evidence-out/structure-natle-reclosure-v1/result.json'
           ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          # Fin source census: representation only, zero semantic authority.
+          def name_table(p):
+              names={}
+              records=[]
+              for raw in p.read_text().splitlines():
+                  try:o=json.loads(raw)
+                  except Exception:continue
+                  records.append(o)
+                  if isinstance(o.get('in'),int):
+                      if 'str' in o:names[o['in']]=(o['str']['pre'],o['str']['str'])
+                      elif 'num' in o:names[o['in']]=(o['num']['pre'],str(o['num']['i']))
+              def full(i):
+                  parts=[];seen=set()
+                  while i in names and i not in seen:
+                      seen.add(i);pre,part=names[i];parts.append(part);i=pre
+                  return '.'.join(reversed(parts))
+              return records,full
           # Exact Fin telescope decoder: recursively retain only the reachable
           # expression graph for type / constructor / recursor / rule.
           def expr_map(p):
@@ -165,23 +182,6 @@ jobs:
               fin_exact.append({'test':name,'roots':roots,'exprs':{str(i):em[i] for i in sorted(seen)}})
           pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/fin-exact.json').write_text(json.dumps(fin_exact,indent=2,sort_keys=True)+'\n')
           print('FIN_EXACT',json.dumps(fin_exact,sort_keys=True))
-          # Fin source census: representation only, zero semantic authority.
-          def name_table(p):
-              names={}
-              records=[]
-              for raw in p.read_text().splitlines():
-                  try:o=json.loads(raw)
-                  except Exception:continue
-                  records.append(o)
-                  if isinstance(o.get('in'),int):
-                      if 'str' in o:names[o['in']]=(o['str']['pre'],o['str']['str'])
-                      elif 'num' in o:names[o['in']]=(o['num']['pre'],str(o['num']['i']))
-              def full(i):
-                  parts=[];seen=set()
-                  while i in names and i not in seen:
-                      seen.add(i);pre,part=names[i];parts.append(part);i=pre
-                  return '.'.join(reversed(parts))
-              return records,full
           fin_census=[]
           for kind,name,_ in targets[:2]:
               p=root/kind/(name+'.ndjson')
