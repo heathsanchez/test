@@ -22,6 +22,7 @@ jobs:
           python -u experiments/collatz_crystal_two_equality_symbolic_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/two-equality-symbolic.json
           python -u experiments/collatz_crystal_two_equality_integer_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/two-equality-integer.json
           python -u experiments/collatz_crystal_carry_realization_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/carry-realization.json
+          python -u experiments/collatz_crystal_equality_local_law_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/equality-local-law.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
