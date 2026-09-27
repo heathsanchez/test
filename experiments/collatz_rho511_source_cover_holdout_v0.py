@@ -66,3 +66,5 @@ out={
 }
 print(json.dumps(out,indent=2))
 if bad: raise SystemExit(1)
+
+# Qualification trigger: 24-bit holdout after workflow installation.
