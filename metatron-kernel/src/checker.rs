@@ -6023,6 +6023,7 @@ fn install_certified_recursor_reduction(
         num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
         level_params: recursor.level_params.clone(),
         rules,
+        k_index_parameter_pairs: Vec::new(),
     };
     environment
         .install_recursor_reduction(recursor.name, reduction)
@@ -7562,6 +7563,7 @@ fn check_binary_enum(
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
             level_params: recursor.level_params.clone(),
             rules,
+        k_index_parameter_pairs: Vec::new(),
         };
         let environment = environment
             .install_recursor_reduction(recursor.name, reduction)
@@ -8147,6 +8149,11 @@ impl ExactBinaryProductDerivation<'_> {
                         .map_err(|_| Verdict::Reject)?,
                     rhs: rule.rhs,
                 }],
+                k_index_parameter_pairs: if matches!(self.law, BinaryProductSortLaw::Eq { .. }) {
+                    vec![(0, 1)]
+                } else {
+                    Vec::new()
+                },
             };
             environment
                 .install_recursor_reduction(self.recursor.name, reduction)
