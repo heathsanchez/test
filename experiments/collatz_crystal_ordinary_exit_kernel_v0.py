@@ -56,3 +56,5 @@ def main():
                 "rows":len(rows),"claim_boundary":"bounded actual source paths; lower merges exact only within source<=N and forward depth<=K; global Collatz UNKNOWN"})
     print(json.dumps(out,indent=2,default=repr))
 if __name__=="__main__": main()
+
+# qualification trigger after workflow installation
