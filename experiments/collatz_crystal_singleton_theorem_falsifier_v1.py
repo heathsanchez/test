@@ -24,12 +24,12 @@ for m in range(1,BITS+1):
   if z is None:
    bad.append({"m":m,"j":j,"source":n,"kind":"unresolved"});continue
   maxwait=max(maxwait,z[0]-j)
-  if z[1]>=n:
+  if n != 1 and z[1]>=n:
    bad.append({"m":m,"j":j,"source":n,"kind":"nondescending","crossing":z})
 result={"schema":"COLLATZ_CRYSTAL_SINGLETON_THEOREM_FALSIFIER_V1",
  "singleton_states":states,"unique_sources":len(uniq),"max_wait":maxwait,
  "violations":len(bad),"first_violations":bad[:30],
- "candidate":"P_j(2^m)=1 implies unique live source has finite descending first coefficient crossing",
+ "candidate":"P_j(2^m)=1 implies unique live source has terminal exit or finite descending first coefficient crossing",
  "status":"BOUNDED_SINGLETON_LAW" if not bad else "SINGLETON_SEPARATOR_REQUIRED",
  "universal":"NOT_PROVED","global_collatz":"UNKNOWN"}
 print(json.dumps(result,indent=2))
