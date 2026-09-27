@@ -1,0 +1,17 @@
+name: Collatz Low Alphabet Zero Carry
+on:
+  push:
+    branches: [collatz-three-quarter-future7-cylinder-v0]
+jobs:
+  carry:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python experiments/collatz_low_alphabet_zero_carry_v0.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-low-alphabet-zero-carry-v0
+          path: /tmp/result.json
