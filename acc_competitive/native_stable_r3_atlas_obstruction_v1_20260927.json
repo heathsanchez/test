@@ -1,0 +1,69 @@
+{
+  "schema": "acc-native-stable-r3-atlas-obstruction-v1",
+  "utc": "2026-09-27T15:58:00Z",
+  "epistemic_status": "CANDIDATE_BOUNDED_LOCAL",
+  "official_semantics_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+  "proof_atlas": {
+    "artifact_id": 10589688184,
+    "states": 433272
+  },
+  "live_authority": {
+    "run_id": 36324166275,
+    "artifact_id": 10935043204,
+    "snapshot_utc": "2026-09-27T15:41:45.681904+00:00",
+    "state_sha256": "4e396f13d50d0a4598b1f290bb039f454d20749dd752b258e0d2eb18277ac3f7",
+    "quota_used": 0,
+    "quota_limit": 40
+  },
+  "empirical_phase": {
+    "interval_start_utc": "2026-09-27T13:57:11.347830+00:00",
+    "interval_end_utc": "2026-09-27T15:41:45.681904+00:00",
+    "ac_strict_shortenings": 2,
+    "stable_strict_shortenings": 20,
+    "strongest_new_native_stable_gaps": [
+      {
+        "id": "03684",
+        "ac_best": 304,
+        "stable_best": 292,
+        "gap": -12
+      },
+      {
+        "id": "01678",
+        "ac_best": 163,
+        "stable_best": 156,
+        "gap": -7
+      },
+      {
+        "id": "03343",
+        "ac_best": 171,
+        "stable_best": 166,
+        "gap": -5
+      }
+    ]
+  },
+  "experiment": {
+    "targets": [
+      "03684",
+      "07606",
+      "01678",
+      "03343",
+      "02537",
+      "02344",
+      "02006"
+    ],
+    "target_rule": "seven largest live Stable<AC gaps, all magnitude >=5",
+    "boundary": "exactly one stabilization; at most four arbitrary applicable rank-3 non-rank-changing official moves; exactly one legal destabilization back to rank 2; then exact 433272-state Proof Atlas contact. Also checked the 16-element signed-generator/relator-swap Atlas orbit quotient.",
+    "rank3_move_count": 33,
+    "per_target_unique_rank3_states_approx": 303590,
+    "aggregate_unique_rank3_states": 2125124,
+    "aggregate_legal_rank2_returns": 101331,
+    "exact_atlas_contacts": 0,
+    "orbit_atlas_contacts": 0,
+    "candidates": 0
+  },
+  "consequence": "The current Stable-native record wave is not explained by a short stabilization detour that returns to the existing rank-2 Proof Atlas, even modulo the existing 16-way Atlas symmetry quotient. Retire local return-to-rank2 handle macros at this boundary. The next justified representation is persistent rank-3 continuation / a Stable-native future quotient, not more AC+2 transport, GS-Sub, free-face radius expansion, or shallow handle reconnect.",
+  "publication": {
+    "submission_attempted": false,
+    "quota_consumed": 0
+  }
+}
