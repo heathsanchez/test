@@ -1,0 +1,29 @@
+name: Collatz Crystal owner-frontier cycles V1
+on:
+  push:
+    branches: [collatz-crystal-owner-frontier-cycles-v1]
+    paths:
+      - 'experiments/collatz_crystal_owner_frontier_cycles_v1.py'
+      - '.github/workflows/collatz-crystal-owner-frontier-cycles-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  cycles:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run stateful Crystal cycles
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-owner-frontier-cycles-v1
+          python -u experiments/collatz_crystal_owner_frontier_cycles_v1.py | tee evidence/collatz-crystal-owner-frontier-cycles-v1/result.json
+          grep -q '"universal_status": "UNKNOWN"' evidence/collatz-crystal-owner-frontier-cycles-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-owner-frontier-cycles-v1
+          path: evidence/collatz-crystal-owner-frontier-cycles-v1
+          if-no-files-found: error
