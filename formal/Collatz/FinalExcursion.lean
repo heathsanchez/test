@@ -1,4 +1,4 @@
-import Collatz.FirstCrossingGap
+import Std
 
 namespace CollatzFinal
 namespace SourceProduct
