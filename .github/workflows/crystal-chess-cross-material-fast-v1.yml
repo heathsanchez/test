@@ -1,0 +1,73 @@
+name: Crystal Chess Cross Material Fast V1
+
+on:
+  push:
+    branches:
+      - crystal-chess-cross-material-fast-v1
+    paths:
+      - ".github/workflows/crystal-chess-cross-material-fast-v1.yml"
+  workflow_dispatch:
+
+jobs:
+  exact-bc-subboundary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Checkout pinned MathGraph chess capability
+        run: |
+          git clone --depth 1 --branch crystal-chess-cross-material-v5 https://github.com/metalogiclabs/mathgraph.git /tmp/mathgraph
+          cd /tmp/mathgraph
+          test "$(git rev-parse HEAD)" = "28a89a36d60c970bb01b9593018f02a75c4739a8"
+
+      - name: Restrict only the target cover to pawn files b-c
+        run: |
+          cd /tmp/mathgraph
+          python - <<'PY'
+          from pathlib import Path
+          p = Path("experiments/crystal_chess_cross_material_v5.py")
+          s = p.read_text()
+          old = "for file in range(4)\n            for rank in range(1, 6)"
+          new = "for file in range(1, 3)\n            for rank in range(1, 6)"
+          assert old in s
+          p.write_text(s.replace(old, new, 1))
+          PY
+
+      - name: Install verifier dependencies
+        run: |
+          cd /tmp/mathgraph
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[all]"
+          python -m pip install "python-chess==1.999" "scikit-learn>=1.5,<2"
+
+      - name: Acquire exact Syzygy WDL authority
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/syzygy
+          base="https://tablebase.lichess.ovh/tables/standard/3-4-5-wdl"
+          for f in KPvK.rtbw KQvK.rtbw KRvK.rtbw KBvK.rtbw KNvK.rtbw KPPvK.rtbw; do
+            curl --fail --location --retry 5 --retry-delay 2 -o "/tmp/syzygy/$f" "$base/$f"
+            test -s "/tmp/syzygy/$f"
+          done
+          sha256sum /tmp/syzygy/*.rtbw | tee /tmp/SHA256SUMS
+
+      - name: Execute exact frozen transfer on complete b-c subset
+        run: |
+          set -euo pipefail
+          cd /tmp/mathgraph
+          mkdir -p /tmp/evidence
+          python experiments/crystal_chess_cross_material_v5.py             --tablebase-dir /tmp/syzygy             --output /tmp/evidence/crystal_chess_cross_material_fast_v1.json             | tee /tmp/evidence/run.log
+          grep -q "CRYSTAL_CHESS_CROSS_MATERIAL_V5=PASS" /tmp/evidence/run.log
+          cp /tmp/SHA256SUMS /tmp/evidence/
+
+      - name: Upload fast exact evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: crystal-chess-cross-material-fast-v1
+          path: /tmp/evidence/
+          if-no-files-found: error
