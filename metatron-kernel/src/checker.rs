@@ -1815,7 +1815,14 @@ fn generic_unary_structure_recursor_shape(
         fail!("rule-telescope");
     };
     if rule_domains[..p] != ind_params[..] {
-        fail!("rule-parameters");
+        if trace_p3 {
+            eprintln!(
+                "NUCLEUS_P3_POST_PARAM:name={}:stage=rule-parameters-shadow-pass",
+                inductive.name.0
+            );
+        } else {
+            fail!("rule-parameters");
+        }
     }
     if rule_domains[p] != motive {
         fail!("rule-motive");
