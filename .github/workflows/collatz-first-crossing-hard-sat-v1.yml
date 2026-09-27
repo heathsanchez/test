@@ -1,0 +1,31 @@
+name: Collatz Hard First-Crossing SAT V1
+on:
+  push:
+    branches: [collatz-first-crossing-hard-sat-v1]
+    paths:
+      - 'experiments/collatz_first_crossing_hard_sat_v1.py'
+      - '.github/workflows/collatz-first-crossing-hard-sat-v1.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  sat:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: pip install python-sat
+      - name: Search exact hard first crossings
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-first-crossing-hard-sat-v1
+          git rev-parse HEAD > evidence/collatz-first-crossing-hard-sat-v1/commit.txt
+          python -u experiments/collatz_first_crossing_hard_sat_v1.py             --min-depth 32 --max-depth 128             --out evidence/collatz-first-crossing-hard-sat-v1/result.json
+          grep -q '"global_collatz": "UNKNOWN"'             evidence/collatz-first-crossing-hard-sat-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-first-crossing-hard-sat-v1
+          path: evidence/collatz-first-crossing-hard-sat-v1
+          if-no-files-found: error
