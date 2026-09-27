@@ -5,7 +5,7 @@
 //! semantic interfaces, then computes consequence closure without changing
 //! checker behavior.
 
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub(crate) enum ContractStatus {
@@ -23,124 +23,26 @@ pub(crate) struct SemanticContract {
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
-pub(crate) enum PathStatus {
-    Warranted {
-        contracts: Vec<&'static str>,
-        path_id: String,
-    },
-    Candidate {
-        candidate_count: usize,
-        contracts: Vec<&'static str>,
-        path_id: String,
-    },
-    None,
+pub(crate) struct SemanticObjectEnvelope {
+    pub(crate) type_id: &'static str,
+    pub(crate) contract_version: u32,
+    pub(crate) canonical_payload_digest: &'static str,
+    pub(crate) interfaces: BTreeSet<&'static str>,
 }
 
-fn contract_registry_rank(id: &str) -> usize {
-    CONTRACTS
-        .iter()
-        .position(|contract| contract.id == id)
-        .unwrap_or(usize::MAX)
-}
-
-pub(crate) fn canonicalize_planner_lineage(
-    contracts: impl IntoIterator<Item = &'static str>,
-) -> Vec<&'static str> {
-    let mut lineage = contracts
-        .into_iter()
-        .filter(|id| !id.starts_with("identity:"))
-        .collect::<Vec<_>>();
-    lineage.sort_by(|left, right| {
-        contract_registry_rank(left)
-            .cmp(&contract_registry_rank(right))
-            .then_with(|| left.cmp(right))
-    });
-    lineage.dedup();
-    lineage
-}
-
-pub(crate) fn canonical_planner_path_id(
-    required: &'static str,
-    candidate_count: usize,
-    contracts: impl IntoIterator<Item = &'static str>,
-) -> String {
-    let lineage = canonicalize_planner_lineage(contracts);
-    format!(
-        "planner:{required}:c{candidate_count}:{}",
-        lineage.join(">")
-    )
-}
-
-pub(crate) fn plan_required_interface(
-    required: &'static str,
-    object_evidence: impl IntoIterator<Item = &'static str>,
-) -> PathStatus {
-    let mut interfaces = object_evidence.into_iter().collect::<BTreeSet<_>>();
-    let mut best = BTreeMap::<&'static str, (usize, Vec<&'static str>)>::new();
-
-    loop {
-        let mut changed = false;
-        for contract in CONTRACTS {
-            let mut candidate_cost = usize::from(contract.status == ContractStatus::Candidate);
-            let mut provenance = Vec::<&'static str>::new();
-            let mut ready = true;
-
-            for required_interface in contract.requires {
-                if interfaces.contains(required_interface) {
-                    continue;
-                }
-                let Some((cost, path)) = best.get(required_interface) else {
-                    ready = false;
-                    break;
-                };
-                candidate_cost = candidate_cost.saturating_add(*cost);
-                provenance.extend(path.iter().copied());
-            }
-            if !ready {
-                continue;
-            }
-
-            provenance.push(contract.id);
-            provenance = canonicalize_planner_lineage(provenance);
-
-            for produced in contract.produces {
-                let replace = match best.get(produced) {
-                    None => true,
-                    Some((old_cost, old_path)) => {
-                        candidate_cost < *old_cost
-                            || (candidate_cost == *old_cost && provenance.len() < old_path.len())
-                    }
-                };
-                if replace {
-                    best.insert(produced, (candidate_cost, provenance.clone()));
-                    interfaces.insert(produced);
-                    changed = true;
-                }
-            }
+impl SemanticObjectEnvelope {
+    pub(crate) fn new(
+        type_id: &'static str,
+        contract_version: u32,
+        canonical_payload_digest: &'static str,
+        interfaces: impl IntoIterator<Item = &'static str>,
+    ) -> Self {
+        Self {
+            type_id,
+            contract_version,
+            canonical_payload_digest,
+            interfaces: interfaces.into_iter().collect(),
         }
-        if !changed {
-            break;
-        }
-    }
-
-    if interfaces.contains(required) && !best.contains_key(required) {
-        return PathStatus::Warranted {
-            contracts: Vec::new(),
-            path_id: canonical_planner_path_id(required, 0, []),
-        };
-    }
-
-    match best.get(required) {
-        Some((0, path)) => PathStatus::Warranted {
-            contracts: path.clone(),
-            path_id: canonical_planner_path_id(required, 0, path.iter().copied()),
-        },
-        Some((candidate_count, path)) => PathStatus::Candidate {
-            candidate_count: *candidate_count,
-            contracts: path.clone(),
-            path_id: canonical_planner_path_id(required, *candidate_count, path.iter().copied()),
-        },
-        None => PathStatus::None,
     }
 }
 
@@ -300,7 +202,7 @@ pub(crate) fn close_interfaces(
 
 #[cfg(test)]
 mod tests {
-    use super::{ContractStatus, close_interfaces};
+    use super::{ContractStatus, SemanticObjectEnvelope, close_interfaces};
 
     fn seed_interfaces() -> [&'static str; 9] {
         [
@@ -314,6 +216,23 @@ mod tests {
             "application@1",
             "canonical.payload@1",
         ]
+    }
+
+    #[test]
+    fn object_envelope_preserves_unknown_future_semantics_without_reinterpretation() {
+        let object = SemanticObjectEnvelope::new(
+            "lean.inductive@1",
+            1,
+            "sha256:test-only-digest",
+            ["canonical.payload@1", "type.signature@1"],
+        );
+
+        assert_eq!(object.type_id, "lean.inductive@1");
+        assert_eq!(object.contract_version, 1);
+        assert_eq!(object.canonical_payload_digest, "sha256:test-only-digest");
+        assert!(object.interfaces.contains("canonical.payload@1"));
+        assert!(object.interfaces.contains("type.signature@1"));
+        assert!(!object.interfaces.contains("future.unknown-interface@1"));
     }
 
     #[test]
