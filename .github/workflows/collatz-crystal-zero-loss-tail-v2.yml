@@ -1,0 +1,22 @@
+name: Collatz Crystal zero-loss tail V2 adversary
+on:
+  push:
+    branches: [collatz-crystal-zero-loss-tail-v1]
+  workflow_dispatch:
+jobs:
+  adversary-v2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Direct zero-loss adversary at larger source boundary
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_crystal_zero_loss_tail_v1.py --source-bits 24 --depth 2000 --start-depth 60 | tee /tmp/zero-loss-v2.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-zero-loss-tail-v2
+          path: /tmp/zero-loss-v2.json
