@@ -442,9 +442,7 @@ impl<'a> Machine<'a> {
                                     if std::env::var_os("NUCLEUS_TRACE_BOOL_FLOW").is_some() {
                                         eprintln!(
                                             "NUCLEUS_BOOL_FLOW:reduce:recursor={}:constructor={}:rhs={}",
-                                            name.0,
-                                            constructor.0,
-                                            rule.rhs.0
+                                            name.0, constructor.0, rule.rhs.0
                                         );
                                     }
                                     let mut level_substitution =
@@ -752,11 +750,7 @@ impl<'a> Machine<'a> {
         }
     }
 
-    pub(crate) fn reexpose_neutral(
-        &self,
-        neutral: &Neutral,
-        budget: usize,
-    ) -> Option<Value> {
+    pub(crate) fn reexpose_neutral(&self, neutral: &Neutral, budget: usize) -> Option<Value> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
         };
