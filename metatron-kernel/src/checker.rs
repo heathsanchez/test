@@ -2845,6 +2845,12 @@ fn new_singleton_recursor_rule(
 /// field domains are compared by the kernel's existing conversion relation
 /// under shared free binders. Recursor/motive/minor/rule shapes are still
 /// derived structurally before opaque promotion.
+fn trace_p3_clause(label: &str, result: bool) {
+    if std::env::var_os("NUCLEUS_TRACE_P3_CLAUSES").is_some() {
+        eprintln!("NUCLEUS_P3_CLAUSE:{label}:{}", if result { "PASS" } else { "FAIL" });
+    }
+}
+
 fn check_conversion_lifted_unary_recursive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -2919,20 +2925,22 @@ fn check_conversion_lifted_unary_recursive(
     if recursor.is_unsafe {
         return Err(Verdict::Unknown);
     }
-    if !recursor_metadata_admissible(
+    let metadata_ok = recursor_metadata_admissible(
         export,
         inductive,
         &block.constructors,
         recursor,
         false,
         recursor.level_params.len() == 1,
-    ) {
+    );
+    trace_p3_clause("metadata", metadata_ok);
+    if !metadata_ok {
         return Err(Verdict::Reject);
     }
 
-    let Some((recursor_parameter, recursor_minor_field, rule_field)) =
-        conversion_lifted_unary_shapes(export, inductive.name, constructor.name, recursor)
-    else {
+    let shapes = conversion_lifted_unary_shapes(export, inductive.name, constructor.name, recursor);
+    trace_p3_clause("recursor-shapes", shapes.is_some());
+    let Some((recursor_parameter, recursor_minor_field, rule_field)) = shapes else {
         return Err(Verdict::Reject);
     };
 
