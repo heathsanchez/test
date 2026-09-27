@@ -130,6 +130,37 @@ jobs:
           pathlib.Path(
               'metatron-kernel/evidence-out/structure-natle-reclosure-v1/result.json'
           ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          # Fin source census: representation only, zero semantic authority.
+          def name_table(p):
+              names={}
+              records=[]
+              for raw in p.read_text().splitlines():
+                  try:o=json.loads(raw)
+                  except Exception:continue
+                  records.append(o)
+                  if isinstance(o.get('in'),int):
+                      if 'str' in o:names[o['in']]=(o['str']['pre'],o['str']['str'])
+                      elif 'num' in o:names[o['in']]=(o['num']['pre'],str(o['num']['i']))
+              def full(i):
+                  parts=[];seen=set()
+                  while i in names and i not in seen:
+                      seen.add(i);pre,part=names[i];parts.append(part);i=pre
+                  return '.'.join(reversed(parts))
+              return records,full
+          fin_census=[]
+          for kind,name,_ in targets[:2]:
+              p=root/kind/(name+'.ndjson')
+              records,full=name_table(p)
+              fin_ids={i for i in range(2000) if full(i)=='Fin' or full(i).startswith('Fin.')}
+              related=[]
+              for o in records:
+                  blob=json.dumps(o,sort_keys=True)
+                  if any(str(i) in blob for i in fin_ids):
+                      related.append(o)
+              fin_census.append({'test':name,'fin_names':{str(i):full(i) for i in sorted(fin_ids)},'records':related})
+          out['fin_census']=fin_census
+          pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/fin-census.json').write_text(json.dumps(fin_census,indent=2,sort_keys=True)+'\n')
+          print('FIN_CENSUS',json.dumps(fin_census,sort_keys=True))
           print(json.dumps({
               'base_residual':out['base_residual'],
               'candidate_residual':out['candidate_residual'],
