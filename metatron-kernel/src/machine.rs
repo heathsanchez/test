@@ -766,6 +766,23 @@ impl<'a> Machine<'a> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
         };
+        let level_ids = self.levels.iter_raw().find_map(|(raw, _)| {
+            let id = LevelId(raw);
+            instantiate_level(self.levels, id, &LevelSubstitution::default(), 1)
+                .ok()
+                .and_then(|_| None::<Vec<LevelId>>)
+        });
+        let _ = level_ids;
+        let mut pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
+        if let Some(value) = self.try_native_nat_reduction(
+            *name,
+            &[],
+            &mut pending,
+            Transparency::Reducible,
+            budget,
+        ) {
+            return Some(value);
+        }
         let declaration = self.definitions.get(name)?;
         if declaration.level_params.len() != levels.len() {
             return None;
@@ -774,24 +791,15 @@ impl<'a> Machine<'a> {
         for (parameter, level) in declaration.level_params.iter().zip(levels) {
             substitution.push((*parameter, level.clone()));
         }
-        let mut closure = Closure::with_levels(
+        let closure = Closure::with_levels(
             declaration.value,
             EnvFrame::empty(),
             LevelSubstitution::new(substitution),
         );
-        let mut pending = neutral.spine.iter().rev().cloned().collect::<Vec<_>>();
-        for argument in pending.drain(..) {
-            closure = Closure::new(
-                self.expressions
-                    .application(closure.expr, argument.expr),
-                closure.env.clone(),
-            );
-        }
         self.expose(closure, Transparency::Reducible, budget)
             .proven_value()
             .cloned()
     }
-
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
