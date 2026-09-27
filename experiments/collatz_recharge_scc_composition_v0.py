@@ -39,3 +39,5 @@ print(json.dumps({"schema":"COLLATZ_RECHARGE_SCC_COMPOSITION_V0",
  "cycle_test_bits":bits,"cycle_classes":cyc[:100],"cycle_class_count":len(cyc),
  "verdict":"NO_SYMBOLIC_TWO_MAP_CYCLE" if not cyc else "SYMBOLIC_CYCLE_RESIDUAL",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
