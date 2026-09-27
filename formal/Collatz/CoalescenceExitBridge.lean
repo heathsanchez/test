@@ -1,5 +1,4 @@
 import Collatz.CoalescenceDescent
-import Collatz.OrdinaryExitReduction
 
 namespace CollatzFinal
 namespace SourceProduct
