@@ -98,8 +98,8 @@ theorem hard_large_previous_coefficient_gt_three_halves
     have hqP' : q * P < P * n := by
       simpa [Nat.mul_comm] using hqP
     omega
-  · dsimp [P] at hcoef
-    omega
+  · change 3 * 2 ^ k < 2 * P
+    exact Nat.lt_of_not_ge hcoef
 
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
