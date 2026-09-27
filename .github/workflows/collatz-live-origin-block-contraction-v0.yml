@@ -1,0 +1,22 @@
+name: Collatz live origin block contraction V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_live_origin_block_contraction_v0.py'
+      - '.github/workflows/collatz-live-origin-block-contraction-v0.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  block:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_live_origin_block_contraction_v0.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-live-origin-block-contraction-v0
+          path: /tmp/result.json
