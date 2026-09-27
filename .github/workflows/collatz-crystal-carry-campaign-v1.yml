@@ -2,7 +2,7 @@ name: Collatz Crystal Source Product Kernel V2
 on:
   push:
     branches: [collatz-crystal-source-product-kernel-v2]
-    paths: ['experiments/collatz_crystal_carry_campaign_v1.py','experiments/test_collatz_crystal_carry_campaign_v1.py','.github/workflows/collatz-crystal-carry-campaign-v1.yml']
+    paths: ['experiments/collatz_crystal_carry_campaign_v1.py','experiments/test_collatz_crystal_carry_campaign_v1.py','experiments/collatz_actual_orbit_inequality_closure_v0.py','.github/workflows/collatz-crystal-carry-campaign-v1.yml']
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
@@ -34,7 +34,7 @@ jobs:
           python -u experiments/collatz_crystal_deficit_one_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/deficit-one.json
           python -u experiments/collatz_crystal_first_crossing_split_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/first-crossing-split.json
           python -u experiments/collatz_crystal_first_crossing_theorem_v1.py | tee evidence/collatz-crystal-carry-campaign-v1/first-crossing-theorem.json
-          python -u experiments/collatz_crystal_source_product_kernel_v2.py | tee evidence/collatz-crystal-carry-campaign-v1/source-product-kernel-v2.json
+          python -u experiments/collatz_crystal_source_product_kernel_v2.py | tee evidence/collatz-crystal-carry-campaign-v1/source-product-kernel-v2.json\n          python -u experiments/collatz_actual_orbit_inequality_closure_v0.py | tee evidence/collatz-crystal-carry-campaign-v1/actual-orbit-inequality-closure-v0.json
           git rev-parse HEAD > evidence/collatz-crystal-carry-campaign-v1/commit.txt
       - uses: actions/upload-artifact@v4
         if: always()
