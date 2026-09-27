@@ -1,0 +1,32 @@
+name: Collatz Crystal zero-exit carry adversary V1
+on:
+  push:
+    branches: [collatz-crystal-zero-exit-carry-v1]
+    paths:
+      - 'experiments/collatz_zero_exit_carry_adversary_v1.py'
+      - '.github/workflows/collatz-zero-exit-carry-adversary-v1.yml'
+  workflow_dispatch:
+
+jobs:
+  adversary:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run exact 24-bit adversarial carry audit
+        run: |
+          set -euo pipefail
+          mkdir -p results
+          python -u experiments/collatz_zero_exit_carry_adversary_v1.py | tee results/zero-exit-carry.json
+          grep -q '"block": 38' results/zero-exit-carry.json
+          grep -q '"record_source": 13421671' results/zero-exit-carry.json
+          grep -q '"B_le_32_uniform_block": "REJECTED_ON_DECLARED_FINITE_BOUNDARY"' results/zero-exit-carry.json
+          grep -q '"universal_eventual_strict_drop": "UNKNOWN"' results/zero-exit-carry.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-zero-exit-carry-adversary-v1
+          path: results/zero-exit-carry.json
+          retention-days: 90
