@@ -1,0 +1,35 @@
+name: Collatz hard endpoint q14 audit
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_hard_endpoint_reverse_q14_audit.py'
+      - 'experiments/collatz_reverse_predecessor_tree.py'
+      - '.github/workflows/collatz-hard-endpoint-q14-audit.yml'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Run exact q14 hard-endpoint coverage audit
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-hard-endpoint-q14-audit
+          cd experiments
+          python -u collatz_hard_endpoint_reverse_q14_audit.py | tee ../evidence/collatz-hard-endpoint-q14-audit/result.txt
+          cd ..
+          grep -q 'DECISION Q14_FIRST_CONTRACTION_BANK_INCOMPLETE_ON_HARD_ENDPOINT_DOMAIN' evidence/collatz-hard-endpoint-q14-audit/result.txt
+          git rev-parse HEAD > evidence/collatz-hard-endpoint-q14-audit/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-hard-endpoint-q14-audit
+          path: evidence/collatz-hard-endpoint-q14-audit
+          if-no-files-found: error
