@@ -73,12 +73,20 @@ pub fn level_equal(left: LevelTerm, right: LevelTerm, budget: usize) -> Judgment
         return Judgment::proven((), "universe-reflexivity");
     }
 
-    let Some(left) = canonical(&left, &mut budget) else {
+    let Some(left_canonical) = canonical(&left, &mut budget) else {
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX side=left left={left:?} right={right:?}");
+        }
         return Judgment::unknown("unresolved-imax-case");
     };
-    let Some(right) = canonical(&right, &mut budget) else {
+    let Some(right_canonical) = canonical(&right, &mut budget) else {
+        if std::env::var_os("NUCLEUS_TRACE_IMAX").is_some() {
+            eprintln!("NUCLEUS_IMAX side=right left={left:?} right={right:?}");
+        }
         return Judgment::unknown("unresolved-imax-case");
     };
+    let left = left_canonical;
+    let right = right_canonical;
     if budget.exhausted {
         return Judgment::unknown("universe-equality-budget");
     }
