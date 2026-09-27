@@ -1,0 +1,29 @@
+name: Collatz Crystal affine-phase cycles V2
+on:
+  push:
+    branches: [collatz-crystal-owner-frontier-cycles-v1]
+    paths:
+      - 'experiments/collatz_crystal_affine_phase_cycles_v2.py'
+      - '.github/workflows/collatz-crystal-affine-phase-cycles-v2.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  cycles:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run affine-phase Crystal cycles
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-affine-phase-cycles-v2
+          python -u experiments/collatz_crystal_affine_phase_cycles_v2.py | tee evidence/collatz-crystal-affine-phase-cycles-v2/result.json
+          grep -q '"universal_status": "UNKNOWN"' evidence/collatz-crystal-affine-phase-cycles-v2/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-affine-phase-cycles-v2
+          path: evidence/collatz-crystal-affine-phase-cycles-v2
+          if-no-files-found: error
