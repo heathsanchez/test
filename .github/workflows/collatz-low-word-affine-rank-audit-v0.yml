@@ -1,0 +1,18 @@
+name: Collatz Low Word Affine Rank Audit
+on:
+  push:
+    branches: [collatz-three-quarter-future7-cylinder-v0]
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python experiments/collatz_low_word_affine_rank_audit_v0.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-low-word-affine-rank-audit-v0
+          path: /tmp/result.json
