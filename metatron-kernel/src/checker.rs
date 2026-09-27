@@ -1729,8 +1729,10 @@ fn fin_like_structure_candidate(export: &ResolvedExport, block: &InductiveBlock)
     let Some((_, result)) = pi_spine(export, inductive.ty, 1) else {
         return false;
     };
-    if !matches!(export.exprs.get(result), Some(Expr::Sort(level)) if matches!(export.levels.get(*level), Some(Level::Zero)))
-    {
+    if !matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))
+    ) {
         return false;
     }
     let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, 3) else {
