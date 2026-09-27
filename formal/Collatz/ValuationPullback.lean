@@ -143,6 +143,28 @@ theorem minimal_bad_ownerLift_owner_ge
     ordinary_exit_of_ownerLift_on_orbit hp hpodd hlt horbit
   exact minimal_bad_has_no_ordinary_exit hmin a hexit
 
+/-- Parametric source-relative valuation barrier.  On a hypothetical
+minimal positive bad orbit, an owner lift of depth k must lie at or above the
+same lift of the original source.  In particular it is at least 4^k*n. -/
+theorem minimal_bad_ownerLift_source_barrier
+    {n p j k : Nat}
+    (hmin : MinimalBad PositiveBad n)
+    (hp : 0 < p)
+    (hpodd : p % 2 = 1)
+    (horbit : iter shortcut j n = ownerLift k p) :
+    ownerLift k n ≤ iter shortcut j n ∧
+      4 ^ k * n ≤ iter shortcut j n := by
+  have hpn : n ≤ p :=
+    minimal_bad_ownerLift_owner_ge hmin hp hpodd horbit
+  have hmono : ownerLift k n ≤ ownerLift k p :=
+    ownerLift_mono hpn k
+  have hscale : 4 ^ k * n ≤ ownerLift k n :=
+    four_pow_mul_le_ownerLift k n
+  constructor
+  · simpa [horbit] using hmono
+  · rw [horbit]
+    exact Nat.le_trans hscale hmono
+
 /-- First concrete valuation barrier.  Below 4*n+1 a minimal-bad orbit cannot
 occupy residue 5 modulo 8, because every such value is exactly ownerLift 1 p
 for an odd p<n. -/
