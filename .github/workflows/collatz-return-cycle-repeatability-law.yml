@@ -1,0 +1,15 @@
+name: Collatz return cycle repeatability law
+on:
+  workflow_dispatch:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths: ['experiments/collatz_return_cycle_repeatability_law_v0.py','.github/workflows/collatz-return-cycle-repeatability-law.yml']
+permissions: {contents: read}
+jobs:
+  law:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: cd experiments && python collatz_return_cycle_repeatability_law_v0.py
