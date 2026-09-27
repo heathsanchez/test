@@ -2847,7 +2847,10 @@ fn new_singleton_recursor_rule(
 /// derived structurally before opaque promotion.
 fn trace_p3_clause(label: &str, result: bool) {
     if std::env::var_os("NUCLEUS_TRACE_P3_CLAUSES").is_some() {
-        eprintln!(\n            "NUCLEUS_P3_CLAUSE:{label}:{}",\n            if result { "PASS" } else { "FAIL" }\n        );
+        eprintln!(
+            "NUCLEUS_P3_CLAUSE:{label}:{}",
+            if result { "PASS" } else { "FAIL" }
+        );
     }
 }
 
