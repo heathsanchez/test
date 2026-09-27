@@ -46,7 +46,6 @@ theorem coefficientCrossingAt_iff_not_survives
     CoefficientCrossingAt n k ↔ ¬ CoefficientSurvives n k := by
   unfold CoefficientCrossingAt CoefficientSurvives
   simp [coefficientNumerator, coefficientDenominator]
-  omega
 
 #print axioms coefficientNumerator_succ_even
 #print axioms coefficientNumerator_succ_odd
