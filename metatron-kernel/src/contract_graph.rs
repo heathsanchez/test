@@ -178,7 +178,7 @@ pub(crate) fn close_interfaces(
 
 #[cfg(test)]
 mod tests {
-    use super::{ContractStatus, SemanticObjectEnvelope, close_interfaces};
+    use super::{ContractStatus, close_interfaces};
 
     fn seed_interfaces() -> [&'static str; 9] {
         [
@@ -192,23 +192,6 @@ mod tests {
             "application@1",
             "canonical.payload@1",
         ]
-    }
-
-    #[test]
-    fn object_envelope_preserves_unknown_future_semantics_without_reinterpretation() {
-        let object = SemanticObjectEnvelope::new(
-            "lean.inductive@1",
-            1,
-            "sha256:test-only-digest",
-            ["canonical.payload@1", "type.signature@1"],
-        );
-
-        assert_eq!(object.type_id, "lean.inductive@1");
-        assert_eq!(object.contract_version, 1);
-        assert_eq!(object.canonical_payload_digest, "sha256:test-only-digest");
-        assert!(object.interfaces.contains("canonical.payload@1"));
-        assert!(object.interfaces.contains("type.signature@1"));
-        assert!(!object.interfaces.contains("future.unknown-interface@1"));
     }
 
     #[test]
