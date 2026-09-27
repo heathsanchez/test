@@ -1,0 +1,31 @@
+name: Collatz Fixed-Source Progress Lean
+on:
+  push:
+    branches: [collatz-crystal-fsp-rank-v1]
+    paths:
+      - 'formal/Collatz/FixedSourceProgress.lean'
+      - '.github/workflows/collatz-fixed-source-progress.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reject placeholders
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FixedSourceProgress.lean
+      - name: Build fixed-source progress closeout
+        run: |
+          set -euo pipefail
+          lake env lean formal/Collatz/FixedSourceProgress.lean 2>&1 | tee fixed-source-progress.log
+          ! grep -q 'sorryAx' fixed-source-progress.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-fixed-source-progress
+          path: fixed-source-progress.log
+          if-no-files-found: error
