@@ -1,5 +1,4 @@
 name: Collatz Final Excursion V1
-
 on:
   push:
     branches: [collatz-final-excursion-v1]
@@ -9,33 +8,34 @@ on:
       - 'lakefile.lean'
       - '.github/workflows/collatz-final-excursion-v1.yml'
   workflow_dispatch:
-
 permissions: {contents: read}
-
 jobs:
   qualify:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      - uses: leanprover/lean-action@v1
-        with:
-          build: true
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
       - name: Reject proof placeholders
         run: |
           set -euo pipefail
           ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FinalExcursion.lean
-      - name: Check theorem axioms
-        run: |
-          set -euo pipefail
-          lake env lean -DautoImplicit=false formal/Collatz/FinalExcursion.lean | tee final-excursion-lean.log
-          ! grep -q 'sorryAx' final-excursion-lean.log
-      - name: Audit protected residual
+      - name: Build and check theorem
         run: |
           set -euo pipefail
           mkdir -p evidence/collatz-final-excursion-v1
           git rev-parse HEAD > evidence/collatz-final-excursion-v1/commit.txt
-          cp final-excursion-lean.log evidence/collatz-final-excursion-v1/
+          lake env lean --version > evidence/collatz-final-excursion-v1/toolchain.txt
+          lake build CollatzFinal | tee evidence/collatz-final-excursion-v1/build.log
+          lake env lean -DautoImplicit=false formal/Collatz/FinalExcursion.lean | tee evidence/collatz-final-excursion-v1/theorems.log
+          ! grep -R 'sorryAx\|Lean.ofReduceBool' evidence/collatz-final-excursion-v1/*.log
+      - name: Audit protected residual
+        run: |
+          set -euo pipefail
           python -u experiments/collatz_final_excursion_v1.py | tee evidence/collatz-final-excursion-v1/result.json
           grep -q '"schema": "COLLATZ_FINAL_ZERO_CARRY_EXCURSION_V1"' evidence/collatz-final-excursion-v1/result.json
       - uses: actions/upload-artifact@v4
