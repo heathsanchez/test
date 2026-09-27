@@ -130,15 +130,15 @@ theorem minimal_bad_below_four_source_not_mod8_five
     dsimp [p]
     omega
   have hlift : ownerLift 1 p = x := by
-    simp [ownerLift, p, hx, a]
+    simp [ownerLift, p]
     omega
   have horbit : iter shortcut j n = ownerLift 1 p := by
     simpa [x] using hlift.symm
   have hge := minimal_bad_ownerLift_owner_ge hmin hp hpodd horbit
   have hxp : x = 4 * p + 1 := by
-    rw [← hlift]
-    simp [ownerLift]
-  dsimp [x] at hlt
+    calc
+      x = ownerLift 1 p := hlift.symm
+      _ = 4 * p + 1 := by simp [ownerLift]
   omega
 
 #print axioms minimal_bad_ownerLift_owner_ge
