@@ -30,7 +30,8 @@ jobs:
       - name: Build fixed-source carry proof
         run: |
           set -euo pipefail
-          lake build CollatzFinal 2>&1 | tee carry-progress.log
+          lake build Collatz.SourceProductAffine Collatz.CoefficientDynamics Collatz.SurvivalDeficit Collatz.OriginPhaseBarrier 2>&1 | tee carry-progress.log
+          lake build Collatz.CarryProgress 2>&1 | tee -a carry-progress.log
           ! grep -q 'sorryAx' carry-progress.log
       - uses: actions/upload-artifact@v4
         with:
