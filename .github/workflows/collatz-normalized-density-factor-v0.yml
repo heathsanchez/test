@@ -1,0 +1,22 @@
+name: Collatz normalized density factor V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_normalized_density_factor_v0.py'
+      - '.github/workflows/collatz-normalized-density-factor-v0.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  factor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_normalized_density_factor_v0.py | tee /tmp/result.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-normalized-density-factor-v0
+          path: /tmp/result.json
