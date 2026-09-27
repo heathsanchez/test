@@ -71,27 +71,6 @@ pub(crate) fn canonical_planner_path_id(
     )
 }
 
-pub(crate) fn canonical_adapter_path_id(contract: &AdapterContract) -> String {
-    let lineage = contract
-        .provenance
-        .iter()
-        .copied()
-        .filter(|id| !id.starts_with("identity:"))
-        .collect::<Vec<_>>();
-    format!(
-        "adapter:{}:{}:{}:{}",
-        contract.source,
-        contract.target,
-        contract
-            .preserves
-            .iter()
-            .copied()
-            .collect::<Vec<_>>()
-            .join(","),
-        lineage.join(">")
-    )
-}
-
 pub(crate) fn plan_required_interface(
     required: &'static str,
     object_evidence: impl IntoIterator<Item = &'static str>,
