@@ -51,11 +51,20 @@ jobs:
           repository: ${{ matrix.repository }}
           ref: ${{ matrix.ref }}
           path: lean4
-      - name: Build exact Lean kernel
-        working-directory: lean4
+      - name: Install Lean build dependencies
         run: |
           set -euo pipefail
-          cmake --preset release -DUSE_GMP=OFF
+          sudo apt-get update
+          sudo apt-get install -y clang libuv1-dev libssl-dev
+
+      - name: Build exact Lean kernel
+        working-directory: lean4
+        env:
+          CC: clang
+          CXX: clang++
+        run: |
+          set -euo pipefail
+          cmake --preset release -DUSE_GMP=OFF -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++
           make -C build/release -j2
       - name: Check eta-major positive and malformed neighbor
         run: |
