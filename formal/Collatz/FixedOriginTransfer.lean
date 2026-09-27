@@ -1,4 +1,4 @@
-import Mathlib
+import Collatz.SourceProduct
 
 namespace CollatzOriginTransfer
 
