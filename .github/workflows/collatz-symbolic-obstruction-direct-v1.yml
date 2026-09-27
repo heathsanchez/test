@@ -1,0 +1,17 @@
+name: Collatz Symbolic Obstruction Direct V1
+on:
+  push:
+    branches: [collatz-symbolic-obstruction-direct-v1]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  direct:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - run: python -u experiments/collatz_symbolic_obstruction_direct_v1.py | tee result.json
+      - uses: actions/upload-artifact@v4
+        with: {name: collatz-symbolic-obstruction-direct-v1, path: result.json}
