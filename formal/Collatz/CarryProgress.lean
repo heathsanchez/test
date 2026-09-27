@@ -65,7 +65,7 @@ theorem all_ones_tail_oddCount_lower (j t : Nat) :
   induction t with
   | zero =>
       have heq := all_ones_odd_count j j (Nat.le_refl j)
-      omega
+      simpa only [Nat.add_zero] using (Nat.le_of_eq heq.symm)
   | succ t ih =>
       have hs := oddCount_le_succ (2 ^ j - 1) (j + t)
       rw [show j + (t + 1) = (j + t) + 1 by omega]
@@ -127,7 +127,6 @@ theorem no_uniform_fixed_origin_block (B : Nat) :
   have hjexp : j = 2 * B + 2 := by simp [j, r]; omega
   have hjpow : 2 ^ j = 2 ^ (2 * B) * 4 := by
     rw [hjexp, Nat.pow_add]
-    rfl
   have hn : 0 < n := by
     simp only [n]
     rw [hjpow]
