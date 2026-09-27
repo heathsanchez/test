@@ -53,6 +53,10 @@ pub struct RecursorReduction {
     pub num_indices: usize,
     pub level_params: Vec<NameId>,
     pub rules: Vec<RecursorRule>,
+    /// For an independently qualified K-like recursor, each pair maps a
+    /// varying recursor index to the fixed parameter it must be convertible
+    /// to before constructor substitution is type-correct.
+    pub k_index_parameter_pairs: Vec<(usize, usize)>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
