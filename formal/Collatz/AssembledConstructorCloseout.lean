@@ -42,10 +42,30 @@ theorem minimal_bad_first_crossing_constructor_domains
       simpa [y] using hsig
     exact Or.inr ⟨hq, hwin, hmod⟩
 
+/-- Exact additive payment forced by any hard first crossing.
+
+The crossing endpoint is nondescending, so its coefficient deficit must be paid
+by affine bias.  The elementary pre-cross bias estimate then gives a single
+source-relative inequality. -/
+theorem hard_first_crossing_bias_payment
+    {n k : Nat}
+    (hn : 0 < n)
+    (hhard : HardFirstCrossing n k) :
+    3 * (2 ^ (k + 1) - 3 ^ oddCount n (k + 1)) * n ≤
+      oddCount n (k + 1) * 3 ^ oddCount n (k + 1) := by
+  have hnd := hard_first_crossing_endpoint_ge_source hn hhard
+  have hm := margin_nonnegative_of_nondescending hnd
+  have hpre := first_crossing_previous_survival_bound hhard.1
+  have hb :=
+    elementary_bias_bound_of_no_earlier_crossing n (k + 1) hpre
+  have hm3 := Nat.mul_le_mul_left 3 hm
+  exact Nat.le_trans
+    (by simpa [Nat.mul_assoc] using hm3) hb
+
 /-- A large-source hard first crossing is forced into the upper half of
 the pre-cross coefficient band.  If the coefficient ratio were at most 3/2,
-the elementary affine-bias budget could not keep the forced even pre-cross
-endpoint at or above 2*n.
+the contraction deficit alone would already exceed the entire allowed bias
+payment because q<n.
 
 This is an exact integer inequality; no logarithm estimate is used. -/
 theorem hard_large_previous_coefficient_gt_three_halves
@@ -53,43 +73,33 @@ theorem hard_large_previous_coefficient_gt_three_halves
     (hn : 0 < n)
     (hhard : HardFirstCrossing n k)
     (hq : oddCount n (k + 1) < n) :
-    3 * 2 ^ k < 2 * 3 ^ oddCount n k := by
-  have heven := hard_first_crossing_last_step_even hhard
-  have hqeq : oddCount n (k + 1) = oddCount n k := by
-    simp [oddCount, heven]
-  have hqk : oddCount n k < n := by
-    simpa [hqeq] using hq
-  have hpre0 := first_crossing_previous_survival_bound hhard.1
-  have hpre : ∀ i, i < k → 2 ^ i ≤ 3 ^ oddCount n i := by
-    intro i hi
-    exact hpre0 i (Nat.lt_trans hi (Nat.lt_succ_self k))
-  have hb := elementary_bias_bound_of_no_earlier_crossing n k hpre
-  have hy := hard_first_crossing_previous_ge_double hn hhard
-  have ha := exact_affine n k
-  have hs := Nat.mul_le_mul_left (2 ^ k) hy
-  rw [ha] at hs
-  have hpowpos : 0 < 3 ^ oddCount n k := Nat.pow_pos (by decide)
-  have hqn :
-      oddCount n k * 3 ^ oddCount n k <
-        n * 3 ^ oddCount n k := by
-    exact (Nat.mul_lt_mul_right hpowpos).2 hqk
-  by_cases hcoef : 2 * 3 ^ oddCount n k ≤ 3 * 2 ^ k
-  · have hcoefN := Nat.mul_le_mul_right n hcoef
-    have hs3 := Nat.mul_le_mul_left 3 hs
-    have hqn' :
-        oddCount n k * 3 ^ oddCount n k <
-          3 ^ oddCount n k * n := by
-      simpa [Nat.mul_comm] using hqn
-    have hcoefN' :
-        2 * (3 ^ oddCount n k * n) ≤
-          3 * (2 ^ k * n) := by
-      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hcoefN
-    have hs3' :
-        3 * (2 * (2 ^ k * n)) ≤
-          3 * (3 ^ oddCount n k * n + bias n k) := by
-      simpa [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hs3
+    3 * 2 ^ k < 2 * 3 ^ oddCount n (k + 1) := by
+  let q := oddCount n (k + 1)
+  let P := 3 ^ q
+  have hpay := hard_first_crossing_bias_payment hn hhard
+  have hPpos : 0 < P := by
+    dsimp [P]
+    exact Nat.pow_pos (by decide)
+  have hqP : q * P < n * P := by
+    exact (Nat.mul_lt_mul_right hPpos).2 (by simpa [q] using hq)
+  by_cases hcoef : 2 * P ≤ 3 * 2 ^ k
+  · have hD : P ≤ 3 * (2 ^ (k + 1) - P) := by
+      have hpow : 2 ^ (k + 1) = 2 * 2 ^ k := by
+        simp [Nat.pow_succ, Nat.mul_comm]
+      rw [hpow]
+      omega
+    have hDn := Nat.mul_le_mul_right n hD
+    have hpay' :
+        3 * (2 ^ (k + 1) - P) * n ≤ q * P := by
+      simpa [q, P] using hpay
+    have hDn' :
+        P * n ≤ 3 * (2 ^ (k + 1) - P) * n := by
+      simpa [Nat.mul_assoc] using hDn
+    have hqP' : q * P < P * n := by
+      simpa [Nat.mul_comm] using hqP
     omega
-  · omega
+  · dsimp [P] at hcoef
+    omega
 
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
