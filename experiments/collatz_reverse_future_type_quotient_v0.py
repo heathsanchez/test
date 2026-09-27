@@ -40,3 +40,5 @@ print(json.dumps({"schema":"COLLATZ_REVERSE_FUTURE_TYPE_QUOTIENT_V0",
  "root_type_count":len(set(types[EVENTS[0]].values())),
  "boundary":"finite future quotient only through Q=13; no all-depth automaton claim",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# qualification trigger
