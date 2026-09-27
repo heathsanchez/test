@@ -130,6 +130,41 @@ jobs:
           pathlib.Path(
               'metatron-kernel/evidence-out/structure-natle-reclosure-v1/result.json'
           ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          # Exact Fin telescope decoder: recursively retain only the reachable
+          # expression graph for type / constructor / recursor / rule.
+          def expr_map(p):
+              m={}
+              for raw in p.read_text().splitlines():
+                  try:o=json.loads(raw)
+                  except Exception:continue
+                  if isinstance(o.get('ie'),int): m[o['ie']]=o
+              return m
+          def children(o):
+              out=[]
+              for key in ('app','forallE','lam','letE','proj'):
+                  v=o.get(key)
+                  if not isinstance(v,dict): continue
+                  for k in ('fn','arg','type','body','value','struct'):
+                      if isinstance(v.get(k),int): out.append(v[k])
+              return out
+          fin_exact=[]
+          for kind,name,_ in targets[:2]:
+              p=root/kind/(name+'.ndjson')
+              records,full=name_table(p)
+              em=expr_map(p)
+              fin_decl=next(o['inductive'] for o in records if 'inductive' in o and any(full(t['name'])=='Fin' for t in o['inductive']['types']))
+              typ=next(t for t in fin_decl['types'] if full(t['name'])=='Fin')
+              ctor=next(c for c in fin_decl['ctors'] if full(c['name'])=='Fin.mk')
+              rec=next(x for x in fin_decl['recs'] if full(x['name'])=='Fin.rec')
+              roots=[typ['type'],ctor['type'],rec['type'],rec['rules'][0]['rhs']]
+              seen=set(); stack=list(roots)
+              while stack:
+                  eid=stack.pop()
+                  if eid in seen or eid not in em: continue
+                  seen.add(eid); stack.extend(children(em[eid]))
+              fin_exact.append({'test':name,'roots':roots,'exprs':{str(i):em[i] for i in sorted(seen)}})
+          pathlib.Path('metatron-kernel/evidence-out/structure-natle-reclosure-v1/fin-exact.json').write_text(json.dumps(fin_exact,indent=2,sort_keys=True)+'\n')
+          print('FIN_EXACT',json.dumps(fin_exact,sort_keys=True))
           # Fin source census: representation only, zero semantic authority.
           def name_table(p):
               names={}
