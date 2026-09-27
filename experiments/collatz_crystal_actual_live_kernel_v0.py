@@ -58,3 +58,5 @@ if __name__=="__main__":
 # qualification trigger after workflow install
 
 # retrigger compact discovery
+
+# trigger parity-only holdout
