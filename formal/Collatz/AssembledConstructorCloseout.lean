@@ -101,6 +101,62 @@ theorem hard_large_previous_coefficient_gt_three_halves
   · change 3 * 2 ^ k < 2 * P
     exact Nat.lt_of_not_ge hcoef
 
+/-- Elementary exponential separation used to force a fixed source into
+the high-odd regime under eternal coefficient survival. -/
+theorem three_pow_lt_four_pow_succ (m : Nat) :
+    3 ^ (m + 1) < 4 ^ (m + 1) := by
+  induction m with
+  | zero => decide
+  | succ m ih =>
+      have h3 : 0 < 3 ^ (m + 1) := Nat.pow_pos (by decide)
+      have hleft :
+          3 * 3 ^ (m + 1) < 4 * 3 ^ (m + 1) :=
+        Nat.mul_lt_mul_of_pos_right (by decide : 3 < 4) h3
+      have hright :
+          4 * 3 ^ (m + 1) < 4 * 4 ^ (m + 1) :=
+        Nat.mul_lt_mul_of_pos_left ih (by decide : 0 < 4)
+      simpa [Nat.pow_succ, Nat.mul_comm, Nat.mul_left_comm,
+        Nat.mul_assoc] using Nat.lt_trans hleft hright
+
+/-- At dyadic depth 2*n the deterministic survival threshold already requires
+strictly more than n odd steps. -/
+theorem source_lt_qmin_double (n : Nat) (hn : 0 < n) :
+    n < qmin (2 * n) := by
+  obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (by omega : n ≠ 0)
+  have hp := three_pow_lt_four_pow_succ m
+  have hfour : 4 ^ (m + 1) = 2 ^ (2 * (m + 1)) := by
+    rw [show 4 = 2 ^ 2 by decide, ← Nat.pow_mul]
+    congr 1
+    omega
+  rw [hfour] at hp
+  by_contra hnot
+  have hq : qmin (2 * (m + 1)) ≤ m + 1 := by omega
+  have hpow :
+      3 ^ qmin (2 * (m + 1)) ≤ 3 ^ (m + 1) :=
+    Nat.pow_le_pow_right (by decide) hq
+  have hs := qmin_spec (2 * (m + 1))
+  omega
+
+/-- One constructor interface covers both the eternal-survival branch and the
+old n<=q origin branch: once a live prefix has accumulated at least n odd
+steps, produce any later OrdinaryExit. -/
+def HighOddConstructorCoverage : Prop :=
+  ∀ n k, 1 < n → CoefficientSurvives n k →
+    n ≤ oddCount n k →
+    ∃ j, OrdinaryExit n (iter shortcut (k + j) n)
+
+/-- Eternal coefficient survival necessarily enters the high-odd constructor
+domain by depth 2*n. -/
+theorem eternal_survival_enters_high_odd
+    {n : Nat} (hn : 0 < n)
+    (hsurv : EternalCoefficientSurvival n) :
+    CoefficientSurvives n (2 * n) ∧
+      n ≤ oddCount n (2 * n) := by
+  have hs := hsurv (2 * n)
+  have hq := (coefficientSurvives_iff_qmin_le n (2 * n)).1 hs
+  have hstrict := source_lt_qmin_double n hn
+  exact ⟨hs, by omega⟩
+
 /-- Constructor coverage needed only on the eternal-survival branch. -/
 def EternalConstructorCoverage : Prop :=
   ∀ n, 1 < n → EternalCoefficientSurvival n →
@@ -174,7 +230,68 @@ theorem reaches_one_of_assembled_constructor_coverage
     exact hnone n ⟨hn, hbad⟩
   exact collatzGood_eventually_one hgood
 
+/-- Two-domain closeout.
+
+HighOddConstructorCoverage subsumes both eternal coefficient survival and the
+n<=q first-crossing origin branch.  The only separate constructor domain left
+is the rigid q<n large-source hard crossing. -/
+theorem reaches_one_of_two_constructor_domains
+    (hHigh : HighOddConstructorCoverage)
+    (hLarge : LargeCrossingConstructorCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  have hnone : ∀ n, ¬ PositiveBad n := by
+    apply no_bad_of_no_minimal PositiveBad
+    intro n hmin
+    have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
+      omega
+    rcases coefficient_survival_or_first_crossing n with hsurv | ⟨d, hfirst⟩
+    · obtain ⟨hs, hq⟩ :=
+        eternal_survival_enters_high_odd hmin.1.1 hsurv
+      obtain ⟨j, hexit⟩ := hHigh n (2 * n) hgt hs hq
+      exact minimal_bad_has_no_ordinary_exit hmin (2 * n + j) hexit
+    · cases d with
+      | zero =>
+          have hc : CoefficientCrossingAt n 0 := hfirst.1
+          unfold CoefficientCrossingAt at hc
+          simp at hc
+      | succ k =>
+          have hhard : HardFirstCrossing n k :=
+            minimal_bad_first_crossing_is_hard hmin hfirst
+          rcases minimal_bad_first_crossing_constructor_domains
+            hmin hfirst with ⟨_, horigin | hlarge⟩
+          · have heven := hard_first_crossing_last_step_even hhard
+            have hqeq :
+                oddCount n (k + 1) = oddCount n k := by
+              simp [oddCount, heven]
+            have hsurvK : CoefficientSurvives n k := by
+              unfold CoefficientSurvives coefficientDenominator coefficientNumerator
+              exact first_crossing_previous_survival_bound hfirst k
+                (Nat.lt_succ_self k)
+            have hqK : n ≤ oddCount n k := by
+              simpa [hqeq] using horigin
+            obtain ⟨j, hexit⟩ := hHigh n k hgt hsurvK hqK
+            exact minimal_bad_has_no_ordinary_exit hmin (k + j) hexit
+          · rcases hlarge with ⟨hq, hwin, hmod⟩
+            obtain ⟨j, hexit⟩ :=
+              hLarge n k hgt hhard hq hwin hmod
+            exact minimal_bad_has_no_ordinary_exit hmin ((k + 1) + j) hexit
+  intro n hn
+  have hgood : CollatzGood n := by
+    apply Classical.byContradiction
+    intro hbad
+    exact hnone n ⟨hn, hbad⟩
+  exact collatzGood_eventually_one hgood
+
+#print axioms source_lt_qmin_double
+#print axioms eternal_survival_enters_high_odd
 #print axioms minimal_bad_first_crossing_constructor_domains
+#print axioms reaches_one_of_two_constructor_domains
 #print axioms reaches_one_of_assembled_constructor_coverage
 
 end SourceProduct
