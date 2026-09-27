@@ -58,8 +58,8 @@ jobs:
                     while ident in names and ident not in seen:
                       seen.add(ident); pre,part=names[ident]; parts.append(part); ident=pre
                     return '.'.join(reversed(parts))
-                  print('FOCUS_NAMES',json.dumps({str(i):full_name(i) for i in (295,375)},sort_keys=True))
-                  focus_exprs={163,162,1558,1557,1667,1666}
+                  print('FOCUS_NAMES',json.dumps({str(i):full_name(i) for i in (281,282,295,375)},sort_keys=True))
+                  focus_exprs={163,162,1558,1557,1667,1666,701,702,281,282,22,6}
                   expr_records={}
                   for raw in p.read_text().splitlines():
                     try: obj=json.loads(raw)
