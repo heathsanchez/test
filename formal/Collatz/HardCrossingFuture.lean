@@ -56,7 +56,10 @@ theorem minimal_bad_below_double_forces_odd
   intro he
   have hnd := minimal_bad_nondescending_all_depths hmin (d + 1)
   rw [iter_succ_last] at hnd
-  unfold shortcut at hnd
+  change n ≤
+    (if iter shortcut d n % 2 = 0
+      then iter shortcut d n / 2
+      else (3 * iter shortcut d n + 1) / 2) at hnd
   rw [if_pos he] at hnd
   omega
 
@@ -88,10 +91,12 @@ theorem minimal_bad_hard_crossing_large_source_signature
   have h3 : y % 3 = 1 := by
     have hm := Nat.mod_lt y (by omega : 0 < 3)
     omega
+  have hgapY :
+      3 * (y - n) < oddCount n (k + 1) := by
+    simpa [y] using hgap
+  have hgeY : n ≤ y := by
+    simpa [y] using hard_first_crossing_endpoint_ge_source hn hhard
   have hylt : y < 2 * n := by
-    have hge := hard_first_crossing_endpoint_ge_source hn hhard
-    dsimp [y] at hge hgap
-    dsimp [y]
     omega
   have hyoddne : y % 2 ≠ 0 := by
     dsimp [y]
@@ -106,13 +111,10 @@ theorem minimal_bad_hard_crossing_large_source_signature
     rw [if_neg hyoddne] at hd
     exact hd
   have hzlt : z < 2 * n := by
-    dsimp [y] at hgap
-    dsimp [z, y]
     omega
   have hzoddne : z % 2 ≠ 0 := by
     have hziter : z = iter shortcut ((k + 1) + 1) n := by
-      dsimp [z, y]
-      rw [iter_succ_last]
+      simpa [z, y] using (iter_succ_last n (k + 1)).symm
     rw [hziter]
     exact minimal_bad_below_double_forces_odd hmin (by
       simpa [hziter] using hzlt)
