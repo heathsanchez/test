@@ -461,6 +461,19 @@ impl<'a> TypeChecker<'a> {
         conversion_refutation_is_unknown: bool,
     ) -> Judgment<()> {
         let inferred = self.infer_in(expression, context, frame, remaining);
+        if std::env::var_os("NUCLEUS_TRACE_POST_CAPABILITY").is_some()
+            && matches!(inferred, Judgment::Unknown { .. })
+        {
+            if let Judgment::Unknown { residual } = &inferred {
+                eprintln!(
+                    "NUCLEUS_POST_CAPABILITY infer_unknown={} expr={:?} node={:?} depth={}",
+                    residual.0,
+                    expression,
+                    self.expressions.get(expression),
+                    context.len()
+                );
+            }
+        }
         match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
