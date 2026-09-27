@@ -96,6 +96,24 @@ pub(crate) const CONTRACTS: &[SemanticContract] = &[
         produces: &["recursor.iota@1"],
         preserves: &["lean.verdict@1"],
     },
+    SemanticContract {
+        id: "nat.beq.reflexive@1",
+        status: ContractStatus::Warranted,
+        requires: &["validated.nat-beq@1", "same.semantic-argument@1"],
+        produces: &["bool.constructor.true@1"],
+        preserves: &["lean.verdict@1"],
+    },
+    SemanticContract {
+        id: "bool.recursor.true@1",
+        status: ContractStatus::Warranted,
+        requires: &[
+            "validated.bool-recursor@1",
+            "bool.constructor.true@1",
+            "recursor.iota@1",
+        ],
+        produces: &["bool.recursor.true-consequence@1"],
+        preserves: &["lean.verdict@1"],
+    },
     // Recent Nucleus evidence shows this operation is semantically useful
     // inside the recursor-signature proof, but it has not yet earned a whole
     // protected Arena verdict. It must therefore stay out of warranted closure.
