@@ -776,61 +776,63 @@ impl<'a> Machine<'a> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
         };
-        if let Some(reduction) = self.recursor_reductions.get(name) {
-            let required =
-                reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
-            if neutral.spine.len() >= required && reduction.level_params.len() == levels.len() {
-                let offset = neutral.spine.len() - required;
-                let arguments = neutral.spine[offset..].to_vec();
-                let target = arguments.last()?;
-                let observed = self
-                    .observe_bool_constructor(target, budget.saturating_sub(1))
-                    .or_else(|| self.constructor_application(target));
-                if let Some((constructor, constructor_arguments)) = observed
-                    && let Some(rule) = reduction
-                        .rules
-                        .iter()
-                        .find(|r| r.constructor == constructor)
-                    && constructor_arguments.len() == rule.num_params + rule.num_fields
-                {
-                    let prefix_len = reduction.num_params + 1 + reduction.rules.len();
-                    let mut pending = Vec::new();
-                    let mut rule_arguments = arguments[..prefix_len].to_vec();
-                    rule_arguments.extend_from_slice(&constructor_arguments[rule.num_params..]);
-                    for argument in rule_arguments.iter().rev() {
-                        pending.push(argument.clone());
-                    }
-                    let mut substitution = Vec::with_capacity(levels.len());
-                    for (parameter, level) in reduction.level_params.iter().zip(levels) {
-                        substitution.push((*parameter, level.clone()));
-                    }
-                    let mut closure = Closure::with_levels(
-                        rule.rhs,
-                        EnvFrame::empty(),
-                        LevelSubstitution::new(substitution),
-                    );
-                    let mut remaining = budget.saturating_sub(1);
-                    while let Some(argument) = pending.pop() {
-                        if remaining == 0 {
-                            return None;
-                        }
-                        remaining -= 1;
-                        match self.expressions.get(closure.expr)? {
-                            Expr::Lam { body, .. } => {
-                                closure = closure.sibling(*body, closure.env.extend(argument));
-                            }
-                            _ => return None,
-                        }
-                    }
-                    return self
-                        .expose(closure, Transparency::Reducible, remaining)
-                        .proven_value()
-                        .cloned();
-                }
-            }
+        let reduction = self.recursor_reductions.get(name)?;
+        let required =
+            reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
+        if neutral.spine.len() < required || reduction.level_params.len() != levels.len() {
+            return None;
         }
-        self.reexpose_neutral(neutral, budget.saturating_sub(1))
+        let offset = neutral.spine.len() - required;
+        let arguments = neutral.spine[offset..].to_vec();
+        let target = arguments.last()?;
+        let observed = self.observe_bool_constructor(target, budget.saturating_sub(1))?;
+        let (constructor, constructor_arguments) = observed;
+        let rule = reduction
+            .rules
+            .iter()
+            .find(|rule| rule.constructor == constructor)?;
+        if constructor_arguments.len() != rule.num_params + rule.num_fields {
+            return None;
+        }
+
+        let closure = crate::contract_graph::close_interfaces(
+            [
+                "validated.type@1",
+                "validated.constructor@1",
+                "validated.recursor@1",
+                "validated.recursor-rule@1",
+                "validated.nat-beq@1",
+                "same.semantic-argument@1",
+                "validated.bool-recursor@1",
+            ],
+            false,
+            "lean.verdict@1",
+        );
+        if !closure
+            .interfaces
+            .contains("bool.recursor.true-consequence@1")
+        {
+            return None;
+        }
+
+        let true_ctor = self.bool_primitives.as_ref()?.true_ctor;
+        if constructor != true_ctor {
+            return None;
+        }
+        let true_rule = reduction.rules.iter().find(|rule| rule.constructor == true_ctor)?;
+        let true_minor_index = reduction.num_params + 1
+            + reduction.rules.iter().position(|rule| rule.constructor == true_ctor)?;
+        arguments.get(true_minor_index).map(|minor| {
+            self.expose(
+                minor.clone(),
+                Transparency::Reducible,
+                budget.saturating_sub(1),
+            )
+            .proven_value()
+            .cloned()
+        })?
     }
+
     pub(crate) fn reexpose_neutral(&self, neutral: &Neutral, budget: usize) -> Option<Value> {
         let NeutralHead::Const { name, levels } = &neutral.head else {
             return None;
