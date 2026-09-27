@@ -32,3 +32,5 @@ print(json.dumps({
  "max_q_over_n_lower":[max(thr).numerator,max(thr).denominator],
  "law":"Hard + reverse barrier L implies q > 3*(L-1)*n via 3*(y-n)<q",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
