@@ -25,6 +25,7 @@ ROWS = [
     # Proof / normalization shell.
     dict(id="ordinary_exit_reduction", status="WARRANTED", effect="PROOF_SHELL"),
     dict(id="source_order_strong_induction", status="CANDIDATE_LOGICAL_COMPRESSION", effect="PROOF_SHELL"),
+    dict(id="eventual_fixed_source_progress_implication", status="WARRANTED_LEAN", effect="PROOF_SHELL"),
     dict(id="source_product_normalization", status="WARRANTED", effect="NORMALIZATION"),
     dict(id="fixed_origin_zero_tail", status="WARRANTED", effect="NORMALIZATION"),
 
@@ -175,6 +176,11 @@ result = {
         ],
         "single_remaining_obligation": "prove total coverage of every fixed positive source by at least one sound lower-source certificate constructor",
     },
+    "proof_shell_reconciliation": {
+        "eventual_fsp": "WARRANTED sufficient closeout, but not a necessary obligation if lower-source constructor coverage is proved directly",
+        "source_order": "the smaller-source certificate itself carries the well-founded descent; no independent time rank is logically required",
+        "terras_boundary": "universal first-coefficient-crossing descent is not required: a hard crossing may survive if any later forward/reverse constructor emits a smaller-source common-future certificate",
+    },
     "protected_effect_quotient": classes,
     "exact_meta_deduplication": {
         "new_strong_reverse_q14_vs_prior_q_source_squeeze_q_le_n": {
@@ -198,7 +204,7 @@ result = {
         "name": "LOWER_SOURCE_CONSTRUCTOR_COVERAGE",
         "status": "CANDIDATE",
         "statement": "For every n>1, some finite actual-orbit prefix enters the verified domain of a constructor that emits p<n with a common future.",
-        "why_this_is_smaller": "all successful forward, reverse, crossing and carry results matter only through whether they construct or force this certificate; timing/rank representations are auxiliary",
+        "why_this_is_smaller": "all successful forward, reverse, crossing and carry results matter only through whether they construct or force this certificate; timing/rank representations are auxiliary, and universal first-crossing descent is unnecessarily strong",
     },
     "highest_leverage_unknown": "totality of the lower-source constructor bank on an arbitrary actual fixed-source no-OrdinaryExit path",
     "next_experiment": {
