@@ -27,35 +27,34 @@ theorem ownerLift_normal_form :
       ∃ k p, 0 < p ∧ p % 2 = 1 ∧ p % 8 ≠ 5 ∧
         x = ownerLift k p := by
   intro x
-  induction x using Nat.strong_induction_on with
-  | h x ih =>
-      intro hx hodd
-      by_cases h5 : x % 8 = 5
-      · let a := x / 8
-        let q := 2 * a + 1
-        have hxform : x = 8 * a + 5 := by
-          have hd := Nat.mod_add_div x 8
-          dsimp [a]
-          omega
-        have hqpos : 0 < q := by
-          dsimp [q]
-          omega
-        have hqodd : q % 2 = 1 := by
-          dsimp [q]
-          omega
-        have hqlt : q < x := by
-          dsimp [q]
-          omega
-        obtain ⟨k, p, hp, hpodd, hp5, hqform⟩ :=
-          ih q hqlt hqpos hqodd
-        refine ⟨k + 1, p, hp, hpodd, hp5, ?_⟩
-        calc
-          x = 4 * q + 1 := by
-            dsimp [q]
-            omega
-          _ = 4 * ownerLift k p + 1 := by rw [hqform]
-          _ = ownerLift (k + 1) p := by simp [ownerLift]
-      · exact ⟨0, x, hx, hodd, h5, by simp [ownerLift]⟩
+  refine Nat.strongRecOn x ?_
+  intro x ih hx hodd
+  by_cases h5 : x % 8 = 5
+  · let a := x / 8
+    let q := 2 * a + 1
+    have hxform : x = 8 * a + 5 := by
+      have hd := Nat.mod_add_div x 8
+      dsimp [a]
+      omega
+    have hqpos : 0 < q := by
+      dsimp [q]
+      omega
+    have hqodd : q % 2 = 1 := by
+      dsimp [q]
+      omega
+    have hqlt : q < x := by
+      dsimp [q]
+      omega
+    obtain ⟨k, p, hp, hpodd, hp5, hqform⟩ :=
+      ih q hqlt hqpos hqodd
+    refine ⟨k + 1, p, hp, hpodd, hp5, ?_⟩
+    calc
+      x = 4 * q + 1 := by
+        dsimp [q]
+        omega
+      _ = 4 * ownerLift k p + 1 := by rw [hqform]
+      _ = ownerLift (k + 1) p := by simp [ownerLift]
+  · exact ⟨0, x, hx, hodd, h5, by simp [ownerLift]⟩
 
 /-- Exact all-depth arithmetic identity for the valuation-pullback lift.
 Each owner-lift layer contributes exactly a factor 4 to 3*x+1. -/
