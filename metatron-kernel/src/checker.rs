@@ -3925,7 +3925,9 @@ fn expression_contains_bvar(export: &ResolvedExport, expression: ExprId, target:
                 || expression_contains_bvar(export, *body, target.saturating_add(1))
         }
         Some(Expr::Proj { structure, .. }) => expression_contains_bvar(export, *structure, target),
-        Some(Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => false,
+        Some(Expr::Const { .. } | Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_)) | None => {
+            false
+        }
     }
 }
 
