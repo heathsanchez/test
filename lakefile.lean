@@ -30,5 +30,6 @@ lean_lib CollatzFinal where
     `Collatz.SourceCoherenceAudit,
     `Collatz.FinalExcursion,
     `Collatz.AssembledConstructorCloseout,
-    `Collatz.ConstructorTournament
+    `Collatz.ConstructorTournament,
+    `Collatz.ValuationPullback
   ]
