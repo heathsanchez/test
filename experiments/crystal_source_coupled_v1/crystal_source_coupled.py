@@ -107,14 +107,16 @@ def greedy_crystal(records):
 
 def run(sources):
     records=build_records(sources)
+    labels=[z[2] for z in records]
     return {"sources":len(sources),"actual_pre_exit_states":len(records),
+            "bounded_unknown_states":sum(1 for x in labels if x[0]=="UNKNOWN"),
             "crystal":greedy_crystal(records)}
 
 if __name__=="__main__":
     rng=random.Random(28092026)
-    train=list(range(3,2049))
-    prospective=[rng.randrange(2049,16385) for _ in range(512)]
-    print(json.dumps({"schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V3",
+    train=list(range(3,4097))
+    prospective=[rng.randrange(2**16,2**20) for _ in range(1024)]
+    print(json.dumps({"schema":"COLLATZ_CRYSTAL_SOURCE_COUPLED_V4_SCALE",
       "epistemic":"DISCOVERY_ONLY_BOUNDED",
       "train":run(train),"prospective":run(prospective),
       "boundary":"UNKNOWN labels are bounded misses; global Collatz UNKNOWN."},indent=2))
