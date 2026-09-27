@@ -23,3 +23,5 @@ print(json.dumps({"schema":"COLLATZ_RECHARGE_SCC_DEFECT_KILL_V0",
  "theorem":"any integer entry has finite consecutive repetitions unless C*m-B=0; zero defect requires m=B/C=19/35, not an integer",
  "verdict":"SOLE_SYMBOLIC_RECHARGE_SCC_NOT_INFINITELY_REPEATABLE",
  "global_collatz":"UNKNOWN"},indent=2))
+
+# trigger
