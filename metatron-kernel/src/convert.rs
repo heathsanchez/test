@@ -609,12 +609,12 @@ fn compare_values(
             if matches!(head_comparison, Judgment::Refuted { .. }) {
                 let machine = checker.machine();
                 if let Some(reexposed) = machine.reexpose_neutral(left, budget)
-                    && &reexposed != left
+                    && reexposed != Value::Neutral(left.clone())
                 {
                     return compare_values(
                         checker,
                         &reexposed,
-                        right,
+                        &Value::Neutral(right.clone()),
                         budget.saturating_sub(1),
                         depth,
                         work,
@@ -622,11 +622,11 @@ fn compare_values(
                     );
                 }
                 if let Some(reexposed) = machine.reexpose_neutral(right, budget)
-                    && &reexposed != right
+                    && reexposed != Value::Neutral(right.clone())
                 {
                     return compare_values(
                         checker,
-                        left,
+                        &Value::Neutral(left.clone()),
                         &reexposed,
                         budget.saturating_sub(1),
                         depth,
