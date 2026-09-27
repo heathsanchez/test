@@ -1,0 +1,64 @@
+name: Nucleus Crystal generic-check separator v1
+on:
+  push:
+    branches: [nucleus-dependency-closure-exec-v1]
+    paths: [".github/workflows/nucleus-crystal-generic-check-separator-v1.yml"]
+permissions: {contents: read}
+jobs:
+  separate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/t.zip
+          mkdir -p /tmp/a /tmp/t && unzip -q /tmp/t.zip -d /tmp/a && tar -xzf /tmp/a/lean-arena-tests.tar.gz -C /tmp/t
+      - name: Quotient executed generic check traces
+        run: |
+          python - <<'PY'
+          import pathlib,subprocess,os,re,json,collections
+          root=pathlib.Path('/tmp/t'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          env=os.environ.copy(); env['NUCLEUS_TRACE_GENERIC_CHECK']='1'; env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+          rows=[]
+          for p in sorted(root.rglob('*.ndjson')):
+            expected=0 if p.relative_to(root).parts[0]=='good' else 1
+            with p.open('rb') as f:
+              try:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=90,env=env)
+              except subprocess.TimeoutExpired: continue
+            if q.returncode!=2: continue
+            log=q.stderr.decode(errors='replace')
+            events=tuple(re.findall(r'NUCLEUS_GENERIC_CHECK:([^\n]+)',log))
+            downstream=tuple(re.findall(r'NUCLEUS_DOWNSTREAM:name=[^:]*:stage=([^:]*):verdict=UNKNOWN:reason=([^\n]+)',log))
+            rows.append({'path':str(p.relative_to(root)),'expected':expected,'events':events,'downstream':downstream})
+          # First differing event prefix among opposite outcomes.
+          atoms=collections.defaultdict(lambda:{0:[],1:[]})
+          for r in rows:
+            for idx,e in enumerate(r['events']):
+              atoms[(idx,e)][r['expected']].append(r['path'])
+          pure=[]
+          for (idx,e),by in atoms.items():
+            outs=[o for o in (0,1) if by[o]]
+            if len(outs)==1:
+              o=outs[0]; pure.append({'index':idx,'event':e,'outcome':o,'coverage':len(by[o]),'members':by[o]})
+          pure.sort(key=lambda x:(x['index'],-x['coverage'],x['outcome'],x['event']))
+          # Exact trace quotient.
+          groups=collections.defaultdict(list)
+          for r in rows: groups[json.dumps(r['events'])].append(r)
+          classes=[]
+          for k,v in groups.items():
+            outs=sorted(set(x['expected'] for x in v))
+            classes.append({'size':len(v),'outcomes':outs,'members':[x['path'] for x in v],'events':json.loads(k)})
+          classes.sort(key=lambda x:(-x['size'],x['outcomes'],x['members']))
+          out={'unknown_count':len(rows),'trace_classes':len(classes),'first_pure_events':pure[:40],'classes':classes}
+          pathlib.Path('/tmp/nucleus-crystal-generic-check-separator-v1.json').write_text(json.dumps(out,indent=2))
+          print(json.dumps(out,indent=2))
+          assert len(rows)==40
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-generic-check-separator-v1
+          path: /tmp/nucleus-crystal-generic-check-separator-v1.json
