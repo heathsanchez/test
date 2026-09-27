@@ -1,0 +1,29 @@
+name: Collatz bi-adic source endpoint join V0
+on:
+  push:
+    branches: [collatz-universal-source-product-v1]
+    paths:
+      - 'experiments/collatz_biadic_source_endpoint_join_v0.py'
+      - '.github/workflows/collatz-biadic-source-endpoint-join-v0.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  join:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exact bounded joint compatibility audit
+        run: |
+          python -u experiments/collatz_biadic_source_endpoint_join_v0.py
+          cat evidence/collatz-biadic-source-endpoint-join-v0/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-biadic-source-endpoint-join-v0
+          path: evidence/collatz-biadic-source-endpoint-join-v0
+          if-no-files-found: error
