@@ -58,7 +58,9 @@ theorem collatz_of_eventual_fixed_source_progress
     intro n hmin
     have hgt : 1 < n := minimal_positive_bad_gt_one hmin
     have himpossible : ∀ w, ∀ k, rank n k = w → False := by
-      apply hprec.induction
+      intro w
+      refine @WellFounded.induction W prec hprec
+        (fun x => ∀ k, rank n k = x → False) w ?_
       intro x ih k hk
       have hlive : FixedSourcePrefixLive n k :=
         minimal_bad_prefix_live hmin k
