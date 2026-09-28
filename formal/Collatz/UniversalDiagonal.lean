@@ -52,16 +52,15 @@ theorem scaled_orbit_le_four_pow_odds
                 simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm,
                   Nat.mul_left_comm]
 
-/-- Any hypothetical minimal bad source has accumulated at least n odd shortcut
-steps by ordinary depth 2*n.  Unlike the older high-odd bridge, this needs no
-coefficient-survival premise. -/
-theorem minimal_bad_enters_post_diagonal_by_double
+/-- Any positive source that has not descended by depth 2*n has already
+accumulated at least n odd shortcut steps.  This is the exact source-level
+form consumed by the V10 checkpoint experiment. -/
+theorem nondescending_double_depth_enters_post_diagonal
     {n : Nat}
-    (hmin : MinimalBad PositiveBad n) :
+    (hn : 0 < n)
+    (hnd : n ≤ iter shortcut (2 * n) n) :
     n ≤ oddCount n (2 * n) := by
-  have hn : 0 < n := hmin.1.1
   have henv := scaled_orbit_le_four_pow_odds hn (2 * n)
-  have hnd := minimal_bad_nondescending_all_depths hmin (2 * n)
   have hscaled :
       2 ^ (2 * n) * n ≤
         4 ^ oddCount n (2 * n) * n := by
@@ -86,6 +85,16 @@ theorem minimal_bad_enters_post_diagonal_by_double
     exact (Nat.mul_lt_mul_right hn).2 hp
   omega
 
+/-- Any hypothetical minimal bad source has accumulated at least n odd shortcut
+steps by ordinary depth 2*n.  Unlike the older high-odd bridge, this needs no
+coefficient-survival premise. -/
+theorem minimal_bad_enters_post_diagonal_by_double
+    {n : Nat}
+    (hmin : MinimalBad PositiveBad n) :
+    n ≤ oddCount n (2 * n) := by
+  exact nondescending_double_depth_enters_post_diagonal
+    hmin.1.1 (minimal_bad_nondescending_all_depths hmin (2 * n))
+
 /-- Consequently the exact V8 post-diagonal source fiber is not merely a
 possible late regime: every minimal bad source enters it by depth 2*n. -/
 theorem minimal_bad_double_depth_is_canonical
@@ -97,6 +106,7 @@ theorem minimal_bad_double_depth_is_canonical
   simpa using minimal_bad_enters_post_diagonal_by_double hmin
 
 #print axioms scaled_orbit_le_four_pow_odds
+#print axioms nondescending_double_depth_enters_post_diagonal
 #print axioms minimal_bad_enters_post_diagonal_by_double
 #print axioms minimal_bad_double_depth_is_canonical
 
