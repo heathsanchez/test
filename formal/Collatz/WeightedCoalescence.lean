@@ -77,6 +77,8 @@ certified, every larger source that reaches the same state with at least the
 same remaining budget inherits the cap for the whole shared suffix. -/
 theorem four_thirds_cap_of_budgeted_common_future
     {n p a b j : Nat}
+    (hp0 : 0 < p)
+    (hplt : p < n)
     (heq : iter shortcut a n = iter shortcut b p)
     (hbud :
       3 * oddCount n a + 4 * p ≤
@@ -85,7 +87,7 @@ theorem four_thirds_cap_of_budgeted_common_future
       3 * oddCount p (b + j) ≤ 4 * p) :
     3 * oddCount n (a + j) ≤ 4 * n := by
   exact weighted_merge_transfers_four_thirds
-    ⟨by omega, by omega, heq, hbud⟩ hp
+    ⟨hp0, hplt, heq, hbud⟩ hp
 
 #print axioms oddCount_add
 #print axioms weighted_budget_persists_after_merge
