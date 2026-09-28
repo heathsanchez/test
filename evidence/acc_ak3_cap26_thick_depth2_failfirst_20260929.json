@@ -1,0 +1,91 @@
+{
+  "schema": "acc-ak3-cap26-thick-depth2-failfirst-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "upstream_source": {
+    "repository": "SauersML/group-approximation",
+    "commit": "f541c13486b24a4986380f16f97e6b61ee4da55f",
+    "generator": "experiments/ak3-cap26-component-2026-09-17/capbfs.c",
+    "goal_semantics": "experiments/ak3-thick-z-pair-search-2026-09-17/thzsearch.c",
+    "neuwirth_solver": "experiments/ak3-thick-z-pair-search-2026-09-17/thick2.c"
+  },
+  "calibration": {
+    "rank3_cap26_depth1_cumulative_states": 222,
+    "rank3_cap26_depth2_cumulative_states": 7452,
+    "depth2_z_using_length_25_or_26_states": 1995,
+    "matches_upstream_and_prior_calibrated_evidence": true
+  },
+  "pinned_original_solver": {
+    "node_cap": 10000,
+    "exact_negative_states": 31,
+    "thick_goals": 0,
+    "undecided_states": 1964
+  },
+  "plateau_control": {
+    "solver": "original thick2 longest-open-path tail selection",
+    "node_cap": 20000,
+    "input_states": 1964,
+    "new_exact_negative_states": 0,
+    "thick_goals": 0,
+    "undecided_states": 1964
+  },
+  "earned_solver_distinction": {
+    "name": "fail_first_open_path_tail",
+    "rule": "Choose the open phi-path tail with the fewest currently legal successor assignments; break ties by the original longest-path rule.",
+    "unchanged_semantics": [
+      "Neuwirth decision problem",
+      "lower-bound pruning",
+      "candidate legality",
+      "exhaustive branch semantics"
+    ]
+  },
+  "memoization_control": {
+    "states_tested": 50,
+    "node_cap": 20000,
+    "exact_dead_state_cache_hits": 0,
+    "verdict": "REJECTED_AS_MECHANISM"
+  },
+  "fail_first_escalation": [
+    {
+      "node_cap": 20000,
+      "input_states": 1964,
+      "new_exact_negative_states": 1004,
+      "thick_goals": 0,
+      "remaining_undecided": 960
+    },
+    {
+      "node_cap": 50000,
+      "input_states": 960,
+      "new_exact_negative_states": 675,
+      "thick_goals": 0,
+      "remaining_undecided": 285
+    },
+    {
+      "node_cap": 100000,
+      "input_states": 285,
+      "new_exact_negative_states": 192,
+      "thick_goals": 0,
+      "remaining_undecided": 93
+    },
+    {
+      "node_cap": 500000,
+      "input_states": 93,
+      "new_exact_negative_states": 93,
+      "thick_goals": 0,
+      "remaining_undecided": 0,
+      "hardest_nodes": 254418,
+      "mean_nodes_final_93": 168380.3
+    }
+  ],
+  "bounded_conclusion": {
+    "depth2_states": 1995,
+    "exact_negative_states": 1995,
+    "thick_goals": 0,
+    "undecided_states": 0,
+    "interpretation": "Direct THICK is absent from every cap-26 rank-3 z-using total-length-25/26 state first discovered at BFS depth 2 under the pinned public move/canonicalization semantics. Reuse fail-first for the deeper first-discovery bands rather than raising the original solver cap."
+  },
+  "publication": {
+    "acc_rows_submitted": 0,
+    "sair_quota_consumed": 0,
+    "official_acc_verifier_candidate": false
+  }
+}
