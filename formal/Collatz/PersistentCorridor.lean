@@ -92,6 +92,95 @@ theorem minimal_bad_persistent_survival_or_deficit_one
     minimal_bad_persistent_qmin_corridor hmin hqpos hq2
   omega
 
+
+/-- Any nondescending prefix has at least half as many odd steps as ordinary
+steps.  This is the arbitrary-depth form of the V9 double-depth diagonal. -/
+theorem nondescending_depth_le_twice_oddCount
+    {n k : Nat}
+    (hn : 0 < n)
+    (hnd : n ≤ iter shortcut k n) :
+    k ≤ 2 * oddCount n k := by
+  have henv := scaled_orbit_le_four_pow_odds hn k
+  have hscaled :
+      2 ^ k * n ≤ 4 ^ oddCount n k * n := by
+    exact Nat.le_trans (Nat.mul_le_mul_left (2 ^ k) hnd) henv
+  apply Nat.le_of_not_gt
+  intro hbad
+  have hexp : 2 * oddCount n k < k := by omega
+  have hp2 :
+      2 ^ (2 * oddCount n k) < 2 ^ k :=
+    Nat.pow_lt_pow_right (by decide : 1 < 2) hexp
+  have hfour :
+      4 ^ oddCount n k =
+        2 ^ (2 * oddCount n k) := by
+    rw [show 4 = 2 ^ 2 by decide, ← Nat.pow_mul]
+  have hp :
+      4 ^ oddCount n k < 2 ^ k := by
+    simpa [hfour] using hp2
+  have hm :=
+    (Nat.mul_lt_mul_right hn).2 hp
+  omega
+
+/-- Elementary separation at the second deterministic diagonal. -/
+theorem three_pow_double_succ_lt_two_pow_quadruple
+    (n : Nat) (hn : 3 ≤ n) :
+    3 ^ (2 * n + 1) < 2 ^ (4 * n) := by
+  obtain ⟨m, rfl⟩ : ∃ m, n = m + 3 := by
+    exact ⟨n - 3, by omega⟩
+  induction m with
+  | zero => decide
+  | succ m ih =>
+      have h3 : 0 < 3 ^ (2 * (m + 3) + 1) :=
+        Nat.pow_pos (by decide)
+      have hleft :
+          9 * 3 ^ (2 * (m + 3) + 1) <
+            16 * 3 ^ (2 * (m + 3) + 1) :=
+        Nat.mul_lt_mul_of_pos_right (by decide : 9 < 16) h3
+      have hright :
+          16 * 3 ^ (2 * (m + 3) + 1) <
+            16 * 2 ^ (4 * (m + 3)) :=
+        Nat.mul_lt_mul_of_pos_left ih (by decide : 0 < 16)
+      have hchain := Nat.lt_trans hleft hright
+      simpa [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hchain
+
+/-- By depth 4*n a hypothetical minimal bad source has accumulated strictly
+more than 2*n odd steps.  Equality would put the path inside the persistent
+one-bit corridor while qmin(4*n) is already strictly above 2*n+1. -/
+theorem minimal_bad_quadruple_depth_strict_double_diagonal
+    {n : Nat}
+    (hmin : MinimalBad PositiveBad n) :
+    2 * n < oddCount n (4 * n) := by
+  have hn : 0 < n := hmin.1.1
+  have hgt : 1 < n := by
+    have hne : n ≠ 1 := by
+      intro heq
+      apply hmin.1.2
+      subst n
+      exact ⟨0, by simp [iter, Terminal]⟩
+    omega
+  have hn3 : 3 ≤ n := by
+    have hodd := positive_minimal_bad_odd hmin
+    omega
+  have hhalf :=
+    nondescending_depth_le_twice_oddCount hn
+      (minimal_bad_nondescending_all_depths hmin (4 * n))
+  have hge : 2 * n ≤ oddCount n (4 * n) := by omega
+  apply Nat.lt_of_le_of_ne hge
+  intro heq
+  have hqeq : oddCount n (4 * n) = 2 * n := by omega
+  have hcorr :=
+    minimal_bad_persistent_qmin_corridor
+      (k := 4 * n) hmin
+      (by rw [hqeq]; omega)
+      (by rw [hqeq])
+  have hspec := qmin_spec (4 * n)
+  have hpowle :
+      3 ^ qmin (4 * n) ≤ 3 ^ (2 * n + 1) :=
+    Nat.pow_le_pow_right (by decide) hcorr
+  have hsep :=
+    three_pow_double_succ_lt_two_pow_quadruple n hn3
+  omega
+
 #print axioms nondescending_q_le_double_source_qmin_corridor
 #print axioms minimal_bad_persistent_qmin_corridor
 #print axioms minimal_bad_persistent_survival_or_deficit_one
