@@ -1,4 +1,4 @@
-import Collatz.PostDiagonalFiber
+import Collatz.QuarterSplice
 
 namespace CollatzFinal
 namespace SourceProduct
