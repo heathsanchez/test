@@ -38,5 +38,6 @@ lean_lib CollatzFinal where
     `Collatz.UniversalDiagonal,
     `Collatz.DoubleDepthCloseout,
     `Collatz.DoubleDepthCorridor,
-    `Collatz.DeficitOneCheckpoint
+    `Collatz.DeficitOneCheckpoint,
+    `Collatz.PersistentCorridor
   ]
