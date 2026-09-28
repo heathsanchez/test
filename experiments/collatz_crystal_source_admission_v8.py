@@ -136,7 +136,7 @@ def count_class(c):
     return "32+"
 
 def run(limit:int,cap:int,out:Path):
-    modes=("CONTROL","ADMISSION_COUNT","ADMISSION","CYLINDER","ENDPOINT")
+    modes=("CONTROL","ADMISSION_COUNT","ADMISSION","DEPTH","RHO16","SUPPORT","RESIDUE","CYLINDER","ENDPOINT")
     graphs={m:{} for m in modes}
     outcomes={m:collections.defaultdict(set) for m in modes}
     counts=collections.Counter()
@@ -194,10 +194,15 @@ def run(limit:int,cap:int,out:Path):
                        None if khi is None else min(khi-klo,64))
             adm_state=(local,klo,khi)
             cyl=(local,adm.D,rho,klo,khi)
+            support_gap=adm.D-rho.bit_length() if rho else adm.D
             keys={
                 "CONTROL":local,
                 "ADMISSION_COUNT":adm_count,
                 "ADMISSION":adm_state,
+                "DEPTH":(local,adm.D),
+                "RHO16":(local,min(adm.D,16),rho & 0xffff),
+                "SUPPORT":(local,int(kactual==0),rho.bit_length(),support_gap),
+                "RESIDUE":(local,rho),
                 "CYLINDER":cyl,
                 "ENDPOINT":y0,
             }
@@ -229,6 +234,12 @@ def run(limit:int,cap:int,out:Path):
         verdict="CONTROL_ALREADY_ACYCLIC"
     elif stats["ADMISSION"]["kernel_nodes"]==0:
         verdict="SOURCE_ADMISSION_REMOVES_RECURRENT_KERNEL"
+    elif stats["RHO16"]["kernel_nodes"]==0:
+        verdict="FINITE_SOURCE_PREFIX_SUFFICES_ON_BOUNDARY"
+    elif stats["SUPPORT"]["kernel_nodes"]==0:
+        verdict="FINITE_SUPPORT_SHAPE_SUFFICES_ON_BOUNDARY"
+    elif stats["RESIDUE"]["kernel_nodes"]==0:
+        verdict="EXACT_SOURCE_RESIDUE_REQUIRED_ON_BOUNDARY"
     elif stats["CYLINDER"]["kernel_nodes"]==0:
         verdict="FULL_CYLINDER_REQUIRED_ON_BOUNDARY"
     else:
