@@ -78,6 +78,35 @@ theorem parse_success_has_parser_witness
     exact ⟨rawDocs, tokens, h_raw, h_scan, h_parse⟩
   · contradiction
 
+
+/--
+Parser success contains the exact missing adjacency distinction.  Once a flow
+sequence already contains at least one parsed item, a successful loop result
+that grows the item array can only have crossed an explicit FLOW-ENTRY token.
+This is the token-level fact that `scannerDrop` currently hides at the
+character/surface layer.
+-/
+lemma parseFlowSequenceLoop_growth_requires_separator
+    (ps ps' : L4YAML.TokenParser.ParseState)
+    (fuel : Nat)
+    (items result : Array L4YAML.YamlValue)
+    (hitems : items.size > 0)
+    (hgrowth : result.size > items.size)
+    (hok : L4YAML.TokenParser.parseFlowSequenceLoop ps (fuel + 1) items = .ok (result, ps')) :
+    ps.peek? = some .flowEntry := by
+  unfold L4YAML.TokenParser.parseFlowSequenceLoop at hok
+  simp only [bind, Except.bind, pure, Except.pure] at hok
+  split at hok
+  · simp only [Except.ok.injEq, Prod.mk.injEq] at hok
+    obtain ⟨rfl, _⟩ := hok
+    exact False.elim (Nat.lt_irrefl _ hgrowth)
+  · simp [hitems] at hok
+    split at hok
+    · assumption
+    · simp only [Except.ok.injEq, Prod.mk.injEq] at hok
+      obtain ⟨rfl, _⟩ := hok
+      exact False.elim (Nat.lt_irrefl _ hgrowth)
+
 #eval scanAccepts "[[a][b]]"
 #eval parseAccepts "[[a][b]]"
 #eval scanAccepts "[a,b]"
