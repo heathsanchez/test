@@ -1,0 +1,34 @@
+name: Collatz Crystal Owner Four Thirds V16
+
+on:
+  push:
+    branches: [collatz-crystal-owner-four-thirds-v16]
+    paths:
+      - 'formal/Collatz/ValuationPullback.lean'
+      - 'formal/Collatz/FourThirdsBoundary.lean'
+      - 'formal/Collatz/OwnerFourThirdsBoundary.lean'
+      - 'experiments/collatz_crystal_owner_boundary_v16.py'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-owner-four-thirds-v16.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify frozen owner four-thirds waist
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/OwnerFourThirdsBoundary.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/OwnerFourThirdsBoundary.lean | tee /tmp/v16.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v16.log
