@@ -130,6 +130,10 @@ theorem three_pow_double_succ_lt_two_pow_quadruple
   induction m with
   | zero => decide
   | succ m ih =>
+      have ih' :
+          3 ^ (2 * (m + 3) + 1) <
+            2 ^ (4 * (m + 3)) :=
+        ih (by omega)
       have h3 : 0 < 3 ^ (2 * (m + 3) + 1) :=
         Nat.pow_pos (by decide)
       have hleft :
@@ -139,9 +143,19 @@ theorem three_pow_double_succ_lt_two_pow_quadruple
       have hright :
           16 * 3 ^ (2 * (m + 3) + 1) <
             16 * 2 ^ (4 * (m + 3)) :=
-        Nat.mul_lt_mul_of_pos_left ih (by decide : 0 < 16)
-      have hchain := Nat.lt_trans hleft hright
-      simpa [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] using hchain
+        Nat.mul_lt_mul_of_pos_left ih' (by decide : 0 < 16)
+      calc
+        3 ^ (2 * (m + 1 + 3) + 1) =
+            9 * 3 ^ (2 * (m + 3) + 1) := by
+              rw [show 2 * (m + 1 + 3) + 1 =
+                2 + (2 * (m + 3) + 1) by omega, Nat.pow_add]
+              norm_num
+        _ < 16 * 3 ^ (2 * (m + 3) + 1) := hleft
+        _ < 16 * 2 ^ (4 * (m + 3)) := hright
+        _ = 2 ^ (4 * (m + 1 + 3)) := by
+              rw [show 4 * (m + 1 + 3) =
+                4 + 4 * (m + 3) by omega, Nat.pow_add]
+              norm_num
 
 /-- By depth 4*n a hypothetical minimal bad source has accumulated strictly
 more than 2*n odd steps.  Equality would put the path inside the persistent
@@ -172,11 +186,13 @@ theorem minimal_bad_quadruple_depth_strict_double_diagonal
     minimal_bad_persistent_qmin_corridor
       (k := 4 * n) hmin
       (by rw [hqeq]; omega)
-      (by rw [hqeq])
+      (by rw [hqeq]; omega)
   have hspec := qmin_spec (4 * n)
+  have hcorr' : qmin (4 * n) ≤ 2 * n + 1 := by
+    simpa [hqeq] using hcorr
   have hpowle :
       3 ^ qmin (4 * n) ≤ 3 ^ (2 * n + 1) :=
-    Nat.pow_le_pow_right (by decide) hcorr
+    Nat.pow_le_pow_right (by decide) hcorr'
   have hsep :=
     three_pow_double_succ_lt_two_pow_quadruple n hn3
   omega
