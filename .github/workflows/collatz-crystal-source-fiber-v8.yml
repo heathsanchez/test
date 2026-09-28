@@ -1,0 +1,68 @@
+name: Collatz Crystal Source Fiber V8
+
+on:
+  push:
+    branches: [collatz-crystal-source-fiber-v8]
+    paths:
+      - 'experiments/collatz_crystal_source_fiber_v8.py'
+      - 'formal/Collatz/PostDiagonalFiber.lean'
+      - '.github/workflows/collatz-crystal-source-fiber-v8.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Reject placeholders and prove universal fiber bound
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/PostDiagonalFiber.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/PostDiagonalFiber.lean
+
+      - name: Run source-fiber falsifier on frozen V7 boundary
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-fiber-v8
+          python experiments/collatz_crystal_source_fiber_v8.py \
+            --limit 1048576 --odd-cap 4096 \
+            --output evidence/collatz-crystal-source-fiber-v8/result.json \
+            | tee evidence/collatz-crystal-source-fiber-v8/run.log
+
+      - name: Judge exact reduction boundary
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-source-fiber-v8/result.json'
+          d=json.load(open(p))
+          c=d['counts']
+          assert c.get('odd_cap_unresolved',0)==0
+          assert c.get('diagonal_entry_band_nonexit',0)==0
+          assert c.get('postdiag_return_nonexit',0)==0
+          assert c.get('diagonal_entrants',0)>0
+          assert c.get('postdiag_return_splice',0)==c.get('diagonal_entrants',0)
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V8_VERDICT',d['verdict'])
+          print('DIAGONAL_ENTRANTS',c.get('diagonal_entrants',0))
+          print('POSTDIAGONAL_RETURNS',json.dumps(d['postdiagonal_band_returns'],sort_keys=True))
+          print('CLOSURE_CERTIFICATE',d['closure_certificate'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-source-fiber-v8
+          path: evidence/collatz-crystal-source-fiber-v8
+          if-no-files-found: warn
