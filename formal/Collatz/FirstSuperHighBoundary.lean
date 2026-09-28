@@ -91,7 +91,7 @@ theorem minimal_bad_first_superhigh_predecessor_corridor
   have hn : 0 < n := hmin.1.1
   have hqpos : 0 < oddCount n k := by rw [hq]; omega
   have hq2 : oddCount n k ≤ 2 * n := by
-    rw [hq]
+    simpa [hq]
   exact minimal_bad_persistent_survival_or_deficit_one
     hmin hqpos hq2
 
