@@ -66,22 +66,24 @@ theorem minimal_bad_enters_post_diagonal_by_double
       2 ^ (2 * n) * n ≤
         4 ^ oddCount n (2 * n) * n := by
     exact Nat.le_trans (Nat.mul_le_mul_left (2 ^ (2 * n)) hnd) henv
-  have hcancel :
-      2 ^ (2 * n) ≤ 4 ^ oddCount n (2 * n) := by
-    exact (Nat.mul_le_mul_right hn).1
-      (by simpa [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hscaled)
   apply Nat.le_of_not_gt
   intro hq
   have hexp :
       2 * oddCount n (2 * n) < 2 * n := by omega
-  have hp :
+  have hp2 :
       2 ^ (2 * oddCount n (2 * n)) < 2 ^ (2 * n) := by
     exact Nat.pow_lt_pow_right (by decide : 1 < 2) hexp
   have hfour :
       4 ^ oddCount n (2 * n) =
         2 ^ (2 * oddCount n (2 * n)) := by
     rw [show 4 = 2 ^ 2 by decide, ← Nat.pow_mul]
-  rw [hfour] at hcancel
+  have hp :
+      4 ^ oddCount n (2 * n) < 2 ^ (2 * n) := by
+    simpa [hfour] using hp2
+  have hmul :
+      4 ^ oddCount n (2 * n) * n <
+        2 ^ (2 * n) * n := by
+    exact (Nat.mul_lt_mul_right hn).2 hp
   omega
 
 /-- Consequently the exact V8 post-diagonal source fiber is not merely a
