@@ -43,18 +43,18 @@ theorem qmin_double_odd_upper
         have hfour : 2 ^ (4 * m) = 16 ^ m := by
           calc
             2 ^ (4 * m) = (2 ^ 4) ^ m := by rw [Nat.pow_mul]
-            _ = 16 ^ m := by norm_num
+            _ = 16 ^ m := by decide
         rw [hfour]
-        norm_num
+        decide
       _ ≤ 27 ^ m * 9 := Nat.mul_le_mul h16 (by decide)
       _ = 3 ^ (3 * m + 2) := by
         rw [Nat.pow_add]
         have hthree : 3 ^ (3 * m) = 27 ^ m := by
           calc
             3 ^ (3 * m) = (3 ^ 3) ^ m := by rw [Nat.pow_mul]
-            _ = 27 ^ m := by norm_num
+            _ = 27 ^ m := by decide
         rw [hthree]
-        norm_num
+        decide
   simpa [m] using qmin_le_of_pow_le hpow
 
 /-- Exact deficit-one checkpoint consequence.
