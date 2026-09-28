@@ -33,5 +33,8 @@ lean_lib CollatzFinal where
     `Collatz.ConstructorTournament,
     `Collatz.ThreeQuarterCoalescence,
     `Collatz.PrefixHighOddCloseout,
-    `Collatz.QuarterSplice
+    `Collatz.QuarterSplice,
+    `Collatz.PostDiagonalFiber,
+    `Collatz.UniversalDiagonal,
+    `Collatz.DoubleDepthCloseout
   ]
