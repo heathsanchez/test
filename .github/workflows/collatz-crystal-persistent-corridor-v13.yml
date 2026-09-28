@@ -1,0 +1,31 @@
+name: Collatz Crystal Persistent Corridor V13
+
+on:
+  push:
+    branches: [collatz-crystal-persistent-corridor-v13]
+    paths:
+      - 'formal/Collatz/PersistentCorridor.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-persistent-corridor-v13.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prove persistent one-bit corridor
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/PersistentCorridor.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/PersistentCorridor.lean | tee /tmp/persistent.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/persistent.log
