@@ -108,10 +108,54 @@ theorem first_superhigh_boundary_step_odd
     rw [if_pos he]
   omega
 
+
+/-- Crystal's stronger bounded separator, stated only as an explicit premise.
+No-exit states never accumulate more than four-thirds as many odd steps as the
+source value. This is NOT proved here; the theorem below records exactly why
+proving it would close Collatz. -/
+def FourThirdsNoExitOddCap : Prop :=
+  ∀ n k, 1 < n →
+    ¬ OrdinaryExit n (iter shortcut k n) →
+    3 * oddCount n k ≤ 4 * n
+
+/-- The four-thirds cap contradicts V13's strict second diagonal at depth 4*n,
+so it is by itself sufficient for full positive Collatz termination. -/
+theorem reaches_one_of_four_thirds_no_exit_cap
+    (hCap : FourThirdsNoExitOddCap) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  have hnone : ∀ n, ¬ PositiveBad n := by
+    apply no_bad_of_no_minimal PositiveBad
+    intro n hmin
+    have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
+      omega
+    have hno :
+        ¬ OrdinaryExit n (iter shortcut (4 * n) n) :=
+      minimal_bad_has_no_ordinary_exit hmin (4 * n)
+    have hcap :
+        3 * oddCount n (4 * n) ≤ 4 * n :=
+      hCap n (4 * n) hgt hno
+    have hstrict :
+        2 * n < oddCount n (4 * n) :=
+      minimal_bad_quadruple_depth_strict_double_diagonal hmin
+    omega
+  intro n hn
+  have hgood : CollatzGood n := by
+    apply Classical.byContradiction
+    intro hbad
+    exact hnone n ⟨hn, hbad⟩
+  exact collatzGood_eventually_one hgood
+
 #print axioms oddCount_exact_boundary
 #print axioms reaches_one_of_first_superhigh_odd_exit
 #print axioms minimal_bad_first_superhigh_predecessor_corridor
 #print axioms first_superhigh_boundary_step_odd
+#print axioms reaches_one_of_four_thirds_no_exit_cap
 
 end SourceProduct
 end CollatzFinal
