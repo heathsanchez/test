@@ -1,0 +1,55 @@
+name: Collatz Crystal Four Thirds Boundary V15
+on:
+  push:
+    branches: [collatz-crystal-four-thirds-boundary-v15]
+    paths:
+      - 'formal/Collatz/FourThirdsBoundary.lean'
+      - 'experiments/collatz_crystal_four_thirds_boundary_v15.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-four-thirds-boundary-v15.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify two-class boundary reduction
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FourThirdsBoundary.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/FourThirdsBoundary.lean | tee /tmp/v15lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v15lean.log
+      - name: Run local boundary Crystal falsifier
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-four-thirds-boundary-v15
+          g++ -O3 -std=c++17 experiments/collatz_crystal_four_thirds_boundary_v15.cpp -o /tmp/v15
+          /tmp/v15 67108864 4096 | tee evidence/collatz-crystal-four-thirds-boundary-v15/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-four-thirds-boundary-v15/result.json'))
+          assert d['tested']==33554431
+          assert d['censored']==0
+          assert d['boundary_violation']==0
+          assert d['odd_core_nonexit']==0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V15_ENTRANTS',d['boundary_entrants'])
+          print('V15_CLASSES',d['class0'],d['class1'],d['class2'])
+          print('V15_CORE',d['odd_core_descent'],d['odd_core_splice'],d['odd_core_nonexit'])
+          print('V15_RECORD',d['record'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-four-thirds-boundary-v15
+          path: evidence/collatz-crystal-four-thirds-boundary-v15
+          if-no-files-found: warn
