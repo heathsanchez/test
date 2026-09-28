@@ -1,0 +1,29 @@
+name: Collatz Crystal symbolic carry closure V4
+on:
+  push:
+    branches: [collatz-crystal-owner-frontier-cycles-v1]
+    paths:
+      - 'experiments/collatz_crystal_symbolic_carry_closure_v4.py'
+      - '.github/workflows/collatz-crystal-symbolic-carry-closure-v4.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  symbolic:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Close symbolic carry relation
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-symbolic-carry-closure-v4
+          python -u experiments/collatz_crystal_symbolic_carry_closure_v4.py | tee evidence/collatz-crystal-symbolic-carry-closure-v4/result.json
+          grep -q '"universal_status": "UNKNOWN"' evidence/collatz-crystal-symbolic-carry-closure-v4/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-symbolic-carry-closure-v4
+          path: evidence/collatz-crystal-symbolic-carry-closure-v4
+          if-no-files-found: error
