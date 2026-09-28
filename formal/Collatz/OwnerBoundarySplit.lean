@@ -139,7 +139,7 @@ theorem minimal_bad_four_thirds_deficit_one_normalized_core
     exact hbudget0
   have hqpos : 0 < oddCount n k := by
     rw [hq]
-    have hlower := source_le_four_thirds_floor hgt
+    have hlower := source_le_four_thirds_floor hn
     omega
   have hlt :
       iter shortcut k n < 2 * n :=
@@ -173,8 +173,8 @@ theorem minimal_bad_four_thirds_odd_boundary_split
         n ≤ p ∧ p < 2 * n ∧
         0 < p ∧ p % 2 = 1 ∧ p % 8 ≠ 5 ∧
         iter shortcut k n = p := by
+  have hn : 0 < n := hmin.1.1
   have hgt : 1 < n := by
-    have hn : 0 < n := hmin.1.1
     have hne : n ≠ 1 := by
       intro heq
       apply hmin.1.2
@@ -183,13 +183,11 @@ theorem minimal_bad_four_thirds_odd_boundary_split
     omega
   have hqpos : 0 < oddCount n k := by
     rw [hq]
-    have hlower := source_le_four_thirds_floor hgt
+    have hlower := source_le_four_thirds_floor hn
     omega
   have hq2 : oddCount n k ≤ 2 * n := by
     rw [hq]
-    exact Nat.le_trans
-      (source_le_four_thirds_floor hgt)
-      (by omega)
+    exact Nat.le_of_lt (four_thirds_floor_lt_double hgt)
   rcases minimal_bad_persistent_survival_or_deficit_one
       hmin hqpos hq2 with hsurv | hdef
   · exact Or.inl hsurv
