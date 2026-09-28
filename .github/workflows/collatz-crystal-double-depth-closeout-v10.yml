@@ -1,0 +1,66 @@
+name: Collatz Crystal Double Depth Closeout V10
+
+on:
+  push:
+    branches: [collatz-crystal-double-depth-closeout-v10]
+    paths:
+      - 'formal/Collatz/UniversalDiagonal.lean'
+      - 'formal/Collatz/DoubleDepthCloseout.lean'
+      - 'experiments/collatz_crystal_double_depth_residual_v10.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-double-depth-closeout-v10.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify universal diagonal and restricted closeout
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/UniversalDiagonal.lean formal/Collatz/DoubleDepthCloseout.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/UniversalDiagonal.lean
+          lake env lean -DautoImplicit=false formal/Collatz/DoubleDepthCloseout.lean
+      - name: Run exact double-depth residual falsifier
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-double-depth-closeout-v10
+          g++ -O3 -std=c++17 experiments/collatz_crystal_double_depth_residual_v10.cpp -o /tmp/v10
+          /tmp/v10 67108864 4096 | tee evidence/collatz-crystal-double-depth-closeout-v10/result.json
+      - name: Judge bounded residual
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-double-depth-closeout-v10/result.json'
+          d=json.load(open(p))
+          assert d['tested_odd_sources']==33554431
+          assert d['censored']==0
+          assert d['double_depth_residuals']==1
+          rows=d['residual_rows']
+          assert len(rows)==1
+          r=rows[0]
+          assert r['n']==27
+          assert r['q_at_2n']>=27
+          assert r['future_steps']==2
+          assert r['future_x']==61
+          assert r['future_kind']=='QUARTER_SPLICE'
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V10_BOUNDED_RESIDUAL',json.dumps(r,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-double-depth-closeout-v10
+          path: evidence/collatz-crystal-double-depth-closeout-v10
+          if-no-files-found: warn
