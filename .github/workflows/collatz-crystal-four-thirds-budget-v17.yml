@@ -1,0 +1,69 @@
+name: Collatz Crystal Four Thirds Budget V17
+
+on:
+  push:
+    branches: [collatz-crystal-four-thirds-budget-v17]
+    paths:
+      - 'formal/Collatz/FourThirdsBudgetGap.lean'
+      - 'formal/Collatz/OwnerFourThirdsBoundary.lean'
+      - 'formal/Collatz/ValuationPullback.lean'
+      - 'experiments/collatz_crystal_four_thirds_budget_v17.py'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-four-thirds-budget-v17.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify odd-budget closeout reduction
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FourThirdsBudgetGap.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/FourThirdsBudgetGap.lean | tee /tmp/v17-lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v17-lean.log
+
+      - name: Run falsification-safe Crystal frontier
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-four-thirds-budget-v17
+          python -u experiments/collatz_crystal_four_thirds_budget_v17.py             | tee evidence/collatz-crystal-four-thirds-budget-v17/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-four-thirds-budget-v17/result.json'
+          d=json.load(open(p))
+          a=d['actual_boundary']
+          s=d['adversarial_abstraction']['first_synthetic_odd_boundary_countermodel']
+          assert a['tested_odd_sources']==524287
+          assert a['censored']==0
+          assert a['minimum_odd_budget']==3
+          assert a['minimum_odd_budget_witness']['n']==27
+          assert a['minimum_odd_budget_witness']['x']==325
+          assert a['minimum_odd_budget_witness']['owner']==81
+          assert a['boundary_odd_states']==0
+          assert s is not None and s['budget'] in (0,1)
+          assert d['candidate']['status']=='CANDIDATE_ONLY'
+          assert d['residual']['universal']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V17_MIN_ODD_BUDGET', a['minimum_odd_budget'])
+          print('V17_MIN_WITNESS', a['minimum_odd_budget_witness'])
+          print('V17_SYNTHETIC_SEPARATOR', s)
+          print('V17_RESIDUAL', d['residual']['name'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-four-thirds-budget-v17
+          path: evidence/collatz-crystal-four-thirds-budget-v17
