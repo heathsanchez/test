@@ -45,5 +45,6 @@ lean_lib CollatzFinal where
     `Collatz.FixedOriginTransfer,
     `Collatz.FourThirdsBoundary,
     `Collatz.ValuationPullback,
-    `Collatz.OwnerFourThirdsBoundary
+    `Collatz.OwnerFourThirdsBoundary,
+    `Collatz.OwnerBoundarySplit
   ]
