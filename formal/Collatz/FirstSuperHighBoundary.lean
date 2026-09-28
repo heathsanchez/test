@@ -103,8 +103,9 @@ theorem first_superhigh_boundary_step_odd
     iter shortcut k n % 2 ≠ 0 := by
   intro he
   have hs : oddCount n (k + 1) = oddCount n k := by
-    simp [oddCount, he]
-  rw [hs, hq] at hqs
+    change (if iter shortcut k n % 2 = 0
+      then oddCount n k else oddCount n k + 1) = oddCount n k
+    rw [if_pos he]
   omega
 
 #print axioms oddCount_exact_boundary
