@@ -67,16 +67,17 @@ theorem twenty_seven_ninety_two_no_ordinary_exit :
 The 27 orbit reaches x=92 at depth 57 with q=37:
 3*37 > 4*27, while no OrdinaryExit holds at x=92.
 The earlier x=61 quarter-splice only schedules the lower merge at depth 59. -/
-set_option maxRecDepth 10000 in
 theorem four_thirds_no_exit_odd_cap_false :
     ¬ FourThirdsNoExitOddCap := by
   intro hCap
-  have hiter : iter shortcut 57 27 = 92 := by decide
+  have hiter : iter shortcut 57 27 = 92 := by
+    set_option maxRecDepth 10000 in decide
   have hno : ¬ OrdinaryExit 27 (iter shortcut 57 27) := by
     rw [hiter]
     exact twenty_seven_ninety_two_no_ordinary_exit
   have h := hCap 27 57 (by decide) hno
-  have hq : oddCount 27 57 = 37 := by decide
+  have hq : oddCount 27 57 = 37 := by
+    set_option maxRecDepth 10000 in decide
   rw [hq] at h
   omega
 
