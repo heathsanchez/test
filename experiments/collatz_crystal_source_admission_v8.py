@@ -136,7 +136,7 @@ def count_class(c):
     return "32+"
 
 def run(limit:int,cap:int,out:Path):
-    modes=("CONTROL","TAIL_ZERO","SOURCE_BITS","SUPPORT_STATIONARY","ADMISSION_COUNT","ADMISSION","DEPTH","RHO16","SUPPORT","RESIDUE","CYLINDER","ENDPOINT")
+    modes=("CONTROL","POST_TAIL_LOCAL","POST_TAIL_SOURCE_BITS","TAIL_ZERO","SOURCE_BITS","SUPPORT_STATIONARY","ADMISSION_COUNT","ADMISSION","DEPTH","RHO16","SUPPORT","RESIDUE","CYLINDER","ENDPOINT")
     graphs={m:{} for m in modes}
     outcomes={m:collections.defaultdict(set) for m in modes}
     counts=collections.Counter()
@@ -197,6 +197,8 @@ def run(limit:int,cap:int,out:Path):
             support_gap=adm.D-rho.bit_length() if rho else adm.D
             keys={
                 "CONTROL":local,
+                "POST_TAIL_LOCAL":(local if kactual==0 else None),
+                "POST_TAIL_SOURCE_BITS":((local,n.bit_length()) if kactual==0 else None),
                 "TAIL_ZERO":(local,int(kactual==0)),
                 "SOURCE_BITS":(local,n.bit_length()),
                 "SUPPORT_STATIONARY":(local,int(kactual==0),rho.bit_length()),
@@ -210,6 +212,9 @@ def run(limit:int,cap:int,out:Path):
                 "ENDPOINT":y0,
             }
             for m,key in keys.items():
+                if key is None:
+                    prev[m]=None
+                    continue
                 add_node(graphs[m],key)
                 if prev[m] is not None:add_edge(graphs[m],prev[m],key)
                 prev[m]=key
@@ -237,6 +242,8 @@ def run(limit:int,cap:int,out:Path):
         verdict="CONTROL_ALREADY_ACYCLIC"
     elif stats["ADMISSION"]["kernel_nodes"]==0:
         verdict="SOURCE_ADMISSION_REMOVES_RECURRENT_KERNEL"
+    elif stats["POST_TAIL_LOCAL"]["kernel_nodes"]==0:
+        verdict="POST_TAIL_LOCAL_QUOTIENT_ACYCLIC_ON_BOUNDARY"
     elif stats["SUPPORT_STATIONARY"]["kernel_nodes"]==0:
         verdict="STATIONARY_FINITE_SUPPORT_SUFFICES_ON_BOUNDARY"
     elif stats["RHO16"]["kernel_nodes"]==0:
