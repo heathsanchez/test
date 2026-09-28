@@ -1,0 +1,47 @@
+{
+  "schema": "acc-ak3-cap26-proj-depth4-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "upstream_source": {
+    "repository": "SauersML/group-approximation",
+    "commit": "f541c13486b24a4986380f16f97e6b61ee4da55f",
+    "component_claim": "research/ak3-rank2-capped-component-at-total-length-26.md",
+    "generator": "experiments/ak3-cap26-component-2026-09-17/capbfs.c",
+    "goal_semantics": "experiments/ak3-thick-z-pair-search-2026-09-17/thzsearch.c"
+  },
+  "calibration": {
+    "rank3_cap26_depth1_cumulative_states": 222,
+    "rank3_cap26_depth2_cumulative_states": 7452,
+    "matches_upstream_log": true
+  },
+  "bounded_screen": {
+    "depths": [
+      2,
+      3,
+      4
+    ],
+    "z_using_length_25_or_26_states": {
+      "2": 1995,
+      "3": 8763,
+      "4": 17429,
+      "total": 28187
+    },
+    "proj_minor_eligible_generators": {
+      "2": 2036,
+      "3": 8810,
+      "4": 17516,
+      "total": 28362
+    },
+    "projected_neuwirth_node_cap": 10000,
+    "projected_neuwirth_undecided": 0,
+    "proj_goals": 0
+  },
+  "direct_thick_depth2_probe": {
+    "states": 1995,
+    "node_cap": 10000,
+    "exact_negative_states": 31,
+    "undecided_states": 1964,
+    "thick_goals": 0
+  },
+  "interpretation": "PROJ is exactly absent from all cap-26 z-using states first reached at BFS depths 2 through 4 under the pinned public move/canonicalization semantics. At depth 2 the remaining goal question is direct THICK on 1964 hard states; do not spend more search on PROJ at these depths.",
+  "publication": "No ACC row was submitted. This is not an official-verifier certificate and does not consume SAIR quota."
+}
