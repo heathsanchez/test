@@ -1,0 +1,30 @@
+name: Collatz Crystal Double Depth Corridor V11
+
+on:
+  push:
+    branches: [collatz-crystal-double-depth-corridor-v11]
+    paths:
+      - 'formal/Collatz/DoubleDepthCorridor.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-double-depth-corridor-v11.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prove one-bit double-depth corridor
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/DoubleDepthCorridor.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/DoubleDepthCorridor.lean
