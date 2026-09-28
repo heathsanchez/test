@@ -43,18 +43,16 @@ theorem qmin_double_odd_upper
         have hfour : 2 ^ (4 * m) = 16 ^ m := by
           calc
             2 ^ (4 * m) = (2 ^ 4) ^ m := by rw [Nat.pow_mul]
-            _ = 16 ^ m := by decide
+            _ = 16 ^ m := by rfl
         rw [hfour]
-        decide
       _ ≤ 27 ^ m * 9 := Nat.mul_le_mul h16 (by decide)
       _ = 3 ^ (3 * m + 2) := by
         rw [Nat.pow_add]
         have hthree : 3 ^ (3 * m) = 27 ^ m := by
           calc
             3 ^ (3 * m) = (3 ^ 3) ^ m := by rw [Nat.pow_mul]
-            _ = 27 ^ m := by decide
+            _ = 27 ^ m := by rfl
         rw [hthree]
-        decide
   simpa [m] using qmin_le_of_pow_le hpow
 
 /-- Exact deficit-one checkpoint consequence.
@@ -91,7 +89,7 @@ theorem minimal_bad_double_depth_deficit_one_lt_double
     omega
   have hqpos : 0 < q := by
     have hdiag := minimal_bad_enters_post_diagonal_by_double hmin
-    simpa [q] using (lt_of_lt_of_le hn hdiag)
+    simpa [q] using (Nat.lt_of_lt_of_le hn hdiag)
   have hq3 : q < 3 * n := by omega
   have hrel :
       2 ^ (2 * n) * n ^ q * y ≤
@@ -169,7 +167,7 @@ theorem minimal_bad_double_depth_deficit_one_lt_double
     have heq :
         (2 ^ (2 * n) * n ^ q) * (3 * n * n) =
           3 * 2 ^ (2 * n) * n ^ (q + 2) := by
-      simp [Nat.pow_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+      simp [Nat.pow_add, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
     rw [heq] at hlower0
     simpa [Nat.mul_assoc] using hlower0
   exact (Nat.lt_asymm hupper hlower)
@@ -186,8 +184,11 @@ theorem minimal_bad_double_depth_deficit_one_interval
     iter shortcut (2 * n) n % 2 = 1 := by
   have hlow := minimal_bad_nondescending_all_depths hmin (2 * n)
   have hhi := minimal_bad_double_depth_deficit_one_lt_double hmin hdef
-  have hodd :=
-    minimal_bad_below_double_forces_odd hmin (k := 2 * n) hhi
+  have hoddne :=
+    minimal_bad_below_double_forces_odd hmin hhi
+  have hodd : iter shortcut (2 * n) n % 2 = 1 := by
+    have hm := Nat.mod_lt (iter shortcut (2 * n) n) (by omega : 0 < 2)
+    omega
   exact ⟨hlow, hhi, hodd⟩
 
 #print axioms qmin_le_of_pow_le
