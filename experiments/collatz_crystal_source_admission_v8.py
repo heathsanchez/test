@@ -136,7 +136,7 @@ def count_class(c):
     return "32+"
 
 def run(limit:int,cap:int,out:Path):
-    modes=("CONTROL","ADMISSION_COUNT","ADMISSION","DEPTH","RHO16","SUPPORT","RESIDUE","CYLINDER","ENDPOINT")
+    modes=("CONTROL","TAIL_ZERO","SOURCE_BITS","SUPPORT_STATIONARY","ADMISSION_COUNT","ADMISSION","DEPTH","RHO16","SUPPORT","RESIDUE","CYLINDER","ENDPOINT")
     graphs={m:{} for m in modes}
     outcomes={m:collections.defaultdict(set) for m in modes}
     counts=collections.Counter()
@@ -197,6 +197,9 @@ def run(limit:int,cap:int,out:Path):
             support_gap=adm.D-rho.bit_length() if rho else adm.D
             keys={
                 "CONTROL":local,
+                "TAIL_ZERO":(local,int(kactual==0)),
+                "SOURCE_BITS":(local,n.bit_length()),
+                "SUPPORT_STATIONARY":(local,int(kactual==0),rho.bit_length()),
                 "ADMISSION_COUNT":adm_count,
                 "ADMISSION":adm_state,
                 "DEPTH":(local,adm.D),
@@ -234,10 +237,12 @@ def run(limit:int,cap:int,out:Path):
         verdict="CONTROL_ALREADY_ACYCLIC"
     elif stats["ADMISSION"]["kernel_nodes"]==0:
         verdict="SOURCE_ADMISSION_REMOVES_RECURRENT_KERNEL"
+    elif stats["SUPPORT_STATIONARY"]["kernel_nodes"]==0:
+        verdict="STATIONARY_FINITE_SUPPORT_SUFFICES_ON_BOUNDARY"
     elif stats["RHO16"]["kernel_nodes"]==0:
         verdict="FINITE_SOURCE_PREFIX_SUFFICES_ON_BOUNDARY"
     elif stats["SUPPORT"]["kernel_nodes"]==0:
-        verdict="FINITE_SUPPORT_SHAPE_SUFFICES_ON_BOUNDARY"
+        verdict="CLOCK_BEARING_SUPPORT_ONLY_ACYCLIC"
     elif stats["RESIDUE"]["kernel_nodes"]==0:
         verdict="EXACT_SOURCE_RESIDUE_REQUIRED_ON_BOUNDARY"
     elif stats["CYLINDER"]["kernel_nodes"]==0:
