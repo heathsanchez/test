@@ -9,7 +9,7 @@ interfaces are compatible. If this over-approximation has a recurrent
 nonterminal SCC, V3 acyclicity does not promote. If it remains acyclic, the
 next task is to prove the abstraction complete rather than enlarge samples.
 """
-import json, itertools, collections, math
+import json, itertools, collections, math, sys\nsys.setrecursionlimit(1000000)
 
 RMAX=12
 HMAX=8
