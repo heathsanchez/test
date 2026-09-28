@@ -48,6 +48,45 @@ theorem reaches_one_of_double_depth_postdiagonal_quarter_splice
     exact hnone n ⟨hn, hbad⟩
   exact collatzGood_eventually_one hgood
 
+/-- Final one-premise Crystal interface.  No explicit q-coordinate is supplied:
+no-exit at the checkpoint itself forces non-descent, and V9 then derives q>=n. -/
+def DoubleDepthNoExitQuarterSpliceCoverage : Prop :=
+  ∀ n, 1 < n → n % 2 = 1 →
+    ¬ OrdinaryExit n (iter shortcut (2 * n) n) →
+    ∃ r, let x := iter shortcut ((2 * n) + r) n
+      x % 8 = 5 ∧ x ≤ 4 * n
+
+theorem double_depth_no_exit_is_post_diagonal
+    {n : Nat}
+    (hn : 0 < n)
+    (hno : ¬ OrdinaryExit n (iter shortcut (2 * n) n)) :
+    n ≤ oddCount n (2 * n) := by
+  have hypos : 0 < iter shortcut (2 * n) n :=
+    iter_positive shortcut shortcut_positive (2 * n) n hn
+  have hnd : n ≤ iter shortcut (2 * n) n := by
+    apply Nat.le_of_not_gt
+    intro hlt
+    exact hno (Or.inr (Or.inl ⟨hypos, hlt⟩))
+  exact nondescending_double_depth_enters_post_diagonal hn hnd
+
+theorem postdiagonal_coverage_of_double_depth_no_exit
+    (hQ : DoubleDepthNoExitQuarterSpliceCoverage) :
+    DoubleDepthPostDiagonalQuarterSpliceCoverage := by
+  intro n hgt hodd _hdiag hno
+  exact hQ n hgt hodd hno
+
+/-- This is the smallest current universal closeout statement: if every odd
+source still no-exit at 2*n eventually reaches a quarter splice relative to the
+same source, then Collatz follows. -/
+theorem reaches_one_of_double_depth_no_exit_quarter_splice
+    (hQ : DoubleDepthNoExitQuarterSpliceCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  exact reaches_one_of_double_depth_postdiagonal_quarter_splice
+    (postdiagonal_coverage_of_double_depth_no_exit hQ)
+
+#print axioms double_depth_no_exit_is_post_diagonal
+#print axioms reaches_one_of_double_depth_no_exit_quarter_splice
+
 #print axioms reaches_one_of_double_depth_postdiagonal_quarter_splice
 
 end SourceProduct
