@@ -1,0 +1,64 @@
+name: Collatz Crystal Source Admission V8
+
+on:
+  push:
+    branches: [collatz-crystal-source-admission-v8]
+    paths:
+      - 'experiments/collatz_crystal_source_admission_v8.py'
+      - 'formal/Collatz/QuarterSplice.lean'
+      - '.github/workflows/collatz-crystal-source-admission-v8.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Recheck quarter-splice authority
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/QuarterSplice.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/QuarterSplice.lean
+          lake env lean -DautoImplicit=false formal/Collatz/QuarterSplice.lean | tee /tmp/quarter.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/quarter.log
+
+      - name: Run exact source-admission Crystal gate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-admission-v8
+          git rev-parse HEAD > evidence/collatz-crystal-source-admission-v8/commit.txt
+          python -u experiments/collatz_crystal_source_admission_v8.py             --limit 524288 --cap 4096             --output evidence/collatz-crystal-source-admission-v8/result.json             | tee evidence/collatz-crystal-source-admission-v8/run.log
+
+      - name: Validate evidence boundary
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-source-admission-v8/result.json'
+          d=json.load(open(p))
+          assert d['counts'].get('resolved_CAP',0)==0
+          assert d['counts'].get('resolved_INTERNAL_ERROR',0)==0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V8_VERDICT',d['verdict'])
+          for k,v in d['representations'].items():
+              print(k,'kernel=',v['kernel_nodes'],'rank=',v['max_rank'])
+          print('CLOSURE_CERTIFICATE',d['closure_certificate'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-source-admission-v8
+          path: evidence/collatz-crystal-source-admission-v8
+          if-no-files-found: error
