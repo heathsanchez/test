@@ -41,5 +41,8 @@ lean_lib CollatzFinal where
     `Collatz.DeficitOneCheckpoint,
     `Collatz.PersistentCorridor,
     `Collatz.FirstSuperHighBoundary,
-    `Collatz.ProtectedFourThirds
+    `Collatz.ProtectedFourThirds,
+    `Collatz.FourThirdsBoundary,
+    `Collatz.ValuationPullback,
+    `Collatz.OwnerFourThirdsBoundary
   ]
