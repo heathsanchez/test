@@ -15,11 +15,11 @@ theorem oddCount_add (n a b : Nat) :
           iter shortcut (a + b) n =
             iter shortcut b (iter shortcut a n) := by
         simpa [Nat.add_assoc] using (iter_add shortcut a b n)
-      simp only [Nat.add_assoc, oddCount]
-      rw [ih, hiter]
+      simp only [oddCount]
+      rw [hiter]
       by_cases h : iter shortcut b (iter shortcut a n) % 2 = 0
-      · simp [h]
-      · simp [h]
+      · simp [h, ih]
+      · simp [h, ih]
         omega
 
 /-- The source/odd-count budget comparison that is preserved after a
