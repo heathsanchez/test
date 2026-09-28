@@ -36,5 +36,6 @@ lean_lib CollatzFinal where
     `Collatz.QuarterSplice,
     `Collatz.PostDiagonalFiber,
     `Collatz.UniversalDiagonal,
-    `Collatz.DoubleDepthCloseout
+    `Collatz.DoubleDepthCloseout,
+    `Collatz.DoubleDepthCorridor
   ]
