@@ -1,0 +1,30 @@
+name: Collatz Crystal Deficit One V12
+
+on:
+  push:
+    branches: [collatz-crystal-deficit-one-v12]
+    paths:
+      - 'formal/Collatz/DeficitOneCheckpoint.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-deficit-one-v12.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prove deficit-one checkpoint squeeze
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/DeficitOneCheckpoint.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/DeficitOneCheckpoint.lean
