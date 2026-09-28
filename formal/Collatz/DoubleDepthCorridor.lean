@@ -130,9 +130,12 @@ theorem source_relative_scaled_orbit_le
               simp [Nat.mul_add, Nat.mul_assoc, Nat.mul_comm,
                 Nat.mul_left_comm]
             _ ≤ 3 * n * x + x := Nat.add_le_add_left hnx _
-            _ = (3 * n + 1) * x := by
-              simp [Nat.add_mul, Nat.mul_assoc, Nat.mul_comm,
-                Nat.mul_left_comm]
+            _ = x * (3 * n) + x := by
+              simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+            _ = x * (3 * n + 1) := by
+              rw [Nat.mul_add]
+              simp
+            _ = (3 * n + 1) * x := Nat.mul_comm _ _
         simp only [oddCount, x, he, ite_false]
         calc
           2 ^ (k + 1) * n ^ (oddCount n k + 1) * shortcut x =
