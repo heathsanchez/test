@@ -1,0 +1,66 @@
+name: Collatz Crystal Weighted Coalescence V15
+
+on:
+  push:
+    branches: [collatz-crystal-weighted-coalescence-v15]
+    paths:
+      - 'formal/Collatz/WeightedCoalescence.lean'
+      - 'experiments/collatz_crystal_weighted_coalescence_v15.cpp'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-weighted-coalescence-v15.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify weighted coalescence algebra
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/WeightedCoalescence.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/WeightedCoalescence.lean | tee /tmp/weighted.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/weighted.log
+
+      - name: Run source-ordered weighted Crystal gate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-weighted-coalescence-v15
+          g++ -O3 -std=c++17 experiments/collatz_crystal_weighted_coalescence_v15.cpp -o /tmp/weighted
+          /tmp/weighted 1048576 4096 | tee evidence/collatz-crystal-weighted-coalescence-v15/result.json
+
+      - name: Judge declared finite boundary
+        run: |
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-weighted-coalescence-v15/result.json'
+          d=json.load(open(p))
+          assert d['tested_odd_sources']==524287
+          assert d['strict_budget_violations']==0
+          assert d['censored']==0
+          assert d['weighted_merge_sources']>0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('WEIGHTED_MERGES',d['weighted_merge_sources'])
+          print('MIN_LIVE_BUDGET',d['minimum_live_budget'])
+          print('MIN_WITNESS',d['minimum_live_budget_witness'])
+          print('LOW_BUDGET',d['first_low_budget_states'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-weighted-coalescence-v15
+          path: evidence/collatz-crystal-weighted-coalescence-v15
+          if-no-files-found: error
