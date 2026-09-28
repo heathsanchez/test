@@ -149,13 +149,13 @@ theorem three_pow_double_succ_lt_two_pow_quadruple
             9 * 3 ^ (2 * (m + 3) + 1) := by
               rw [show 2 * (m + 1 + 3) + 1 =
                 2 + (2 * (m + 3) + 1) by omega, Nat.pow_add]
-              norm_num
+              simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
         _ < 16 * 3 ^ (2 * (m + 3) + 1) := hleft
         _ < 16 * 2 ^ (4 * (m + 3)) := hright
         _ = 2 ^ (4 * (m + 1 + 3)) := by
               rw [show 4 * (m + 1 + 3) =
                 4 + 4 * (m + 3) by omega, Nat.pow_add]
-              norm_num
+              simp [Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
 
 /-- By depth 4*n a hypothetical minimal bad source has accumulated strictly
 more than 2*n odd steps.  Equality would put the path inside the persistent
