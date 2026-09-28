@@ -196,22 +196,37 @@ theorem minimal_bad_source_mod8_three_or_seven
       n % 8 = 1 ∨ n % 8 = 3 ∨ n % 8 = 5 ∨ n % 8 = 7 := by
     omega
   rcases hr with h1 | h3 | h5 | h7
-  · have hn : 0 < n := hmin.1.1
-    have hneven : n % 2 ≠ 0 := by omega
-    have hstep1 : shortcut n = (3 * n + 1) / 2 := by
-      unfold shortcut
-      simp only [hneven, ite_false]
-    have hstep1even : shortcut n % 2 = 0 := by
-      rw [hstep1]
+  · have hgt : 1 < n := by
+      have hn : 0 < n := hmin.1.1
+      have hne : n ≠ 1 := by
+        intro heq
+        apply hmin.1.2
+        subst n
+        exact ⟨0, by simp [iter, Terminal]⟩
       omega
-    have hstep2 :
-        iter shortcut 2 n = (3 * n + 1) / 4 := by
+    let a := n / 8
+    have hnform : n = 8 * a + 1 := by
+      have hd := Nat.mod_add_div n 8
+      dsimp [a]
+      omega
+    have ha : 0 < a := by
+      rw [hnform] at hgt
+      omega
+    have hstep1 : shortcut n = 12 * a + 2 := by
+      rw [hnform]
+      unfold shortcut
+      have ho : (8 * a + 1) % 2 ≠ 0 := by omega
+      simp only [ho, ite_false]
+      omega
+    have hstep2 : iter shortcut 2 n = 6 * a + 1 := by
       change shortcut (shortcut n) = _
       rw [hstep1]
       unfold shortcut
-      simp only [hstep1even, ite_true]
+      have he : (12 * a + 2) % 2 = 0 := by omega
+      simp only [he, ite_true]
+      omega
     have hlt : iter shortcut 2 n < n := by
-      rw [hstep2]
+      rw [hstep2, hnform]
       omega
     have hnd := minimal_bad_nondescending_all_depths hmin 2
     omega
@@ -222,7 +237,7 @@ theorem minimal_bad_source_mod8_three_or_seven
     have hnot5 :=
       minimal_bad_below_four_source_not_mod8_five
         (j := 0) hmin hlt0
-    simp [iter, h5] at hnot5
+    exact False.elim (hnot5 (by simpa [iter] using h5))
   · exact Or.inr h7
 
 /-- Combining source mod 3 and normalized owner shape leaves four source
