@@ -1,0 +1,31 @@
+name: Collatz Crystal Owner Boundary Split V17
+
+on:
+  push:
+    branches: [collatz-crystal-owner-boundary-split-v17]
+    paths:
+      - 'formal/Collatz/OwnerBoundarySplit.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-owner-boundary-split-v17.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Prove owner boundary split
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/OwnerBoundarySplit.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/OwnerBoundarySplit.lean | tee /tmp/v17.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v17.log
