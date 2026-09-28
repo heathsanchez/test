@@ -5,6 +5,7 @@ on:
     branches: [collatz-crystal-first-superhigh-v14]
     paths:
       - 'formal/Collatz/FirstSuperHighBoundary.lean'
+      - 'experiments/collatz_crystal_four_thirds_odd_cap_v14.cpp'
       - 'lakefile.lean'
       - '.github/workflows/collatz-crystal-first-superhigh-v14.yml'
   workflow_dispatch:
@@ -29,3 +30,29 @@ jobs:
           lake build CollatzFinal
           lake env lean -DautoImplicit=false formal/Collatz/FirstSuperHighBoundary.lean | tee /tmp/superhigh.log
           ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/superhigh.log
+
+      - name: Run four-thirds Crystal falsifier
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-first-superhigh-v14
+          g++ -O3 -std=c++17 experiments/collatz_crystal_four_thirds_odd_cap_v14.cpp -o /tmp/fourthirds
+          /tmp/fourthirds 67108864 4096 | tee evidence/collatz-crystal-first-superhigh-v14/four-thirds.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-first-superhigh-v14/four-thirds.json'))
+          assert d['tested_odd_sources']==33554431
+          assert d['censored']==0
+          assert d['strict_violation_sources']==0
+          assert d['strict_violation_states']==0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('FOUR_THIRDS_EQUALITIES',d['first_equalities'])
+          print('FOUR_THIRDS_RECORD',d['record_ratio'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-first-superhigh-v14
+          path: evidence/collatz-crystal-first-superhigh-v14
+          if-no-files-found: warn
