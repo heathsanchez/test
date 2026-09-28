@@ -22,18 +22,36 @@ static std::string s128(u128 x){
 
 struct EqRow { u64 n,k,q; u128 x; };
 
+static constexpr unsigned PRED_MOD=2187;
+static bool PRED_KILLED[PRED_MOD];
+static void init_q7(){
+  auto mark=[](unsigned mod,unsigned residue){
+    for(unsigned r=residue;r<PRED_MOD;r+=mod) PRED_KILLED[r]=true;
+  };
+  mark(3,2); mark(9,4); mark(81,10);
+  mark(729,433); mark(729,604);
+  for(unsigned r: {205u,325u,919u,991u,1000u,1090u,1171u,2170u}) mark(2187,r);
+  unsigned z=0; for(bool b:PRED_KILLED) z+=b;
+  assert(z==1013);
+}
+
 int main(int argc,char**argv){
   const u64 limit = argc>1 ? std::stoull(argv[1]) : (1ULL<<26);
   const u64 step_cap = argc>2 ? std::stoull(argv[2]) : 4096;
 
+  init_q7();
   u64 tested=0, direct=0, splice=0, censored=0;
+  u64 q7_source_killed=0,q7_source_survivors=0;
   u64 strict_viol_sources=0, strict_viol_states=0;
   u64 equality_sources=0, equality_states=0;
   std::vector<EqRow> first_eq, first_bad;
   u64 best_n=0,best_q=0,best_k=0; u128 best_x=0;
+  u64 q7_best_n=0,q7_best_q=0,q7_best_k=0; u128 q7_best_x=0;
 
   for(u64 n=3;n<limit;n+=2){
     ++tested;
+    const bool q7k=PRED_KILLED[n%PRED_MOD];
+    if(q7k) ++q7_source_killed; else ++q7_source_survivors;
     u128 x=n;
     u64 q=0,k=0;
     bool eq_source=false,bad_source=false,closed=false;
@@ -55,6 +73,9 @@ int main(int argc,char**argv){
       if((u128)q * best_n > (u128)best_q * n || best_n==0){
         best_n=n; best_q=q; best_k=k; best_x=x;
       }
+      if(!q7k && ((u128)q * q7_best_n > (u128)q7_best_q * n || q7_best_n==0)){
+        q7_best_n=n; q7_best_q=q; q7_best_k=k; q7_best_x=x;
+      }
 
       if(x & 1) ++q;
       x=T(x); ++k;
@@ -70,12 +91,16 @@ int main(int argc,char**argv){
   std::cout<<"  \"direct_descent_sources\":"<<direct<<",\n";
   std::cout<<"  \"quarter_splice_sources\":"<<splice<<",\n";
   std::cout<<"  \"censored\":"<<censored<<",\n";
+  std::cout<<"  \"q7_source_killed\":"<<q7_source_killed<<",\n";
+  std::cout<<"  \"q7_source_survivors\":"<<q7_source_survivors<<",\n";
   std::cout<<"  \"strict_violation_sources\":"<<strict_viol_sources<<",\n";
   std::cout<<"  \"strict_violation_states\":"<<strict_viol_states<<",\n";
   std::cout<<"  \"equality_sources\":"<<equality_sources<<",\n";
   std::cout<<"  \"equality_states\":"<<equality_states<<",\n";
   std::cout<<"  \"record_ratio\":{\"n\":"<<best_n<<",\"q\":"<<best_q<<",\"k\":"<<best_k
            <<",\"x\":\""<<s128(best_x)<<"\"},\n";
+  std::cout<<"  \"q7_survivor_record_ratio\":{\"n\":"<<q7_best_n<<",\"q\":"<<q7_best_q<<",\"k\":"<<q7_best_k
+           <<",\"x\":\""<<s128(q7_best_x)<<"\"},\n";
 
   auto rows=[&](const char* name,const std::vector<EqRow>& v){
     std::cout<<"  \""<<name<<"\":[";
