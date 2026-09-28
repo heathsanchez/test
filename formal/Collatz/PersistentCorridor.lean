@@ -198,6 +198,9 @@ theorem minimal_bad_quadruple_depth_strict_double_diagonal
 #print axioms nondescending_q_le_double_source_qmin_corridor
 #print axioms minimal_bad_persistent_qmin_corridor
 #print axioms minimal_bad_persistent_survival_or_deficit_one
+#print axioms nondescending_depth_le_twice_oddCount
+#print axioms three_pow_double_succ_lt_two_pow_quadruple
+#print axioms minimal_bad_quadruple_depth_strict_double_diagonal
 
 end SourceProduct
 end CollatzFinal
