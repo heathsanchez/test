@@ -228,7 +228,14 @@ fn instantiate<S: LevelSubstitutionLookup + ?Sized>(
     let result = match level {
         Level::Zero => Ok(LevelTerm::Zero),
         Level::Succ(inner) => {
-            instantiate(levels, *inner, substitution, remaining, visiting).map(succ)
+            // A literal successor of zero is already fully determined once the
+            // successor node has been visited. Do not spend a second semantic
+            // budget tick merely to re-read the zero child.
+            if matches!(levels.get(*inner), Some(Level::Zero)) {
+                Ok(succ(LevelTerm::Zero))
+            } else {
+                instantiate(levels, *inner, substitution, remaining, visiting).map(succ)
+            }
         }
         Level::Max(left, right) => {
             let left = instantiate(levels, *left, substitution, remaining, visiting)?;
