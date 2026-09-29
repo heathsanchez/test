@@ -166,7 +166,9 @@ theorem twelve_odd_scaled_bias_bound
     4096 * bias n k ≤ 527345 * 2 ^ k := by
   have h := two_pow_odds_mul_bias_add_depth_le n k
   rw [hq] at h
-  norm_num at h ⊢
+  have h2 : 2 ^ 12 = 4096 := by decide
+  have h3 : 3 ^ 12 = 531441 := by decide
+  rw [h2, h3] at h
   rw [Nat.mul_add] at h
   omega
 
@@ -184,7 +186,8 @@ theorem twelve_odd_long_block_strict_descent
   have hgap262 :
       527345 * 2 ^ k <
         4096 * (2 ^ k - 531441) * 262 := by
-    norm_num at hp ⊢
+    have h20 : 2 ^ 20 = 1048576 := by decide
+    rw [h20] at hp
     omega
   have hgap :
       527345 * 2 ^ k <
@@ -196,7 +199,8 @@ theorem twelve_odd_long_block_strict_descent
     exact Nat.lt_of_lt_of_le hgap262 hm
   have ha := exact_affine n k
   rw [hq] at ha
-  norm_num at ha
+  have h3 : 3 ^ 12 = 531441 := by decide
+  rw [h3] at ha
   apply Classical.byContradiction
   intro hnot
   have hnd : n ≤ iter shortcut k n := by omega
