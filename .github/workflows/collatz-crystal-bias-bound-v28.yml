@@ -1,0 +1,46 @@
+name: Collatz Crystal Bias Bound V28
+
+on:
+  push:
+    branches: [collatz-crystal-bias-bound-v28]
+    paths:
+      - 'formal/Collatz/UniversalBiasBound.lean'
+      - '.github/workflows/collatz-crystal-bias-bound-v28.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check universal bias and blocked-block contraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-bias-bound-v28
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-crystal-bias-bound-v28/toolchain.txt
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/UniversalBiasBound.lean; then
+            echo 'Forbidden source token' >&2; exit 1
+          fi
+          lake env lean -DautoImplicit=false formal/Collatz/UniversalBiasBound.lean \
+            | tee evidence/collatz-crystal-bias-bound-v28/UniversalBiasBound.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-crystal-bias-bound-v28/UniversalBiasBound.log
+          grep -q "'CollatzFinal.SourceProduct.bias_le_dyadic_ternary_envelope'" evidence/collatz-crystal-bias-bound-v28/UniversalBiasBound.log
+          grep -q "'CollatzFinal.SourceProduct.twelve_odd_long_block_contracts'" evidence/collatz-crystal-bias-bound-v28/UniversalBiasBound.log
+          git rev-parse HEAD > evidence/collatz-crystal-bias-bound-v28/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-bias-bound-v28
+          path: evidence/collatz-crystal-bias-bound-v28
+          if-no-files-found: error
