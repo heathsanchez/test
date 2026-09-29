@@ -1,0 +1,54 @@
+name: Collatz Crystal SCC Origin Boundary V29
+
+on:
+  push:
+    branches: [collatz-crystal-scc-origin-boundary-v29]
+    paths:
+      - 'experiments/collatz_crystal_scc_origin_boundary_v29.py'
+      - '.github/workflows/collatz-crystal-scc-origin-boundary-v29.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Certify recurrent SCC density potential
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-scc-origin-boundary-v29
+          python -u experiments/collatz_crystal_scc_origin_boundary_v29.py \
+            | tee evidence/collatz-crystal-scc-origin-boundary-v29/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-scc-origin-boundary-v29/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_SCC_ORIGIN_BOUNDARY_V29'
+          s=d['recurrent_identity_scc']
+          c=d['exact_density_certificate']
+          assert s['states']==3302
+          assert s['internal_edges']==4788
+          assert s['internal_edge_pattern']=={'only_bit_1':1816,'both_bits_0_1':1486}
+          assert s['zero_edge_exits']=={'B':792,'I_OUTSIDE':1023,'K':1}
+          assert c['numerator']==12 and c['denominator']==19
+          assert c['negative_reduced_edges']==0
+          assert c['tight_cycle']['length']==19
+          assert c['tight_cycle']['odd_bits']==12
+          assert d['critical_density_separation']['gap']==7153
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V29_SCC',s)
+          print('V29_DENSITY',c)
+          print('V29_NEXT',d['next_residual'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-scc-origin-boundary-v29
+          path: evidence/collatz-crystal-scc-origin-boundary-v29
+          if-no-files-found: error
