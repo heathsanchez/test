@@ -225,9 +225,7 @@ impl<'a> Machine<'a> {
             closure: closure.clone(),
             transparency,
         };
-        if let Some(cached) = self.exposure_cache.borrow().get(&key)
-            && budget >= cached.required_budget
-        {
+        if let Some(cached) = self.exposure_cache.borrow().get(&key) {
             return Judgment::proven(cached.value.clone(), "cached-certified-exposure");
         }
 
