@@ -65,6 +65,24 @@ fn instantiation_expands_sparse_level_graph_with_explicit_substitution() {
     assert_eq!(instantiated, succ(LevelTerm::param("u")));
 }
 
+
+#[test]
+fn instantiation_resolves_literal_succ_zero_with_one_tick() {
+    let mut levels = IdTable::default();
+    levels.insert(LevelId(0), Level::Zero).unwrap();
+    levels.insert(LevelId(1), Level::Succ(LevelId(0))).unwrap();
+    let substitution = HashMap::new();
+
+    assert_eq!(
+        instantiate_level(&levels, LevelId(1), &substitution, 1).unwrap(),
+        succ(LevelTerm::Zero)
+    );
+    assert_eq!(
+        instantiate_level(&levels, LevelId(1), &substitution, 0),
+        Err(LevelError::BudgetExhausted)
+    );
+}
+
 #[test]
 fn instantiation_rejects_cycles_missing_parameters_and_exhausted_budget() {
     let mut levels = IdTable::default();
