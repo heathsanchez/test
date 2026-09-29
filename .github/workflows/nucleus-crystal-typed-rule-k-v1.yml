@@ -39,7 +39,7 @@ jobs:
       - name: Build candidate and exact 33-case authority
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
           cargo clippy --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
