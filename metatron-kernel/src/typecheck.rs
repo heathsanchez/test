@@ -682,8 +682,22 @@ impl<'a> TypeChecker<'a> {
             return RuleKAttempt::NotApplicable;
         };
         let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=no-reduction", name.0);
+            }
             return RuleKAttempt::NotApplicable;
         };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=found:k={}:rules={}:spine={}:params={}:indices={}",
+                name.0,
+                reduction.k,
+                reduction.rules.len(),
+                neutral.spine.len(),
+                reduction.num_params,
+                reduction.num_indices
+            );
+        }
         let [rule] = reduction.rules.as_slice() else {
             return RuleKAttempt::NotApplicable;
         };
@@ -712,6 +726,9 @@ impl<'a> TypeChecker<'a> {
             self.machine()
                 .expose(target.clone(), Transparency::Reducible, budget / 4);
         let Some(Value::Neutral(target_neutral)) = target_exposed.proven_value() else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-not-neutral", name.0);
+            }
             return RuleKAttempt::NotApplicable;
         };
         let Some(target_type) = self.neutral_result_type(target_neutral, context, budget / 4)
@@ -751,6 +768,12 @@ impl<'a> TypeChecker<'a> {
             context.len(),
             context,
         );
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=compatibility:result={compatibility:?}",
+                name.0
+            );
+        }
         match compatibility {
             Judgment::Proven { .. } => {
                 let substitutions = reduction
@@ -779,6 +802,9 @@ impl<'a> TypeChecker<'a> {
                             _ => return RuleKAttempt::NotApplicable,
                         }
                     }
+                }
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=reduced", name.0);
                 }
                 RuleKAttempt::Reduced(result)
             }
