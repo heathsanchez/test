@@ -660,6 +660,26 @@ impl<'a> Machine<'a> {
         outer_reduction: &RecursorReduction,
         budget: usize,
     ) -> Option<(NameId, Vec<Closure>)> {
+        let trace = std::env::var_os("NUCLEUS_TRACE_ONE_STEP_IOTA").is_some();
+        macro_rules! decline {
+            ($reason:expr) => {{
+                if trace {
+                    eprintln!(
+                        "NUCLEUS_ONE_STEP_IOTA:DECLINE:{}:target={:?}:outer_rules={:?}:budget={}",
+                        $reason,
+                        target,
+                        outer_reduction
+                            .rules
+                            .iter()
+                            .map(|rule| rule.constructor)
+                            .collect::<Vec<_>>(),
+                        budget
+                    );
+                }
+                return None;
+            }};
+        }
+
         let matches_outer = |constructor: NameId, arity: usize| {
             outer_reduction.rules.iter().any(|rule| {
                 rule.constructor == constructor && arity == rule.num_params + rule.num_fields
@@ -669,45 +689,97 @@ impl<'a> Machine<'a> {
         if let Some((constructor, arguments)) = self.constructor_application(target)
             && matches_outer(constructor, arguments.len())
         {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DIRECT:constructor={:?}:arity={}",
+                    constructor,
+                    arguments.len()
+                );
+            }
             return Some((constructor, arguments));
         }
 
-        // Crystal v1: exactly one certified nested-iota step.  Do not call
-        // expose_internal here: previous recursive-major experiments proved
-        // that broad WHNF can enter >120s paths.  The inner recursor must be
-        // syntactically visible, and its own major must already be a certified
-        // constructor application.
-        let (inner_name, inner_levels, inner_arguments, inner_head) =
-            self.constant_application(target)?;
-        let inner_reduction = self.recursor_reductions.get(&inner_name)?;
+        let Some((inner_name, inner_levels, inner_arguments, inner_head)) =
+            self.constant_application(target)
+        else {
+            decline!("inner-head-not-constant-application");
+        };
+        let Some(inner_reduction) = self.recursor_reductions.get(&inner_name) else {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:inner-head-not-certified-recursor:inner={:?}:arity={}:outer_rules={:?}",
+                    inner_name,
+                    inner_arguments.len(),
+                    outer_reduction
+                        .rules
+                        .iter()
+                        .map(|rule| rule.constructor)
+                        .collect::<Vec<_>>()
+                );
+            }
+            return None;
+        };
         let inner_required = inner_reduction.num_params
             + 1
             + inner_reduction.rules.len()
             + inner_reduction.num_indices
             + 1;
-        if inner_arguments.len() != inner_required
-            || inner_reduction.level_params.len() != inner_levels.len()
-        {
+        if inner_arguments.len() != inner_required {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:inner-arity:inner={:?}:have={}:required={}",
+                    inner_name,
+                    inner_arguments.len(),
+                    inner_required
+                );
+            }
             return None;
         }
+        if inner_reduction.level_params.len() != inner_levels.len() {
+            decline!("inner-level-arity");
+        }
 
-        let inner_target = inner_arguments.last()?;
-        let (inner_constructor, inner_constructor_arguments) =
-            self.constructor_application(inner_target)?;
-        let inner_rule = inner_reduction
+        let Some(inner_target) = inner_arguments.last() else {
+            decline!("missing-inner-major");
+        };
+        let Some((inner_constructor, inner_constructor_arguments)) =
+            self.constructor_application(inner_target)
+        else {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:inner-major-not-direct-constructor:inner={:?}:major={:?}",
+                    inner_name,
+                    inner_target
+                );
+            }
+            return None;
+        };
+        let Some(inner_rule) = inner_reduction
             .rules
             .iter()
-            .find(|rule| rule.constructor == inner_constructor)?;
-        if inner_constructor_arguments.len() != inner_rule.num_params + inner_rule.num_fields {
+            .find(|rule| rule.constructor == inner_constructor)
+        else {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:inner-constructor-not-in-rules:inner={:?}:constructor={:?}:rules={:?}",
+                    inner_name,
+                    inner_constructor,
+                    inner_reduction
+                        .rules
+                        .iter()
+                        .map(|rule| rule.constructor)
+                        .collect::<Vec<_>>()
+                );
+            }
             return None;
+        };
+        if inner_constructor_arguments.len() != inner_rule.num_params + inner_rule.num_fields {
+            decline!("inner-constructor-arity");
         }
 
-        let prefix_len =
-            inner_reduction.num_params + 1 + inner_reduction.rules.len();
+        let prefix_len = inner_reduction.num_params + 1 + inner_reduction.rules.len();
         let mut rule_arguments = inner_arguments[..prefix_len].to_vec();
-        rule_arguments.extend_from_slice(
-            &inner_constructor_arguments[inner_rule.num_params..],
-        );
+        rule_arguments.extend_from_slice(&inner_constructor_arguments[inner_rule.num_params..]);
 
         let mut level_substitution = inner_head.levels.to_map();
         for (parameter, level) in inner_reduction
@@ -715,8 +787,11 @@ impl<'a> Machine<'a> {
             .iter()
             .zip(inner_levels.iter())
         {
-            let resolved =
-                self.resolve_level(*level, &inner_head, budget.saturating_sub(1))?;
+            let Some(resolved) =
+                self.resolve_level(*level, &inner_head, budget.saturating_sub(1))
+            else {
+                decline!("inner-level-resolution");
+            };
             level_substitution.insert(*parameter, resolved);
         }
         let mut level_substitution = level_substitution.into_iter().collect::<Vec<_>>();
@@ -727,8 +802,16 @@ impl<'a> Machine<'a> {
             EnvFrame::empty(),
             LevelSubstitution::new(level_substitution),
         );
-        for argument in rule_arguments {
-            let Expr::Lam { body, .. } = self.expressions.get(reduced.expr)? else {
+        for (argument_index, argument) in rule_arguments.into_iter().enumerate() {
+            let Some(Expr::Lam { body, .. }) = self.expressions.get(reduced.expr) else {
+                if trace {
+                    eprintln!(
+                        "NUCLEUS_ONE_STEP_IOTA:DECLINE:rule-rhs-not-lambda:index={}:expr={:?}:inner={:?}",
+                        argument_index,
+                        reduced.expr,
+                        inner_name
+                    );
+                }
                 return None;
             };
             reduced = Closure::with_levels(
@@ -738,8 +821,41 @@ impl<'a> Machine<'a> {
             );
         }
 
-        let (constructor, arguments) = self.constructor_application(&reduced)?;
-        matches_outer(constructor, arguments.len()).then_some((constructor, arguments))
+        let Some((constructor, arguments)) = self.constructor_application(&reduced) else {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:one-step-result-not-constructor:inner={:?}:result={:?}",
+                    inner_name,
+                    reduced
+                );
+            }
+            return None;
+        };
+        if !matches_outer(constructor, arguments.len()) {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_ONE_STEP_IOTA:DECLINE:one-step-result-not-outer-constructor:inner={:?}:constructor={:?}:arity={}:outer_rules={:?}",
+                    inner_name,
+                    constructor,
+                    arguments.len(),
+                    outer_reduction
+                        .rules
+                        .iter()
+                        .map(|rule| rule.constructor)
+                        .collect::<Vec<_>>()
+                );
+            }
+            return None;
+        }
+        if trace {
+            eprintln!(
+                "NUCLEUS_ONE_STEP_IOTA:PASS:inner={:?}:constructor={:?}:arity={}",
+                inner_name,
+                constructor,
+                arguments.len()
+            );
+        }
+        Some((constructor, arguments))
     }
 
     fn constant_application(
