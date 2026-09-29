@@ -264,8 +264,8 @@ impl<'a> TypeChecker<'a> {
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
                 let function_type = match function_type {
-                    Judgment::Proven { value, provenance } => {
-                        Judgment::Proven { value, provenance }
+                    Judgment::Proven { value, warrant } => {
+                        Judgment::Proven { value, warrant }
                     }
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
