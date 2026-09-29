@@ -1,0 +1,52 @@
+name: Collatz Crystal Nonpositive Budget Kernel V53
+
+on:
+  push:
+    branches: [collatz-crystal-nonpositive-budget-kernel-v53]
+    paths:
+      - 'experiments/collatz_crystal_nonpositive_budget_kernel_v53.py'
+      - 'experiments/collatz_crystal_biadic_port_v46.py'
+      - 'experiments/collatz_crystal_nearest_centre_v45.py'
+      - 'experiments/collatz_crystal_owner8_prospective_v44.py'
+      - 'experiments/collatz_crystal_dynamic_owner_separator_v43.py'
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - 'experiments/collatz_crystal_phase_normalized_return_v40.py'
+      - '.github/workflows/collatz-crystal-nonpositive-budget-kernel-v53.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  falsify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Source-free nonpositive-budget kernel
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-nonpositive-budget-kernel-v53
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_nonpositive_budget_kernel_v53.py \
+            | tee evidence/collatz-crystal-nonpositive-budget-kernel-v53/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-nonpositive-budget-kernel-v53/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_NONPOSITIVE_BUDGET_KERNEL_V53'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V53_VERDICT', d['verdict'])
+          print('V53_STATS', d['stats'])
+          print('V53_GRAPH', d['source_free_graph'])
+          print('V53_BITS', {k:v['recurrent_sccs'] for k,v in d['source_bit_frontier'].items()})
+          print('V53_CERT', d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-nonpositive-budget-kernel-v53/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-nonpositive-budget-kernel-v53
+          path: evidence/collatz-crystal-nonpositive-budget-kernel-v53
+          if-no-files-found: error
