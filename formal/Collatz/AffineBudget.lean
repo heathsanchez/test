@@ -57,6 +57,38 @@ theorem affineBudget_pos_iff
     0 < affineBudget A B P L ↔ B < (P - A) * L := by
   simp [affineBudget]
 
+/-- A positive composite budget cannot be synthesized from two nonpositive
+component budgets when the affine composition weights are nonnegative.
+
+Together with [affineBudget_compose], this is the key consequence-pruning
+step: any cumulative fixed-floor descent certificate contains an individual
+return whose fixed-floor budget is already positive.  Hence an infinite path
+with every individual return budget <= 0 can never acquire positive budget
+merely by batching more returns. -/
+theorem affineBudget_compose_pos_implies_component_pos
+    (A₁ B₁ P₁ A₂ B₂ P₂ L : Int)
+    (hA₂ : 0 ≤ A₂)
+    (hP₁ : 0 ≤ P₁)
+    (hpos :
+      0 < affineBudget (A₂ * A₁) (A₂ * B₁ + B₂ * P₁) (P₁ * P₂) L) :
+    0 < affineBudget A₁ B₁ P₁ L ∨
+      0 < affineBudget A₂ B₂ P₂ L := by
+  rw [affineBudget_compose] at hpos
+  by_cases h₁ : 0 < affineBudget A₁ B₁ P₁ L
+  · exact Or.inl h₁
+  · right
+    by_contra h₂
+    have hn₁ : affineBudget A₁ B₁ P₁ L ≤ 0 := le_of_not_gt h₁
+    have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := le_of_not_gt h₂
+    have hw₁ :
+        A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
+    have hw₂ :
+        P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
+      mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
+    exact (not_lt_of_ge (add_nonpos hw₁ hw₂)) hpos
+
+
 #print axioms affineBudget_compose
 #print axioms affineBudget_composite_expanded
 #print axioms affineBudget_pos_iff
