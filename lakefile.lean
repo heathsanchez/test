@@ -20,6 +20,7 @@ lean_lib CollatzFinal where
     `Collatz.BTransientMacro,
     `Collatz.ReturnFixedPointDescent,
     `Collatz.EventualMacroProgress,
+    `Collatz.AffineBudget,
     `Collatz.SourceProductAffine,
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
