@@ -48,7 +48,7 @@ theorem bias_le_dyadic_ternary_envelope (n k : Nat) :
             dsimp [A]
             simp only [Nat.pow_succ]
             rw [show (6 : Nat) = 2 * 3 by decide]
-            rw [Nat.mul_assoc]
+            ac_rfl
 
 /-- Any shortcut block with exactly twelve odd steps and length at least twenty
 strictly contracts every starting value above the tiny absolute threshold
