@@ -6495,6 +6495,7 @@ fn install_certified_recursor_reduction(
         .map(|(constructor, rule)| {
             Ok(RecursorRule {
                 constructor: constructor.name,
+                constructor_level_params: constructor.level_params.clone(),
                 num_params: usize::try_from(constructor.num_params).map_err(|_| Verdict::Reject)?,
                 num_fields: usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?,
                 rhs: rule.rhs,
@@ -6502,6 +6503,7 @@ fn install_certified_recursor_reduction(
         })
         .collect::<Result<Vec<_>, Verdict>>()?;
     let reduction = RecursorReduction {
+        k: recursor.k,
         num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
         num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
         level_params: recursor.level_params.clone(),
