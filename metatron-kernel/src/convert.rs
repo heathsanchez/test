@@ -694,6 +694,23 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-free-variable")
         }
         (
+            NeutralHead::Projection {
+                type_name: left_type,
+                index: left_index,
+                structure: left_structure,
+            },
+            NeutralHead::Projection {
+                type_name: right_type,
+                index: right_index,
+                structure: right_structure,
+            },
+        ) if left_type == right_type
+            && left_index == right_index
+            && left_structure == right_structure =>
+        {
+            Judgment::proven((), "same-neutral-projection")
+        }
+        (
             NeutralHead::Const {
                 name: left_name,
                 levels: left_levels,
