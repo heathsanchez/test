@@ -893,6 +893,20 @@ fn check_generic_nonrecursive_type(
             || constructor_result_is_definitely_malformed(export,inductive,c)
             || constructor_has_definite_negative_recursive_field(export,inductive,c)
         });
+        for (i, constructor) in block.constructors.iter().enumerate() {
+            eprintln!(
+                "NUCLEUS_GENERIC_NONREC:name={:?}:stage=constructor-components:index={}:ctor={:?}:idx_ok={}:owner_ok={}:params_ok={}:levels_ok={}:result_malformed={}:negative_recursive_field={}",
+                inductive.name,
+                i,
+                constructor.name,
+                constructor.index == i as u64,
+                constructor.inductive == inductive.name,
+                constructor.num_params == inductive.num_params,
+                constructor.level_params == inductive.level_params,
+                constructor_result_is_definitely_malformed(export,inductive,constructor),
+                constructor_has_definite_negative_recursive_field(export,inductive,constructor)
+            );
+        }
         let rec_meta = recursor_metadata_admissible(
             export,inductive,&block.constructors,recursor,false,
             recursor.level_params.len()==inductive.level_params.len()+1
