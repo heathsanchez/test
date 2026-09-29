@@ -1,0 +1,49 @@
+name: Collatz Crystal Post-P36 Adversary V26
+
+on:
+  push:
+    branches: [collatz-crystal-post-p36-adversary-v26]
+    paths:
+      - 'experiments/collatz_crystal_post_p36_adversary_v26.py'
+      - '.github/workflows/collatz-crystal-post-p36-adversary-v26.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify exact post-P36 adversary
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-post-p36-adversary-v26
+          python -u experiments/collatz_crystal_post_p36_adversary_v26.py \
+            | tee evidence/collatz-crystal-post-p36-adversary-v26/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-post-p36-adversary-v26/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_POST_P36_ADVERSARY_V26'
+          assert d['natural_parameter']['bit_length']==389
+          assert d['parity_corridor']['verified_through_state_depth']==448
+          assert d['protected_checks']['first_direct_descent'] is None
+          assert d['protected_checks']['first_quarter_splice'] is None
+          assert d['protected_checks']['first_coefficient_crossing'] is None
+          assert d['v25_reverse_prefix_recheck']['through_parameter_depth']==29
+          assert d['v25_reverse_prefix_recheck']['all_no_exit'] is True
+          assert d['global_collatz']=='UNKNOWN'
+          print('V26_PARAMETER', d['natural_parameter']['t'])
+          print('V26_REVERSE_STATES', d['v25_reverse_prefix_recheck']['total_reverse_states'])
+          print('V26_VERDICT', d['scientific_verdict'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-post-p36-adversary-v26
+          path: evidence/collatz-crystal-post-p36-adversary-v26
+          if-no-files-found: error
