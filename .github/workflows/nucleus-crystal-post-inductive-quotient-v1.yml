@@ -1,0 +1,112 @@
+name: Nucleus Crystal Post Inductive Quotient v1
+
+on:
+  push:
+    branches: [nucleus-crystal-post-inductive-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-post-inductive-quotient-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build diagnostic candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch exact corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace transformed 13-case inductive quotient
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-post-inductive-quotient-v1
+          python3 - <<'PY'
+          import json, pathlib, subprocess, os, collections
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets={
+              'perf/fueled-chain','perf/grind-ring-5','tutorial/086_PSigma.snd',
+              'tutorial/089_projProp1','tutorial/091_projProp3','tutorial/095_projDataIndexRec',
+              'bugs/large-elim-param','bugs/large-elim-prop-bool','bugs/proj-of-imax-prop',
+              'bugs/rec-missing-ih','other/proj-of-prop','tutorial/111_indexedUnitEta',
+              'tutorial/113_indexedStructEta'
+          }
+
+          rows=[]
+          reasons=collections.Counter()
+          for d,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  if name not in targets:
+                      continue
+                  env=os.environ.copy()
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  env['NUCLEUS_TRACE_RESIDUAL']='1'
+                  env['NUCLEUS_TRACE_APPLICATION_INFER']='1'
+                  env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+                  env['NUCLEUS_TRACE_GENERIC_NONREC']='1'
+                  with p.open('rb') as f:
+                      q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+                  err=q.stderr.decode(errors='replace')
+                  marks=[line for line in err.splitlines() if 'NUCLEUS_' in line]
+                  downs=[line for line in marks if 'NUCLEUS_DOWNSTREAM:' in line]
+                  residuals=[line for line in marks if 'NUCLEUS_RESIDUAL:' in line]
+                  apps=[line for line in marks if 'NUCLEUS_APP_INFER:' in line]
+                  heads=[line for line in marks if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line]
+                  generics=[line for line in marks if 'NUCLEUS_GENERIC_NONREC:' in line or 'NUCLEUS_GENERIC_CTOR:' in line]
+                  terminal=downs[-1] if downs else (residuals[-1] if residuals else 'untraced')
+                  if ':reason=' in terminal:
+                      reason=terminal.rsplit(':reason=',1)[1]
+                  elif 'NUCLEUS_RESIDUAL:' in terminal:
+                      reason=terminal.split('NUCLEUS_RESIDUAL:',1)[1]
+                  else:
+                      reason='untraced'
+                  reasons[reason]+=1
+                  rows.append({
+                      'test':name,'expected':expected,'rc':q.returncode,
+                      'terminal':terminal,'reason':reason,
+                      'generic_marks':generics[-12:],
+                      'application_marks':apps[-12:],
+                      'head_marks':heads[-12:],
+                      'tail':marks[-80:],
+                  })
+
+          assert len(rows)==13, len(rows)
+          out={
+              'schema':'nucleus-crystal-post-inductive-quotient-v1',
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'reason_counts':dict(reasons),
+              'by_reason':{
+                  k:[r['test'] for r in rows if r['reason']==k]
+                  for k in sorted(reasons)
+              },
+              'rows':rows,
+          }
+          p=pathlib.Path('metatron-kernel/evidence-out/crystal-post-inductive-quotient-v1/result.json')
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({'reason_counts':out['reason_counts'],'by_reason':out['by_reason']},sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-post-inductive-quotient-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-post-inductive-quotient-v1
+          if-no-files-found: error
