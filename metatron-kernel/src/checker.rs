@@ -8621,9 +8621,13 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
-        // G32 reuses G31's already-qualified constructor-iota machine. Only
-        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        // Reuse the qualified constructor-iota machine for exact Prod and
+        // the independently validated exact Eq recursor. Eq's exported K bit
+        // is retained and separately guarded at the typed conversion boundary.
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }
+        ) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
