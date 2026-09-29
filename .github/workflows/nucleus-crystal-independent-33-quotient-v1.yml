@@ -33,7 +33,8 @@ jobs:
         run: |
           set -euo pipefail
           git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
-          extra="$(git diff --name-only "$AUTHORITY_SHA"...HEAD | grep -v '^.github/workflows/nucleus-crystal-independent-33-quotient-v1.yml
+          changes="$(git diff --name-only "$AUTHORITY_SHA"...HEAD)"
+          test "$changes" = ".github/workflows/nucleus-crystal-independent-33-quotient-v1.yml"
           cd metatron-kernel
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
