@@ -18,6 +18,7 @@ concurrency:
 env:
   AUTHORITY_SHA: a12353b7cce96c48d9a0c684c3e9d81031168e1b
   ARENA_ARTIFACT: "10712869614"
+  ORACLE_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
 
 jobs:
   quotient:
@@ -37,6 +38,23 @@ jobs:
           cargo fmt
           cargo test --release
           cargo build --release --locked
+
+      - name: Build pinned complete oracle
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$ORACLE_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
 
       - name: Fetch exact frozen 193-case corpus
         env:
@@ -62,12 +80,17 @@ jobs:
           binary = pathlib.Path('target/release/metatron-kernel').resolve()
 
           trace_flags = {
-              'NUCLEUS_TRACE_RESIDUAL':'1',
               'NUCLEUS_TRACE_DOWNSTREAM':'1',
               'NUCLEUS_TRACE_GENERIC_NONREC':'1',
               'NUCLEUS_TRACE_PROP_SMALL':'1',
               'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+              'NUCLEUS_TRACE_SINGLE_FIELD':'1',
+              'NUCLEUS_TRACE_IMAX':'1',
+              'NUCLEUS_TRACE_CAPABILITY':'1',
+              'NUCLEUS_TRACE_PARSE_ERROR':'1',
           }
+          oracle = pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
+          oracle_config = pathlib.Path('/tmp/mathgraph/config.json')
 
           def run_case(path, trace=False):
               env = os.environ.copy()
@@ -79,6 +102,15 @@ jobs:
                       stderr=subprocess.PIPE, timeout=120, env=env
                   )
               return q.returncode, q.stderr.decode(errors='replace')
+
+          def run_oracle(path):
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(oracle), str(oracle_config)], stdin=f,
+                      stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+                      timeout=120
+                  )
+              return 0 if q.returncode == 0 else 1
 
           rows = []
           for bucket, expected in [('good',0),('bad',1)]:
@@ -101,47 +133,131 @@ jobs:
           assert len(residual) == 33, len(residual)
 
           terminal_counts = collections.Counter()
+          root_counts = collections.Counter()
           all_marker_counts = collections.Counter()
           by_terminal = {}
+          by_root = {}
           by_marker = {}
+
+          def marker_head(line):
+              m = re.search(r'(NUCLEUS_[A-Z0-9_]+)', line)
+              return m.group(1) if m else None
+
+          def unique_order(items):
+              seen=set(); out=[]
+              for x in items:
+                  if x not in seen:
+                      seen.add(x); out.append(x)
+              return out
 
           for r in residual:
               p = pathlib.Path(r['path'])
+              oracle_rc = run_oracle(p)
+              assert oracle_rc == r['expected'], (r['test'], oracle_rc, r['expected'])
               rc, err = run_case(p, True)
               assert rc == r['rc'], (r['test'], r['rc'], rc)
 
-              nucleus_lines = [
-                  line.strip() for line in err.splitlines()
-                  if 'NUCLEUS_' in line
-              ]
-              residual_marks = re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)', err)
-              terminal = residual_marks[-1].strip() if residual_marks else 'untraced'
-              terminal_counts[terminal] += 1
-              by_terminal.setdefault(terminal, []).append(r['test'])
+              nucleus_lines = [line.strip() for line in err.splitlines() if 'NUCLEUS_' in line]
+              downstream = [line for line in nucleus_lines if 'NUCLEUS_DOWNSTREAM:' in line]
+              neutral = [line for line in nucleus_lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line]
+              imax = [line for line in nucleus_lines if 'NUCLEUS_IMAX ' in line]
+              generic = [line for line in nucleus_lines if 'NUCLEUS_GENERIC_' in line]
+              prop_small = [line for line in nucleus_lines if 'NUCLEUS_PROP_SMALL:' in line]
+              single_field = [line for line in nucleus_lines if 'NUCLEUS_SINGLE_FIELD:' in line]
 
-              marker_heads = []
-              for line in nucleus_lines:
-                  m = re.search(r'(NUCLEUS_[A-Z0-9_]+)', line)
-                  if m:
-                      marker_heads.append(m.group(1))
-              for marker in sorted(set(marker_heads)):
+              terminal_line = downstream[-1] if downstream else 'untraced'
+              stage_m = re.search(r':stage=([^:]+)', terminal_line)
+              reason_m = re.search(r':reason=([^:]+)$', terminal_line)
+              stage = stage_m.group(1) if stage_m else 'untraced'
+              if reason_m:
+                  reason = reason_m.group(1)
+              elif stage == 'inductive':
+                  reason = 'inductive-unknown'
+              elif stage == 'unsupported':
+                  reason = 'unsupported-declaration'
+              else:
+                  reason = 'untraced'
+
+              # Causal-root quotient: collapse downstream cascades onto the
+              # earliest already-instrumented semantic separator. This is a
+              # diagnostic hypothesis, not new checker authority.
+              if imax:
+                  causal_root = 'unresolved-imax-case'
+              elif neutral:
+                  causal_root = 'typed-neutral-head-conversion'
+              elif stage == 'inductive':
+                  if single_field:
+                      causal_root = 'inductive-single-field-contract'
+                  elif prop_small:
+                      causal_root = 'inductive-prop-small-contract'
+                  elif generic:
+                      causal_root = 'inductive-generic-contract'
+                  else:
+                      causal_root = 'inductive-envelope'
+              else:
+                  causal_root = reason
+
+              heads = [h for h in (marker_head(x) for x in nucleus_lines) if h]
+              dependency_cone = unique_order(heads + [f'STAGE:{stage}', f'REASON:{reason}'])
+
+              terminal_key = f'{stage}:{reason}'
+              terminal_counts[terminal_key] += 1
+              root_counts[causal_root] += 1
+              by_terminal.setdefault(terminal_key, []).append(r['test'])
+              by_root.setdefault(causal_root, []).append(r['test'])
+
+              for marker in sorted(set(heads)):
                   all_marker_counts[marker] += 1
                   by_marker.setdefault(marker, []).append(r['test'])
 
-              r['terminal'] = terminal
-              r['residual_marks'] = residual_marks
-              r['trace_lines'] = nucleus_lines[-400:]
+              r.update({
+                  'oracle_rc':oracle_rc,
+                  'terminal_line':terminal_line,
+                  'terminal_stage':stage,
+                  'terminal_reason':reason,
+                  'causal_root':causal_root,
+                  'dependency_cone':dependency_cone,
+                  'last_neutral':neutral[-1] if neutral else None,
+                  'last_imax':imax[-1] if imax else None,
+                  'last_generic':generic[-1] if generic else None,
+                  'last_prop_small':prop_small[-1] if prop_small else None,
+                  'last_single_field':single_field[-1] if single_field else None,
+                  'trace_lines':nucleus_lines[-400:],
+              })
               r.pop('path', None)
 
-          # Coarse consequential quotient: use the final residual reason as the
-          # primary class and retain all emitted trace markers as refinements.
-          classes = []
-          for terminal, tests in sorted(by_terminal.items(), key=lambda kv:(-len(kv[1]),kv[0])):
+          classes=[]
+          for root_name, tests in sorted(by_root.items(), key=lambda kv:(-len(kv[1]),kv[0])):
+              members=[r for r in residual if r['causal_root']==root_name]
+              accepts=sorted(r['test'] for r in members if r['expected']==0)
+              rejects=sorted(r['test'] for r in members if r['expected']==1)
               classes.append({
-                  'terminal': terminal,
-                  'count': len(tests),
-                  'tests': sorted(tests),
+                  'causal_root':root_name,
+                  'count':len(tests),
+                  'accept_count':len(accepts),
+                  'reject_count':len(rejects),
+                  'accepts':accepts,
+                  'rejects':rejects,
+                  'tests':sorted(tests),
               })
+
+          mixed=[c for c in classes if c['accept_count'] and c['reject_count']]
+          separator=None
+          if mixed:
+              chosen=max(mixed,key=lambda c:(min(c['accept_count'],c['reject_count']),c['count']))
+              separator={
+                  'causal_root':chosen['causal_root'],
+                  'accept':chosen['accepts'][0],
+                  'reject':chosen['rejects'][0],
+                  'rationale':'opposite protected verdicts inside the same causal-root class',
+              }
+          elif classes:
+              chosen=classes[0]
+              separator={
+                  'causal_root':chosen['causal_root'],
+                  'representative':chosen['tests'][0],
+                  'rationale':'largest pure causal-root class; requires nearest decided sibling probe next',
+              }
 
           out = {
               'schema':'nucleus-crystal-independent-33-quotient-v1',
@@ -153,10 +269,14 @@ jobs:
               'residual_count':len(residual),
               'wrong':wrong,
               'terminal_reason_counts':dict(terminal_counts),
+              'causal_root_counts':dict(root_counts),
               'marker_presence_counts':dict(all_marker_counts),
               'by_terminal':by_terminal,
+              'by_causal_root':by_root,
               'by_marker':by_marker,
               'classes':classes,
+              'separator_target':separator,
+              'oracle_sha':os.environ['ORACLE_SHA'],
               'rows':residual,
           }
           p = pathlib.Path('evidence-out/crystal-independent-33-quotient-v1/result.json')
@@ -167,8 +287,11 @@ jobs:
               'native_reject':native_reject,
               'residual_count':len(residual),
               'terminal_reason_counts':dict(terminal_counts),
+              'causal_root_counts':dict(root_counts),
               'by_terminal':by_terminal,
+              'by_causal_root':by_root,
               'marker_presence_counts':dict(all_marker_counts),
+              'separator_target':separator,
           }, sort_keys=True))
           PY
 
