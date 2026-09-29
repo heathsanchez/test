@@ -1,0 +1,48 @@
+name: Collatz Crystal Affine Family V24
+
+on:
+  push:
+    branches: [collatz-crystal-affine-family-v24]
+    paths:
+      - 'experiments/collatz_crystal_affine_family_v24.py'
+      - '.github/workflows/collatz-crystal-affine-family-v24.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Exhaust unsplit affine family
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-affine-family-v24
+          python -u experiments/collatz_crystal_affine_family_v24.py             | tee evidence/collatz-crystal-affine-family-v24/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-affine-family-v24/result.json'))
+          p=d['maximal_uniform_forward_prefix']
+          r=d['uniform_reverse_search']
+          assert p['ordinary_depth']==59
+          assert p['odd_count']==38
+          assert p['endpoint_slope']==3**46
+          assert p['next_parity_depends_on_t_mod2'] is True
+          assert r['prefixes_checked']==60
+          assert r['uniform_lower_source_witness'] is None
+          assert r['depth_cap_hit'] is False
+          assert r['max_reverse_depth']==67
+          assert d['global_collatz']=='UNKNOWN'
+          print('V24_PREFIX',p)
+          print('V24_REVERSE',r)
+          print('V24_SPLIT',d['first_parameter_split'])
+          print('V24_NEXT',d['next_residual'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-affine-family-v24
+          path: evidence/collatz-crystal-affine-family-v24
