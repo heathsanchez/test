@@ -483,6 +483,21 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
+    pub(crate) fn eta_projection_spec_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs.into_iter().filter(|(_, spec)| {
+            spec.eta_expandable && spec.constructor == constructor
+        });
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params, spec.field_types.len()))
+    }
+
     pub(crate) fn unit_like_type_key(
         &self,
         ty: &TypeValue,
