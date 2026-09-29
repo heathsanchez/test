@@ -246,6 +246,10 @@ impl Environment {
         self.recursor_reductions.as_ref().clone()
     }
 
+    pub fn recursor_reduction(&self, name: NameId) -> Option<&RecursorReduction> {
+        self.recursor_reductions.get(&name)
+    }
+
     pub fn install_projection_spec(
         &self,
         name: NameId,
