@@ -1,0 +1,78 @@
+name: Collatz Crystal Mod9 Section V40
+
+on:
+  push:
+    branches: [collatz-crystal-mod9-section-v40]
+    paths:
+      - 'lakefile.lean'
+      - 'formal/Collatz/Mod9Section.lean'
+      - 'formal/Collatz/BiadicRankedNormalization.lean'
+      - 'experiments/collatz_crystal_mod9_section_v40.py'
+      - 'experiments/collatz_crystal_zero_tail_k_rank_v39.py'
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - '.github/workflows/collatz-crystal-mod9-section-v40.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify exact 2 mod 9 section bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-mod9-section-v40
+          lake env lean --version | tee evidence/collatz-crystal-mod9-section-v40/toolchain.txt
+          lake build CollatzFinal
+          f=formal/Collatz/Mod9Section.lean
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+            echo "Forbidden source token in $f" >&2
+            exit 1
+          fi
+          lake env lean -DautoImplicit=false "$f"             | tee evidence/collatz-crystal-mod9-section-v40/Mod9Section.lean.log
+          grep -q "collatz_of_low_mod9_two_hit"             evidence/collatz-crystal-mod9-section-v40/Mod9Section.lean.log
+          ! grep -R -E 'sorryAx|Lean.ofReduceBool'             evidence/collatz-crystal-mod9-section-v40/*.log
+
+      - name: Run frozen section-return falsifier
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments             python experiments/collatz_crystal_mod9_section_v40.py             > evidence/collatz-crystal-mod9-section-v40/result.json
+          python - <<'PY'
+          import json
+          p="evidence/collatz-crystal-mod9-section-v40/result.json"
+          d=json.load(open(p))
+          assert d["schema"]=="COLLATZ_CRYSTAL_MOD9_SECTION_V40"
+          assert d["global_collatz"]=="UNKNOWN"
+          assert d["verdict"] in {
+              "POST_ZERO_TAIL_MOD9_SECTION_PRED_RANK_REJECTED",
+              "NO_COUNTEREXAMPLE_ON_FROZEN_EXACT_SOURCES",
+          }
+          assert len(d["frozen_sources"])==3
+          print("VERDICT", d["verdict"])
+          for r in d["frozen_sources"]:
+              print(r["name"], r["post_zero_tail_section_pred_transitions"],
+                    "first_exit=", r["first_simple_exit"],
+                    "first_low_section=", r["first_low_section_hit"])
+          print("CERT", d["certificate_sha256"])
+          PY
+          git rev-parse HEAD | tee evidence/collatz-crystal-mod9-section-v40/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-mod9-section-v40
+          path: evidence/collatz-crystal-mod9-section-v40
+          if-no-files-found: error
