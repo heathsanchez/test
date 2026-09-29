@@ -45,11 +45,11 @@ jobs:
           target="$(find /tmp/tests/good -type f -path '*/tutorial/112_structEta.ndjson' | head -1)"
           test -n "$target"
           set +e
-          NUCLEUS_TRACE_STRUCTURE_ETA=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 metatron-kernel/target/release/metatron-kernel < "$target" > /tmp/out.txt 2> /tmp/err.txt
+          NUCLEUS_TRACE_STRUCTURE_ETA=1 NUCLEUS_TRACE_APPLICATION_INFER=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 metatron-kernel/target/release/metatron-kernel < "$target" > /tmp/out.txt 2> /tmp/err.txt
           rc=$?
           set -e
           echo "rc=$rc"
-          grep -E 'NUCLEUS_STRUCTURE_ETA:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:' /tmp/err.txt || true
+          grep -E 'NUCLEUS_STRUCTURE_ETA:PASS|NUCLEUS_APP_INFER:unknown|NUCLEUS_DOWNSTREAM:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:' /tmp/err.txt || true
           mkdir -p metatron-kernel/evidence-out/crystal-prod-eta-trace-v1
           cp /tmp/err.txt metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/stderr.txt
           printf '{"schema":"nucleus-crystal-prod-eta-trace-v1","rc":%s}\n' "$rc" > metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/result.json
