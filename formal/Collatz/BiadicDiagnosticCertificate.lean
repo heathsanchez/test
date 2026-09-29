@@ -45,7 +45,13 @@ def biadicDiagnosticModel : FiniteResidualModel 12 where
 
 theorem biadicDiagnosticRankValid :
     FiniteResidualModel.RankValid biadicDiagnosticModel := by
-  decide
+  intro s t hs hnext
+  simp [FiniteResidualModel.NextP, biadicDiagnosticModel,
+    biadicDiagnosticNext] at hnext
+  rcases hnext with h | h | h | h | h
+  all_goals
+    rcases h with ⟨rfl, rfl⟩
+    decide
 
 theorem biadicDiagnosticKernelEmpty :
     KernelEmpty
