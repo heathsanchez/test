@@ -71,7 +71,7 @@ jobs:
                   residuals=[line for line in marks if 'NUCLEUS_RESIDUAL:' in line]
                   apps=[line for line in marks if 'NUCLEUS_APP_INFER:' in line]
                   heads=[line for line in marks if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line]
-                  generics=[line for line in marks if 'NUCLEUS_GENERIC_NONREC:' in line or 'NUCLEUS_GENERIC_CTOR:' in line]
+                  generics=[line for line in marks if 'NUCLEUS_GENERIC_NONREC:' in line or 'NUCLEUS_GENERIC_CTOR:' in line or 'NUCLEUS_GENERIC_PROMOTE:' in line]
                   terminal=downs[-1] if downs else (residuals[-1] if residuals else 'untraced')
                   if ':reason=' in terminal:
                       reason=terminal.rsplit(':reason=',1)[1]
