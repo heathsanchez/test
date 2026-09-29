@@ -886,6 +886,33 @@ fn check_generic_nonrecursive_type(
     let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
     if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        let ctor_contract = !block.constructors.iter().enumerate().any(|(i,c)|{
+            c.index!=i as u64 || c.inductive!=inductive.name
+            || c.num_params!=inductive.num_params || c.level_params!=inductive.level_params
+            || constructor_result_is_definitely_malformed(export,inductive,c)
+            || constructor_has_definite_negative_recursive_field(export,inductive,c)
+        });
+        let rec_meta = recursor_metadata_admissible(
+            export,inductive,&block.constructors,recursor,false,
+            recursor.level_params.len()==inductive.level_params.len()+1
+        );
+        let rec_shape = generic_nonrecursive_recursor_shape(
+            export,inductive,&block.constructors,recursor
+        );
+        eprintln!(
+            "NUCLEUS_GENERIC_NONREC:name={:?}:stage=formula-components:arity={}:all={}:ctors={}:level_unique={}:ctor_contract={}:rec_meta={}:rec_shape={}",
+            inductive.name,
+            inductive_arity_metadata_is_well_formed(export,inductive),
+            inductive.all == [inductive.name],
+            inductive.constructors == block.constructors.iter().map(|c|c.name).collect::<Vec<_>>(),
+            !has_duplicate_parameter(&inductive.level_params),
+            ctor_contract,
+            rec_meta,
+            rec_shape
+        );
+    }
+
     if !inductive_arity_metadata_is_well_formed(export,inductive)
        || inductive.all != [inductive.name]
        || inductive.constructors != block.constructors.iter().map(|c|c.name).collect::<Vec<_>>()
