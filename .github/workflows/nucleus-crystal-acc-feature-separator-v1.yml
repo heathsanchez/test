@@ -1,0 +1,85 @@
+name: Nucleus Crystal Acc Feature Separator v1
+
+on:
+  push:
+    branches: [nucleus-crystal-acc-feature-separator-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-acc-feature-separator-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUTHORITY_SHA: 16d34375af9ff7af41f341077628f5a1b0847292
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build exact Rule-K authority
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace Acc iota / K / eta separator
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/acc-feature-separator-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          root=pathlib.Path('/tmp/tests')
+          bin=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          specs=[
+              ('good','tutorial/124_accRecReduction',0),
+              ('bad','tutorial/101_ruleKAcc',1),
+              ('bad','tutorial/125_accRecNoEta',1),
+          ]
+          rows=[]
+          for bucket,name,expected in specs:
+              p=root/bucket/(name+'.ndjson')
+              env=os.environ.copy()
+              for k in [
+                  'NUCLEUS_TRACE_DOWNSTREAM',
+                  'NUCLEUS_TRACE_RESIDUAL',
+                  'NUCLEUS_TRACE_NEUTRAL_HEADS',
+                  'NUCLEUS_TRACE_RULE_K',
+                  'NUCLEUS_TRACE_APPLICATION_INFER',
+              ]: env[k]='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(bin)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=120,env=env)
+              marks=[x for x in q.stderr.decode(errors='replace').splitlines() if 'NUCLEUS_' in x]
+              rows.append({'test':name,'expected':expected,'rc':q.returncode,'marks':marks[-500:]})
+          assert all(r['rc'] in (2,3) for r in rows), rows
+          out={
+              'schema':'nucleus-crystal-acc-feature-separator-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'rows':rows,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/acc-feature-separator-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-acc-feature-separator-${{ github.sha }}
+          path: metatron-kernel/evidence-out/acc-feature-separator-v1
+          if-no-files-found: error
