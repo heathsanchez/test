@@ -1,0 +1,59 @@
+{
+  "schema": "COLLATZ_CRYSTAL_SOURCE_HEADROOM_GATE_V36B_LOCAL_REPLAY",
+  "branch": "collatz-crystal-headroom-gate-v36b",
+  "script_commit": "6c35a6983bc2bf23100f65c1ad3e0a78605674ec",
+  "qualification_status": "LOCAL_INDEPENDENT_REPLAY_NOT_CI",
+  "supersedes_failed_run_as_evidence": false,
+  "failed_ci_run": 36619077213,
+  "v23_source_floor": "38911100780481085467",
+  "K_gate": {
+    "lower_cost_transitions": 3832,
+    "same_cost_transitions": 450,
+    "drop_histogram": {
+      "1": 3702,
+      "2": 107,
+      "3": 13,
+      "4": 9,
+      "5": 1
+    },
+    "d1_no_exit_xmin": "77822201560962170927",
+    "d1_no_exit_xmax": "77822201560962170947",
+    "law": "2^d*p=x+E; lower-source exit iff x+E<2^d*n"
+  },
+  "B_gate": {
+    "transitions": 15947,
+    "raw_cost": 20,
+    "no_direct_xmin": "76774743408946119444",
+    "no_direct_xmax": "76774743408946119465",
+    "threshold_width": 21,
+    "law": "endpoint=(3^12*x+C)/2^20"
+  },
+  "zero_slack": {
+    "recurrent_components": 66,
+    "component_shape": "pure-I length19 q12 D0",
+    "multiplier": "531441/524288",
+    "gap": 7153
+  },
+  "same_state_regime": {
+    "base_state": 514835,
+    "contracting_no_exit_start_threshold": "86371586335064384399",
+    "least_expanding_guard_start": "38911100780491415295",
+    "least_expanding_guard_after": "373968357745318616831",
+    "least_contracting_guard_start": "38911100780985433855",
+    "least_contracting_guard_after": "17529766769534369535"
+  },
+  "tail_zero_falsifier": {
+    "v26_source_bit_length": 460,
+    "first_simple_exit_kind": "M1",
+    "first_simple_exit_depth": 518
+  },
+  "v35_falsifier": {
+    "checked_repeats": 32,
+    "first_least_start_above_v23_floor": 5,
+    "all_above_floor_shadows_pass_K_source_floor_gate": true
+  },
+  "scientific_verdict": "SOURCE_HEADROOM_CONSEQUENTIAL; TAIL_ZERO_REJECTED; HEADROOM_GATE_ALONE_REJECTED",
+  "next_residual": "HEADROOM_GATED_APERIODIC_RETURN_LANGUAGE",
+  "universal_status": "UNKNOWN",
+  "global_collatz": "UNKNOWN"
+}
