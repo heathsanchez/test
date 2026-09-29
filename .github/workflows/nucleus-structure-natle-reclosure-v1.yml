@@ -1,11 +1,12 @@
-name: Nucleus Structure NatLe Reclosure v1
+name: Nucleus Crystal App Residual v1
 
 on:
   push:
-    branches: [nucleus-structure-natle-reclosure-v1]
+    branches: [nucleus-crystal-app-residual-v1]
     paths:
       - ".github/workflows/nucleus-structure-natle-reclosure-v1.yml"
       - "metatron-kernel/src/checker.rs"
+      - "metatron-kernel/src/typecheck.rs"
       - "metatron-kernel/src/level.rs"
   workflow_dispatch:
 
@@ -57,6 +58,7 @@ jobs:
           NUCLEUS_TRACE_SINGLE_FIELD: "1"
           NUCLEUS_TRACE_DOWNSTREAM: "1"
           NUCLEUS_TRACE_IMAX: "1"
+          NUCLEUS_TRACE_CRYSTAL_APP_RESIDUAL: "1"
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/structure-natle-reclosure-v1
@@ -72,6 +74,7 @@ jobs:
                   env.pop('NUCLEUS_TRACE_SINGLE_FIELD',None)
                   env.pop('NUCLEUS_TRACE_DOWNSTREAM',None)
                   env.pop('NUCLEUS_TRACE_IMAX',None)
+                  env.pop('NUCLEUS_TRACE_CRYSTAL_APP_RESIDUAL',None)
               try:
                   with p.open('rb') as f:
                       q=subprocess.run(
@@ -114,7 +117,7 @@ jobs:
               rc,stderr=rr(cand,p,True)
               marks=[
                   line for line in stderr.splitlines()
-                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line or 'NUCLEUS_IMAX ' in line
+                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line or 'NUCLEUS_IMAX ' in line or 'NUCLEUS_CRYSTAL_APP_RESIDUAL:' in line
               ]
               traces.append({'test':name,'expected':expected,'rc':rc,'marks':marks})
 
