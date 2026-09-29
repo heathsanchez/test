@@ -1027,7 +1027,10 @@ fn check_generic_nonrecursive_type(
         || !recursor_metadata_ok
         || !recursor_shape_ok
     {
-        return Err(Verdict::Reject);
+        // This path is an admission capability, not a negative oracle.
+        // Failure to match its exact positive contract leaves the declaration
+        // outside authority unless a separately warranted rejection law applies.
+        return Err(Verdict::Unknown);
     }
 
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
