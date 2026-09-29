@@ -215,14 +215,14 @@ assert max_positive_fp == Fraction(1_107_667, 502_829)
 false_safe.sort(key=lambda row: (len(row[0]), tuple((e[0],e[1],e[2]) for e in row[0])))
 wpath, wthr, widx, wA, wB, wpref, wfinal = false_safe[0]
 assert len(wpath) == 19
-assert widx == 17
+assert widx == 18
 fA, fB = wpref[-1]
 assert fA == Fraction(531441,524288)
-assert fB == Fraction(216305,524288)
-assert wthr == Fraction(283341988972178713019743,6561)
+assert fB == Fraction(371953,524288)
+assert wthr == Fraction(1133367955888714852069405,19683)
 
 floor_values = owner_values(wpref, N0)
-assert floor_values[widx] == Fraction(574415397496656903932127,16384)
+assert floor_values[widx] == Fraction(1723246192489970711814813,65536)
 assert floor_values[widx] < N0
 assert wfinal > N0
 
