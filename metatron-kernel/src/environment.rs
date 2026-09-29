@@ -77,6 +77,7 @@ pub struct NatPrimitives {
     pub add: Option<NameId>,
     pub sub: Option<NameId>,
     pub ble: Option<NameId>,
+    pub beq: Option<NameId>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -337,6 +338,7 @@ impl Environment {
             NatOperation::Add => &mut primitives.add,
             NatOperation::Sub => &mut primitives.sub,
             NatOperation::Ble => &mut primitives.ble,
+            NatOperation::Beq => &mut primitives.beq,
         };
         if slot.is_some() {
             return Err(EnvironmentError::DuplicateNatOperation(name));
@@ -484,6 +486,7 @@ pub enum NatOperation {
     Add,
     Sub,
     Ble,
+    Beq,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
