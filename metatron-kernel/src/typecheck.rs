@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -18,12 +19,20 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+struct ApplicationInferenceKey {
+    expression: ExprId,
+    context: Vec<TypeValue>,
+    frame: EnvFrame,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    application_inference_cache: RefCell<HashMap<ApplicationInferenceKey, Judgment<TypeValue>>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +47,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            application_inference_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +63,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            application_inference_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -145,6 +156,31 @@ impl<'a> TypeChecker<'a> {
         policy: crate::convert::DeltaPolicy,
     ) -> Judgment<()> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
+    }
+
+    fn infer_application_function(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+    ) -> Judgment<TypeValue> {
+        let key = ApplicationInferenceKey {
+            expression,
+            context: context.to_vec(),
+            frame: frame.clone(),
+        };
+        if let Some(cached) = self.application_inference_cache.borrow().get(&key) {
+            return cached.clone();
+        }
+
+        let result = self.infer_in(expression, context, frame, remaining);
+        if !result.is_unknown() {
+            self.application_inference_cache
+                .borrow_mut()
+                .insert(key, result.clone());
+        }
+        result
     }
 
     fn infer_in(
@@ -262,7 +298,8 @@ impl<'a> TypeChecker<'a> {
                     })
             }
             Expr::App { fun, arg } => {
-                let function_type = self.infer_in(*fun, context, frame, remaining);
+                let function_type =
+                    self.infer_application_function(*fun, context, frame, remaining);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
                         obstruction: *obstruction,
