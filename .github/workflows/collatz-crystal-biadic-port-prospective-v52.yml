@@ -1,0 +1,48 @@
+name: Collatz Crystal Biadic Port Prospective V52
+
+on:
+  push:
+    branches: [collatz-crystal-biadic-port-prospective-v52]
+    paths:
+      - 'experiments/collatz_crystal_biadic_port_prospective_v52.py'
+      - '.github/workflows/collatz-crystal-biadic-port-prospective-v52.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  prospective:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen c5 biadic port challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-biadic-port-prospective-v52
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_biadic_port_prospective_v52.py \
+            | tee evidence/collatz-crystal-biadic-port-prospective-v52/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-biadic-port-prospective-v52/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_BIADIC_PORT_PROSPECTIVE_V52'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V52_VERDICT', d['verdict'])
+          print('V52_STATS', d['stats'])
+          print('V52_FROZEN', d['prospective_frozen_check'])
+          print('V52_PORT_MIN', d['diagnostic_minimum_fresh_extra_bits'])
+          print('V52_BANK_GROWTH', d['frozen_bank_growth'])
+          print('V52_CERT', d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-biadic-port-prospective-v52/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-biadic-port-prospective-v52
+          path: evidence/collatz-crystal-biadic-port-prospective-v52
+          if-no-files-found: error
