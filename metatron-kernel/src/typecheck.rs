@@ -732,27 +732,54 @@ impl<'a> TypeChecker<'a> {
             return RuleKAttempt::NotApplicable;
         }
 
-        let Some(target) = neutral.spine.last() else {
-            return RuleKAttempt::NotApplicable;
+        // Rule K is licensed by the certified recursor interface itself:
+        // after applying every recursor argument except the final major, the
+        // remaining Pi domain is the exact type that a replacement constructor
+        // must inhabit. This avoids reconstructing a local variable's type from
+        // incidental FreeId numbering.
+        let declaration = match self.environment.get(*name) {
+            Some(declaration) if declaration.level_params.len() == levels.len() => declaration,
+            _ => return RuleKAttempt::NotApplicable,
         };
-        let target_exposed =
-            self.machine()
-                .expose(target.clone(), Transparency::Reducible, budget / 4);
-        let Some(Value::Neutral(target_neutral)) = target_exposed.proven_value() else {
-            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
-                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-not-neutral", name.0);
-            }
-            return RuleKAttempt::NotApplicable;
-        };
-        let Some(target_type) = self.neutral_result_type(target_neutral, context, budget / 4)
+        let substitutions = declaration
+            .level_params
+            .iter()
+            .copied()
+            .zip(levels.iter().cloned())
+            .collect::<Vec<_>>();
+        let mut current = TypeValue::Term(Closure::with_levels(
+            declaration.ty,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitutions),
+        ));
+        for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
+            let Some((_domain, body)) =
+                self.pi_view(Judgment::proven(current, "rule-k-recursor-spine"), budget / 4)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing", name.0);
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            current = match body {
+                PiBody::Fixed(body) => body,
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        let Some((target_domain, _body)) =
+            self.pi_view(Judgment::proven(current, "rule-k-final-domain"), budget / 4)
         else {
             if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
-                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-type-missing", name.0);
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-missing", name.0);
             }
             return RuleKAttempt::NotApplicable;
         };
         if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
-            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-type-ok", name.0);
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-ok", name.0);
         }
 
         let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
@@ -793,7 +820,7 @@ impl<'a> TypeChecker<'a> {
 
         let compatibility = crate::convert::convert_with_policy_in_context(
             self,
-            &target_type,
+            &target_domain,
             &constructor_type,
             budget / 2,
             crate::convert::DeltaPolicy::GuardedSemanticFallback,
