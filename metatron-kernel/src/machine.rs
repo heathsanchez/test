@@ -282,7 +282,12 @@ impl<'a> Machine<'a> {
                     return Judgment::unknown("string-literal-reduction-not-qualified");
                 }
                 Expr::Sort(level) if pending.is_empty() => {
-                    let Some(level) = self.resolve_level(*level, &closure, budget) else {
+                    // The outer reduction loop already charged one step for
+                    // inspecting this Sort node.  Level instantiation must
+                    // still be allowed to inspect the level constructor itself.
+                    let Some(level) =
+                        self.resolve_level(*level, &closure, budget.saturating_add(1))
+                    else {
                         return Judgment::unknown("unresolved-sort-level-during-reduction");
                     };
                     record_transition(&mut transitions, record_witnesses, TransitionWitness::Rigid);
