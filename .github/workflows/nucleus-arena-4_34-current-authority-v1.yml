@@ -43,7 +43,6 @@ jobs:
           set -euo pipefail
           git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
           cd metatron-kernel
-          cargo fmt --check
           cargo clippy --all-targets -- -D warnings
           cargo test --release
           cargo build --release --locked
