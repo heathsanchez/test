@@ -1,0 +1,50 @@
+name: Collatz Crystal Affine Budget V51
+
+on:
+  push:
+    branches: [collatz-crystal-affine-budget-v51]
+    paths:
+      - 'formal/Collatz/AffineBudget.lean'
+      - 'formal/Collatz/ReturnFixedPointDescent.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-affine-budget-v51.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify affine budget algebra
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-affine-budget-v51
+          lake env lean --version | tee evidence/collatz-crystal-affine-budget-v51/toolchain.txt
+          lake build CollatzFinal
+          f=formal/Collatz/AffineBudget.lean
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+            echo "Forbidden source token in $f" >&2
+            exit 1
+          fi
+          lake env lean -DautoImplicit=false "$f" \
+            | tee evidence/collatz-crystal-affine-budget-v51/AffineBudget.lean.log
+          grep -q "affineBudget_compose" evidence/collatz-crystal-affine-budget-v51/AffineBudget.lean.log
+          grep -q "affineBudget_compose_pos_implies_component_pos" evidence/collatz-crystal-affine-budget-v51/AffineBudget.lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-crystal-affine-budget-v51/AffineBudget.lean.log
+          git rev-parse HEAD > evidence/collatz-crystal-affine-budget-v51/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-affine-budget-v51
+          path: evidence/collatz-crystal-affine-budget-v51
+          if-no-files-found: error
