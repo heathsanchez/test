@@ -808,14 +808,27 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         || inductive.is_unsafe
         || constructor.is_unsafe
         || recursor.is_unsafe
-        || inductive.num_params != 2
-        || constructor.num_fields != 2
-        || constructor.num_params != 2
-        || !pprod_has_dependent_field_neighbor(export, constructor.ty)
     {
         return false;
     }
-    let Some((_, result)) = pi_spine(export, inductive.ty, 2) else {
+
+    let dependent_pair = inductive.num_params == 2
+        && constructor.num_fields == 2
+        && constructor.num_params == 2
+        && pprod_has_dependent_field_neighbor(export, constructor.ty);
+
+    let scalar_structure = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 1;
+
+    if !dependent_pair && !scalar_structure {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
         return false;
     };
     matches!(
