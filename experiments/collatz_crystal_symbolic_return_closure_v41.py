@@ -26,6 +26,7 @@ from collections import defaultdict
 from contextlib import redirect_stdout
 from fractions import Fraction
 import hashlib, io, json
+from math import gcd
 
 with redirect_stdout(io.StringIO()):
     import collatz_crystal_phase_normalized_return_v40 as v40
@@ -102,15 +103,30 @@ def dynamic_compatible(ea, eb):
         return False
 
     # Necessary ternary congruence for the current and next protected cells.
+    # A is a power of 3, so it is generally NOT invertible modulo 3^tb.
+    # Solve A*m == 2^D*zb-B (mod 3^tb) by dividing out the exact gcd.
     if ta is None or tb is None:
         return False
     if tb:
         mod3 = 3 ** tb
-        # (A*m+B)/2^D == zb mod 3^tb
-        pre3 = (((1 << D) * zb - B) * pow(A, -1, mod3)) % mod3
+        rhs = ((1 << D) * zb - B) % mod3
+        g = gcd(A, mod3)
+        if rhs % g:
+            return False
+        A1, rhs1, mod1 = A // g, rhs // g, mod3 // g
+        if mod1 == 1:
+            pre3, pre3_depth = 0, 0
+        else:
+            pre3 = (rhs1 * pow(A1, -1, mod1)) % mod1
+            q = mod1
+            pre3_depth = 0
+            while q > 1:
+                assert q % 3 == 0
+                q //= 3
+                pre3_depth += 1
     else:
-        pre3 = 0
-    if not compat_pow_residue(za, ta, pre3, tb, 3):
+        pre3, pre3_depth = 0, 0
+    if not compat_pow_residue(za, ta, pre3, pre3_depth, 3):
         return False
 
     return True
