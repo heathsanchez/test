@@ -1,0 +1,45 @@
+name: Collatz Crystal Parameter Quotient V25
+
+on:
+  push:
+    branches: [collatz-crystal-parameter-quotient-v25]
+    paths:
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - '.github/workflows/collatz-crystal-parameter-quotient-v25.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Build exact parameter-halving tree
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-parameter-quotient-v25
+          python -u experiments/collatz_crystal_parameter_quotient_v25.py \
+            | tee evidence/collatz-crystal-parameter-quotient-v25/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-parameter-quotient-v25/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_PARAMETER_QUOTIENT_V25'
+          assert d['tree_depth']==9
+          assert d['levels'][0]['input_cells']==1
+          assert d['global_collatz']=='UNKNOWN'
+          print('V25_FRONTIER',d['frontier_survivors'])
+          print('V25_LEVELS',[(x['depth'],x['survivors'],x['exits']) for x in d['levels']])
+          print('V25_BRANCHING',d['branching'])
+          print('V25_ZERO_TAIL',d['zero_tail_control'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-parameter-quotient-v25
+          path: evidence/collatz-crystal-parameter-quotient-v25
+          if-no-files-found: error
