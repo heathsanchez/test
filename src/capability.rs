@@ -630,13 +630,21 @@ fn prop_projection_target(
         let Declaration::Inductive(block) = declaration else {
             continue;
         };
-        if block.types.len() != 1 || block.constructors.len() != 1 {
+        let inductive = block
+            .types
+            .iter()
+            .find(|inductive| inductive.name == type_name)?;
+
+        let mut constructors = block
+            .constructors
+            .iter()
+            .filter(|constructor| constructor.inductive == type_name);
+        let constructor = constructors.next()?;
+        if constructors.next().is_some() {
             continue;
         }
-        let inductive = &block.types[0];
-        let constructor = &block.constructors[0];
-        if inductive.name != type_name
-            || constructor.inductive != type_name
+
+        if constructor.inductive != type_name
             || inductive.num_params != 0
             || inductive.num_indices != 0
             || inductive.num_nested != 0
