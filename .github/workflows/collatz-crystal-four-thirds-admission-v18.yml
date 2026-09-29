@@ -1,0 +1,65 @@
+name: Collatz Crystal Four Thirds Admission V18
+
+on:
+  push:
+    branches: [collatz-crystal-four-thirds-admission-v18]
+    paths:
+      - 'formal/Collatz/FourThirdsAdmission.lean'
+      - 'experiments/collatz_crystal_four_thirds_admission_v18.py'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-four-thirds-admission-v18.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify exact affine bias envelope
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FourThirdsAdmission.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/FourThirdsAdmission.lean | tee /tmp/v18-lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v18-lean.log
+
+      - name: Run consequence-pruned admission compiler
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-four-thirds-admission-v18
+          python -u experiments/collatz_crystal_four_thirds_admission_v18.py             | tee evidence/collatz-crystal-four-thirds-admission-v18/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-four-thirds-admission-v18/result.json'
+          d=json.load(open(p))
+          assert d['declared_boundary']['source_census'] is False
+          assert d['declared_boundary']['post_boundary_trajectory_search'] is False
+          a,b,c=d['separator_ladder']
+          assert not a['passes_bias_sandwich']
+          assert b['passes_bias_sandwich'] and b['exact_bias_word'] is None
+          assert c['exact_bias_word']==[0,1,5,7]
+          assert c['replay']['parity_matches'] and not c['replay']['protected']
+          assert d['deficit_one_qmin_scan']['closed_by_lagged_qmin_bias_max']>0
+          assert d['deficit_one_qmin_scan']['near_resonant_types']>0
+          assert d['residual']['universal']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V18_TYPES',d['deficit_one_qmin_scan']['candidate_types'])
+          print('V18_CLOSED',d['deficit_one_qmin_scan']['closed_by_lagged_qmin_bias_max'])
+          print('V18_NEAR',d['deficit_one_qmin_scan']['near_resonant_types'])
+          print('V18_RESIDUAL',d['residual'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-four-thirds-admission-v18
+          path: evidence/collatz-crystal-four-thirds-admission-v18
