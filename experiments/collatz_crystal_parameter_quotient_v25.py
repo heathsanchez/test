@@ -23,6 +23,7 @@ natural parameter has an eventually-zero binary tail.
 """
 from __future__ import annotations
 from collections import Counter, defaultdict
+from functools import lru_cache
 import json
 
 N0 = 38_911_100_780_481_085_467
@@ -151,6 +152,7 @@ def reverse_lower_witness(A:int,C:int,N:int,S:int):
             break
     return None,states
 
+@lru_cache(maxsize=None)
 def classify_cell(d:int,r:int,with_merge:bool=True):
     N=N0+NC*r
     S=NC*(1<<d)
