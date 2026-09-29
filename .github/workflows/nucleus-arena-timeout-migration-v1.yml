@@ -125,6 +125,7 @@ jobs:
           esac
           SH
           chmod +x /tmp/nucleus-arena-run
+          export NUCLEUS_ARENA_RUN=/tmp/nucleus-arena-run
           echo "NUCLEUS_ARENA_RUN=/tmp/nucleus-arena-run" >> "$GITHUB_ENV"
 
           cat >/tmp/arena/checkers/nucleus-contract-smoke.yaml <<'YAML'
