@@ -1,0 +1,46 @@
+name: Collatz Crystal Affine Reverse Cell V24
+
+on:
+  push:
+    branches: [collatz-crystal-affine-reverse-cell-v24]
+    paths:
+      - 'experiments/collatz_crystal_affine_reverse_cell_v24.py'
+      - '.github/workflows/collatz-crystal-affine-reverse-cell-v24.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Exhaust uniform affine reverse words
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-affine-reverse-cell-v24
+          python -u experiments/collatz_crystal_affine_reverse_cell_v24.py             | tee evidence/collatz-crystal-affine-reverse-cell-v24/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-affine-reverse-cell-v24/result.json'
+          d=json.load(open(p))
+          assert d['uniform_lower_source_candidates']==0
+          assert d['uniform_equal_source_candidates']==1
+          z=d['unique_equal_candidate']
+          assert z['odd_inverse_steps']==38
+          assert z['even_lifts']==21
+          assert len(z['word'])==59
+          assert d['verdict']=='NO_UNIFORM_LOWER_SOURCE_AT_FIRST_AFFINE_INTERFACE'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V24_LOWER',d['uniform_lower_source_candidates'])
+          print('V24_EQUAL',d['uniform_equal_source_candidates'])
+          print('V24_IDENTITY_WORD',z['word'])
+          print('V24_MAX_STATES',d['finite_exhaustion']['max_dynamic_states'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-affine-reverse-cell-v24
+          path: evidence/collatz-crystal-affine-reverse-cell-v24
