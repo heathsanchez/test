@@ -1,0 +1,41 @@
+name: Collatz Crystal Joint Margin Closeout V22
+
+on:
+  push:
+    branches: [collatz-crystal-joint-margin-closeout-v22]
+    paths:
+      - 'formal/Collatz/FourThirdsFutureExit.lean'
+      - 'experiments/collatz_crystal_joint_margin_owner_v22.py'
+      - '.github/workflows/collatz-crystal-joint-margin-closeout-v22.yml'
+      - 'lakefile.lean'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build formal closeout
+        run: |
+          set -euo pipefail
+          lake build CollatzFinal
+          lake env lean formal/Collatz/FourThirdsFutureExit.lean
+
+      - name: Run joint-margin owner audit
+        if: ${{ hashFiles('experiments/collatz_crystal_joint_margin_owner_v22.py') != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-joint-margin-closeout-v22
+          python -u experiments/collatz_crystal_joint_margin_owner_v22.py \
+            | tee evidence/collatz-crystal-joint-margin-closeout-v22/result.json
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-joint-margin-closeout-v22
+          path: evidence/collatz-crystal-joint-margin-closeout-v22
+          if-no-files-found: ignore
