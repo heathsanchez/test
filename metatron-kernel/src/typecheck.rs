@@ -277,11 +277,7 @@ impl<'a> TypeChecker<'a> {
                                         Transparency::Reducible,
                                         *remaining,
                                     ),
-                                    machine.expose(
-                                        closure.clone(),
-                                        Transparency::Full,
-                                        *remaining,
-                                    ),
+                                    machine.expose(closure.clone(), Transparency::Full, *remaining),
                                 )
                             }
                             _ => (
