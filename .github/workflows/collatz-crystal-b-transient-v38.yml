@@ -1,0 +1,53 @@
+name: Collatz Crystal B Transient V38
+
+on:
+  push:
+    branches: [collatz-crystal-b-transient-v38]
+    paths:
+      - 'lakefile.lean'
+      - 'formal/Collatz/BTransientMacro.lean'
+      - 'formal/Collatz/TwelveOddBlockContraction.lean'
+      - '.github/workflows/collatz-crystal-b-transient-v38.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify sparse B macro transience
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-b-transient-v38
+          lake env lean --version | tee evidence/collatz-crystal-b-transient-v38/toolchain.txt
+          lake build CollatzFinal
+          for f in             formal/Collatz/TwelveOddBlockContraction.lean             formal/Collatz/BTransientMacro.lean
+          do
+            if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+              echo "Forbidden source token in $f" >&2
+              exit 1
+            fi
+            lake env lean -DautoImplicit=false "$f"               | tee "evidence/collatz-crystal-b-transient-v38/$(basename "$f").log"
+          done
+          grep -q "sparse_twelve_kernel_empty"             evidence/collatz-crystal-b-transient-v38/BTransientMacro.lean.log
+          ! grep -R -E 'sorryAx|Lean.ofReduceBool'             evidence/collatz-crystal-b-transient-v38/*.log
+          git rev-parse HEAD | tee evidence/collatz-crystal-b-transient-v38/commit.txt
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-b-transient-v38
+          path: evidence/collatz-crystal-b-transient-v38
+          if-no-files-found: error
