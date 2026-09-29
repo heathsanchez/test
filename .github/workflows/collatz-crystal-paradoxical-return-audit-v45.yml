@@ -5,6 +5,8 @@ on:
     branches: [collatz-crystal-paradoxical-return-audit-v45]
     paths:
       - 'experiments/collatz_crystal_paradoxical_return_audit_v45.py'
+      - 'formal/Collatz/ReturnFixedPointDescent.lean'
+      - 'lakefile.lean'
       - '.github/workflows/collatz-crystal-paradoxical-return-audit-v45.yml'
   workflow_dispatch:
 
@@ -38,6 +40,29 @@ jobs:
           print('V45_CERT',d['certificate_sha256'])
           PY
           git rev-parse HEAD > evidence/collatz-crystal-paradoxical-return-audit-v45/commit.txt
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify return fixed-point descent theorem
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean --version | tee evidence/collatz-crystal-paradoxical-return-audit-v45/toolchain.txt
+          lake build CollatzFinal
+          f=formal/Collatz/ReturnFixedPointDescent.lean
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+            echo "Forbidden source token in $f" >&2
+            exit 1
+          fi
+          lake env lean -DautoImplicit=false "$f" \
+            | tee evidence/collatz-crystal-paradoxical-return-audit-v45/ReturnFixedPointDescent.lean.log
+          grep -q "collatz_affine_return_strict_descent_of_live_floor" \
+            evidence/collatz-crystal-paradoxical-return-audit-v45/ReturnFixedPointDescent.lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' \
+            evidence/collatz-crystal-paradoxical-return-audit-v45/ReturnFixedPointDescent.lean.log
       - uses: actions/upload-artifact@v4
         if: always()
         with:
