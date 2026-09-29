@@ -1,0 +1,41 @@
+name: Collatz Crystal Normalized Parameter Quotient V42
+
+on:
+  push:
+    branches: [collatz-crystal-normalized-parameter-quotient-v42]
+    paths:
+      - 'experiments/collatz_crystal_normalized_parameter_quotient_v42.py'
+      - 'experiments/collatz_crystal_v40_bank_challenge_v41.py'
+      - 'experiments/collatz_crystal_phase_normalized_return_v40.py'
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - '.github/workflows/collatz-crystal-normalized-parameter-quotient-v42.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Normalized V23 parameter quotient and held-out challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-normalized-parameter-quotient-v42
+          python experiments/collatz_crystal_normalized_parameter_quotient_v42.py \
+            | tee evidence/collatz-crystal-normalized-parameter-quotient-v42/result.json
+          grep -q '"schema": "COLLATZ_CRYSTAL_NORMALIZED_PARAMETER_QUOTIENT_V42"' \
+            evidence/collatz-crystal-normalized-parameter-quotient-v42/result.json
+          git rev-parse HEAD \
+            | tee evidence/collatz-crystal-normalized-parameter-quotient-v42/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-normalized-parameter-quotient-v42
+          path: evidence/collatz-crystal-normalized-parameter-quotient-v42
+          if-no-files-found: error
