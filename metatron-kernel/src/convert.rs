@@ -621,13 +621,19 @@ fn compare_values(
             // Work is LIFO. Push the source spine in reverse so comparison
             // itself proceeds left-to-right, allowing cheap early separators
             // to fire before expensive later arguments.
-            work.extend(left.spine.iter().zip(&right.spine).rev().map(|(left, right)| {
-                (
-                    TypeValue::Term(left.clone()),
-                    TypeValue::Term(right.clone()),
-                    depth,
-                )
-            }));
+            work.extend(
+                left.spine
+                    .iter()
+                    .zip(&right.spine)
+                    .rev()
+                    .map(|(left, right)| {
+                        (
+                            TypeValue::Term(left.clone()),
+                            TypeValue::Term(right.clone()),
+                            depth,
+                        )
+                    }),
+            );
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
