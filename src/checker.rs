@@ -896,20 +896,55 @@ fn check_generic_nonrecursive_type(
     let [inductive]=block.types.as_slice() else{return Err(Verdict::Unknown);};
     let [recursor]=block.recursors.as_slice() else{return Err(Verdict::Unknown);};
     if !generic_nonrecursive_type_candidate(export,block){return Err(Verdict::Unknown);}
-    if !inductive_arity_metadata_is_well_formed(export,inductive)
-       || inductive.all != [inductive.name]
-       || inductive.constructors != block.constructors.iter().map(|c|c.name).collect::<Vec<_>>()
-       || has_duplicate_parameter(&inductive.level_params)
-       || block.constructors.iter().enumerate().any(|(i,c)|{
-            c.index!=i as u64 || c.inductive!=inductive.name
-            || c.num_params!=inductive.num_params || c.level_params!=inductive.level_params
-            || constructor_result_is_definitely_malformed(export,inductive,c)
-            || constructor_has_definite_negative_recursive_field(export,inductive,c)
-       })
-       || !recursor_metadata_admissible(export,inductive,&block.constructors,recursor,false,
-            recursor.level_params.len()==inductive.level_params.len()+1)
-       || !generic_nonrecursive_recursor_shape(export,inductive,&block.constructors,recursor)
-    {return Err(Verdict::Reject);}
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors
+        == block.constructors.iter().map(|constructor| constructor.name).collect::<Vec<_>>();
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let constructor_contracts_ok = !block.constructors.iter().enumerate().any(|(index, constructor)| {
+        constructor.index != index as u64
+            || constructor.inductive != inductive.name
+            || constructor.num_params != inductive.num_params
+            || constructor.level_params != inductive.level_params
+            || constructor_result_is_definitely_malformed(export, inductive, constructor)
+            || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+    });
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len() + 1,
+    );
+    let recursor_shape_ok =
+        generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor);
+
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!(
+            "NUCLEUS_GENERIC_NONREC:arity={}:all={}:constructors={}:levels_unique={}:ctor_contracts={}:rec_metadata={}:rec_shape={}:params={}:ctors={}",
+            arity_ok,
+            all_ok,
+            constructors_ok,
+            levels_unique,
+            constructor_contracts_ok,
+            recursor_metadata_ok,
+            recursor_shape_ok,
+            inductive.num_params,
+            block.constructors.len(),
+        );
+    }
+
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+    {
+        return Err(Verdict::Reject);
+    }
 
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
     let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
