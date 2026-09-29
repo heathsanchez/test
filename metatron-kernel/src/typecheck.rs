@@ -179,7 +179,9 @@ impl<'a> TypeChecker<'a> {
         }
         let result = self.infer_in_uncached(expression, context, frame, remaining);
         if !result.is_unknown() {
-            self.inference_cache.borrow_mut().insert(key, result.clone());
+            self.inference_cache
+                .borrow_mut()
+                .insert(key, result.clone());
         }
         result
     }
@@ -633,7 +635,8 @@ impl<'a> TypeChecker<'a> {
         };
 
         for argument in &neutral.spine {
-            let (domain, body) = self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
+            let (domain, body) =
+                self.pi_view(Judgment::proven(current, "proof-type-spine"), budget)?;
             let _ = domain;
             current = match body {
                 PiBody::Fixed(body) => body,
