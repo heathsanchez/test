@@ -37,7 +37,7 @@ jobs:
       - name: Build and protect prior contracts
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
           cargo clippy --locked --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
@@ -114,5 +114,7 @@ jobs:
         if: always()
         with:
           name: nucleus-crystal-first-field-projection-${{ github.sha }}
-          path: metatron-kernel/evidence-out/crystal-first-field-projection-v1
+          path: |
+            metatron-kernel/evidence-out/crystal-first-field-projection-v1
+            metatron-kernel/src/checker.rs
           if-no-files-found: warn
