@@ -122,10 +122,18 @@ theorem two_pow_odds_mul_bias_add_depth_le
           _ ≤ 6 * (2 ^ k * 3 ^ q) := hmul
           _ = 2 ^ (k + 1) * 3 ^ (q + 1) := by
                 rw [Nat.pow_succ, Nat.pow_succ]
-                change
-                  (2 * 3) * (2 ^ k * 3 ^ q) =
-                    (2 ^ k * 2) * (3 ^ q * 3)
-                simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+                let C := 2 ^ k
+                let D := 3 ^ q
+                change 6 * (C * D) = (C * 2) * (D * 3)
+                calc
+                  6 * (C * D) = (2 * 3) * (C * D) := by rfl
+                  _ = 2 * (3 * (C * D)) := by rw [Nat.mul_assoc]
+                  _ = 2 * ((3 * C) * D) := by rw [← Nat.mul_assoc]
+                  _ = 2 * ((C * 3) * D) := by rw [Nat.mul_comm 3 C]
+                  _ = 2 * (C * (3 * D)) := by rw [Nat.mul_assoc]
+                  _ = (2 * C) * (3 * D) := by rw [Nat.mul_assoc]
+                  _ = (C * 2) * (3 * D) := by rw [Nat.mul_comm 2 C]
+                  _ = (C * 2) * (D * 3) := by rw [Nat.mul_comm 3 D]
 
 /-- The V17 synthetic local tuple (27,53,36,451) is excluded already by the
 universal lower bias envelope.  This is a regression theorem documenting that
