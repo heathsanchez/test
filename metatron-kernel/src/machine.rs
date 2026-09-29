@@ -654,7 +654,17 @@ impl<'a> Machine<'a> {
         closure: &Closure,
         budget: usize,
     ) -> Option<crate::level::LevelTerm> {
-        instantiate_level(self.levels, level, &closure.levels, budget).ok()
+        let result = instantiate_level(self.levels, level, &closure.levels, budget).ok();
+        if result.is_none() && std::env::var_os("NUCLEUS_TRACE_LEVEL_RESOLVE").is_some() {
+            eprintln!(
+                "NUCLEUS_LEVEL_RESOLVE_FAIL:level_id={:?}:level={:?}:substitution={:?}:budget={}",
+                level,
+                self.levels.get(level),
+                closure.levels,
+                budget
+            );
+        }
+        result
     }
 }
 
