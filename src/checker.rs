@@ -775,6 +775,24 @@ fn check_inductive(
     }
 }
 
+fn exported_level_is_definitely_nonzero(
+    export: &ResolvedExport,
+    level: LevelId,
+    budget: usize,
+) -> bool {
+    if budget == 0 {
+        return false;
+    }
+    match export.levels.get(level) {
+        Some(Level::Succ(_)) => true,
+        Some(Level::Max(left, right)) => {
+            exported_level_is_definitely_nonzero(export, *left, budget - 1)
+                || exported_level_is_definitely_nonzero(export, *right, budget - 1)
+        }
+        Some(Level::Zero | Level::IMax(_, _) | Level::Param(_)) | None => false,
+    }
+}
+
 fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
     let [inductive] = block.types.as_slice() else { return false; };
     if inductive.num_nested != 0 || inductive.num_indices != 0
@@ -794,9 +812,15 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         }
     }
 
-    matches!(pi_spine(export, inductive.ty, p),
-        Some((_, result)) if matches!(export.exprs.get(result),
-            Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))))
+    matches!(
+        pi_spine(export, inductive.ty, p),
+        Some((_, result))
+            if matches!(
+                export.exprs.get(result),
+                Some(Expr::Sort(level))
+                    if exported_level_is_definitely_nonzero(export, *level, 128)
+            )
+    )
 }
 
 fn generic_nonrecursive_constructor_result_is_definitely_malformed(
