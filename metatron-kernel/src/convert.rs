@@ -286,6 +286,7 @@ pub(crate) fn convert_with_policy_in_context(
                             depth,
                             &mut work,
                             &mut proof_function_frees,
+                            context,
                         ) {
                             Judgment::Proven { .. } => {}
                             Judgment::Refuted { obstruction } => {
@@ -530,17 +531,17 @@ fn certified_structure_eta(
     if !target.spine.is_empty() {
         return false;
     }
-    let NeutralHead::Free(free) = target.head else {
+    let NeutralHead::Free(free) = &target.head else {
         return false;
     };
     let NeutralHead::Const {
         name: constructor, ..
-    } = constructed.head
+    } = &constructed.head
     else {
         return false;
     };
     let Some((type_name, num_params, num_fields)) =
-        checker.eta_projection_spec_for_constructor(constructor)
+        checker.eta_projection_spec_for_constructor(*constructor)
     else {
         return false;
     };
@@ -562,11 +563,11 @@ fn certified_structure_eta(
     };
     let NeutralHead::Const {
         name: actual_type, ..
-    } = target_type.head
+    } = &target_type.head
     else {
         return false;
     };
-    if actual_type != type_name || target_type.spine.len() != num_params {
+    if *actual_type != type_name || target_type.spine.len() != num_params {
         return false;
     }
 
