@@ -951,11 +951,15 @@ fn generic_nonrecursive_recursor_shape(
         if !is_bvar(export,*mm,(f+j) as u64){return false;}
         let (ch,ca)=application_spine(export,*constructed);
         if ca.len()!=p+f || !is_declared_level_constant(export,ch,ctor.name,&ctor.level_params){return false;}
-        for i in 0..p{
-            if !is_bvar(export,ca[i],(f+j+1+(p-1-i)) as u64){return false;}
+        for (i, argument) in ca.iter().take(p).enumerate() {
+            if !is_bvar(export, *argument, (f + j + 1 + (p - 1 - i)) as u64) {
+                return false;
+            }
         }
-        for k in 0..f{
-            if !is_bvar(export,ca[p+k],(f-1-k) as u64){return false;}
+        for (k, argument) in ca.iter().skip(p).take(f).enumerate() {
+            if !is_bvar(export, *argument, (f - 1 - k) as u64) {
+                return false;
+            }
         }
     }
 
