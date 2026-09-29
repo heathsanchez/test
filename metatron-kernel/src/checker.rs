@@ -28,7 +28,7 @@ pub struct Limits {
 impl Default for Limits {
     fn default() -> Self {
         Self {
-            judgment_steps: 16_384,
+            judgment_steps: 32_768,
         }
     }
 }
