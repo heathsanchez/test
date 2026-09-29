@@ -574,14 +574,9 @@ fn certified_structure_eta(
     }
 
     for (index, field) in constructed.spine[num_params..].iter().enumerate() {
-        if !checker.certified_eta_projection_field(
-            field,
-            type_name,
-            index,
-            target,
-            num_params,
-            budget,
-        ) {
+        if !checker
+            .certified_eta_projection_field(field, type_name, index, target, num_params, budget)
+        {
             return false;
         }
     }
