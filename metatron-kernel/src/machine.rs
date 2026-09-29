@@ -738,8 +738,47 @@ impl<'a> Machine<'a> {
             );
         }
 
-        let (constructor, arguments) = self.constructor_application(&reduced)?;
+        let (constructor, arguments) =
+            self.beta_zeta_constructor_application(&reduced, 64)?;
         matches_outer(constructor, arguments.len()).then_some((constructor, arguments))
+    }
+
+    fn beta_zeta_constructor_application(
+        &self,
+        target: &Closure,
+        max_steps: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let mut closure = target.clone();
+        let mut arguments = Vec::new();
+        let mut steps = max_steps;
+
+        while steps > 0 {
+            steps -= 1;
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
+                }
+                Expr::Lam { body, .. } => {
+                    let argument = arguments.pop()?;
+                    closure = closure.sibling(*body, closure.env.extend(argument));
+                }
+                Expr::Const { name, .. } => {
+                    arguments.reverse();
+                    return Some((*name, arguments));
+                }
+                _ => return None,
+            }
+        }
+        None
     }
 
     fn constant_application(
