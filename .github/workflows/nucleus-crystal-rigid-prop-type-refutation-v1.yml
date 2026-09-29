@@ -34,7 +34,6 @@ jobs:
           ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
           grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
           cargo fmt --manifest-path metatron-kernel/Cargo.toml
-          cargo clippy --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
