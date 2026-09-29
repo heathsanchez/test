@@ -313,6 +313,12 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
                 let Some(exposed) = exposed.proven_value() else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE_MIXED:term={:?}:other={:?}:exposed={:?}:depth={}:remaining={}",
+                            term, other, exposed, depth, remaining
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
