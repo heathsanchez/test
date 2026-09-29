@@ -122,7 +122,10 @@ theorem two_pow_odds_mul_bias_add_depth_le
           _ ≤ 6 * (2 ^ k * 3 ^ q) := hmul
           _ = 2 ^ (k + 1) * 3 ^ (q + 1) := by
                 rw [Nat.pow_succ, Nat.pow_succ]
-                rw [show (6 : Nat) = 2 * 3 by decide]
+                have h63 :
+                    6 * 3 ^ q = 2 * (3 * 3 ^ q) := by
+                  omega
+                rw [h63]
                 simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
 
 /-- The V17 synthetic local tuple (27,53,36,451) is excluded already by the
