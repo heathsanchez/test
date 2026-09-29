@@ -8,6 +8,7 @@ on:
       - 'formal/Collatz/FourThirdsConstructor.lean'
       - 'lakefile.lean'
       - 'experiments/collatz_crystal_four_thirds_exact_word_v19.py'
+      - 'experiments/collatz_crystal_four_thirds_constructor_v20.cpp'
       - '.github/workflows/collatz-crystal-four-thirds-exact-word-v19.yml'
   workflow_dispatch:
 
@@ -66,6 +67,29 @@ jobs:
           print('V19_EXCEPTIONS',d['exceptional_non_TERM_GT_B_types'])
           print('V19_MAX_PEEL',d['max_TERM_GT_B_peel_step'],d['max_TERM_GT_B_witness'])
           print('V19_RESIDUAL',d['next_residual'])
+          PY
+
+      - name: Run V20 source-ordered constructor compiler
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-four-thirds-constructor-v20
+          g++ -O3 -std=c++17 experiments/collatz_crystal_four_thirds_constructor_v20.cpp -o /tmp/v20
+          /tmp/v20 | tee evidence/collatz-crystal-four-thirds-constructor-v20/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-four-thirds-constructor-v20/result.json'))
+          assert d['tested_odd_sources']==524287
+          assert d['direct_exit_sources']==85143
+          assert d['quarter_splice_sources']==237022
+          assert d['weighted_lower_merge_sources']==202122
+          assert d['budget_violations']==0
+          assert d['censored']==0
+          assert d['bounded_v20_residual']==0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V20_CONSTRUCTORS',d['direct_exit_sources'],d['quarter_splice_sources'],d['weighted_lower_merge_sources'])
+          print('V20_CLASSES',d['minimal_bad_source_classes'])
+          print('V20_RESIDUAL',d['bounded_v20_residual'])
           PY
 
       - uses: actions/upload-artifact@v4
