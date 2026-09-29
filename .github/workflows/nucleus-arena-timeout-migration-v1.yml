@@ -155,6 +155,22 @@ jobs:
           sys.modules[spec.name] = lka
           spec.loader.exec_module(lka)
 
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
+
           checkers = {c["name"]: c for c in lka.load_checkers()}
           smoke = checkers["nucleus-contract-smoke"]
           compat = checkers["nucleus-compat"]
@@ -237,6 +253,22 @@ jobs:
           lka = importlib.util.module_from_spec(spec)
           sys.modules[spec.name] = lka
           spec.loader.exec_module(lka)
+
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
           checker = next(c for c in lka.load_checkers() if c["name"] == "nucleus-compat")
 
           nucleus = pathlib.Path(os.environ["NUCLEUS_BIN"])
@@ -324,6 +356,22 @@ jobs:
           lka = importlib.util.module_from_spec(spec)
           sys.modules[spec.name] = lka
           spec.loader.exec_module(lka)
+
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
           checker = next(c for c in lka.load_checkers() if c["name"] == "nucleus-compat")
 
           nucleus = pathlib.Path(os.environ["NUCLEUS_BIN"])
