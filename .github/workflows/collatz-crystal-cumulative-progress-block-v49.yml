@@ -1,0 +1,49 @@
+name: Collatz Crystal Cumulative Progress Block V49
+
+on:
+  push:
+    branches: [collatz-crystal-cumulative-progress-block-v49]
+    paths:
+      - 'experiments/collatz_crystal_cumulative_progress_block_v49.py'
+      - 'experiments/collatz_crystal_paradoxical_return_audit_v45.py'
+      - 'experiments/collatz_crystal_phase_normalized_return_v40.py'
+      - '.github/workflows/collatz-crystal-cumulative-progress-block-v49.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit cumulative fixed-floor progress blocks
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-cumulative-progress-block-v49
+          PYTHONPATH=experiments python experiments/collatz_crystal_cumulative_progress_block_v49.py \
+            | tee evidence/collatz-crystal-cumulative-progress-block-v49/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-cumulative-progress-block-v49/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_CUMULATIVE_PROGRESS_BLOCK_V49'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V49_VERDICT', d['verdict'])
+          print('V49_STATS', d['stats'])
+          print('V49_MAX_RATIO', d['max_fixed_point_over_v23_floor'])
+          print('V49_CERT', d['certificate_sha256'])
+          PY
+          git rev-parse HEAD \
+            | tee evidence/collatz-crystal-cumulative-progress-block-v49/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-cumulative-progress-block-v49
+          path: evidence/collatz-crystal-cumulative-progress-block-v49
+          if-no-files-found: error
