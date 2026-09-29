@@ -47,7 +47,9 @@ theorem bias_le_dyadic_ternary_envelope (n k : Nat) :
           _ = 2 ^ (k + 1) * 3 ^ (oddCount n k + 1) := by
             dsimp [A]
             simp only [Nat.pow_succ]
-            simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
+            rw [show (6 : Nat) = 2 * 3 by decide]
+            rw [Nat.mul_assoc 2 3 (3 ^ oddCount n k)]
+            rw [Nat.mul_left_comm (2 ^ k) 2 (3 * 3 ^ oddCount n k)]
 
 /-- Any shortcut block with exactly twelve odd steps and length at least twenty
 strictly contracts every starting value above the tiny absolute threshold
