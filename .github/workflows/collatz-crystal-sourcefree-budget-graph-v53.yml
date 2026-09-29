@@ -1,0 +1,56 @@
+name: Collatz Crystal Source-Free Budget Graph V53
+
+on:
+  push:
+    branches: [collatz-crystal-sourcefree-budget-graph-v53]
+    paths:
+      - 'experiments/collatz_crystal_sourcefree_budget_graph_v53.py'
+      - 'experiments/collatz_crystal_biadic_port_prospective_v52.py'
+      - '.github/workflows/collatz-crystal-sourcefree-budget-graph-v53.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Source-free bad-budget recurrence audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-sourcefree-budget-graph-v53
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_sourcefree_budget_graph_v53.py \
+            | tee evidence/collatz-crystal-sourcefree-budget-graph-v53/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-sourcefree-budget-graph-v53/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_SOURCEFREE_BUDGET_GRAPH_V53'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V53_VERDICT', d['verdict'])
+          print('V53_SELECTED', d['selected_coarsest_acyclic_reused_mode'])
+          for k,v in d['audits'].items():
+              print('V53_MODE', k, {
+                  'bad':v['bad_occurrences'],
+                  'nodes':v['distinct_bad_nodes'],
+                  'edges':v['distinct_bad_edges'],
+                  'cross_source':v['cross_source_nodes'],
+                  'sccs':v['recurrent_sccs'],
+                  'largest':v['largest_recurrent_scc'],
+                  'residual':v['residual_nodes_after_elimination'],
+              })
+          print('V53_CERT', d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-sourcefree-budget-graph-v53/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-sourcefree-budget-graph-v53
+          path: evidence/collatz-crystal-sourcefree-budget-graph-v53
+          if-no-files-found: error
