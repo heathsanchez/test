@@ -1,0 +1,77 @@
+name: Collatz Crystal Source Forced Events V20
+
+on:
+  push:
+    branches: [collatz-crystal-source-forced-events-v20]
+    paths:
+      - 'formal/Collatz/SourceForcedFourThirds.lean'
+      - 'experiments/collatz_crystal_source_forced_events_v20.py'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-source-forced-events-v20.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Qualify exact V20 closeout interface
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/SourceForcedFourThirds.lean
+          lake build CollatzFinal
+          lake env lean -DautoImplicit=false formal/Collatz/SourceForcedFourThirds.lean | tee /tmp/v20-lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v20-lean.log
+
+      - name: Run source-forced consequence compression
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-forced-events-v20
+          python -u experiments/collatz_crystal_source_forced_events_v20.py \
+            | tee evidence/collatz-crystal-source-forced-events-v20/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-source-forced-events-v20/result.json'))
+          b=d['declared_boundary']
+          assert b['source_census'] is False
+          assert b['endpoint_enumeration'] is False
+          assert b['post_boundary_trajectory_search'] is False
+          assert b['relevant_types']==12501
+          assert b['near_resonant_types']==7669
+          assert b['v19_near_types_replayed']==315
+          assert d['failure_counts']=={
+            'B_NONPOS':1,
+            'POSITION_GE_K':2,
+            'RESIDUAL':1,
+            'TERM_GT_B':7665,
+          }
+          assert d['all_q_ge_52_TERM_GT_B_on_declared_type_boundary'] is True
+          assert [(e['q'],e['status']) for e in d['exceptions']]==[
+            (4,'B_NONPOS'),(9,'POSITION_GE_K'),(36,'RESIDUAL'),(41,'POSITION_GE_K')
+          ]
+          assert d['max_peel']['peel_step']==122
+          assert d['candidate']['status']=='BOUNDED_CANDIDATE_ONLY'
+          assert d['residual']['universal']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V20_TYPES',b['relevant_types'])
+          print('V20_NEAR',b['near_resonant_types'])
+          print('V20_FAILURES',d['failure_counts'])
+          print('V20_EXCEPTIONS',d['exceptions'])
+          print('V20_MAX_PEEL',d['max_peel'])
+          print('V20_RESIDUAL',d['residual'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-source-forced-events-v20
+          path: evidence/collatz-crystal-source-forced-events-v20
