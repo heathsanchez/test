@@ -915,9 +915,7 @@ fn generic_nonrecursive_recursor_shape(
 ) -> bool {
     let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
     let c = constructors.len();
-    let Some((ind_params,_)) = pi_spine(export,inductive.ty,p) else { return false; };
     let Some((domains,result)) = pi_spine(export,recursor.ty,p+c+2) else { return false; };
-    if domains[..p] != ind_params[..] { return false; }
 
     let motive=domains[p];
     let Some((motive_domains,motive_sort))=pi_spine(export,motive,1) else{return false;};
@@ -970,6 +968,64 @@ fn generic_nonrecursive_recursor_shape(
            || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
     }
     true
+}
+
+
+fn generic_nonrecursive_parameters_convert(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<(), Verdict> {
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((recursor_domains, _)) =
+        pi_spine(export, recursor.ty, parameter_count + block_recursor_tail_len(recursor))
+    else {
+        return Err(Verdict::Reject);
+    };
+    if recursor_domains.len() < parameter_count {
+        return Err(Verdict::Reject);
+    }
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&inductive.level_params),
+    )
+    .with_delta_policy(delta_policy);
+
+    let mut frame = EnvFrame::empty();
+    for (index, (inductive_parameter, recursor_parameter)) in inductive_parameters
+        .iter()
+        .zip(recursor_domains.iter().take(parameter_count))
+        .enumerate()
+    {
+        verdict_boundary(checker.convert(
+            &TypeValue::Term(checker.closure(*inductive_parameter, frame.clone())),
+            &TypeValue::Term(checker.closure(*recursor_parameter, frame.clone())),
+            limits.judgment_steps,
+        ))?;
+        let Ok(index) = u64::try_from(index) else {
+            return Err(Verdict::Unknown);
+        };
+        frame = frame.extend_free(FreeId(40_000 + index));
+    }
+    Ok(())
+}
+
+fn block_recursor_tail_len(recursor: &Recursor) -> usize {
+    usize::try_from(recursor.num_minors)
+        .ok()
+        .and_then(|minors| minors.checked_add(2))
+        .unwrap_or(usize::MAX)
 }
 
 fn check_generic_nonrecursive_type(
@@ -1056,6 +1112,24 @@ fn check_generic_nonrecursive_type(
     let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
         else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
     d.promote(export,ty,limits.judgment_steps,delta_policy)?;
+
+    generic_nonrecursive_parameters_convert(
+        export,
+        d.environment(),
+        inductive,
+        recursor,
+        limits,
+        delta_policy,
+    )?;
+
+    if trace_generic {
+        eprintln!(
+            "NUCLEUS_GENERIC_PARAM_CONV:name={}:verdict=Accept:params={}",
+            inductive.name.0,
+            inductive.num_params
+        );
+    }
+
     for c in &block.constructors{
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
