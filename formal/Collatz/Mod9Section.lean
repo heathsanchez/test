@@ -29,7 +29,11 @@ theorem mod9_two_pred_shortcut
       3 * (6 * (y / 9) + 1) + 1 =
         2 * (9 * (y / 9) + 2) := by
     omega
-  simp [mod9TwoPred, shortcut, hodd, hnum, hdecomp]
+  unfold mod9TwoPred
+  simp only [shortcut]
+  rw [if_neg hodd]
+  rw [hnum, hdecomp]
+  omega
 
 /-- A forced-section hit below the exact 3/2 source threshold has a smaller
 positive odd predecessor whose next shortcut value is the hit. -/
@@ -57,7 +61,8 @@ theorem low_mod9_two_is_exit
   refine ⟨p, 1, ?_, ?_, ?_⟩
   · exact mod9_two_pred_positive (endpoint s)
   · exact mod9_two_pred_lt_source hy hheight
-  · simp [iter, p, mod9_two_pred_shortcut hy]
+  · change shortcut p = endpoint s
+    exact mod9_two_pred_shortcut hy
 
 /-- Every 2 mod 9 hit on a minimal positive bad path must stay at or above the
 exact source-relative 3/2 threshold.  Thus the remaining theorem is a height
