@@ -54,6 +54,24 @@ theorem collatz_affine_return_strict_descent_of_live_floor
   exact affine_return_strict_descent_of_live_floor
     hcontract hfloor hfixed heq
 
+/-- Final concrete QED socket after the V45 phase correction.
+
+No deterministic return automaton is required.  It is enough that every live
+zero-tail state has some later live zero-tail continuation whose actual
+endpoint is strictly smaller.  This is V37's eventual-rank theorem specialized
+to the identity rank on endpoints. -/
+theorem collatz_of_zero_tail_eventual_endpoint_descent
+    (hprogress :
+      ∀ s, ZeroTailLive s →
+        ∃ j,
+          ZeroTailLive (iter step j s) ∧
+          endpoint (iter step j s) < endpoint s) :
+    ∀ n, 0 < n → CollatzGood n := by
+  exact collatz_of_zero_tail_eventual_rank
+    endpoint (fun x : Nat => x) hprogress
+
+#print axioms collatz_of_zero_tail_eventual_endpoint_descent
+
 #print axioms affine_return_strict_descent_of_live_floor
 #print axioms collatz_affine_return_strict_descent_of_live_floor
 
