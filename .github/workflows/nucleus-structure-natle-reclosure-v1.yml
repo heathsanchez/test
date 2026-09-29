@@ -63,6 +63,7 @@ jobs:
           NUCLEUS_TRACE_IMAX: "1"
           NUCLEUS_TRACE_CRYSTAL_APP_RESIDUAL: "1"
           NUCLEUS_TRACE_CRYSTAL_NEUTRAL_HEAD: "1"
+          NUCLEUS_TRACE_CRYSTAL_CONV_EXPOSURE: "1"
         run: |
           set -euo pipefail
           mkdir -p metatron-kernel/evidence-out/structure-natle-reclosure-v1
@@ -80,6 +81,7 @@ jobs:
                   env.pop('NUCLEUS_TRACE_IMAX',None)
                   env.pop('NUCLEUS_TRACE_CRYSTAL_APP_RESIDUAL',None)
                   env.pop('NUCLEUS_TRACE_CRYSTAL_NEUTRAL_HEAD',None)
+                  env.pop('NUCLEUS_TRACE_CRYSTAL_CONV_EXPOSURE',None)
               try:
                   with p.open('rb') as f:
                       q=subprocess.run(
@@ -121,7 +123,7 @@ jobs:
               rc,stderr=rr(cand,p,True)
               marks=[
                   line for line in stderr.splitlines()
-                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line or 'NUCLEUS_IMAX ' in line or 'NUCLEUS_CRYSTAL_APP_RESIDUAL:' in line or 'NUCLEUS_CRYSTAL_NEUTRAL_HEAD:' in line
+                  if 'NUCLEUS_SINGLE_FIELD:' in line or 'NUCLEUS_DOWNSTREAM:' in line or 'NUCLEUS_IMAX ' in line or 'NUCLEUS_CRYSTAL_APP_RESIDUAL:' in line or 'NUCLEUS_CRYSTAL_NEUTRAL_HEAD:' in line or 'NUCLEUS_CRYSTAL_CONV_EXPOSURE:' in line
               ]
               traces.append({'test':name,'expected':expected,'rc':rc,'marks':marks})
 
