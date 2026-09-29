@@ -1,5 +1,4 @@
 import Collatz.ReturnFixedPointDescent
-import Mathlib
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -10,7 +9,7 @@ relative to a declared live floor L.
 
 Positive budget is exactly the fixed-point-below-floor inequality
       B < (P - A) * L
-when the coefficient is contracting.  We use Int here so negative recharge
+when the coefficient is contracting. We use Int here so negative recharge
 budgets remain first-class instead of being truncated by Nat subtraction. -/
 def affineBudget (A B P L : Int) : Int :=
   (P - A) * L - B
@@ -27,19 +26,20 @@ then the composite law has
     B = A₂ B₁ + B₂ P₁.
 
 The budget of the composite is therefore the weighted sum
-    W₁₂ = A₂ W₁ + P₁ W₂.
-
-This is the algebraic state that V47/V49 were discovering empirically:
-individual return laws may recharge (negative budget), while a later
-cumulative block can cross to positive budget and then descend by
-[affine_return_strict_descent_of_live_floor]. -/
+    W₁₂ = A₂ W₁ + P₁ W₂. -/
 theorem affineBudget_compose
     (A₁ B₁ P₁ A₂ B₂ P₂ L : Int) :
     affineBudget (A₂ * A₁) (A₂ * B₁ + B₂ * P₁) (P₁ * P₂) L =
       A₂ * affineBudget A₁ B₁ P₁ L +
       P₁ * affineBudget A₂ B₂ P₂ L := by
-  simp [affineBudget, sub_mul, mul_sub, mul_add, add_mul,
-    mul_assoc, mul_left_comm, mul_comm]
+  simp only [affineBudget]
+  simp only [sub_mul, mul_sub, mul_add, add_mul, mul_assoc]
+  have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
+    rw [← mul_assoc, mul_comm A₂ P₁, mul_assoc]
+  have hb : B₂ * P₁ = P₁ * B₂ := by
+    rw [mul_comm B₂ P₁]
+  rw [hcross, hb]
+  omega
 
 /-- Expanded form of the same identity, useful for certificate emitters that
 store the composite affine triple directly. -/
@@ -48,12 +48,16 @@ theorem affineBudget_composite_expanded
     ((P₁ * P₂ - A₂ * A₁) * L - (A₂ * B₁ + B₂ * P₁)) =
       A₂ * ((P₁ - A₁) * L - B₁) +
       P₁ * ((P₂ - A₂) * L - B₂) := by
-  simp [sub_mul, mul_sub, mul_add, add_mul,
-    mul_assoc, mul_left_comm, mul_comm]
+  simp only [sub_mul, mul_sub, mul_add, add_mul, mul_assoc]
+  have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
+    rw [← mul_assoc, mul_comm A₂ P₁, mul_assoc]
+  have hb : B₂ * P₁ = P₁ * B₂ := by
+    rw [mul_comm B₂ P₁]
+  rw [hcross, hb]
+  omega
 
 /-- Positive signed budget is the integer form of the strict fixed-floor
-inequality.  This keeps the executable and theorem-facing certificates aligned
-without introducing a second notion of progress. -/
+inequality. -/
 theorem affineBudget_pos_iff
     (A B P L : Int) :
     0 < affineBudget A B P L ↔ B < (P - A) * L := by
@@ -62,11 +66,8 @@ theorem affineBudget_pos_iff
 /-- A positive composite budget cannot be synthesized from two nonpositive
 component budgets when the affine composition weights are nonnegative.
 
-Together with [affineBudget_compose], this is the key consequence-pruning
-step: any cumulative fixed-floor descent certificate contains an individual
-return whose fixed-floor budget is already positive.  Hence an infinite path
-with every individual return budget <= 0 can never acquire positive budget
-merely by batching more returns. -/
+Thus any cumulative fixed-floor descent certificate contains an individual
+return whose fixed-floor budget is already positive. -/
 theorem affineBudget_compose_pos_implies_component_pos
     (A₁ B₁ P₁ A₂ B₂ P₂ L : Int)
     (hA₂ : 0 ≤ A₂)
@@ -78,23 +79,26 @@ theorem affineBudget_compose_pos_implies_component_pos
   rw [affineBudget_compose] at hpos
   by_cases h₁ : 0 < affineBudget A₁ B₁ P₁ L
   · exact Or.inl h₁
-  · right
-    by_cases h₂ : 0 < affineBudget A₂ B₂ P₂ L
-    · exact h₂
-    · have hn₁ : affineBudget A₁ B₁ P₁ L ≤ 0 := le_of_not_gt h₁
-    have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := le_of_not_gt h₂
-    have hw₁ :
-        A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
-      mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
-    have hw₂ :
-        P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
-      mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
-    exact (not_lt_of_ge (add_nonpos hw₁ hw₂)) hpos
-
+  · by_cases h₂ : 0 < affineBudget A₂ B₂ P₂ L
+    · exact Or.inr h₂
+    · have hn₁ : affineBudget A₁ B₁ P₁ L ≤ 0 := by omega
+      have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := by omega
+      have hw₁ :
+          A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
+        mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
+      have hw₂ :
+          P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
+        mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
+      have hsum :
+          A₂ * affineBudget A₁ B₁ P₁ L +
+            P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
+        add_nonpos hw₁ hw₂
+      exact False.elim (by omega)
 
 #print axioms affineBudget_compose
 #print axioms affineBudget_composite_expanded
 #print axioms affineBudget_pos_iff
+#print axioms affineBudget_compose_pos_implies_component_pos
 
 end SourceProduct
 end CollatzFinal
