@@ -120,7 +120,7 @@ pub(crate) fn convert_with_policy_in_context(
     budget: usize,
     delta_policy: DeltaPolicy,
     initial_depth: usize,
-    _context: &[TypeValue],
+    context: &[TypeValue],
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -134,6 +134,32 @@ pub(crate) fn convert_with_policy_in_context(
     let mut proposition_frees = HashSet::new();
     let mut proof_frees = HashMap::new();
     let mut proof_function_frees = HashMap::new();
+
+    // The typechecker represents the i-th local binder as FreeId(i).
+    // Seed the same certified binder classifications used while traversing Pi
+    // values from the actual local context supplied by check_in.
+    for (index, ty) in context.iter().enumerate() {
+        let Ok(index) = u64::try_from(index) else {
+            return Judgment::unknown("binder-depth-overflow");
+        };
+        let free = FreeId(index);
+
+        if let Some(key) = checker.unit_like_type_key(ty, remaining) {
+            unit_like_frees.insert(free, key);
+        }
+
+        if checker.type_value_is_prop_sort(ty, remaining) {
+            proposition_frees.insert(free);
+        } else if let Some(prop) = bare_free_type(checker, ty, remaining)
+            && proposition_frees.contains(&prop)
+        {
+            proof_frees.insert(free, prop);
+        }
+
+        if let Some(key) = checker.fixed_proof_function_type_key(ty, remaining) {
+            proof_function_frees.insert(free, key);
+        }
+    }
 
     while let Some((left, right, depth)) = work.pop() {
         if left == right {
