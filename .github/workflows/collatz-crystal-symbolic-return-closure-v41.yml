@@ -1,0 +1,47 @@
+name: Collatz Crystal Symbolic Return Closure V41
+
+on:
+  push:
+    branches: [collatz-crystal-symbolic-return-closure-v41]
+    paths:
+      - 'experiments/collatz_crystal_symbolic_return_closure_v41.py'
+      - 'experiments/collatz_crystal_phase_normalized_return_v40.py'
+      - 'experiments/collatz_q0_rigid_recharge_audit.py'
+      - '.github/workflows/collatz-crystal-symbolic-return-closure-v41.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Symbolic closure of the V40 return bank
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-symbolic-return-closure-v41
+          python experiments/collatz_crystal_symbolic_return_closure_v41.py \
+            | tee evidence/collatz-crystal-symbolic-return-closure-v41/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-symbolic-return-closure-v41/result.json'))
+          assert d['schema']=='COLLATZ_CRYSTAL_SYMBOLIC_RETURN_CLOSURE_V41'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V41_VERDICT',d['verdict'])
+          print('V41_BANK',d['bank'])
+          print('V41_GRAPH',d['symbolic_graph'])
+          print('V41_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-symbolic-return-closure-v41/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-symbolic-return-closure-v41
+          path: evidence/collatz-crystal-symbolic-return-closure-v41
+          if-no-files-found: error
