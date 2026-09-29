@@ -21,6 +21,7 @@ lean_lib CollatzFinal where
     `Collatz.ReturnFixedPointDescent,
     `Collatz.EventualMacroProgress,
     `Collatz.AffineBudget,
+    `Collatz.ReturnDefectTransport,
     `Collatz.SourceProductAffine,
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
