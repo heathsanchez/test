@@ -1,0 +1,57 @@
+name: Collatz Crystal Owner Gauge V34
+
+on:
+  push:
+    branches: [collatz-crystal-owner-gauge-v34]
+    paths:
+      - 'experiments/collatz_crystal_k_density_tradeoff_v32.py'
+      - 'experiments/collatz_crystal_owner_gauge_v34.py'
+      - '.github/workflows/collatz-crystal-owner-gauge-v34.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Certify corrected owner gauge
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-owner-gauge-v34
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_owner_gauge_v34.py \
+            | tee evidence/collatz-crystal-owner-gauge-v34/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-owner-gauge-v34/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_OWNER_GAUGE_V34'
+          assert d['owner_map_correction']['literal_edges_checked']==38991
+          assert d['gauge_certificate']['edges_checked']==38991
+          assert d['corrected_K_maps']['total']==4282
+          assert d['corrected_K_maps']['slope_lt_1']==3838
+          assert d['corrected_K_maps']['slope_eq_1_negative_shift']==42
+          assert d['corrected_K_maps']['slope_gt_1']==402
+          assert d['zero_slack_boundary']['recurrent_components']==66
+          c=d['corrected_sharp_K_cycle']
+          assert c['length']==49 and c['odd_steps']==29 and c['K_drop']==2
+          assert c['fixed_point_lt_4'] is True
+          assert c['contracts_V23_source_floor'] is True
+          assert d['global_collatz']=='UNKNOWN'
+          print('V34_CORRECTION',d['owner_map_correction'])
+          print('V34_GAUGE',d['gauge_certificate'])
+          print('V34_K',d['corrected_K_maps'])
+          print('V34_SHARP',d['corrected_sharp_K_cycle'])
+          print('V34_NEXT',d['next_residual'])
+          print('V34_CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-owner-gauge-v34
+          path: evidence/collatz-crystal-owner-gauge-v34
+          if-no-files-found: error
