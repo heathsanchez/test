@@ -901,14 +901,45 @@ fn check_generic_nonrecursive_type(
        || !generic_nonrecursive_recursor_shape(export,inductive,&block.constructors,recursor)
     {return Err(Verdict::Reject);}
 
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!(
+            "NUCLEUS_GENERIC_NONREC:name={:?}:stage=formula:verdict=PASS",
+            inductive.name
+        );
+    }
+
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
     let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
         else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
-    d.promote(export,ty,limits.judgment_steps,delta_policy)?;
-    for c in &block.constructors{
-        d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
+    if let Err(verdict) = d.promote(export,ty,limits.judgment_steps,delta_policy) {
+        if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+            eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=type-promotion:verdict={:?}", inductive.name, verdict);
+        }
+        return Err(verdict);
     }
-    d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=type-promotion:verdict=PASS", inductive.name);
+    }
+    for c in &block.constructors{
+        if let Err(verdict) = d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy) {
+            if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+                eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=constructor-promotion:constructor={:?}:verdict={:?}", inductive.name, c.name, verdict);
+            }
+            return Err(verdict);
+        }
+    }
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=constructors-promotion:verdict=PASS", inductive.name);
+    }
+    if let Err(verdict) = d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy) {
+        if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+            eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=recursor-promotion:recursor={:?}:verdict={:?}", inductive.name, recursor.name, verdict);
+        }
+        return Err(verdict);
+    }
+    if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
+        eprintln!("NUCLEUS_GENERIC_NONREC:name={:?}:stage=recursor-promotion:verdict=PASS", inductive.name);
+    }
     Ok(d.finish())
 }
 
