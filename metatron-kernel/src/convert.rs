@@ -841,7 +841,15 @@ fn compare_neutral_heads(
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => Judgment::refuted("distinct-neutral-heads"),
+        _ => {
+            if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+                eprintln!(
+                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                    left.head, left.spine, right.head, right.spine, budget
+                );
+            }
+            Judgment::refuted("distinct-neutral-heads")
+        }
     }
 }
 
