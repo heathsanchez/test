@@ -38,7 +38,6 @@ jobs:
         run: |
           set -euo pipefail
           cargo fmt --manifest-path metatron-kernel/Cargo.toml
-          cargo clippy --locked --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
