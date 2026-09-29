@@ -1,0 +1,47 @@
+name: Collatz Crystal Source-Free Budget Prospective V54
+
+on:
+  push:
+    branches: [collatz-crystal-sourcefree-budget-prospective-v54]
+    paths:
+      - 'experiments/collatz_crystal_sourcefree_budget_prospective_v54.py'
+      - '.github/workflows/collatz-crystal-sourcefree-budget-prospective-v54.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  prospective:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Frozen source-free quotient challenge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-sourcefree-budget-prospective-v54
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_sourcefree_budget_prospective_v54.py \
+            | tee evidence/collatz-crystal-sourcefree-budget-prospective-v54/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-sourcefree-budget-prospective-v54/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_SOURCEFREE_BUDGET_PROSPECTIVE_V54'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V54_VERDICT', d['verdict'])
+          print('V54_STATS', d['stats'])
+          print('V54_PROSPECTIVE', d['prospective'])
+          print('V54_BANK_GROWTH', d['frozen_bank_growth'])
+          print('V54_CERT', d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-sourcefree-budget-prospective-v54/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-sourcefree-budget-prospective-v54
+          path: evidence/collatz-crystal-sourcefree-budget-prospective-v54
+          if-no-files-found: error
