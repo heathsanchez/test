@@ -20,10 +20,12 @@ the bank is universal for every ZeroTailLive state.
 """
 from __future__ import annotations
 
+from contextlib import redirect_stdout
 from fractions import Fraction
-import hashlib, json
+import hashlib, io, json
 
-import collatz_crystal_symbolic_return_closure_v41 as v41
+with redirect_stdout(io.StringIO()):
+    import collatz_crystal_symbolic_return_closure_v41 as v41
 
 keys = v41.keys
 edges = v41.edges
@@ -97,8 +99,13 @@ for cid, nodes in sorted(cycles_by_id.items()):
         fp = Fraction(B, den)
         slope = "EXPANDING"
 
-    # Universal live-integer descent criterion for this macro cycle.
-    descent_m_ge_2 = den > 0 and fp <= 1
+    # Source-relative live floor. Any minimal-bad source surviving V23 lies
+    # in its sole affine residual cell, hence n >= N0. A live endpoint
+    # x=2^anchor*m-1 cannot be below its fixed source, so m is at least this
+    # exact floor.
+    N0 = v41.v40.v25.N0
+    live_m_floor = (N0 + 1 + (1 << anchor) - 1) // (1 << anchor)
+    descent_on_live_floor = den > 0 and fp < live_m_floor
 
     equality_at_one = False
     terminal_at_one = False
@@ -127,13 +134,14 @@ for cid, nodes in sorted(cycles_by_id.items()):
         "two_pow_D_minus_A": str(den),
         "slope_class": slope,
         "fixed_point": None if fp is None else [fp.numerator, fp.denominator],
-        "fixed_point_le_one": bool(fp is not None and fp <= 1),
-        "strict_descent_for_integer_m_ge_2": descent_m_ge_2,
+        "v23_live_m_floor": str(live_m_floor),
+        "fixed_point_lt_v23_live_floor": bool(fp is not None and fp < live_m_floor),
+        "strict_descent_on_v23_live_domain": descent_on_live_floor,
         "equality_at_m1": equality_at_one,
         "equality_endpoint_terminal": terminal_at_one if equality_at_one else None,
     }
     rows.append(row)
-    if not descent_m_ge_2 or (equality_at_one and not terminal_at_one):
+    if not descent_on_live_floor:
         bad.append(row)
 
 # Every V41 recurrent SCC must be represented by at least one simple cycle.
@@ -162,8 +170,8 @@ result = {
         "Within the complete 13-law V40 bank and V41's stronger symbolic "
         "successor over-approximation, any infinite protected return path must "
         "revisit a node; the intervening simple-cycle decomposition contains "
-        "a cycle whose exact affine return strictly lowers positive integer "
-        "m whenever m>=2. The only equality fixed point is checked terminal. "
+        "a cycle whose exact affine return strictly lowers m throughout the "
+        "source-relative V23 live domain. "
         "Thus recurrence in this finite bank cannot support an infinite live "
         "execution; m is an eventual macro rank on recurrent returns."
     ),
