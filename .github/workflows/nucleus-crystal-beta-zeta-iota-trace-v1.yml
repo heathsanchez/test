@@ -6,6 +6,11 @@ on:
     paths:
       - ".github/workflows/nucleus-crystal-beta-zeta-iota-trace-v1.yml"
       - "metatron-kernel/**"
+  pull_request:
+    branches: [nucleus-crystal-beta-zeta-after-iota-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-beta-zeta-iota-trace-v1.yml"
+      - "metatron-kernel/**"
   workflow_dispatch:
 
 permissions:
