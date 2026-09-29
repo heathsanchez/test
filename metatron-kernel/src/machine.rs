@@ -393,7 +393,7 @@ impl<'a> Machine<'a> {
                                 pending[offset..].iter().rev().cloned().collect::<Vec<_>>();
                             let target = arguments.last().expect("required includes target");
                             if let Some((constructor, constructor_arguments)) =
-                                self.constructor_application(target)
+                                self.one_step_constructor_application(target, reduction, budget)
                                 && let Some(rule) = reduction
                                     .rules
                                     .iter()
@@ -652,6 +652,119 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    fn one_step_constructor_application(
+        &self,
+        target: &Closure,
+        outer_reduction: &RecursorReduction,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let matches_outer = |constructor: NameId, arity: usize| {
+            outer_reduction.rules.iter().any(|rule| {
+                rule.constructor == constructor && arity == rule.num_params + rule.num_fields
+            })
+        };
+
+        if let Some((constructor, arguments)) = self.constructor_application(target)
+            && matches_outer(constructor, arguments.len())
+        {
+            return Some((constructor, arguments));
+        }
+
+        // Crystal v1: exactly one certified nested-iota step.  Do not call
+        // expose_internal here: previous recursive-major experiments proved
+        // that broad WHNF can enter >120s paths.  The inner recursor must be
+        // syntactically visible, and its own major must already be a certified
+        // constructor application.
+        let (inner_name, inner_levels, inner_arguments, inner_head) =
+            self.constant_application(target)?;
+        let inner_reduction = self.recursor_reductions.get(&inner_name)?;
+        let inner_required = inner_reduction.num_params
+            + 1
+            + inner_reduction.rules.len()
+            + inner_reduction.num_indices
+            + 1;
+        if inner_arguments.len() != inner_required
+            || inner_reduction.level_params.len() != inner_levels.len()
+        {
+            return None;
+        }
+
+        let inner_target = inner_arguments.last()?;
+        let (inner_constructor, inner_constructor_arguments) =
+            self.constructor_application(inner_target)?;
+        let inner_rule = inner_reduction
+            .rules
+            .iter()
+            .find(|rule| rule.constructor == inner_constructor)?;
+        if inner_constructor_arguments.len() != inner_rule.num_params + inner_rule.num_fields {
+            return None;
+        }
+
+        let prefix_len =
+            inner_reduction.num_params + 1 + inner_reduction.rules.len();
+        let mut rule_arguments = inner_arguments[..prefix_len].to_vec();
+        rule_arguments.extend_from_slice(
+            &inner_constructor_arguments[inner_rule.num_params..],
+        );
+
+        let mut level_substitution = inner_head.levels.to_map();
+        for (parameter, level) in inner_reduction
+            .level_params
+            .iter()
+            .zip(inner_levels.iter())
+        {
+            let resolved =
+                self.resolve_level(*level, &inner_head, budget.saturating_sub(1))?;
+            level_substitution.insert(*parameter, resolved);
+        }
+        let mut level_substitution = level_substitution.into_iter().collect::<Vec<_>>();
+        level_substitution.sort_by_key(|(name, _)| name.0);
+
+        let mut reduced = Closure::with_levels(
+            inner_rule.rhs,
+            EnvFrame::empty(),
+            LevelSubstitution::new(level_substitution),
+        );
+        for argument in rule_arguments {
+            let Expr::Lam { body, .. } = self.expressions.get(reduced.expr)? else {
+                return None;
+            };
+            reduced = Closure::with_levels(
+                *body,
+                reduced.env.extend(argument),
+                reduced.levels.clone(),
+            );
+        }
+
+        let (constructor, arguments) = self.constructor_application(&reduced)?;
+        matches_outer(constructor, arguments.len()).then_some((constructor, arguments))
+    }
+
+    fn constant_application(
+        &self,
+        target: &Closure,
+    ) -> Option<(NameId, Vec<LevelId>, Vec<Closure>, Closure)> {
+        let mut closure = target.clone();
+        let mut arguments = Vec::new();
+        loop {
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
+                },
+                Expr::Const { name, levels } => {
+                    arguments.reverse();
+                    return Some((*name, levels.clone(), arguments, closure));
+                }
+                _ => return None,
+            }
+        }
     }
 
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
