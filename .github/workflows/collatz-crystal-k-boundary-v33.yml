@@ -1,0 +1,50 @@
+name: Collatz Crystal K Boundary V33
+
+on:
+  push:
+    branches: [collatz-crystal-k-boundary-v33]
+    paths:
+      - 'experiments/collatz_crystal_k_boundary_v33.py'
+      - '.github/workflows/collatz-crystal-k-boundary-v33.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Certify zero-slack K boundary
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-k-boundary-v33
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_k_boundary_v33.py \
+            | tee evidence/collatz-crystal-k-boundary-v33/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-k-boundary-v33/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_K_BOUNDARY_V33'
+          z=d['zero_slack_boundary']
+          assert z['recurrent_components']==66
+          assert z['K_on_recurrent_zero_slack_cycle'] is False
+          s=d['sharp_K_cycle']
+          assert s['length']==49 and s['odd_steps']==29 and s['K_drop']==2
+          assert s['weight_c18']==-1
+          assert s['fixed_point_lt_v23_source_floor'] is True
+          assert d['global_collatz']=='UNKNOWN'
+          print('V33_ZERO',z)
+          print('V33_SHARP',s)
+          print('V33_NEXT',d['next_residual'])
+          print('V33_CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-k-boundary-v33
+          path: evidence/collatz-crystal-k-boundary-v33
+          if-no-files-found: error
