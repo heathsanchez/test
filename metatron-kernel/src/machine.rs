@@ -258,6 +258,30 @@ impl<'a> Machine<'a> {
                                     transitions,
                                 );
                             }
+                            EnvBinding::Projection {
+                                type_name,
+                                index,
+                                structure,
+                            } => {
+                                let mut spine = Vec::new();
+                                append_pending(&mut spine, &mut pending);
+                                record_transition(
+                                    &mut transitions,
+                                    record_witnesses,
+                                    TransitionWitness::Rigid,
+                                );
+                                return exposed(
+                                    Value::Neutral(Neutral {
+                                        head: NeutralHead::Projection {
+                                            type_name,
+                                            index,
+                                            structure,
+                                        },
+                                        spine,
+                                    }),
+                                    transitions,
+                                );
+                            }
                         }
                     }
                     let mut spine = Vec::new();
@@ -493,26 +517,47 @@ impl<'a> Machine<'a> {
                     }
                     let structure = closure.sibling(*structure, closure.env.clone());
                     let exposed_structure =
-                        self.expose_internal(structure, transparency, budget, false);
+                        self.expose_internal(structure.clone(), transparency, budget, false);
                     let Some(exposure) = exposed_structure.proven_value() else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
                     let Value::Neutral(neutral) = &exposure.value else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
-                    let NeutralHead::Const { name, .. } = &neutral.head else {
-                        return Judgment::unknown("projection-structure-neutral");
-                    };
-                    if *name != spec.constructor {
-                        return Judgment::unknown("projection-constructor-mismatch");
+                    if let NeutralHead::Const { name, .. } = &neutral.head
+                        && *name == spec.constructor
+                    {
+                        let field_offset = spec.num_params + index;
+                        let Some(field) = neutral.spine.get(field_offset).cloned() else {
+                            return Judgment::unknown("projection-constructor-arity");
+                        };
+                        visited.clear();
+                        closure = field;
+                        continue;
                     }
-                    let field_offset = spec.num_params + index;
-                    let Some(field) = neutral.spine.get(field_offset).cloned() else {
-                        return Judgment::unknown("projection-constructor-arity");
-                    };
-                    visited.clear();
-                    closure = field;
-                    continue;
+
+                    // A projection from a neutral structure is itself neutral.
+                    // Retaining it explicitly lets conversion compare stuck
+                    // projections and lets dependent field types refer to
+                    // earlier projected fields without inventing syntax.
+                    let mut spine = Vec::new();
+                    append_pending(&mut spine, &mut pending);
+                    record_transition(
+                        &mut transitions,
+                        record_witnesses,
+                        TransitionWitness::Rigid,
+                    );
+                    return exposed(
+                        Value::Neutral(Neutral {
+                            head: NeutralHead::Projection {
+                                type_name: *type_name,
+                                index,
+                                structure,
+                            },
+                            spine,
+                        }),
+                        transitions,
+                    );
                 }
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
@@ -637,7 +682,7 @@ impl<'a> Machine<'a> {
                     EnvBinding::Closure(bound) => {
                         closure = bound;
                     }
-                    EnvBinding::Free(_) => return None,
+                    EnvBinding::Free(_) | EnvBinding::Projection { .. } => return None,
                 },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
