@@ -789,7 +789,7 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
     // classes whose authority is explicitly sealed by earlier generations.
     if let [constructor] = block.constructors.as_slice() {
         let Ok(fields) = usize::try_from(constructor.num_fields) else { return false; };
-        if fields == 0 || (p == 2 && fields == 2) {
+        if fields == 0 {
             return false;
         }
     }
@@ -1038,7 +1038,42 @@ fn check_generic_nonrecursive_type(
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
     d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    Ok(d.finish())
+    let environment = d.finish();
+
+    // Complete the exact single-constructor structure dependency closure:
+    // the checked constructor telescope is the authority for projection field
+    // types, and the already-checked recursor rules supply iota.
+    if let [constructor] = block.constructors.as_slice() {
+        let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+        let f = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+        if f > 0 {
+            let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + f) else {
+                return Err(Verdict::Reject);
+            };
+            let field_types = constructor_domains[p..]
+                .iter()
+                .copied()
+                .map(ProjectionFieldType::Derived)
+                .collect::<Vec<_>>();
+            let environment = environment
+                .install_projection_spec(
+                    inductive.name,
+                    ProjectionSpec {
+                        constructor: constructor.name,
+                        num_params: p,
+                        field_types,
+                    },
+                )
+                .map_err(|_| Verdict::Reject)?;
+            return install_certified_recursor_reduction(
+                environment,
+                &block.constructors,
+                recursor,
+            );
+        }
+    }
+
+    Ok(environment)
 }
 
 fn check_single_constructor_inductive(
