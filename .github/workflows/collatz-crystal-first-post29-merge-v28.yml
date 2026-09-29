@@ -1,0 +1,47 @@
+name: Collatz Crystal First Post29 Merge V28
+
+on:
+  push:
+    branches: [collatz-crystal-first-post29-merge-v28]
+    paths:
+      - 'experiments/collatz_crystal_first_post29_merge_v28.py'
+      - '.github/workflows/collatz-crystal-first-post29-merge-v28.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Verify first post-depth-29 lower-source transition
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-first-post29-merge-v28
+          python -u experiments/collatz_crystal_first_post29_merge_v28.py \
+            | tee evidence/collatz-crystal-first-post29-merge-v28/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-first-post29-merge-v28/result.json'
+          d=json.load(open(p))
+          h=d['first_lower_source_inverse_odd']
+          assert h['ordinary_depth']==518
+          assert h['source_gap'] < 0
+          assert d['first_existing_direct_or_splice']['ordinary_depth']==525
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V28_FIRST_MERGE_DEPTH', h['ordinary_depth'])
+          print('V28_SOURCE_GAP', h['source_gap'])
+          print('V28_DS_EXIT', d['first_existing_direct_or_splice'])
+          print('V28_VERDICT', d['scientific_verdict'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-first-post29-merge-v28
+          path: evidence/collatz-crystal-first-post29-merge-v28
+          if-no-files-found: error
