@@ -8,6 +8,8 @@ on:
       - "metatron-kernel/src/checker.rs"
       - "metatron-kernel/src/typecheck.rs"
       - "metatron-kernel/src/convert.rs"
+      - "metatron-kernel/src/machine.rs"
+      - "metatron-kernel/src/environment.rs"
       - "metatron-kernel/src/level.rs"
   workflow_dispatch:
 
@@ -20,7 +22,7 @@ jobs:
     timeout-minutes: 90
     env:
       ARENA_ARTIFACT: 10712869614
-      BASE_SHA: 57115bfbde93b55824991a6800182cc3c75fa5a4
+      BASE_SHA: aa430901d51f54a3926741bab3a32cac363dc251
 
     steps:
       - uses: actions/checkout@v4
@@ -97,7 +99,7 @@ jobs:
                   rows.append({'test':name,'expected':expected,'base':a,'candidate':b})
 
           assert len(rows)==193
-          assert sum(r['base'] in (2,3) for r in rows)==41
+          assert sum(r['base'] in (2,3) for r in rows)==40
           wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
           regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
           errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
@@ -106,6 +108,8 @@ jobs:
           assert not wrong, wrong
           assert not regressions, regressions
           assert not errors, errors
+          assert earned, "Crystal candidate earned no terminal consequence"
+          assert sum(r['candidate'] in (2,3) for r in rows) < 40, "residual did not shrink"
 
           targets=[
             ('good','perf/magma-list-deep-n21',0),
