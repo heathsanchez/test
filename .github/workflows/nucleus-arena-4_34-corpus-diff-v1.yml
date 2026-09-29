@@ -140,20 +140,27 @@ jobs:
           assert not false_accepts, false_accepts
           assert not false_rejects, false_rejects
 
-          migrated_expected = {
-              "corner-cases/nested-nonuniform-param": "either",
-              "bugs/nested-unused-param": "reject",
-              "bugs/proj-of-stuck-prop": "reject",
-              "bugs/proj-of-subst-prop": "reject",
-              "bugs/rec-of-subst-prop": "reject",
-          }
+          # The "either" corner-case is deliberately unscored by Arena and is
+          # not present in the good/bad tarball. The four reject regressions are
+          # scored and must all remain non-accepted by native Nucleus.
+          scored_migrated = [
+              "bugs/nested-unused-param",
+              "bugs/proj-of-stuck-prop",
+              "bugs/proj-of-subst-prop",
+              "bugs/rec-of-subst-prop",
+          ]
           migrated = {}
-          for name, expected in migrated_expected.items():
-              assert name in fresh, f"missing current migrated case {name}"
+          for name in scored_migrated:
+              assert name in fresh, f"missing current scored migrated case {name}"
               row = fresh[name]
-              migrated[name] = {"expected": expected, **row}
-              if expected == "reject":
-                  assert row["rc"] != 0, (name, row)
+              migrated[name] = {"expected": "reject", **row}
+              assert row["rc"] != 0, (name, row)
+          migrated["corner-cases/nested-nonuniform-param"] = {
+              "expected": "either",
+              "scored": False,
+              "present_in_scored_tarball": "corner-cases/nested-nonuniform-param" in fresh,
+          }
+          assert not migrated["corner-cases/nested-nonuniform-param"]["present_in_scored_tarball"]
 
           def counts(rows):
               return {
