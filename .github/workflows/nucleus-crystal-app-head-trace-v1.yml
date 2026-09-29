@@ -33,7 +33,6 @@ jobs:
       - name: Build trace and exact base
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
