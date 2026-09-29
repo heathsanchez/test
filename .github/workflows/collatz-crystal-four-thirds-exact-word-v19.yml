@@ -28,6 +28,7 @@ jobs:
         run: |
           set -euo pipefail
           ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FourThirdsAdmission.lean
+          lake build CollatzFinal
           lake env lean -DautoImplicit=false formal/Collatz/FourThirdsAdmission.lean | tee /tmp/v19-lean.log
           ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v19-lean.log
 
