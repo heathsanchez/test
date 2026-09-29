@@ -66,6 +66,8 @@ pub struct ProjectionSpec {
     pub constructor: NameId,
     pub num_params: usize,
     pub field_types: Vec<ProjectionFieldType>,
+    /// True only when this independently certified structure has Lean structure eta.
+    pub eta_expandable: bool,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
