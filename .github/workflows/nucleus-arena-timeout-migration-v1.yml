@@ -1,0 +1,470 @@
+name: Nucleus Arena Timeout Migration v1
+
+on:
+  push:
+    branches: [nucleus-arena-timeout-migration-v1]
+    paths:
+      - ".github/workflows/nucleus-arena-timeout-migration-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-arena-timeout-migration-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: e7c4855177eb2086c14e90b851be99062ee8c959
+  ARENA_INTERFACE_SHA: cdb3497bd9080229f3ea107b0b9d5d25bd9e71a6
+  ARENA_PUBLISHED_CORPUS_SHA: 5d7ca987618f1136aaa296057b50a2c10c4ce77a
+  PROTECTED_ARTIFACT_ID: "10712869614"
+  PUBLISHED_ARTIFACT_ID: "10815825679"
+  FLASH_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+
+jobs:
+  qualify:
+    name: Exact Arena timeout/interface compatibility
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Verify authority ancestry and build Nucleus
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+          bash -n scripts/nucleus-semantic-closure
+
+      - name: Build pinned qualified fallback
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$FLASH_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+          {
+            echo "NUCLEUS_BIN=$GITHUB_WORKSPACE/metatron-kernel/target/release/metatron-kernel"
+            echo "NUCLEUS_WRAPPER=$GITHUB_WORKSPACE/metatron-kernel/scripts/nucleus-semantic-closure"
+            echo "FLASH_BIN=/tmp/mathgraph/target/release/sokonanoda"
+            echo "FLASH_CONFIG=/tmp/mathgraph/config.json"
+          } >> "$GITHUB_ENV"
+
+      - name: Fetch exact Arena interface and Python dependencies
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_INTERFACE_SHA"
+          test "$(git -C /tmp/arena rev-parse HEAD)" = "$ARENA_INTERFACE_SHA"
+          python3 -m pip install --quiet             "jinja2>=3.1.6" "jsonschema>=4.26.0" "markdown>=3.10" "pyyaml>=6.0.3"
+
+      - name: Fetch protected and latest published Arena corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          fetch_corpus() {
+            local artifact_id="$1"
+            local dest="$2"
+            local zip="/tmp/artifact-${artifact_id}.zip"
+            local unpack="/tmp/artifact-${artifact_id}"
+            rm -rf "$dest" "$unpack" "$zip"
+            mkdir -p "$dest" "$unpack"
+            gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/${artifact_id}/zip" > "$zip"
+            unzip -q "$zip" -d "$unpack"
+            local tarball
+            tarball="$(find "$unpack" -type f -name 'lean-arena-tests.tar.gz' -print -quit)"
+            test -n "$tarball"
+            tar -xzf "$tarball" -C "$dest"
+            printf '%s  %s\n' "$(sha256sum "$tarball" | cut -d' ' -f1)" "$tarball"
+          }
+          fetch_corpus "$PROTECTED_ARTIFACT_ID" /tmp/protected-tests
+          fetch_corpus "$PUBLISHED_ARTIFACT_ID" /tmp/published-tests
+          test "$(find /tmp/protected-tests -type f -name '*.ndjson' | wc -l)" -eq 193
+          echo "protected_cases=$(find /tmp/protected-tests -type f -name '*.ndjson' | wc -l)"
+          echo "published_cases=$(find /tmp/published-tests -type f -name '*.ndjson' | wc -l)"
+
+      - name: Validate new checker schema and timeout/process-group contract
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/arena/checkers /tmp/nucleus-arena-smoke-results
+          cat >/tmp/nucleus-arena-run <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          case "${IN:-}" in
+            *forced-timeout.ndjson)
+              rm -f /tmp/nucleus-timeout-child-survived
+              ( sleep 5; touch /tmp/nucleus-timeout-child-survived ) &
+              wait
+              ;;
+            *)
+              exec bash "$NUCLEUS_WRAPPER" "$IN"
+              ;;
+          esac
+          SH
+          chmod +x /tmp/nucleus-arena-run
+          export NUCLEUS_ARENA_RUN=/tmp/nucleus-arena-run
+          echo "NUCLEUS_ARENA_RUN=/tmp/nucleus-arena-run" >> "$GITHUB_ENV"
+
+          cat >/tmp/arena/checkers/nucleus-contract-smoke.yaml <<'YAML'
+          version: e7c4855-arena-cdb3497
+          run: bash "$NUCLEUS_ARENA_RUN"
+          timeout: 2
+          YAML
+
+          cat >/tmp/arena/checkers/nucleus-compat.yaml <<'YAML'
+          version: e7c4855-arena-cdb3497
+          run: bash "$NUCLEUS_WRAPPER" "$IN"
+          timeout: 1800
+          YAML
+
+          touch /tmp/forced-timeout.ndjson
+
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+          import sys
+          import time
+
+          arena = pathlib.Path("/tmp/arena")
+          spec = importlib.util.spec_from_file_location("lka_exact", arena / "lka.py")
+          lka = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = lka
+          spec.loader.exec_module(lka)
+
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
+
+          checkers = {c["name"]: c for c in lka.load_checkers()}
+          smoke = checkers["nucleus-contract-smoke"]
+          compat = checkers["nucleus-compat"]
+          assert smoke["timeout"] == 2
+          assert compat["timeout"] == 1800
+
+          build_dir = arena / "_build" / "checkers"
+          results_dir = pathlib.Path("/tmp/nucleus-arena-smoke-results")
+          tests_dir = arena / "_build" / "tests"
+          root = pathlib.Path(os.environ["GITHUB_WORKSPACE"]) / "metatron-kernel/tests/fixtures"
+
+          cases = [
+              {
+                  "name": "nucleus-smoke-accept",
+                  "file": root / "good-beta-definition.ndjson",
+                  "outcome": "accept",
+                  "timeout": 10,
+              },
+              {
+                  "name": "nucleus-smoke-reject",
+                  "file": root / "bad-self-proof.ndjson",
+                  "outcome": "reject",
+                  "timeout": 10,
+              },
+              {
+                  "name": "nucleus-smoke-timeout",
+                  "file": pathlib.Path("/tmp/forced-timeout.ndjson"),
+                  "outcome": "accept",
+                  "timeout": 10,
+              },
+          ]
+          results = [
+              lka.run_checker_on_test(smoke, case, build_dir, tests_dir, results_dir)
+              for case in cases
+          ]
+
+          assert results[0]["status"] == "accepted", results[0]
+          assert results[0]["correctness"] == "correct", results[0]
+          assert results[0]["timeout"] == 2, results[0]
+          assert results[1]["status"] == "rejected", results[1]
+          assert results[1]["correctness"] == "correct", results[1]
+          assert results[1]["timeout"] == 2, results[1]
+          assert results[2]["status"] == "timeout", results[2]
+          assert results[2]["correctness"] == "error", results[2]
+          assert results[2]["timeout"] == 2, results[2]
+
+          # If Arena failed to kill the full process group, the child writes this
+          # marker five seconds after launch. Wait beyond that deadline.
+          time.sleep(4)
+          assert not pathlib.Path("/tmp/nucleus-timeout-child-survived").exists()
+
+          summary = {
+              "schema": "nucleus-arena-timeout-contract-v1",
+              "authority_sha": os.environ["AUTHORITY_SHA"],
+              "arena_interface_sha": os.environ["ARENA_INTERFACE_SHA"],
+              "checker_timeout": smoke["timeout"],
+              "results": results,
+              "process_group_child_survived": False,
+          }
+          pathlib.Path("/tmp/nucleus-arena-timeout-contract.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Replay protected authority corpus through new Arena interface
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          arena = pathlib.Path("/tmp/arena")
+          spec = importlib.util.spec_from_file_location("lka_exact", arena / "lka.py")
+          lka = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = lka
+          spec.loader.exec_module(lka)
+
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
+          checker = next(c for c in lka.load_checkers() if c["name"] == "nucleus-compat")
+
+          nucleus = pathlib.Path(os.environ["NUCLEUS_BIN"])
+          build_dir = arena / "_build" / "checkers"
+          tests_dir = arena / "_build" / "tests"
+          results_dir = pathlib.Path("/tmp/protected-lka-results")
+          root = pathlib.Path("/tmp/protected-tests")
+
+          rows = []
+          for bucket, outcome, expected_rc in [("good", "accept", 0), ("bad", "reject", 1)]:
+              for p in sorted((root / bucket).rglob("*.ndjson")):
+                  name = str(p.relative_to(root / bucket)).removesuffix(".ndjson")
+                  with p.open("rb") as stream:
+                      native = subprocess.run(
+                          [str(nucleus)],
+                          stdin=stream,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      ).returncode
+                  result = lka.run_checker_on_test(
+                      checker,
+                      {"name": name, "file": p, "outcome": outcome},
+                      build_dir,
+                      tests_dir,
+                      results_dir,
+                  )
+                  rows.append({
+                      "test": name,
+                      "outcome": outcome,
+                      "expected_rc": expected_rc,
+                      "nucleus_rc": native,
+                      "arena_status": result["status"],
+                      "arena_correctness": result["correctness"],
+                      "arena_timeout": result.get("timeout"),
+                  })
+
+          false_accept = [r for r in rows if r["expected_rc"] == 1 and r["nucleus_rc"] == 0]
+          false_reject = [r for r in rows if r["expected_rc"] == 0 and r["nucleus_rc"] == 1]
+          native_accept = [r for r in rows if r["expected_rc"] == 0 and r["nucleus_rc"] == 0]
+          native_reject = [r for r in rows if r["expected_rc"] == 1 and r["nucleus_rc"] == 1]
+          fallback = [r for r in rows if r["nucleus_rc"] in (2, 3)]
+          arena_bad = [r for r in rows if r["arena_correctness"] != "correct"]
+
+          assert len(rows) == 193, len(rows)
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert len(native_accept) == 77, len(native_accept)
+          assert len(native_reject) == 31, len(native_reject)
+          assert len(fallback) == 85, len(fallback)
+          assert not arena_bad, arena_bad
+
+          summary = {
+              "schema": "nucleus-arena-timeout-protected-replay-v1",
+              "authority_sha": os.environ["AUTHORITY_SHA"],
+              "arena_interface_sha": os.environ["ARENA_INTERFACE_SHA"],
+              "cases": len(rows),
+              "native_accept": len(native_accept),
+              "native_reject": len(native_reject),
+              "fallback": len(fallback),
+              "false_accepts": false_accept,
+              "false_rejects": false_reject,
+              "arena_bad": arena_bad,
+          }
+          pathlib.Path("/tmp/nucleus-arena-protected-replay.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Replay latest published corpus through new Arena interface
+        timeout-minutes: 25
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import importlib.util
+          import json
+          import os
+          import pathlib
+          import subprocess
+          import sys
+
+          arena = pathlib.Path("/tmp/arena")
+          spec = importlib.util.spec_from_file_location("lka_exact", arena / "lka.py")
+          lka = importlib.util.module_from_spec(spec)
+          sys.modules[spec.name] = lka
+          spec.loader.exec_module(lka)
+
+          # Hosted runner exposes perf(1) but forbids perf events. Keep the
+          # exact Arena process-group timeout path and drop only perf counters.
+          def no_perf(cmd, cwd=None, env=None, shell=False, capture_output=True, timeout=None):
+              started = lka.time.time()
+              result = lka._run_process(
+                  cmd, cwd=cwd, env=env, shell=shell,
+                  capture_output=capture_output, timeout=timeout
+              )
+              return result, {
+                  "wall_time": lka.time.time() - started,
+                  "cpu_time": 0.0,
+                  "max_rss": 0.0,
+                  "instructions": 0,
+              }
+          lka.measure_perf_with_fallback = no_perf
+          checker = next(c for c in lka.load_checkers() if c["name"] == "nucleus-compat")
+
+          nucleus = pathlib.Path(os.environ["NUCLEUS_BIN"])
+          build_dir = arena / "_build" / "checkers"
+          tests_dir = arena / "_build" / "tests"
+          results_dir = pathlib.Path("/tmp/published-lka-results")
+          root = pathlib.Path("/tmp/published-tests")
+
+          rows = []
+          for bucket, outcome, expected_rc in [("good", "accept", 0), ("bad", "reject", 1)]:
+              for p in sorted((root / bucket).rglob("*.ndjson")):
+                  name = str(p.relative_to(root / bucket)).removesuffix(".ndjson")
+                  with p.open("rb") as stream:
+                      native = subprocess.run(
+                          [str(nucleus)],
+                          stdin=stream,
+                          stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL,
+                          check=False,
+                      ).returncode
+                  result = lka.run_checker_on_test(
+                      checker,
+                      {"name": name, "file": p, "outcome": outcome},
+                      build_dir,
+                      tests_dir,
+                      results_dir,
+                  )
+                  rows.append({
+                      "test": name,
+                      "outcome": outcome,
+                      "expected_rc": expected_rc,
+                      "nucleus_rc": native,
+                      "arena_status": result["status"],
+                      "arena_correctness": result["correctness"],
+                      "arena_timeout": result.get("timeout"),
+                  })
+
+          false_accept = [r for r in rows if r["expected_rc"] == 1 and r["nucleus_rc"] == 0]
+          false_reject = [r for r in rows if r["expected_rc"] == 0 and r["nucleus_rc"] == 1]
+          native_accept = [r for r in rows if r["expected_rc"] == 0 and r["nucleus_rc"] == 0]
+          native_reject = [r for r in rows if r["expected_rc"] == 1 and r["nucleus_rc"] == 1]
+          fallback = [r for r in rows if r["nucleus_rc"] in (2, 3)]
+          arena_bad = [r for r in rows if r["arena_correctness"] != "correct"]
+
+          assert rows, "published corpus is empty"
+          assert not false_accept, false_accept
+          assert not false_reject, false_reject
+          assert not arena_bad, arena_bad
+
+          summary = {
+              "schema": "nucleus-arena-timeout-published-replay-v1",
+              "authority_sha": os.environ["AUTHORITY_SHA"],
+              "arena_interface_sha": os.environ["ARENA_INTERFACE_SHA"],
+              "arena_published_corpus_sha": os.environ["ARENA_PUBLISHED_CORPUS_SHA"],
+              "cases": len(rows),
+              "native_accept": len(native_accept),
+              "native_reject": len(native_reject),
+              "fallback": len(fallback),
+              "false_accepts": false_accept,
+              "false_rejects": false_reject,
+              "arena_bad": arena_bad,
+          }
+          pathlib.Path("/tmp/nucleus-arena-published-replay.json").write_text(
+              json.dumps(summary, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - name: Seal compatibility evidence
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-timeout-migration
+          cp -f /tmp/nucleus-arena-timeout-contract.json             metatron-kernel/evidence-out/arena-timeout-migration/contract.json 2>/dev/null || true
+          cp -f /tmp/nucleus-arena-protected-replay.json             metatron-kernel/evidence-out/arena-timeout-migration/protected-replay.json 2>/dev/null || true
+          cp -f /tmp/nucleus-arena-published-replay.json             metatron-kernel/evidence-out/arena-timeout-migration/published-replay.json 2>/dev/null || true
+          cat >metatron-kernel/evidence-out/arena-timeout-migration/boundary.json <<JSON
+          {
+            "schema": "nucleus-arena-timeout-migration-v1",
+            "candidate_sha": "$GITHUB_SHA",
+            "authority_sha": "$AUTHORITY_SHA",
+            "arena_interface_sha": "$ARENA_INTERFACE_SHA",
+            "arena_published_corpus_sha": "$ARENA_PUBLISHED_CORPUS_SHA",
+            "protected_artifact_id": "$PROTECTED_ARTIFACT_ID",
+            "published_artifact_id": "$PUBLISHED_ARTIFACT_ID"
+          }
+          JSON
+
+      - name: Upload compatibility evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-arena-timeout-migration-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-timeout-migration
+          if-no-files-found: warn
