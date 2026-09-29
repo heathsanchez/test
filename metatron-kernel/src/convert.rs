@@ -290,6 +290,7 @@ pub(crate) fn convert_with_policy_in_context(
                             full_right,
                             remaining,
                             depth,
+                            context,
                             &mut work,
                             &mut proof_function_frees,
                         ) {
