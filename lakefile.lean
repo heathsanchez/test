@@ -19,6 +19,7 @@ lean_lib CollatzFinal where
     `Collatz.TwelveOddBlockContraction,
     `Collatz.BTransientMacro,
     `Collatz.ReturnFixedPointDescent,
+    `Collatz.EventualMacroProgress,
     `Collatz.SourceProductAffine,
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
