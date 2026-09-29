@@ -11,11 +11,13 @@ increase kills the candidate immediately.  Survival does not promote it.
 """
 from __future__ import annotations
 from collections import Counter
-import hashlib,json
+from contextlib import redirect_stdout
+import hashlib,io,json
 
-import collatz_crystal_k_rewind_v31 as v31
-import collatz_crystal_parameter_quotient_v25 as v25
-import collatz_crystal_post_p36_adversary_v26 as v26
+with redirect_stdout(io.StringIO()):
+    import collatz_crystal_k_rewind_v31 as v31
+    import collatz_crystal_parameter_quotient_v25 as v25
+    import collatz_crystal_post_p36_adversary_v26 as v26
 
 MOD=v31.MOD
 
