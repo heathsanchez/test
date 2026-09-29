@@ -213,6 +213,63 @@ fn check_export_with_policy(
                                 "NUCLEUS_DOWNSTREAM:name={name}:stage=inductive:verdict={verdict:?}"
                             );
                         }
+                        if verdict == Verdict::Unknown
+                            && std::env::var_os("NUCLEUS_TRACE_INDUCTIVE_QUOTIENT").is_some()
+                        {
+                            if let Some(inductive) = block.types.first() {
+                                let constructors = block
+                                    .constructors
+                                    .iter()
+                                    .map(|constructor| {
+                                        format!(
+                                            "{}:idx{}:p{}:f{}:l{}:u{}",
+                                            trace_name(&export, constructor.name),
+                                            constructor.index,
+                                            constructor.num_params,
+                                            constructor.num_fields,
+                                            constructor.level_params.len(),
+                                            u8::from(constructor.is_unsafe),
+                                        )
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join(",");
+                                let recursors = block
+                                    .recursors
+                                    .iter()
+                                    .map(|recursor| {
+                                        format!(
+                                            "{}:p{}:i{}:m{}:n{}:k{}:l{}:r{}:u{}",
+                                            trace_name(&export, recursor.name),
+                                            recursor.num_params,
+                                            recursor.num_indices,
+                                            recursor.num_motives,
+                                            recursor.num_minors,
+                                            u8::from(recursor.k),
+                                            recursor.level_params.len(),
+                                            recursor.rules.len(),
+                                            u8::from(recursor.is_unsafe),
+                                        )
+                                    })
+                                    .collect::<Vec<_>>()
+                                    .join(",");
+                                eprintln!(
+                                    "NUCLEUS_INDUCTIVE_QUOTIENT:name={}:types={}:ctors={}:recs={}:p={}:i={}:n={}:rec={}:refl={}:unsafe={}:levels={}:constructors=[{}]:recursors=[{}]",
+                                    trace_name(&export, inductive.name),
+                                    block.types.len(),
+                                    block.constructors.len(),
+                                    block.recursors.len(),
+                                    inductive.num_params,
+                                    inductive.num_indices,
+                                    inductive.num_nested,
+                                    u8::from(inductive.is_recursive),
+                                    u8::from(inductive.is_reflexive),
+                                    u8::from(inductive.is_unsafe),
+                                    inductive.level_params.len(),
+                                    constructors,
+                                    recursors,
+                                );
+                            }
+                        }
                         return verdict;
                     }
                 }
