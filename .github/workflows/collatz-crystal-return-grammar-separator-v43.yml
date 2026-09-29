@@ -1,0 +1,37 @@
+name: Collatz Crystal Return Grammar Separator V43
+on:
+  push:
+    branches: [collatz-crystal-return-grammar-separator-v43]
+    paths:
+      - 'experiments/collatz_crystal_return_grammar_separator_v43.py'
+      - '.github/workflows/collatz-crystal-return-grammar-separator-v43.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Probe fresh V23 parameters
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-return-grammar-separator-v43
+          PYTHONPATH=experiments python experiments/collatz_crystal_return_grammar_separator_v43.py | tee evidence/collatz-crystal-return-grammar-separator-v43/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-return-grammar-separator-v43/result.json'))
+          print('V43_VERDICT',d['verdict'])
+          print('V43_CHECKED',d['checked'])
+          print('V43_SURVIVORS',d['postzero_sources'])
+          print('V43_SEPARATOR',d['separator'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-return-grammar-separator-v43
+          path: evidence/collatz-crystal-return-grammar-separator-v43
+          if-no-files-found: error
