@@ -1,0 +1,159 @@
+name: Nucleus Arena Checker Timeout Compatibility v1
+
+on:
+  push:
+    branches: [nucleus-arena-checker-timeout-compat-v1]
+    paths:
+      - ".github/workflows/nucleus-arena-checker-timeout-compat-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  NUCLEUS_AUTHORITY_SHA: e7c4855177eb2086c14e90b851be99062ee8c959
+  ARENA_PREVIOUS_SHA: ae76435a5fb439571a28e19d74cd1e2e3ab69667
+  ARENA_SHA: cdb3497bd9080229f3ea107b0b9d5d25bd9e71a6
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify exact Nucleus lineage
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$NUCLEUS_AUTHORITY_SHA" HEAD
+          test -z "$(git diff --name-only "$NUCLEUS_AUTHORITY_SHA"..HEAD -- metatron-kernel)"
+          echo "nucleus_authority_sha=$NUCLEUS_AUTHORITY_SHA"
+          echo "candidate_sha=$GITHUB_SHA"
+
+      - name: Build exact Nucleus kernel
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          cargo build --release --locked
+          test -x target/release/metatron-kernel
+
+      - name: Fetch exact live Arena interface
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/leanprover/lean-kernel-arena /tmp/arena
+          git -C /tmp/arena checkout -q "$ARENA_SHA"
+          test "$(git -C /tmp/arena rev-parse HEAD)" = "$ARENA_SHA"
+          python3 -m pip install --quiet "jinja2>=3.1.6" "jsonschema>=4.26.0" "markdown>=3.10" "pyyaml>=6.0.3"
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          schema = json.loads(Path("/tmp/arena/schemas/checker.json").read_text())
+          timeout = schema["properties"]["timeout"]
+          assert timeout["type"] == "integer"
+          assert timeout["minimum"] == 1
+          print(json.dumps(timeout, sort_keys=True))
+          PY
+
+      - name: Run three-case Arena execution-contract probe
+        run: |
+          set -euo pipefail
+          export NUCLEUS_BIN="$GITHUB_WORKSPACE/metatron-kernel/target/release/metatron-kernel"
+          OUT="$GITHUB_WORKSPACE/metatron-kernel/evidence-out/arena-checker-timeout-compat-v1"
+          rm -rf /tmp/nucleus-arena-probe "$OUT"
+          mkdir -p /tmp/nucleus-arena-probe "$OUT"
+
+          cp metatron-kernel/tests/fixtures/good-beta-definition.ndjson /tmp/nucleus-arena-probe/known-accept.ndjson
+          cp metatron-kernel/tests/fixtures/bad-self-theorem.ndjson /tmp/nucleus-arena-probe/known-reject.ndjson
+          cp metatron-kernel/tests/fixtures/good-beta-definition.ndjson /tmp/nucleus-arena-probe/forced-timeout.ndjson
+
+          cat >/tmp/arena/checkers/nucleus-compat.yaml <<'YAML'
+          version: e7c4855177eb2086c14e90b851be99062ee8c959
+          description: Nucleus live Arena timeout-contract compatibility probe.
+          run: |
+            case "$IN" in
+              *forced-timeout.ndjson) sleep 10 ;;
+              *) "$NUCLEUS_BIN" < "$IN" ;;
+            esac
+          timeout: 3
+          YAML
+
+          python3 - <<'PY'
+          import hashlib
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          sys.path.insert(0, "/tmp/arena")
+          import yaml
+          import lka
+
+          arena = Path("/tmp/arena")
+          checker_path = arena / "checkers" / "nucleus-compat.yaml"
+          checker = yaml.safe_load(checker_path.read_text())
+          lka.validate_yaml_data(checker, "checker", checker_path)
+          checker["name"] = "nucleus-compat"
+
+          build_dir = arena / "_build" / "checkers"
+          tests_dir = arena / "_build" / "tests"
+          out_dir = Path(os.environ["GITHUB_WORKSPACE"]) / "metatron-kernel" / "evidence-out" / "arena-checker-timeout-compat-v1"
+          results_dir = out_dir / "raw-results"
+
+          cases = [
+              ("known-accept", "accept", Path("/tmp/nucleus-arena-probe/known-accept.ndjson")),
+              ("known-reject", "reject", Path("/tmp/nucleus-arena-probe/known-reject.ndjson")),
+              ("forced-timeout", "accept", Path("/tmp/nucleus-arena-probe/forced-timeout.ndjson")),
+          ]
+
+          results = {}
+          for name, outcome, file in cases:
+              test = {"name": name, "outcome": outcome, "file": file}
+              results[name] = lka.run_checker_on_test(
+                  checker, test, build_dir, tests_dir, results_dir
+              )
+
+          assert results["known-accept"]["status"] == "accepted", results["known-accept"]
+          assert results["known-accept"]["correctness"] == "correct", results["known-accept"]
+          assert results["known-accept"]["exit_code"] == 0, results["known-accept"]
+
+          assert results["known-reject"]["status"] == "rejected", results["known-reject"]
+          assert results["known-reject"]["correctness"] == "correct", results["known-reject"]
+          assert results["known-reject"]["exit_code"] == 1, results["known-reject"]
+
+          assert results["forced-timeout"]["status"] == "timeout", results["forced-timeout"]
+          assert results["forced-timeout"]["correctness"] == "error", results["forced-timeout"]
+          assert results["forced-timeout"]["timeout"] == 3, results["forced-timeout"]
+          assert results["forced-timeout"]["wall_time"] < 8, results["forced-timeout"]
+
+          def sha256(path):
+              return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+          summary = {
+              "schema": "nucleus-arena-checker-timeout-compat-v1",
+              "candidate_sha": os.environ["GITHUB_SHA"],
+              "nucleus_authority_sha": os.environ["NUCLEUS_AUTHORITY_SHA"],
+              "arena_previous_sha": os.environ["ARENA_PREVIOUS_SHA"],
+              "arena_sha": os.environ["ARENA_SHA"],
+              "arena_checker_schema": "timeout integer >= 1",
+              "checker_timeout_seconds": 3,
+              "nucleus_tree_unchanged_from_authority": True,
+              "fixtures": {
+                  "known_accept_sha256": sha256("/tmp/nucleus-arena-probe/known-accept.ndjson"),
+                  "known_reject_sha256": sha256("/tmp/nucleus-arena-probe/known-reject.ndjson"),
+                  "forced_timeout_sha256": sha256("/tmp/nucleus-arena-probe/forced-timeout.ndjson"),
+              },
+              "results": results,
+              "verdict": "PASS_LIVE_ARENA_EXECUTION_CONTRACT",
+          }
+          (out_dir / "result.json").write_text(json.dumps(summary, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(summary, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-arena-checker-timeout-compat-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-checker-timeout-compat-v1
+          if-no-files-found: warn
