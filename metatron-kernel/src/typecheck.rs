@@ -366,6 +366,37 @@ impl<'a> TypeChecker<'a> {
                         );
                         Closure::with_levels(field_expression, field_frame, level_substitution)
                     }
+                    ProjectionFieldType::IndependentDerived {
+                        expression,
+                        prior_fields,
+                    } => {
+                        if neutral.spine.len() < spec.num_params {
+                            return Judgment::refuted("projection-parameter-arity");
+                        }
+                        let Some(declaration) = self.environment.get(*type_name) else {
+                            return Judgment::unknown("projection-missing-type-authority");
+                        };
+                        if declaration.level_params.len() != levels.len() {
+                            return Judgment::refuted("projection-level-arity");
+                        }
+                        let mut field_frame = EnvFrame::empty();
+                        for parameter in neutral.spine.iter().take(spec.num_params) {
+                            field_frame = field_frame.extend(parameter.clone());
+                        }
+                        let inert = self.closure(*structure, frame.clone());
+                        for _ in 0..prior_fields {
+                            field_frame = field_frame.extend(inert.clone());
+                        }
+                        let level_substitution = LevelSubstitution::new(
+                            declaration
+                                .level_params
+                                .iter()
+                                .copied()
+                                .zip(levels)
+                                .collect(),
+                        );
+                        Closure::with_levels(expression, field_frame, level_substitution)
+                    }
                     ProjectionFieldType::Unqualified => {
                         return Judgment::unknown("projection-field-unqualified");
                     }
