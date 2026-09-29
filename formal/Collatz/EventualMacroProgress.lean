@@ -33,11 +33,12 @@ theorem zero_tail_kernel_empty_of_eventual_progress_or_exit
     | ind r ih =>
         intro s hrs hs
         have hzero : ZeroTailLive s := hsub s hs
-        obtain ⟨j, hjexit | hjdec⟩ := hprogress s hzero
+        obtain ⟨j, hj⟩ := hprogress s hzero
         have hSj : S (iter step j s) :=
           postfixed_iter_mem S hPost j s hs
         have hzeroj : ZeroTailLive (iter step j s) :=
           hsub (iter step j s) hSj
+        rcases hj with hjexit | hjdec
         · exact hjexit hzeroj.1
         · have hlt : rank (project (iter step j s)) < r := by
             simpa [hrs] using hjdec.2
