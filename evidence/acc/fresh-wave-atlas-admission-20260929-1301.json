@@ -1,0 +1,79 @@
+{
+  "baseline_authority": {
+    "artifact_digest": "sha256:170b21fcfae96804f10bf31038cb6201495a0e3166e7ee8d28c13b83c6b777bd",
+    "artifact_id": 11033127051,
+    "run_id": 36542901192,
+    "utc": "2026-09-29T12:40:27.859863+00:00"
+  },
+  "claim_boundary": [
+    "No publication candidate was produced.",
+    "Source-map negative is exact against the qualified AC19/AC1M map artifact only.",
+    "Atlas admission negative is exact only for the pinned official starting orientation and official ordinary AC moves within the stated radius; it is not a claim about global AC distance.",
+    "Search does not use representation changes or heuristic pruning and skips only immediate inverse moves, which cannot be part of a shortest simple path.",
+    "Any future candidate still requires pinned official-verifier replay and a fresh live-record/quota check immediately before publication."
+  ],
+  "epistemic_state": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "fresh_authority": {
+    "artifact_digest": "sha256:008d827dee158b8de99173672e00f75facfa2691011fb2338e06e38d45ecd5ac",
+    "artifact_id": 11035420811,
+    "live_state_sha256": "6bcec544bf6585c8956e14f275b178115b3f29a8e6b3c99527a60c4fa24a1b49",
+    "quota": {
+      "limit": 40,
+      "remaining": 40,
+      "used": 0
+    },
+    "run_id": 36542901192,
+    "standing": {
+      "lost": 106,
+      "tied": 6,
+      "unique": 0
+    },
+    "unsolved": {
+      "ac": 2672,
+      "stable_ac": 2672
+    },
+    "utc": "2026-09-29T13:01:04.772561+00:00"
+  },
+  "proof_atlas": {
+    "authority_run_id": 36070189102,
+    "input_artifact_id": 10838365781,
+    "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "ordinary_move_count": 14,
+    "sqlite_sha256": "0cd6ef6ba53da0a0dcc8e63b30e658bff5d109bdfd06f79753958c757da03879",
+    "states": 433272
+  },
+  "qualified_source_map": {
+    "artifact_digest": "sha256:a9409fa545084f6bdaf9d379874c5622974fbf6a5238d3e140546c2e15be5068",
+    "artifact_id": 10847946381,
+    "run_id": 34727788755
+  },
+  "schema": "acc-fresh-wave-atlas-admission-20260929-v1",
+  "strict_ac_shortenings": [
+    {"atlas_admission":{"generated":188176,"layer_counts":[1,14,145,1390,12925,118292],"radius":5,"record":86,"status":"NO_JOIN","visited":132767},"challenge_id":"ac-02157","new_ac_best":86,"new_ac_kTeams":1,"new_stable_best":88,"new_stable_kTeams":1,"old_ac_best":88,"old_ac_kTeams":1,"old_stable_best":90,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYXYxyX","YYYYYXYYXYxyXyXXYYYX"],"total_len":27},"stable_challenge_id":"sac-02157","stable_minus_ac":2},
+    {"atlas_admission":{"generated":1725972,"layer_counts":[1,14,145,1390,12925,118292,1072991],"radius":6,"record":287,"status":"NO_JOIN","visited":1205758},"challenge_id":"ac-02794","new_ac_best":287,"new_ac_kTeams":1,"new_stable_best":289,"new_stable_kTeams":1,"old_ac_best":288,"old_ac_kTeams":1,"old_stable_best":290,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYXYxyX","YXYXXYXYXXYxyXYxxxx"],"total_len":26},"stable_challenge_id":"sac-02794","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188202,"layer_counts":[1,14,145,1390,12927,118322],"radius":5,"record":71,"status":"NO_JOIN","visited":132799},"challenge_id":"ac-03641","new_ac_best":71,"new_ac_kTeams":1,"new_stable_best":73,"new_stable_kTeams":1,"old_ac_best":72,"old_ac_kTeams":1,"old_stable_best":74,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYYxYYXXyyxyx","YYXyXYxxYYXXyyxyx"],"total_len":30},"stable_challenge_id":"sac-03641","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188176,"layer_counts":[1,14,145,1390,12925,118292],"radius":5,"record":86,"status":"NO_JOIN","visited":132767},"challenge_id":"ac-04355","new_ac_best":86,"new_ac_kTeams":1,"new_stable_best":88,"new_stable_kTeams":1,"old_ac_best":87,"old_ac_kTeams":2,"old_stable_best":89,"old_stable_kTeams":2,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YXyxYXX","YXYXXXXYxyxxyXXYXXYxYXX"],"total_len":30},"stable_challenge_id":"sac-04355","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188202,"layer_counts":[1,14,145,1390,12927,118320],"radius":5,"record":58,"status":"NO_JOIN","visited":132797},"challenge_id":"ac-05160","new_ac_best":58,"new_ac_kTeams":1,"new_stable_best":60,"new_stable_kTeams":1,"old_ac_best":60,"old_ac_kTeams":1,"old_stable_best":62,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYYYXyyyx","YYYXXXYYYxx"],"total_len":20},"stable_challenge_id":"sac-05160","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188202,"layer_counts":[1,14,145,1390,12927,118322],"radius":5,"record":138,"status":"NO_JOIN","visited":132799},"challenge_id":"ac-05929","new_ac_best":138,"new_ac_kTeams":1,"new_stable_best":140,"new_stable_kTeams":1,"old_ac_best":139,"old_ac_kTeams":1,"old_stable_best":141,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YXXXXyXXyxxxxYx","YXXXyXXyXXXyxxxxYx"],"total_len":33},"stable_challenge_id":"sac-05929","stable_minus_ac":2},
+    {"atlas_admission":{"generated":187786,"layer_counts":[1,14,145,1388,12897,117932],"radius":5,"record":68,"status":"NO_JOIN","visited":132377},"challenge_id":"ac-06887","new_ac_best":68,"new_ac_kTeams":1,"new_stable_best":70,"new_stable_kTeams":1,"old_ac_best":69,"old_ac_kTeams":1,"old_stable_best":71,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYxyX","YYxxYXXXyxyxYXyXXXyxx"],"total_len":26},"stable_challenge_id":"sac-06887","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188176,"layer_counts":[1,14,145,1390,12925,118292],"radius":5,"record":132,"status":"NO_JOIN","visited":132767},"challenge_id":"ac-08160","new_ac_best":132,"new_ac_kTeams":1,"new_stable_best":134,"new_stable_kTeams":1,"old_ac_best":133,"old_ac_kTeams":1,"old_stable_best":135,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYXyxYX","YYXYYxyxYXXYXX"],"total_len":21},"stable_challenge_id":"sac-08160","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188189,"layer_counts":[1,14,145,1390,12926,118306],"radius":5,"record":101,"status":"NO_JOIN","visited":132782},"challenge_id":"ac-08195","new_ac_best":101,"new_ac_kTeams":1,"new_stable_best":103,"new_stable_kTeams":1,"old_ac_best":102,"old_ac_kTeams":1,"old_stable_best":104,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYXYYxYX","YYYYYYYYXYYYXyyyyxyxyxyXX"],"total_len":33},"stable_challenge_id":"sac-08195","stable_minus_ac":2},
+    {"atlas_admission":{"generated":188202,"layer_counts":[1,14,145,1390,12927,118322],"radius":5,"record":106,"status":"NO_JOIN","visited":132799},"challenge_id":"ac-09398","new_ac_best":106,"new_ac_kTeams":1,"new_stable_best":108,"new_stable_kTeams":1,"old_ac_best":108,"old_ac_kTeams":1,"old_stable_best":110,"old_stable_kTeams":1,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YYYYYxYYxYXYxYYx","YYYXyyyxYXyxYXYxYYx"],"total_len":35},"stable_challenge_id":"sac-09398","stable_minus_ac":2},
+    {"atlas_admission":{"generated":1726362,"layer_counts":[1,14,145,1390,12927,118320,1073359],"radius":6,"record":290,"status":"NO_JOIN","visited":1206156},"challenge_id":"ac-10011","new_ac_best":290,"new_ac_kTeams":1,"new_stable_best":292,"new_stable_kTeams":1,"old_ac_best":312,"old_ac_kTeams":2,"old_stable_best":314,"old_stable_kTeams":2,"source_map":{"ac19_index":null,"ac1m_index":null,"canonical":["YXYXyxYXX","YYXYYXYXyxyXX"],"total_len":22},"stable_challenge_id":"sac-10011","stable_minus_ac":2}
+  ],
+  "summary": {
+    "all_stable_exactly_ac_plus_2": true,
+    "atlas_joins": 0,
+    "decision": "Retire unchanged qualified public-source and shallow exact-Atlas admission lanes for this fresh wave. Do not change representation/compiler from this evidence. Return positive-EV compute to the existing AK(3) fail-first residual unless a newer live event creates a cheaper earned target.",
+    "largest_fresh_compression": {
+      "challenge_id": "ac-10011",
+      "delta": 22,
+      "new_best": 290,
+      "old_best": 312
+    },
+    "public_source_hits": 0,
+    "strict_ac_shortenings": 11,
+    "strict_stable_paired_shortenings": 11,
+    "submission": "none"
+  }
+}
