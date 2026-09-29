@@ -901,14 +901,37 @@ fn check_generic_nonrecursive_type(
     let constructors_ok = inductive.constructors
         == block.constructors.iter().map(|constructor| constructor.name).collect::<Vec<_>>();
     let levels_unique = !has_duplicate_parameter(&inductive.level_params);
-    let constructor_contracts_ok = !block.constructors.iter().enumerate().any(|(index, constructor)| {
-        constructor.index != index as u64
-            || constructor.inductive != inductive.name
-            || constructor.num_params != inductive.num_params
-            || constructor.level_params != inductive.level_params
-            || constructor_result_is_definitely_malformed(export, inductive, constructor)
-            || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
-    });
+    let trace_generic = std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some();
+    let mut constructor_contracts_ok = true;
+    for (index, constructor) in block.constructors.iter().enumerate() {
+        let index_ok = constructor.index == index as u64;
+        let owner_ok = constructor.inductive == inductive.name;
+        let params_ok = constructor.num_params == inductive.num_params;
+        let levels_ok = constructor.level_params == inductive.level_params;
+        let result_ok =
+            !constructor_result_is_definitely_malformed(export, inductive, constructor);
+        let recursive_field_ok =
+            !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
+        if trace_generic {
+            eprintln!(
+                "NUCLEUS_GENERIC_CTOR:index={}:index_ok={}:owner_ok={}:params_ok={}:levels_ok={}:result_ok={}:recursive_field_ok={}:fields={}",
+                index,
+                index_ok,
+                owner_ok,
+                params_ok,
+                levels_ok,
+                result_ok,
+                recursive_field_ok,
+                constructor.num_fields,
+            );
+        }
+        constructor_contracts_ok &= index_ok
+            && owner_ok
+            && params_ok
+            && levels_ok
+            && result_ok
+            && recursive_field_ok;
+    }
     let recursor_metadata_ok = recursor_metadata_admissible(
         export,
         inductive,
