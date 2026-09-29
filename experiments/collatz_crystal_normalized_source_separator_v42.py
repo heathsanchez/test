@@ -144,7 +144,70 @@ for a in range(BASE_DEPTH+SUFFIX_BITS+1):
         bad,_=conflicts(train,a,b)
         if not bad:
             candidates.append((a+b,a,b))
-assert candidates
+if not candidates:
+    # Full challenged parameter identity still fails: because every generated t
+    # lies in [0, 2^(BASE_DEPTH+SUFFIX_BITS)*3^4), the pair
+    # (t mod 2^27, t mod 3^4) uniquely identifies the exact tested natural t.
+    # Any remaining collision is therefore a SAME-SOURCE / SAME-INTRINSIC-STATE
+    # phase collision, not a missing source bit/trit.
+    FULL_A=BASE_DEPTH+SUFFIX_BITS
+    FULL_B=4
+    full_bad,full_w=conflicts(train,FULL_A,FULL_B)
+    assert full_bad
+    k=next(iter(full_bad))
+    wr=full_w[k]
+    exact_ts={z["t"] for z in wr}
+    assert len(exact_ts)==1, exact_ts
+    witness=[]
+    for z in wr[:12]:
+        witness.append({
+          "motif":z["motif"],"t":str(z["t"]),"source":str(z["source"]),
+          "r":z["r"],"a3":z["a3"],"anchor":z["anchor"],
+          "depth":[z["k0"],z["k1"]],
+          "state":repr(z["state"]),"consequence":repr(z["cons"]),
+          "t_mod_2full":z["t"]%(1<<FULL_A),
+          "t_mod_3full":z["t"]%(3**FULL_B),
+        })
+    result={
+      "schema":"COLLATZ_CRYSTAL_NORMALIZED_SOURCE_SEPARATOR_V42",
+      "parent":"collatz-crystal-v40-bank-challenge-v41@2283822c221f17cce47c954c203036c5138a0ae2",
+      "corpus":{
+        "v25_live_cells":len(LIVE),"ternary_classes":MOD3,
+        "suffix_bits":SUFFIX_BITS,"train_motifs":list(TRAIN),
+        "holdout_motifs":list(HOLDOUT),"cap":CAP,
+      },
+      "stats":dict(sorted(stats.items())),
+      "full_parameter_identity_test":{
+        "a_binary_parameter_bits":FULL_A,
+        "b_ternary_parameter_trits":FULL_B,
+        "collision_keys":len(full_bad),
+        "first_collision_key":repr(k),
+        "exact_t":str(next(iter(exact_ts))),
+        "rows":witness,
+      },
+      "first_new_anchor_event":first_new_anchor,
+      "verdict":"NORMALIZED_PARAMETER_ALONE_REJECTED_SAME_SOURCE_PHASE_COLLISION",
+      "interpretation":(
+        "Even exact challenged parameter identity plus the V40 intrinsic cell "
+        "is not future-functional. The same fixed natural source revisits the "
+        "same intrinsic cell with different next consequences. The missing "
+        "coordinate is phase/return-specific: preserve the exact current "
+        "same-anchor return law/defect (or an equivalent future-sufficient "
+        "return-epoch quotient), as the ROS V40 design originally required."
+      ),
+      "promotion_boundary":(
+        "Do not deepen source bits/trits. Add only the minimum return-phase "
+        "separator exposed by this exact same-source collision, then retest "
+        "prospectively."
+      ),
+      "global_collatz":"UNKNOWN",
+    }
+    result["certificate_sha256"]=hashlib.sha256(
+      json.dumps(result,sort_keys=True,separators=(",",":")).encode()
+    ).hexdigest()
+    print(json.dumps(result,indent=2,sort_keys=True))
+    raise SystemExit(0)
+
 _,A,B=min(candidates)
 train_bad,train_w=conflicts(train,A,B)
 assert not train_bad
