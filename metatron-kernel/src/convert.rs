@@ -256,8 +256,7 @@ pub(crate) fn convert_with_policy_in_context(
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
                     if std::env::var_os("NUCLEUS_TRACE_CRYSTAL_CONV_EXPOSURE").is_some() {
-                        let full_left =
-                            machine.expose(left.clone(), Transparency::Full, remaining);
+                        let full_left = machine.expose(left.clone(), Transparency::Full, remaining);
                         let full_right =
                             machine.expose(right.clone(), Transparency::Full, remaining);
                         eprintln!(
@@ -326,12 +325,7 @@ pub(crate) fn convert_with_policy_in_context(
                         let full = machine.expose(term.clone(), Transparency::Full, remaining);
                         eprintln!(
                             "NUCLEUS_CRYSTAL_CONV_EXPOSURE:mixed:depth={}:remaining={}:term={:?}:other={:?}:reducible={:?}:full={:?}",
-                            depth,
-                            remaining,
-                            term,
-                            other,
-                            exposed,
-                            full,
+                            depth, remaining, term, other, exposed, full,
                         );
                     }
                     return Judgment::unknown("conversion-exposure");
