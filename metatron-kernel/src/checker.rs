@@ -1050,8 +1050,8 @@ fn generic_prop_singleton_large_elim_candidate(
     };
 
     generic_nonrecursive_prop_small_candidate(export, block)
-        && inductive.num_params == 1
-        && constructor.num_params == 1
+        && inductive.num_params <= 1
+        && constructor.num_params == inductive.num_params
         && constructor.num_fields == 1
         && recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
         && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice())
@@ -1069,7 +1069,7 @@ fn generic_prop_singleton_field_is_proposition(
     let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
         return false;
     };
-    if parameter_count != 1 || constructor.num_fields != 1 {
+    if parameter_count > 1 || constructor.num_fields != 1 {
         return false;
     }
     let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
