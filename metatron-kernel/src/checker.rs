@@ -953,6 +953,7 @@ fn check_exact_ofnat(
                 constructor: constructor.name,
                 num_params: 2,
                 field_types: vec![ProjectionFieldType::Parameter(0)],
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)
@@ -1796,6 +1797,7 @@ fn check_fin_like_structure(
                     ProjectionFieldType::Derived(constructor_domains[1]),
                     ProjectionFieldType::Derived(constructor_domains[2]),
                 ],
+                eta_expandable: false,
             },
         )
         .map_err(|_| Verdict::Reject)?;
@@ -2154,6 +2156,7 @@ fn check_single_derived_field_structure(
             constructor: constructor.name,
             num_params: p,
             field_types: vec![ProjectionFieldType::Derived(field_type)],
+            eta_expandable: false,
         },
     ) {
         Ok(environment) => environment,
@@ -7826,6 +7829,10 @@ impl ExactBinaryProductDerivation<'_> {
                             ProjectionFieldType::Parameter(0),
                             ProjectionFieldType::Parameter(1),
                         ],
+                        eta_expandable: matches!(
+                            self.law,
+                            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::PProd { .. }
+                        ),
                     },
                 )
                 .map_err(|_| Verdict::Reject)?
