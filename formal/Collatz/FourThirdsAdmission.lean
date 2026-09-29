@@ -127,13 +127,24 @@ theorem two_pow_odds_mul_bias_add_depth_le
                 change 6 * (C * D) = (C * 2) * (D * 3)
                 calc
                   6 * (C * D) = (2 * 3) * (C * D) := by rfl
-                  _ = 2 * (3 * (C * D)) := by rw [Nat.mul_assoc]
-                  _ = 2 * ((3 * C) * D) := by rw [← Nat.mul_assoc]
-                  _ = 2 * ((C * 3) * D) := by rw [Nat.mul_comm 3 C]
-                  _ = 2 * (C * (3 * D)) := by rw [Nat.mul_assoc]
-                  _ = (2 * C) * (3 * D) := by rw [Nat.mul_assoc]
-                  _ = (C * 2) * (3 * D) := by rw [Nat.mul_comm 2 C]
-                  _ = (C * 2) * (D * 3) := by rw [Nat.mul_comm 3 D]
+                  _ = 2 * (3 * (C * D)) := by
+                    exact Nat.mul_assoc 2 3 (C * D)
+                  _ = 2 * ((3 * C) * D) := by
+                    congr 1
+                    exact (Nat.mul_assoc 3 C D).symm
+                  _ = 2 * ((C * 3) * D) := by
+                    congr 1
+                    rw [Nat.mul_comm 3 C]
+                  _ = 2 * (C * (3 * D)) := by
+                    congr 1
+                    exact Nat.mul_assoc C 3 D
+                  _ = (2 * C) * (3 * D) := by
+                    exact (Nat.mul_assoc 2 C (3 * D)).symm
+                  _ = (C * 2) * (3 * D) := by
+                    rw [Nat.mul_comm 2 C]
+                  _ = (C * 2) * (D * 3) := by
+                    congr 1
+                    rw [Nat.mul_comm 3 D]
 
 /-- The V17 synthetic local tuple (27,53,36,451) is excluded already by the
 universal lower bias envelope.  This is a regression theorem documenting that
