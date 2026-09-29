@@ -1,0 +1,47 @@
+name: Collatz Crystal Future Quotient V26
+
+on:
+  push:
+    branches: [collatz-crystal-future-quotient-v26]
+    paths:
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - 'experiments/collatz_crystal_future_quotient_v26.py'
+      - '.github/workflows/collatz-crystal-future-quotient-v26.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Build exact bounded protected-future quotient
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-future-quotient-v26
+          python -u experiments/collatz_crystal_future_quotient_v26.py \
+            | tee evidence/collatz-crystal-future-quotient-v26/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-future-quotient-v26/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_FUTURE_QUOTIENT_V26'
+          assert d['max_depth']==11
+          assert d['max_horizon']==6
+          assert d['global_collatz']=='UNKNOWN'
+          print('V26_NODES',d['nodes'])
+          print('V26_LIVE',d['live_by_depth'])
+          print('V26_HORIZONS',d['horizons'])
+          print('V26_FIRST_RIGHT_CONGRUENT',d['first_bounded_right_congruent_horizon'])
+          print('V26_CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-future-quotient-v26
+          path: evidence/collatz-crystal-future-quotient-v26
+          if-no-files-found: error
