@@ -59,6 +59,13 @@ pub struct RecursorReduction {
 pub enum ProjectionFieldType {
     Parameter(usize),
     Derived(ExprId),
+    /// A later field whose type is certified not to mention any preceding
+    /// constructor field. The prior_fields count preserves its original
+    /// de Bruijn frame while typing without granting authority for those values.
+    IndependentDerived {
+        expression: ExprId,
+        prior_fields: usize,
+    },
     /// The field is known to exist in the certified constructor telescope,
     /// but its dependent type has not yet earned projection-typing authority.
     Unqualified,
