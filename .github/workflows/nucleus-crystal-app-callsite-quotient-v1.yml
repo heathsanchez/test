@@ -1,0 +1,275 @@
+name: Nucleus Crystal App Callsite Quotient v1
+
+on:
+  push:
+    branches: [nucleus-crystal-app-callsite-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-app-callsite-quotient-v1.yml"
+      - "metatron-kernel/src/typecheck.rs"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-app-callsite-quotient-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+  ORACLE_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build diagnostic candidate and exact authority
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Build pinned complete oracle
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/oracle
+          git -C /tmp/oracle checkout -q "$ORACLE_SHA"
+          cat >/tmp/oracle/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/oracle/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Prove diagnostic semantic identity on all 193 cases
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import pathlib, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          rows=[]
+          for d in ('good','bad'):
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  def run(binary):
+                      with p.open('rb') as f:
+                          return subprocess.run(
+                              [str(binary)], stdin=f,
+                              stdout=subprocess.DEVNULL,
+                              stderr=subprocess.DEVNULL,
+                              timeout=120
+                          ).returncode
+                  a=run(base); b=run(cand)
+                  rows.append((str(p.relative_to(root)),a,b))
+
+          assert len(rows)==193
+          changed=[r for r in rows if r[1]!=r[2]]
+          assert not changed, changed
+          print({"cases":len(rows),"semantic_changes":len(changed)})
+          PY
+
+      - name: Trace and quotient the 11 application-function-type cases
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-app-callsite-quotient-v1
+          python3 - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          oracle=pathlib.Path('/tmp/oracle/target/release/sokonanoda')
+          config=pathlib.Path('/tmp/oracle/config.json')
+
+          targets=[
+              'init-prelude',
+              'perf/app-lam',
+              'perf/magma-list-deep-n21',
+              'perf/magma-list-deep-n36',
+              'perf/magma-list-pair-n21',
+              'perf/magma-list-pair-n7',
+              'tutorial/082_RBTree.id_spec',
+              'tutorial/112_structEta',
+              'tutorial/124_accRecReduction',
+              'tutorial/101_ruleKAcc',
+              'tutorial/125_accRecNoEta',
+          ]
+
+          def locate(name):
+              hits=[]
+              for d,expected in [('good',0),('bad',1)]:
+                  p=root/d/(name+'.ndjson')
+                  if p.exists():
+                      hits.append((p,expected,d))
+              assert len(hits)==1,(name,hits)
+              return hits[0]
+
+          def names_in(path):
+              rows=[json.loads(line) for line in path.read_text().splitlines()]
+              raw={}
+              for row in rows:
+                  if 'in' not in row:
+                      continue
+                  if 'str' in row:
+                      raw[row['in']]=('str',row['str']['pre'],row['str']['str'])
+                  elif 'num' in row:
+                      raw[row['in']]=('num',row['num']['pre'],str(row['num']['i']))
+              memo={0:''}
+              def full(i):
+                  if i in memo: return memo[i]
+                  if i not in raw: return f'<name:{i}>'
+                  _,pre,suffix=raw[i]
+                  prefix=full(pre)
+                  memo[i]=suffix if not prefix else prefix+'.'+suffix
+                  return memo[i]
+              return {i:full(i) for i in raw}
+
+          def signature(line):
+              fields={}
+              for part in line.split(':')[1:]:
+                  if '=' in part:
+                      k,v=part.split('=',1)
+                      fields[k]=v
+              keys=('fun_kind','inferred','reducible','full')
+              return '|'.join(f'{k}={fields.get(k,"?")}' for k in keys)
+
+          rows=[]
+          clusters=collections.defaultdict(list)
+
+          for name in targets:
+              p,expected,bucket=locate(name)
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APP_PI']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(cand)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, timeout=120, env=env
+                  )
+              with p.open('rb') as f:
+                  oq=subprocess.run(
+                      [str(oracle),str(config)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.DEVNULL, timeout=120
+                  )
+
+              assert q.returncode in (2,3),(name,q.returncode,q.stderr.decode(errors='replace')[-2000:])
+              if expected==0:
+                  assert oq.returncode==0,(name,'oracle expected ACCEPT',oq.returncode)
+              else:
+                  assert oq.returncode!=0,(name,'oracle expected REJECT',oq.returncode)
+
+              err=q.stderr.decode(errors='replace')
+              fails=[x for x in err.splitlines() if x.startswith('NUCLEUS_APP_PI_FAIL:')]
+              details=[x for x in err.splitlines() if x.startswith('NUCLEUS_APP_PI_DETAIL:')]
+              assert fails,(name,'no app-pi fail trace')
+              terminal=fails[-1]
+              sig=signature(terminal)
+              name_map=names_in(p)
+              detail=details[-1] if details else ''
+              ids=sorted({int(x) for x in re.findall(r'NameId\((\d+)\)',detail)})
+              resolved=[name_map.get(i,f'<name:{i}>') for i in ids]
+
+              row={
+                  'test':name,
+                  'bucket':bucket,
+                  'expected':'accept' if expected==0 else 'reject',
+                  'candidate_rc':q.returncode,
+                  'oracle_raw_rc':oq.returncode,
+                  'file_bytes':p.stat().st_size,
+                  'event_count':len(fails),
+                  'terminal_signature':sig,
+                  'terminal_event':terminal,
+                  'terminal_detail':detail,
+                  'resolved_names':resolved,
+                  'all_events':fails,
+                  'all_details':details,
+              }
+              rows.append(row)
+              clusters[sig].append(row)
+
+          cluster_rows=[]
+          for sig,members in sorted(clusters.items(),key=lambda kv:(-len(kv[1]),kv[0])):
+              accepts=sorted((m for m in members if m['expected']=='accept'),key=lambda m:m['file_bytes'])
+              rejects=sorted((m for m in members if m['expected']=='reject'),key=lambda m:m['file_bytes'])
+              separator=None
+              if accepts and rejects:
+                  separator={
+                      'accept':accepts[0]['test'],
+                      'reject':rejects[0]['test'],
+                      'criterion':'same abstract failed-Pi witness, opposite protected verdict; smallest files'
+                  }
+              cluster_rows.append({
+                  'signature':sig,
+                  'count':len(members),
+                  'accept_count':len(accepts),
+                  'reject_count':len(rejects),
+                  'tests':[m['test'] for m in members],
+                  'resolved_name_union':sorted({n for m in members for n in m['resolved_names']}),
+                  'separator_pair':separator,
+              })
+
+          # ARC-style next probe: prefer the largest same-signature mixed-verdict
+          # cluster because one perturbation there can falsify the most candidate laws.
+          mixed=[c for c in cluster_rows if c['accept_count'] and c['reject_count']]
+          next_probe=mixed[0]['separator_pair'] if mixed else {
+              'representative':min(rows,key=lambda r:r['file_bytes'])['test'],
+              'criterion':'no mixed-verdict abstract cluster; use smallest terminal witness'
+          }
+
+          out={
+              'schema':'nucleus-crystal-app-callsite-quotient-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'oracle_sha':os.environ['ORACLE_SHA'],
+              'target_count':len(rows),
+              'cluster_count':len(cluster_rows),
+              'clusters':cluster_rows,
+              'next_probe':next_probe,
+              'rows':rows,
+          }
+          pathlib.Path(
+              'metatron-kernel/evidence-out/crystal-app-callsite-quotient-v1/result.json'
+          ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+
+          print(json.dumps({
+              'target_count':out['target_count'],
+              'cluster_count':out['cluster_count'],
+              'clusters':cluster_rows,
+              'next_probe':next_probe,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-app-callsite-quotient-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-app-callsite-quotient-v1
+          if-no-files-found: error
