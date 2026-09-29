@@ -612,8 +612,7 @@ fn compare_values(
                     if obstruction.0 == "distinct-neutral-heads"
             ) {
                 let machine = checker.machine();
-                if let Some(closed) =
-                    machine.close_certified_recursor_consequence(left, budget)
+                if let Some(closed) = machine.close_certified_recursor_consequence(left, budget)
                     && closed != Value::Neutral(left.clone())
                 {
                     return compare_values(
@@ -626,8 +625,7 @@ fn compare_values(
                         proof_function_frees,
                     );
                 }
-                if let Some(closed) =
-                    machine.close_certified_recursor_consequence(right, budget)
+                if let Some(closed) = machine.close_certified_recursor_consequence(right, budget)
                     && closed != Value::Neutral(right.clone())
                 {
                     return compare_values(
