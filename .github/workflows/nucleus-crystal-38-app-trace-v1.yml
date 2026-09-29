@@ -1,0 +1,76 @@
+name: Nucleus Crystal 38 App Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-38-app-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-38-app-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip >/tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace 11 application residuals
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-38-app-trace-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          targets={
+            "init-prelude","perf/app-lam","perf/magma-list-deep-n21","perf/magma-list-deep-n36",
+            "perf/magma-list-pair-n21","perf/magma-list-pair-n7","tutorial/082_RBTree.id_spec",
+            "tutorial/112_structEta","tutorial/124_accRecReduction","tutorial/101_ruleKAcc",
+            "tutorial/125_accRecNoEta"
+          }
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,expected in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              name=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              if name not in targets: continue
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APPLICATION_INFER']='1'
+              env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              with p.open('rb') as f:
+                q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+              err=q.stderr.decode(errors='replace').splitlines()
+              marks=[x for x in err if 'NUCLEUS_APP_INFER:' in x or 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x or 'NUCLEUS_DOWNSTREAM:' in x]
+              first_unknown=next((x for x in marks if 'NUCLEUS_APP_INFER:unknown:' in x or 'NUCLEUS_APP_INFER:refuted:' in x),None)
+              mismatches=[x for x in marks if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              rows.append({'test':name,'expected':expected,'rc':q.returncode,'first_unknown':first_unknown,'mismatches':mismatches[-8:],'tail':marks[-16:]})
+          assert len(rows)==11, len(rows)
+          out={'schema':'nucleus-crystal-38-app-trace-v1','rows':rows}
+          p=pathlib.Path('metatron-kernel/evidence-out/crystal-38-app-trace-v1/result.json')
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-38-app-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-38-app-trace-v1
+          if-no-files-found: error
