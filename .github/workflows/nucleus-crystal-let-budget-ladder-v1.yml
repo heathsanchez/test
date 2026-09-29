@@ -1,0 +1,115 @@
+name: Nucleus Crystal Let Budget Ladder v1
+
+on:
+  push:
+    branches: [nucleus-crystal-let-budget-ladder-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-let-budget-ladder-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-let-budget-ladder-v1
+  cancel-in-progress: true
+
+env:
+  ARENA_ARTIFACT: 10712869614
+
+jobs:
+  ladder:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test -f /tmp/tests/good/perf/let-ladder.ndjson
+
+      - name: Build and run exact judgment-budget ladder
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-let-budget-ladder-v1
+
+          python3 - <<'PY'
+          import json, pathlib, shutil, subprocess, time
+
+          repo = pathlib.Path.cwd()
+          source = repo / 'metatron-kernel'
+          target = pathlib.Path('/tmp/tests/good/perf/let-ladder.ndjson')
+          budgets = [16384, 32768, 65536, 131072]
+          rows = []
+
+          for budget in budgets:
+              work = pathlib.Path(f'/tmp/nucleus-budget-{budget}')
+              if work.exists():
+                  shutil.rmtree(work)
+              shutil.copytree(source, work)
+
+              checker = work / 'src/checker.rs'
+              text = checker.read_text()
+              old = 'judgment_steps: 16_384,'
+              new = f'judgment_steps: {budget:,},'.replace(',', '_')
+              assert old in text, (budget, 'default budget marker missing')
+              checker.write_text(text.replace(old, new, 1))
+
+              t0 = time.perf_counter()
+              subprocess.run(
+                  ['cargo','build','--release','--locked','--manifest-path',str(work/'Cargo.toml')],
+                  check=True,
+              )
+              build_s = time.perf_counter() - t0
+
+              binary = work / 'target/release/metatron-kernel'
+              env = dict(__import__('os').environ)
+              env['NUCLEUS_TRACE_DOWNSTREAM'] = '1'
+              env['NUCLEUS_TRACE_LEVEL_RESOLVE'] = '1'
+
+              with target.open('rb') as f:
+                  t1 = time.perf_counter()
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, timeout=180, env=env
+                  )
+                  run_s = time.perf_counter() - t1
+              marks = [x for x in q.stderr.decode(errors='replace').splitlines()
+                       if 'NUCLEUS_' in x][-80:]
+              row = {
+                  'budget': budget,
+                  'rc': q.returncode,
+                  'build_s': build_s,
+                  'run_s': run_s,
+                  'marks': marks,
+              }
+              rows.append(row)
+              print(json.dumps(row, sort_keys=True))
+
+          out = {
+              'schema':'nucleus-crystal-let-budget-ladder-v1',
+              'authority_sha': __import__('os').environ['GITHUB_SHA'],
+              'test':'perf/let-ladder',
+              'expected':0,
+              'rows':rows,
+          }
+          pathlib.Path(
+              'metatron-kernel/evidence-out/crystal-let-budget-ladder-v1/result.json'
+          ).write_text(json.dumps(out, indent=2, sort_keys=True) + '\n')
+          assert rows[0]['rc'] in (2,3), rows
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-let-budget-ladder-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-let-budget-ladder-v1
+          if-no-files-found: error
