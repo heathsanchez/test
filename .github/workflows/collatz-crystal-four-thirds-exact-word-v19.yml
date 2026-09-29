@@ -43,6 +43,8 @@ jobs:
           assert d['declared_boundary']['source_census'] is False
           assert d['declared_boundary']['post_boundary_trajectory_search'] is False
           assert d['declared_boundary']['near_resonant_types']==315
+          assert d['raw_candidate_endpoints']==114495
+          assert d['bias_envelope_rejections']==2
           assert d['candidate_endpoints']==114493
           assert d['exact_bias_words']==0
           assert d['failure_counts']=={
