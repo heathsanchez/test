@@ -1,0 +1,46 @@
+name: Collatz Crystal Paradoxical Return Audit V45
+
+on:
+  push:
+    branches: [collatz-crystal-paradoxical-return-audit-v45]
+    paths:
+      - 'experiments/collatz_crystal_paradoxical_return_audit_v45.py'
+      - '.github/workflows/collatz-crystal-paradoxical-return-audit-v45.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Audit paradoxical return obstruction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-paradoxical-return-audit-v45
+          PYTHONPATH=experiments python experiments/collatz_crystal_paradoxical_return_audit_v45.py \
+            | tee evidence/collatz-crystal-paradoxical-return-audit-v45/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-paradoxical-return-audit-v45/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_PARADOXICAL_RETURN_AUDIT_V45'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V45_VERDICT',d['verdict'])
+          print('V45_STATS',d['stats'])
+          print('V45_FIRST',d['first_by_class'])
+          print('V45_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-paradoxical-return-audit-v45/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-paradoxical-return-audit-v45
+          path: evidence/collatz-crystal-paradoxical-return-audit-v45
+          if-no-files-found: error
