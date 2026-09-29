@@ -1,0 +1,115 @@
+{
+  "schema": "acc-ac05698-atlas-admission-gate-v1",
+  "epistemic_state": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "claim_boundary": [
+    "No publication candidate was produced.",
+    "Negative claim is limited to exact Proof-Atlas contact within ordinary-AC radius 4 from every cyclic-rotation/inversion/relator-order representative consistent with the qualified ACSolverX canonical key.",
+    "The search intentionally treats the unknown official orientation conservatively by enumerating the entire canonical preimage at depth 0; it does not treat those symmetries as free after depth 0.",
+    "No claim is made about global AC distance or about paths beyond radius 4."
+  ],
+  "fresh_authority": {
+    "run_id": 36542901192,
+    "run_attempt": 2,
+    "utc": "2026-09-29T12:40:27.859863+00:00",
+    "artifact_id": 11033127051,
+    "artifact_digest": "sha256:170b21fcfae96804f10bf31038cb6201495a0e3166e7ee8d28c13b83c6b777bd",
+    "live_state_sha256": "16f3e2c2e43ddb7169b821d9c9e7b6dbbc9c00d9d8fcff7e5a7b01b819e5d04b",
+    "quota": {
+      "used": 0,
+      "remaining": 40,
+      "limit": 40
+    },
+    "standing": {
+      "unique": 0,
+      "tied": 6,
+      "lost": 106
+    },
+    "unsolved": {
+      "ac": 2672,
+      "stable_ac": 2672
+    }
+  },
+  "fresh_delta_from_2026_09_29T08_28_12Z": {
+    "actual_length_changes": [
+      {
+        "challenge_id": "ac-05698",
+        "old_best": 112,
+        "old_kTeams": 2,
+        "new_best": 111,
+        "new_kTeams": 1
+      },
+      {
+        "challenge_id": "sac-05698",
+        "old_best": 114,
+        "old_kTeams": 2,
+        "new_best": 113,
+        "new_kTeams": 1
+      }
+    ],
+    "other_row_changes": "team-count churn only; no other best-length change and no new solve"
+  },
+  "source_map": {
+    "run_id": 34727788755,
+    "artifact_id": 10847946381,
+    "artifact_digest": "sha256:a9409fa545084f6bdaf9d379874c5622974fbf6a5238d3e140546c2e15be5068",
+    "acsolverx_pin": "6a12515fe1d95178a483b76d5553266e61122417",
+    "challenge_id": "ac-05698",
+    "ac19_index": null,
+    "ac1m_index": null,
+    "total_len": 30,
+    "canonical": [
+      "YYXXyyx",
+      "YYYYYYYYYYYXyyyyyyyyyyx"
+    ],
+    "canonicalization": "each relator is minimized over cyclic rotations and inverse rotations; then relators are ordered by length and lexicographic order"
+  },
+  "proof_atlas": {
+    "authority_run_id": 36070189102,
+    "input_artifact_id": 10838365781,
+    "official_pin": "99a65377c5c4f412cd9af7b8d31c41464a855736",
+    "states": 433272,
+    "sqlite_sha256": "0cd6ef6ba53da0a0dcc8e63b30e658bff5d109bdfd06f79753958c757da03879"
+  },
+  "admission_search": {
+    "ordinary_move_count": 14,
+    "initial_canonical_preimage": {
+      "first_relator_orientations": 14,
+      "second_relator_orientations": 46,
+      "ordered_pair_orientations": 1288,
+      "atlas_hits_at_depth_0": 0
+    },
+    "depths": [
+      {
+        "depth": 1,
+        "new_states": 10304,
+        "cumulative_states": 11592,
+        "exact_atlas_hits": 0
+      },
+      {
+        "depth": 2,
+        "new_states": 94704,
+        "cumulative_states": 106296,
+        "exact_atlas_hits": 0
+      },
+      {
+        "depth": 3,
+        "new_states": 845528,
+        "cumulative_states": 951824,
+        "exact_atlas_hits": 0
+      },
+      {
+        "depth": 4,
+        "new_states": 7578408,
+        "cumulative_states": 8530232,
+        "exact_atlas_hits": 0
+      }
+    ],
+    "result": "NO_EXACT_PROOF_ATLAS_CONTACT_THROUGH_RADIUS_4_FOR_ANY_CANONICAL_PREIMAGE"
+  },
+  "decision": {
+    "ac05698": "retire unchanged public-source and shallow exact-Atlas lanes for this cycle; do not widen solely because the row shortened",
+    "stable05698": "no independent Stable-native signal: live Stable record remains exactly AC+2",
+    "next_frontier": "return compute to already-earned AK(3) depth-3 fail-first residual unless a newer live record/unsolved event creates a cheaper admission target",
+    "submission": "none"
+  }
+}
