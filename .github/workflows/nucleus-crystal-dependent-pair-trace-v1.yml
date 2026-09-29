@@ -39,7 +39,7 @@ jobs:
           rc=$?
           set -e
           echo "psigma_rc=$rc"
-          grep -E 'NUCLEUS_GENERIC_|NUCLEUS_DOWNSTREAM:|NUCLEUS_RESIDUAL:' /tmp/err || true
+          grep -E 'NUCLEUS_GENERIC_|NUCLEUS_DOWNSTREAM:|NUCLEUS_RESIDUAL:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:' /tmp/err || true
           mkdir -p metatron-kernel/evidence-out/crystal-dependent-pair-trace-v1
           cp /tmp/err metatron-kernel/evidence-out/crystal-dependent-pair-trace-v1/stderr.txt
           printf '{"schema":"nucleus-crystal-dependent-pair-trace-v1","rc":%s}\n' "$rc" > metatron-kernel/evidence-out/crystal-dependent-pair-trace-v1/result.json
