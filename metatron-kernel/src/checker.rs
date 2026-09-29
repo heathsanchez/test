@@ -1076,7 +1076,39 @@ fn check_generic_nonrecursive_type(
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
     d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    install_certified_recursor_reduction(d.finish(), &block.constructors, recursor)
+
+    let mut environment = d.finish();
+    if let [constructor] = block.constructors.as_slice() {
+        let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+            return Err(Verdict::Reject);
+        };
+        let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+            return Err(Verdict::Reject);
+        };
+        if field_count > 0 {
+            let Some((constructor_domains, _)) =
+                pi_spine(export, constructor.ty, parameter_count + field_count)
+            else {
+                return Err(Verdict::Reject);
+            };
+            let mut field_types = vec![ProjectionFieldType::Derived(
+                constructor_domains[parameter_count],
+            )];
+            field_types.resize(field_count, ProjectionFieldType::Unqualified);
+            environment = environment
+                .install_projection_spec(
+                    inductive.name,
+                    ProjectionSpec {
+                        constructor: constructor.name,
+                        num_params: parameter_count,
+                        field_types,
+                    },
+                )
+                .map_err(|_| Verdict::Reject)?;
+        }
+    }
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn check_single_constructor_inductive(
