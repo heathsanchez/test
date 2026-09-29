@@ -1,0 +1,48 @@
+name: Collatz Crystal Lift Stable Cover V23
+
+on:
+  push:
+    branches: [collatz-crystal-lift-stable-cover-v23]
+    paths:
+      - 'experiments/collatz_crystal_lift_stable_cover_v23.cpp'
+      - 'experiments/collatz_crystal_lift_stable_cover_v23.py'
+      - '.github/workflows/collatz-crystal-lift-stable-cover-v23.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract frozen V22 constructor ledger
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-lift-stable-cover-v23
+          g++ -O3 -std=c++17 experiments/collatz_crystal_lift_stable_cover_v23.cpp -o /tmp/v23extract
+          /tmp/v23extract evidence/collatz-crystal-lift-stable-cover-v23/certs.tsv             | tee evidence/collatz-crystal-lift-stable-cover-v23/extract.log
+      - name: Compile exact lift-stable cylinder cover
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_crystal_lift_stable_cover_v23.py             evidence/collatz-crystal-lift-stable-cover-v23/certs.tsv             evidence/collatz-crystal-lift-stable-cover-v23/result.json             | tee evidence/collatz-crystal-lift-stable-cover-v23/run.log
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-lift-stable-cover-v23/result.json'
+          d=json.load(open(p))
+          assert d['larger_source_census'] is False
+          assert d['unique_stable_cylinders']>0
+          assert d['global_collatz']=='UNKNOWN'
+          print('V23_CYLINDERS',d['unique_stable_cylinders'])
+          print('V23_KINDS',d['stable_cylinders_by_kind'])
+          print('V23_EXPONENT_PAIRS',d['distinct_exponent_pairs'])
+          print('V23_MAX_EXP',d['max_binary_exponent'],d['max_ternary_exponent'])
+          print('V23_COMPLETE',d['universal_source_class_cover'])
+          print('V23_UNCOVERED',d['first_uncovered_symbolic_cell'])
+          print('V23_SEARCH',d['cover_search_stats'],d['cover_search_max_depth'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-lift-stable-cover-v23
+          path: evidence/collatz-crystal-lift-stable-cover-v23
