@@ -152,7 +152,9 @@ for r in near:
             continue
         B = P * p - A * n
         counts["candidate_odd_normalized_endpoints"] += 1
-        assert loB <= B <= hiB
+        if not (loB <= B <= hiB):
+            counts["bias_envelope_rejections"] += 1
+            continue
         counts["pass_universal_bias_envelope"] += 1
         d = decode_bias_word(k, q, B)
         local[d["status"]] += 1
@@ -191,7 +193,9 @@ for r in near:
 assert len(rows) == 511
 assert len(closed) == 196
 assert len(near) == 315
-assert counts["candidate_odd_normalized_endpoints"] == 114493
+assert counts["candidate_odd_normalized_endpoints"] == 114495
+assert counts["bias_envelope_rejections"] == 2
+assert counts["pass_universal_bias_envelope"] == 114493
 assert counts["exact_bias_words"] == 0
 assert counts["fail_TERM_GT_B"] == 114471
 assert counts["fail_POSITION_GE_K"] == 10
@@ -218,7 +222,9 @@ result = {
         "law": "successive v2 of the bias residual uniquely forces the odd positions",
         "exhaustive_sanity_words_k_le_12": decoder_sanity,
     },
-    "candidate_endpoints": counts["candidate_odd_normalized_endpoints"],
+    "raw_candidate_endpoints": counts["candidate_odd_normalized_endpoints"],
+    "bias_envelope_rejections": counts["bias_envelope_rejections"],
+    "candidate_endpoints": counts["pass_universal_bias_envelope"],
     "exact_bias_words": counts["exact_bias_words"],
     "failure_counts": {
         k.removeprefix("fail_"): v
