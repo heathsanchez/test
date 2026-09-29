@@ -352,10 +352,57 @@ impl<'a> TypeChecker<'a> {
                         if declaration.level_params.len() != levels.len() {
                             return Judgment::refuted("projection-level-arity");
                         }
+
+                        // Constructor field types are scoped over parameters
+                        // followed by all earlier fields.  Instantiate that
+                        // exact telescope.  Earlier fields of a neutral
+                        // structure stay neutral projections rather than
+                        // becoming UNKNOWN.
+                        let structure_value = self.machine().expose(
+                            self.closure(*structure, frame.clone()),
+                            Transparency::Reducible,
+                            *remaining,
+                        );
+                        let Some(Value::Neutral(structure_value)) = structure_value.proven_value()
+                        else {
+                            return Judgment::unknown("projection-dependent-structure-value");
+                        };
+
                         let mut field_frame = EnvFrame::empty();
                         for parameter in neutral.spine.iter().take(spec.num_params) {
                             field_frame = field_frame.extend(parameter.clone());
                         }
+                        for prior_index in 0..index {
+                            match &structure_value.head {
+                                NeutralHead::Const { name, .. } if *name == spec.constructor => {
+                                    let field_offset = spec.num_params + prior_index;
+                                    let Some(prior_field) =
+                                        structure_value.spine.get(field_offset).cloned()
+                                    else {
+                                        return Judgment::unknown(
+                                            "projection-dependent-constructor-arity",
+                                        );
+                                    };
+                                    field_frame = field_frame.extend(prior_field);
+                                }
+                                NeutralHead::Const { .. } => {
+                                    return Judgment::unknown(
+                                        "projection-dependent-constructor-mismatch",
+                                    );
+                                }
+                                NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                                    field_frame = field_frame.extend_neutral(Neutral {
+                                        head: NeutralHead::Projection {
+                                            type_name: *type_name,
+                                            index: prior_index,
+                                            structure: Box::new(structure_value.clone()),
+                                        },
+                                        spine: Vec::new(),
+                                    });
+                                }
+                            }
+                        }
+
                         let level_substitution = LevelSubstitution::new(
                             declaration
                                 .level_params
