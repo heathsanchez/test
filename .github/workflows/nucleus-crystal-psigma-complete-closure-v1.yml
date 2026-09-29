@@ -6,6 +6,11 @@ on:
     paths:
       - ".github/workflows/nucleus-crystal-psigma-complete-closure-v1.yml"
       - "metatron-kernel/**"
+  pull_request:
+    branches: [nucleus-crystal-compose-irrel-refute-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-psigma-complete-closure-v1.yml"
+      - "metatron-kernel/**"
   workflow_dispatch:
 
 permissions:
