@@ -5,7 +5,7 @@ use crate::judgment::Judgment;
 use crate::level::level_equal;
 use crate::machine::Transparency;
 use crate::syntax::Expr;
-use crate::typecheck::{TypeChecker, TypeValue};
+use crate::typecheck::{RuleKAttempt, TypeChecker, TypeValue};
 use crate::value::{Closure, EnvBinding, FreeId, Neutral, NeutralHead, Value};
 
 type ConversionVisitKey = (crate::machine::AuthorityId, TypeValue, TypeValue);
@@ -269,6 +269,7 @@ pub(crate) fn convert_with_policy_in_context(
                     cheap_right,
                     remaining,
                     depth,
+                    context,
                     &mut work,
                     &mut proof_function_frees,
                 ) {
@@ -289,7 +290,8 @@ pub(crate) fn convert_with_policy_in_context(
                             full_right,
                             remaining,
                             depth,
-                            &mut work,
+                            context,
+                    &mut work,
                             &mut proof_function_frees,
                         ) {
                             Judgment::Proven { .. } => {}
@@ -529,6 +531,7 @@ fn compare_values(
     right: &Value,
     budget: usize,
     depth: usize,
+    context: &[TypeValue],
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
@@ -545,6 +548,7 @@ fn compare_values(
                 neutral,
                 budget,
                 depth,
+                context,
                 work,
                 proof_function_frees,
             );
@@ -556,6 +560,7 @@ fn compare_values(
                 neutral,
                 budget,
                 depth,
+                context,
                 work,
                 proof_function_frees,
             );
@@ -611,6 +616,58 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
+            match checker.rule_k_reduce_neutral(left, context, budget) {
+                RuleKAttempt::Reduced(closure) => {
+                    let exposed =
+                        checker
+                            .machine()
+                            .expose(closure, Transparency::Reducible, budget.saturating_sub(1));
+                    let Some(reduced) = exposed.proven_value() else {
+                        return Judgment::unknown("rule-k-reduction-exposure");
+                    };
+                    let other = Value::Neutral(right.clone());
+                    return compare_values(
+                        checker,
+                        reduced,
+                        &other,
+                        budget.saturating_sub(1),
+                        depth,
+                        context,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                RuleKAttempt::DefiniteMismatch => {
+                    return Judgment::refuted("rule-k-target-mismatch");
+                }
+                RuleKAttempt::NotApplicable => {}
+            }
+            match checker.rule_k_reduce_neutral(right, context, budget) {
+                RuleKAttempt::Reduced(closure) => {
+                    let exposed =
+                        checker
+                            .machine()
+                            .expose(closure, Transparency::Reducible, budget.saturating_sub(1));
+                    let Some(reduced) = exposed.proven_value() else {
+                        return Judgment::unknown("rule-k-reduction-exposure");
+                    };
+                    let other = Value::Neutral(left.clone());
+                    return compare_values(
+                        checker,
+                        &other,
+                        reduced,
+                        budget.saturating_sub(1),
+                        depth,
+                        context,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                RuleKAttempt::DefiniteMismatch => {
+                    return Judgment::refuted("rule-k-target-mismatch");
+                }
+                RuleKAttempt::NotApplicable => {}
+            }
             match compare_neutral_heads(checker, left, right, budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
@@ -637,6 +694,7 @@ fn compare_nat_literal_neutral(
     neutral: &Neutral,
     budget: usize,
     depth: usize,
+    context: &[TypeValue],
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
 ) -> Judgment<()> {
@@ -676,6 +734,7 @@ fn compare_nat_literal_neutral(
             argument,
             budget.saturating_sub(1),
             depth,
+            context,
             work,
             proof_function_frees,
         );
