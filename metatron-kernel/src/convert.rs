@@ -255,6 +255,12 @@ pub(crate) fn convert_with_policy_in_context(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE:left={:?}:right={:?}:cheap_left={:?}:cheap_right={:?}:depth={}:remaining={}",
+                            left, right, cheap_left, cheap_right, depth, remaining
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 match compare_values(
