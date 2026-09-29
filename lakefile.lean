@@ -16,6 +16,8 @@ lean_lib CollatzFinal where
     `Collatz.SourceProductZeroTail,
     `Collatz.BiadicRankedNormalization,
     `Collatz.BiadicDiagnosticCertificate,
+    `Collatz.TwelveOddBlockContraction,
+    `Collatz.BTransientMacro,
     `Collatz.SourceProductAffine,
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
