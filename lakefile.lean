@@ -18,6 +18,7 @@ lean_lib CollatzFinal where
     `Collatz.BiadicDiagnosticCertificate,
     `Collatz.TwelveOddBlockContraction,
     `Collatz.BTransientMacro,
+    `Collatz.ReturnFixedPointDescent,
     `Collatz.SourceProductAffine,
     `Collatz.CoefficientCrossing,
     `Collatz.CoefficientDynamics,
