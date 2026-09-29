@@ -255,6 +255,12 @@ pub(crate) fn convert_with_policy_in_context(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE:left={:?}:right={:?}:cheap_left={:?}:cheap_right={:?}:depth={}:remaining={}",
+                            left, right, cheap_left, cheap_right, depth, remaining
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 match compare_values(
@@ -307,6 +313,12 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
                 let Some(exposed) = exposed.proven_value() else {
+                    if std::env::var_os("NUCLEUS_TRACE_CONVERSION_EXPOSURE").is_some() {
+                        eprintln!(
+                            "NUCLEUS_CONVERSION_EXPOSURE_MIXED:term={:?}:other={:?}:exposed={:?}:depth={}:remaining={}",
+                            term, other, exposed, depth, remaining
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
@@ -529,54 +541,76 @@ fn certified_structure_eta(
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     context: &[TypeValue],
 ) -> bool {
+    let trace = std::env::var_os("NUCLEUS_TRACE_STRUCTURE_ETA").is_some();
+    macro_rules! fail {
+        ($reason:expr) => {{
+            if trace {
+                eprintln!(
+                    "NUCLEUS_STRUCTURE_ETA:FAIL:{}:target={:?}:constructed={:?}:context_len={}",
+                    $reason, target, constructed, context.len()
+                );
+            }
+            return false;
+        }};
+    }
+
     if !target.spine.is_empty() {
-        return false;
+        fail!("target-spine");
     }
     let NeutralHead::Free(free) = &target.head else {
-        return false;
+        fail!("target-not-free");
     };
     let NeutralHead::Const {
         name: constructor, ..
     } = &constructed.head
     else {
-        return false;
+        fail!("constructed-not-const");
     };
     let Some((type_name, num_params, num_fields)) =
         checker.eta_projection_spec_for_constructor(*constructor)
     else {
-        return false;
+        fail!("no-eta-spec");
     };
     if constructed.spine.len() != num_params + num_fields {
-        return false;
+        fail!("constructed-arity");
     }
 
     let Ok(free_index) = usize::try_from(free.0) else {
-        return false;
+        fail!("free-index-overflow");
     };
     let Some(TypeValue::Term(target_type)) = context.get(free_index) else {
-        return false;
+        fail!("free-type-not-in-context");
     };
     let target_type =
         checker
             .machine()
             .expose(target_type.clone(), Transparency::Reducible, budget);
     let Some(Value::Neutral(target_type)) = target_type.proven_value() else {
-        return false;
+        fail!("target-type-not-neutral");
     };
     let NeutralHead::Const {
         name: actual_type, ..
     } = &target_type.head
     else {
-        return false;
+        fail!("target-type-head-not-const");
     };
-    if *actual_type != type_name || target_type.spine.len() != num_params {
-        return false;
+    if *actual_type != type_name {
+        fail!("target-type-name");
+    }
+    if target_type.spine.len() != num_params {
+        fail!("target-type-arity");
     }
 
     for (index, field) in constructed.spine[num_params..].iter().enumerate() {
         if !checker
             .certified_eta_projection_field(field, type_name, index, target, num_params, budget)
         {
+            if trace {
+                eprintln!(
+                    "NUCLEUS_STRUCTURE_ETA:FAIL:projection-field:{}:field={:?}:target={:?}",
+                    index, field, target
+                );
+            }
             return false;
         }
     }
@@ -591,6 +625,12 @@ fn certified_structure_eta(
             TypeValue::Term(rebuilt.clone()),
             depth,
         ));
+    }
+    if trace {
+        eprintln!(
+            "NUCLEUS_STRUCTURE_ETA:PASS:type={:?}:params={}:fields={}",
+            type_name, num_params, num_fields
+        );
     }
     true
 }
@@ -813,7 +853,15 @@ fn compare_neutral_heads(
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => Judgment::refuted("distinct-neutral-heads"),
+        _ => {
+            if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
+                eprintln!(
+                    "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
+                    left.head, left.spine, right.head, right.spine, budget
+                );
+            }
+            Judgment::refuted("distinct-neutral-heads")
+        }
     }
 }
 

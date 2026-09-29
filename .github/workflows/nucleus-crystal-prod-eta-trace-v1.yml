@@ -1,0 +1,61 @@
+name: Nucleus Crystal Prod Eta Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-prod-eta-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-prod-eta-trace-v1.yml"
+      - "metatron-kernel/**"
+  pull_request:
+    branches: [nucleus-crystal-prod-eta-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-prod-eta-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build diagnostic
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch exact corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace structEta
+        run: |
+          set -euo pipefail
+          target="$(find /tmp/tests/good -type f -path '*/tutorial/112_structEta.ndjson' | head -1)"
+          test -n "$target"
+          set +e
+          NUCLEUS_TRACE_STRUCTURE_ETA=1 NUCLEUS_TRACE_APPLICATION_INFER=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 NUCLEUS_TRACE_CONVERSION_EXPOSURE=1 metatron-kernel/target/release/metatron-kernel < "$target" > /tmp/out.txt 2> /tmp/err.txt
+          rc=$?
+          set -e
+          echo "rc=$rc"
+          grep -E 'NUCLEUS_STRUCTURE_ETA:PASS|NUCLEUS_APP_INFER:unknown|NUCLEUS_DOWNSTREAM:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:|NUCLEUS_CONVERSION_EXPOSURE:|NUCLEUS_CONVERSION_EXPOSURE_MIXED:' /tmp/err.txt || true
+          mkdir -p metatron-kernel/evidence-out/crystal-prod-eta-trace-v1
+          cp /tmp/err.txt metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/stderr.txt
+          printf '{"schema":"nucleus-crystal-prod-eta-trace-v1","rc":%s}\n' "$rc" > metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-prod-eta-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-prod-eta-trace-v1
+          if-no-files-found: error
