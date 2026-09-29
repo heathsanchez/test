@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -24,6 +25,8 @@ pub struct TypeChecker<'a> {
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    context_free_atomic_cache: RefCell<HashMap<ExprId, bool>>,
+    let_binding_validation_cache: RefCell<HashMap<(ExprId, ExprId), ()>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +41,8 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context_free_atomic_cache: RefCell::new(HashMap::new()),
+            let_binding_validation_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +58,8 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context_free_atomic_cache: RefCell::new(HashMap::new()),
+            let_binding_validation_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -163,6 +170,45 @@ impl<'a> TypeChecker<'a> {
         policy: crate::convert::DeltaPolicy,
     ) -> Judgment<()> {
         crate::convert::convert_with_policy(self, left, right, budget, policy)
+    }
+
+    fn is_context_free_atomic_application(&self, root: ExprId) -> bool {
+        if let Some(cached) = self.context_free_atomic_cache.borrow().get(&root) {
+            return *cached;
+        }
+
+        let mut stack = vec![root];
+        let mut seen = std::collections::HashSet::new();
+        let mut context_free = true;
+        while let Some(expression) = stack.pop() {
+            if !seen.insert(expression) {
+                continue;
+            }
+            let Some(node) = self.expressions.get(expression) else {
+                context_free = false;
+                break;
+            };
+            match node {
+                Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. } => {}
+                Expr::App { fun, arg } => {
+                    stack.push(*fun);
+                    stack.push(*arg);
+                }
+                Expr::BVar(_)
+                | Expr::Pi { .. }
+                | Expr::Lam { .. }
+                | Expr::Proj { .. }
+                | Expr::Let { .. } => {
+                    context_free = false;
+                    break;
+                }
+            }
+        }
+
+        self.context_free_atomic_cache
+            .borrow_mut()
+            .insert(root, context_free);
+        context_free
     }
 
     fn infer_in(
@@ -438,21 +484,37 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Let { ty, value, body } => {
-                let annotation_type = self.infer_in(*ty, context, frame, remaining);
-                match self.sort_level(annotation_type, *remaining) {
-                    Judgment::Proven { .. } => {}
-                    Judgment::Refuted { obstruction } => {
-                        return Judgment::Refuted { obstruction };
-                    }
-                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
-                }
+                let reusable_binding = self.is_context_free_atomic_application(*ty)
+                    && self.is_context_free_atomic_application(*value);
+                let binding_key = (*ty, *value);
+                let already_validated = reusable_binding
+                    && self
+                        .let_binding_validation_cache
+                        .borrow()
+                        .contains_key(&binding_key);
+
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(*value, &established, context, frame, remaining, true) {
-                    Judgment::Proven { .. } => {}
-                    Judgment::Refuted { obstruction } => {
-                        return Judgment::Refuted { obstruction };
+                if !already_validated {
+                    let annotation_type = self.infer_in(*ty, context, frame, remaining);
+                    match self.sort_level(annotation_type, *remaining) {
+                        Judgment::Proven { .. } => {}
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                     }
-                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    match self.check_in(*value, &established, context, frame, remaining, true) {
+                        Judgment::Proven { .. } => {}
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    }
+                    if reusable_binding {
+                        self.let_binding_validation_cache
+                            .borrow_mut()
+                            .insert(binding_key, ());
+                    }
                 }
                 let mut extended = context.to_vec();
                 extended.push(established);
