@@ -7473,6 +7473,123 @@ enum BinaryEnumSortLaw {
     Prop,
 }
 
+
+fn exact_binary_payload_sum_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [left, right], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || left.is_unsafe
+        || right.is_unsafe
+        || recursor.is_unsafe
+        || left.num_fields == 0
+        || right.num_fields == 0
+    {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    let Some(Expr::Sort(level)) = export.exprs.get(result) else {
+        return false;
+    };
+    if !exported_level_is_definitely_nonzero(export, *level, 128) {
+        return false;
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [left.name, right.name]
+        || has_duplicate_parameter(&inductive.level_params)
+    {
+        return false;
+    }
+
+    for (index, constructor) in [left, right].into_iter().enumerate() {
+        if constructor.index != index as u64
+            || constructor.inductive != inductive.name
+            || constructor.num_params != inductive.num_params
+            || constructor.level_params != inductive.level_params
+            || constructor_result_is_definitely_malformed(export, inductive, constructor)
+            || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+        {
+            return false;
+        }
+    }
+
+    recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len() + 1,
+    ) && generic_nonrecursive_recursor_shape(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+    )
+}
+
+fn check_exact_binary_payload_sum(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [left, right], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_binary_payload_sum_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote_all(
+        export,
+        [
+            derived_inductive,
+            derived_constructor(left),
+            derived_constructor(right),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+
+    install_certified_recursor_reduction(
+        derivation.finish(),
+        &block.constructors,
+        recursor,
+    )
+}
+
 fn check_binary_enum(
     export: &ResolvedExport,
     environment: &Environment,
@@ -7503,6 +7620,8 @@ fn check_binary_enum(
             return Err(Verdict::Unknown);
         }
         BinaryEnumSortLaw::Type
+    } else if exact_binary_payload_sum_candidate(export, block) {
+        return check_exact_binary_payload_sum(export, environment, block, limits, delta_policy);
     } else if generic_nonrecursive_type_candidate(export, block) {
         return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
     } else {
