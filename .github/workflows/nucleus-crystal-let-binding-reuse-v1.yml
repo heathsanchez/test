@@ -1,0 +1,107 @@
+name: Nucleus Crystal Let Binding Reuse v1
+
+on:
+  push:
+    branches: [nucleus-crystal-let-binding-reuse-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-let-binding-reuse-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-let-binding-reuse-v1
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: 10712869614
+
+jobs:
+  separator:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact base and candidate
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+
+      - name: Let-ladder / app-lam separator gate
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-let-binding-reuse-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess,time
+
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          root=pathlib.Path('/tmp/tests/good')
+          cases=['perf/let-ladder','perf/app-lam']
+          rows=[]
+
+          def rr(binary,p):
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              with p.open('rb') as f:
+                  t=time.perf_counter()
+                  q=subprocess.run(
+                      [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,timeout=120,env=env
+                  )
+                  return q.returncode,time.perf_counter()-t,[
+                      x for x in q.stderr.decode(errors='replace').splitlines()
+                      if 'NUCLEUS_' in x
+                  ][-40:]
+
+          for name in cases:
+              p=root/(name+'.ndjson')
+              a,at,am=rr(base,p); b,bt,bm=rr(cand,p)
+              row={'test':name,'base':a,'candidate':b,'base_s':at,'candidate_s':bt,
+                   'base_marks':am,'candidate_marks':bm}
+              rows.append(row)
+              print(json.dumps(row,sort_keys=True))
+
+          by={r['test']:r for r in rows}
+          assert by['perf/let-ladder']['base'] in (2,3),by
+          assert by['perf/let-ladder']['candidate']==0,by
+          assert by['perf/app-lam']['candidate'] in (0,2,3),by
+          assert by['perf/app-lam']['candidate'] != -6,by
+
+          out={
+              'schema':'nucleus-crystal-let-binding-reuse-v1',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'rows':rows,
+          }
+          pathlib.Path(
+              'metatron-kernel/evidence-out/crystal-let-binding-reuse-v1/separator.json'
+          ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-let-binding-reuse-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-let-binding-reuse-v1
+          if-no-files-found: error
