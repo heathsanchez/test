@@ -255,6 +255,17 @@ pub(crate) fn convert_with_policy_in_context(
                 work.push((*left_domain, *right_domain, depth));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
+                if same_unfold_head_spines_convertible(
+                    checker,
+                    &left,
+                    &right,
+                    remaining,
+                    delta_policy,
+                    depth,
+                    context,
+                ) {
+                    continue;
+                }
                 let machine = checker.machine();
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
@@ -337,6 +348,78 @@ pub(crate) fn convert_with_policy_in_context(
     }
 
     Judgment::proven((), "guarded-relational-conversion")
+}
+
+const SPINE_PROBE_CAP: usize = 2_048;
+
+fn same_unfold_head_spines_convertible(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    remaining: usize,
+    delta_policy: DeltaPolicy,
+    depth: usize,
+    context: &[TypeValue],
+) -> bool {
+    let budget = remaining.min(SPINE_PROBE_CAP);
+    if budget == 0 {
+        return false;
+    }
+    let machine = checker.machine();
+    let left_value = machine.expose(left.clone(), Transparency::Opaque, budget);
+    let right_value = machine.expose(right.clone(), Transparency::Opaque, budget);
+    let (Some(Value::Neutral(left)), Some(Value::Neutral(right))) =
+        (left_value.proven_value(), right_value.proven_value())
+    else {
+        return false;
+    };
+    let (
+        NeutralHead::Const {
+            name: left_name,
+            levels: left_levels,
+        },
+        NeutralHead::Const {
+            name: right_name,
+            levels: right_levels,
+        },
+    ) = (&left.head, &right.head)
+    else {
+        return false;
+    };
+    if left_name != right_name
+        || left_levels.len() != right_levels.len()
+        || left.spine.len() != right.spine.len()
+    {
+        return false;
+    }
+    for (left_level, right_level) in left_levels.iter().zip(right_levels) {
+        if !matches!(
+            level_equal(left_level.clone(), right_level.clone(), budget),
+            Judgment::Proven { .. }
+        ) {
+            return false;
+        }
+    }
+    for (left_arg, right_arg) in left.spine.iter().zip(&right.spine) {
+        if left_arg == right_arg {
+            continue;
+        }
+        if !matches!(
+            convert_with_policy_in_context(
+                checker,
+                &TypeValue::Term(left_arg.clone()),
+                &TypeValue::Term(right_arg.clone()),
+                budget,
+                delta_policy,
+                depth,
+                context,
+            ),
+            Judgment::Proven { .. }
+        ) {
+            return false;
+        }
+    }
+    true
 }
 
 #[cfg(test)]
