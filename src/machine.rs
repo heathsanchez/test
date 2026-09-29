@@ -258,6 +258,15 @@ impl<'a> Machine<'a> {
                                     transitions,
                                 );
                             }
+                            EnvBinding::Neutral(mut neutral) => {
+                                append_pending(&mut neutral.spine, &mut pending);
+                                record_transition(
+                                    &mut transitions,
+                                    record_witnesses,
+                                    TransitionWitness::Rigid,
+                                );
+                                return exposed(Value::Neutral(neutral), transitions);
+                            }
                         }
                     }
                     let mut spine = Vec::new();
@@ -500,19 +509,40 @@ impl<'a> Machine<'a> {
                     let Value::Neutral(neutral) = &exposure.value else {
                         return Judgment::unknown("projection-structure-stuck");
                     };
-                    let NeutralHead::Const { name, .. } = &neutral.head else {
-                        return Judgment::unknown("projection-structure-neutral");
-                    };
-                    if *name != spec.constructor {
-                        return Judgment::unknown("projection-constructor-mismatch");
+                    match &neutral.head {
+                        NeutralHead::Const { name, .. } if *name == spec.constructor => {
+                            let field_offset = spec.num_params + index;
+                            let Some(field) = neutral.spine.get(field_offset).cloned() else {
+                                return Judgment::unknown("projection-constructor-arity");
+                            };
+                            visited.clear();
+                            closure = field;
+                            continue;
+                        }
+                        NeutralHead::Const { .. } => {
+                            return Judgment::unknown("projection-constructor-mismatch");
+                        }
+                        NeutralHead::Free(_) | NeutralHead::Projection { .. } => {
+                            let mut spine = Vec::new();
+                            append_pending(&mut spine, &mut pending);
+                            record_transition(
+                                &mut transitions,
+                                record_witnesses,
+                                TransitionWitness::Rigid,
+                            );
+                            return exposed(
+                                Value::Neutral(Neutral {
+                                    head: NeutralHead::Projection {
+                                        type_name: *type_name,
+                                        index,
+                                        structure: Box::new(neutral.clone()),
+                                    },
+                                    spine,
+                                }),
+                                transitions,
+                            );
+                        }
                     }
-                    let field_offset = spec.num_params + index;
-                    let Some(field) = neutral.spine.get(field_offset).cloned() else {
-                        return Judgment::unknown("projection-constructor-arity");
-                    };
-                    visited.clear();
-                    closure = field;
-                    continue;
                 }
                 Expr::Sort(_) | Expr::Pi { .. } => {
                     return Judgment::unknown("rigid-head-applied-as-function");
