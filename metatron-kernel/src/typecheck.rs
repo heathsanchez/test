@@ -356,6 +356,22 @@ impl<'a> TypeChecker<'a> {
                         for parameter in neutral.spine.iter().take(spec.num_params) {
                             field_frame = field_frame.extend(parameter.clone());
                         }
+
+                        // A later constructor field is scoped over all earlier
+                        // fields.  Reconstruct those binders as stuck
+                        // projections from the current structure, so dependent
+                        // field types (e.g. PSigma.snd) retain their exact
+                        // telescope instead of accidentally rebinding BVar 0
+                        // to the last parameter.
+                        let structure_closure = self.closure(*structure, frame.clone());
+                        for previous_index in 0..index {
+                            field_frame = field_frame.extend_projection(
+                                *type_name,
+                                previous_index,
+                                structure_closure.clone(),
+                            );
+                        }
+
                         let level_substitution = LevelSubstitution::new(
                             declaration
                                 .level_params
@@ -596,6 +612,7 @@ impl<'a> TypeChecker<'a> {
                     LevelSubstitution::new(substitution),
                 ))
             }
+            NeutralHead::Projection { .. } => return None,
         };
 
         for argument in &neutral.spine {
