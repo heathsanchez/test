@@ -37,8 +37,8 @@ theorem affineBudget_compose
     affineBudget (A₂ * A₁) (A₂ * B₁ + B₂ * P₁) (P₁ * P₂) L =
       A₂ * affineBudget A₁ B₁ P₁ L +
       P₁ * affineBudget A₂ B₂ P₂ L := by
-  simp [affineBudget]
-  ring
+  simp [affineBudget, sub_mul, mul_sub, mul_add, add_mul,
+    mul_assoc, mul_left_comm, mul_comm]
 
 /-- Expanded form of the same identity, useful for certificate emitters that
 store the composite affine triple directly. -/
@@ -47,7 +47,8 @@ theorem affineBudget_composite_expanded
     ((P₁ * P₂ - A₂ * A₁) * L - (A₂ * B₁ + B₂ * P₁)) =
       A₂ * ((P₁ - A₁) * L - B₁) +
       P₁ * ((P₂ - A₂) * L - B₂) := by
-  ring
+  simp [sub_mul, mul_sub, mul_add, add_mul,
+    mul_assoc, mul_left_comm, mul_comm]
 
 /-- Positive signed budget is the integer form of the strict fixed-floor
 inequality.  This keeps the executable and theorem-facing certificates aligned
@@ -77,8 +78,9 @@ theorem affineBudget_compose_pos_implies_component_pos
   by_cases h₁ : 0 < affineBudget A₁ B₁ P₁ L
   · exact Or.inl h₁
   · right
-    by_contra h₂
-    have hn₁ : affineBudget A₁ B₁ P₁ L ≤ 0 := le_of_not_gt h₁
+    by_cases h₂ : 0 < affineBudget A₂ B₂ P₂ L
+    · exact h₂
+    · have hn₁ : affineBudget A₁ B₁ P₁ L ≤ 0 := le_of_not_gt h₁
     have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := le_of_not_gt h₂
     have hw₁ :
         A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
