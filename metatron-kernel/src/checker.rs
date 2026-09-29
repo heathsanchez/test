@@ -808,14 +808,27 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         || inductive.is_unsafe
         || constructor.is_unsafe
         || recursor.is_unsafe
-        || inductive.num_params != 2
-        || constructor.num_fields != 2
-        || constructor.num_params != 2
-        || !pprod_has_dependent_field_neighbor(export, constructor.ty)
     {
         return false;
     }
-    let Some((_, result)) = pi_spine(export, inductive.ty, 2) else {
+
+    let dependent_pair = inductive.num_params == 2
+        && constructor.num_fields == 2
+        && constructor.num_params == 2
+        && pprod_has_dependent_field_neighbor(export, constructor.ty);
+
+    let scalar_structure = inductive.num_params == 0
+        && constructor.num_params == 0
+        && constructor.num_fields == 1;
+
+    if !dependent_pair && !scalar_structure {
+        return false;
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
         return false;
     };
     matches!(
@@ -978,6 +991,375 @@ fn generic_nonrecursive_recursor_shape(
            || !args.iter().enumerate().all(|(k,a)|is_bvar(export,*a,(f-1-k) as u64)){return false;}
     }
     true
+}
+
+fn generic_nonrecursive_prop_small_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let [inductive] = block.types.as_slice() else {
+        return false;
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return false;
+    };
+    if inductive.num_nested != 0
+        || inductive.num_indices != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || block.constructors.is_empty()
+        || block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+
+    // Earlier Crystal generations deliberately sealed fieldless singleton
+    // families and two-parameter/two-field product representations.  Do not
+    // silently transfer those representation classes under a renamed type.
+    if let [constructor] = block.constructors.as_slice() {
+        if constructor.num_fields == 0
+            || (inductive.num_params == 2 && constructor.num_fields == 2)
+        {
+            return false;
+        }
+    }
+
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    is_prop_sort(export, result)
+}
+
+fn generic_nonrecursive_prop_small_recursor_shape(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructors: &[Constructor],
+    recursor: &Recursor,
+) -> bool {
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    let constructor_count = constructors.len();
+    let Some((inductive_parameters, _)) =
+        pi_spine(export, inductive.ty, parameter_count)
+    else {
+        return false;
+    };
+    let Some((domains, result)) =
+        pi_spine(export, recursor.ty, parameter_count + constructor_count + 2)
+    else {
+        return false;
+    };
+    if domains[..parameter_count] != inductive_parameters[..] {
+        return false;
+    }
+
+    let motive = domains[parameter_count];
+    let Some((motive_domains, motive_sort)) = pi_spine(export, motive, 1) else {
+        return false;
+    };
+    let [motive_target] = motive_domains.as_slice() else {
+        return false;
+    };
+    let (motive_head, motive_arguments) = application_spine(export, *motive_target);
+    if motive_arguments.len() != parameter_count
+        || !is_declared_level_constant(
+            export,
+            motive_head,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !motive_arguments.iter().enumerate().all(|(index, argument)| {
+            is_bvar(
+                export,
+                *argument,
+                (parameter_count.saturating_sub(1 + index)) as u64,
+            )
+        })
+        || !is_prop_sort(export, motive_sort)
+        || recursor.level_params != inductive.level_params
+    {
+        return false;
+    }
+
+    for (minor_index, constructor) in constructors.iter().enumerate() {
+        let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+            return false;
+        };
+        let Some((constructor_domains, _)) =
+            pi_spine(export, constructor.ty, parameter_count + field_count)
+        else {
+            return false;
+        };
+        let Some((minor_fields, minor_result)) =
+            pi_spine(export, domains[parameter_count + 1 + minor_index], field_count)
+        else {
+            return false;
+        };
+        for (field_index, (constructor_domain, minor_domain)) in constructor_domains
+            [parameter_count..]
+            .iter()
+            .zip(&minor_fields)
+            .enumerate()
+        {
+            if !expr_eq_with_bvar_shift(
+                export,
+                *constructor_domain,
+                *minor_domain,
+                field_index as u64,
+                (1 + minor_index) as u64,
+            ) {
+                return false;
+            }
+        }
+
+        let Some(Expr::App {
+            fun: motive_application,
+            arg: constructed,
+        }) = export.exprs.get(minor_result)
+        else {
+            return false;
+        };
+        if !is_bvar(
+            export,
+            *motive_application,
+            (field_count + minor_index) as u64,
+        ) {
+            return false;
+        }
+
+        let (constructor_head, constructor_arguments) =
+            application_spine(export, *constructed);
+        if constructor_arguments.len() != parameter_count + field_count
+            || !is_declared_level_constant(
+                export,
+                constructor_head,
+                constructor.name,
+                &constructor.level_params,
+            )
+        {
+            return false;
+        }
+        for parameter_index in 0..parameter_count {
+            if !is_bvar(
+                export,
+                constructor_arguments[parameter_index],
+                (field_count
+                    + minor_index
+                    + 1
+                    + (parameter_count - 1 - parameter_index)) as u64,
+            ) {
+                return false;
+            }
+        }
+        for field_index in 0..field_count {
+            if !is_bvar(
+                export,
+                constructor_arguments[parameter_count + field_index],
+                (field_count - 1 - field_index) as u64,
+            ) {
+                return false;
+            }
+        }
+    }
+
+    let target = domains[parameter_count + 1 + constructor_count];
+    let (target_head, target_arguments) = application_spine(export, target);
+    if target_arguments.len() != parameter_count
+        || !is_declared_level_constant(
+            export,
+            target_head,
+            inductive.name,
+            &inductive.level_params,
+        )
+        || !target_arguments.iter().enumerate().all(|(index, argument)| {
+            is_bvar(
+                export,
+                *argument,
+                (constructor_count + 1 + (parameter_count - 1 - index)) as u64,
+            )
+        })
+        || !is_bvar_application(export, result, (constructor_count + 1) as u64, 0)
+    {
+        return false;
+    }
+
+    if recursor.rules.len() != constructor_count {
+        return false;
+    }
+    for (minor_index, (constructor, rule)) in
+        constructors.iter().zip(&recursor.rules).enumerate()
+    {
+        let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+            return false;
+        };
+        let Some((_, rule_result)) =
+            lam_spine(
+                export,
+                rule.rhs,
+                parameter_count + 1 + constructor_count + field_count,
+            )
+        else {
+            return false;
+        };
+        let (rule_head, rule_arguments) = application_spine(export, rule_result);
+        if !is_bvar(
+            export,
+            rule_head,
+            (field_count + (constructor_count - 1 - minor_index)) as u64,
+        ) || rule_arguments.len() != field_count
+            || !rule_arguments.iter().enumerate().all(|(field_index, argument)| {
+                is_bvar(export, *argument, (field_count - 1 - field_index) as u64)
+            })
+        {
+            return false;
+        }
+    }
+
+    true
+}
+
+fn check_generic_nonrecursive_prop_small(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let [inductive] = block.types.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let [recursor] = block.recursors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_nonrecursive_prop_small_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors
+        == block
+            .constructors
+            .iter()
+            .map(|constructor| constructor.name)
+            .collect::<Vec<_>>();
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let constructor_contracts_ok =
+        block.constructors.iter().enumerate().all(|(index, constructor)| {
+            constructor.index == index as u64
+                && constructor.inductive == inductive.name
+                && constructor.num_params == inductive.num_params
+                && constructor.level_params == inductive.level_params
+                && !generic_nonrecursive_constructor_result_is_definitely_malformed(
+                    export,
+                    inductive,
+                    constructor,
+                )
+                && !constructor_has_definite_negative_recursive_field(
+                    export,
+                    inductive,
+                    constructor,
+                )
+        });
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params == inductive.level_params,
+    );
+    let recursor_shape_ok = generic_nonrecursive_prop_small_recursor_shape(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+    );
+
+    if std::env::var_os("NUCLEUS_TRACE_PROP_SMALL").is_some() {
+        eprintln!(
+            "NUCLEUS_PROP_SMALL:arity={arity_ok}:all={all_ok}:constructors={constructors_ok}:levels_unique={levels_unique}:ctor_contracts={constructor_contracts_ok}:rec_metadata={recursor_metadata_ok}:rec_shape={recursor_shape_ok}:params={}:ctors={}",
+            inductive.num_params,
+            block.constructors.len(),
+        );
+    }
+
+    // This first transfer experiment is positive-only: failure to establish
+    // the full structural contract preserves UNKNOWN rather than inventing a
+    // new negative boundary.
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    for constructor in &block.constructors {
+        derivation.promote(
+            export,
+            derived_constructor(constructor),
+            limits.judgment_steps,
+            delta_policy,
+        )?;
+    }
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let mut environment = derivation.finish();
+
+    if let [constructor] = block.constructors.as_slice() {
+        let parameter_count =
+            usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+        let field_count =
+            usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+        let Some((constructor_domains, _)) =
+            pi_spine(export, constructor.ty, parameter_count + field_count)
+        else {
+            return Err(Verdict::Unknown);
+        };
+        let field_types = constructor_domains[parameter_count..]
+            .iter()
+            .copied()
+            .map(ProjectionFieldType::Derived)
+            .collect::<Vec<_>>();
+        environment = environment
+            .install_projection_spec(
+                inductive.name,
+                ProjectionSpec {
+                    constructor: constructor.name,
+                    num_params: parameter_count,
+                    field_types,
+                },
+            )
+            .map_err(|_| Verdict::Reject)?;
+    }
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn check_generic_nonrecursive_type(
@@ -1168,9 +1550,22 @@ fn check_single_constructor_inductive(
     } else if generic_nonrecursive_type_candidate(export, block) {
         match check_generic_nonrecursive_type(export, environment, block, limits, delta_policy) {
             Ok(environment) => Ok(environment),
+            Err(Verdict::Unknown)
+                if generic_nonrecursive_prop_small_candidate(export, block) =>
+            {
+                check_generic_nonrecursive_prop_small(
+                    export,
+                    environment,
+                    block,
+                    limits,
+                    delta_policy,
+                )
+            }
             Err(Verdict::Unknown) => check_unrecognized_single_constructor_coherence(export, block),
             Err(verdict) => Err(verdict),
         }
+    } else if generic_nonrecursive_prop_small_candidate(export, block) {
+        check_generic_nonrecursive_prop_small(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
@@ -7505,6 +7900,14 @@ fn check_binary_enum(
         BinaryEnumSortLaw::Type
     } else if generic_nonrecursive_type_candidate(export, block) {
         return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
+    } else if generic_nonrecursive_prop_small_candidate(export, block) {
+        return check_generic_nonrecursive_prop_small(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
     } else {
         return Err(Verdict::Unknown);
     };
