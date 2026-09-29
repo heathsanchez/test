@@ -519,6 +519,7 @@ fn expression_uses_bvar(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn certified_structure_eta(
     checker: &TypeChecker<'_>,
     target: &Neutral,
@@ -573,25 +574,14 @@ fn certified_structure_eta(
     }
 
     for (index, field) in constructed.spine[num_params..].iter().enumerate() {
-        let Some(Expr::Proj {
-            type_name: projected_type,
-            index: projected_index,
-            structure,
-        }) = checker.expression(field.expr)
-        else {
-            return false;
-        };
-        if *projected_type != type_name || usize::try_from(*projected_index).ok() != Some(index) {
-            return false;
-        }
-        let structure = field.sibling(*structure, field.env.clone());
-        let structure = checker
-            .machine()
-            .expose(structure, Transparency::Reducible, budget);
-        let Some(Value::Neutral(structure)) = structure.proven_value() else {
-            return false;
-        };
-        if structure != target {
+        if !checker.certified_eta_projection_field(
+            field,
+            type_name,
+            index,
+            target,
+            num_params,
+            budget,
+        ) {
             return false;
         }
     }
