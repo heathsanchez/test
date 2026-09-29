@@ -1,0 +1,81 @@
+name: Nucleus Crystal One Step Iota Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-one-step-iota-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-one-step-iota-trace-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build diagnostic
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace exact decline gates
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-one-step-iota-trace-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+              ('good','perf/args-before-unfold'),
+              ('good','perf/folded-constant-first'),
+              ('good','perf/folded-constant-last'),
+              ('bad','perf/refute-cheap-first'),
+              ('good','tutorial/082_RBTree.id_spec'),
+              ('good','perf/magma-list-deep-n21'),
+          ]
+          rows=[]
+          for d,name in targets:
+              p=root/d/(name+'.ndjson')
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_ONE_STEP_IOTA']='1'
+              env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+              env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+              err=q.stderr.decode(errors='replace')
+              marks=[
+                  line for line in err.splitlines()
+                  if 'NUCLEUS_ONE_STEP_IOTA:' in line
+                  or 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in line
+                  or 'NUCLEUS_DOWNSTREAM:' in line
+              ]
+              rows.append({'test':name,'expected':0 if d=='good' else 1,'rc':q.returncode,'marks':marks[-200:]})
+          out={'schema':'nucleus-crystal-one-step-iota-trace-v1','source_sha':os.environ['GITHUB_SHA'],'rows':rows}
+          path=pathlib.Path('metatron-kernel/evidence-out/crystal-one-step-iota-trace-v1/result.json')
+          path.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          for row in rows:
+              print(json.dumps(row,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-one-step-iota-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-one-step-iota-trace-v1
+          if-no-files-found: error
