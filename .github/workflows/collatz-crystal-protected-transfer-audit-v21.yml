@@ -1,0 +1,47 @@
+name: Collatz Crystal Protected Transfer Audit V21
+
+on:
+  push:
+    branches: [collatz-crystal-protected-transfer-audit-v21]
+    paths:
+      - 'experiments/collatz_crystal_protected_transfer_audit_v21.py'
+      - '.github/workflows/collatz-crystal-protected-transfer-audit-v21.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run protected transfer audit
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-protected-transfer-audit-v21
+          python -u experiments/collatz_crystal_protected_transfer_audit_v21.py \
+            | tee evidence/collatz-crystal-protected-transfer-audit-v21/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-protected-transfer-audit-v21/result.json'))
+          assert d['declared_boundary']['near_resonant_types']==7669
+          assert d['protected_outcomes']=={'DESCENT':1323,'QUARTER_SPLICE':6346}
+          assert d['v20_term_transfer']=={'PROTECTED_FAILURE_BEFORE_TERM':7665}
+          assert d['scientific_verdict']=='V20_SEPARATOR_NOT_PROSPECTIVE_FOR_PROTECTED_RESIDUAL'
+          assert d['rejected_promotion']['status']=='REJECT_AS_TRANSFER_EVIDENCE'
+          assert d['rejected_promotion']['mathematical_truth_status']=='UNKNOWN'
+          assert d['next_residual']['universal']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V21_PROTECTED',d['protected_outcomes'])
+          print('V21_TERM_TRANSFER',d['v20_term_transfer'])
+          print('V21_CLOSEST',d['closest_protected_failure_to_boundary'])
+          print('V21_VERDICT',d['scientific_verdict'])
+          print('V21_RESIDUAL',d['next_residual'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-protected-transfer-audit-v21
+          path: evidence/collatz-crystal-protected-transfer-audit-v21
