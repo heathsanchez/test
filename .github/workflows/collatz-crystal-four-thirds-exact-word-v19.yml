@@ -1,0 +1,69 @@
+name: Collatz Crystal Four Thirds Exact Word V19
+
+on:
+  push:
+    branches: [collatz-crystal-four-thirds-exact-word-v19]
+    paths:
+      - 'formal/Collatz/FourThirdsAdmission.lean'
+      - 'experiments/collatz_crystal_four_thirds_exact_word_v19.py'
+      - '.github/workflows/collatz-crystal-four-thirds-exact-word-v19.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lean
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+
+      - name: Recheck V18 affine admission authority
+        run: |
+          set -euo pipefail
+          ! grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/FourThirdsAdmission.lean
+          lake env lean -DautoImplicit=false formal/Collatz/FourThirdsAdmission.lean | tee /tmp/v19-lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' /tmp/v19-lean.log
+
+      - name: Run exact-word consequence prune
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-four-thirds-exact-word-v19
+          python -u experiments/collatz_crystal_four_thirds_exact_word_v19.py             | tee evidence/collatz-crystal-four-thirds-exact-word-v19/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-four-thirds-exact-word-v19/result.json'))
+          assert d['declared_boundary']['source_census'] is False
+          assert d['declared_boundary']['post_boundary_trajectory_search'] is False
+          assert d['declared_boundary']['near_resonant_types']==315
+          assert d['candidate_endpoints']==114493
+          assert d['exact_bias_words']==0
+          assert d['failure_counts']=={
+            'B_NONPOS':2,
+            'POSITION_GE_K':10,
+            'RESIDUAL':10,
+            'TERM_GT_B':114471,
+          }
+          assert d['generic_q52_plus_all_TERM_GT_B_on_declared_boundary'] is True
+          assert d['max_TERM_GT_B_peel_step']==68
+          assert d['next_residual']['universal']=='UNKNOWN'
+          assert d['next_residual']['survival_branch_still_open'] is True
+          assert d['global_collatz']=='UNKNOWN'
+          print('V19_CANDIDATES',d['candidate_endpoints'])
+          print('V19_EXACT_WORDS',d['exact_bias_words'])
+          print('V19_FAILURES',d['failure_counts'])
+          print('V19_EXCEPTIONS',d['exceptional_non_TERM_GT_B_types'])
+          print('V19_MAX_PEEL',d['max_TERM_GT_B_peel_step'],d['max_TERM_GT_B_witness'])
+          print('V19_RESIDUAL',d['next_residual'])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-four-thirds-exact-word-v19
+          path: evidence/collatz-crystal-four-thirds-exact-word-v19
