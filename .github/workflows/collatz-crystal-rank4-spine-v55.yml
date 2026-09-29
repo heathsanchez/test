@@ -1,0 +1,45 @@
+name: Collatz Crystal Rank4 Spine V55
+on:
+  push:
+    branches: [collatz-crystal-rank4-spine-v55]
+    paths:
+      - 'experiments/collatz_crystal_rank4_spine_v55.py'
+      - '.github/workflows/collatz-crystal-rank4-spine-v55.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit rank4 residual spine
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-rank4-spine-v55
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_rank4_spine_v55.py \
+            | tee evidence/collatz-crystal-rank4-spine-v55/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-rank4-spine-v55/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_RANK4_SPINE_V55'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V55_VERDICT',d['verdict'])
+          print('V55_110',d['all_top_states_exact_110_owner_law'])
+          print('V55_MINUS1',d['all_top_centres_minus_one'])
+          print('V55_V2DROP',d['all_top_realizations_drop_v2_mplus1_by_3'])
+          print('V55_TOP',d['top_states'])
+          print('V55_PATHS',d['maximal_residual_paths'])
+          print('V55_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-rank4-spine-v55/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-rank4-spine-v55
+          path: evidence/collatz-crystal-rank4-spine-v55
+          if-no-files-found: error
