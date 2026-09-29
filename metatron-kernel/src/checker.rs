@@ -1522,6 +1522,247 @@ fn check_generic_nonrecursive_type(
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
+
+fn exact_simple_indexed_singleton_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields > 1
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.num_params != 0
+        || recursor.num_indices != 1
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.rules.len() != 1
+        || recursor.level_params.len() != 1
+    {
+        return false;
+    }
+
+    let Some((index_domains, result_sort)) = pi_spine(export, inductive.ty, 1) else {
+        return false;
+    };
+    let [index_type] = index_domains.as_slice() else {
+        return false;
+    };
+    let Some(Expr::Sort(level)) = export.exprs.get(result_sort) else {
+        return false;
+    };
+    if !exported_level_is_definitely_nonzero(export, *level, 128) {
+        return false;
+    }
+
+    if inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || has_duplicate_parameter(&inductive.level_params)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+    {
+        return false;
+    }
+
+    let Ok(field_count) = usize::try_from(constructor.num_fields) else {
+        return false;
+    };
+    let Some((constructor_fields, constructor_result)) =
+        pi_spine(export, constructor.ty, field_count)
+    else {
+        return false;
+    };
+    for field in &constructor_fields {
+        if expression_contains_constant(export, *field, inductive.name) {
+            return false;
+        }
+    }
+
+    let (constructor_result_head, constructor_result_args) =
+        application_spine(export, constructor_result);
+    if !is_declared_level_constant(
+        export,
+        constructor_result_head,
+        inductive.name,
+        &inductive.level_params,
+    ) || constructor_result_args.len() != 1
+    {
+        return false;
+    }
+    let constructor_index = constructor_result_args[0];
+
+    let Some((recursor_domains, recursor_result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, minor, recursor_index_type, major] = recursor_domains.as_slice() else {
+        return false;
+    };
+
+    if !expr_eq_with_bvar_shift(export, *index_type, *recursor_index_type, 0, 0) {
+        return false;
+    }
+
+    let Some((motive_domains, motive_sort)) = pi_spine(export, *motive, 2) else {
+        return false;
+    };
+    let [motive_index_type, motive_major] = motive_domains.as_slice() else {
+        return false;
+    };
+    if !expr_eq_with_bvar_shift(export, *index_type, *motive_index_type, 0, 0) {
+        return false;
+    }
+    let (motive_major_head, motive_major_args) = application_spine(export, *motive_major);
+    if !is_declared_level_constant(
+        export,
+        motive_major_head,
+        inductive.name,
+        &inductive.level_params,
+    ) || motive_major_args.len() != 1
+        || !is_bvar(export, motive_major_args[0], 0)
+    {
+        return false;
+    }
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return false;
+    };
+    if !matches!(
+        export.exprs.get(motive_sort),
+        Some(Expr::Sort(level))
+            if matches!(export.levels.get(*level), Some(Level::Param(actual)) if actual == motive_level)
+    ) {
+        return false;
+    }
+
+    let Some((minor_fields, minor_result)) = pi_spine(export, *minor, field_count) else {
+        return false;
+    };
+    for (left, right) in constructor_fields.iter().zip(&minor_fields) {
+        if !expr_eq_with_bvar_shift(export, *left, *right, 0, 0) {
+            return false;
+        }
+    }
+    let (minor_head, minor_args) = application_spine(export, minor_result);
+    if !is_bvar(export, minor_head, field_count as u64)
+        || minor_args.len() != 2
+        || !expr_eq_with_bvar_shift(export, constructor_index, minor_args[0], 0, 0)
+    {
+        return false;
+    }
+    let (minor_ctor_head, minor_ctor_args) = application_spine(export, minor_args[1]);
+    if !is_declared_level_constant(
+        export,
+        minor_ctor_head,
+        constructor.name,
+        &constructor.level_params,
+    ) || minor_ctor_args.len() != field_count
+        || !minor_ctor_args
+            .iter()
+            .enumerate()
+            .all(|(index, argument)| is_bvar(export, *argument, (field_count - 1 - index) as u64))
+    {
+        return false;
+    }
+
+    let (major_head, major_args) = application_spine(export, *major);
+    if !is_declared_level_constant(
+        export,
+        major_head,
+        inductive.name,
+        &inductive.level_params,
+    ) || major_args.len() != 1
+        || !is_bvar(export, major_args[0], 0)
+    {
+        return false;
+    }
+
+    let (result_head, result_args) = application_spine(export, recursor_result);
+    if !is_bvar(export, result_head, 3)
+        || result_args.len() != 2
+        || !is_bvar(export, result_args[0], 1)
+        || !is_bvar(export, result_args[1], 0)
+    {
+        return false;
+    }
+
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.constructor != constructor.name || rule.num_fields != constructor.num_fields {
+        return false;
+    }
+    let Some((_, rule_result)) = lam_spine(export, rule.rhs, 2 + field_count) else {
+        return false;
+    };
+    let (rule_head, rule_args) = application_spine(export, rule_result);
+    is_bvar(export, rule_head, field_count as u64)
+        && rule_args.len() == field_count
+        && rule_args
+            .iter()
+            .enumerate()
+            .all(|(index, argument)| is_bvar(export, *argument, (field_count - 1 - index) as u64))
+}
+
+fn check_exact_simple_indexed_singleton(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_simple_indexed_singleton_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    install_certified_recursor_reduction(
+        derivation.finish(),
+        &block.constructors,
+        recursor,
+    )
+}
+
 fn check_single_constructor_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -1610,6 +1851,8 @@ fn check_single_constructor_inductive(
         }
     } else if generic_nonrecursive_prop_small_candidate(export, block) {
         check_generic_nonrecursive_prop_small(export, environment, block, limits, delta_policy)
+    } else if exact_simple_indexed_singleton_candidate(export, block) {
+        check_exact_simple_indexed_singleton(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
