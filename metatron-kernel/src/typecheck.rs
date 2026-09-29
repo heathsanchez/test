@@ -180,7 +180,11 @@ impl<'a> TypeChecker<'a> {
         // exhaust the same budget intended to stop recursive blowups.
         let atomic_leaf = matches!(
             expression_node,
-            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. }
+            Expr::NatLit(_)
+                | Expr::StrLit(_)
+                | Expr::BVar(_)
+                | Expr::Sort(_)
+                | Expr::Const { .. }
         );
         if !atomic_leaf && !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
