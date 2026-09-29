@@ -1149,10 +1149,25 @@ fn check_generic_nonrecursive_type(
             else {
                 return Err(Verdict::Reject);
             };
-            let mut field_types = vec![ProjectionFieldType::Derived(
-                constructor_domains[parameter_count],
-            )];
-            field_types.resize(field_count, ProjectionFieldType::Unqualified);
+            let field_types = (0..field_count)
+                .map(|field_index| {
+                    let expression = constructor_domains[parameter_count + field_index];
+                    if field_index == 0 {
+                        return ProjectionFieldType::Derived(expression);
+                    }
+                    let depends_on_prior_field = (0..field_index).any(|prior_field| {
+                        expression_contains_bvar(export, expression, prior_field as u64)
+                    });
+                    if depends_on_prior_field {
+                        ProjectionFieldType::Unqualified
+                    } else {
+                        ProjectionFieldType::IndependentDerived {
+                            expression,
+                            prior_fields: field_index,
+                        }
+                    }
+                })
+                .collect::<Vec<_>>();
             environment = environment
                 .install_projection_spec(
                     inductive.name,
