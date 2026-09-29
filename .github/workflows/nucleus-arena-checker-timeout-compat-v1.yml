@@ -62,6 +62,13 @@ jobs:
         run: |
           set -euo pipefail
           export NUCLEUS_BIN="$GITHUB_WORKSPACE/metatron-kernel/target/release/metatron-kernel"
+          mkdir -p /tmp/no-perf
+          cat >/tmp/no-perf/perf <<'SH'
+          #!/usr/bin/env bash
+          exit 1
+          SH
+          chmod +x /tmp/no-perf/perf
+          export PATH="/tmp/no-perf:$PATH"
           OUT="$GITHUB_WORKSPACE/metatron-kernel/evidence-out/arena-checker-timeout-compat-v1"
           rm -rf /tmp/nucleus-arena-probe "$OUT"
           mkdir -p /tmp/nucleus-arena-probe "$OUT"
