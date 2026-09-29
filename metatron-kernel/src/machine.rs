@@ -59,6 +59,9 @@ pub struct RecursorReduction {
 pub enum ProjectionFieldType {
     Parameter(usize),
     Derived(ExprId),
+    /// The field is known to exist in the certified constructor telescope,
+    /// but its dependent type has not yet earned projection-typing authority.
+    Unqualified,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
