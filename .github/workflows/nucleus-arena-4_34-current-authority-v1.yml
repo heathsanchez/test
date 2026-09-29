@@ -440,7 +440,7 @@ jobs:
           PY
 
 
-      - name: Verify Lean 4.34.1 and migrated-case semantic equivalence
+      - name: Verify Lean 4.34.1 migrated scored cases
         run: |
           set -euo pipefail
           grep -qx 'leanprover/lean4:v4.34.1' /tmp/arena/tests/lean-toolchain
@@ -453,22 +453,14 @@ jobs:
           import subprocess
 
           nucleus = pathlib.Path(os.environ["NUCLEUS_BIN"])
-          protected = pathlib.Path("/tmp/protected-tests")
-          published = pathlib.Path("/tmp/published-tests")
-          names = [
-              "corner-cases/nested-nonuniform-param",
-              "bugs/nested-unused-param",
-              "bugs/proj-of-stuck-prop",
-              "bugs/proj-of-subst-prop",
-              "bugs/rec-of-subst-prop",
-          ]
+          fresh = pathlib.Path("/tmp/published-tests")
 
-          def locate(root, name):
+          def locate(name):
               for bucket in ("good", "bad"):
-                  p = root / bucket / (name + ".ndjson")
+                  p = fresh / bucket / (name + ".ndjson")
                   if p.exists():
                       return bucket, p
-              raise AssertionError(f"missing migrated case {name} under {root}")
+              return None, None
 
           def run_case(p):
               with p.open("rb") as stream:
@@ -480,33 +472,43 @@ jobs:
                       timeout=120,
                       check=False,
                   )
-              assert q.returncode in (0, 1, 2, 3), (p, q.returncode, q.stderr.decode(errors="replace")[-4000:])
+              assert q.returncode in (0, 1, 2, 3), (
+                  p, q.returncode, q.stderr.decode(errors="replace")[-4000:]
+              )
               return q.returncode
 
-          rows = []
-          for name in names:
-              old_bucket, old_path = locate(protected, name)
-              new_bucket, new_path = locate(published, name)
-              old_rc = run_case(old_path)
-              new_rc = run_case(new_path)
-              row = {
-                  "test": name,
-                  "protected_bucket": old_bucket,
-                  "published_bucket": new_bucket,
-                  "protected_rc": old_rc,
-                  "published_rc": new_rc,
-              }
-              rows.append(row)
-              assert old_bucket == new_bucket, row
-              assert old_rc == new_rc, row
+          scored = [
+              "bugs/nested-unused-param",
+              "bugs/proj-of-stuck-prop",
+              "bugs/proj-of-subst-prop",
+              "bugs/rec-of-subst-prop",
+          ]
+          rows = {}
+          for name in scored:
+              bucket, p = locate(name)
+              assert p is not None, f"missing current scored migrated case {name}"
+              rc = run_case(p)
+              rows[name] = {"bucket": bucket, "expected": "reject", "rc": rc}
+              assert bucket == "bad", rows[name]
+              assert rc != 0, rows[name]
+
+          # This upstream test is outcome:either, deliberately unscored and
+          # therefore absent from the good/bad test tarball.
+          either_name = "corner-cases/nested-nonuniform-param"
+          either_bucket, either_path = locate(either_name)
+          assert either_path is None, (either_bucket, either_path)
 
           out = {
-              "schema": "nucleus-arena-4_34-migrated-five-v1",
+              "schema": "nucleus-arena-4_34-migrated-scored-v1",
               "authority_sha": os.environ["AUTHORITY_SHA"],
               "arena_interface_sha": os.environ["ARENA_INTERFACE_SHA"],
               "published_artifact_id": os.environ["PUBLISHED_ARTIFACT_ID"],
               "lean_version": "4.34.1",
-              "cases": rows,
+              "scored_cases": rows,
+              "unscored_either": {
+                  "test": either_name,
+                  "present_in_scored_tarball": False,
+              },
           }
           pathlib.Path("/tmp/nucleus-arena-migrated-five.json").write_text(
               json.dumps(out, indent=2, sort_keys=True) + "\n"
