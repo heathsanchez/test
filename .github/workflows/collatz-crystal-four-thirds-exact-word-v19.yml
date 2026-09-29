@@ -2,9 +2,11 @@ name: Collatz Crystal Four Thirds Exact Word V19
 
 on:
   push:
-    branches: [collatz-crystal-four-thirds-exact-word-v19]
+    branches: [collatz-crystal-four-thirds-exact-word-v19, collatz-crystal-four-thirds-constructor-v20]
     paths:
       - 'formal/Collatz/FourThirdsAdmission.lean'
+      - 'formal/Collatz/FourThirdsConstructor.lean'
+      - 'lakefile.lean'
       - 'experiments/collatz_crystal_four_thirds_exact_word_v19.py'
       - '.github/workflows/collatz-crystal-four-thirds-exact-word-v19.yml'
   workflow_dispatch:
