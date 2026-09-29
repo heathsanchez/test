@@ -1037,6 +1037,200 @@ fn generic_nonrecursive_recursor_shape(
     true
 }
 
+fn generic_prop_singleton_large_elim_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+
+    generic_nonrecursive_prop_small_candidate(export, block)
+        && inductive.num_params == 1
+        && constructor.num_params == 1
+        && constructor.num_fields == 1
+        && recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
+        && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice())
+}
+
+fn generic_prop_singleton_field_is_proposition(
+    export: &ResolvedExport,
+    environment: &Environment,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+    recursor: &Recursor,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> bool {
+    let Ok(parameter_count) = usize::try_from(inductive.num_params) else {
+        return false;
+    };
+    if parameter_count != 1 || constructor.num_fields != 1 {
+        return false;
+    }
+    let Some((inductive_parameters, _)) = pi_spine(export, inductive.ty, parameter_count) else {
+        return false;
+    };
+    let Some((constructor_domains, _)) =
+        pi_spine(export, constructor.ty, parameter_count.saturating_add(1))
+    else {
+        return false;
+    };
+
+    let checker = TypeChecker::with_level_substitution(
+        &export.exprs,
+        &export.levels,
+        environment,
+        parameter_substitution(&recursor.level_params),
+    )
+    .with_delta_policy(delta_policy);
+
+    let mut context = Vec::with_capacity(parameter_count);
+    let mut frame = EnvFrame::empty();
+    for (index, parameter) in inductive_parameters.iter().enumerate() {
+        context.push(TypeValue::Term(checker.closure(*parameter, frame.clone())));
+        let Ok(index) = u64::try_from(index) else {
+            return false;
+        };
+        frame = frame.extend_free(FreeId(75_000 + index));
+    }
+
+    matches!(
+        checker.is_proposition_in_context(
+            constructor_domains[parameter_count],
+            &context,
+            &frame,
+            limits.judgment_steps,
+        ),
+        Judgment::Proven { .. }
+    )
+}
+
+fn check_generic_prop_singleton_large_elim(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !generic_prop_singleton_large_elim_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let arity_ok = inductive_arity_metadata_is_well_formed(export, inductive);
+    let all_ok = inductive.all == [inductive.name];
+    let constructors_ok = inductive.constructors == [constructor.name];
+    let levels_unique = !has_duplicate_parameter(&inductive.level_params);
+    let constructor_contracts_ok = constructor.index == 0
+        && constructor.inductive == inductive.name
+        && constructor.num_params == inductive.num_params
+        && constructor.level_params == inductive.level_params
+        && !generic_nonrecursive_constructor_result_is_definitely_malformed(
+            export,
+            inductive,
+            constructor,
+        )
+        && !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
+    let recursor_metadata_ok = recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        recursor.level_params.len() == inductive.level_params.len().saturating_add(1)
+            && recursor.level_params.get(1..) == Some(inductive.level_params.as_slice()),
+    );
+    let recursor_shape_ok =
+        generic_nonrecursive_recursor_shape(export, inductive, &block.constructors, recursor);
+    let field_is_prop = generic_prop_singleton_field_is_proposition(
+        export,
+        environment,
+        inductive,
+        constructor,
+        recursor,
+        limits,
+        delta_policy,
+    );
+
+    if std::env::var_os("NUCLEUS_TRACE_PROP_SINGLETON").is_some() {
+        eprintln!(
+            "NUCLEUS_PROP_SINGLETON:name={}:arity={arity_ok}:all={all_ok}:constructors={constructors_ok}:levels_unique={levels_unique}:ctor_contracts={constructor_contracts_ok}:rec_metadata={recursor_metadata_ok}:rec_shape={recursor_shape_ok}:field_prop={field_is_prop}",
+            trace_name(export, inductive.name),
+        );
+    }
+
+    if !arity_ok
+        || !all_ok
+        || !constructors_ok
+        || !levels_unique
+        || !constructor_contracts_ok
+        || !recursor_metadata_ok
+        || !recursor_shape_ok
+        || !field_is_prop
+    {
+        return Err(Verdict::Unknown);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    let derived_inductive = if inductive.level_params.is_empty() {
+        derived_type(inductive.name, inductive.ty)
+    } else {
+        derived_polymorphic_type(inductive.name, &inductive.level_params, inductive.ty)
+    };
+    derivation.promote(
+        export,
+        derived_inductive,
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_constructor(constructor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    derivation.promote(
+        export,
+        derived_recursor(recursor),
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation.finish();
+
+    let parameter_count =
+        usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+    let Some((constructor_domains, _)) =
+        pi_spine(export, constructor.ty, parameter_count.saturating_add(1))
+    else {
+        return Err(Verdict::Unknown);
+    };
+    let environment = environment
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: parameter_count,
+                field_types: vec![ProjectionFieldType::Derived(
+                    constructor_domains[parameter_count],
+                )],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
+}
+
 fn generic_nonrecursive_prop_small_candidate(
     export: &ResolvedExport,
     block: &InductiveBlock,
@@ -1575,6 +1769,14 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_unary_recursive(export, environment, block, limits, delta_policy)
     } else if generic_closed_prop_singleton_candidate(block) {
         check_generic_closed_prop_singleton(export, environment, block, limits, delta_policy)
+    } else if generic_prop_singleton_large_elim_candidate(export, block) {
+        check_generic_prop_singleton_large_elim(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        )
     } else if generic_parameterized_nullary_candidate(export, block) {
         check_generic_parameterized_nullary(export, environment, block, limits, delta_policy)
     } else if fin_like_structure_candidate(export, block) {
