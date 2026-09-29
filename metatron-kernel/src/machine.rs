@@ -658,8 +658,7 @@ impl<'a> Machine<'a> {
                         return None;
                     }
                     arguments.reverse();
-                    return (arguments[0] == arguments[1])
-                        .then(|| (bools.true_ctor, Vec::new()));
+                    return (arguments[0] == arguments[1]).then(|| (bools.true_ctor, Vec::new()));
                 }
                 _ => return None,
             }
@@ -678,8 +677,7 @@ impl<'a> Machine<'a> {
             return None;
         };
         let reduction = self.recursor_reductions.get(name)?;
-        let required =
-            reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
+        let required = reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
         if neutral.spine.len() < required || reduction.level_params.len() != levels.len() {
             return None;
         }
@@ -708,13 +706,9 @@ impl<'a> Machine<'a> {
                 .collect(),
         );
         let closure = self.instantiate_rule_lambdas(rule.rhs, levels, &rule_arguments)?;
-        self.expose(
-            closure,
-            Transparency::Reducible,
-            budget.saturating_sub(1),
-        )
-        .proven_value()
-        .cloned()
+        self.expose(closure, Transparency::Reducible, budget.saturating_sub(1))
+            .proven_value()
+            .cloned()
     }
 
     fn instantiate_rule_lambdas(
