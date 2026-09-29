@@ -25,7 +25,7 @@ theorem affine_return_strict_descent_of_live_floor
   have hgap : (P - A) * L ≤ (P - A) * m := by
     exact Nat.mul_le_mul_left (P - A) hfloor
   have hB : B < (P - A) * m :=
-    lt_of_lt_of_le hfixed hgap
+    Nat.lt_of_lt_of_le hfixed hgap
   have hsum : A * m + B < A * m + (P - A) * m :=
     Nat.add_lt_add_left hB (A * m)
   have hAP : A + (P - A) = P := by
