@@ -1,0 +1,97 @@
+{
+  "full_depth3_conclusion": {
+    "all_remaining_residual_exact_negative": 6262,
+    "depth3_band_states": 8763,
+    "direct_thick_exact_negative_total": 8763,
+    "initial_5k_exact_negative": 1989,
+    "interpretation": "Direct THICK is absent from every cap-26 rank-3 z-using total-length-25/26 state first discovered at BFS depth 3 under the pinned move/canonicalization semantics and calibrated fail-first Neuwirth solver.",
+    "prior_stratified_exact_negative": 512,
+    "thick_goals": 0,
+    "undecided": 0
+  },
+  "new_blocks": [
+    {
+      "closed": true,
+      "genuinely_fresh_after_stratified": 761,
+      "source_lines_inclusive": "5845-6679",
+      "stages": {
+        "100k": {"goal": 0, "max_negative_nodes": 99926, "negative": 74, "total": 258, "undecided": 184},
+        "1m": {"goal": 0, "max_negative_nodes": 601932, "negative": 13, "total": 13, "undecided": 0},
+        "20k": {"goal": 0, "max_negative_nodes": 19985, "negative": 356, "total": 761, "undecided": 405},
+        "250k": {"goal": 0, "max_negative_nodes": 245030, "negative": 163, "total": 184, "undecided": 21},
+        "500k": {"goal": 0, "max_negative_nodes": 454841, "negative": 8, "total": 21, "undecided": 13},
+        "50k": {"goal": 0, "max_negative_nodes": 49402, "negative": 147, "total": 405, "undecided": 258}
+      },
+      "thick_goals": 0
+    },
+    {
+      "closed": true,
+      "genuinely_fresh_after_stratified": 744,
+      "source_lines_inclusive": "6680-7514",
+      "stages": {
+        "20k": {"goal": 0, "max_negative_nodes": 19637, "negative": 86, "total": 744, "undecided": 658},
+        "sample100k": {"goal": 0, "max_negative_nodes": 93580, "negative": 25, "total": 37, "undecided": 12},
+        "sample500k": {"goal": 0, "max_negative_nodes": 144087, "negative": 12, "total": 12, "undecided": 0},
+        "sample50k": {"goal": 0, "max_negative_nodes": 47782, "negative": 27, "total": 64, "undecided": 37},
+        "unsampled100k": {"goal": 0, "max_negative_nodes": 99786, "negative": 165, "total": 330, "undecided": 165},
+        "unsampled250k": {"goal": 0, "max_negative_nodes": 242846, "negative": 161, "total": 165, "undecided": 4},
+        "unsampled500k": {"goal": 0, "max_negative_nodes": 281422, "negative": 4, "total": 4, "undecided": 0},
+        "unsampled50k": {"goal": 0, "max_negative_nodes": 49996, "negative": 264, "total": 594, "undecided": 330}
+      },
+      "thick_goals": 0
+    },
+    {
+      "closed": true,
+      "genuinely_fresh_after_stratified": 638,
+      "source_lines_inclusive": "7515-8349",
+      "stages": {
+        "100k": {"goal": 0, "max_negative_nodes": 99385, "negative": 141, "total": 209, "undecided": 68},
+        "20k": {"goal": 0, "max_negative_nodes": 19999, "negative": 220, "total": 638, "undecided": 418},
+        "250k": {"goal": 0, "max_negative_nodes": 245799, "negative": 61, "total": 68, "undecided": 7},
+        "500k": {"goal": 0, "max_negative_nodes": 281919, "negative": 7, "total": 7, "undecided": 0},
+        "50k": {"goal": 0, "max_negative_nodes": 49580, "negative": 209, "total": 418, "undecided": 209}
+      },
+      "thick_goals": 0
+    },
+    {
+      "closed": true,
+      "genuinely_fresh_after_stratified": 285,
+      "source_lines_inclusive": "8350-8762",
+      "stages": {
+        "100k": {"goal": 0, "max_negative_nodes": 97957, "negative": 78, "total": 102, "undecided": 24},
+        "20k": {"goal": 0, "max_negative_nodes": 19999, "negative": 78, "total": 285, "undecided": 207},
+        "250k": {"goal": 0, "max_negative_nodes": 245844, "negative": 20, "total": 24, "undecided": 4},
+        "500k": {"goal": 0, "max_negative_nodes": 284445, "negative": 4, "total": 4, "undecided": 0},
+        "50k": {"goal": 0, "max_negative_nodes": 49553, "negative": 105, "total": 207, "undecided": 102}
+      },
+      "thick_goals": 0
+    }
+  ],
+  "phase_decision": "Depth3 direct THICK is closed. Combined with the existing PROJ-negative depth2-4 evidence and depth2 direct-THICK closure, the smallest justified next semantic residual is direct THICK on the 17,429 depth4 first-discovery z-using total-length-25/26 states. Do not repeat depth2/depth3 THICK, PROJ depth2-4, GS-Sub, shallow Proof Atlas, or publisher pools.",
+  "prior_durable_head": {
+    "branch": "acc-ak3-depth3-full-closure-20260930-v1",
+    "commit": "9bed414e6a5e17b5ae1f5a09ae52fd3b7348f944",
+    "residual_entering": 2428
+  },
+  "publication": {
+    "candidate_produced": false,
+    "official_acc_verifier_replay_entered": false,
+    "quota_consumed": 0,
+    "submitted": false
+  },
+  "reproducibility": {
+    "depth3_band_sha256": "0c74775f0790548cb21078f515e973e18ba71c17122833cd2972219f3213e16c",
+    "depth3_band_states": 8763,
+    "expected_depth3_band_sha256": "0c74775f0790548cb21078f515e973e18ba71c17122833cd2972219f3213e16c",
+    "fail_first_solver_source_sha256": "5cda347222303ee12da5221d0258e8049fd080fff22fe22e02bcc34aa3d066fa",
+    "generator_source_sha256": "71c0eb876e6fb51761047b3997d841f391b82f6364fc96bebe1a5d220146ffb7"
+  },
+  "schema": "acc-ak3-cap26-thick-depth3-full-closure-v1",
+  "status": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "upstream": {
+    "cap": 26,
+    "commit": "f541c13486b24a4986380f16f97e6b61ee4da55f",
+    "rank": 3,
+    "repository": "SauersML/group-approximation"
+  }
+}
