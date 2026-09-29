@@ -1,0 +1,50 @@
+name: Collatz Crystal Eventual Progress Socket V48
+
+on:
+  push:
+    branches: [collatz-crystal-eventual-progress-socket-v48]
+    paths:
+      - 'formal/Collatz/EventualMacroProgress.lean'
+      - 'formal/Collatz/BiadicRankedNormalization.lean'
+      - 'formal/Collatz/SourceProductZeroTail.lean'
+      - 'lakefile.lean'
+      - '.github/workflows/collatz-crystal-eventual-progress-socket-v48.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify eventual progress-or-exit socket
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-eventual-progress-socket-v48
+          lake env lean --version             | tee evidence/collatz-crystal-eventual-progress-socket-v48/toolchain.txt
+          lake build CollatzFinal
+          f=formal/Collatz/EventualMacroProgress.lean
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
+            echo "Forbidden source token in $f" >&2
+            exit 1
+          fi
+          lake env lean -DautoImplicit=false "$f"             | tee evidence/collatz-crystal-eventual-progress-socket-v48/EventualMacroProgress.lean.log
+          grep -q "zero_tail_kernel_empty_of_eventual_progress_or_exit"             evidence/collatz-crystal-eventual-progress-socket-v48/EventualMacroProgress.lean.log
+          grep -q "collatz_of_zero_tail_eventual_progress_or_exit"             evidence/collatz-crystal-eventual-progress-socket-v48/EventualMacroProgress.lean.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool'             evidence/collatz-crystal-eventual-progress-socket-v48/EventualMacroProgress.lean.log
+          git rev-parse HEAD             | tee evidence/collatz-crystal-eventual-progress-socket-v48/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-eventual-progress-socket-v48
+          path: evidence/collatz-crystal-eventual-progress-socket-v48
+          if-no-files-found: error
