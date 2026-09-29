@@ -35,7 +35,8 @@ jobs:
           target="$(find /tmp/tests/good -type f -path '*/tutorial/086_PSigma.snd.ndjson' | head -1)"
           test -n "$target"
           set +e
-          NUCLEUS_TRACE_GENERIC_NONREC=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_RESIDUAL=1             metatron-kernel/target/release/metatron-kernel < "$target" >/tmp/out 2>/tmp/err
+          NUCLEUS_TRACE_GENERIC_NONREC=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_RESIDUAL=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1 \
+            metatron-kernel/target/release/metatron-kernel < "$target" >/tmp/out 2>/tmp/err
           rc=$?
           set -e
           echo "psigma_rc=$rc"
