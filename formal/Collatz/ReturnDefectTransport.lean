@@ -49,11 +49,13 @@ theorem returnDefect_transport
     _ = A₂ * ((P₁ - A₁) * m - B₁) +
           ((P₁ - A₁) * B₂ - (P₂ - A₂) * B₁) := by
           simp only [Int.mul_add, Int.mul_sub, Int.sub_mul, Int.mul_assoc]
-          have hcross :
-              (P₁ - A₁) * (A₂ * m) =
-                A₂ * ((P₁ - A₁) * m) := by
-            rw [← Int.mul_assoc, Int.mul_comm (P₁ - A₁) A₂, Int.mul_assoc]
-          rw [hcross]
+          have hP :
+              P₁ * (A₂ * m) = A₂ * (P₁ * m) := by
+            rw [← Int.mul_assoc, Int.mul_comm P₁ A₂, Int.mul_assoc]
+          have hA :
+              A₁ * (A₂ * m) = A₂ * (A₁ * m) := by
+            rw [← Int.mul_assoc, Int.mul_comm A₁ A₂, Int.mul_assoc]
+          rw [hP, hA]
           omega
 
 /-- A return law transports its own defect multiplicatively:
