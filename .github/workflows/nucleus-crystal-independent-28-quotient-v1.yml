@@ -178,8 +178,6 @@ jobs:
 
               if imax:
                   root_cause='unresolved-imax-case'
-              elif rulek:
-                  root_cause='typed-rule-k-boundary'
               elif neutral:
                   root_cause='typed-neutral-head-conversion'
               elif stage=='inductive':
