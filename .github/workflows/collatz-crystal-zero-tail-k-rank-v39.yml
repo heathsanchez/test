@@ -1,0 +1,46 @@
+name: Collatz Crystal Zero Tail K Rank V39
+
+on:
+  push:
+    branches: [collatz-crystal-zero-tail-k-rank-v39]
+    paths:
+      - 'experiments/collatz_crystal_zero_tail_k_rank_v39.py'
+      - '.github/workflows/collatz-crystal-zero-tail-k-rank-v39.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Exact zero-tail K-rank falsifier
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-zero-tail-k-rank-v39
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_zero_tail_k_rank_v39.py \
+            | tee evidence/collatz-crystal-zero-tail-k-rank-v39/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-zero-tail-k-rank-v39/result.json'))
+          assert d['schema']=='COLLATZ_CRYSTAL_ZERO_TAIL_K_RANK_V39'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V39_VERDICT',d['verdict'])
+          for r in d['sources']:
+              print('V39_SOURCE',r['name'],r['source_bits'],r['first_simple_exit'],
+                    r['post_zero_tail_K_ge_source'],
+                    r['post_zero_tail_owner_transitions'])
+              print('V39_INCREASES',r['name'],r['first_increases'])
+          print('V39_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-zero-tail-k-rank-v39/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-zero-tail-k-rank-v39
+          path: evidence/collatz-crystal-zero-tail-k-rank-v39
+          if-no-files-found: error
