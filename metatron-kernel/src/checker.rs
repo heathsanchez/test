@@ -617,6 +617,44 @@ fn owned_single_type_recursor_metadata_is_definitely_malformed(
     )
 }
 
+fn multi_constructor_small_elim_is_definitely_malformed(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [recursor]) = (block.types.as_slice(), block.recursors.as_slice()) else {
+        return false;
+    };
+    if block.constructors.len() < 2
+        || inductive.num_nested != 0
+        || inductive.is_unsafe
+        || block.constructors.iter().any(|constructor| constructor.is_unsafe)
+        || recursor.is_unsafe
+    {
+        return false;
+    }
+
+    let Some(binder_count) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return false;
+    };
+    let Ok(binder_count) = usize::try_from(binder_count) else {
+        return false;
+    };
+    let Some((_, result)) = pi_spine(export, inductive.ty, binder_count) else {
+        return false;
+    };
+    let Some(Expr::Sort(level)) = export.exprs.get(result) else {
+        return false;
+    };
+
+    // Lean permits an independent elimination universe only when the
+    // inductive sort is provably nonzero, or for the separately handled
+    // singleton-like Prop cases. A multi-constructor family whose sort may
+    // collapse to Prop is therefore small-eliminating and its recursor must
+    // carry exactly the declaration's own universe parameters.
+    !exported_level_is_definitely_nonzero(export, *level, 128)
+        && recursor.level_params != inductive.level_params
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -624,6 +662,12 @@ fn check_inductive(
     limits: Limits,
     delta_policy: DeltaPolicy,
 ) -> Result<Environment, Verdict> {
+    // Crystal negative reuse: reject only a declaration-level universe
+    // contradiction. This grants no new positive inductive authority.
+    if multi_constructor_small_elim_is_definitely_malformed(export, block) {
+        return Err(Verdict::Reject);
+    }
+
     // G26-001: negative-only recursor coherence. A single safe inductive
     // that explicitly owns a .rec declaration cannot advertise impossible
     // motive/minor/rule cardinalities. This grants no positive family
