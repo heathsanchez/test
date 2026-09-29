@@ -1,0 +1,39 @@
+name: Collatz Crystal Eventual Macro Progress V47
+on:
+  push:
+    branches: [collatz-crystal-eventual-macro-progress-v47]
+    paths:
+      - 'experiments/collatz_crystal_eventual_macro_progress_v47.py'
+      - '.github/workflows/collatz-crystal-eventual-macro-progress-v47.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit eventual macro progress
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-eventual-macro-progress-v47
+          PYTHONPATH=experiments python experiments/collatz_crystal_eventual_macro_progress_v47.py | tee evidence/collatz-crystal-eventual-macro-progress-v47/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-eventual-macro-progress-v47/result.json'))
+          assert d['schema']=='COLLATZ_CRYSTAL_EVENTUAL_MACRO_PROGRESS_V47'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V47_VERDICT',d['verdict'])
+          print('V47_STATS',d['stats'])
+          print('V47_SEPARATORS',d['separators'][:3])
+          print('V47_LONGEST',d['longest_progress_waits'][:5])
+          print('V47_CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-eventual-macro-progress-v47
+          path: evidence/collatz-crystal-eventual-macro-progress-v47
+          if-no-files-found: error
