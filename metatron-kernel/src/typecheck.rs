@@ -286,7 +286,134 @@ impl<'a> TypeChecker<'a> {
                         obstruction: *obstruction,
                     };
                 }
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    if std::env::var_os("NUCLEUS_TRACE_APP_PI").is_some() {
+                        let fun_kind = match self.expression(*fun) {
+                            Some(Expr::BVar(_)) => "bvar",
+                            Some(Expr::NatLit(_)) => "natlit",
+                            Some(Expr::StrLit(_)) => "strlit",
+                            Some(Expr::Sort(_)) => "sort",
+                            Some(Expr::Const { .. }) => "const",
+                            Some(Expr::App { .. }) => "app",
+                            Some(Expr::Lam { .. }) => "lam",
+                            Some(Expr::Pi { .. }) => "pi",
+                            Some(Expr::Let { .. }) => "let",
+                            Some(Expr::Proj { .. }) => "proj",
+                            None => "missing",
+                        };
+
+                        let inferred_tag = match &function_type {
+                            Judgment::Proven {
+                                value: TypeValue::Sort(_),
+                                ..
+                            } => "proven_sort".to_string(),
+                            Judgment::Proven {
+                                value: TypeValue::Pi { .. },
+                                ..
+                            } => "proven_pi".to_string(),
+                            Judgment::Proven {
+                                value: TypeValue::Term(_),
+                                ..
+                            } => "proven_term".to_string(),
+                            Judgment::Refuted { obstruction } => {
+                                format!("refuted_{}", obstruction.0)
+                            }
+                            Judgment::Unknown { residual } => {
+                                format!("unknown_{}", residual.0)
+                            }
+                        };
+
+                        let mut reducible_tag = "na".to_string();
+                        let mut full_tag = "na".to_string();
+                        let mut reducible_detail = None;
+                        let mut full_detail = None;
+
+                        if let Judgment::Proven {
+                            value: TypeValue::Term(closure),
+                            ..
+                        } = &function_type
+                        {
+                            let classify = |judgment: &Judgment<Value>| -> String {
+                                match judgment {
+                                    Judgment::Unknown { residual } => {
+                                        format!("unknown_{}", residual.0)
+                                    }
+                                    Judgment::Refuted { obstruction } => {
+                                        format!("refuted_{}", obstruction.0)
+                                    }
+                                    Judgment::Proven {
+                                        value: Value::NatLit(_),
+                                        ..
+                                    } => "natlit".to_string(),
+                                    Judgment::Proven {
+                                        value: Value::Sort(_),
+                                        ..
+                                    } => "sort".to_string(),
+                                    Judgment::Proven {
+                                        value: Value::Pi { .. },
+                                        ..
+                                    } => "pi".to_string(),
+                                    Judgment::Proven {
+                                        value: Value::Lam { .. },
+                                        ..
+                                    } => "lam".to_string(),
+                                    Judgment::Proven {
+                                        value: Value::Neutral(neutral),
+                                        ..
+                                    } => match &neutral.head {
+                                        NeutralHead::Free(_) => {
+                                            format!("neutral_free_spine{}", neutral.spine.len())
+                                        }
+                                        NeutralHead::Const { name, levels } => format!(
+                                            "neutral_const_body{}_levels{}_spine{}",
+                                            usize::from(
+                                                self.environment
+                                                    .definition_bodies()
+                                                    .contains_key(name)
+                                            ),
+                                            levels.len(),
+                                            neutral.spine.len()
+                                        ),
+                                        NeutralHead::Projection { .. } => {
+                                            format!("neutral_projection_spine{}", neutral.spine.len())
+                                        }
+                                    },
+                                }
+                            };
+
+                            let machine = self.machine();
+                            let reducible = machine.expose(
+                                closure.clone(),
+                                Transparency::Reducible,
+                                *remaining,
+                            );
+                            let full =
+                                machine.expose(closure.clone(), Transparency::Full, *remaining);
+                            reducible_tag = classify(&reducible);
+                            full_tag = classify(&full);
+                            reducible_detail = Some(format!("{:?}", reducible));
+                            full_detail = Some(format!("{:?}", full));
+                        }
+
+                        eprintln!(
+                            "NUCLEUS_APP_PI_FAIL:fun_expr={}:fun_kind={}:context_depth={}:remaining={}:inferred={}:reducible={}:full={}",
+                            fun.0,
+                            fun_kind,
+                            context.len(),
+                            *remaining,
+                            inferred_tag,
+                            reducible_tag,
+                            full_tag
+                        );
+                        eprintln!(
+                            "NUCLEUS_APP_PI_DETAIL:fun_expr={}:fun_node={:?}:function_type={:?}:reducible={}:full={}",
+                            fun.0,
+                            self.expression(*fun),
+                            function_type,
+                            reducible_detail.as_deref().unwrap_or("na"),
+                            full_detail.as_deref().unwrap_or("na")
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
