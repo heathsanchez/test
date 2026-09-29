@@ -723,7 +723,18 @@ fn compare_neutral_heads(
             }
             Judgment::proven((), "same-rigid-constant")
         }
-        _ => Judgment::refuted("distinct-neutral-heads"),
+        _ => {
+            if std::env::var_os("NUCLEUS_TRACE_CRYSTAL_NEUTRAL_HEAD").is_some() {
+                eprintln!(
+                    "NUCLEUS_CRYSTAL_NEUTRAL_HEAD:left={:?}:left_spine={}:right={:?}:right_spine={}",
+                    left.head,
+                    left.spine.len(),
+                    right.head,
+                    right.spine.len(),
+                );
+            }
+            Judgment::refuted("distinct-neutral-heads")
+        }
     }
 }
 
