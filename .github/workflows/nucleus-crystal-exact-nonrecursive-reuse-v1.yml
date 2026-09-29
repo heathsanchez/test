@@ -56,6 +56,18 @@ jobs:
           tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
           test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
 
+      - name: Trace fueled-chain separator
+        run: |
+          set -euo pipefail
+          target="$(find /tmp/tests/good -type f -path '*/perf/fueled-chain.ndjson' | head -1)"
+          test -n "$target"
+          set +e
+          NUCLEUS_TRACE_GENERIC_NONREC=1 metatron-kernel/target/release/metatron-kernel < "$target" >/tmp/fueled.out 2>/tmp/fueled.err
+          rc=$?
+          set -e
+          echo "fueled_chain_rc=$rc"
+          grep 'NUCLEUS_GENERIC_NONREC:' /tmp/fueled.err || true
+
       - name: Causal 193-case qualification
         run: |
           set -euo pipefail
