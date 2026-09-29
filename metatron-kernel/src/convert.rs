@@ -610,6 +610,7 @@ fn certified_structure_eta(
     true
 }
 
+#[allow(clippy::too_many_arguments)]
 fn compare_values(
     checker: &TypeChecker<'_>,
     left: &Value,
@@ -726,6 +727,7 @@ fn compare_values(
     Judgment::proven((), "rigid-value-comparison")
 }
 
+#[allow(clippy::too_many_arguments)]
 fn compare_nat_literal_neutral(
     checker: &TypeChecker<'_>,
     literal: &crate::nat::BigNat,
