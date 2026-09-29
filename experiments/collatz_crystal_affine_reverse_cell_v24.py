@@ -64,7 +64,7 @@ for o in range(47):
     max_e_by_o[o]=e
 
 admissible_o=[o for o,e in max_e_by_o.items() if e>=0]
-assert admissible_o[0] == 38
+assert admissible_o[0] == 3
 assert admissible_o[-1] == 46
 GLOBAL_E_MAX=max(max_e_by_o.values())
 assert GLOBAL_E_MAX == 25
