@@ -643,6 +643,7 @@ impl<'a> TypeChecker<'a> {
                     LevelSubstitution::new(substitution),
                 ))
             }
+            NeutralHead::Projection { .. } => return None,
         };
 
         for argument in &neutral.spine {
