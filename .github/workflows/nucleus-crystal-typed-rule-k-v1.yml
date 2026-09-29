@@ -73,6 +73,7 @@ jobs:
               if trace:
                   env['NUCLEUS_TRACE_DOWNSTREAM']='1'
                   env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+                  env['NUCLEUS_TRACE_RULE_K']='1'
               with p.open('rb') as f:
                   q=subprocess.run(
                       [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
@@ -104,16 +105,17 @@ jobs:
           changes=[r for r in rows if r['base']!=r['candidate']]
           by={r['test']:r for r in rows}
 
+          traces={}
+          for d,n in [('good','tutorial/099_ruleK'),('bad','tutorial/100_ruleKbad'),('bad','tutorial/101_ruleKAcc')]:
+              rc,err=rr(cand,root/d/(n+'.ndjson'),True)
+              traces[n]={'rc':rc,'marks':[x for x in err.splitlines() if 'NUCLEUS_' in x][-160:]}
+              print(json.dumps({'trace_target':n,'rc':rc,'marks':traces[n]['marks']},sort_keys=True))
+
           assert by['tutorial/099_ruleK']['base'] in (2,3)
           assert by['tutorial/099_ruleK']['candidate']==0, by['tutorial/099_ruleK']
           assert by['tutorial/100_ruleKbad']['base'] in (2,3)
           assert by['tutorial/100_ruleKbad']['candidate']==1, by['tutorial/100_ruleKbad']
           assert by['tutorial/101_ruleKAcc']['candidate']==2, by['tutorial/101_ruleKAcc']
-
-          traces={}
-          for d,n in [('good','tutorial/099_ruleK'),('bad','tutorial/100_ruleKbad'),('bad','tutorial/101_ruleKAcc')]:
-              rc,err=rr(cand,root/d/(n+'.ndjson'),True)
-              traces[n]={'rc':rc,'marks':[x for x in err.splitlines() if 'NUCLEUS_' in x][-100:]}
 
           out={
               'schema':'nucleus-crystal-typed-rule-k-v1',
