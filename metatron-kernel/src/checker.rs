@@ -6697,6 +6697,7 @@ fn install_certified_recursor_reduction(
         .map(|(constructor, rule)| {
             Ok(RecursorRule {
                 constructor: constructor.name,
+                constructor_level_params: constructor.level_params.clone(),
                 num_params: usize::try_from(constructor.num_params).map_err(|_| Verdict::Reject)?,
                 num_fields: usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?,
                 rhs: rule.rhs,
@@ -6704,6 +6705,7 @@ fn install_certified_recursor_reduction(
         })
         .collect::<Result<Vec<_>, Verdict>>()?;
     let reduction = RecursorReduction {
+        k: recursor.k,
         num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
         num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
         level_params: recursor.level_params.clone(),
@@ -8244,6 +8246,7 @@ fn check_binary_enum(
             .map(|(constructor, rule)| {
                 Ok(RecursorRule {
                     constructor: constructor.name,
+                    constructor_level_params: constructor.level_params.clone(),
                     num_params: usize::try_from(constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(constructor.num_fields)
@@ -8253,6 +8256,7 @@ fn check_binary_enum(
             })
             .collect::<Result<Vec<_>, Verdict>>()?;
         let reduction = RecursorReduction {
+            k: recursor.k,
             num_params: usize::try_from(recursor.num_params).map_err(|_| Verdict::Reject)?,
             num_indices: usize::try_from(recursor.num_indices).map_err(|_| Verdict::Reject)?,
             level_params: recursor.level_params.clone(),
@@ -8819,13 +8823,18 @@ impl ExactBinaryProductDerivation<'_> {
             environment
         };
 
-        // G32 reuses G31's already-qualified constructor-iota machine. Only
-        // exact Prod opts in here; And/PProd/PUnit/Eq remain opaque.
-        if matches!(self.law, BinaryProductSortLaw::Prod { .. }) {
+        // Reuse the qualified constructor-iota machine for exact Prod and
+        // the independently validated exact Eq recursor. Eq's exported K bit
+        // is separately guarded at the typed conversion boundary.
+        if matches!(
+            self.law,
+            BinaryProductSortLaw::Prod { .. } | BinaryProductSortLaw::Eq { .. }
+        ) {
             let [rule] = self.recursor.rules.as_slice() else {
                 return Err(Verdict::Reject);
             };
             let reduction = RecursorReduction {
+                k: self.recursor.k,
                 num_params: usize::try_from(self.recursor.num_params)
                     .map_err(|_| Verdict::Reject)?,
                 num_indices: usize::try_from(self.recursor.num_indices)
@@ -8833,6 +8842,7 @@ impl ExactBinaryProductDerivation<'_> {
                 level_params: self.recursor.level_params.clone(),
                 rules: vec![RecursorRule {
                     constructor: self.constructor.name,
+                    constructor_level_params: self.constructor.level_params.clone(),
                     num_params: usize::try_from(self.constructor.num_params)
                         .map_err(|_| Verdict::Reject)?,
                     num_fields: usize::try_from(self.constructor.num_fields)
