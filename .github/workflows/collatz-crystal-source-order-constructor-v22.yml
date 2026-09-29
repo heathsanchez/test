@@ -1,0 +1,44 @@
+name: Collatz Crystal Source Order Constructor V22
+
+on:
+  push:
+    branches: [collatz-crystal-source-order-constructor-v22]
+    paths:
+      - 'experiments/collatz_crystal_source_order_constructor_v22.cpp'
+      - '.github/workflows/collatz-crystal-source-order-constructor-v22.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run source-order constructor ablation
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-order-constructor-v22
+          g++ -O3 -std=c++17 experiments/collatz_crystal_source_order_constructor_v22.cpp -o /tmp/v22
+          /tmp/v22 | tee evidence/collatz-crystal-source-order-constructor-v22/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-source-order-constructor-v22/result.json'
+          d=json.load(open(p))
+          assert d['tested_odd_sources']==524287
+          assert d['censored']==0
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V22_COUNTS',d['direct'],d['splice'],d['lower_source_merge'])
+          print('V22_RESIDUAL',d['constructor_free_boundary'])
+          print('V22_MAX_DEPTHS',d['max_close_depth'],d['max_merge_depth'],d['max_smaller_source_depth'])
+          print('V22_CLOSEST_RATIO',d['closest_merge_source_ratio'])
+          print('V22_MIN_GAP',d['minimum_source_gap'])
+          print('V22_TOP_DDEPTH',d['top_delta_depth'])
+          print('V22_TOP_DODD',d['top_delta_odd'])
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: collatz-crystal-source-order-constructor-v22
+          path: evidence/collatz-crystal-source-order-constructor-v22
