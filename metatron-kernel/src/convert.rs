@@ -255,6 +255,23 @@ pub(crate) fn convert_with_policy_in_context(
                 let (Some(cheap_left), Some(cheap_right)) =
                     (cheap_left.proven_value(), cheap_right.proven_value())
                 else {
+                    if std::env::var_os("NUCLEUS_TRACE_CRYSTAL_CONV_EXPOSURE").is_some() {
+                        let full_left =
+                            machine.expose(left.clone(), Transparency::Full, remaining);
+                        let full_right =
+                            machine.expose(right.clone(), Transparency::Full, remaining);
+                        eprintln!(
+                            "NUCLEUS_CRYSTAL_CONV_EXPOSURE:pair:depth={}:remaining={}:left={:?}:right={:?}:cheap_left={:?}:cheap_right={:?}:full_left={:?}:full_right={:?}",
+                            depth,
+                            remaining,
+                            left,
+                            right,
+                            cheap_left,
+                            cheap_right,
+                            full_left,
+                            full_right,
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 match compare_values(
@@ -305,6 +322,18 @@ pub(crate) fn convert_with_policy_in_context(
                 let machine = checker.machine();
                 let exposed = machine.expose(term.clone(), Transparency::Reducible, remaining);
                 let Some(exposed) = exposed.proven_value() else {
+                    if std::env::var_os("NUCLEUS_TRACE_CRYSTAL_CONV_EXPOSURE").is_some() {
+                        let full = machine.expose(term.clone(), Transparency::Full, remaining);
+                        eprintln!(
+                            "NUCLEUS_CRYSTAL_CONV_EXPOSURE:mixed:depth={}:remaining={}:term={:?}:other={:?}:reducible={:?}:full={:?}",
+                            depth,
+                            remaining,
+                            term,
+                            other,
+                            exposed,
+                            full,
+                        );
+                    }
                     return Judgment::unknown("conversion-exposure");
                 };
                 let exposed = if let Some(exposed) = value_as_type(exposed, depth) {
