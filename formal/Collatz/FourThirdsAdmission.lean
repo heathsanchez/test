@@ -85,16 +85,19 @@ theorem two_pow_odds_mul_bias_add_depth_le
         simp only [oddCount, bias, h, ite_true]
         change 2 ^ q * (B + 2 ^ (k + 1)) ≤
           2 ^ (k + 1) * 3 ^ q
+        have hpowadd :
+            2 ^ (k + 1) = 2 ^ k + 2 ^ k := by
+          rw [Nat.pow_succ, Nat.mul_two]
         calc
           2 ^ q * (B + 2 ^ (k + 1)) =
               2 ^ q * (B + 2 ^ k) + 2 ^ q * 2 ^ k := by
-                rw [Nat.pow_succ]
-                ring
+                rw [hpowadd]
+                simp only [Nat.mul_add]
+                omega
           _ ≤ 2 ^ k * 3 ^ q + 2 ^ k * 3 ^ q :=
                 Nat.add_le_add hbase hextra
           _ = 2 ^ (k + 1) * 3 ^ q := by
-                rw [Nat.pow_succ]
-                ring
+                rw [hpowadd, Nat.add_mul]
       · let q := oddCount n k
         let B := bias n k
         have hbase :
@@ -105,15 +108,20 @@ theorem two_pow_odds_mul_bias_add_depth_le
         change
           2 ^ (q + 1) * (3 * B + 2 ^ k + 2 ^ (k + 1)) ≤
             2 ^ (k + 1) * 3 ^ (q + 1)
+        have hinner :
+            3 * B + 2 ^ k + 2 ^ (k + 1) =
+              3 * (B + 2 ^ k) := by
+          rw [Nat.pow_succ, Nat.mul_two]
+          omega
         calc
           2 ^ (q + 1) * (3 * B + 2 ^ k + 2 ^ (k + 1)) =
               6 * (2 ^ q * (B + 2 ^ k)) := by
-                rw [Nat.pow_succ, Nat.pow_succ]
-                ring
+                rw [hinner, Nat.pow_succ]
+                simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
           _ ≤ 6 * (2 ^ k * 3 ^ q) := hmul
           _ = 2 ^ (k + 1) * 3 ^ (q + 1) := by
                 rw [Nat.pow_succ, Nat.pow_succ]
-                ring
+                simp [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
 
 /-- The V17 synthetic local tuple (27,53,36,451) is excluded already by the
 universal lower bias envelope.  This is a regression theorem documenting that
