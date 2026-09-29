@@ -630,16 +630,21 @@ fn prop_projection_target(
         let Declaration::Inductive(block) = declaration else {
             continue;
         };
-        let inductive = block
+        let Some(inductive) = block
             .types
             .iter()
-            .find(|inductive| inductive.name == type_name)?;
+            .find(|inductive| inductive.name == type_name)
+        else {
+            continue;
+        };
 
         let mut constructors = block
             .constructors
             .iter()
             .filter(|constructor| constructor.inductive == type_name);
-        let constructor = constructors.next()?;
+        let Some(constructor) = constructors.next() else {
+            continue;
+        };
         if constructors.next().is_some() {
             continue;
         }
