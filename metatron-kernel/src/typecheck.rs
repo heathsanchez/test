@@ -263,6 +263,33 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
+                if std::env::var_os("NUCLEUS_TRACE_APPLICATION_INFER").is_some() {
+                    match &function_type {
+                        Judgment::Proven { value: TypeValue::Pi { .. }, .. } =>
+                            eprintln!("NUCLEUS_APP_INFER:proven-pi"),
+                        Judgment::Proven { value: TypeValue::Sort(_), .. } =>
+                            eprintln!("NUCLEUS_APP_INFER:proven-sort"),
+                        Judgment::Proven { value: TypeValue::Term(closure), .. } => {
+                            let machine = self.machine();
+                            let reducible = machine.expose(
+                                closure.clone(), Transparency::Reducible, *remaining
+                            );
+                            let shape = match reducible.proven_value() {
+                                Some(Value::Pi { .. }) => "pi",
+                                Some(Value::Neutral(_)) => "neutral",
+                                Some(Value::Sort(_)) => "sort",
+                                Some(Value::Lam { .. }) => "lam",
+                                Some(Value::NatLit(_)) => "nat",
+                                None => "unknown",
+                            };
+                            eprintln!("NUCLEUS_APP_INFER:proven-term:reducible={}", shape);
+                        }
+                        Judgment::Refuted { obstruction } =>
+                            eprintln!("NUCLEUS_APP_INFER:refuted:{}", obstruction.0),
+                        Judgment::Unknown { residual } =>
+                            eprintln!("NUCLEUS_APP_INFER:unknown:{}", residual.0),
+                    }
+                }
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
                         obstruction: *obstruction,
