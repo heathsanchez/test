@@ -109,6 +109,7 @@ first={}
 new_cells=set()
 new_laws=set()
 new_edges=set()
+new_anchors=set()
 max_d2=0
 max_r3=0
 tested=0
@@ -132,6 +133,29 @@ for r in LIVE:
 
             by=defaultdict(list)
             for e in rr["events"]:
+                lk=law_key(e)
+
+                # A new episode anchor is already an exact separator against
+                # the frozen V40 grammar.  Do not crash trying to classify it
+                # through a Q3 bank that was never learned for this anchor.
+                if e["anchor"] not in v40.banks:
+                    counts["NEW_ANCHOR"]+=1
+                    new_anchors.add(e["anchor"])
+                    if lk not in ref_laws:
+                        counts["NEW_RETURN_LAW"]+=1
+                        new_laws.add(lk)
+                    first.setdefault("NEW_ANCHOR",{
+                        "r":r,"a":a,"motif":motif,"t":str(t),"source":str(n),
+                        "anchor":e["anchor"],"k0":e["k0"],"k1":e["k1"],
+                        "law":repr(lk),
+                    })
+                    first.setdefault("NEW_RETURN_LAW",{
+                        "r":r,"a":a,"motif":motif,"t":str(t),"source":str(n),
+                        "k0":e["k0"],"k1":e["k1"],
+                        "law":repr(lk),"source_key":"UNCLASSIFIED_NEW_ANCHOR",
+                    })
+                    continue
+
                 e["intrinsic_key"],e["source_key"]=v40.event_keys(e)
                 key=e["source_key"]
                 ik=e["intrinsic_key"]
@@ -141,7 +165,6 @@ for r in LIVE:
                     max_r3=max(max_r3,r3)
                 by[e["anchor"]].append(e)
 
-                lk=law_key(e)
                 if lk not in ref_laws:
                     counts["NEW_RETURN_LAW"]+=1
                     new_laws.add(lk)
@@ -184,7 +207,7 @@ for rr in v40.runs:
         assert law_key(e) in ref_laws
 
 rejected=any(counts[k] for k in
-             ("NEW_CELL","SUCCESSOR_COLLISION","TERMINAL_REOPEN","NEW_RETURN_LAW"))
+             ("NEW_ANCHOR","NEW_CELL","SUCCESSOR_COLLISION","TERMINAL_REOPEN","NEW_RETURN_LAW"))
 verdict=("FROZEN_V40_BANK_COMPLETENESS_REJECTED"
          if rejected else
          "NO_FALSIFIER_IN_ADVERSARIAL_V25xQ3_CHALLENGE")
@@ -208,6 +231,8 @@ result={
   },
   "counts":dict(sorted(counts.items())),
   "exit_counts":dict(sorted(exit_counts.items())),
+  "distinct_new_anchors":len(new_anchors),
+  "new_anchors":sorted(new_anchors),
   "distinct_new_laws":len(new_laws),
   "distinct_new_cells":len(new_cells),
   "distinct_new_edges":len(new_edges),
