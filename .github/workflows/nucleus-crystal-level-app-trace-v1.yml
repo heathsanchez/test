@@ -1,0 +1,83 @@
+name: Nucleus Crystal Level App Trace v1
+
+on:
+  push:
+    branches: [nucleus-crystal-level-app-trace-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-level-app-trace-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-level-app-trace-v1
+  cancel-in-progress: true
+
+env:
+  ARENA_ARTIFACT: 10712869614
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build post-level-repair candidate
+        run: |
+          set -euo pipefail
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test -f /tmp/tests/good/perf/let-ladder.ndjson
+
+      - name: Trace post-level application residual
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-level-app-trace-v1
+          set +e
+          NUCLEUS_TRACE_LEVEL_RESOLVE=1 \
+          NUCLEUS_TRACE_APPLICATION_INFER=1 \
+          NUCLEUS_TRACE_DOWNSTREAM=1 \
+          NUCLEUS_TRACE_RESIDUAL=1 \
+          NUCLEUS_TRACE_NEUTRAL_HEADS=1 \
+          metatron-kernel/target/release/metatron-kernel \
+            < /tmp/tests/good/perf/let-ladder.ndjson \
+            > /tmp/out.txt 2> /tmp/err.txt
+          rc=$?
+          set -e
+          test "$rc" -eq 2
+          grep -E 'NUCLEUS_LEVEL_RESOLVE_FAIL:|NUCLEUS_APP_INFER:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:|NUCLEUS_DOWNSTREAM:|NUCLEUS_RESIDUAL:' /tmp/err.txt || true
+          cp /tmp/err.txt metatron-kernel/evidence-out/crystal-level-app-trace-v1/stderr.txt
+          python3 - <<'PY'
+          import json,pathlib
+          lines=pathlib.Path('/tmp/err.txt').read_text(errors='replace').splitlines()
+          marks=[x for x in lines if 'NUCLEUS_' in x]
+          out={
+            'schema':'nucleus-crystal-level-app-trace-v1',
+            'test':'perf/let-ladder',
+            'rc':2,
+            'marks':marks[-800:],
+          }
+          pathlib.Path(
+            'metatron-kernel/evidence-out/crystal-level-app-trace-v1/result.json'
+          ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-level-app-trace-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-level-app-trace-v1
+          if-no-files-found: error
