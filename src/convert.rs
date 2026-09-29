@@ -478,7 +478,7 @@ fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option
         match checker.expression(current.expr)? {
             Expr::BVar(index) => match current.env.lookup(*index)? {
                 EnvBinding::Closure(bound) => current = bound,
-                EnvBinding::Free(_) => return Some(current),
+                EnvBinding::Free(_) | EnvBinding::Neutral(_) => return Some(current),
             },
             Expr::Let { value, body, .. } => {
                 let value = current.sibling(*value, current.env.clone());
