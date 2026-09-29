@@ -803,29 +803,9 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
     }
     let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
 
-    // Crystal transfer boundary: do not generalize into representation
-    // classes whose authority is explicitly sealed by earlier generations.
-    //
-    // The one principled exception is a genuinely dependent 2-parameter,
-    // 2-field singleton structure: the second field type must mention the
-    // first field (BVar(0)).  This separates Subtype/PSigma-like dependent
-    // pairs from the sealed PProd representation class without using names.
-    if let [constructor] = block.constructors.as_slice() {
-        let Ok(fields) = usize::try_from(constructor.num_fields) else { return false; };
-        if fields == 0 {
-            return false;
-        }
-        if p == 2 && fields == 2 {
-            let Some((domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
-                return false;
-            };
-            let second_field = domains[p + 1];
-            if !expression_contains_bvar(export, second_field, 0) {
-                return false;
-            }
-        }
-    }
-
+    // Crystal V2: the full constructor/recursor reconstruction is the
+    // authority boundary. Historical name seals are treated as supersedable
+    // epistemic guards, not kernel semantics.
     matches!(
         pi_spine(export, inductive.ty, p),
         Some((_, result))
