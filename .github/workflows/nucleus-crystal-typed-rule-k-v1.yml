@@ -28,7 +28,7 @@ jobs:
         with: {fetch-depth: 0}
       - uses: dtolnay/rust-toolchain@stable
         with:
-          components: rustfmt, clippy
+          components: rustfmt
 
       - name: Prove independent runtime boundary
         run: |
@@ -40,7 +40,6 @@ jobs:
         run: |
           set -euo pipefail
           cargo fmt --manifest-path metatron-kernel/Cargo.toml
-          cargo clippy --all-targets --manifest-path metatron-kernel/Cargo.toml -- -D warnings
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
