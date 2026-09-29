@@ -767,12 +767,6 @@ fn check_inductive(
         return check_exact_closed_reflexive_tree(export, environment, block, limits, delta_policy);
     }
 
-    // Crystal reuse: exact previously-derived nonrecursive constructor/recursor
-    // contract, replayed on the current frontier. This is not shape admission.
-    if generic_nonrecursive_type_candidate(export, block) {
-        return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
-    }
-
     match block.constructors.len() {
         0 => check_empty_inductive(export, environment, block, limits, delta_policy),
         1 => check_single_constructor_inductive(export, environment, block, limits, delta_policy),
@@ -987,6 +981,8 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
+    } else if generic_nonrecursive_type_candidate(export, block) {
+        check_generic_nonrecursive_type(export, environment, block, limits, delta_policy)
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
@@ -7320,6 +7316,8 @@ fn check_binary_enum(
             return Err(Verdict::Unknown);
         }
         BinaryEnumSortLaw::Type
+    } else if generic_nonrecursive_type_candidate(export, block) {
+        return check_generic_nonrecursive_type(export, environment, block, limits, delta_policy);
     } else {
         return Err(Verdict::Unknown);
     };
