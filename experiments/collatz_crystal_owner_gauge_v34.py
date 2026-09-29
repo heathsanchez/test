@@ -212,6 +212,48 @@ for cc,ee in recurrent:
     assert sum(e[4] for e in ee)==0
     assert Counter(e[3] for e in ee)==Counter({"I":19})
 
+
+# Source-anchor control: a cost-20/B transition can be a strict local block
+# contraction while remaining far above the original source.  Therefore V30
+# does not license deleting B from the minimal-bad graph.
+r0 = 233
+S0,C0,w0 = best[r0]
+assert S0 == 16 and C0 == 920981
+y0_num = MOD*N0 + C0
+assert y0_num % (2**S0) == 0
+y = y0_num // (2**S0)
+assert y == 315535801847528816873
+m = N0
+r = r0
+first_B = None
+for depth in range(16, 80):
+    bit = y & 1
+    S,C,w = best[r]
+    nw = v32.next_window(w, bit)
+    cls,v = v32.classify_word(nw)
+    if cls == "B":
+        yp = shortcut(y)
+        first_B = {
+            "depth": depth,
+            "window_owner": m,
+            "endpoint_before": y,
+            "endpoint_after": yp,
+        }
+        break
+    opts=[e for e in corrected if e[0]==r and e[1]==v and e[2]==bit and e[3]==cls]
+    assert len(opts)==1
+    _u,_v,_bit,_cls,_drop,a,b,_S,_Sp=opts[0]
+    mp=a*m+b
+    assert mp.denominator==1
+    m=int(mp)
+    y=shortcut(y)
+    r=v
+
+assert first_B is not None
+assert first_B["depth"] == 54
+assert first_B["endpoint_after"] < first_B["window_owner"]
+assert first_B["endpoint_after"] > N0
+
 # Correct the V33 sharp K cycle.
 cycle=[
 169775,254663,381995,41552,328049,492074,246037,369056,184528,
@@ -282,9 +324,16 @@ payload={
       "(3m-15)/2":expanding_b[Fraction(-15,2)],
     }
   },
+  "B_source_anchor_control":{
+    "first_B_transition_on_V23_representative":first_B,
+    "local_descent":True,
+    "direct_source_descent":False,
+    "consequence":"V30 proves local 12-odd block contraction, not OrdinaryExit; B cannot be deleted from the live minimal-bad graph without source-margin evidence"
+  },
   "zero_slack_boundary":{
     "recurrent_components":len(recurrent),
     "shape":"66 pure-I cycles, each length 19 with 12 odd steps and no K-drop",
+    "conditional_boundary":"valid on the V32 no-B graph only",
     "unchanged_from_V33":True
   },
   "corrected_sharp_K_cycle":{
@@ -300,10 +349,10 @@ payload={
     "fixed_point_lt_4":True,
     "contracts_V23_source_floor":True
   },
-  "scientific_verdict":"V33_OWNER_MAP_ARITHMETIC_CORRECTED; GRAPH_DENSITY_RESULTS_SURVIVE; OWNER_ONLY_CLOSEOUT_REJECTED_AS_PRESENTATION_GAUGE",
+  "scientific_verdict":"V33_OWNER_MAP_ARITHMETIC_CORRECTED; V32_V33_GRAPH_RESULTS_RETAINED_ONLY_CONDITIONALLY_ON_NO_B; OWNER_ONLY_CLOSEOUT_REJECTED_AS_PRESENTATION_GAUGE",
   "next_residual":{
-    "name":"SOURCE_ANCHORED_CRITICAL_K_MIXTURE",
-    "statement":"Carry the fixed original source n (or the exact SourceProduct tail/canonical-M margin) through the V32 tradeoff. The finite owner coordinate alone is gauge-equivalent to endpoint dynamics and cannot exclude the aperiodic critical mixture.",
+    "name":"SOURCE_ANCHORED_B_K_MARGIN",
+    "statement":"Return to V27's exact residual: carry the fixed original source n and canonical source-relative margin through both B and K events. V30 B contraction is local only; the finite owner coordinate is gauge-equivalent to endpoint dynamics.",
     "forbidden_shortcuts":["reuse V33 owner fixed point","fit chamber-only owner rank","larger 3-adic chamber"]
   },
   "universal_status":"UNKNOWN",
