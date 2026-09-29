@@ -126,6 +126,24 @@ impl<'a> TypeChecker<'a> {
         )
     }
 
+    pub(crate) fn is_proposition_in_context(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        budget: usize,
+    ) -> Judgment<()> {
+        let mut remaining = budget;
+        self.check_in(
+            expression,
+            &TypeValue::Sort(LevelTerm::Zero),
+            context,
+            frame,
+            &mut remaining,
+            false,
+        )
+    }
+
     pub fn convert(&self, left: &TypeValue, right: &TypeValue, budget: usize) -> Judgment<()> {
         crate::convert::convert_with_policy_at_depth(
             self,
