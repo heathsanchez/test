@@ -37,7 +37,7 @@ theorem affineBudget_compose
   have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
     rw [← Int.mul_assoc, Int.mul_comm A₂ P₁, Int.mul_assoc]
   have hb : B₂ * P₁ = P₁ * B₂ := by
-    rw [Int.Int.mul_comm B₂ P₁]
+    rw [Int.mul_comm B₂ P₁]
   rw [hcross, hb]
   omega
 
@@ -52,7 +52,7 @@ theorem affineBudget_composite_expanded
   have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
     rw [← Int.mul_assoc, Int.mul_comm A₂ P₁, Int.mul_assoc]
   have hb : B₂ * P₁ = P₁ * B₂ := by
-    rw [Int.Int.mul_comm B₂ P₁]
+    rw [Int.mul_comm B₂ P₁]
   rw [hcross, hb]
   omega
 
@@ -85,10 +85,10 @@ theorem affineBudget_compose_pos_implies_component_pos
       have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := by omega
       have hw₁ :
           A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
-        Int.Int.mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
+        Int.mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
       have hw₂ :
           P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
-        Int.Int.mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
+        Int.mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
       have hsum :
           A₂ * affineBudget A₁ B₁ P₁ L +
             P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 := by
