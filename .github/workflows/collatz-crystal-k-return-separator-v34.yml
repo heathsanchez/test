@@ -1,0 +1,60 @@
+name: Collatz Crystal K Return Separator V34
+
+on:
+  push:
+    branches: [collatz-crystal-k-return-separator-v34]
+    paths:
+      - 'experiments/collatz_crystal_k_return_separator_v34.py'
+      - '.github/workflows/collatz-crystal-k-return-separator-v34.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit owner algebra and qualify K-return separator
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-k-return-separator-v34
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_k_return_separator_v34.py \
+            | tee evidence/collatz-crystal-k-return-separator-v34/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-k-return-separator-v34/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_K_RETURN_SEPARATOR_V34'
+          a=d['owner_map_audit']
+          assert a['non_B_edges_checked']==38991
+          assert a['odd_edges_checked']==27469
+          assert a['v33_odd_intercept_disagreements']==27469
+          s=d['v33_sharp_cycle_corrected']
+          assert s['length']==49 and s['odd_steps']==29 and s['K_drop']==2
+          assert s['fixed_point_lt_v23_source_floor'] is True
+          assert s['contracts_at_v23_floor'] is True
+          z=d['same_state_opposite_return_drift']
+          assert z['base_state']==514835
+          assert z['expanding']['drift_for_positive_owner']=='STRICT_EXPANSION'
+          assert z['contracting']['drift_for_positive_owner']=='STRICT_CONTRACTION'
+          assert z['expanding']['first_new_owner_bit']==0
+          assert z['contracting']['first_new_owner_bit']==1
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V34_AUDIT',a)
+          print('V34_SHARP_CORRECTED',s)
+          print('V34_SEPARATOR',z)
+          print('V34_NEXT',d['next_residual'])
+          print('V34_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-k-return-separator-v34/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-k-return-separator-v34
+          path: evidence/collatz-crystal-k-return-separator-v34
+          if-no-files-found: error
