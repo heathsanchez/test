@@ -1,0 +1,23 @@
+{
+  "current_exact_unresolved_depth3_states": 6262,
+  "do_not_recompute_states": 512,
+  "hashes": {
+    "ordered_5k_undecided_sha256": "bcbf7823b72d0c4126f972ab7e7cebe9584a6fdd76013aad808137347806a88e",
+    "residual6262_sha256": "39f2eecb79ea5e31d8efcf8ccd22dc8e86367f23cd26047c84ff2f213ee285aa",
+    "stratified512_sha256": "722fb1297d1356848273ea6b1a3990c1dfe075a9369e4b666cff9344b8170968"
+  },
+  "next_action": "staged fail-first escalation only on residual6262; reuse 512 exact negatives unchanged",
+  "schema": "acc-ak3-cap26-thick-depth3-residual-after-stratified-v1",
+  "source_frontier": {
+    "depth3_first_discovery_z_using_length_25_or_26": 8763,
+    "fail_first_5k_exact_negative": 1989,
+    "fail_first_5k_undecided": 6774
+  },
+  "status": "CANDIDATE_BOUNDED_LOCAL_CALIBRATED",
+  "stratified_reuse": {
+    "all_512_exact_direct_thick_negative_by_2m": true,
+    "selected_unique_states": 512,
+    "selection": "round(i*(6774-1)/(512-1)) for i=0..511 over ordered 5k-undecided list",
+    "thick_goals": 0
+  }
+}
