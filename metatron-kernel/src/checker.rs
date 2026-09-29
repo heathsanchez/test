@@ -784,6 +784,16 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
         return false;
     }
     let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
+
+    // Crystal transfer boundary: do not generalize into representation
+    // classes whose authority is explicitly sealed by earlier generations.
+    if let [constructor] = block.constructors.as_slice() {
+        let Ok(fields) = usize::try_from(constructor.num_fields) else { return false; };
+        if fields == 0 || (p == 2 && fields == 2) {
+            return false;
+        }
+    }
+
     matches!(pi_spine(export, inductive.ty, p),
         Some((_, result)) if matches!(export.exprs.get(result),
             Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))))
