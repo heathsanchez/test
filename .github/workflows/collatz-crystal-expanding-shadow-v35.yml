@@ -1,0 +1,50 @@
+name: Collatz Crystal Expanding Shadow V35
+
+on:
+  push:
+    branches: [collatz-crystal-expanding-shadow-v35]
+    paths:
+      - 'experiments/collatz_crystal_expanding_shadow_v35.py'
+      - '.github/workflows/collatz-crystal-expanding-shadow-v35.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify exact expanding carry shadows
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-expanding-shadow-v35
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_expanding_shadow_v35.py \
+            | tee evidence/collatz-crystal-expanding-shadow-v35/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-expanding-shadow-v35/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_EXPANDING_SHADOW_V35'
+          s=d['shadow_recurrence']
+          assert s['checked_repeats']==32
+          assert s['first_least_representative_above_v23_source_floor']==5
+          assert s['first_rows'][0]['parameter_residue']=='1260'
+          assert s['first_rows'][1]['parameter_residue']=='3118316'
+          assert all(x['strict_owner_expansion_every_return'] for x in s['first_rows'])
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V35_SHADOW',s)
+          print('V35_NEXT',d['next_residual'])
+          print('V35_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-expanding-shadow-v35/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-expanding-shadow-v35
+          path: evidence/collatz-crystal-expanding-shadow-v35
+          if-no-files-found: error
