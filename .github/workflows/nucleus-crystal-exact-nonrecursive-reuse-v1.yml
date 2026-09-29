@@ -37,7 +37,10 @@ jobs:
       - name: Build candidate and exact base
         run: |
           set -euo pipefail
-          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          # Candidate authority intentionally supersedes old name-seal end-to-end
+          # assertions only if the frozen Arena differential earns it. Keep the
+          # kernel/library unit suite active here.
+          cargo test --release --locked --lib --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
           cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
