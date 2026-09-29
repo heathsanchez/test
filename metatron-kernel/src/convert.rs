@@ -555,9 +555,10 @@ fn certified_structure_eta(
     let Some(TypeValue::Term(target_type)) = context.get(free_index) else {
         return false;
     };
-    let target_type = checker
-        .machine()
-        .expose(target_type.clone(), Transparency::Reducible, budget);
+    let target_type =
+        checker
+            .machine()
+            .expose(target_type.clone(), Transparency::Reducible, budget);
     let Some(Value::Neutral(target_type)) = target_type.proven_value() else {
         return false;
     };
