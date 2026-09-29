@@ -263,17 +263,11 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
-                let function_type = match function_type {
-                    Judgment::Proven { value, warrant } => {
-                        Judgment::Proven { value, warrant }
-                    }
-                    Judgment::Refuted { obstruction } => {
-                        return Judgment::Refuted { obstruction };
-                    }
-                    Judgment::Unknown { residual } => {
-                        return Judgment::Unknown { residual };
-                    }
-                };
+                if let Judgment::Refuted { obstruction } = &function_type {
+                    return Judgment::Refuted {
+                        obstruction: *obstruction,
+                    };
+                }
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
                     return Judgment::unknown("application-function-type");
                 };
