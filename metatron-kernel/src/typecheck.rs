@@ -172,12 +172,19 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
     ) -> Judgment<TypeValue> {
-        if !take_step(remaining) {
-            return Judgment::unknown("type-inference-budget");
-        }
         let Some(expression_node) = self.expressions.get(expression) else {
             return Judgment::unknown("missing-expression-during-inference");
         };
+        // The judgment budget protects recursive structural work. Atomic leaves
+        // are bounded O(1) lookups here; charging them makes large linear terms
+        // exhaust the same budget intended to stop recursive blowups.
+        let atomic_leaf = matches!(
+            expression_node,
+            Expr::NatLit(_) | Expr::StrLit(_) | Expr::Sort(_) | Expr::Const { .. }
+        );
+        if !atomic_leaf && !take_step(remaining) {
+            return Judgment::unknown("type-inference-budget");
+        }
         match expression_node {
             Expr::NatLit(_) => {
                 let Some(primitives) = self.environment.nat_primitives() else {
