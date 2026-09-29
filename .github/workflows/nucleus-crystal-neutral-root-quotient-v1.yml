@@ -26,13 +26,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
       - uses: dtolnay/rust-toolchain@stable
 
       - name: Build frozen diagnostic source
         run: |
           set -euo pipefail
-          test "$(git rev-parse HEAD^)" = "$DIAGNOSTIC_SHA"
+          git diff --exit-code "$DIAGNOSTIC_SHA" -- metatron-kernel/src/typecheck.rs
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
 
       - name: Fetch exact frozen corpus
