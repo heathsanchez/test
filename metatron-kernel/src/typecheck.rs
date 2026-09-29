@@ -18,6 +18,13 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum RuleKAttempt {
+    NotApplicable,
+    Reduced(Closure),
+    DefiniteMismatch,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -680,6 +687,218 @@ impl<'a> TypeChecker<'a> {
         Some(current)
     }
 
+    pub(crate) fn rule_k_reduce_neutral(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> RuleKAttempt {
+        if budget < 8 {
+            return RuleKAttempt::NotApplicable;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=no-reduction", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=found:k={}:rules={}:spine={}:params={}:indices={}",
+                name.0,
+                reduction.k,
+                reduction.rules.len(),
+                neutral.spine.len(),
+                reduction.num_params,
+                reduction.num_indices
+            );
+        }
+        let [rule] = reduction.rules.as_slice() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=rule:fields={}:rule_params={}:level_params={}:head_levels={}",
+                name.0,
+                rule.num_fields,
+                rule.num_params,
+                reduction.level_params.len(),
+                levels.len()
+            );
+        }
+        if !reduction.k
+            || rule.num_fields != 0
+            || rule.num_params != reduction.num_params
+            || reduction.level_params.len() != levels.len()
+        {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=guard-failed", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        }
+
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return RuleKAttempt::NotApplicable;
+        }
+
+        // Rule K is licensed by the certified recursor interface itself:
+        // after applying every recursor argument except the final major, the
+        // remaining Pi domain is the exact type that a replacement constructor
+        // must inhabit. This avoids reconstructing a local variable's type from
+        // incidental FreeId numbering.
+        let declaration = match self.environment.get(*name) {
+            Some(declaration) if declaration.level_params.len() == levels.len() => declaration,
+            _ => return RuleKAttempt::NotApplicable,
+        };
+        let substitutions = declaration
+            .level_params
+            .iter()
+            .copied()
+            .zip(levels.iter().cloned())
+            .collect::<Vec<_>>();
+        let mut current = TypeValue::Term(Closure::with_levels(
+            declaration.ty,
+            EnvFrame::empty(),
+            LevelSubstitution::new(substitutions),
+        ));
+        for argument in &neutral.spine[..neutral.spine.len().saturating_sub(1)] {
+            let Some((_domain, body)) =
+                self.pi_view(Judgment::proven(current, "rule-k-recursor-spine"), budget / 4)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=recursor-spine-type-missing", name.0);
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            current = match body {
+                PiBody::Fixed(body) => body,
+                PiBody::Closure(body) => TypeValue::Term(Closure::with_levels(
+                    body.expr,
+                    body.env.extend(argument.clone()),
+                    body.levels,
+                )),
+            };
+        }
+        let Some((target_domain, _body)) =
+            self.pi_view(Judgment::proven(current, "rule-k-final-domain"), budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-missing", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-domain-ok", name.0);
+        }
+
+        let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
+        for parameter in &rule.constructor_level_params {
+            let Some(index) = reduction
+                .level_params
+                .iter()
+                .position(|candidate| candidate == parameter)
+            else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=constructor-level-map-missing:param={}",
+                        name.0,
+                        parameter.0
+                    );
+                }
+                return RuleKAttempt::NotApplicable;
+            };
+            constructor_levels.push(levels[index].clone());
+        }
+        let constructor = Neutral {
+            head: NeutralHead::Const {
+                name: rule.constructor,
+                levels: constructor_levels,
+            },
+            spine: neutral.spine[..rule.num_params].to_vec(),
+        };
+        let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
+        else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-missing", name.0);
+            }
+            return RuleKAttempt::NotApplicable;
+        };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-ok", name.0);
+        }
+
+        let compatibility = crate::convert::convert_with_policy_in_context(
+            self,
+            &target_domain,
+            &constructor_type,
+            budget / 2,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),
+            context,
+        );
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=compatibility:result={compatibility:?}",
+                name.0
+            );
+        }
+        match compatibility {
+            Judgment::Proven { .. } => {
+                let substitutions = reduction
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                let mut result = Closure::with_levels(
+                    rule.rhs,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitutions),
+                );
+                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                for argument in &neutral.spine[..prefix_len] {
+                    loop {
+                        match self.expression(result.expr) {
+                            Some(Expr::Lam { body, .. }) => {
+                                result = result.sibling(*body, result.env.extend(argument.clone()));
+                                break;
+                            }
+                            Some(Expr::Let { value, body, .. }) => {
+                                let value = result.sibling(*value, result.env.clone());
+                                result = result.sibling(*body, result.env.extend(value));
+                            }
+                            _ => return RuleKAttempt::NotApplicable,
+                        }
+                    }
+                }
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!("NUCLEUS_RULE_K:head={}:stage=reduced", name.0);
+                }
+                RuleKAttempt::Reduced(result)
+            }
+            Judgment::Refuted { obstruction }
+                if matches!(
+                    obstruction.0,
+                    "distinct-canonical-universes"
+                        | "distinct-Nat-literals"
+                        | "rigid-value-constructor-mismatch"
+                ) =>
+            {
+                RuleKAttempt::DefiniteMismatch
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => RuleKAttempt::NotApplicable,
+        }
+    }
+
     pub(crate) fn unit_like_type_key(
         &self,
         ty: &TypeValue,
@@ -869,6 +1088,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
             | "distinct-Nat-literals"
             | "rigid-value-constructor-mismatch"
             | "distinct-opaque-proposition-types"
+            | "rule-k-target-mismatch"
     )
 }
 
