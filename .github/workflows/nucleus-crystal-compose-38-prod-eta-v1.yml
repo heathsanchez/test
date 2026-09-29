@@ -1,6 +1,11 @@
 name: Nucleus Crystal Compose 38 Prod Eta v1
 
 on:
+  push:
+    branches: [nucleus-crystal-compose-38-prod-eta-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-compose-38-prod-eta-v1.yml"
+      - "metatron-kernel/**"
   pull_request:
     branches: [nucleus-crystal-compose-38-prod-eta-v1]
     paths:
