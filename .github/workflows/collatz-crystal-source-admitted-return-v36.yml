@@ -1,0 +1,55 @@
+name: Collatz Crystal Source-Admitted Return V36
+
+on:
+  push:
+    branches: [collatz-crystal-source-admitted-return-v36]
+    paths:
+      - 'experiments/collatz_crystal_source_admitted_return_v36.py'
+      - '.github/workflows/collatz-crystal-source-admitted-return-v36.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify exact source-admitted expanding return
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-admitted-return-v36
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_source_admitted_return_v36.py \
+            | tee evidence/collatz-crystal-source-admitted-return-v36/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-source-admitted-return-v36/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_SOURCE_ADMITTED_RETURN_V36'
+          assert d['v23_source']['parameter_t']==1018706
+          assert d['v25_prefix_interface']['all_nonterminal']
+          r=d['source_admitted_expanding_return']
+          assert r['base_depth']==73 and r['base_state']==514835
+          assert r['base_owner_ge_source']
+          assert r['owner_parameter_mod_2pow11']==1260
+          assert r['return_depth']==84
+          assert r['strict_owner_expansion']
+          assert d['later_exit']['kind']=='S'
+          assert d['later_exit']['depth']==127
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V36_RETURN',r)
+          print('V36_EXIT',d['later_exit'])
+          print('V36_VERDICT',d['scientific_verdict'])
+          print('V36_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-source-admitted-return-v36/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-source-admitted-return-v36
+          path: evidence/collatz-crystal-source-admitted-return-v36
+          if-no-files-found: error
