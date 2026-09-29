@@ -112,13 +112,19 @@ for d in range(MAX_DEPTH+1):
     counts.append({"depth":d,"input_cells":len(frontier),
                    "D":here["D"],"S":here["S"],"P":here["P"],
                    "live":here["L"]})
+    if d == MAX_DEPTH:
+        final_live=[(d,r) for _d,r in frontier if classify(d,r) is None]
+        break
     frontier=nxt
     if not frontier:
+        final_live=[]
         break
+else:
+    final_live=[]
 
 # Strong exact checks on every paired closure recorded in the frontier census.
 # The affine identity itself proves equality for every u>=0 in that cell.
-status="FINITE_PAIRED_SOURCE_ORDER_COVER" if not frontier else "PAIRED_SOURCE_ORDER_RESIDUAL"
+status="FINITE_PAIRED_SOURCE_ORDER_COVER" if not final_live else "PAIRED_SOURCE_ORDER_RESIDUAL"
 result={
  "schema":"COLLATZ_CRYSTAL_PAIRED_SOURCE_ORDER_V37B",
  "family":{
@@ -132,8 +138,8 @@ result={
  "exit_totals":dict(all_exits),
  "first_examples":first_examples,
  "sample_closures":rows,
- "final_live_cells":len(frontier),
- "first_live_cells":[{"d":d,"r":r} for d,r in frontier[:100]],
+ "final_live_cells":len(final_live),
+ "first_live_cells":[{"d":d,"r":r} for d,r in final_live[:100]],
  "scientific_verdict":status,
  "claim_boundary":(
    "Each closed parameter cylinder is exact for all natural u>=0. "
