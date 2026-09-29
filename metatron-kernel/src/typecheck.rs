@@ -483,6 +483,98 @@ impl<'a> TypeChecker<'a> {
         self.expressions.get(expression)
     }
 
+    pub(crate) fn eta_projection_spec_for_constructor(
+        &self,
+        constructor: NameId,
+    ) -> Option<(NameId, usize, usize)> {
+        let specs = self.environment.projection_specs();
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| spec.eta_expandable && spec.constructor == constructor);
+        let (type_name, spec) = matches.next()?;
+        if matches.next().is_some() {
+            return None;
+        }
+        Some((type_name, spec.num_params, spec.field_types.len()))
+    }
+
+    pub(crate) fn certified_eta_projection_field(
+        &self,
+        field: &Closure,
+        type_name: NameId,
+        index: usize,
+        target: &crate::value::Neutral,
+        num_params: usize,
+        budget: usize,
+    ) -> bool {
+        let mut closure = field.clone();
+        let mut arguments = Vec::new();
+        let (projection, levels) = loop {
+            let Some(expression) = self.expressions.get(closure.expr) else {
+                return false;
+            };
+            match expression {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(bvar) => {
+                    let Some(binding) = closure.env.lookup(*bvar) else {
+                        return false;
+                    };
+                    match binding {
+                        crate::value::EnvBinding::Closure(bound) => closure = bound,
+                        crate::value::EnvBinding::Free(_) => return false,
+                    }
+                }
+                Expr::Const { name, levels } => break (*name, levels.clone()),
+                _ => return false,
+            }
+        };
+        arguments.reverse();
+        if arguments.len() != num_params + 1 {
+            return false;
+        }
+
+        let Some(declaration) = self.environment.get(projection) else {
+            return false;
+        };
+        let Some(mut body) = declaration.value else {
+            return false;
+        };
+        if !declaration.preferred_for_reduction || declaration.level_params.len() != levels.len() {
+            return false;
+        }
+        for _ in 0..=num_params {
+            let Some(Expr::Lam { body: next, .. }) = self.expressions.get(body) else {
+                return false;
+            };
+            body = *next;
+        }
+        let Some(Expr::Proj {
+            type_name: projected_type,
+            index: projected_index,
+            structure,
+        }) = self.expressions.get(body)
+        else {
+            return false;
+        };
+        if *projected_type != type_name || usize::try_from(*projected_index).ok() != Some(index) {
+            return false;
+        }
+        if !matches!(self.expressions.get(*structure), Some(Expr::BVar(0))) {
+            return false;
+        }
+
+        let Some(target_argument) = arguments.last().cloned() else {
+            return false;
+        };
+        let exposed = self
+            .machine()
+            .expose(target_argument, Transparency::Reducible, budget);
+        matches!(exposed.proven_value(), Some(Value::Neutral(actual)) if actual == target)
+    }
+
     pub(crate) fn proof_terms_same_proposition(
         &self,
         left: &Closure,
