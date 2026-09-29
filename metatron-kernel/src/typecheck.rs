@@ -6,7 +6,7 @@ use crate::judgment::Judgment;
 use crate::level::{LevelTerm, imax, instantiate_level, succ};
 use crate::machine::{Machine, ProjectionFieldType, Transparency};
 use crate::syntax::{Expr, Level};
-use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, NeutralHead, Value};
+use crate::value::{Closure, EnvFrame, FreeId, LevelSubstitution, Neutral, NeutralHead, Value};
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub enum TypeValue {
