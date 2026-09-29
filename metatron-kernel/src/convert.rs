@@ -120,7 +120,7 @@ pub(crate) fn convert_with_policy_in_context(
     budget: usize,
     delta_policy: DeltaPolicy,
     initial_depth: usize,
-    _context: &[TypeValue],
+    context: &[TypeValue],
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -265,6 +265,7 @@ pub(crate) fn convert_with_policy_in_context(
                     depth,
                     &mut work,
                     &mut proof_function_frees,
+                    context,
                 ) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { .. }
@@ -517,6 +518,96 @@ fn expression_uses_bvar(
     }
 }
 
+fn certified_structure_eta(
+    checker: &TypeChecker<'_>,
+    target: &Neutral,
+    constructed: &Neutral,
+    budget: usize,
+    depth: usize,
+    work: &mut Vec<(TypeValue, TypeValue, usize)>,
+    context: &[TypeValue],
+) -> bool {
+    if !target.spine.is_empty() {
+        return false;
+    }
+    let NeutralHead::Free(free) = target.head else {
+        return false;
+    };
+    let NeutralHead::Const {
+        name: constructor, ..
+    } = constructed.head
+    else {
+        return false;
+    };
+    let Some((type_name, num_params, num_fields)) =
+        checker.eta_projection_spec_for_constructor(constructor)
+    else {
+        return false;
+    };
+    if constructed.spine.len() != num_params + num_fields {
+        return false;
+    }
+
+    let Ok(free_index) = usize::try_from(free.0) else {
+        return false;
+    };
+    let Some(TypeValue::Term(target_type)) = context.get(free_index) else {
+        return false;
+    };
+    let target_type = checker
+        .machine()
+        .expose(target_type.clone(), Transparency::Reducible, budget);
+    let Some(Value::Neutral(target_type)) = target_type.proven_value() else {
+        return false;
+    };
+    let NeutralHead::Const {
+        name: actual_type, ..
+    } = target_type.head
+    else {
+        return false;
+    };
+    if actual_type != type_name || target_type.spine.len() != num_params {
+        return false;
+    }
+
+    for (index, field) in constructed.spine[num_params..].iter().enumerate() {
+        let Some(Expr::Proj {
+            type_name: projected_type,
+            index: projected_index,
+            structure,
+        }) = checker.expression(field.expr)
+        else {
+            return false;
+        };
+        if *projected_type != type_name || usize::try_from(*projected_index).ok() != Some(index) {
+            return false;
+        }
+        let structure = field.sibling(*structure, field.env.clone());
+        let structure = checker
+            .machine()
+            .expose(structure, Transparency::Reducible, budget);
+        let Some(Value::Neutral(structure)) = structure.proven_value() else {
+            return false;
+        };
+        if structure != target {
+            return false;
+        }
+    }
+
+    for (actual, rebuilt) in target_type
+        .spine
+        .iter()
+        .zip(constructed.spine.iter().take(num_params))
+    {
+        work.push((
+            TypeValue::Term(actual.clone()),
+            TypeValue::Term(rebuilt.clone()),
+            depth,
+        ));
+    }
+    true
+}
+
 fn compare_values(
     checker: &TypeChecker<'_>,
     left: &Value,
@@ -525,6 +616,7 @@ fn compare_values(
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     match (left, right) {
         (Value::NatLit(left), Value::NatLit(right)) => {
@@ -541,6 +633,7 @@ fn compare_values(
                 depth,
                 work,
                 proof_function_frees,
+                context,
             );
         }
         (Value::Neutral(neutral), Value::NatLit(literal)) => {
@@ -552,6 +645,7 @@ fn compare_values(
                 depth,
                 work,
                 proof_function_frees,
+                context,
             );
         }
         (Value::Sort(left), Value::Sort(right)) => {
@@ -605,6 +699,11 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
+            if certified_structure_eta(checker, left, right, budget, depth, work, context)
+                || certified_structure_eta(checker, right, left, budget, depth, work, context)
+            {
+                return Judgment::proven((), "certified-structure-eta");
+            }
             match compare_neutral_heads(checker, left, right, budget) {
                 Judgment::Proven { .. } => {}
                 other => return other,
@@ -633,6 +732,7 @@ fn compare_nat_literal_neutral(
     depth: usize,
     work: &mut Vec<(TypeValue, TypeValue, usize)>,
     proof_function_frees: &mut HashMap<FreeId, (crate::id::NameId, Vec<crate::level::LevelTerm>)>,
+    context: &[TypeValue],
 ) -> Judgment<()> {
     let Some(primitives) = checker.nat_primitives() else {
         return Judgment::unknown("Nat-literal-conversion-without-authority");
@@ -672,6 +772,7 @@ fn compare_nat_literal_neutral(
             depth,
             work,
             proof_function_frees,
+            context,
         );
     }
     Judgment::refuted("Nat-literal-non-Nat-head")
