@@ -1,0 +1,46 @@
+name: Collatz Crystal Cost20 Contraction V30
+
+on:
+  push:
+    branches: [collatz-crystal-cost20-contraction-v30]
+    paths:
+      - 'formal/Collatz/TwelveOddBlockContraction.lean'
+      - '.github/workflows/collatz-crystal-cost20-contraction-v30.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  lean:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Qualify universal 12-odd cost20 contraction
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-cost20-contraction-v30
+          lake build CollatzFinal
+          lake env lean --version | tee evidence/collatz-crystal-cost20-contraction-v30/toolchain.txt
+          if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' formal/Collatz/TwelveOddBlockContraction.lean; then
+            echo 'Forbidden source token' >&2; exit 1
+          fi
+          lake env lean -DautoImplicit=false formal/Collatz/TwelveOddBlockContraction.lean \
+            | tee evidence/collatz-crystal-cost20-contraction-v30/TwelveOddBlockContraction.log
+          ! grep -E 'sorryAx|Lean.ofReduceBool' evidence/collatz-crystal-cost20-contraction-v30/TwelveOddBlockContraction.log
+          grep -q "'CollatzFinal.SourceProduct.twelve_odd_scaled_bias_bound'" evidence/collatz-crystal-cost20-contraction-v30/TwelveOddBlockContraction.log
+          grep -q "'CollatzFinal.SourceProduct.twelve_odd_long_block_strict_descent'" evidence/collatz-crystal-cost20-contraction-v30/TwelveOddBlockContraction.log
+          git rev-parse HEAD | tee evidence/collatz-crystal-cost20-contraction-v30/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-cost20-contraction-v30
+          path: evidence/collatz-crystal-cost20-contraction-v30
+          if-no-files-found: error
