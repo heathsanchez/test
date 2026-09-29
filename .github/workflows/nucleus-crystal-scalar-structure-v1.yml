@@ -1,0 +1,124 @@
+name: Nucleus Crystal Scalar Structure v1
+
+on:
+  push:
+    branches: [nucleus-crystal-scalar-structure-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-scalar-structure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-scalar-structure-v1
+  cancel-in-progress: true
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      BASE_SHA: 07b3183b3f892fee381af4ef83c032c6655930e0
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Prove independent runtime boundary
+        run: |
+          set -euo pipefail
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+
+      - name: Build candidate and exact 37-case base
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Causal 193-case reclosure
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-scalar-structure-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          def rr(binary,p,trace=False):
+              env=os.environ.copy()
+              if trace:
+                  env['NUCLEUS_TRACE_DOWNSTREAM']='1'
+                  env['NUCLEUS_TRACE_RESIDUAL']='1'
+                  env['NUCLEUS_TRACE_GENERIC_NONREC']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+          rows=[]
+          for d,e in [('good',0),('bad',1)]:
+              for p in sorted((root/d).rglob('*.ndjson')):
+                  n=str(p.relative_to(root/d)).removesuffix('.ndjson')
+                  a,_=rr(base,p); b,_=rr(cand,p)
+                  rows.append({'test':n,'expected':e,'base':a,'candidate':b})
+          assert len(rows)==193
+          assert sum(r['base'] in (2,3) for r in rows)==37
+          wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          reg=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          assert not wrong,wrong
+          assert not reg,reg
+          assert not errors,errors
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+          by={r['test']:r for r in rows}
+          traces={}
+          for d,n in [('good','perf/grind-ring-5'),('bad','other/proj-of-prop')]:
+              p=root/d/(n+'.ndjson')
+              rc,err=rr(cand,p,True)
+              traces[n]={'rc':rc,'marks':[x for x in err.splitlines() if 'NUCLEUS_' in x][-120:]}
+          out={
+            'schema':'nucleus-crystal-scalar-structure-v1',
+            'base_sha':os.environ['BASE_SHA'],'candidate_sha':os.environ['GITHUB_SHA'],
+            'base_residual':sum(r['base'] in (2,3) for r in rows),
+            'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+            'native_accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+            'native_reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+            'earned':[r['test'] for r in earned],
+            'changes':changes,
+            'targets':{n:by[n] for n in ['perf/grind-ring-5','other/proj-of-prop']},
+            'traces':traces,
+            'wrong':wrong,'regressions':reg,'errors':errors,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/crystal-scalar-structure-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'base_residual':out['base_residual'],'candidate_residual':out['candidate_residual'],
+            'native_accept':out['native_accept'],'native_reject':out['native_reject'],
+            'earned':out['earned'],'changes':[(r['test'],r['base'],r['candidate']) for r in changes],
+            'targets':out['targets']
+          },sort_keys=True))
+          assert earned, 'Scalar structure class earned no protected terminal consequence.'
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-scalar-structure-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-scalar-structure-v1
+          if-no-files-found: warn
