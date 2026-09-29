@@ -1148,10 +1148,13 @@ fn check_single_constructor_inductive(
         check_conversion_lifted_reflexive_unary(export, environment, block, limits, delta_policy)
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
-    } else if generic_nonrecursive_type_candidate(export, block) {
-        check_generic_nonrecursive_type(export, environment, block, limits, delta_policy)
     } else {
-        check_unrecognized_single_constructor_coherence(export, block)
+        match check_unrecognized_single_constructor_coherence(export, block) {
+            Err(Verdict::Unknown) if generic_nonrecursive_type_candidate(export, block) => {
+                check_generic_nonrecursive_type(export, environment, block, limits, delta_policy)
+            }
+            prior => prior,
+        }
     }
 }
 
