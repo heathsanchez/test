@@ -1,0 +1,48 @@
+name: Collatz Crystal Cycle Rank V42
+
+on:
+  push:
+    branches: [collatz-crystal-cycle-rank-v42]
+    paths:
+      - 'experiments/collatz_crystal_cycle_rank_v42.py'
+      - 'experiments/collatz_crystal_symbolic_return_closure_v41.py'
+      - 'experiments/collatz_crystal_phase_normalized_return_v40.py'
+      - '.github/workflows/collatz-crystal-cycle-rank-v42.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Exhaustive simple-cycle rank audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-cycle-rank-v42
+          PYTHONPATH=experiments python experiments/collatz_crystal_cycle_rank_v42.py \
+            | tee evidence/collatz-crystal-cycle-rank-v42/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-cycle-rank-v42/result.json'))
+          assert d['schema']=='COLLATZ_CRYSTAL_CYCLE_RANK_V42'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V42_VERDICT',d['verdict'])
+          print('V42_GRAPH',d['graph'])
+          print('V42_BAD',d['bad_cycles'])
+          print('V42_EQUALITIES',d['terminal_equalities'])
+          print('V42_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-cycle-rank-v42/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-cycle-rank-v42
+          path: evidence/collatz-crystal-cycle-rank-v42
+          if-no-files-found: error
