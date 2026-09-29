@@ -605,7 +605,43 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
+            let head_comparison = compare_neutral_heads(checker, left, right, budget);
+            if matches!(
+                head_comparison,
+                Judgment::Refuted { obstruction }
+                    if obstruction.0 == "distinct-neutral-heads"
+            ) {
+                let machine = checker.machine();
+                if let Some(closed) =
+                    machine.close_certified_recursor_consequence(left, budget)
+                    && closed != Value::Neutral(left.clone())
+                {
+                    return compare_values(
+                        checker,
+                        &closed,
+                        &Value::Neutral(right.clone()),
+                        budget.saturating_sub(1),
+                        depth,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+                if let Some(closed) =
+                    machine.close_certified_recursor_consequence(right, budget)
+                    && closed != Value::Neutral(right.clone())
+                {
+                    return compare_values(
+                        checker,
+                        &Value::Neutral(left.clone()),
+                        &closed,
+                        budget.saturating_sub(1),
+                        depth,
+                        work,
+                        proof_function_frees,
+                    );
+                }
+            }
+            match head_comparison {
                 Judgment::Proven { .. } => {}
                 other => return other,
             }
