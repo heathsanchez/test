@@ -701,11 +701,24 @@ impl<'a> TypeChecker<'a> {
         let [rule] = reduction.rules.as_slice() else {
             return RuleKAttempt::NotApplicable;
         };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!(
+                "NUCLEUS_RULE_K:head={}:stage=rule:fields={}:rule_params={}:level_params={}:head_levels={}",
+                name.0,
+                rule.num_fields,
+                rule.num_params,
+                reduction.level_params.len(),
+                levels.len()
+            );
+        }
         if !reduction.k
             || rule.num_fields != 0
             || rule.num_params != reduction.num_params
             || reduction.level_params.len() != levels.len()
         {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=guard-failed", name.0);
+            }
             return RuleKAttempt::NotApplicable;
         }
 
@@ -733,8 +746,14 @@ impl<'a> TypeChecker<'a> {
         };
         let Some(target_type) = self.neutral_result_type(target_neutral, context, budget / 4)
         else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=target-type-missing", name.0);
+            }
             return RuleKAttempt::NotApplicable;
         };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=target-type-ok", name.0);
+        }
 
         let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
         for parameter in &rule.constructor_level_params {
@@ -743,6 +762,13 @@ impl<'a> TypeChecker<'a> {
                 .iter()
                 .position(|candidate| candidate == parameter)
             else {
+                if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                    eprintln!(
+                        "NUCLEUS_RULE_K:head={}:stage=constructor-level-map-missing:param={}",
+                        name.0,
+                        parameter.0
+                    );
+                }
                 return RuleKAttempt::NotApplicable;
             };
             constructor_levels.push(levels[index].clone());
@@ -756,8 +782,14 @@ impl<'a> TypeChecker<'a> {
         };
         let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
         else {
+            if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+                eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-missing", name.0);
+            }
             return RuleKAttempt::NotApplicable;
         };
+        if std::env::var_os("NUCLEUS_TRACE_RULE_K").is_some() {
+            eprintln!("NUCLEUS_RULE_K:head={}:stage=constructor-type-ok", name.0);
+        }
 
         let compatibility = crate::convert::convert_with_policy_in_context(
             self,
