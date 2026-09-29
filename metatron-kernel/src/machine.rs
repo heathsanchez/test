@@ -42,6 +42,7 @@ pub struct DefinitionBody {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorRule {
     pub constructor: NameId,
+    pub constructor_level_params: Vec<NameId>,
     pub num_params: usize,
     pub num_fields: usize,
     pub rhs: ExprId,
@@ -49,6 +50,7 @@ pub struct RecursorRule {
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub struct RecursorReduction {
+    pub k: bool,
     pub num_params: usize,
     pub num_indices: usize,
     pub level_params: Vec<NameId>,
