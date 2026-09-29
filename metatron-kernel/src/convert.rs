@@ -618,7 +618,10 @@ fn compare_values(
             if left.spine.len() != right.spine.len() {
                 return Judgment::refuted("neutral-spine-length");
             }
-            work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+            // Work is LIFO. Push the source spine in reverse so comparison
+            // itself proceeds left-to-right, allowing cheap early separators
+            // to fire before expensive later arguments.
+            work.extend(left.spine.iter().zip(&right.spine).rev().map(|(left, right)| {
                 (
                     TypeValue::Term(left.clone()),
                     TypeValue::Term(right.clone()),
