@@ -1033,11 +1033,23 @@ fn check_generic_nonrecursive_type(
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
     let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
         else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
-    d.promote(export,ty,limits.judgment_steps,delta_policy)?;
-    for c in &block.constructors{
-        d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
+    if let Err(verdict)=d.promote(export,ty,limits.judgment_steps,delta_policy){
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=type:verdict={verdict:?}"); }
+        return Err(verdict);
     }
-    d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
+    if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=type:verdict=Accept"); }
+    for (index,c) in block.constructors.iter().enumerate(){
+        if let Err(verdict)=d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy){
+            if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=constructor:index={index}:verdict={verdict:?}"); }
+            return Err(verdict);
+        }
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=constructor:index={index}:verdict=Accept"); }
+    }
+    if let Err(verdict)=d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy){
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=recursor:verdict={verdict:?}"); }
+        return Err(verdict);
+    }
+    if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:stage=recursor:verdict=Accept"); }
     Ok(d.finish())
 }
 
