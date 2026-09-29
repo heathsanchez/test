@@ -734,6 +734,27 @@ fn compare_neutral_heads(
                 name: right_name,
                 levels: right_levels,
             },
+        ) if left.spine.is_empty()
+            && right.spine.is_empty()
+            && checker.distinct_opaque_closed_proposition_types(
+                *left_name,
+                left_levels,
+                *right_name,
+                right_levels,
+                budget,
+            ) =>
+        {
+            Judgment::refuted("distinct-opaque-proposition-types")
+        }
+        (
+            NeutralHead::Const {
+                name: left_name,
+                levels: left_levels,
+            },
+            NeutralHead::Const {
+                name: right_name,
+                levels: right_levels,
+            },
         ) if left_name == right_name && left_levels.len() == right_levels.len() => {
             for (left, right) in left_levels.iter().zip(right_levels) {
                 match level_equal(left.clone(), right.clone(), budget) {
