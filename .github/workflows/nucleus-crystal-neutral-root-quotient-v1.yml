@@ -1,0 +1,232 @@
+name: Nucleus Crystal Neutral Root Quotient v1
+
+on:
+  push:
+    branches: [nucleus-crystal-neutral-root-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-neutral-root-quotient-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-neutral-root-quotient-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  DIAGNOSTIC_SHA: ff1abf91aa7295c056c04bee5891fb0e7220202d
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build frozen diagnostic source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$DIAGNOSTIC_SHA"
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch exact frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Quotient first neutral-head roots
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-neutral-root-quotient-v1
+          python3 - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          targets=[
+              'init-prelude',
+              'perf/magma-list-deep-n21',
+              'perf/magma-list-deep-n36',
+              'perf/magma-list-pair-n21',
+              'perf/magma-list-pair-n7',
+              'tutorial/082_RBTree.id_spec',
+              'tutorial/112_structEta',
+              'tutorial/124_accRecReduction',
+              'tutorial/101_ruleKAcc',
+              'tutorial/125_accRecNoEta',
+          ]
+
+          def locate(name):
+              hits=[]
+              for d,expected in [('good',0),('bad',1)]:
+                  p=root/d/(name+'.ndjson')
+                  if p.exists():
+                      hits.append((p,expected,d))
+              assert len(hits)==1,(name,hits)
+              return hits[0]
+
+          def name_map(path):
+              rows=[json.loads(line) for line in path.read_text().splitlines()]
+              raw={}
+              for row in rows:
+                  if 'in' not in row:
+                      continue
+                  if 'str' in row:
+                      raw[row['in']]=(row['str']['pre'],row['str']['str'])
+                  elif 'num' in row:
+                      raw[row['in']]=(row['num']['pre'],str(row['num']['i']))
+              memo={0:''}
+              def full(i):
+                  if i in memo: return memo[i]
+                  if i not in raw: return f'<name:{i}>'
+                  pre,suffix=raw[i]
+                  prefix=full(pre)
+                  memo[i]=suffix if not prefix else prefix+'.'+suffix
+                  return memo[i]
+              return {i:full(i) for i in raw}
+
+          def head_kind(text):
+              if text.startswith('Free('): return 'free'
+              if text.startswith('Const '): return 'const'
+              if text.startswith('Projection '): return 'projection'
+              return 'other'
+
+          def parse_mismatch(line):
+              prefix='NUCLEUS_NEUTRAL_HEAD_MISMATCH:'
+              assert line.startswith(prefix),line
+              body=line[len(prefix):]
+              a=body.index('left=')
+              b=body.index(':left_spine=')
+              c=body.index(':right=')
+              d=body.index(':right_spine=')
+              e=body.rindex(':budget=')
+              left=body[a+5:b]
+              lsp=body[b+12:c]
+              right=body[c+7:d]
+              rsp=body[d+13:e]
+              return {
+                  'left_head':left,
+                  'right_head':right,
+                  'left_kind':head_kind(left),
+                  'right_kind':head_kind(right),
+                  'left_spine_len':lsp.count('Closure {'),
+                  'right_spine_len':rsp.count('Closure {'),
+                  'budget':int(body[e+8:]),
+              }
+
+          rows=[]
+          clusters=collections.defaultdict(list)
+          for name in targets:
+              p,expected,bucket=locate(name)
+              env=os.environ.copy()
+              env['NUCLEUS_TRACE_APP_PI']='1'
+              env['NUCLEUS_TRACE_NEUTRAL_HEADS']='1'
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, timeout=120, env=env
+                  )
+              assert q.returncode in (2,3),(name,q.returncode)
+              lines=q.stderr.decode(errors='replace').splitlines()
+              root_index=None
+              for i,line in enumerate(lines):
+                  if line.startswith('NUCLEUS_APP_PI_FAIL:') and 'inferred=unknown_distinct-neutral-heads' in line:
+                      root_index=i
+                      break
+              assert root_index is not None,(name,'missing neutral-root app trace')
+              mismatch=None
+              mismatch_index=None
+              for i in range(root_index-1,-1,-1):
+                  if lines[i].startswith('NUCLEUS_NEUTRAL_HEAD_MISMATCH:'):
+                      mismatch=lines[i]
+                      mismatch_index=i
+                      break
+              assert mismatch is not None,(name,'missing neutral mismatch before root')
+              parsed=parse_mismatch(mismatch)
+              ids=sorted({int(x) for x in re.findall(r'NameId\((\d+)\)',mismatch)})
+              nm=name_map(p)
+              resolved=[nm.get(i,f'<name:{i}>') for i in ids]
+              sig=(
+                  f"left={parsed['left_kind']}/s{parsed['left_spine_len']}|"
+                  f"right={parsed['right_kind']}/s{parsed['right_spine_len']}"
+              )
+              row={
+                  'test':name,
+                  'expected':'accept' if expected==0 else 'reject',
+                  'bucket':bucket,
+                  'candidate_rc':q.returncode,
+                  'file_bytes':p.stat().st_size,
+                  'root_app_event':lines[root_index],
+                  'mismatch_event':mismatch,
+                  'mismatch_distance':root_index-mismatch_index,
+                  'signature':sig,
+                  'resolved_names':resolved,
+                  'parsed':parsed,
+              }
+              rows.append(row)
+              clusters[sig].append(row)
+
+          out_clusters=[]
+          for sig,members in sorted(clusters.items(),key=lambda kv:(-len(kv[1]),kv[0])):
+              accepts=sorted((m for m in members if m['expected']=='accept'),key=lambda m:m['file_bytes'])
+              rejects=sorted((m for m in members if m['expected']=='reject'),key=lambda m:m['file_bytes'])
+              pair=None
+              if accepts and rejects:
+                  pair={
+                      'accept':accepts[0]['test'],
+                      'reject':rejects[0]['test'],
+                      'criterion':'same first neutral-root shape, opposite protected verdict, smallest files',
+                  }
+              out_clusters.append({
+                  'signature':sig,
+                  'count':len(members),
+                  'accept_count':len(accepts),
+                  'reject_count':len(rejects),
+                  'tests':[m['test'] for m in members],
+                  'resolved_name_union':sorted({n for m in members for n in m['resolved_names']}),
+                  'separator_pair':pair,
+              })
+
+          mixed=[c for c in out_clusters if c['accept_count'] and c['reject_count']]
+          next_probe=mixed[0]['separator_pair'] if mixed else {
+              'representative':min(rows,key=lambda r:r['file_bytes'])['test'],
+              'criterion':'no mixed-verdict neutral-root shape; use smallest witness'
+          }
+          out={
+              'schema':'nucleus-crystal-neutral-root-quotient-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'diagnostic_sha':os.environ['DIAGNOSTIC_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'target_count':len(rows),
+              'cluster_count':len(out_clusters),
+              'clusters':out_clusters,
+              'next_probe':next_probe,
+              'rows':rows,
+          }
+          pathlib.Path(
+              'metatron-kernel/evidence-out/crystal-neutral-root-quotient-v1/result.json'
+          ).write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+              'target_count':out['target_count'],
+              'cluster_count':out['cluster_count'],
+              'clusters':out_clusters,
+              'next_probe':next_probe,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-neutral-root-quotient-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-neutral-root-quotient-v1
+          if-no-files-found: error
