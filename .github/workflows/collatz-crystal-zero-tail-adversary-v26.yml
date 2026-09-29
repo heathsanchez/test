@@ -1,0 +1,45 @@
+name: Collatz Crystal Zero Tail Adversary V26
+
+on:
+  push:
+    branches: [collatz-crystal-zero-tail-adversary-v26]
+    paths:
+      - 'experiments/collatz_crystal_zero_tail_adversary_v26.py'
+      - '.github/workflows/collatz-crystal-zero-tail-adversary-v26.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run stateful zero-tail adversary
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-zero-tail-adversary-v26
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_zero_tail_adversary_v26.py \
+            | tee evidence/collatz-crystal-zero-tail-adversary-v26/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-zero-tail-adversary-v26/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_ZERO_TAIL_ADVERSARY_V26'
+          assert d['seed_reproduction']['max_zero_tail_wait']==93
+          assert d['global_collatz']=='UNKNOWN'
+          print('V26_VERDICT',d['scientific_verdict'])
+          print('V26_MAX_WAIT',d['max_zero_tail_wait_seen'])
+          print('V26_FIRST_SEPARATOR',d['first_over_v25_bound'])
+          print('V26_ROUND_MAX',[(x['round'],x['max_zero_tail_wait']) for x in d['rounds']])
+          print('V26_PRUNING',d['pruning'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-zero-tail-adversary-v26
+          path: evidence/collatz-crystal-zero-tail-adversary-v26
+          if-no-files-found: error
