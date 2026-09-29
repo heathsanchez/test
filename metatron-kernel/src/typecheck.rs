@@ -488,9 +488,9 @@ impl<'a> TypeChecker<'a> {
         constructor: NameId,
     ) -> Option<(NameId, usize, usize)> {
         let specs = self.environment.projection_specs();
-        let mut matches = specs.into_iter().filter(|(_, spec)| {
-            spec.eta_expandable && spec.constructor == constructor
-        });
+        let mut matches = specs
+            .into_iter()
+            .filter(|(_, spec)| spec.eta_expandable && spec.constructor == constructor);
         let (type_name, spec) = matches.next()?;
         if matches.next().is_some() {
             return None;
