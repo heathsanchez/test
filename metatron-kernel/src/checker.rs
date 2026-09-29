@@ -1038,7 +1038,7 @@ fn check_generic_nonrecursive_type(
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
     d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    Ok(d.finish())
+    install_certified_recursor_reduction(d.finish(), &block.constructors, recursor)
 }
 
 fn check_single_constructor_inductive(
