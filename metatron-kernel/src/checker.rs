@@ -1044,7 +1044,8 @@ fn check_generic_nonrecursive_type(
 
     if std::env::var_os("NUCLEUS_TRACE_GENERIC_NONREC").is_some() {
         eprintln!(
-            "NUCLEUS_GENERIC_NONREC:arity={}:all={}:constructors={}:levels_unique={}:ctor_contracts={}:rec_metadata={}:rec_shape={}:params={}:ctors={}",
+            "NUCLEUS_GENERIC_NONREC:name={}:arity={}:all={}:constructors={}:levels_unique={}:ctor_contracts={}:rec_metadata={}:rec_shape={}:params={}:ctors={}",
+            inductive.name.0,
             arity_ok,
             all_ok,
             constructors_ok,
@@ -1071,12 +1072,33 @@ fn check_generic_nonrecursive_type(
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
     let ty=if inductive.level_params.is_empty(){derived_type(inductive.name,inductive.ty)}
         else{derived_polymorphic_type(inductive.name,&inductive.level_params,inductive.ty)};
-    d.promote(export,ty,limits.judgment_steps,delta_policy)?;
-    for c in &block.constructors{
-        d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
+    if let Err(verdict)=d.promote(export,ty,limits.judgment_steps,delta_policy){
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=type:verdict={verdict:?}", inductive.name.0); }
+        return Err(verdict);
     }
-    d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    install_certified_recursor_reduction(d.finish(), &block.constructors, recursor)
+    if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=type:verdict=Accept", inductive.name.0); }
+    for (index,c) in block.constructors.iter().enumerate(){
+        if let Err(verdict)=d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy){
+            if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=constructor:index={index}:verdict={verdict:?}", inductive.name.0); }
+            return Err(verdict);
+        }
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=constructor:index={index}:verdict=Accept", inductive.name.0); }
+    }
+    if let Err(verdict)=d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy){
+        if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=recursor:verdict={verdict:?}", inductive.name.0); }
+        return Err(verdict);
+    }
+    if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=recursor:verdict=Accept", inductive.name.0); }
+    match install_certified_recursor_reduction(d.finish(), &block.constructors, recursor) {
+        Ok(environment) => {
+            if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=iota:verdict=Accept", inductive.name.0); }
+            Ok(environment)
+        }
+        Err(verdict) => {
+            if trace_generic { eprintln!("NUCLEUS_GENERIC_PROMOTE:name={}:stage=iota:verdict={verdict:?}", inductive.name.0); }
+            Err(verdict)
+        }
+    }
 }
 
 fn check_single_constructor_inductive(
