@@ -49,7 +49,7 @@ jobs:
           rc=$?
           set -e
           echo "rc=$rc"
-          grep -E 'NUCLEUS_STRUCTURE_ETA:PASS|NUCLEUS_APP_INFER:unknown|NUCLEUS_DOWNSTREAM:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:|NUCLEUS_CONVERSION_EXPOSURE:' /tmp/err.txt || true
+          grep -E 'NUCLEUS_STRUCTURE_ETA:PASS|NUCLEUS_APP_INFER:unknown|NUCLEUS_DOWNSTREAM:|NUCLEUS_NEUTRAL_HEAD_MISMATCH:|NUCLEUS_CONVERSION_EXPOSURE:|NUCLEUS_CONVERSION_EXPOSURE_MIXED:' /tmp/err.txt || true
           mkdir -p metatron-kernel/evidence-out/crystal-prod-eta-trace-v1
           cp /tmp/err.txt metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/stderr.txt
           printf '{"schema":"nucleus-crystal-prod-eta-trace-v1","rc":%s}\n' "$rc" > metatron-kernel/evidence-out/crystal-prod-eta-trace-v1/result.json
