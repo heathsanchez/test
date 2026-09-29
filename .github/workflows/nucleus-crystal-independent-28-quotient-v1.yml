@@ -1,0 +1,294 @@
+name: Nucleus Crystal Independent 28 Quotient v1
+
+on:
+  push:
+    branches: [nucleus-crystal-independent-28-quotient-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-independent-28-quotient-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-crystal-independent-28-quotient-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: 16d34375af9ff7af41f341077628f5a1b0847292
+  ARENA_ARTIFACT: "10712869614"
+  ORACLE_SHA: 78c7502bac8a5ba000057b3f083bc0595ac65750
+
+jobs:
+  quotient:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+
+      - name: Verify diagnostic-only lineage and build exact authority
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Build pinned complete oracle
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/metalogiclabs/mathgraph-lean-kernel /tmp/mathgraph
+          git -C /tmp/mathgraph checkout -q "$ORACLE_SHA"
+          cat >/tmp/mathgraph/config.json <<'JSON'
+          {
+            "use_stdin": true,
+            "nat_extension": true,
+            "string_extension": true,
+            "unpermitted_axiom_hard_error": false,
+            "unsafe_permit_all_axioms": true,
+            "num_threads": 2
+          }
+          JSON
+          cargo build --release --locked --manifest-path /tmp/mathgraph/Cargo.toml
+
+      - name: Fetch exact frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          rm -rf /tmp/art /tmp/tests
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Reconstruct exact 28-case causal quotient
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/crystal-independent-28-quotient-v1
+          python3 - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          root=pathlib.Path('/tmp/tests')
+          binary=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          oracle=pathlib.Path('/tmp/mathgraph/target/release/sokonanoda')
+          config=pathlib.Path('/tmp/mathgraph/config.json')
+
+          trace_flags={
+              'NUCLEUS_TRACE_DOWNSTREAM':'1',
+              'NUCLEUS_TRACE_RESIDUAL':'1',
+              'NUCLEUS_TRACE_GENERIC_NONREC':'1',
+              'NUCLEUS_TRACE_PROP_SMALL':'1',
+              'NUCLEUS_TRACE_PROP_SINGLETON':'1',
+              'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+              'NUCLEUS_TRACE_SINGLE_FIELD':'1',
+              'NUCLEUS_TRACE_IMAX':'1',
+              'NUCLEUS_TRACE_CAPABILITY':'1',
+              'NUCLEUS_TRACE_PARSE_ERROR':'1',
+              'NUCLEUS_TRACE_RULE_K':'1',
+          }
+
+          def rr(path, trace=False):
+              env=os.environ.copy()
+              if trace:
+                  env.update(trace_flags)
+              with path.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.PIPE,timeout=120,env=env)
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          def oracle_rc(path):
+              with path.open('rb') as f:
+                  q=subprocess.run([str(oracle),str(config)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL,timeout=120)
+              return 0 if q.returncode==0 else 1
+
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  rc,_=rr(p)
+                  rows.append({'test':name,'bucket':bucket,'expected':expected,'rc':rc,'path':str(p)})
+
+          assert len(rows)==193
+          wrong=[r for r in rows if r['rc'] in (0,1) and r['rc']!=r['expected']]
+          errors=[r for r in rows if r['rc'] not in (0,1,2,3)]
+          assert not wrong,wrong
+          assert not errors,errors
+
+          native_accept=sum(r['expected']==0 and r['rc']==0 for r in rows)
+          native_reject=sum(r['expected']==1 and r['rc']==1 for r in rows)
+          residual=[r for r in rows if r['rc'] in (2,3)]
+          assert native_accept==104,native_accept
+          assert native_reject==61,native_reject
+          assert len(residual)==28,len(residual)
+
+          def marker_head(line):
+              m=re.search(r'(NUCLEUS_[A-Z0-9_]+)',line)
+              return m.group(1) if m else None
+
+          def unique_order(xs):
+              out=[]; seen=set()
+              for x in xs:
+                  if x not in seen:
+                      seen.add(x); out.append(x)
+              return out
+
+          terminal_counts=collections.Counter()
+          root_counts=collections.Counter()
+          by_terminal={}
+          by_root={}
+          marker_counts=collections.Counter()
+
+          for r in residual:
+              p=pathlib.Path(r['path'])
+              o=oracle_rc(p)
+              assert o==r['expected'],(r['test'],o,r['expected'])
+              rc,err=rr(p,True)
+              assert rc==r['rc'],(r['test'],r['rc'],rc)
+              lines=[x.strip() for x in err.splitlines() if 'NUCLEUS_' in x]
+              downs=[x for x in lines if 'NUCLEUS_DOWNSTREAM:' in x]
+              neutral=[x for x in lines if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x]
+              imax=[x for x in lines if 'NUCLEUS_IMAX ' in x]
+              generic=[x for x in lines if 'NUCLEUS_GENERIC_' in x]
+              prop=[x for x in lines if 'NUCLEUS_PROP_SMALL:' in x or 'NUCLEUS_PROP_SINGLETON:' in x]
+              single=[x for x in lines if 'NUCLEUS_SINGLE_FIELD:' in x]
+              rulek=[x for x in lines if 'NUCLEUS_RULE_K' in x]
+              caps=[x for x in lines if 'NUCLEUS_CAPABILITY' in x]
+
+              terminal=downs[-1] if downs else 'untraced'
+              sm=re.search(r':stage=([^:]+)',terminal)
+              rm=re.search(r':reason=([^:]+)$',terminal)
+              stage=sm.group(1) if sm else 'untraced'
+              if rm:
+                  reason=rm.group(1)
+              elif stage=='inductive':
+                  reason='inductive-unknown'
+              elif stage=='unsupported':
+                  reason='unsupported-declaration'
+              else:
+                  reason='untraced'
+
+              if imax:
+                  root_cause='unresolved-imax-case'
+              elif rulek:
+                  root_cause='typed-rule-k-boundary'
+              elif neutral:
+                  root_cause='typed-neutral-head-conversion'
+              elif stage=='inductive':
+                  if single:
+                      root_cause='inductive-single-field-contract'
+                  elif prop:
+                      root_cause='inductive-prop-contract'
+                  elif generic:
+                      root_cause='inductive-generic-contract'
+                  else:
+                      root_cause='inductive-envelope'
+              else:
+                  root_cause=reason
+
+              heads=[h for h in (marker_head(x) for x in lines) if h]
+              cone=unique_order(heads+[f'STAGE:{stage}',f'REASON:{reason}'])
+              tkey=f'{stage}:{reason}'
+              terminal_counts[tkey]+=1
+              root_counts[root_cause]+=1
+              by_terminal.setdefault(tkey,[]).append(r['test'])
+              by_root.setdefault(root_cause,[]).append(r['test'])
+              for h in set(heads):
+                  marker_counts[h]+=1
+
+              r.update({
+                  'oracle_rc':o,
+                  'terminal_line':terminal,
+                  'terminal_stage':stage,
+                  'terminal_reason':reason,
+                  'causal_root':root_cause,
+                  'dependency_cone':cone,
+                  'last_neutral':neutral[-1] if neutral else None,
+                  'last_imax':imax[-1] if imax else None,
+                  'last_generic':generic[-1] if generic else None,
+                  'last_prop':prop[-1] if prop else None,
+                  'last_single':single[-1] if single else None,
+                  'last_rule_k':rulek[-1] if rulek else None,
+                  'last_capability':caps[-1] if caps else None,
+                  'trace_lines':lines[-400:],
+              })
+              r.pop('path',None)
+
+          classes=[]
+          for root_name,tests in sorted(by_root.items(),key=lambda kv:(-len(kv[1]),kv[0])):
+              members=[r for r in residual if r['causal_root']==root_name]
+              accepts=sorted(r['test'] for r in members if r['expected']==0)
+              rejects=sorted(r['test'] for r in members if r['expected']==1)
+              classes.append({
+                  'causal_root':root_name,
+                  'count':len(members),
+                  'accept_count':len(accepts),
+                  'reject_count':len(rejects),
+                  'accepts':accepts,
+                  'rejects':rejects,
+                  'tests':sorted(tests),
+              })
+
+          mixed=[c for c in classes if c['accept_count'] and c['reject_count']]
+          if mixed:
+              chosen=max(mixed,key=lambda c:(min(c['accept_count'],c['reject_count']),c['count']))
+              separator={
+                  'causal_root':chosen['causal_root'],
+                  'accept':chosen['accepts'][0],
+                  'reject':chosen['rejects'][0],
+                  'rationale':'opposite protected verdicts inside same causal-root class',
+              }
+          else:
+              chosen=classes[0]
+              separator={
+                  'causal_root':chosen['causal_root'],
+                  'representative':chosen['tests'][0],
+                  'rationale':'largest pure causal-root class',
+              }
+
+          out={
+              'schema':'nucleus-crystal-independent-28-quotient-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'oracle_sha':os.environ['ORACLE_SHA'],
+              'native_accept':native_accept,
+              'native_reject':native_reject,
+              'residual_count':len(residual),
+              'wrong':wrong,
+              'terminal_reason_counts':dict(terminal_counts),
+              'causal_root_counts':dict(root_counts),
+              'marker_presence_counts':dict(marker_counts),
+              'by_terminal':by_terminal,
+              'by_causal_root':by_root,
+              'classes':classes,
+              'separator_target':separator,
+              'rows':residual,
+          }
+          pathlib.Path('metatron-kernel/evidence-out/crystal-independent-28-quotient-v1/result.json').write_text(
+              json.dumps(out,indent=2,sort_keys=True)+'\n'
+          )
+          print(json.dumps({
+              'native_accept':native_accept,
+              'native_reject':native_reject,
+              'residual_count':len(residual),
+              'terminal_reason_counts':dict(terminal_counts),
+              'causal_root_counts':dict(root_counts),
+              'by_causal_root':by_root,
+              'separator_target':separator,
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-independent-28-quotient-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-independent-28-quotient-v1
+          if-no-files-found: error
