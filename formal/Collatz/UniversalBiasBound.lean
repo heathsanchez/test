@@ -14,13 +14,39 @@ theorem bias_le_dyadic_ternary_envelope (n k : Nat) :
       simp [bias, oddCount]
   | succ k ih =>
       by_cases h : iter shortcut k n % 2 = 0
-      · simp only [bias, oddCount, h, ite_true, Nat.pow_succ]
-        have hz : 0 ≤ 2 ^ k * 3 ^ oddCount n k := Nat.zero_le _
-        nlinarith
-      · simp only [bias, oddCount, h, ite_false, Nat.pow_succ]
-        have h2 : 0 < 2 ^ k := Nat.pow_pos (by decide)
-        have h3 : 0 < 3 ^ oddCount n k := Nat.pow_pos (by decide)
-        nlinarith
+      · simp only [bias, oddCount, h, ite_true]
+        let A := 2 ^ k * 3 ^ oddCount n k
+        have hApos : 0 < A := by
+          dsimp [A]
+          exact Nat.mul_pos (Nat.pow_pos (by decide)) (Nat.pow_pos (by decide))
+        have hdouble : A ≤ 2 * A := by omega
+        calc
+          bias n k ≤ A := by simpa [A] using ih
+          _ ≤ 2 ^ (k + 1) * 3 ^ oddCount n k := by
+            simpa [A, Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm,
+              Nat.mul_left_comm] using hdouble
+      · simp only [bias, oddCount, h, ite_false]
+        let A := 2 ^ k * 3 ^ oddCount n k
+        have h3pos : 0 < 3 ^ oddCount n k :=
+          Nat.pow_pos (by decide)
+        have h3one : 1 ≤ 3 ^ oddCount n k := by omega
+        have hk_le_A : 2 ^ k ≤ A := by
+          have hm := Nat.mul_le_mul_left (2 ^ k) h3one
+          simpa [A] using hm
+        have h3ih : 3 * bias n k ≤ 3 * A := by
+          exact Nat.mul_le_mul_left 3 (by simpa [A] using ih)
+        have hfour : 3 * bias n k + 2 ^ k ≤ 4 * A := by
+          omega
+        have hApos : 0 < A := by
+          dsimp [A]
+          exact Nat.mul_pos (Nat.pow_pos (by decide)) h3pos
+        have hsix : 4 * A ≤ 6 * A := by omega
+        calc
+          3 * bias n k + 2 ^ k ≤ 4 * A := hfour
+          _ ≤ 6 * A := hsix
+          _ = 2 ^ (k + 1) * 3 ^ (oddCount n k + 1) := by
+            dsimp [A]
+            simp [Nat.pow_succ, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm]
 
 /-- Any shortcut block with exactly twelve odd steps and length at least twenty
 strictly contracts every starting value above the tiny absolute threshold
@@ -60,12 +86,15 @@ theorem twelve_odd_long_block_contracts
     omega
   have htarget :
       3 ^ 12 * x + 2 ^ k * 3 ^ 12 < 2 ^ k * x := by
-    nlinarith [h1, h2]
+    simp only [Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm] at h1 h2 ⊢
+    omega
   have hstrict :
       2 ^ k * iter shortcut k x < 2 ^ k * x :=
     Nat.lt_of_le_of_lt hscaled htarget
-  exact (Nat.mul_lt_mul_left hkpos).mp (by
-    simpa [Nat.mul_comm] using hstrict)
+  by_contra hnot
+  have hge : x ≤ iter shortcut k x := by omega
+  have hmul := Nat.mul_le_mul_left (2 ^ k) hge
+  omega
 
 /-- The sole V23 affine cell starts far above the universal blocked-block
 threshold. -/
