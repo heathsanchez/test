@@ -58,6 +58,7 @@ jobs:
           set -euo pipefail
           lake env lean --version | tee evidence/collatz-crystal-biadic-ranked-normalization-v37/toolchain.txt
           lake build CollatzFinal
+          lake build CollatzFinal
           for f in             formal/Collatz/BiadicRankedNormalization.lean             formal/Collatz/BiadicDiagnosticCertificate.lean
           do
             if grep -nE '(^|[^[:alnum:]_])(sorry|admit|axiom|unsafe)([^[:alnum:]_]|$)' "$f"; then
