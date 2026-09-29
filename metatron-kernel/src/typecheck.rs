@@ -246,10 +246,20 @@ impl<'a> TypeChecker<'a> {
                 };
                 let domain_value = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
-                extended.push(domain_value);
                 let Some(free) = fresh_local(context.len()) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
+                if std::env::var_os("NUCLEUS_TRACE_FREE_PROVENANCE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_FREE_BIND:kind=pi:free={}:context_depth={}:domain_expr={:?}:domain={:?}:frame={}",
+                        free.0,
+                        context.len(),
+                        domain,
+                        domain_value,
+                        frame.id(),
+                    );
+                }
+                extended.push(domain_value);
                 let body_frame = frame.extend_free(free);
                 let body_type = self.infer_in(*body, &extended, &body_frame, remaining);
                 let body_sort = match self.sort_level(body_type, *remaining) {
@@ -275,10 +285,20 @@ impl<'a> TypeChecker<'a> {
                 }
                 let domain_type = TypeValue::Term(self.closure(*domain, frame.clone()));
                 let mut extended = context.to_vec();
-                extended.push(domain_type.clone());
                 let Some(free) = fresh_local(context.len()) else {
                     return Judgment::unknown("binder-depth-overflow");
                 };
+                if std::env::var_os("NUCLEUS_TRACE_FREE_PROVENANCE").is_some() {
+                    eprintln!(
+                        "NUCLEUS_FREE_BIND:kind=lam:free={}:context_depth={}:domain_expr={:?}:domain={:?}:frame={}",
+                        free.0,
+                        context.len(),
+                        domain,
+                        domain_type,
+                        frame.id(),
+                    );
+                }
+                extended.push(domain_type.clone());
                 let body_frame = frame.extend_free(free);
                 self.infer_in(*body, &extended, &body_frame, remaining)
                     .map(|body_type| TypeValue::Pi {
