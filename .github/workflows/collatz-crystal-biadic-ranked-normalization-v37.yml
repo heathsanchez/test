@@ -1,0 +1,49 @@
+name: Collatz Crystal Biadic Ranked Normalization V37
+
+on:
+  push:
+    branches: [collatz-crystal-biadic-ranked-normalization-v37]
+    paths:
+      - 'experiments/collatz_crystal_biadic_ranked_normalization_v37.py'
+      - '.github/workflows/collatz-crystal-biadic-ranked-normalization-v37.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Normalize full chamber and certify potential
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-biadic-ranked-normalization-v37
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_biadic_ranked_normalization_v37.py \
+            | tee evidence/collatz-crystal-biadic-ranked-normalization-v37/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-biadic-ranked-normalization-v37/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_BIADIC_RANKED_NORMALIZATION_V37'
+          assert d['states']==27469
+          assert d['B_normalization']['old_B_edges']==15947
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V37_B',json.dumps(d['B_normalization'],sort_keys=True))
+          print('V37_COMPLETE',d['complete_normalized_graph'])
+          print('V37_POTENTIAL',json.dumps(d['potential_extension'],sort_keys=True))
+          print('V37_ZERO',json.dumps(d['zero_reduced_boundary'],sort_keys=True))
+          print('V37_VERDICT',d['scientific_verdict'])
+          print('V37_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-biadic-ranked-normalization-v37/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-biadic-ranked-normalization-v37
+          path: evidence/collatz-crystal-biadic-ranked-normalization-v37
+          if-no-files-found: error
