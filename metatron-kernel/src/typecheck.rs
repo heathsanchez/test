@@ -263,7 +263,45 @@ impl<'a> TypeChecker<'a> {
             }
             Expr::App { fun, arg } => {
                 let function_type = self.infer_in(*fun, context, frame, remaining);
-                let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
+                let Some((domain, body)) = self.pi_view(function_type.clone(), *remaining) else {
+                    if std::env::var_os("NUCLEUS_TRACE_CRYSTAL_APP_RESIDUAL").is_some() {
+                        let (reducible, full) = match &function_type {
+                            Judgment::Proven {
+                                value: TypeValue::Term(closure),
+                                ..
+                            } => {
+                                let machine = self.machine();
+                                (
+                                    machine.expose(
+                                        closure.clone(),
+                                        Transparency::Reducible,
+                                        *remaining,
+                                    ),
+                                    machine.expose(
+                                        closure.clone(),
+                                        Transparency::Full,
+                                        *remaining,
+                                    ),
+                                )
+                            }
+                            _ => (
+                                Judgment::unknown("not-term-function-type"),
+                                Judgment::unknown("not-term-function-type"),
+                            ),
+                        };
+                        eprintln!(
+                            "NUCLEUS_CRYSTAL_APP_RESIDUAL:expr={}:fun={}:arg={}:context_depth={}:remaining={}:fun_node={:?}:function_type={:?}:reducible={:?}:full={:?}",
+                            expression.0,
+                            fun.0,
+                            arg.0,
+                            context.len(),
+                            *remaining,
+                            self.expressions.get(*fun),
+                            function_type,
+                            reducible,
+                            full,
+                        );
+                    }
                     return Judgment::unknown("application-function-type");
                 };
                 match self.check_in(*arg, &domain, context, frame, remaining, true) {
