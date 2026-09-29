@@ -6,6 +6,11 @@ on:
     paths:
       - ".github/workflows/nucleus-crystal-app-pi-after-heq-v1.yml"
       - "metatron-kernel/**"
+  pull_request:
+    branches: [nucleus-structure-natle-reclosure-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-app-pi-after-heq-v1.yml"
+      - "metatron-kernel/**"
   workflow_dispatch:
 
 permissions:
