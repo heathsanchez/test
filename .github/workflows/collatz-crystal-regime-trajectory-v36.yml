@@ -1,0 +1,51 @@
+name: Collatz Crystal Regime Trajectory V36
+
+on:
+  push:
+    branches: [collatz-crystal-regime-trajectory-v36]
+    paths:
+      - 'experiments/collatz_crystal_regime_trajectory_v36.py'
+      - '.github/workflows/collatz-crystal-regime-trajectory-v36.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify source-regime trajectory certificate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-regime-trajectory-v36
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_regime_trajectory_v36.py \
+            | tee evidence/collatz-crystal-regime-trajectory-v36/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-regime-trajectory-v36/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_REGIME_TRAJECTORY_V36'
+          c=d['first_return_census']['classification']
+          assert d['first_return_census']['first_returns']==18414
+          assert c['trajectory_exit_final_expands']==86
+          assert d['shortest_false_safe_witness']['length']==19
+          assert d['shortest_false_safe_witness']['same_2adic_guard_regime_reversal']['low_headroom_consequence'].startswith('ORDINARY_EXIT')
+          assert d['shortest_false_safe_witness']['same_2adic_guard_regime_reversal']['high_headroom_consequence'].startswith('FULL_RETURN')
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V36_CENSUS',d['first_return_census'])
+          print('V36_WITNESS',d['shortest_false_safe_witness'])
+          print('V36_NEXT',d['next_residual'])
+          print('V36_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-regime-trajectory-v36/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-regime-trajectory-v36
+          path: evidence/collatz-crystal-regime-trajectory-v36
+          if-no-files-found: error
