@@ -26,6 +26,11 @@ enum EnvNode {
 pub enum EnvBinding {
     Closure(Closure),
     Free(FreeId),
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Closure,
+    },
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -42,6 +47,19 @@ impl EnvFrame {
 
     pub fn extend_free(&self, free: FreeId) -> Self {
         self.extend_binding(EnvBinding::Free(free))
+    }
+
+    pub fn extend_projection(
+        &self,
+        type_name: NameId,
+        index: usize,
+        structure: Closure,
+    ) -> Self {
+        self.extend_binding(EnvBinding::Projection {
+            type_name,
+            index,
+            structure,
+        })
     }
 
     fn extend_binding(&self, value: EnvBinding) -> Self {
@@ -178,5 +196,10 @@ pub enum NeutralHead {
     Const {
         name: NameId,
         levels: Vec<LevelTerm>,
+    },
+    Projection {
+        type_name: NameId,
+        index: usize,
+        structure: Closure,
     },
 }
