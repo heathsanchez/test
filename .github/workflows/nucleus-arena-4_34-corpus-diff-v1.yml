@@ -1,0 +1,191 @@
+name: Nucleus Arena 4.34 Corpus Diff v1
+
+on:
+  push:
+    branches: [nucleus-arena-4_34-current-authority-v1]
+    paths:
+      - ".github/workflows/nucleus-arena-4_34-corpus-diff-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-arena-4_34-corpus-diff-v1
+  cancel-in-progress: true
+
+env:
+  AUTHORITY_SHA: a12353b7cce96c48d9a0c684c3e9d81031168e1b
+  PROTECTED_ARTIFACT_ID: "10712869614"
+  FRESH_ARTIFACT_ID: "11053046055"
+  ARENA_SHA: cdb3497bd9080229f3ea107b0b9d5d25bd9e71a6
+
+jobs:
+  diff:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Build exact warranted Nucleus authority
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen and fresh Arena corpora
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          fetch_corpus() {
+            local artifact_id="$1"
+            local dest="$2"
+            local zip="/tmp/artifact-${artifact_id}.zip"
+            local unpack="/tmp/artifact-${artifact_id}"
+            rm -rf "$dest" "$unpack" "$zip"
+            mkdir -p "$dest" "$unpack"
+            gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/${artifact_id}/zip" > "$zip"
+            unzip -q "$zip" -d "$unpack"
+            local tarball
+            tarball="$(find "$unpack" -type f -name 'lean-arena-tests.tar.gz' -print -quit)"
+            test -n "$tarball"
+            tar -xzf "$tarball" -C "$dest"
+          }
+          fetch_corpus "$PROTECTED_ARTIFACT_ID" /tmp/protected-tests
+          fetch_corpus "$FRESH_ARTIFACT_ID" /tmp/fresh-tests
+          echo "protected=$(find /tmp/protected-tests -type f -name '*.ndjson' | wc -l)"
+          echo "fresh=$(find /tmp/fresh-tests -type f -name '*.ndjson' | wc -l)"
+
+      - name: Diff native Nucleus behavior across corpus migration
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/arena-4_34-corpus-diff
+          python3 - <<'PY'
+          import json
+          import os
+          import pathlib
+          import subprocess
+
+          binary = pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          roots = {
+              "protected": pathlib.Path("/tmp/protected-tests"),
+              "fresh": pathlib.Path("/tmp/fresh-tests"),
+          }
+
+          def run_case(path):
+              with path.open("rb") as stream:
+                  q = subprocess.run(
+                      [str(binary)],
+                      stdin=stream,
+                      stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE,
+                      timeout=120,
+                      check=False,
+                  )
+              assert q.returncode in (0, 1, 2, 3), {
+                  "path": str(path),
+                  "rc": q.returncode,
+                  "stderr": q.stderr.decode(errors="replace")[-4000:],
+              }
+              return q.returncode
+
+          def collect(root):
+              rows = {}
+              for bucket in ("good", "bad"):
+                  d = root / bucket
+                  if not d.exists():
+                      continue
+                  for p in sorted(d.rglob("*.ndjson")):
+                      name = str(p.relative_to(d)).removesuffix(".ndjson")
+                      assert name not in rows, name
+                      rows[name] = {
+                          "bucket": bucket,
+                          "rc": run_case(p),
+                      }
+              return rows
+
+          protected = collect(roots["protected"])
+          fresh = collect(roots["fresh"])
+          assert len(protected) == 193, len(protected)
+          assert len(fresh) == 193, len(fresh)
+
+          pnames, fnames = set(protected), set(fresh)
+          added = sorted(fnames - pnames)
+          removed = sorted(pnames - fnames)
+          shared = sorted(pnames & fnames)
+          changed = []
+          for name in shared:
+              p, f = protected[name], fresh[name]
+              if p != f:
+                  changed.append({
+                      "test": name,
+                      "protected": p,
+                      "fresh": f,
+                  })
+
+          # Recheck the current corpus safety boundary directly.
+          false_accepts = [
+              {"test": n, **r} for n, r in fresh.items()
+              if r["bucket"] == "bad" and r["rc"] == 0
+          ]
+          false_rejects = [
+              {"test": n, **r} for n, r in fresh.items()
+              if r["bucket"] == "good" and r["rc"] == 1
+          ]
+          assert not false_accepts, false_accepts
+          assert not false_rejects, false_rejects
+
+          migrated_expected = {
+              "corner-cases/nested-nonuniform-param": "either",
+              "bugs/nested-unused-param": "reject",
+              "bugs/proj-of-stuck-prop": "reject",
+              "bugs/proj-of-subst-prop": "reject",
+              "bugs/rec-of-subst-prop": "reject",
+          }
+          migrated = {}
+          for name, expected in migrated_expected.items():
+              assert name in fresh, f"missing current migrated case {name}"
+              row = fresh[name]
+              migrated[name] = {"expected": expected, **row}
+              if expected == "reject":
+                  assert row["rc"] != 0, (name, row)
+
+          def counts(rows):
+              return {
+                  "accept": sum(r["rc"] == 0 for r in rows.values()),
+                  "reject": sum(r["rc"] == 1 for r in rows.values()),
+                  "residual": sum(r["rc"] in (2, 3) for r in rows.values()),
+              }
+
+          out = {
+              "schema": "nucleus-arena-4_34-corpus-diff-v1",
+              "authority_sha": os.environ["AUTHORITY_SHA"],
+              "arena_sha": os.environ["ARENA_SHA"],
+              "protected_artifact_id": os.environ["PROTECTED_ARTIFACT_ID"],
+              "fresh_artifact_id": os.environ["FRESH_ARTIFACT_ID"],
+              "protected_counts": counts(protected),
+              "fresh_counts": counts(fresh),
+              "added": added,
+              "removed": removed,
+              "changed": changed,
+              "migrated_five": migrated,
+              "false_accepts": false_accepts,
+              "false_rejects": false_rejects,
+          }
+          pathlib.Path(
+              "metatron-kernel/evidence-out/arena-4_34-corpus-diff/result.json"
+          ).write_text(json.dumps(out, indent=2, sort_keys=True) + "\n")
+          print(json.dumps(out, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-arena-4_34-corpus-diff-${{ github.sha }}
+          path: metatron-kernel/evidence-out/arena-4_34-corpus-diff
+          if-no-files-found: warn
