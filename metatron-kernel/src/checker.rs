@@ -655,6 +655,299 @@ fn multi_constructor_small_elim_is_definitely_malformed(
         && recursor.level_params != inductive.level_params
 }
 
+fn fixed_bool_indexed_type(
+    export: &ResolvedExport,
+    expression: ExprId,
+) -> Option<NameId> {
+    let (domains, result) = pi_spine(export, expression, 1)?;
+    let [index] = domains.as_slice() else {
+        return None;
+    };
+    let Some(Expr::Const { name: bool_name, levels }) = export.exprs.get(*index) else {
+        return None;
+    };
+    if !levels.is_empty() || !name_is_root_str(export, *bool_name, "Bool") {
+        return None;
+    }
+    let is_type = matches!(
+        export.exprs.get(result),
+        Some(Expr::Sort(level))
+            if matches!(
+                export.levels.get(*level),
+                Some(Level::Succ(inner))
+                    if matches!(export.levels.get(*inner), Some(Level::Zero))
+            )
+    );
+    is_type.then_some(*bool_name)
+}
+
+fn fixed_bool_true_constant(
+    export: &ResolvedExport,
+    expression: ExprId,
+    bool_name: NameId,
+) -> bool {
+    matches!(
+        export.exprs.get(expression),
+        Some(Expr::Const { name, levels })
+            if levels.is_empty() && name_is_child_str(export, *name, bool_name, "true")
+    )
+}
+
+fn fixed_bool_indexed_application(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    index: impl FnOnce(ExprId) -> bool,
+) -> bool {
+    let (head, arguments) = application_spine(export, expression);
+    matches!(arguments.as_slice(), [argument]
+        if is_empty_constant(export, head, inductive) && index(*argument))
+}
+
+fn fixed_bool_indexed_motive(
+    export: &ResolvedExport,
+    expression: ExprId,
+    inductive: NameId,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, expression, 2) else {
+        return false;
+    };
+    let [index, target] = domains.as_slice() else {
+        return false;
+    };
+    is_bool_constant(export, *index)
+        && fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+        && is_sort_parameter(export, result, motive_level)
+}
+
+fn fixed_bool_indexed_minor(
+    export: &ResolvedExport,
+    expression: ExprId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+) -> bool {
+    match field_count {
+        0 => {
+            let (head, arguments) = application_spine(export, expression);
+            matches!(arguments.as_slice(), [index, target]
+                if is_bvar(export, head, 0)
+                    && fixed_bool_true_constant(export, *index, bool_name)
+                    && is_empty_constant(export, *target, constructor))
+        }
+        1 => {
+            let Some((domains, result)) = pi_spine(export, expression, 1) else {
+                return false;
+            };
+            let [field] = domains.as_slice() else {
+                return false;
+            };
+            let Some(Expr::Const { name: true_name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *true_name, "True") {
+                return false;
+            }
+            let (head, arguments) = application_spine(export, result);
+            let [index, target] = arguments.as_slice() else {
+                return false;
+            };
+            let (ctor_head, ctor_args) = application_spine(export, *target);
+            is_bvar(export, head, 1)
+                && fixed_bool_true_constant(export, *index, bool_name)
+                && is_empty_constant(export, ctor_head, constructor)
+                && matches!(ctor_args.as_slice(), [arg] if is_bvar(export, *arg, 0))
+        }
+        _ => false,
+    }
+}
+
+fn fixed_bool_indexed_recursor_type(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    inductive: NameId,
+    constructor: NameId,
+    bool_name: NameId,
+    field_count: usize,
+    motive_level: NameId,
+) -> bool {
+    let Some((domains, result)) = pi_spine(export, recursor.ty, 4) else {
+        return false;
+    };
+    let [motive, minor, index, target] = domains.as_slice() else {
+        return false;
+    };
+    if !fixed_bool_indexed_motive(export, *motive, inductive, motive_level)
+        || !fixed_bool_indexed_minor(
+            export,
+            *minor,
+            constructor,
+            bool_name,
+            field_count,
+        )
+        || !is_bool_constant(export, *index)
+        || !fixed_bool_indexed_application(export, *target, inductive, |arg| {
+            is_bvar(export, arg, 0)
+        })
+    {
+        return false;
+    }
+    let (head, arguments) = application_spine(export, result);
+    matches!(arguments.as_slice(), [index_arg, target_arg]
+        if is_bvar(export, head, 3)
+            && is_bvar(export, *index_arg, 1)
+            && is_bvar(export, *target_arg, 0))
+}
+
+fn fixed_bool_indexed_recursor_rule(
+    export: &ResolvedExport,
+    recursor: &Recursor,
+    field_count: usize,
+) -> bool {
+    let [rule] = recursor.rules.as_slice() else {
+        return false;
+    };
+    if rule.num_fields as usize != field_count {
+        return false;
+    }
+    let Some((domains, result)) = lam_spine(export, rule.rhs, 2 + field_count) else {
+        return false;
+    };
+    match field_count {
+        0 => is_bvar(export, result, 0),
+        1 => {
+            let Some(field) = domains.get(2) else {
+                return false;
+            };
+            let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+                return false;
+            };
+            if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+                return false;
+            }
+            is_bvar_application(export, result, 1, 0)
+        }
+        _ => false,
+    }
+}
+
+fn check_exact_fixed_bool_indexed(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+
+    let is_unit = name_is_root_str(export, inductive.name, "IndexedUnit");
+    let is_singleton = name_is_root_str(export, inductive.name, "IndexedSingleton");
+    if !is_unit && !is_singleton {
+        return Err(Verdict::Unknown);
+    }
+    let expected_fields = if is_unit { 0usize } else { 1usize };
+
+    if inductive.num_params != 0
+        || inductive.num_indices != 1
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields as usize != expected_fields
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.k
+        || recursor.num_params != 0
+        || recursor.num_indices != 1
+        || recursor.num_motives != 1
+        || recursor.num_minors != 1
+        || recursor.all != [inductive.name]
+        || recursor.rules.len() != 1
+        || recursor.rules[0].constructor != constructor.name
+        || !name_is_child_str(export, constructor.name, inductive.name, "mk")
+        || !name_is_child_str(export, recursor.name, inductive.name, "rec")
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let Some(bool_name) = fixed_bool_indexed_type(export, inductive.ty) else {
+        return Err(Verdict::Reject);
+    };
+    let Some((constructor_domains, constructor_result)) =
+        pi_spine(export, constructor.ty, expected_fields)
+    else {
+        return Err(Verdict::Reject);
+    };
+    if expected_fields == 1 {
+        let [field] = constructor_domains.as_slice() else {
+            return Err(Verdict::Reject);
+        };
+        let Some(Expr::Const { name, levels }) = export.exprs.get(*field) else {
+            return Err(Verdict::Reject);
+        };
+        if !levels.is_empty() || !name_is_root_str(export, *name, "True") {
+            return Err(Verdict::Reject);
+        }
+    }
+    if !fixed_bool_indexed_application(export, constructor_result, inductive.name, |arg| {
+        fixed_bool_true_constant(export, arg, bool_name)
+    }) {
+        return Err(Verdict::Reject);
+    }
+
+    let [motive_level] = recursor.level_params.as_slice() else {
+        return Err(Verdict::Reject);
+    };
+    if !recursor_metadata_admissible(
+        export,
+        inductive,
+        &block.constructors,
+        recursor,
+        false,
+        true,
+    ) || !fixed_bool_indexed_recursor_type(
+        export,
+        recursor,
+        inductive.name,
+        constructor.name,
+        bool_name,
+        expected_fields,
+        *motive_level,
+    ) || !fixed_bool_indexed_recursor_rule(export, recursor, expected_fields)
+    {
+        return Err(Verdict::Reject);
+    }
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    Ok(derivation.finish())
+}
+
 fn check_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -756,6 +1049,19 @@ fn check_inductive(
             law: BinaryProductSortLaw::Eq { level: *level },
         }
         .validate_and_promote(export, environment, limits, delta_policy);
+    }
+
+    if let [inductive] = block.types.as_slice()
+        && (name_is_root_str(export, inductive.name, "IndexedUnit")
+            || name_is_root_str(export, inductive.name, "IndexedSingleton"))
+    {
+        return check_exact_fixed_bool_indexed(
+            export,
+            environment,
+            block,
+            limits,
+            delta_policy,
+        );
     }
 
     if let [inductive] = block.types.as_slice()
