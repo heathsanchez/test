@@ -33,7 +33,155 @@ jobs:
         run: |
           set -euo pipefail
           git merge-base --is-ancestor "$AUTHORITY_SHA" HEAD
-          test "$(git diff --name-only "$AUTHORITY_SHA"...HEAD | grep -v '^.github/workflows/nucleus-crystal-independent-33-quotient-v1.yml$' | wc -l)" -eq 0
+          extra="$(git diff --name-only "$AUTHORITY_SHA"...HEAD | grep -v '^.github/workflows/nucleus-crystal-independent-33-quotient-v1.yml
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Fetch exact frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          rm -rf /tmp/art /tmp/tests
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Reconstruct exact 33-case quotient
+        working-directory: metatron-kernel
+        run: |
+          set -euo pipefail
+          mkdir -p evidence-out/crystal-independent-33-quotient-v1
+          python3 - <<'PY'
+          import collections, json, os, pathlib, re, subprocess
+
+          root = pathlib.Path('/tmp/tests')
+          binary = pathlib.Path('target/release/metatron-kernel').resolve()
+
+          trace_flags = {
+              'NUCLEUS_TRACE_RESIDUAL':'1',
+              'NUCLEUS_TRACE_DOWNSTREAM':'1',
+              'NUCLEUS_TRACE_GENERIC_NONREC':'1',
+              'NUCLEUS_TRACE_PROP_SMALL':'1',
+              'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+          }
+
+          def run_case(path, trace=False):
+              env = os.environ.copy()
+              if trace:
+                  env.update(trace_flags)
+              with path.open('rb') as f:
+                  q = subprocess.run(
+                      [str(binary)], stdin=f, stdout=subprocess.DEVNULL,
+                      stderr=subprocess.PIPE, timeout=120, env=env
+                  )
+              return q.returncode, q.stderr.decode(errors='replace')
+
+          rows = []
+          for bucket, expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name = str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  rc, _ = run_case(p, False)
+                  rows.append({'test':name,'bucket':bucket,'expected':expected,'rc':rc,'path':str(p)})
+
+          assert len(rows) == 193
+          wrong = [r for r in rows if r['rc'] in (0,1) and r['rc'] != r['expected']]
+          errors = [r for r in rows if r['rc'] not in (0,1,2,3)]
+          assert not wrong, wrong
+          assert not errors, errors
+
+          native_accept = sum(r['expected']==0 and r['rc']==0 for r in rows)
+          native_reject = sum(r['expected']==1 and r['rc']==1 for r in rows)
+          residual = [r for r in rows if r['rc'] in (2,3)]
+          assert native_accept == 102, native_accept
+          assert native_reject == 58, native_reject
+          assert len(residual) == 33, len(residual)
+
+          terminal_counts = collections.Counter()
+          all_marker_counts = collections.Counter()
+          by_terminal = {}
+          by_marker = {}
+
+          for r in residual:
+              p = pathlib.Path(r['path'])
+              rc, err = run_case(p, True)
+              assert rc == r['rc'], (r['test'], r['rc'], rc)
+
+              nucleus_lines = [
+                  line.strip() for line in err.splitlines()
+                  if 'NUCLEUS_' in line
+              ]
+              residual_marks = re.findall(r'NUCLEUS_RESIDUAL:([^\r\n]+)', err)
+              terminal = residual_marks[-1].strip() if residual_marks else 'untraced'
+              terminal_counts[terminal] += 1
+              by_terminal.setdefault(terminal, []).append(r['test'])
+
+              marker_heads = []
+              for line in nucleus_lines:
+                  m = re.search(r'(NUCLEUS_[A-Z0-9_]+)', line)
+                  if m:
+                      marker_heads.append(m.group(1))
+              for marker in sorted(set(marker_heads)):
+                  all_marker_counts[marker] += 1
+                  by_marker.setdefault(marker, []).append(r['test'])
+
+              r['terminal'] = terminal
+              r['residual_marks'] = residual_marks
+              r['trace_lines'] = nucleus_lines[-400:]
+              r.pop('path', None)
+
+          # Coarse consequential quotient: use the final residual reason as the
+          # primary class and retain all emitted trace markers as refinements.
+          classes = []
+          for terminal, tests in sorted(by_terminal.items(), key=lambda kv:(-len(kv[1]),kv[0])):
+              classes.append({
+                  'terminal': terminal,
+                  'count': len(tests),
+                  'tests': sorted(tests),
+              })
+
+          out = {
+              'schema':'nucleus-crystal-independent-33-quotient-v1',
+              'authority_sha':os.environ['AUTHORITY_SHA'],
+              'candidate_sha':os.environ['GITHUB_SHA'],
+              'cases':len(rows),
+              'native_accept':native_accept,
+              'native_reject':native_reject,
+              'residual_count':len(residual),
+              'wrong':wrong,
+              'terminal_reason_counts':dict(terminal_counts),
+              'marker_presence_counts':dict(all_marker_counts),
+              'by_terminal':by_terminal,
+              'by_marker':by_marker,
+              'classes':classes,
+              'rows':residual,
+          }
+          p = pathlib.Path('evidence-out/crystal-independent-33-quotient-v1/result.json')
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+
+          print(json.dumps({
+              'native_accept':native_accept,
+              'native_reject':native_reject,
+              'residual_count':len(residual),
+              'terminal_reason_counts':dict(terminal_counts),
+              'by_terminal':by_terminal,
+              'marker_presence_counts':dict(all_marker_counts),
+          }, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-independent-33-quotient-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-independent-33-quotient-v1
+          if-no-files-found: error
+ || true)"
+          test -z "$extra"
           cd metatron-kernel
           cargo fmt --check
           cargo clippy --all-targets -- -D warnings
