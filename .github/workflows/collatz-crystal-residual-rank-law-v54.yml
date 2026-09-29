@@ -1,0 +1,47 @@
+name: Collatz Crystal Residual Rank Law V54
+
+on:
+  push:
+    branches: [collatz-crystal-residual-rank-law-v54]
+    paths:
+      - 'experiments/collatz_crystal_residual_rank_law_v54.py'
+      - '.github/workflows/collatz-crystal-residual-rank-law-v54.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  discover:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Extract residual rank law
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-residual-rank-law-v54
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_residual_rank_law_v54.py \
+            | tee evidence/collatz-crystal-residual-rank-law-v54/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-residual-rank-law-v54/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_RESIDUAL_RANK_LAW_V54'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V54_VERDICT',d['verdict'])
+          print('V54_GRAPH',d['graph'])
+          print('V54_SUBSETS',d['minimum_rank_functional_subsets'])
+          print('V54_LEX',d['lexicographic_local_potentials'])
+          print('V54_LINEAR',d['linear_local_potential'])
+          print('V54_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-residual-rank-law-v54/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-residual-rank-law-v54
+          path: evidence/collatz-crystal-residual-rank-law-v54
+          if-no-files-found: error
