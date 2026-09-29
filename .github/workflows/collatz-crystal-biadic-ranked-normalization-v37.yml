@@ -4,6 +4,7 @@ on:
   push:
     branches: [collatz-crystal-biadic-ranked-normalization-v37]
     paths:
+      - 'lakefile.lean'
       - 'experiments/collatz_crystal_biadic_ranked_normalization_v37.py'
       - 'formal/Collatz/BiadicRankedNormalization.lean'
       - 'formal/Collatz/BiadicDiagnosticCertificate.lean'
