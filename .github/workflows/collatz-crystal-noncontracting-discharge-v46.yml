@@ -1,0 +1,39 @@
+name: Collatz Crystal Noncontracting Discharge V46
+on:
+  push:
+    branches: [collatz-crystal-noncontracting-discharge-v46]
+    paths:
+      - 'experiments/collatz_crystal_noncontracting_discharge_v46.py'
+      - '.github/workflows/collatz-crystal-noncontracting-discharge-v46.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit noncontracting discharge blocks
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-noncontracting-discharge-v46
+          PYTHONPATH=experiments python experiments/collatz_crystal_noncontracting_discharge_v46.py | tee evidence/collatz-crystal-noncontracting-discharge-v46/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-crystal-noncontracting-discharge-v46/result.json'))
+          assert d['schema']=='COLLATZ_CRYSTAL_NONCONTRACTING_DISCHARGE_V46'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V46_VERDICT',d['verdict'])
+          print('V46_STATS',d['stats'])
+          print('V46_BAD',d['bad_blocks'][:3])
+          print('V46_OPEN',d['open_tails'][:3])
+          print('V46_CERT',d['certificate_sha256'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-noncontracting-discharge-v46
+          path: evidence/collatz-crystal-noncontracting-discharge-v46
+          if-no-files-found: error
