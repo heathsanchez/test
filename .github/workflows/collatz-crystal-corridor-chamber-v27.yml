@@ -1,0 +1,51 @@
+name: Collatz Crystal Corridor Chamber V27
+
+on:
+  push:
+    branches: [collatz-crystal-corridor-chamber-v27]
+    paths:
+      - 'experiments/collatz_crystal_corridor_chamber_v27.py'
+      - '.github/workflows/collatz-crystal-corridor-chamber-v27.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Compile corridor/chamber join
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-corridor-chamber-v27
+          python -u experiments/collatz_crystal_corridor_chamber_v27.py \
+            | tee evidence/collatz-crystal-corridor-chamber-v27/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-corridor-chamber-v27/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_CORRIDOR_CHAMBER_V27'
+          assert [x['residue'] for x in d['escape_quotient']['blocked_B_centers']] == [132859,332149,398579]
+          assert d['escape_quotient']['suffix_costs']['phase0_B0']==20
+          assert d['escape_quotient']['suffix_costs']['phase0_B10']==20
+          assert d['escape_quotient']['suffix_costs']['phase1_B0']==20
+          assert d['v26_adversary_continuation']['first_lower_source_merge']['depth']==518
+          assert d['v26_adversary_continuation']['first_quarter_splice']['depth']==525
+          assert d['v26_adversary_continuation']['first_direct_descent']['depth']==528
+          assert d['global_collatz']=='UNKNOWN'
+          print('V27_B_CENTERS',d['escape_quotient']['blocked_B_centers'])
+          print('V27_K_CENTERS',d['escape_quotient']['identity_K_centers'])
+          print('V27_MERGE',d['v26_adversary_continuation']['first_lower_source_merge'])
+          print('V27_NEXT',d['next_residual'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-corridor-chamber-v27/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-corridor-chamber-v27
+          path: evidence/collatz-crystal-corridor-chamber-v27
+          if-no-files-found: error
