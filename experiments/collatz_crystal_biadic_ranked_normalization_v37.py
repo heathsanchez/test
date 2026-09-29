@@ -173,12 +173,11 @@ if full_graph:
         stack = []
         on = set()
         comps = []
-        counter = 0
+        counter = [0]
 
         def strong(x):
-            nonlocal counter
-            index[x] = low[x] = counter
-            counter += 1
+            index[x] = low[x] = counter[0]
+            counter[0] += 1
             stack.append(x); on.add(x)
             for e in zadj.get(x, ()):
                 y = e[1]
