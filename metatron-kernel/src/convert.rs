@@ -478,7 +478,7 @@ fn resolve_local_closure(checker: &TypeChecker<'_>, closure: &Closure) -> Option
         match checker.expression(current.expr)? {
             Expr::BVar(index) => match current.env.lookup(*index)? {
                 EnvBinding::Closure(bound) => current = bound,
-                EnvBinding::Free(_) => return Some(current),
+                EnvBinding::Free(_) | EnvBinding::Projection { .. } => return Some(current),
             },
             Expr::Let { value, body, .. } => {
                 let value = current.sibling(*value, current.env.clone());
@@ -611,20 +611,53 @@ fn compare_values(
             ));
         }
         (Value::Neutral(left), Value::Neutral(right)) => {
-            match compare_neutral_heads(checker, left, right, budget) {
-                Judgment::Proven { .. } => {}
-                other => return other,
-            }
-            if left.spine.len() != right.spine.len() {
-                return Judgment::refuted("neutral-spine-length");
-            }
-            work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
-                (
-                    TypeValue::Term(left.clone()),
-                    TypeValue::Term(right.clone()),
+            if let (
+                NeutralHead::Projection {
+                    type_name: left_type,
+                    index: left_index,
+                    structure: left_structure,
+                },
+                NeutralHead::Projection {
+                    type_name: right_type,
+                    index: right_index,
+                    structure: right_structure,
+                },
+            ) = (&left.head, &right.head)
+            {
+                if left_type != right_type || left_index != right_index {
+                    return Judgment::refuted("distinct-projection-heads");
+                }
+                if left.spine.len() != right.spine.len() {
+                    return Judgment::refuted("neutral-spine-length");
+                }
+                work.push((
+                    TypeValue::Term(left_structure.clone()),
+                    TypeValue::Term(right_structure.clone()),
                     depth,
-                )
-            }));
+                ));
+                work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+                    (
+                        TypeValue::Term(left.clone()),
+                        TypeValue::Term(right.clone()),
+                        depth,
+                    )
+                }));
+            } else {
+                match compare_neutral_heads(checker, left, right, budget) {
+                    Judgment::Proven { .. } => {}
+                    other => return other,
+                }
+                if left.spine.len() != right.spine.len() {
+                    return Judgment::refuted("neutral-spine-length");
+                }
+                work.extend(left.spine.iter().zip(&right.spine).map(|(left, right)| {
+                    (
+                        TypeValue::Term(left.clone()),
+                        TypeValue::Term(right.clone()),
+                        depth,
+                    )
+                }));
+            }
         }
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
