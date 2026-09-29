@@ -667,7 +667,7 @@ impl<'a> Machine<'a> {
                     EnvBinding::Closure(bound) => {
                         closure = bound;
                     }
-                    EnvBinding::Free(_) => return None,
+                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
                 },
                 Expr::Const { name, .. } => {
                     arguments.reverse();
