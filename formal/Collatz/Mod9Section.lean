@@ -23,14 +23,13 @@ theorem mod9_two_pred_shortcut
     shortcut (mod9TwoPred y) = y := by
   have hdecomp : y = 9 * (y / 9) + 2 :=
     mod9_two_decomposition hy
-  have hodd : (mod9TwoPred y) % 2 = 1 := by
-    simp [mod9TwoPred]
-  simp only [shortcut]
-  split
-  · omega
-  · rw [hdecomp]
-    simp [mod9TwoPred]
+  have hodd : (6 * (y / 9) + 1) % 2 ≠ 0 := by
     omega
+  have hnum :
+      3 * (6 * (y / 9) + 1) + 1 =
+        2 * (9 * (y / 9) + 2) := by
+    omega
+  simp [mod9TwoPred, shortcut, hodd, hnum, hdecomp]
 
 /-- A forced-section hit below the exact 3/2 source threshold has a smaller
 positive odd predecessor whose next shortcut value is the hit. -/
@@ -68,9 +67,8 @@ theorem minimal_bad_mod9_two_height
     (hmin : MinimalBad PositiveBad n)
     (hy : iter shortcut k n % 9 = 2) :
     3 * n + 1 ≤ 2 * iter shortcut k n := by
-  by_contra h
-  have hheight : 2 * iter shortcut k n < 3 * n + 1 := by
-    omega
+  apply Nat.le_of_not_gt
+  intro hheight
   have hyState : endpoint (stateAt n k) % 9 = 2 := by
     simpa [at_endpoint] using hy
   have hheightState :
