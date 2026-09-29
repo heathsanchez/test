@@ -794,46 +794,34 @@ fn exported_level_is_definitely_nonzero(
 }
 
 fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &InductiveBlock) -> bool {
-    let [inductive] = block.types.as_slice() else { return false; };
-    if inductive.num_nested != 0 || inductive.num_indices != 0
-        || inductive.is_recursive || inductive.is_reflexive || inductive.is_unsafe
-        || block.constructors.is_empty() || block.recursors.len() != 1
-        || block.constructors.iter().any(|c| c.is_unsafe) || block.recursors[0].is_unsafe {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_nested != 0
+        || inductive.num_indices != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || constructor.is_unsafe
+        || recursor.is_unsafe
+        || inductive.num_params != 2
+        || constructor.num_fields != 2
+        || constructor.num_params != 2
+        || !pprod_has_dependent_field_neighbor(export, constructor.ty)
+    {
         return false;
     }
-    let Ok(p) = usize::try_from(inductive.num_params) else { return false; };
-
-    // Crystal transfer boundary: do not generalize into representation
-    // classes whose authority is explicitly sealed by earlier generations.
-    //
-    // The one principled exception is a genuinely dependent 2-parameter,
-    // 2-field singleton structure: the second field type must mention the
-    // first field (BVar(0)).  This separates Subtype/PSigma-like dependent
-    // pairs from the sealed PProd representation class without using names.
-    if let [constructor] = block.constructors.as_slice() {
-        let Ok(fields) = usize::try_from(constructor.num_fields) else { return false; };
-        if fields == 0 {
-            return false;
-        }
-        if p == 2 && fields == 2 {
-            let Some((domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
-                return false;
-            };
-            let second_field = domains[p + 1];
-            if !expression_contains_bvar(export, second_field, 0) {
-                return false;
-            }
-        }
-    }
-
+    let Some((_, result)) = pi_spine(export, inductive.ty, 2) else {
+        return false;
+    };
     matches!(
-        pi_spine(export, inductive.ty, p),
-        Some((_, result))
-            if matches!(
-                export.exprs.get(result),
-                Some(Expr::Sort(level))
-                    if exported_level_is_definitely_nonzero(export, *level, 128)
-            )
+        export.exprs.get(result),
+        Some(Expr::Sort(level))
+            if exported_level_is_definitely_nonzero(export, *level, 128)
     )
 }
 
@@ -1065,7 +1053,7 @@ fn check_generic_nonrecursive_type(
         || !recursor_metadata_ok
         || !recursor_shape_ok
     {
-        return Err(Verdict::Reject);
+        return Err(Verdict::Unknown);
     }
 
     let mut d=ClosedNonrecursiveDerivation::begin(environment);
@@ -1076,7 +1064,32 @@ fn check_generic_nonrecursive_type(
         d.promote(export,derived_constructor(c),limits.judgment_steps,delta_policy)?;
     }
     d.promote(export,derived_recursor(recursor),limits.judgment_steps,delta_policy)?;
-    install_certified_recursor_reduction(d.finish(), &block.constructors, recursor)
+    let environment = d.finish();
+
+    let [constructor] = block.constructors.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let p = usize::try_from(inductive.num_params).map_err(|_| Verdict::Reject)?;
+    let fields = usize::try_from(constructor.num_fields).map_err(|_| Verdict::Reject)?;
+    let Some((constructor_domains, _)) = pi_spine(export, constructor.ty, p + fields) else {
+        return Err(Verdict::Unknown);
+    };
+    let field_types = constructor_domains[p..]
+        .iter()
+        .copied()
+        .map(ProjectionFieldType::Derived)
+        .collect::<Vec<_>>();
+    let environment = environment
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: p,
+                field_types,
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
 fn check_single_constructor_inductive(
@@ -1149,7 +1162,11 @@ fn check_single_constructor_inductive(
     } else if unary_field_universe_candidate(export, block) {
         check_unary_field_universe_inductive(export, environment, block, limits, delta_policy)
     } else if generic_nonrecursive_type_candidate(export, block) {
-        check_generic_nonrecursive_type(export, environment, block, limits, delta_policy)
+        match check_generic_nonrecursive_type(export, environment, block, limits, delta_policy) {
+            Ok(environment) => Ok(environment),
+            Err(Verdict::Unknown) => check_unrecognized_single_constructor_coherence(export, block),
+            Err(verdict) => Err(verdict),
+        }
     } else {
         check_unrecognized_single_constructor_coherence(export, block)
     }
