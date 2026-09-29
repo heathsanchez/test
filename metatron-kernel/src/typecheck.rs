@@ -1,3 +1,4 @@
+use std::cell::RefCell;
 use std::collections::HashMap;
 
 use crate::environment::Environment;
@@ -18,12 +19,19 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+struct InferenceKey {
+    expression: ExprId,
+    frame_id: u64,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
     environment: &'a Environment,
     level_substitution: HashMap<NameId, LevelTerm>,
     delta_policy: crate::convert::DeltaPolicy,
+    inference_cache: RefCell<HashMap<InferenceKey, Judgment<TypeValue>>>,
 }
 
 impl<'a> TypeChecker<'a> {
@@ -38,6 +46,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution: HashMap::new(),
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            inference_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -53,6 +62,7 @@ impl<'a> TypeChecker<'a> {
             environment,
             level_substitution,
             delta_policy: crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            inference_cache: RefCell::new(HashMap::new()),
         }
     }
 
@@ -62,11 +72,13 @@ impl<'a> TypeChecker<'a> {
     }
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
+        self.inference_cache.borrow_mut().clear();
         let mut remaining = budget;
         self.infer_in(expression, &[], &EnvFrame::empty(), &mut remaining)
     }
 
     pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
+        self.inference_cache.borrow_mut().clear();
         let mut remaining = budget;
         self.check_in(
             expression,
@@ -115,6 +127,7 @@ impl<'a> TypeChecker<'a> {
     /// This remains three-valued: unresolved universe equality or reduction
     /// is not a refutation.
     pub fn is_proposition(&self, expression: ExprId, budget: usize) -> Judgment<()> {
+        self.inference_cache.borrow_mut().clear();
         let mut remaining = budget;
         self.check_in(
             expression,
@@ -157,6 +170,27 @@ impl<'a> TypeChecker<'a> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
         }
+        let key = InferenceKey {
+            expression,
+            frame_id: frame.id(),
+        };
+        if let Some(cached) = self.inference_cache.borrow().get(&key) {
+            return cached.clone();
+        }
+        let result = self.infer_in_uncached(expression, context, frame, remaining);
+        if !result.is_unknown() {
+            self.inference_cache.borrow_mut().insert(key, result.clone());
+        }
+        result
+    }
+
+    fn infer_in_uncached(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+    ) -> Judgment<TypeValue> {
         let Some(expression_node) = self.expressions.get(expression) else {
             return Judgment::unknown("missing-expression-during-inference");
         };
