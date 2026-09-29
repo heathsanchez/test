@@ -807,6 +807,50 @@ impl<'a> TypeChecker<'a> {
             })
     }
 
+    /// Two distinct opaque closed constants that themselves inhabit Prop
+    /// are rigid proposition type constructors. They cannot be definitionally
+    /// equal: neither side has a delta body, there are no universe arguments,
+    /// and each constant's declared type reduces to Sort 0.
+    pub(crate) fn distinct_opaque_closed_proposition_types(
+        &self,
+        left: NameId,
+        left_levels: &[LevelTerm],
+        right: NameId,
+        right_levels: &[LevelTerm],
+        budget: usize,
+    ) -> bool {
+        if left == right || !left_levels.is_empty() || !right_levels.is_empty() {
+            return false;
+        }
+
+        let definitions = self.environment.definition_bodies();
+        if definitions.contains_key(&left) || definitions.contains_key(&right) {
+            return false;
+        }
+
+        let is_closed_prop_type = |name: NameId| {
+            let Some(declaration) = self.environment.get(name) else {
+                return false;
+            };
+            if !declaration.level_params.is_empty() {
+                return false;
+            }
+            let ty = Closure::with_levels(
+                declaration.ty,
+                EnvFrame::empty(),
+                LevelSubstitution::new(Vec::new()),
+            );
+            matches!(
+                self.machine()
+                    .expose(ty, Transparency::Reducible, budget)
+                    .proven_value(),
+                Some(Value::Sort(LevelTerm::Zero))
+            )
+        };
+
+        is_closed_prop_type(left) && is_closed_prop_type(right)
+    }
+
     pub(crate) fn closure(&self, expr: ExprId, env: EnvFrame) -> Closure {
         let mut entries: Vec<_> = self
             .level_substitution
@@ -824,6 +868,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
         "distinct-canonical-universes"
             | "distinct-Nat-literals"
             | "rigid-value-constructor-mismatch"
+            | "distinct-opaque-proposition-types"
     )
 }
 
