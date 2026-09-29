@@ -1,0 +1,51 @@
+name: Collatz Crystal Source Headroom Gate V36
+
+on:
+  push:
+    branches: [collatz-crystal-headroom-gate-v36]
+    paths:
+      - 'experiments/collatz_crystal_source_headroom_gate_v36.py'
+      - '.github/workflows/collatz-crystal-source-headroom-gate-v36.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify source headroom gate
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-source-headroom-gate-v36
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_source_headroom_gate_v36.py \
+            | tee evidence/collatz-crystal-source-headroom-gate-v36/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-source-headroom-gate-v36/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_SOURCE_HEADROOM_GATE_V36'
+          assert d['K_source_floor_gate']['lower_cost_transitions']==3832
+          assert d['B_source_floor_gate']['transitions']==15947
+          assert d['zero_slack_boundary']['recurrent_components']==66
+          assert d['tail_zero_falsifier']['v26_source_bit_length']==460
+          assert d['tail_zero_falsifier']['first_simple_ordinary_exit']['depth']==518
+          assert d['v35_shadow_falsifier']['first_least_shadow_start_above_v23_floor']==5
+          assert d['v35_shadow_falsifier']['all_above_floor_shadows_pass_K_source_floor_gate']
+          assert d['universal_status']=='UNKNOWN'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V36_VERDICT',d['scientific_verdict'])
+          print('V36_NEXT',d['next_residual'])
+          print('V36_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-source-headroom-gate-v36/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-source-headroom-gate-v36
+          path: evidence/collatz-crystal-source-headroom-gate-v36
+          if-no-files-found: error
