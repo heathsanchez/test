@@ -33,11 +33,11 @@ theorem affineBudget_compose
       A₂ * affineBudget A₁ B₁ P₁ L +
       P₁ * affineBudget A₂ B₂ P₂ L := by
   simp only [affineBudget]
-  simp only [sub_mul, mul_sub, mul_add, add_mul, mul_assoc]
+  simp only [Int.sub_mul, Int.mul_sub, Int.mul_add, Int.add_mul, Int.mul_assoc]
   have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
-    rw [← mul_assoc, mul_comm A₂ P₁, mul_assoc]
+    rw [← Int.mul_assoc, Int.mul_comm A₂ P₁, Int.mul_assoc]
   have hb : B₂ * P₁ = P₁ * B₂ := by
-    rw [mul_comm B₂ P₁]
+    rw [Int.mul_comm B₂ P₁]
   rw [hcross, hb]
   omega
 
@@ -48,11 +48,11 @@ theorem affineBudget_composite_expanded
     ((P₁ * P₂ - A₂ * A₁) * L - (A₂ * B₁ + B₂ * P₁)) =
       A₂ * ((P₁ - A₁) * L - B₁) +
       P₁ * ((P₂ - A₂) * L - B₂) := by
-  simp only [sub_mul, mul_sub, mul_add, add_mul, mul_assoc]
+  simp only [Int.sub_mul, Int.mul_sub, Int.mul_add, Int.add_mul, Int.mul_assoc]
   have hcross : A₂ * (P₁ * L) = P₁ * (A₂ * L) := by
-    rw [← mul_assoc, mul_comm A₂ P₁, mul_assoc]
+    rw [← Int.mul_assoc, Int.mul_comm A₂ P₁, Int.mul_assoc]
   have hb : B₂ * P₁ = P₁ * B₂ := by
-    rw [mul_comm B₂ P₁]
+    rw [Int.mul_comm B₂ P₁]
   rw [hcross, hb]
   omega
 
@@ -85,14 +85,14 @@ theorem affineBudget_compose_pos_implies_component_pos
       have hn₂ : affineBudget A₂ B₂ P₂ L ≤ 0 := by omega
       have hw₁ :
           A₂ * affineBudget A₁ B₁ P₁ L ≤ 0 :=
-        mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
+        Int.mul_nonpos_of_nonneg_of_nonpos hA₂ hn₁
       have hw₂ :
           P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
-        mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
+        Int.mul_nonpos_of_nonneg_of_nonpos hP₁ hn₂
       have hsum :
           A₂ * affineBudget A₁ B₁ P₁ L +
-            P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 :=
-        add_nonpos hw₁ hw₂
+            P₁ * affineBudget A₂ B₂ P₂ L ≤ 0 := by
+        omega
       exact False.elim (by omega)
 
 #print axioms affineBudget_compose
