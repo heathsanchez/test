@@ -1,0 +1,60 @@
+name: Nucleus Crystal Conversion Param Closure v1
+
+on:
+  push:
+    branches: [nucleus-crystal-conversion-param-closure-v1]
+    paths:
+      - ".github/workflows/nucleus-crystal-conversion-param-closure-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      ARENA_ARTIFACT: 10712869614
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with: {components: rustfmt}
+      - name: Build developmental kernel
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --lib --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch frozen corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace fueled-chain after conversion-lifted parameters
+        run: |
+          set -euo pipefail
+          target="$(find /tmp/tests/good -type f -path '*/perf/fueled-chain.ndjson' | head -1)"
+          test -n "$target"
+          set +e
+          NUCLEUS_TRACE_GENERIC_NONREC=1 NUCLEUS_TRACE_DOWNSTREAM=1 NUCLEUS_TRACE_RESIDUAL=1 NUCLEUS_TRACE_APPLICATION_INFER=1 NUCLEUS_TRACE_NEUTRAL_HEADS=1             metatron-kernel/target/release/metatron-kernel < "$target" >/tmp/fueled.out 2>/tmp/fueled.err
+          rc=$?
+          set -e
+          echo "fueled_chain_rc=$rc"
+          grep -E 'NUCLEUS_GENERIC_|NUCLEUS_DOWNSTREAM:|NUCLEUS_RESIDUAL:|NUCLEUS_APP_INFER:unknown|NUCLEUS_NEUTRAL_HEAD_MISMATCH:' /tmp/fueled.err || true
+          mkdir -p metatron-kernel/evidence-out/crystal-conversion-param-closure-v1
+          cp /tmp/fueled.err metatron-kernel/evidence-out/crystal-conversion-param-closure-v1/fueled.stderr.txt
+          printf '{"schema":"nucleus-crystal-conversion-param-closure-v1","fueled_chain_rc":%s}\n' "$rc" > metatron-kernel/evidence-out/crystal-conversion-param-closure-v1/result.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-crystal-conversion-param-closure-${{ github.sha }}
+          path: |
+            metatron-kernel/evidence-out/crystal-conversion-param-closure-v1
+            metatron-kernel/src/checker.rs
+          if-no-files-found: error
