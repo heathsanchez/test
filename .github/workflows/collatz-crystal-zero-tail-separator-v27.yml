@@ -1,0 +1,57 @@
+name: Collatz Crystal Zero Tail Separator V27
+
+on:
+  push:
+    branches: [collatz-crystal-zero-tail-separator-v27]
+    paths:
+      - 'experiments/collatz_crystal_parameter_quotient_v25.py'
+      - 'experiments/collatz_crystal_zero_tail_separator_v27.py'
+      - '.github/workflows/collatz-crystal-zero-tail-separator-v27.yml'
+  workflow_dispatch:
+
+permissions: {contents: read}
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit first V26 separator under full D/S/M semantics
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-zero-tail-separator-v27
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_zero_tail_separator_v27.py \
+            | tee evidence/collatz-crystal-zero-tail-separator-v27/result.log
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-zero-tail-separator-v27/result.log'
+          text=open(p).read()
+          start=text.rfind('\n{')
+          if start < 0:
+              start=text.find('{')
+          else:
+              start += 1
+          d=json.loads(text[start:])
+          assert d['schema']=='COLLATZ_CRYSTAL_ZERO_TAIL_SEPARATOR_V27'
+          assert d['ds_control']['extra_zero_bits']==132
+          assert d['full_dsm_audit']['old_bound']==93
+          assert d['global_collatz']=='UNKNOWN'
+          assert d['scientific_verdict'] in {
+              'FULL_DSM_93_BOUND_REJECTED_BY_V26_SEPARATOR',
+              'V26_DS_SEPARATOR_CLOSED_BY_LOWER_MERGE_WITHIN_93',
+          }
+          print('V27_VERDICT',d['scientific_verdict'])
+          print('V27_AUDITED',d['full_dsm_audit']['states_audited'])
+          print('V27_FIRST_FULL_EXIT',d['full_dsm_audit']['first_full_exit'])
+          print('V27_RHO_LAW',d['forced_bit_transition']['exact_rho_law'])
+          print('V27_NEXT',d['next_residual'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-zero-tail-separator-v27
+          path: evidence/collatz-crystal-zero-tail-separator-v27
+          if-no-files-found: error
