@@ -18,6 +18,13 @@ pub enum TypeValue {
     },
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum RuleKAttempt {
+    NotApplicable,
+    Reduced(Closure),
+    DefiniteMismatch,
+}
+
 pub struct TypeChecker<'a> {
     expressions: &'a IdTable<ExprId, Expr>,
     levels: &'a IdTable<LevelId, Level>,
@@ -662,6 +669,133 @@ impl<'a> TypeChecker<'a> {
         Some(current)
     }
 
+    pub(crate) fn rule_k_reduce_neutral(
+        &self,
+        neutral: &Neutral,
+        context: &[TypeValue],
+        budget: usize,
+    ) -> RuleKAttempt {
+        if budget < 8 {
+            return RuleKAttempt::NotApplicable;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let Some(reduction) = self.environment.recursor_reduction(*name) else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let [rule] = reduction.rules.as_slice() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        if !reduction.k
+            || rule.num_fields != 0
+            || rule.num_params != reduction.num_params
+            || reduction.level_params.len() != levels.len()
+        {
+            return RuleKAttempt::NotApplicable;
+        }
+
+        let required = reduction
+            .num_params
+            .saturating_add(1)
+            .saturating_add(reduction.rules.len())
+            .saturating_add(reduction.num_indices)
+            .saturating_add(1);
+        if neutral.spine.len() != required {
+            return RuleKAttempt::NotApplicable;
+        }
+
+        let Some(target) = neutral.spine.last() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let target_exposed =
+            self.machine()
+                .expose(target.clone(), Transparency::Reducible, budget / 4);
+        let Some(Value::Neutral(target_neutral)) = target_exposed.proven_value() else {
+            return RuleKAttempt::NotApplicable;
+        };
+        let Some(target_type) = self.neutral_result_type(target_neutral, context, budget / 4)
+        else {
+            return RuleKAttempt::NotApplicable;
+        };
+
+        let mut constructor_levels = Vec::with_capacity(rule.constructor_level_params.len());
+        for parameter in &rule.constructor_level_params {
+            let Some(index) = reduction
+                .level_params
+                .iter()
+                .position(|candidate| candidate == parameter)
+            else {
+                return RuleKAttempt::NotApplicable;
+            };
+            constructor_levels.push(levels[index].clone());
+        }
+        let constructor = Neutral {
+            head: NeutralHead::Const {
+                name: rule.constructor,
+                levels: constructor_levels,
+            },
+            spine: neutral.spine[..rule.num_params].to_vec(),
+        };
+        let Some(constructor_type) = self.neutral_result_type(&constructor, context, budget / 4)
+        else {
+            return RuleKAttempt::NotApplicable;
+        };
+
+        let compatibility = crate::convert::convert_with_policy_in_context(
+            self,
+            &target_type,
+            &constructor_type,
+            budget / 2,
+            crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            context.len(),
+            context,
+        );
+        match compatibility {
+            Judgment::Proven { .. } => {
+                let substitutions = reduction
+                    .level_params
+                    .iter()
+                    .copied()
+                    .zip(levels.iter().cloned())
+                    .collect::<Vec<_>>();
+                let mut result = Closure::with_levels(
+                    rule.rhs,
+                    EnvFrame::empty(),
+                    LevelSubstitution::new(substitutions),
+                );
+                let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+                for argument in &neutral.spine[..prefix_len] {
+                    loop {
+                        match self.expression(result.expr) {
+                            Some(Expr::Lam { body, .. }) => {
+                                result = result.sibling(*body, result.env.extend(argument.clone()));
+                                break;
+                            }
+                            Some(Expr::Let { value, body, .. }) => {
+                                let value = result.sibling(*value, result.env.clone());
+                                result = result.sibling(*body, result.env.extend(value));
+                            }
+                            _ => return RuleKAttempt::NotApplicable,
+                        }
+                    }
+                }
+                RuleKAttempt::Reduced(result)
+            }
+            Judgment::Refuted { obstruction }
+                if matches!(
+                    obstruction.0,
+                    "distinct-canonical-universes"
+                        | "distinct-Nat-literals"
+                        | "rigid-value-constructor-mismatch"
+                ) =>
+            {
+                RuleKAttempt::DefiniteMismatch
+            }
+            Judgment::Refuted { .. } | Judgment::Unknown { .. } => RuleKAttempt::NotApplicable,
+        }
+    }
+
     pub(crate) fn unit_like_type_key(
         &self,
         ty: &TypeValue,
@@ -806,6 +940,7 @@ fn definite_conversion_obstruction(obstruction: &str) -> bool {
         "distinct-canonical-universes"
             | "distinct-Nat-literals"
             | "rigid-value-constructor-mismatch"
+            | "rule-k-target-mismatch"
     )
 }
 
