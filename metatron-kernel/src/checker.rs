@@ -799,6 +799,67 @@ fn generic_nonrecursive_type_candidate(export: &ResolvedExport, block: &Inductiv
             Some(Expr::Sort(level)) if !matches!(export.levels.get(*level), Some(Level::Zero))))
 }
 
+fn generic_nonrecursive_constructor_result_is_definitely_malformed(
+    export: &ResolvedExport,
+    inductive: &crate::syntax::InductiveType,
+    constructor: &Constructor,
+) -> bool {
+    // Constructor ordinal is metadata about position in the block, not part of
+    // the result-type law.  The caller separately checks the exact ordinal.
+    if constructor.inductive != inductive.name
+        || constructor.num_params != inductive.num_params
+        || constructor.level_params != inductive.level_params
+    {
+        return true;
+    }
+
+    let Some(num_binders) = constructor.num_params.checked_add(constructor.num_fields) else {
+        return true;
+    };
+    let mut result = constructor.ty;
+    for _ in 0..num_binders {
+        let Some(Expr::Pi { body, .. }) = export.exprs.get(result) else {
+            return true;
+        };
+        result = *body;
+    }
+
+    let (head, arguments) = application_spine(export, result);
+    if !inductive_constant_uses_declared_levels(
+        export,
+        head,
+        inductive.name,
+        &inductive.level_params,
+    ) {
+        return true;
+    }
+
+    let Some(expected_arguments) = inductive.num_params.checked_add(inductive.num_indices) else {
+        return true;
+    };
+    let Ok(expected_arguments) = usize::try_from(expected_arguments) else {
+        return true;
+    };
+    if arguments.len() != expected_arguments {
+        return true;
+    }
+
+    let Ok(num_params) = usize::try_from(inductive.num_params) else {
+        return true;
+    };
+    for parameter in 0..num_params {
+        let parameter = parameter as u64;
+        let expected_bvar = constructor.num_fields + inductive.num_params - 1 - parameter;
+        if !is_bvar(export, arguments[parameter as usize], expected_bvar) {
+            return true;
+        }
+    }
+
+    arguments[num_params..]
+        .iter()
+        .any(|argument| expression_contains_constant(export, *argument, inductive.name))
+}
+
 fn expr_eq_with_bvar_shift(
     export: &ResolvedExport, left: ExprId, right: ExprId, cutoff: u64, shift: u64,
 ) -> bool {
@@ -909,7 +970,7 @@ fn check_generic_nonrecursive_type(
         let params_ok = constructor.num_params == inductive.num_params;
         let levels_ok = constructor.level_params == inductive.level_params;
         let result_ok =
-            !constructor_result_is_definitely_malformed(export, inductive, constructor);
+            !generic_nonrecursive_constructor_result_is_definitely_malformed(export, inductive, constructor);
         let recursive_field_ok =
             !constructor_has_definite_negative_recursive_field(export, inductive, constructor);
         if trace_generic {
