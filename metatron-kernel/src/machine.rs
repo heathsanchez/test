@@ -624,6 +624,116 @@ impl<'a> Machine<'a> {
         })
     }
 
+    fn observe_reflexive_nat_beq(
+        &self,
+        target: &Closure,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let bools = self.bool_primitives.as_ref()?;
+        let nat = self.nat_primitives.as_ref()?;
+        let beq = nat.beq?;
+        let mut closure = target.clone();
+        let mut arguments = Vec::new();
+        let mut remaining = budget.min(64);
+        loop {
+            if remaining == 0 {
+                return None;
+            }
+            remaining -= 1;
+            match self.expressions.get(closure.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(closure.sibling(*arg, closure.env.clone()));
+                    closure = closure.sibling(*fun, closure.env.clone());
+                }
+                Expr::BVar(index) => match closure.env.lookup(*index)? {
+                    EnvBinding::Closure(bound) => closure = bound,
+                    EnvBinding::Free(_) => return None,
+                },
+                Expr::Let { value, body, .. } => {
+                    let value = closure.sibling(*value, closure.env.clone());
+                    closure = closure.sibling(*body, closure.env.extend(value));
+                }
+                Expr::Const { name, levels } if *name == beq => {
+                    if !levels.is_empty() || arguments.len() != 2 {
+                        return None;
+                    }
+                    arguments.reverse();
+                    return (arguments[0] == arguments[1])
+                        .then(|| (bools.true_ctor, Vec::new()));
+                }
+                _ => return None,
+            }
+        }
+    }
+
+    pub(crate) fn close_certified_recursor_consequence(
+        &self,
+        neutral: &Neutral,
+        budget: usize,
+    ) -> Option<Value> {
+        if budget == 0 {
+            return None;
+        }
+        let NeutralHead::Const { name, levels } = &neutral.head else {
+            return None;
+        };
+        let reduction = self.recursor_reductions.get(name)?;
+        let required =
+            reduction.num_params + 1 + reduction.rules.len() + reduction.num_indices + 1;
+        if neutral.spine.len() < required || reduction.level_params.len() != levels.len() {
+            return None;
+        }
+        let offset = neutral.spine.len() - required;
+        let arguments = neutral.spine[offset..].to_vec();
+        let target = arguments.last()?;
+        let (constructor, constructor_arguments) =
+            self.observe_reflexive_nat_beq(target, budget.saturating_sub(1))?;
+        let rule = reduction
+            .rules
+            .iter()
+            .find(|rule| rule.constructor == constructor)?;
+        if constructor_arguments.len() != rule.num_params + rule.num_fields {
+            return None;
+        }
+
+        let prefix_len = reduction.num_params + 1 + reduction.rules.len();
+        let mut rule_arguments = arguments[..prefix_len].to_vec();
+        rule_arguments.extend_from_slice(&constructor_arguments[rule.num_params..]);
+        let levels = LevelSubstitution::new(
+            reduction
+                .level_params
+                .iter()
+                .copied()
+                .zip(levels.iter().cloned())
+                .collect(),
+        );
+        let closure = self.instantiate_rule_lambdas(rule.rhs, levels, &rule_arguments)?;
+        self.expose(
+            closure,
+            Transparency::Reducible,
+            budget.saturating_sub(1),
+        )
+        .proven_value()
+        .cloned()
+    }
+
+    fn instantiate_rule_lambdas(
+        &self,
+        rhs: ExprId,
+        levels: LevelSubstitution,
+        arguments: &[Closure],
+    ) -> Option<Closure> {
+        let mut closure = Closure::with_levels(rhs, EnvFrame::empty(), levels);
+        for argument in arguments {
+            let Expr::Lam { body, .. } = self.expressions.get(closure.expr)? else {
+                return None;
+            };
+            let env = closure.env.extend(argument.clone());
+            closure = closure.sibling(*body, env);
+        }
+        Some(closure)
+    }
+
     fn constructor_application(&self, target: &Closure) -> Option<(NameId, Vec<Closure>)> {
         let mut closure = target.clone();
         let mut arguments = Vec::new();
