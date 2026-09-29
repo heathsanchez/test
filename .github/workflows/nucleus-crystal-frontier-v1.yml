@@ -1,0 +1,52 @@
+name: Nucleus Crystal Frontier v1
+on:
+  push:
+    branches: [nucleus-crystal-frontier-v1]
+    paths: [".github/workflows/nucleus-crystal-frontier-v1.yml"]
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  trace:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env: {ARENA_ARTIFACT: 10712869614}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Build
+        run: cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+      - name: Fetch corpus
+        env: {GH_TOKEN: "${{ github.token }}"}
+        run: |
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+      - name: Trace current residual frontier
+        run: |
+          mkdir -p metatron-kernel/evidence-out/crystal-frontier-v1
+          python3 - <<'PY'
+          import json,os,pathlib,subprocess,collections,re
+          root=pathlib.Path('/tmp/tests'); b=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          rows=[]
+          for d,e in [('good',0),('bad',1)]:
+            for p in sorted((root/d).rglob('*.ndjson')):
+              n=str(p.relative_to(root/d)).removesuffix('.ndjson')
+              env=os.environ.copy(); env['NUCLEUS_TRACE_DOWNSTREAM']='1'; env['NUCLEUS_TRACE_RESIDUAL']='1'
+              with p.open('rb') as f:q=subprocess.run([str(b)],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=120,env=env)
+              if q.returncode not in (2,3): continue
+              err=q.stderr.decode(errors='replace').splitlines()
+              down=[x for x in err if 'NUCLEUS_DOWNSTREAM:' in x]
+              residual=[x for x in err if 'NUCLEUS_RESIDUAL:' in x]
+              rows.append({'test':n,'expected':e,'rc':q.returncode,'downstream':down[-1] if down else None,'residual':residual[-1] if residual else None})
+          assert len(rows)==39,len(rows)
+          groups=collections.Counter((r['downstream'],r['residual']) for r in rows)
+          out={'schema':'nucleus-crystal-frontier-v1','candidate_sha':os.environ['GITHUB_SHA'],'residual_count':39,'rows':rows,
+               'groups':[{'downstream':k[0],'residual':k[1],'count':v} for k,v in groups.items()]}
+          pathlib.Path('metatron-kernel/evidence-out/crystal-frontier-v1/result.json').write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nucleus-crystal-frontier-${{ github.sha }}
+          path: metatron-kernel/evidence-out/crystal-frontier-v1
