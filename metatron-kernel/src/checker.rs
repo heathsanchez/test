@@ -1522,6 +1522,115 @@ fn check_generic_nonrecursive_type(
     install_certified_recursor_reduction(environment, &block.constructors, recursor)
 }
 
+
+fn exact_prop_field_structure_candidate(
+    export: &ResolvedExport,
+    block: &InductiveBlock,
+) -> bool {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return false;
+    };
+    if inductive.num_params != 0
+        || inductive.num_indices != 0
+        || inductive.num_nested != 0
+        || inductive.is_recursive
+        || inductive.is_reflexive
+        || inductive.is_unsafe
+        || !inductive.level_params.is_empty()
+        || constructor.index != 0
+        || constructor.inductive != inductive.name
+        || constructor.num_params != 0
+        || constructor.num_fields != 1
+        || constructor.is_unsafe
+        || !constructor.level_params.is_empty()
+        || recursor.is_unsafe
+        || recursor.level_params.len() != 1
+        || inductive.all != [inductive.name]
+        || inductive.constructors != [constructor.name]
+        || !is_prop_sort(export, inductive.ty)
+        || constructor_result_is_definitely_malformed(export, inductive, constructor)
+        || constructor_has_definite_negative_recursive_field(export, inductive, constructor)
+        || !recursor_metadata_admissible(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+            false,
+            true,
+        )
+        || !generic_nonrecursive_recursor_shape(
+            export,
+            inductive,
+            &block.constructors,
+            recursor,
+        )
+    {
+        return false;
+    }
+    true
+}
+
+fn check_exact_prop_field_structure(
+    export: &ResolvedExport,
+    environment: &Environment,
+    block: &InductiveBlock,
+    limits: Limits,
+    delta_policy: DeltaPolicy,
+) -> Result<Environment, Verdict> {
+    let ([inductive], [constructor], [recursor]) = (
+        block.types.as_slice(),
+        block.constructors.as_slice(),
+        block.recursors.as_slice(),
+    ) else {
+        return Err(Verdict::Unknown);
+    };
+    if !exact_prop_field_structure_candidate(export, block) {
+        return Err(Verdict::Unknown);
+    }
+
+    let Some((fields, _)) = pi_spine(export, constructor.ty, 1) else {
+        return Err(Verdict::Unknown);
+    };
+    let [field_type] = fields.as_slice() else {
+        return Err(Verdict::Unknown);
+    };
+    let checker = TypeChecker::new(&export.exprs, &export.levels, environment)
+        .with_delta_policy(delta_policy);
+    verdict_boundary(checker.is_proposition(*field_type, limits.judgment_steps))?;
+
+    let mut derivation = ClosedNonrecursiveDerivation::begin(environment);
+    derivation.promote_all(
+        export,
+        [
+            derived_type(inductive.name, inductive.ty),
+            derived_constructor(constructor),
+            derived_recursor(recursor),
+        ],
+        limits.judgment_steps,
+        delta_policy,
+    )?;
+    let environment = derivation
+        .finish()
+        .install_projection_spec(
+            inductive.name,
+            ProjectionSpec {
+                constructor: constructor.name,
+                num_params: 0,
+                field_types: vec![ProjectionFieldType::Derived(*field_type)],
+            },
+        )
+        .map_err(|_| Verdict::Reject)?;
+    install_certified_recursor_reduction(
+        environment,
+        &block.constructors,
+        recursor,
+    )
+}
+
 fn check_single_constructor_inductive(
     export: &ResolvedExport,
     environment: &Environment,
@@ -1608,6 +1717,8 @@ fn check_single_constructor_inductive(
             Err(Verdict::Unknown) => check_unrecognized_single_constructor_coherence(export, block),
             Err(verdict) => Err(verdict),
         }
+    } else if exact_prop_field_structure_candidate(export, block) {
+        check_exact_prop_field_structure(export, environment, block, limits, delta_policy)
     } else if generic_nonrecursive_prop_small_candidate(export, block) {
         check_generic_nonrecursive_prop_small(export, environment, block, limits, delta_policy)
     } else {
