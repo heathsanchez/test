@@ -748,35 +748,87 @@ impl<'a> Machine<'a> {
         target: &Closure,
         max_steps: usize,
     ) -> Option<(NameId, Vec<Closure>)> {
+        let trace = std::env::var_os("NUCLEUS_TRACE_BETA_ZETA_CONSTRUCTOR").is_some();
         let mut closure = target.clone();
         let mut arguments = Vec::new();
         let mut steps = max_steps;
 
         while steps > 0 {
             steps -= 1;
-            match self.expressions.get(closure.expr)? {
+            let Some(expression) = self.expressions.get(closure.expr) else {
+                if trace {
+                    eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:missing-expr:{:?}", closure);
+                }
+                return None;
+            };
+            match expression {
                 Expr::App { fun, arg } => {
                     arguments.push(closure.sibling(*arg, closure.env.clone()));
                     closure = closure.sibling(*fun, closure.env.clone());
                 }
-                Expr::BVar(index) => match closure.env.lookup(*index)? {
-                    EnvBinding::Closure(bound) => closure = bound,
-                    EnvBinding::Free(_) | EnvBinding::Neutral(_) => return None,
-                },
+                Expr::BVar(index) => {
+                    let Some(bound) = closure.env.lookup(*index) else {
+                        if trace {
+                            eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:unbound-bvar:index={}:closure={:?}", index, closure);
+                        }
+                        return None;
+                    };
+                    match bound {
+                        EnvBinding::Closure(bound) => closure = bound,
+                        EnvBinding::Free(free) => {
+                            if trace {
+                                eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:free-head:{:?}:args={}", free, arguments.len());
+                            }
+                            return None;
+                        }
+                        EnvBinding::Neutral(neutral) => {
+                            if trace {
+                                eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:neutral-head:{:?}:args={}", neutral.head, arguments.len());
+                            }
+                            return None;
+                        }
+                    }
+                }
                 Expr::Let { value, body, .. } => {
                     let value = closure.sibling(*value, closure.env.clone());
                     closure = closure.sibling(*body, closure.env.extend(value));
                 }
                 Expr::Lam { body, .. } => {
-                    let argument = arguments.pop()?;
+                    let Some(argument) = arguments.pop() else {
+                        if trace {
+                            eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:lambda-without-argument:expr={:?}", closure.expr);
+                        }
+                        return None;
+                    };
                     closure = closure.sibling(*body, closure.env.extend(argument));
                 }
                 Expr::Const { name, .. } => {
                     arguments.reverse();
+                    if trace {
+                        eprintln!(
+                            "NUCLEUS_BETA_ZETA_CONSTRUCTOR:PASS:name={:?}:arity={}:steps_used={}",
+                            name,
+                            arguments.len(),
+                            max_steps - steps
+                        );
+                    }
                     return Some((*name, arguments));
                 }
-                _ => return None,
+                other => {
+                    if trace {
+                        eprintln!(
+                            "NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:unsupported:{:?}:expr={:?}:args={}",
+                            other,
+                            closure.expr,
+                            arguments.len()
+                        );
+                    }
+                    return None;
+                }
             }
+        }
+        if trace {
+            eprintln!("NUCLEUS_BETA_ZETA_CONSTRUCTOR:DECLINE:step-cap:target={:?}", target);
         }
         None
     }
