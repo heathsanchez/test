@@ -1,4 +1,5 @@
 import Collatz.FourThirdsAdmission
+import Collatz.SourceCoherenceAudit
 
 namespace CollatzFinal
 namespace SourceProduct
@@ -74,7 +75,113 @@ theorem reaches_one_of_four_thirds_odd_constructor_coverage
     exact hnone n ⟨hn, hbad⟩
   exact collatzGood_eventually_one hgood
 
+
+/-- The exact constructor-totality statement implemented by the source-ordered
+Crystal compiler. Before the four-thirds odd-count budget is exceeded, either
+an OrdinaryExit has already been constructed, or the boundary state itself is
+a quarter-splice state. -/
+def FourThirdsPreboundaryConstructorCoverage : Prop :=
+  ∀ n, 1 < n →
+    n % 2 = 1 →
+    ∃ a,
+      (oddCount n a ≤ (4 * n) / 3 ∧
+        OrdinaryExit n (iter shortcut a n)) ∨
+      (oddCount n a = (4 * n) / 3 ∧
+        iter shortcut a n % 8 = 5 ∧
+        iter shortcut a n ≤ 4 * n)
+
+theorem oddCount_mono
+    (n : Nat) :
+    ∀ {a b}, a ≤ b → oddCount n a ≤ oddCount n b := by
+  intro a b hab
+  induction b with
+  | zero =>
+      have ha : a = 0 := by omega
+      subst a
+      exact Nat.le_refl _
+  | succ b ih =>
+      by_cases hEq : a = b + 1
+      · subst a
+        exact Nat.le_refl _
+      · have hab' : a ≤ b := by omega
+        have hprev := ih hab'
+        have hstep := oddCount_succ_bounds n b
+        omega
+
+/-- The source-ordered preboundary compiler target implies the single-boundary
+V20 constructor interface. -/
+theorem four_thirds_odd_constructor_coverage_of_preboundary
+    (hPre : FourThirdsPreboundaryConstructorCoverage) :
+    FourThirdsOddConstructorCoverage := by
+  intro n k hgt hodd hq hxodd
+  let Q := (4 * n) / 3
+  have hnext :
+      oddCount n (k + 1) = Q + 1 := by
+    simp only [oddCount]
+    have hne : iter shortcut k n % 2 ≠ 0 := by omega
+    rw [if_neg hne]
+    simpa [Q] using congrArg (fun z => z + 1) hq
+  obtain ⟨a, hExit | hSplice⟩ := hPre n hgt hodd
+  · rcases hExit with ⟨hqa, haExit⟩
+    have hak : a ≤ k := by
+      apply Nat.le_of_not_gt
+      intro hka
+      have hmono :
+          oddCount n (k + 1) ≤ oddCount n a :=
+        oddCount_mono n (by omega)
+      dsimp [Q] at hqa
+      omega
+    let d := k - a
+    have had : a + d = k := by
+      dsimp [d]
+      omega
+    have hpersist :=
+      joined_ordinary_exit_persists
+        n (iter shortcut a n) d haExit
+    left
+    rw [← had, iter_add]
+    exact hpersist
+  · rcases hSplice with ⟨hqa, hamod, haband⟩
+    have haodd : iter shortcut a n % 2 = 1 := by
+      have hlt := Nat.mod_lt (iter shortcut a n) (by decide : 0 < 8)
+      omega
+    have hanext :
+        oddCount n (a + 1) = Q + 1 := by
+      simp only [oddCount]
+      have hne : iter shortcut a n % 2 ≠ 0 := by omega
+      rw [if_neg hne]
+      simpa [Q] using congrArg (fun z => z + 1) hqa
+    have hak : a = k := by
+      apply Nat.le_antisymm
+      · apply Nat.le_of_not_gt
+        intro hka
+        have hm :
+            oddCount n (k + 1) ≤ oddCount n a :=
+          oddCount_mono n (by omega)
+        omega
+      · apply Nat.le_of_not_gt
+        intro hak'
+        have hm :
+            oddCount n (a + 1) ≤ oddCount n k :=
+          oddCount_mono n (by omega)
+        dsimp [Q] at hq
+        omega
+    subst a
+    right
+    exact ⟨hamod, haband⟩
+
+/-- Hence the exact source-ordered constructor-totality theorem is itself a
+one-premise Collatz closeout. -/
+theorem reaches_one_of_four_thirds_preboundary_constructor_coverage
+    (hPre : FourThirdsPreboundaryConstructorCoverage) :
+    ∀ n, 0 < n → ∃ t, iter shortcut t n = 1 := by
+  exact reaches_one_of_four_thirds_odd_constructor_coverage
+    (four_thirds_odd_constructor_coverage_of_preboundary hPre)
+
 #print axioms oddCount_boundary_step_odd
+#print axioms oddCount_mono
+#print axioms four_thirds_odd_constructor_coverage_of_preboundary
+#print axioms reaches_one_of_four_thirds_preboundary_constructor_coverage
 #print axioms reaches_one_of_four_thirds_odd_constructor_coverage
 
 end SourceProduct
