@@ -521,6 +521,12 @@ impl<'a> Machine<'a> {
                     );
                     let Some(exposure) = exposed_structure.proven_value() else {
                         if preserve_stuck_projection {
+                            if std::env::var_os("NUCLEUS_TRACE_CONVERSION_STUCK_PROJECTION").is_some() {
+                                eprintln!(
+                                    "NUCLEUS_CONVERSION_STUCK_PROJECTION_PRESERVE:type={:?}:index={}:structure={:?}:residual={:?}",
+                                    type_name, index, structure, exposed_structure
+                                );
+                            }
                             return exposed(
                                 Value::StuckProjection {
                                     type_name: *type_name,
