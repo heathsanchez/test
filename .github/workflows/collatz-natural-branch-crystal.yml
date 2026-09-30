@@ -1,0 +1,63 @@
+name: Collatz Natural Branch Crystal
+on:
+  push:
+    branches: [collatz-natural-branch-crystal-20260930]
+    paths:
+      - 'experiments/collatz_natural_branch_crystal_20260930.py'
+      - '.github/workflows/collatz-natural-branch-crystal.yml'
+permissions: {contents: read}
+jobs:
+  natural-bar:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run exact natural-branch tournament
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-natural-branch-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_natural_branch_crystal_20260930.py             | tee evidence/collatz-natural-branch-crystal/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-natural-branch-crystal/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_NATURAL_BRANCH_CRYSTAL_20260930'
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          for split in ('train','heldout'):
+              x=d[split]
+              print(split,'SWITCHES',x['switches'])
+              for k,v in x['tests'].items():
+                  print(split,k,'PASS',v['pass'],'FAIL',v['fail'],'FIRST_FAIL',v['first_fail'])
+          PY
+          git rev-parse HEAD | tee evidence/collatz-natural-branch-crystal/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-natural-branch-crystal
+          path: evidence/collatz-natural-branch-crystal
+          if-no-files-found: error
+
+  adelic-control:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run existing adelic switch control
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-natural-branch-crystal
+          PYTHONPATH=experiments python -u experiments/collatz_adelic_switch_probe.py --lo 3 --hi 8191 --K 128             | tee evidence/collatz-natural-branch-crystal/adelic-train.txt
+          PYTHONPATH=experiments python -u experiments/collatz_adelic_switch_probe.py --lo 8193 --hi 32767 --K 128             | tee evidence/collatz-natural-branch-crystal/adelic-heldout.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-adelic-control
+          path: evidence/collatz-natural-branch-crystal/adelic-*.txt
+          if-no-files-found: error
