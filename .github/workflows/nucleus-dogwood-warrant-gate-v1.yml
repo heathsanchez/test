@@ -1,0 +1,166 @@
+name: Nucleus Dogwood Warrant Gate v1
+
+on:
+  push:
+    branches: [nucleus-dogwood-warrant-gate-v1]
+    paths:
+      - ".github/workflows/nucleus-dogwood-warrant-gate-v1.yml"
+      - "experiments/nucleus-dogwood-warrant-v1/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-dogwood-warrant-gate-v1
+  cancel-in-progress: true
+
+env:
+  DOGWOOD_SHA: 996d756de1013b7ae209a14f566a80375a59f2f0
+  BAD_SHA: a1b62bd3dfb05ae5d95c019d9eb37ca8b3c31cf5
+  BAD_RUN: "35960340790"
+  GOOD_SHA: a12353b7cce96c48d9a0c684c3e9d81031168e1b
+  GOOD_RUN: "36627307769"
+  GOOD_ARTIFACT: "11061162830"
+  FIXTURE: experiments/nucleus-dogwood-warrant-v1
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify source-pinned Nucleus lineage
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+
+          bad_json="$(gh api "repos/heathsanchez/test/actions/runs/$BAD_RUN")"
+          test "$(jq -r .head_sha <<<"$bad_json")" = "$BAD_SHA"
+          test "$(jq -r .conclusion <<<"$bad_json")" = "failure"
+
+          good_json="$(gh api "repos/heathsanchez/test/actions/runs/$GOOD_RUN")"
+          test "$(jq -r .head_sha <<<"$good_json")" = "$GOOD_SHA"
+          test "$(jq -r .conclusion <<<"$good_json")" = "success"
+
+          artifact_json="$(gh api "repos/heathsanchez/test/actions/artifacts/$GOOD_ARTIFACT")"
+          test "$(jq -r .id <<<"$artifact_json")" = "$GOOD_ARTIFACT"
+          test "$(jq -r .expired <<<"$artifact_json")" = "false"
+          test "$(jq -r '.workflow_run.head_sha // empty' <<<"$artifact_json")" = "$GOOD_SHA"
+
+          mkdir -p "$FIXTURE/evidence-out"
+          printf '%s\n' "$bad_json" > "$FIXTURE/evidence-out/failed-run.json"
+          printf '%s\n' "$good_json" > "$FIXTURE/evidence-out/warranted-run.json"
+          printf '%s\n' "$artifact_json" > "$FIXTURE/evidence-out/warranted-artifact.json"
+
+      - name: Build exact Dogwood
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/dogwood-policy/dogwood /tmp/dogwood
+          git -C /tmp/dogwood checkout -q "$DOGWOOD_SHA"
+          test "$(git -C /tmp/dogwood rev-parse HEAD)" = "$DOGWOOD_SHA"
+          cargo build --release --locked --manifest-path /tmp/dogwood/Cargo.toml -p dogwood-cli
+          /tmp/dogwood/target/release/dogwood --help >/dev/null
+
+      - name: Validate Nucleus temporal warrant policy
+        run: |
+          set -euo pipefail
+          DOGWOOD=/tmp/dogwood/target/release/dogwood
+          "$DOGWOOD" schema action "$FIXTURE/schema.cedarschema"
+          "$DOGWOOD" check-parse "$FIXTURE/policy.dw"
+          "$DOGWOOD" validate "$FIXTURE/policy.dw" \
+            --policy-schema "$FIXTURE/schema.cedarschema"
+
+      - name: Replay failed and warranted Nucleus lineages
+        run: |
+          set -euo pipefail
+          DOGWOOD=/tmp/dogwood/target/release/dogwood
+          "$DOGWOOD" replay "$FIXTURE/policy.dw" \
+            --policy-schema "$FIXTURE/schema.cedarschema" \
+            --trace "$FIXTURE/trace.log" \
+            | tee "$FIXTURE/evidence-out/replay.raw.out"
+
+          sed -E 's/  \[rules: [^]]+\]//' \
+            "$FIXTURE/evidence-out/replay.raw.out" \
+            > "$FIXTURE/evidence-out/replay.normalized.out"
+
+          diff -u "$FIXTURE/expected.normalized.out" \
+            "$FIXTURE/evidence-out/replay.normalized.out"
+
+      - name: Seal bounded interoperability result
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib
+
+          root = pathlib.Path(os.environ["FIXTURE"])
+          def sha(path):
+              return hashlib.sha256(path.read_bytes()).hexdigest()
+
+          normalized = (root / "evidence-out/replay.normalized.out").read_text().splitlines()
+          expected = (root / "expected.normalized.out").read_text().splitlines()
+          assert normalized == expected
+
+          by_ts = {}
+          for line in normalized:
+              ts = int(line.split()[0][1:])
+              verdict = line.rsplit(": ", 1)[1]
+              by_ts[ts] = verdict
+
+          checks = {
+              "failed_candidate_qualify_after_build": by_ts[10] == "ALLOW",
+              "failed_candidate_replay_denied": by_ts[30] == "DENY",
+              "failed_candidate_artifact_denied": by_ts[40] == "DENY",
+              "failed_candidate_promotion_denied": by_ts[50] == "DENY",
+              "warranted_candidate_qualify_allowed": by_ts[110] == "ALLOW",
+              "warranted_candidate_replay_allowed": by_ts[130] == "ALLOW",
+              "warranted_candidate_artifact_allowed": by_ts[150] == "ALLOW",
+              "warranted_candidate_promotion_allowed": by_ts[170] == "ALLOW",
+              "warranted_candidate_promotion_denied_after_revoke": by_ts[190] == "DENY",
+          }
+          assert all(checks.values()), checks
+
+          lineage = json.loads((root / "lineage.json").read_text())
+          result = {
+              "schema": "nucleus-dogwood-warrant-gate-result-v1",
+              "candidate_sha": os.environ["GITHUB_SHA"],
+              "dogwood_sha": os.environ["DOGWOOD_SHA"],
+              "failed_candidate_sha": os.environ["BAD_SHA"],
+              "failed_run_id": int(os.environ["BAD_RUN"]),
+              "warranted_candidate_sha": os.environ["GOOD_SHA"],
+              "warranted_run_id": int(os.environ["GOOD_RUN"]),
+              "warranted_artifact_id": int(os.environ["GOOD_ARTIFACT"]),
+              "checks": checks,
+              "policy_sha256": sha(root / "policy.dw"),
+              "schema_sha256": sha(root / "schema.cedarschema"),
+              "trace_sha256": sha(root / "trace.log"),
+              "lineage_sha256": sha(root / "lineage.json"),
+              "expected_sha256": sha(root / "expected.normalized.out"),
+              "decision_stream": normalized,
+              "claim": "WARRANTED_BOUNDED_DOGWOOD_NUCLEUS_WARRANT_ENFORCEMENT",
+              "boundary": [
+                  "source-pinned projected Nucleus traces only",
+                  "GitHub event provenance is trusted input",
+                  "no claim of full ROS policy coverage",
+                  "no claim of Dogwood/Metatron/CLC semantic equivalence",
+              ],
+              "lineage": lineage,
+          }
+          (root / "evidence-out/result.json").write_text(
+              json.dumps(result, indent=2, sort_keys=True) + "\n"
+          )
+          print(json.dumps(result, sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dogwood-warrant-gate-${{ github.sha }}
+          path: experiments/nucleus-dogwood-warrant-v1/evidence-out
+          if-no-files-found: warn
