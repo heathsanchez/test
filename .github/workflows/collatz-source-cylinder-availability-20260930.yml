@@ -1,0 +1,77 @@
+name: Collatz Source Cylinder Availability 20260930
+on:
+  push:
+    branches: [collatz-source-cylinder-availability-20260930]
+    paths:
+      - '.github/workflows/collatz-source-cylinder-availability-20260930.yml'
+      - 'formal/Collatz/SourceCylinderExit.lean'
+      - 'experiments/collatz_source_cylinder_availability_20260930.py'
+      - 'evidence/collatz-source-cylinder-availability-20260930/**'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 2c6a845f113ea902734b242b1a3c9795574e30ff
+          path: _crystal-foundation
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check formal spine and universal source-cylinder lifting
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-source-cylinder-availability-20260930/hosted
+          lake env lean --version | tee evidence/collatz-source-cylinder-availability-20260930/hosted/toolchain.txt
+          lake build CollatzFinal | tee evidence/collatz-source-cylinder-availability-20260930/hosted/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean | tee evidence/collatz-source-cylinder-availability-20260930/hosted/lifting.log
+      - name: Fresh source replay and exact cylinder compilation
+        shell: bash
+        run: |
+          set -euo pipefail
+          CRYSTAL_FOUNDATION_ROOT=_crystal-foundation/mathgraph PYTHONPATH=experiments python -u experiments/collatz_source_cylinder_availability_20260930.py | tee evidence/collatz-source-cylinder-availability-20260930/hosted/replay.log
+          python - <<'PY'
+          import json
+          actual=json.load(open('source-cylinder-result.json'))
+          expected=json.load(open('evidence/collatz-source-cylinder-availability-20260930/local-result.json'))
+          assert actual==expected
+          assert actual['certificates']==4808 and actual['global_collatz']=='UNKNOWN'
+          assert actual['first_parameter_outside_this_bank']=='0'
+          print('4808_ACTUAL_SOURCE_CYLINDERS_REPRODUCED')
+          PY
+          cp source-cylinder-result.json source-cylinder-certificates.json GeneratedSourceCylinders.lean formal/Collatz/SourceCylinderExit.lean evidence/collatz-source-cylinder-availability-20260930/hosted/
+      - name: Kernel check all cylinder exit laws and exact incompleteness witness
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false GeneratedSourceCylinders.lean | tee evidence/collatz-source-cylinder-availability-20260930/hosted/cylinders.log
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          p=Path('evidence/collatz-source-cylinder-availability-20260930/hosted')
+          logs=(p/'lifting.log').read_text()+(p/'cylinders.log').read_text()
+          assert 'sorryAx' not in logs and 'Lean.ofReduceBool' not in logs
+          assert len(re.findall(r"source_cylinder_exit_[0-9]+.*depends on axioms",logs))==4808
+          assert 'parameter_zero_outside_compiled_bank' in logs
+          print('4808_KERNEL_CHECKED_UNIVERSAL_SOURCE_CYLINDER_EXIT_LAWS')
+          print('KERNEL_CHECKED_PARAMETER_ZERO_OUTSIDE_THIS_BANK')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-source-cylinder-availability-20260930/hosted/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-source-cylinder-availability-20260930
+          path: evidence/collatz-source-cylinder-availability-20260930/hosted
+          if-no-files-found: error
