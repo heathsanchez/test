@@ -813,6 +813,75 @@ fn compare_neutral_heads(
             Judgment::proven((), "same-rigid-constant")
         }
         _ => {
+            if std::env::var_os("NUCLEUS_TRACE_BRECON_RUNTIME").is_some() {
+                for (side, neutral) in [("left", left), ("right", right)] {
+                    if let NeutralHead::Projection {
+                        type_name,
+                        index,
+                        structure,
+                    } = &neutral.head
+                    {
+                        eprintln!(
+                            "NUCLEUS_BRECON_PROJECTION:side={}:type={:?}:index={}:structure_head={:?}:outer_spine_len={}",
+                            side,
+                            type_name,
+                            index,
+                            structure.head,
+                            neutral.spine.len()
+                        );
+                        for (arg_index, argument) in structure.spine.iter().enumerate() {
+                            eprintln!(
+                                "NUCLEUS_BRECON_ARG:side={}:arg={}:expr={:?}:env_id={}:levels={:?}",
+                                side,
+                                arg_index,
+                                argument.expr,
+                                argument.env.id(),
+                                argument.levels
+                            );
+                            for binding_index in 0..16u64 {
+                                let Some(binding) = argument.env.lookup(binding_index) else {
+                                    break;
+                                };
+                                match binding {
+                                    EnvBinding::Closure(bound) => eprintln!(
+                                        "NUCLEUS_BRECON_BIND:side={}:arg={}:bvar={}:kind=closure:expr={:?}:env_id={}:levels={:?}",
+                                        side,
+                                        arg_index,
+                                        binding_index,
+                                        bound.expr,
+                                        bound.env.id(),
+                                        bound.levels
+                                    ),
+                                    EnvBinding::Free(free) => eprintln!(
+                                        "NUCLEUS_BRECON_BIND:side={}:arg={}:bvar={}:kind=free:value={:?}",
+                                        side,
+                                        arg_index,
+                                        binding_index,
+                                        free
+                                    ),
+                                    EnvBinding::Neutral(bound) => eprintln!(
+                                        "NUCLEUS_BRECON_BIND:side={}:arg={}:bvar={}:kind=neutral:value={:?}",
+                                        side,
+                                        arg_index,
+                                        binding_index,
+                                        bound
+                                    ),
+                                }
+                            }
+                        }
+                        for (arg_index, argument) in neutral.spine.iter().enumerate() {
+                            eprintln!(
+                                "NUCLEUS_BRECON_OUTER_ARG:side={}:arg={}:expr={:?}:env_id={}:levels={:?}",
+                                side,
+                                arg_index,
+                                argument.expr,
+                                argument.env.id(),
+                                argument.levels
+                            );
+                        }
+                    }
+                }
+            }
             if std::env::var_os("NUCLEUS_TRACE_NEUTRAL_HEADS").is_some() {
                 eprintln!(
                     "NUCLEUS_NEUTRAL_HEAD_MISMATCH:left={:?}:left_spine={:?}:right={:?}:right_spine={:?}:budget={}",
