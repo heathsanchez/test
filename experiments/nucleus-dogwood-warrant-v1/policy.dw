@@ -1,0 +1,84 @@
+// Nucleus promotion contract projected into Dogwood.
+//
+// The stage policies make the warrant chain executable:
+//   Build success -> Qualify -> FullReplay -> RecordArtifact -> Promote.
+// Promotion also re-checks all terminal premises directly and is invalidated
+// by a later successful Revoke.
+//
+// Candidate SHA is the correlation key. The event logger / provenance binding
+// is trusted input to Dogwood; this policy does not authenticate GitHub itself.
+
+@id("qualify_requires_build")
+permit (
+    principal,
+    action == Nucleus::Action::"Qualify",
+    resource
+)
+when temporal {
+    formerly within 24h Nucleus::Action::"Build"::response{
+        input.candidate: context.input.candidate,
+        output.success: true
+    }
+};
+
+@id("replay_requires_qualification")
+permit (
+    principal,
+    action == Nucleus::Action::"FullReplay",
+    resource
+)
+when temporal {
+    formerly within 24h Nucleus::Action::"Qualify"::response{
+        input.candidate: context.input.candidate,
+        output.success: true
+    }
+};
+
+@id("artifact_requires_zero_wrong_replay")
+permit (
+    principal,
+    action == Nucleus::Action::"RecordArtifact",
+    resource
+)
+when temporal {
+    formerly within 24h Nucleus::Action::"FullReplay"::response{
+        input.candidate: context.input.candidate,
+        output.success: true,
+        output.wrong: 0,
+        output.regressions: 0,
+        output.errors: 0
+    }
+};
+
+@id("promotion_requires_dependency_closed_warrant")
+permit (
+    principal,
+    action == Nucleus::Action::"Promote",
+    resource
+)
+when temporal {
+    formerly within 24h Nucleus::Action::"Build"::response{
+        input.candidate: context.input.candidate,
+        output.success: true
+    }
+    && formerly within 24h Nucleus::Action::"Qualify"::response{
+        input.candidate: context.input.candidate,
+        output.success: true
+    }
+    && formerly within 24h Nucleus::Action::"FullReplay"::response{
+        input.candidate: context.input.candidate,
+        output.success: true,
+        output.wrong: 0,
+        output.regressions: 0,
+        output.errors: 0
+    }
+    && (!Nucleus::Action::"Revoke"::response{
+            input.candidate: context.input.candidate,
+            output.success: true
+        }
+        since within 24h
+        Nucleus::Action::"RecordArtifact"::response{
+            input.candidate: context.input.candidate,
+            output.success: true
+        })
+};
