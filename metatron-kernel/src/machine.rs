@@ -401,6 +401,21 @@ impl<'a> Machine<'a> {
                                         .any(|rule| rule.constructor == *constructor)
                                 })
                                 .or_else(|| {
+                                    self.is_nat_recursor(*name).then(|| {
+                                        self.nat_zero_constructor_application(
+                                            target,
+                                            transparency,
+                                            budget.min(512),
+                                        )
+                                    })?
+                                })
+                                .filter(|(constructor, _)| {
+                                    reduction
+                                        .rules
+                                        .iter()
+                                        .any(|rule| rule.constructor == *constructor)
+                                })
+                                .or_else(|| {
                                     self.is_bool_recursor_reduction(reduction).then(|| {
                                         self.reduced_constructor_application(
                                             target,
@@ -699,6 +714,35 @@ impl<'a> Machine<'a> {
                 })
             }
         })
+    }
+
+    fn is_nat_recursor(&self, name: NameId) -> bool {
+        self.nat_primitives
+            .as_ref()
+            .is_some_and(|primitives| primitives.recursor == name)
+    }
+
+    fn nat_zero_constructor_application(
+        &self,
+        target: &Closure,
+        transparency: Transparency,
+        budget: usize,
+    ) -> Option<(NameId, Vec<Closure>)> {
+        let primitives = self.nat_primitives.as_ref()?;
+        let exposure = self
+            .expose_internal(
+                target.clone(),
+                transparency,
+                budget.saturating_sub(1),
+                false,
+            )
+            .proven_value()?
+            .value
+            .clone();
+        match exposure {
+            Value::NatLit(value) if value.is_zero() => Some((primitives.zero, Vec::new())),
+            _ => None,
+        }
     }
 
     fn is_bool_recursor_reduction(&self, reduction: &RecursorReduction) -> bool {
