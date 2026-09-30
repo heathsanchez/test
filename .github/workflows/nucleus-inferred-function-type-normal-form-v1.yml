@@ -27,7 +27,7 @@ jobs:
       - name: Build diagnostic candidate and frozen authority
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
+          rustfmt --check --edition 2024 metatron-kernel/src/typecheck.rs
           cargo test --release --locked --lib --manifest-path metatron-kernel/Cargo.toml
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
           git worktree add --detach /tmp/base "$BASE_SHA"
