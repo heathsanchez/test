@@ -1,0 +1,271 @@
+name: ACC Number1 Singleton Harvest V1
+
+on:
+  push:
+    branches:
+      - acc-number1-singleton-harvest-v1
+    paths:
+      - ".github/workflows/acc-number1-singleton-harvest-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-number1-singleton-harvest-v1
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      leader_team: ${{ steps.freeze.outputs.leader_team }}
+      leader_score: ${{ steps.freeze.outputs.leader_score }}
+      targets: ${{ steps.freeze.outputs.targets }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-singleton-harvest-v1
+
+      - name: Freeze live #1 unique-singleton frontier
+        id: freeze
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_harvest
+          python3 - <<'PY'
+          import json, pathlib, urllib.request, urllib.parse
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          root=pathlib.Path('acc_competitive/number1_harvest')
+
+          def get(path):
+              req=urllib.request.Request(B+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def data(o): return o.get('data',o)
+
+          lb=data(get('/api/acc/leaderboard?problem=ac'))
+          sid=lb['snapshotId']
+          leader=lb['items'][0]
+          tid=leader['team']['teamId']
+          name=leader['team'].get('teamName') or tid
+          score=leader['score']
+
+          items=[]; cursor=None
+          while True:
+              q={'problem':'ac','snapshotId':sid,'limit':100}
+              if cursor: q['cursor']=cursor
+              dd=data(get('/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+urllib.parse.urlencode(q)))
+              items.extend(dd.get('items',[]))
+              cursor=dd.get('nextCursor')
+              if not cursor: break
+
+          attempted=set()
+          for fn in ('competitive_attempted_seed_v1.json','competitive_attempted_addendum_v1.json','competitive_wins_seed_v1.json'):
+              p=pathlib.Path('acc_competitive')/fn
+              if p.exists():
+                  attempted.update(json.loads(p.read_text()))
+
+          # Stealing a singleton is the highest scoring swing: +1 to us, -1 to #1.
+          # Prefer long records (largest shortening budget) but never repeat known targets.
+          cand=[x for x in items
+                if x.get('kTeams')==1
+                and isinstance(x.get('currentBestLength'),int)
+                and x.get('challengeId') not in attempted]
+          cand.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          cand=cand[:128]
+          ids=[x['challengeId'] for x in cand]
+          if not ids:
+              raise SystemExit('no fresh #1 singleton targets')
+
+          # Freeze current public discovery snapshots for exact track bounds.
+          for problem in ('ac','stable_ac'):
+              snap=get('/api/acc/discoveries/snapshot?problem='+problem)
+              (root/f'snapshot_{problem}.json').write_text(json.dumps(snap,indent=2,sort_keys=True)+'\n')
+          (root/'leader.json').write_text(json.dumps({'teamId':tid,'teamName':name,'rank':leader['rank'],'score':score,'currentBestCount':leader['currentBestCount'],'snapshotId':sid},indent=2,sort_keys=True)+'\n')
+          (root/'selected.json').write_text(json.dumps(cand,indent=2,sort_keys=True)+'\n')
+          for shard in range(16):
+              (root/f'shard_{shard}.json').write_text(json.dumps(ids[shard::16],indent=2)+'\n')
+
+          print('NUMBER1_FRONTIER',json.dumps({'leader':name,'score':score,'leader_records':leader['currentBestCount'],'fresh_singletons':len(cand),'max_best':cand[0]['currentBestLength'],'min_best':cand[-1]['currentBestLength']},sort_keys=True))
+          with open(__import__('os').environ['GITHUB_OUTPUT'],'a') as f:
+              f.write(f'leader_team={name}\n')
+              f.write(f'leader_score={score}\n')
+              f.write(f'targets={len(cand)}\n')
+          PY
+
+      - name: Recover latest verified Proof Atlas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-freeze
+          path: acc_competitive/number1_harvest/
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-atlas
+          path: /tmp/atlas/
+          retention-days: 1
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-singleton-harvest-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-atlas
+          path: /tmp/atlas
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Official-cost search against Proof Atlas
+        run: |
+          set -euo pipefail
+          OUT="acc_competitive/number1_shard_${{ matrix.shard }}"
+          python3 acc_competitive/official_bestfirst_v1.py             --acc-root /tmp/acc             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)"             --snapshot-ac /tmp/freeze/snapshot_ac.json             --snapshot-stable /tmp/freeze/snapshot_stable_ac.json             --target-ids-file "/tmp/freeze/shard_${{ matrix.shard }}.json"             --out-dir "$OUT"             --node-cap 80000             --time-cap 90             --depth-weight 0.12             --extra-total 80             | tee "$OUT.log"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number1-shard-${{ matrix.shard }}
+          path: |
+            acc_competitive/number1_shard_${{ matrix.shard }}/
+            acc_competitive/number1_shard_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-singleton-harvest-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-number1-shard-*
+          path: /tmp/shards
+          merge-multiple: false
+
+      - name: Pool only pinned-verifier-clean strict wins
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_pool
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/shards'); rows=[]; best={}
+          for p in root.rglob('results.json'):
+              rows.extend(json.loads(p.read_text()))
+          for p in root.rglob('pending_submission.txt'):
+              for line in p.read_text().splitlines():
+                  if ':' not in line: continue
+                  cid,raw=line.split(':',1)
+                  try: moves=list(json.loads(raw.strip()))
+                  except Exception: continue
+                  if cid not in best or len(moves)<len(best[cid]): best[cid]=moves
+          out=pathlib.Path('acc_competitive/number1_pool')
+          rows.sort(key=lambda x:x['challenge_id'])
+          (out/'results.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          (out/'pending_submission.txt').write_text('\n'.join(f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items()))+('\n' if best else ''))
+          report={'targets':len(rows),'strict_targets':sum(bool(r.get('strict_win')) for r in rows),'pending_rows':len(best),'nodes':sum(r.get('nodes',0) for r in rows)}
+          (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('NUMBER1_POOL',json.dumps(report,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-official-bestfirst-pool
+          path: acc_competitive/number1_pool/
+          retention-days: 90
+
+  publish:
+    needs: pool
+    if: always() && needs.pool.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-singleton-harvest-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-official-bestfirst-pool
+          path: /tmp/pool
+
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+
+      - name: Fresh live strict-only quota gate and packed publication
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/pool/pending_submission.txt ]; then
+            echo "NO_STRICT_WIN"
+            exit 0
+          fi
+          mkdir -p acc_competitive/number1_publish
+          cp /tmp/pool/pending_submission.txt acc_competitive/number1_publish/candidates.txt
+          python3 andrews_curtis/continuous_aggregate_v5.py             --acc-root /tmp/acc             --glob 'acc_competitive/number1_publish/candidates.txt'             --out-dir acc_competitive/number1_publish/out             --cycle 0 | tee acc_competitive/number1_publish/publish.log
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('acc_competitive/number1_publish/out/report.json')
+          if not p.exists(): raise SystemExit('missing publication report')
+          r=json.loads(p.read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'):
+              raise SystemExit('unsafe quota authority')
+          if r.get('selected_scoring_ties',0):
+              raise SystemExit('ties selected')
+          if r.get('selected_rows',0) != r.get('selected_strict_improvements',0):
+              raise SystemExit('non-strict selected')
+          print('NUMBER1_PUBLICATION',json.dumps({
+            'strict':r.get('selected_strict_improvements'),
+            'submission_id':r.get('submission_id'),
+            'quota_used_pre':r.get('daily_submissions_used_pre'),
+            'quota_remaining_pre':r.get('daily_submissions_remaining_pre'),
+            'quota_blocked':r.get('quota_blocked')
+          },sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number1-publication
+          path: acc_competitive/number1_publish/
+          retention-days: 90
+          if-no-files-found: warn
