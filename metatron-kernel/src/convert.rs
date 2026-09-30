@@ -255,6 +255,29 @@ pub(crate) fn convert_with_policy_in_context(
                 work.push((*left_domain, *right_domain, depth));
             }
             (TypeValue::Term(left), TypeValue::Term(right)) => {
+                if let (
+                    Some(Expr::Proj {
+                        type_name: left_type,
+                        index: left_index,
+                        structure: left_structure,
+                    }),
+                    Some(Expr::Proj {
+                        type_name: right_type,
+                        index: right_index,
+                        structure: right_structure,
+                    }),
+                ) = (checker.expression(left.expr), checker.expression(right.expr))
+                    && left_type == right_type
+                    && left_index == right_index
+                {
+                    work.push((
+                        TypeValue::Term(left.sibling(*left_structure, left.env.clone())),
+                        TypeValue::Term(right.sibling(*right_structure, right.env.clone())),
+                        depth,
+                    ));
+                    continue;
+                }
+
                 let machine = checker.machine();
                 let cheap_left = machine.expose(left.clone(), Transparency::Reducible, remaining);
                 let cheap_right = machine.expose(right.clone(), Transparency::Reducible, remaining);
