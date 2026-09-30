@@ -63,7 +63,13 @@ impl<'a> TypeChecker<'a> {
 
     pub fn infer(&self, expression: ExprId, budget: usize) -> Judgment<TypeValue> {
         let mut remaining = budget;
-        self.infer_in(expression, &[], &EnvFrame::empty(), &mut remaining)
+        self.infer_in(
+            expression,
+            &[],
+            &EnvFrame::empty(),
+            &mut remaining,
+            &mut HashMap::new(),
+        )
     }
 
     pub fn check(&self, expression: ExprId, expected: &TypeValue, budget: usize) -> Judgment<()> {
@@ -75,6 +81,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             self.delta_policy == crate::convert::DeltaPolicy::GuardedSemanticFallback,
+            &mut HashMap::new(),
         )
     }
 
@@ -123,6 +130,7 @@ impl<'a> TypeChecker<'a> {
             &EnvFrame::empty(),
             &mut remaining,
             false,
+            &mut HashMap::new(),
         )
     }
 
@@ -141,6 +149,7 @@ impl<'a> TypeChecker<'a> {
             frame,
             &mut remaining,
             false,
+            &mut HashMap::new(),
         )
     }
 
@@ -171,6 +180,33 @@ impl<'a> TypeChecker<'a> {
         context: &[TypeValue],
         frame: &EnvFrame,
         remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
+    ) -> Judgment<TypeValue> {
+        // This cache is local to one public judgment. A frame has one fixed
+        // typing context in that judgment, and every binder allocates a fresh
+        // frame identity. Never reuse UNKNOWN, refutations, or another scope.
+        let key = (expression, frame.id());
+        if let Some(value) = cache.get(&key) {
+            return if take_step(remaining) {
+                Judgment::proven(value.clone(), "shared-expression-inference")
+            } else {
+                Judgment::unknown("type-inference-budget")
+            };
+        }
+        let result = self.infer_uncached(expression, context, frame, remaining, cache);
+        if let Judgment::Proven { value, .. } = &result {
+            cache.insert(key, value.clone());
+        }
+        result
+    }
+
+    fn infer_uncached(
+        &self,
+        expression: ExprId,
+        context: &[TypeValue],
+        frame: &EnvFrame,
+        remaining: &mut usize,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<TypeValue> {
         if !take_step(remaining) {
             return Judgment::unknown("type-inference-budget");
@@ -229,7 +265,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Pi { domain, body } => {
-                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
                 let domain_sort = match self.sort_level(domain_type, *remaining) {
                     Judgment::Proven { value, .. } => value,
                     Judgment::Refuted { obstruction } => {
@@ -244,7 +280,7 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
-                let body_type = self.infer_in(*body, &extended, &body_frame, remaining);
+                let body_type = self.infer_in(*body, &extended, &body_frame, remaining, cache);
                 let body_sort = match self.sort_level(body_type, *remaining) {
                     Judgment::Proven { value, .. } => value,
                     Judgment::Refuted { obstruction } => {
@@ -258,7 +294,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Lam { domain, body } => {
-                let domain_type = self.infer_in(*domain, context, frame, remaining);
+                let domain_type = self.infer_in(*domain, context, frame, remaining, cache);
                 match self.sort_level(domain_type, *remaining) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
@@ -273,14 +309,14 @@ impl<'a> TypeChecker<'a> {
                     return Judgment::unknown("binder-depth-overflow");
                 };
                 let body_frame = frame.extend_free(free);
-                self.infer_in(*body, &extended, &body_frame, remaining)
+                self.infer_in(*body, &extended, &body_frame, remaining, cache)
                     .map(|body_type| TypeValue::Pi {
                         domain: Box::new(domain_type),
                         body: Box::new(body_type),
                     })
             }
             Expr::App { fun, arg } => {
-                let function_type = self.infer_in(*fun, context, frame, remaining);
+                let function_type = self.infer_in(*fun, context, frame, remaining, cache);
                 if let Judgment::Refuted { obstruction } = &function_type {
                     return Judgment::Refuted {
                         obstruction: *obstruction,
@@ -289,7 +325,7 @@ impl<'a> TypeChecker<'a> {
                 let Some((domain, body)) = self.pi_view(function_type, *remaining) else {
                     return Judgment::unknown("application-function-type");
                 };
-                match self.check_in(*arg, &domain, context, frame, remaining, true) {
+                match self.check_in(*arg, &domain, context, frame, remaining, true, cache) {
                     Judgment::Proven { .. } => Judgment::proven(
                         match body {
                             PiBody::Fixed(body) => body,
@@ -320,13 +356,14 @@ impl<'a> TypeChecker<'a> {
                 let Some(field_type) = spec.field_types.get(index).cloned() else {
                     return Judgment::refuted("projection-index-out-of-range");
                 };
-                let structure_type = match self.infer_in(*structure, context, frame, remaining) {
-                    Judgment::Proven { value, .. } => value,
-                    Judgment::Refuted { obstruction } => {
-                        return Judgment::Refuted { obstruction };
-                    }
-                    Judgment::Unknown { residual } => return Judgment::Unknown { residual },
-                };
+                let structure_type =
+                    match self.infer_in(*structure, context, frame, remaining, cache) {
+                        Judgment::Proven { value, .. } => value,
+                        Judgment::Refuted { obstruction } => {
+                            return Judgment::Refuted { obstruction };
+                        }
+                        Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+                    };
                 let TypeValue::Term(structure_type) = structure_type else {
                     return Judgment::refuted("projection-not-structure");
                 };
@@ -438,7 +475,7 @@ impl<'a> TypeChecker<'a> {
                 )
             }
             Expr::Let { ty, value, body } => {
-                let annotation_type = self.infer_in(*ty, context, frame, remaining);
+                let annotation_type = self.infer_in(*ty, context, frame, remaining, cache);
                 match self.sort_level(annotation_type, *remaining) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
@@ -447,7 +484,7 @@ impl<'a> TypeChecker<'a> {
                     Judgment::Unknown { residual } => return Judgment::Unknown { residual },
                 }
                 let established = TypeValue::Term(self.closure(*ty, frame.clone()));
-                match self.check_in(*value, &established, context, frame, remaining, true) {
+                match self.check_in(*value, &established, context, frame, remaining, true, cache) {
                     Judgment::Proven { .. } => {}
                     Judgment::Refuted { obstruction } => {
                         return Judgment::Refuted { obstruction };
@@ -457,7 +494,7 @@ impl<'a> TypeChecker<'a> {
                 let mut extended = context.to_vec();
                 extended.push(established);
                 let extended_frame = frame.extend(self.closure(*value, frame.clone()));
-                self.infer_in(*body, &extended, &extended_frame, remaining)
+                self.infer_in(*body, &extended, &extended_frame, remaining, cache)
             }
         }
     }
@@ -470,8 +507,9 @@ impl<'a> TypeChecker<'a> {
         frame: &EnvFrame,
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
+        cache: &mut HashMap<(ExprId, u64), TypeValue>,
     ) -> Judgment<()> {
-        let inferred = self.infer_in(expression, context, frame, remaining);
+        let inferred = self.infer_in(expression, context, frame, remaining, cache);
         match inferred {
             Judgment::Proven { value, .. } => {
                 let conversion = crate::convert::convert_with_policy_in_context(
