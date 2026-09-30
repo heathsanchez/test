@@ -417,6 +417,60 @@ impl<'a> Machine<'a> {
                                     head,
                                     args
                                 );
+                                let exposure = self.expose_internal(
+                                    target.clone(),
+                                    transparency,
+                                    512,
+                                    false,
+                                );
+                                match exposure {
+                                    Judgment::Unknown { residual } => eprintln!(
+                                        "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=UNKNOWN:reason={}",
+                                        name.0,
+                                        target.expr.0,
+                                        residual.0
+                                    ),
+                                    Judgment::Refuted { obstruction } => eprintln!(
+                                        "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=REFUTED:reason={}",
+                                        name.0,
+                                        target.expr.0,
+                                        obstruction.0
+                                    ),
+                                    Judgment::Proven { value, warrant } => match value.value {
+                                        Value::Neutral(neutral) => eprintln!(
+                                            "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=PROVEN:warrant={}:value=neutral:{:?}:spine={}",
+                                            name.0,
+                                            target.expr.0,
+                                            warrant.0,
+                                            neutral.head,
+                                            neutral.spine.len()
+                                        ),
+                                        Value::NatLit(_) => eprintln!(
+                                            "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=PROVEN:warrant={}:value=natlit",
+                                            name.0,
+                                            target.expr.0,
+                                            warrant.0
+                                        ),
+                                        Value::Sort(_) => eprintln!(
+                                            "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=PROVEN:warrant={}:value=sort",
+                                            name.0,
+                                            target.expr.0,
+                                            warrant.0
+                                        ),
+                                        Value::Pi { .. } => eprintln!(
+                                            "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=PROVEN:warrant={}:value=pi",
+                                            name.0,
+                                            target.expr.0,
+                                            warrant.0
+                                        ),
+                                        Value::Lam { .. } => eprintln!(
+                                            "NUCLEUS_BOOL_RECURSOR_TARGET_EXPOSE:recursor={}:target_expr={}:verdict=PROVEN:warrant={}:value=lam",
+                                            name.0,
+                                            target.expr.0,
+                                            warrant.0
+                                        ),
+                                    },
+                                }
                             }
                             if let Some((constructor, constructor_arguments)) =
                                 self.constructor_application(target)
