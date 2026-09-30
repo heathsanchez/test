@@ -1,0 +1,44 @@
+name: Collatz Crystal V23 Resonant Shadow V59
+on:
+  push:
+    branches: [collatz-crystal-v23-resonant-shadow-v59]
+    paths:
+      - 'experiments/collatz_crystal_v23_resonant_shadow_v59.py'
+      - '.github/workflows/collatz-crystal-v23-resonant-shadow-v59.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Qualify exact resonant shadow
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-v23-resonant-shadow-v59
+          python -u experiments/collatz_crystal_v23_resonant_shadow_v59.py \
+            | tee evidence/collatz-crystal-v23-resonant-shadow-v59/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-v23-resonant-shadow-v59/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_V23_RESONANT_SHADOW_V59'
+          assert d['global_collatz']=='UNKNOWN'
+          assert d['shadow']['fully_postzero_expanding_returns']==6
+          print('V59_VERDICT',d['verdict'])
+          print('V59_RESONANCE',d['resonance'])
+          print('V59_SIZE',d['source_size'])
+          print('V59_SHADOW',d['shadow'])
+          print('V59_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-v23-resonant-shadow-v59/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-v23-resonant-shadow-v59
+          path: evidence/collatz-crystal-v23-resonant-shadow-v59
+          if-no-files-found: error
