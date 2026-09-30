@@ -33,6 +33,26 @@ jobs:
           print('BA_FP',d['compose_b_then_a']['fixed_point'])
           print('CERT',d['certificate_sha256'])
           PY
+      - name: Reuse historical symbolic SCC kill
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments python experiments/collatz_recharge_scc_compatibility_v0.py | tee evidence/collatz-zero-exposure-scc-separator-20260930/compatibility.json
+          PYTHONPATH=experiments python experiments/collatz_recharge_scc_composition_v0.py | tee evidence/collatz-zero-exposure-scc-separator-20260930/composition.json
+          PYTHONPATH=experiments python experiments/collatz_recharge_scc_defect_kill_v0.py | tee evidence/collatz-zero-exposure-scc-separator-20260930/defect-kill.json
+          python - <<'PY'
+          import json
+          base='evidence/collatz-zero-exposure-scc-separator-20260930/'
+          a=json.load(open(base+'compatibility.json'))
+          b=json.load(open(base+'composition.json'))
+          d=json.load(open(base+'defect-kill.json'))
+          assert a['simultaneously_admissible'] is False
+          assert b['verdict']=='NO_SYMBOLIC_TWO_MAP_CYCLE'
+          assert b['cycle_class_count']==0
+          assert d['verdict']=='SOLE_SYMBOLIC_RECHARGE_SCC_NOT_INFINITELY_REPEATABLE'
+          print('ZERO_EXPOSURE_SCC_SYMBOLICALLY_KILLED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
       - uses: actions/upload-artifact@v4
         if: always()
         with:
