@@ -1,0 +1,69 @@
+// Exact source-pinned promotion guard for the real 31 -> 30 Nucleus step.
+// The event history is generated from the qualification artifact, never
+// handwritten. This policy checks the generated history and exact lineage.
+@id("nucleus_live_evidence_promotion_v2")
+permit (
+    principal,
+    action == Nucleus::Action::"Admit",
+    resource
+)
+when {
+    context.input.campaign == "nucleus"
+    && context.input.residual == "other/proj-of-prop"
+    && context.input.candidate == "98f87d9e66fb97987427d68180f51a653d626fdb"
+    && context.input.authority == "d2bdeadceb1bb6d0695f15126fb23b50f732c4ce"
+    && context.input.corpus == "arena-193:10712869614"
+    && context.input.originEvidence == "11065775422:2bdd0c6f94f014e698eb59dd4b53effc2f890a3e3628795e6033fcd15c4e2024"
+}
+when temporal {
+    formerly within 24h (
+        Nucleus::Action::"FullReclosureGreen"::response{
+            input.campaign: context.input.campaign,
+            input.residual: context.input.residual,
+            input.candidate: context.input.candidate,
+            input.authority: context.input.authority,
+            input.corpus: context.input.corpus,
+            input.originEvidence: context.input.originEvidence
+        }
+        && formerly within 24h (
+            Nucleus::Action::"ControlsGreen"::response{
+                input.campaign: context.input.campaign,
+                input.residual: context.input.residual,
+                input.candidate: context.input.candidate,
+                input.authority: context.input.authority,
+                input.corpus: context.input.corpus,
+                input.originEvidence: context.input.originEvidence
+            }
+            && formerly within 24h (
+                Nucleus::Action::"CandidateDerived"::response{
+                    input.campaign: context.input.campaign,
+                    input.residual: context.input.residual,
+                    input.candidate: context.input.candidate,
+                    input.authority: context.input.authority,
+                    input.corpus: context.input.corpus,
+                    input.originEvidence: context.input.originEvidence
+                }
+                && formerly within 24h
+                    Nucleus::Action::"ResidualObserved"::response{
+                        input.campaign: context.input.campaign,
+                        input.residual: context.input.residual,
+                        input.candidate: context.input.candidate,
+                        input.authority: context.input.authority,
+                        input.corpus: context.input.corpus,
+                        input.originEvidence: context.input.originEvidence
+                    }
+            )
+        )
+    )
+}
+unless temporal {
+    formerly within 24h
+        Nucleus::Action::"CandidateRejected"::response{
+            input.campaign: context.input.campaign,
+            input.residual: context.input.residual,
+            input.candidate: context.input.candidate,
+            input.authority: context.input.authority,
+            input.corpus: context.input.corpus,
+            input.originEvidence: context.input.originEvidence
+        }
+};
