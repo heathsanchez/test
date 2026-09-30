@@ -1,0 +1,208 @@
+name: Nucleus Dogwood Inline Qualification v3
+
+on:
+  push:
+    branches: [nucleus-dogwood-inline-qualification-v3]
+    paths:
+      - ".github/workflows/nucleus-dogwood-inline-qualification-v3.yml"
+      - "experiments/nucleus-dogwood-live-events-v2/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-dogwood-inline-qualification-v3
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: d2bdeadceb1bb6d0695f15126fb23b50f732c4ce
+  CANDIDATE_SEMANTIC_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ARENA_ARTIFACT: "10712869614"
+  DOGWOOD_SHA: 996d756de1013b7ae209a14f566a80375a59f2f0
+  TARGET_TEST: other/proj-of-prop
+  EXP: experiments/nucleus-dogwood-live-events-v2
+
+jobs:
+  qualify-and-authorize:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 80
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Prove candidate semantic bytes are unchanged
+        run: |
+          set -euo pipefail
+          git diff --quiet "$CANDIDATE_SEMANTIC_SHA" -- metatron-kernel
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+
+      - name: Build candidate and exact base
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$BASE_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen 193-case Arena corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip" > /tmp/tests.zip
+          rm -rf /tmp/art /tmp/tests
+          mkdir -p /tmp/art /tmp/tests
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Requalify Nucleus and emit fresh result.json
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXP/evidence-out-v3"
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          def rr(binary,p):
+              with p.open('rb') as f:
+                  q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                                   stderr=subprocess.DEVNULL,timeout=180)
+              return q.returncode
+
+          rows=[]
+          for bucket,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/bucket).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/bucket)).removesuffix('.ndjson')
+                  rows.append({
+                      'test':name,'expected':expected,
+                      'base':rr(base,p),'candidate':rr(cand,p),
+                  })
+
+          assert len(rows)==193
+          assert sum(r['base']==0 for r in rows)==103
+          assert sum(r['base']==1 for r in rows)==59
+          assert sum(r['base'] in (2,3) for r in rows)==31
+
+          wrong=[r for r in rows if r['candidate'] in (0,1) and r['candidate']!=r['expected']]
+          regressions=[r for r in rows if r['base'] in (0,1) and r['candidate']!=r['base']]
+          errors=[r for r in rows if r['candidate'] not in (0,1,2,3)]
+          false_accepts=[r for r in rows if r['expected']==1 and r['candidate']==0]
+          false_rejects=[r for r in rows if r['expected']==0 and r['candidate']==1]
+          earned=[r for r in rows if r['base'] in (2,3) and r['candidate']==r['expected']]
+          changes=[r for r in rows if r['base']!=r['candidate']]
+
+          assert not wrong,wrong
+          assert not regressions,regressions
+          assert not errors,errors
+          assert not false_accepts,false_accepts
+          assert not false_rejects,false_rejects
+          assert earned == [{
+              'test':'other/proj-of-prop','expected':1,'base':2,'candidate':1
+          }], earned
+          assert changes == earned, changes
+
+          out={
+              'schema':'nucleus-crystal-rigid-prop-type-refutation-v1-inline',
+              'base_sha':os.environ['BASE_SHA'],
+              'candidate_sha':os.environ['CANDIDATE_SEMANTIC_SHA'],
+              'workflow_sha':os.environ['GITHUB_SHA'],
+              'base_residual':sum(r['base'] in (2,3) for r in rows),
+              'candidate_residual':sum(r['candidate'] in (2,3) for r in rows),
+              'native_accept':sum(r['expected']==0 and r['candidate']==0 for r in rows),
+              'native_reject':sum(r['expected']==1 and r['candidate']==1 for r in rows),
+              'earned':[r['test'] for r in earned],
+              'changes':changes,
+              'wrong':wrong,'regressions':regressions,'errors':errors,
+              'false_accepts':false_accepts,'false_rejects':false_rejects,
+          }
+          p=pathlib.Path(os.environ['EXP'])/'evidence-out-v3'/'result.json'
+          p.write_text(json.dumps(out,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - name: Compile fresh qualification directly into Dogwood lifecycle
+        run: |
+          set -euo pipefail
+          RESULT="$EXP/evidence-out-v3/result.json"
+          python3 "$EXP/compile_events.py"             --result "$RESULT"             --test "$TARGET_TEST"             --corpus "arena-193:$ARENA_ARTIFACT"             --evidence "inline-run:$GITHUB_RUN_ID:$GITHUB_SHA"             --out "$EXP/evidence-out-v3/live.log"             | tee "$EXP/evidence-out-v3/compiler.json"
+
+          grep -q 'ResidualObserved' "$EXP/evidence-out-v3/live.log"
+          grep -q 'CandidateDerived' "$EXP/evidence-out-v3/live.log"
+          grep -q 'ControlsGreen' "$EXP/evidence-out-v3/live.log"
+          grep -q 'FullReclosureGreen' "$EXP/evidence-out-v3/live.log"
+          ! grep -q 'CandidateRejected' "$EXP/evidence-out-v3/live.log"
+
+      - name: Render exact inline policy from fresh lineage
+        run: |
+          set -euo pipefail
+          sed             -e 's#11065775422:2bdd0c6f94f014e698eb59dd4b53effc2f890a3e3628795e6033fcd15c4e2024#inline-run:'"$GITHUB_RUN_ID"':'"$GITHUB_SHA"'#g'             "$EXP/policy.dw" > "$EXP/evidence-out-v3/policy.dw"
+          cp "$EXP/schema.cedarschema" "$EXP/evidence-out-v3/schema.cedarschema"
+
+      - name: Build pinned Dogwood and authorize same-run promotion
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/dogwood-policy/dogwood /tmp/dogwood
+          git -C /tmp/dogwood checkout -q "$DOGWOOD_SHA"
+          cargo build --release --manifest-path /tmp/dogwood/Cargo.toml -p dogwood-cli
+          DOGWOOD=/tmp/dogwood/target/release/dogwood
+
+          "$DOGWOOD" validate "$EXP/evidence-out-v3/policy.dw"             --policy-schema "$EXP/evidence-out-v3/schema.cedarschema"
+
+          "$DOGWOOD" replay "$EXP/evidence-out-v3/policy.dw"             --policy-schema "$EXP/evidence-out-v3/schema.cedarschema"             --trace "$EXP/evidence-out-v3/live.log"             | tee "$EXP/evidence-out-v3/replay.out"
+
+          grep -E 'ALLOW|DENY' "$EXP/evidence-out-v3/replay.out" | tail -n 1 | grep -q 'ALLOW'
+
+      - name: Seal inline qualification-to-authorization result
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re
+          outdir=pathlib.Path(os.environ['EXP'])/'evidence-out-v3'
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          verdicts=re.findall(r'\b(ALLOW|DENY)\b',(outdir/'replay.out').read_text())
+          assert verdicts and verdicts[-1]=='ALLOW'
+          result={
+            'schema':'nucleus-dogwood-inline-qualification-v3',
+            'status':'WARRANTED_BOUNDED',
+            'workflow_sha':os.environ['GITHUB_SHA'],
+            'semantic_candidate_sha':os.environ['CANDIDATE_SEMANTIC_SHA'],
+            'base_sha':os.environ['BASE_SHA'],
+            'arena_artifact':int(os.environ['ARENA_ARTIFACT']),
+            'dogwood_sha':os.environ['DOGWOOD_SHA'],
+            'target_test':os.environ['TARGET_TEST'],
+            'same_run_dogwood_verdict':'ALLOW',
+            'hashes':{
+              'fresh_nucleus_result':sha(outdir/'result.json'),
+              'generated_lifecycle':sha(outdir/'live.log'),
+              'compiled_policy':sha(outdir/'policy.dw'),
+              'event_compiler':sha(pathlib.Path(os.environ['EXP'])/'compile_events.py'),
+            },
+            'claim':'A fresh 193-case independent Nucleus requalification can emit its own lifecycle evidence and pass the pinned Dogwood promotion gate in the same CI run without a hand-authored history.',
+            'boundary':[
+              'exact 31-to-30 Nucleus semantic lineage only',
+              'Dogwood governs promotion but does not establish Lean-kernel correctness independently of the Nucleus reclosure',
+              'event compiler is tested but not formally verified',
+              'no canonical branch mutation is performed by the gate',
+            ],
+          }
+          (outdir/'integration-result.json').write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(result,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dogwood-inline-qualification-${{ github.sha }}
+          path: experiments/nucleus-dogwood-live-events-v2/evidence-out-v3
+          if-no-files-found: warn
