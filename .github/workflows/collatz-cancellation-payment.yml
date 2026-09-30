@@ -1,0 +1,31 @@
+name: Collatz Cancellation Payment
+on:
+  push:
+    branches: [collatz-cancellation-payment-20260930]
+    paths: ['.github/workflows/collatz-cancellation-payment.yml']
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned parent
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+      - name: Qualify cancellation payment and exact plateau family
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-cancellation-payment
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean > evidence/collatz-cancellation-payment/parent.log
+          lake env lean -DautoImplicit=false formal/Collatz/CancellationPayment.lean | tee evidence/collatz-cancellation-payment/payment.log
+          git rev-parse HEAD > evidence/collatz-cancellation-payment/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-cancellation-payment
+          path: evidence/collatz-cancellation-payment
