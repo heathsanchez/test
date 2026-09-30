@@ -1,0 +1,40 @@
+name: Collatz Original Source Temporal
+on:
+  push:
+    branches: [collatz-original-source-temporal-20260930]
+    paths:
+      - 'experiments/collatz_original_source_temporal_20260930.py'
+      - '.github/workflows/collatz-original-source-temporal.yml'
+permissions: {contents: read}
+jobs:
+  temporal:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run temporal tournament
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-original-source-temporal
+          PYTHONPATH=experiments python -u experiments/collatz_original_source_temporal_20260930.py             | tee evidence/collatz-original-source-temporal/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-original-source-temporal/result.json'))
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          print('SURVIVORS',d['survivors'])
+          for split in ('train','heldout'):
+              print(split,'SEQUENCES',d[split]['sequence_count'])
+              for h,rows in d[split]['horizons'].items():
+                  for f,v in rows.items():
+                      print(split,'H',h,f,'N',v['comparisons'],'PASS',v['pass'],'FAIL',v['fail'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-original-source-temporal
+          path: evidence/collatz-original-source-temporal
+          if-no-files-found: error
