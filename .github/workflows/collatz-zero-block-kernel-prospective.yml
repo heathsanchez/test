@@ -1,0 +1,47 @@
+name: Collatz Zero Block Kernel Prospective
+on:
+  push:
+    branches: [collatz-zero-block-kernel-prospective-20260930]
+    paths: ['.github/workflows/collatz-zero-block-kernel-prospective.yml']
+permissions: {contents: read}
+jobs:
+  band1:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Fresh band 32769..65535
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments python - <<'PY'
+          import json
+          from collatz_zero_block_kernel_crystal_20260930 import audit
+          x=audit(32769,65535,128)
+          print(json.dumps(x,indent=2))
+          assert x['cyclic_sccs']==0
+          assert x['sourcewise_repeated_zero_switch_states']==0
+          print('PROSPECTIVE_ZERO_BLOCK_KERNEL_EMPTY_BAND1')
+          PY
+  band2:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Fresh band 65537..131071
+        shell: bash
+        run: |
+          set -euo pipefail
+          PYTHONPATH=experiments python - <<'PY'
+          import json
+          from collatz_zero_block_kernel_crystal_20260930 import audit
+          x=audit(65537,131071,128)
+          print(json.dumps(x,indent=2))
+          assert x['cyclic_sccs']==0
+          assert x['sourcewise_repeated_zero_switch_states']==0
+          print('PROSPECTIVE_ZERO_BLOCK_KERNEL_EMPTY_BAND2')
+          PY
