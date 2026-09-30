@@ -1,0 +1,45 @@
+name: Collatz Crystal Pulled Centre Height V60
+on:
+  push:
+    branches: [collatz-crystal-pulled-centre-height-v60]
+    paths:
+      - 'experiments/collatz_crystal_pulled_centre_height_v60.py'
+      - '.github/workflows/collatz-crystal-pulled-centre-height-v60.yml'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Audit pulled-centre precision versus height
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-pulled-centre-height-v60
+          PYTHONPATH=experiments python -u experiments/collatz_crystal_pulled_centre_height_v60.py \
+            | tee evidence/collatz-crystal-pulled-centre-height-v60/result.json
+          python - <<'PY'
+          import json
+          p='evidence/collatz-crystal-pulled-centre-height-v60/result.json'
+          d=json.load(open(p))
+          assert d['schema']=='COLLATZ_CRYSTAL_PULLED_CENTRE_HEIGHT_V60'
+          assert d['global_collatz']=='UNKNOWN'
+          print('V60_VERDICT',d['verdict'])
+          print('V60_SWITCH',d['centre_switches'],d['every_switch_strictly_increases_source_precision'])
+          print('V60_SAME',d['same_center_steps'],d['same_center_preserves_pulled_center_and_precision'])
+          print('V60_JUMPS',d['precision_jump_histogram'])
+          print('V60_RATIO',d['max_precision_over_height_bits'],d['max_ratio_witness'])
+          print('V60_SURPLUS',d['minimum_height_bits_minus_precision'])
+          print('V60_CERT',d['certificate_sha256'])
+          PY
+          git rev-parse HEAD > evidence/collatz-crystal-pulled-centre-height-v60/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-pulled-centre-height-v60
+          path: evidence/collatz-crystal-pulled-centre-height-v60
+          if-no-files-found: error
