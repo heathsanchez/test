@@ -143,3 +143,5 @@ jobs:
           name: nucleus-crystal-independent-30-trace-${{ github.sha }}
           path: metatron-kernel/evidence-out/crystal-independent-30-trace-v1
           if-no-files-found: error
+
+# retrigger after trace-format repair
