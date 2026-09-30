@@ -6,6 +6,8 @@ on:
       - '.github/workflows/collatz-symbolic-repayment-guards-20260930.yml'
       - 'formal/Collatz/ComposedReturnRepayment.lean'
       - 'lakefile.lean'
+      - 'experiments/collatz_symbolic_repayment_guards_20260930.py'
+      - 'evidence/collatz-symbolic-repayment-guards-20260930/local-result.json'
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
