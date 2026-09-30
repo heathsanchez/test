@@ -1,5 +1,6 @@
 import Collatz.ReturnFixedPointDescent
 
+/-- V57 rebased on the green V51 affine-budget authority. -/
 namespace CollatzFinal
 namespace SourceProduct
 
