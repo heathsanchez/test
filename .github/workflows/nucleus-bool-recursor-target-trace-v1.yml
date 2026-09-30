@@ -96,7 +96,7 @@ jobs:
               p=root/'good'/(name+'.ndjson')
               rc,err=rr(cand,p,True)
               assert rc in (2,3),(name,rc)
-              marks=[x for x in err.splitlines() if 'NUCLEUS_BOOL_RECURSOR_TARGET:' in x]
+              marks=[x for x in err.splitlines() if 'NUCLEUS_BOOL_RECURSOR_TARGET' in x]
               assert marks,(name,err[-10000:])
               traces[name]={
                   'rc':rc,
