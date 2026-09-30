@@ -46,6 +46,9 @@ certificate={'weights':[{'edge':[e['from'],e['to']],'weight':str(w)} for e,w in 
 for length in (0,1,2,8,32,128):
  for z in (1,2,5,17):
   original=864*8**length*z-5
+  predecessor=(8*original-5)//9
+  assert 0<predecessor<original
+  assert step(step(step(predecessor)))==original
   current=original
   for i in range(length+1):
    expected=864*9**i*8**(length-i)*z-5
@@ -58,6 +61,6 @@ for length in (0,1,2,8,32,128):
      assert current%8!=5
      assert current%3!=2 or (2*current-1)//3>=original
      current=step(current)
-result={'status':'GLOBAL_COLLATZ_UNKNOWN','scope':'Immediate payment on the declared actual anchor-2 returns; D/S/M1 protection only; eventual progress and full no-OrdinaryExit remain open','source':N,'feature_names':names,'points':pts,'edges':edges,'certificate':certificate,'plateau_literal_lengths':[0,1,2,8,32,128]}
+result={'status':'GLOBAL_COLLATZ_UNKNOWN','scope':'Immediate payment on the declared actual anchor-2 returns; D/S/M1 protection only; eventual progress and full no-OrdinaryExit remain open','source':N,'feature_names':names,'points':pts,'edges':edges,'certificate':certificate,'plateau_literal_lengths':[0,1,2,8,32,128],'plateau_reclosure':'Every PlateauCell has a smaller three-step predecessor; the entire family is excluded from least-bad sources'}
 result['certificate_sha256']=hashlib.sha256(json.dumps(result,sort_keys=True,separators=(',',':')).encode()).hexdigest()
 print(json.dumps(result,indent=2))
