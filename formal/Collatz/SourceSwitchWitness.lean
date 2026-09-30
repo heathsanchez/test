@@ -1,6 +1,8 @@
 import Collatz.GuardedDyadicSwitch
 import Collatz.SourceCylinderExit
 
+set_option maxRecDepth 100000
+
 namespace CollatzFinal.SourceProduct
 
 def switchSource (t : Nat) := 3294206330938702138381104133963803 + 84740873427720190311783157213303496617381798500264465924096*t
@@ -12,10 +14,13 @@ theorem iter_at_source_period {n k y q period unit : Nat}
     (htrace : sourceOrbit n k = (y,q)) (hperiod : period = 2^k*unit)
     (t : Nat) : iter shortcut k (n+period*t) = y + (3^q*unit)*t := by
   have hp := (sourceOrbit_correct n k).symm.trans htrace
-  have hy := congrArg Prod.fst hp
-  have hq := congrArg Prod.snd hp
+  have hy : iter shortcut k n = y := by
+    simpa using congrArg Prod.fst hp
+  have hq : oddCount n k = q := by
+    simpa using congrArg Prod.snd hp
   have he : n+period*t = n+2^k*(unit*t) := by rw [hperiod, Nat.mul_assoc]
-  rw [he, shortcut_iter_source_lift, hy, hq, Nat.mul_assoc]
+  rw [he, shortcut_iter_source_lift, hy, hq]
+  simp [Nat.mul_assoc]
 
 theorem switch_source_endpoint_0 (t : Nat) :
     iter shortcut 167 (switchSource t) + 1 = 4*switchOwner0 t := by
@@ -78,37 +83,79 @@ theorem switch_original_source_bounds (t : Nat) :
 theorem switch_own_orders_0 (t : Nat) :
     DyadicOrder (returnDefect 6561 2443 2048 (switchOwner0 t)) 12 ∧
     TernaryOrder (returnDefect 6561 2443 2048 (switchOwner0 t)) 0 := by
-  have hr : returnDefect 6561 2443 2048 (switchOwner0 t) = -1813869915301352679501979330449017491456 + (-46660380518150868390000108499167015037698009204577002001413439488:Int)*(t:Int) := by
-    unfold switchOwner0
-    simp only [Int.natCast_add,Int.natCast_mul]
-    rw [returnDefect_linear_ray]
-  rw [hr]
+  change
+    DyadicOrder
+      (returnDefect 6561 2443 2048
+        ((401921098006060864059822585962556501 : Int) +
+          (10339104923144442364280990139412146030954577709855307334680576 : Int) * (t : Int))) 12 ∧
+    TernaryOrder
+      (returnDefect 6561 2443 2048
+        ((401921098006060864059822585962556501 : Int) +
+          (10339104923144442364280990139412146030954577709855307334680576 : Int) * (t : Int))) 0
+  rw [returnDefect_linear_ray]
   constructor
-  · have hb : DyadicOrder (-1813869915301352679501979330449017491456:Int) 12 := ⟨-442839334790369306519037922472904661, by decide, by decide⟩
-    have hc : (-46660380518150868390000108499167015037698009204577002001413439488:Int) = (2:Int)^(12+1)*(-5695847231219588426513685119527223515343995264230591064625664:Int) := by decide
-    rw [hc,Int.mul_assoc]
+  · have hb : DyadicOrder
+        (returnDefect 6561 2443 2048 (401921098006060864059822585962556501 : Int)) 12 := by
+      refine ⟨-442839334790369306519037922472904661, ?_, by decide⟩
+      norm_num [returnDefect]
+    have hc :
+        ((2048 - 6561 : Int) *
+          10339104923144442364280990139412146030954577709855307334680576) =
+        (2 : Int)^(12+1) *
+          (-5695847231219588426513685119527223515343995264230591064625664 : Int) := by
+      norm_num
+    rw [hc, Int.mul_assoc]
     exact dyadic_even_perturbation hb _
-  · have hb : TernaryOrder (-1813869915301352679501979330449017491456:Int) 0 := ⟨-1813869915301352679501979330449017491456, by decide, by decide⟩
-    have hc : (-46660380518150868390000108499167015037698009204577002001413439488:Int) = (3:Int)^(0+1)*(-15553460172716956130000036166389005012566003068192334000471146496:Int) := by decide
-    rw [hc,Int.mul_assoc]
+  · have hb : TernaryOrder
+        (returnDefect 6561 2443 2048 (401921098006060864059822585962556501 : Int)) 0 := by
+      refine ⟨-1813869915301352679501979330449017491456, ?_, by decide⟩
+      norm_num [returnDefect]
+    have hc :
+        ((2048 - 6561 : Int) *
+          10339104923144442364280990139412146030954577709855307334680576) =
+        (3 : Int)^(0+1) *
+          (-15553460172716956130000036166389005012566003068192334000471146496 : Int) := by
+      norm_num
+    rw [hc, Int.mul_assoc]
     exact ternary_multiple_perturbation hb _
 
 theorem switch_own_orders_1 (t : Nat) :
     DyadicOrder (returnDefect 9 1 8 (switchOwner1 t)) 10 ∧
     TernaryOrder (returnDefect 9 1 8 (switchOwner1 t)) 2 := by
-  have hr : returnDefect 9 1 8 (switchOwner1 t) = -1287599767586799477097898430908365824 + (-33122493848022796070335730617521040092330558766777671593183232:Int)*(t:Int) := by
-    unfold switchOwner1
-    simp only [Int.natCast_add,Int.natCast_mul]
-    rw [returnDefect_linear_ray]
-  rw [hr]
+  change
+    DyadicOrder
+      (returnDefect 9 1 8
+        ((1287599767586799477097898430908365823 : Int) +
+          (33122493848022796070335730617521040092330558766777671593183232 : Int) * (t : Int))) 10 ∧
+    TernaryOrder
+      (returnDefect 9 1 8
+        ((1287599767586799477097898430908365823 : Int) +
+          (33122493848022796070335730617521040092330558766777671593183232 : Int) * (t : Int))) 2
+  rw [returnDefect_linear_ray]
   constructor
-  · have hb : DyadicOrder (-1287599767586799477097898430908365824:Int) 10 := ⟨-1257421648033983864353416436433951, by decide, by decide⟩
-    have hc : (-33122493848022796070335730617521040092330558766777671593183232:Int) = (2:Int)^(10+1)*(-16173092699229880893718618465586445357583280647840659957609:Int) := by decide
-    rw [hc,Int.mul_assoc]
+  · have hb : DyadicOrder
+        (returnDefect 9 1 8 (1287599767586799477097898430908365823 : Int)) 10 := by
+      refine ⟨-1257421648033983864353416436433951, ?_, by decide⟩
+      norm_num [returnDefect]
+    have hc :
+        ((8 - 9 : Int) *
+          33122493848022796070335730617521040092330558766777671593183232) =
+        (2 : Int)^(10+1) *
+          (-16173092699229880893718618465586445357583280647840659957609 : Int) := by
+      norm_num
+    rw [hc, Int.mul_assoc]
     exact dyadic_even_perturbation hb _
-  · have hb : TernaryOrder (-1287599767586799477097898430908365824:Int) 2 := ⟨-143066640842977719677544270100929536, by decide, by decide⟩
-    have hc : (-33122493848022796070335730617521040092330558766777671593183232:Int) = (3:Int)^(2+1)*(-1226759031408251706308730763611890373790020695065839688636416:Int) := by decide
-    rw [hc,Int.mul_assoc]
+  · have hb : TernaryOrder
+        (returnDefect 9 1 8 (1287599767586799477097898430908365823 : Int)) 2 := by
+      refine ⟨-143066640842977719677544270100929536, ?_, by decide⟩
+      norm_num [returnDefect]
+    have hc :
+        ((8 - 9 : Int) *
+          33122493848022796070335730617521040092330558766777671593183232) =
+        (3 : Int)^(2+1) *
+          (-1226759031408251706308730763611890373790020695065839688636416 : Int) := by
+      norm_num
+    rw [hc, Int.mul_assoc]
     exact ternary_multiple_perturbation hb _
 
 #print axioms switch_source_endpoint_0
