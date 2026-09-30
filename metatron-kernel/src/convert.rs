@@ -122,12 +122,14 @@ pub(crate) fn convert_with_policy_in_context(
     initial_depth: usize,
     context: &[TypeValue],
 ) -> Judgment<()> {
+    let mut congruence_attempts = 32;
     convert_in_context_with_congruence(
         checker, left, right, budget, delta_policy, initial_depth, context, 0,
+        &mut congruence_attempts,
     )
 }
 
-// Speculative congruence has a separate depth bound. Exhaustion merely
+// Speculative congruence has shared attempt and depth bounds. Exhaustion merely
 // declines this sufficient rule and leaves the established conversion path.
 fn convert_in_context_with_congruence(
     checker: &TypeChecker<'_>,
@@ -138,6 +140,7 @@ fn convert_in_context_with_congruence(
     initial_depth: usize,
     context: &[TypeValue],
     congruence_depth: usize,
+    congruence_attempts: &mut usize,
 ) -> Judgment<()> {
     #[cfg(test)]
     TRUSTED_CONVERSION_CALLS.with(|calls| calls.set(calls.get() + 1));
@@ -279,7 +282,8 @@ fn convert_in_context_with_congruence(
                 // argument while proving id c = c inside that argument.
                 // This is a positive-only rule: failure of a premise says
                 // nothing about the applications (the function can ignore it).
-                if congruence_depth < 16 {
+                if congruence_depth < 16 && *congruence_attempts > 0 {
+                    *congruence_attempts -= 1;
                     let probe_budget = remaining.min(256);
                     let opaque_left =
                         machine.expose(left.clone(), Transparency::Opaque, probe_budget);
@@ -305,6 +309,7 @@ fn convert_in_context_with_congruence(
                                 depth,
                                 context,
                                 congruence_depth + 1,
+                                congruence_attempts,
                             )
                             .is_proven()
                         })

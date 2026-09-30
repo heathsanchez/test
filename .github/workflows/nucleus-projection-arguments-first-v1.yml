@@ -57,6 +57,29 @@ jobs:
           unzip -q /tmp/current.zip -d /tmp/a2
           tar -xzf "$(find /tmp/a2 -name lean-arena-tests.tar.gz -print -quit)" -C /tmp/current
 
+      - name: Check target and protected projection controls first
+        run: |
+          mkdir -p metatron-kernel/evidence-out/projection-arguments-first-v1
+          python3 - <<'PY'
+          import json, pathlib, subprocess, time
+          rows=[]
+          cases=[("good","perf/proj-stuck-struct"),("bad","bugs/proj-of-stuck-prop"),("bad","bugs/proj-of-subst-prop"),("bad","bugs/rec-of-subst-prop")]
+          for bucket,name in cases:
+              p=pathlib.Path("/tmp/current")/bucket/(name+".ndjson")
+              t=time.perf_counter_ns()
+              with p.open("rb") as f:
+                  try:
+                      q=subprocess.run(["/tmp/nucleus-candidate"],stdin=f,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE,timeout=15)
+                      row={"test":name,"rc":q.returncode,"ns":time.perf_counter_ns()-t,"stderr":q.stderr.decode(errors="replace").splitlines()[-20:]}
+                  except subprocess.TimeoutExpired:
+                      row={"test":name,"rc":124,"ns":time.perf_counter_ns()-t}
+              rows.append(row)
+              print(json.dumps(row),flush=True)
+          pathlib.Path("metatron-kernel/evidence-out/projection-arguments-first-v1/preflight.json").write_text(json.dumps(rows,indent=2)+"\n")
+          assert rows[0]["rc"]==0,rows[0]
+          assert all(r["rc"] in (1,2) for r in rows[1:]),rows[1:]
+          PY
+
       - name: Differential reclosure on both round boundaries
         run: |
           set -euo pipefail
