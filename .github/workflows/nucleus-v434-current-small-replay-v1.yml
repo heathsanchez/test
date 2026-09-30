@@ -1,0 +1,204 @@
+name: Nucleus v4.34 Current Small Replay v1
+
+on:
+  push:
+    branches: [nucleus-v434-current-small-replay-v1]
+    paths:
+      - ".github/workflows/nucleus-v434-current-small-replay-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-v434-current-small-replay-v1
+  cancel-in-progress: true
+
+env:
+  NUCLEUS_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  ROUND1_ARTIFACT: "10712869614"
+  CURRENT_ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
+  CURRENT_ARENA_RUN: "36700836088"
+  CURRENT_TEST_ARTIFACT: "11090525747"
+
+jobs:
+  replay:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Prove independent runtime boundary and build exact authority
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD~1)" = "$NUCLEUS_SHA"
+          ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
+          grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen Round 1 and current v4.34 Arena tarballs
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/round1 /tmp/current /tmp/r1-art /tmp/current-art
+          mkdir -p /tmp/round1 /tmp/current /tmp/r1-art /tmp/current-art
+
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ROUND1_ARTIFACT/zip > /tmp/r1.zip
+          unzip -q /tmp/r1.zip -d /tmp/r1-art
+          tar -xzf /tmp/r1-art/lean-arena-tests.tar.gz -C /tmp/round1
+
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$CURRENT_TEST_ARTIFACT/zip > /tmp/current.zip
+          unzip -q /tmp/current.zip -d /tmp/current-art
+          tarball="$(find /tmp/current-art -type f -name 'lean-arena-tests.tar.gz' -print -quit)"
+          test -n "$tarball"
+          tar -xzf "$tarball" -C /tmp/current
+
+          echo "ROUND1_COUNT=$(find /tmp/round1 -type f -name '*.ndjson' | wc -l)"
+          echo "CURRENT_COUNT=$(find /tmp/current -type f -name '*.ndjson' | wc -l)"
+          sha256sum /tmp/r1-art/lean-arena-tests.tar.gz "$tarball"
+
+      - name: Replay unchanged independent Nucleus across both corpora
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/v434-current-small-replay-v1
+          python3 - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          binary = pathlib.Path("metatron-kernel/target/release/metatron-kernel").resolve()
+          outdir = pathlib.Path("metatron-kernel/evidence-out/v434-current-small-replay-v1")
+
+          def run_corpus(root):
+              root = pathlib.Path(root)
+              rows = []
+              for bucket, expected in [("good", 0), ("bad", 1)]:
+                  bdir = root / bucket
+                  if not bdir.exists():
+                      continue
+                  for p in sorted(bdir.rglob("*.ndjson")):
+                      name = str(p.relative_to(bdir)).removesuffix(".ndjson")
+                      with p.open("rb") as f:
+                          t0 = time.perf_counter_ns()
+                          try:
+                              q = subprocess.run(
+                                  [str(binary)],
+                                  stdin=f,
+                                  stdout=subprocess.DEVNULL,
+                                  stderr=subprocess.PIPE,
+                                  timeout=180,
+                              )
+                              rc = q.returncode
+                              err = q.stderr.decode(errors="replace")
+                              timed_out = False
+                          except subprocess.TimeoutExpired as e:
+                              rc = 124
+                              err = (e.stderr or b"").decode(errors="replace") if isinstance(e.stderr, bytes) else str(e.stderr or "")
+                              timed_out = True
+                          dt = time.perf_counter_ns() - t0
+                      rows.append({
+                          "test": name,
+                          "expected": expected,
+                          "rc": rc,
+                          "ns": dt,
+                          "timed_out": timed_out,
+                          "stderr_tail": err.splitlines()[-20:],
+                      })
+              return rows
+
+          round1 = run_corpus("/tmp/round1")
+          current = run_corpus("/tmp/current")
+
+          def summarize(rows):
+              wrong = [r for r in rows if r["rc"] in (0,1) and r["rc"] != r["expected"]]
+              residual = [r for r in rows if r["rc"] in (2,3)]
+              abnormal = [r for r in rows if r["rc"] not in (0,1,2,3)]
+              return {
+                  "tests": len(rows),
+                  "accept": sum(r["expected"] == 0 and r["rc"] == 0 for r in rows),
+                  "reject": sum(r["expected"] == 1 and r["rc"] == 1 for r in rows),
+                  "residual": len(residual),
+                  "wrong": len(wrong),
+                  "abnormal": len(abnormal),
+                  "wrong_rows": wrong,
+                  "abnormal_rows": abnormal,
+                  "residual_tests": [r["test"] for r in residual],
+              }
+
+          r1s = summarize(round1)
+          curs = summarize(current)
+
+          old = {r["test"]: r for r in round1}
+          cur = {r["test"]: r for r in current}
+          shared = sorted(set(old) & set(cur))
+          changed_shared = [
+              {
+                  "test": n,
+                  "round1_rc": old[n]["rc"],
+                  "current_rc": cur[n]["rc"],
+                  "expected_round1": old[n]["expected"],
+                  "expected_current": cur[n]["expected"],
+              }
+              for n in shared
+              if old[n]["rc"] != cur[n]["rc"] or old[n]["expected"] != cur[n]["expected"]
+          ]
+
+          report = {
+              "schema": "nucleus-v434-current-small-replay-v1",
+              "nucleus_authority_sha": os.environ["NUCLEUS_SHA"],
+              "round1_artifact": int(os.environ["ROUND1_ARTIFACT"]),
+              "current_arena_sha": os.environ["CURRENT_ARENA_SHA"],
+              "current_arena_run": int(os.environ["CURRENT_ARENA_RUN"]),
+              "current_test_artifact": int(os.environ["CURRENT_TEST_ARTIFACT"]),
+              "boundary": "public downloadable fixed-outcome test tarball; large >10MB corpora excluded",
+              "round1": r1s,
+              "current": curs,
+              "shared_tests": len(shared),
+              "changed_shared": changed_shared,
+              "current_only": sorted(set(cur) - set(old)),
+              "round1_only": sorted(set(old) - set(cur)),
+          }
+
+          (outdir / "result.json").write_text(json.dumps(report, indent=2, sort_keys=True) + "\n")
+          (outdir / "round1_rows.json").write_text(json.dumps(round1, indent=2, sort_keys=True) + "\n")
+          (outdir / "current_rows.json").write_text(json.dumps(current, indent=2, sort_keys=True) + "\n")
+
+          print(json.dumps({
+              "round1": {k:v for k,v in r1s.items() if not k.endswith("_rows") and k != "residual_tests"},
+              "current": {k:v for k,v in curs.items() if not k.endswith("_rows") and k != "residual_tests"},
+              "shared_tests": len(shared),
+              "changed_shared": changed_shared,
+              "current_only": report["current_only"],
+              "round1_only": report["round1_only"],
+          }, indent=2, sort_keys=True))
+
+          # Re-establish the durable old authority exactly.
+          assert r1s["tests"] == 193, r1s
+          assert r1s["accept"] == 103, r1s
+          assert r1s["reject"] == 60, r1s
+          assert r1s["residual"] == 30, r1s
+          assert r1s["wrong"] == 0 and r1s["abnormal"] == 0, r1s
+          PY
+
+      - name: Upload replay evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-v434-current-small-replay-${{ github.sha }}
+          path: metatron-kernel/evidence-out/v434-current-small-replay-v1
+          if-no-files-found: error
+
+      - name: Zero-wrong gate on current round
+        run: |
+          python3 - <<'PY'
+          import json
+          r=json.load(open("metatron-kernel/evidence-out/v434-current-small-replay-v1/result.json"))
+          c=r["current"]
+          assert c["wrong"] == 0, c["wrong_rows"]
+          assert c["abnormal"] == 0, c["abnormal_rows"]
+          PY
