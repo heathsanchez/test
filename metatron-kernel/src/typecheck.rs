@@ -471,6 +471,65 @@ impl<'a> TypeChecker<'a> {
         remaining: &mut usize,
         conversion_refutation_is_unknown: bool,
     ) -> Judgment<()> {
+        // Bidirectional lambda checking: when the expected type exposes a Pi,
+        // check the annotated domain and body directly under one shared fresh
+        // binder instead of inferring a semantic Pi first and then comparing
+        // two independently reified telescopes.
+        if let Some(Expr::Lam { domain, body }) = self.expression(expression)
+            && let Some((expected_domain, PiBody::Closure(expected_body))) =
+                self.pi_view(Judgment::proven(expected.clone(), "expected-lambda-type"), *remaining)
+        {
+            let domain_type = self.infer_in(*domain, context, frame, remaining);
+            match self.sort_level(domain_type, *remaining) {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction } => {
+                    return Judgment::Refuted { obstruction };
+                }
+                Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+            }
+
+            let declared_domain = TypeValue::Term(self.closure(*domain, frame.clone()));
+            let domain_conversion = crate::convert::convert_with_policy_in_context(
+                self,
+                &declared_domain,
+                &expected_domain,
+                *remaining,
+                self.delta_policy,
+                context.len(),
+                context,
+            );
+            match domain_conversion {
+                Judgment::Proven { .. } => {}
+                Judgment::Refuted { obstruction }
+                    if conversion_refutation_is_unknown
+                        && !definite_conversion_obstruction(obstruction.0) =>
+                {
+                    return Judgment::unknown(obstruction.0);
+                }
+                Judgment::Refuted { obstruction } => {
+                    return Judgment::Refuted { obstruction };
+                }
+                Judgment::Unknown { residual } => return Judgment::Unknown { residual },
+            }
+
+            let Some(free) = fresh_local(context.len()) else {
+                return Judgment::unknown("binder-depth-overflow");
+            };
+            let mut extended = context.to_vec();
+            extended.push(declared_domain);
+            let body_frame = frame.extend_free(free);
+            let expected_body =
+                TypeValue::Term(expected_body.under_free(free));
+            return self.check_in(
+                *body,
+                &expected_body,
+                &extended,
+                &body_frame,
+                remaining,
+                conversion_refutation_is_unknown,
+            );
+        }
+
         let inferred = self.infer_in(expression, context, frame, remaining);
         match inferred {
             Judgment::Proven { value, .. } => {
