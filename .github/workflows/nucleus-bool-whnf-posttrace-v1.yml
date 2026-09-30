@@ -75,6 +75,7 @@ jobs:
                   env['NUCLEUS_TRACE_BOOL_WHNF']='1'
                   env['NUCLEUS_TRACE_APP_FUNCTION_TYPE']='1'
                   env['NUCLEUS_TRACE_CONVERSION_EXPOSURE']='1'
+                  env['NUCLEUS_TRACE_PROJECTION_MISMATCH']='1'
               with p.open('rb') as f:
                   q=subprocess.run([str(binary)],stdin=f,stdout=subprocess.DEVNULL,
                                    stderr=subprocess.PIPE,timeout=180,env=env)
@@ -92,6 +93,7 @@ jobs:
               whnf=[x for x in cerr.splitlines() if 'NUCLEUS_BOOL_WHNF:' in x]
               app=[x for x in cerr.splitlines() if 'NUCLEUS_APP_FUNCTION_TYPE:' in x]
               conv=[x for x in cerr.splitlines() if 'NUCLEUS_CONVERSION_EXPOSURE:' in x]
+              proj=[x for x in cerr.splitlines() if 'NUCLEUS_PROJECTION_MISMATCH:' in x]
               bdown=[x for x in berr.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
               cdown=[x for x in cerr.splitlines() if 'NUCLEUS_DOWNSTREAM:' in x]
               assert whnf,(name,cerr[-12000:])
@@ -104,6 +106,8 @@ jobs:
                   'app_tail':app[-40:],
                   'conversion_exposure_count':len(conv),
                   'conversion_exposure':conv[-40:],
+                  'projection_mismatch_count':len(proj),
+                  'projection_mismatch':proj[-80:],
                   'base_neutral_count':len(bneutral),
                   'candidate_neutral_count':len(cneutral),
                   'base_neutral_tail':bneutral[-30:],
@@ -128,6 +132,7 @@ jobs:
                   'app_head':v['app_head'][:8],
                   'app_tail':v['app_tail'][-8:],
                   'conversion_exposure':v['conversion_exposure'][-8:],
+                  'projection_mismatch':v['projection_mismatch'][-12:],
                   'base_neutral_tail':v['base_neutral_tail'][-6:],
                   'candidate_neutral_tail':v['candidate_neutral_tail'][-6:],
                   'base_downstream_tail':v['base_downstream_tail'][-2:],
