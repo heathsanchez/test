@@ -1,0 +1,40 @@
+name: Collatz Original Source Mismatch
+on:
+  push:
+    branches: [collatz-original-source-mismatch-20260930]
+    paths:
+      - 'experiments/collatz_original_source_mismatch_20260930.py'
+      - '.github/workflows/collatz-original-source-mismatch.yml'
+permissions: {contents: read}
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run original-source tournament
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-original-source-mismatch
+          PYTHONPATH=experiments python -u experiments/collatz_original_source_mismatch_20260930.py             | tee evidence/collatz-original-source-mismatch/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-original-source-mismatch/result.json'))
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          print('PRECISION_UP_BOTH',d['precision_up_both'])
+          print('SURVIVORS',d['survivors'])
+          for split in ('train','heldout'):
+              print(split,'SWITCHES',d[split]['switches'],'TAIL',d[split]['source_tail_switches'])
+              for k,v in d[split]['tests'].items():
+                  print(split,k,'PASS',v['pass'],'FAIL',v['fail'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-original-source-mismatch
+          path: evidence/collatz-original-source-mismatch
+          if-no-files-found: error
