@@ -1,0 +1,80 @@
+name: Collatz Backward Symbolic Cover 20260930
+on:
+  push:
+    branches: [collatz-backward-symbolic-cover-20260930]
+    paths:
+      - '.github/workflows/collatz-backward-symbolic-cover-20260930.yml'
+      - 'formal/Collatz/BackwardParameterCover.lean'
+      - 'experiments/collatz_backward_symbolic_cover_20260930.py'
+      - 'evidence/collatz-backward-symbolic-cover-20260930/**'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check formal spine and exact source-parameter partition bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-backward-symbolic-cover-20260930/hosted
+          lake env lean --version | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/toolchain.txt
+          lake build CollatzFinal | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/spine.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/lifting.log
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/BackwardParameterCover.olean formal/Collatz/BackwardParameterCover.lean | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/cover-bridge.log
+      - name: Reproduce universal cell partition and compile the certified tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -u experiments/collatz_backward_symbolic_cover_20260930.py | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/replay.log
+          python - <<'PY'
+          import json,hashlib
+          actual=json.load(open('backward-cover-result.json'))
+          claimed=actual.pop('certificate_sha256')
+          assert hashlib.sha256(json.dumps(actual,sort_keys=True,separators=(',',':')).encode()).hexdigest()==claimed
+          actual['certificate_sha256']=claimed
+          summary={k:v for k,v in actual.items() if k!='unresolved_cells'}
+          summary['unresolved_cell_count']=len(actual['unresolved_cells'])
+          expected=json.load(open('evidence/collatz-backward-symbolic-cover-20260930/local-summary.json'))
+          assert summary==expected
+          assert actual['global_collatz']=='UNKNOWN'
+          assert len(actual['unresolved_cells'])==22485
+          print('EXACT_SYMBOLIC_PARTITION_AND_CERTIFIED_TREE_REPRODUCED')
+          PY
+          cp backward-cover-result.json backward-cover-certificates.json GeneratedBackwardCover.lean formal/Collatz/BackwardParameterCover.lean evidence/collatz-backward-symbolic-cover-20260930/hosted/
+      - name: Kernel check every closed cell, certified cover, and explicit residual
+        shell: bash
+        run: |
+          set -euo pipefail
+          lake env lean -DautoImplicit=false GeneratedBackwardCover.lean | tee evidence/collatz-backward-symbolic-cover-20260930/hosted/cover.log
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          p=Path('evidence/collatz-backward-symbolic-cover-20260930/hosted')
+          logs=(p/'cover-bridge.log').read_text()+(p/'cover.log').read_text()
+          assert 'sorryAx' not in logs and 'Lean.ofReduceBool' not in logs
+          assert len(re.findall(r"backward_cell_exit_[0-9]+.*depends on axioms",logs))==3294
+          for name in ('backward_closed_leaf_count','backward_residual_leaf_count','backward_covered_parameter_slots','backward_parameter_zero_closed','backward_parameter_one_unresolved','family_exit_outside_exact_residual'):
+              assert name in logs
+          print('3294_UNIVERSAL_SOURCE_CELLS_KERNEL_CHECKED')
+          print('CERTIFIED_TREE_COVERS_239659_OF_262144_PARAMETER_RESIDUES')
+          print('22485_PARAMETER_RESIDUE_CELLS_EXPLICITLY_UNRESOLVED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-backward-symbolic-cover-20260930/hosted/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-backward-symbolic-cover-20260930
+          path: evidence/collatz-backward-symbolic-cover-20260930/hosted
+          if-no-files-found: error
