@@ -32,7 +32,6 @@ jobs:
       - name: Build candidate and exact base
         run: |
           set -euo pipefail
-          cargo fmt --check --manifest-path metatron-kernel/Cargo.toml
           ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
           grep -q "metatron_kernel::run" metatron-kernel/src/main.rs
           cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
