@@ -626,6 +626,14 @@ fn compare_values(
                 structure: right_structure,
             },
         ) if left_type == right_type && left_index == right_index => {
+            if same_rigid_application_congruence(
+                checker,
+                left_structure,
+                right_structure,
+                budget,
+            ) {
+                return Judgment::proven((), "stuck-projection-rigid-application-congruence");
+            }
             work.push((
                 TypeValue::Term(left_structure.clone()),
                 TypeValue::Term(right_structure.clone()),
@@ -654,6 +662,65 @@ fn compare_values(
         _ => return Judgment::refuted("rigid-value-constructor-mismatch"),
     }
     Judgment::proven((), "rigid-value-comparison")
+}
+
+fn same_rigid_application_congruence(
+    checker: &TypeChecker<'_>,
+    left: &Closure,
+    right: &Closure,
+    budget: usize,
+) -> bool {
+    if budget == 0 {
+        return false;
+    }
+
+    fn rigid_application_spine(
+        checker: &TypeChecker<'_>,
+        closure: &Closure,
+    ) -> Option<(Closure, Vec<Closure>)> {
+        let mut current = resolve_local_closure(checker, closure)?;
+        let mut arguments = Vec::new();
+        loop {
+            match checker.expression(current.expr)? {
+                Expr::App { fun, arg } => {
+                    arguments.push(current.sibling(*arg, current.env.clone()));
+                    current = current.sibling(*fun, current.env.clone());
+                    current = resolve_local_closure(checker, &current)?;
+                }
+                Expr::Const { .. } => {
+                    arguments.reverse();
+                    return Some((current, arguments));
+                }
+                _ => return None,
+            }
+        }
+    }
+
+    let Some((left_head, left_args)) = rigid_application_spine(checker, left) else {
+        return false;
+    };
+    let Some((right_head, right_args)) = rigid_application_spine(checker, right) else {
+        return false;
+    };
+    if left_args.is_empty()
+        || left_args.len() != right_args.len()
+        || left_head.expr != right_head.expr
+        || left_head.levels != right_head.levels
+    {
+        return false;
+    }
+
+    left_args.iter().zip(&right_args).all(|(left, right)| {
+        matches!(
+            convert(
+                checker,
+                &TypeValue::Term(left.clone()),
+                &TypeValue::Term(right.clone()),
+                budget.saturating_sub(1),
+            ),
+            Judgment::Proven { .. }
+        )
+    })
 }
 
 fn compare_nat_literal_neutral(
