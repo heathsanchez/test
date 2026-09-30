@@ -1,4 +1,4 @@
-import Collatz.GuardedDyadicSwitch
+import Collatz.AffineBudget
 
 namespace CollatzFinal.SourceProduct
 
