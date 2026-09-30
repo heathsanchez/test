@@ -1,0 +1,45 @@
+name: Collatz Natural Bit Bar
+on:
+  push:
+    branches: [collatz-natural-bit-bar-20260930]
+    paths:
+      - 'formal/Collatz/NaturalBitBar.lean'
+      - '.github/workflows/collatz-natural-bit-bar-20260930.yml'
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean and build parent
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake build CollatzFinal
+      - name: Kernel-check natural bit bar
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-natural-bit-bar-20260930
+          lake env lean -DautoImplicit=false formal/Collatz/NaturalBitBar.lean \
+            | tee evidence/collatz-natural-bit-bar-20260930/lean.log
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('evidence/collatz-natural-bit-bar-20260930/lean.log').read_text()
+          assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
+          src=Path('formal/Collatz/NaturalBitBar.lean').read_text()
+          import re
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          print('NATURAL_SWITCH_TAIL_ZERO_KERNEL_CHECKED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-natural-bit-bar-20260930
+          path: evidence/collatz-natural-bit-bar-20260930
+          if-no-files-found: error
