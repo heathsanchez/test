@@ -1,0 +1,239 @@
+name: ACC Number1 Physical Atlas Cut V1
+
+on:
+  push:
+    branches:
+      - acc-number1-physical-atlas-cut-v1
+    paths:
+      - ".github/workflows/acc-number1-physical-atlas-cut-v1.yml"
+      - "acc_competitive/nielsen_physical_atlas_cut_v1.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: acc-number1-physical-atlas-cut-v1
+  cancel-in-progress: false
+
+jobs:
+  freeze:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-physical-atlas-cut-v1
+      - name: Freeze live number-one singleton frontier
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_physical
+          python3 - <<'PY'
+          import json,pathlib,urllib.request,urllib.parse
+          B='https://server-9527.sair.foundation'
+          H={'User-Agent':'Mozilla/5.0','Accept':'application/json'}
+          root=pathlib.Path('acc_competitive/number1_physical')
+          def get(path):
+              req=urllib.request.Request(B+path,headers=H)
+              with urllib.request.urlopen(req,timeout=60) as r:
+                  return json.loads(r.read().decode())
+          def data(o): return o.get('data',o)
+          lb=data(get('/api/acc/leaderboard?problem=ac'))
+          sid=lb['snapshotId']; leader=lb['items'][0]
+          tid=leader['team']['teamId']; name=leader['team'].get('teamName') or tid
+          items=[]; cursor=None
+          while True:
+              q={'problem':'ac','snapshotId':sid,'limit':100}
+              if cursor:q['cursor']=cursor
+              dd=data(get('/api/acc/leaderboard/teams/'+urllib.parse.quote(tid,safe='')+'/challenges?'+urllib.parse.urlencode(q)))
+              items.extend(dd.get('items',[])); cursor=dd.get('nextCursor')
+              if not cursor:break
+          cand=[x for x in items if x.get('kTeams')==1 and isinstance(x.get('currentBestLength'),int)]
+          cand.sort(key=lambda x:(-x['currentBestLength'],x['challengeId']))
+          ids=[x['challengeId'] for x in cand]
+          if not ids:raise SystemExit('no leader singleton records')
+          for problem in ('ac','stable_ac'):
+              snap=get('/api/acc/discoveries/snapshot?problem='+problem)
+              (root/f'snapshot_{problem}.json').write_text(json.dumps(snap,indent=2,sort_keys=True)+'\n')
+          (root/'leader.json').write_text(json.dumps({
+              'teamId':tid,'teamName':name,'rank':leader['rank'],'score':leader['score'],
+              'currentBestCount':leader['currentBestCount'],'snapshotId':sid,'singleton_count':len(ids)
+          },indent=2,sort_keys=True)+'\n')
+          for shard in range(32):
+              (root/f'shard_{shard}.json').write_text(json.dumps(ids[shard::32],indent=2)+'\n')
+          print('PHYSICAL_NUMBER1_FRONTIER',json.dumps({
+              'leader':name,'score':leader['score'],'leader_records':leader['currentBestCount'],
+              'singletons':len(ids),'max_best':cand[0]['currentBestLength'],'min_best':cand[-1]['currentBestLength']
+          },sort_keys=True))
+          PY
+      - name: Recover latest verified Proof Atlas
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/atlas
+          ID="$(gh api 'repos/heathsanchez/test/actions/artifacts?name=acc-proof-atlas-state&per_page=1' --jq '.artifacts[0].id // empty')"
+          test -n "$ID"
+          gh api "repos/heathsanchez/test/actions/artifacts/$ID/zip" > /tmp/atlas.zip
+          unzip -q /tmp/atlas.zip -d /tmp/atlas
+          test -n "$(find /tmp/atlas -name proof_atlas.sqlite -print -quit)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-physical-freeze
+          path: acc_competitive/number1_physical/
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-physical-atlas
+          path: /tmp/atlas/
+          retention-days: 1
+
+  search:
+    needs: freeze
+    strategy:
+      fail-fast: false
+      max-parallel: 16
+      matrix:
+        shard: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31]
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-physical-atlas-cut-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-physical-freeze
+          path: /tmp/freeze
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-physical-atlas
+          path: /tmp/atlas
+      - name: Fetch pinned authorities
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Avi161/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 5ae1bd8eda6d80dfbea51680636f825da19fb802
+          python3 -m pip install --quiet numpy numba
+      - name: Cut physical Nielsen prefixes into Proof Atlas
+        run: |
+          set -euo pipefail
+          OUT="acc_competitive/number1_physical_shard_${{ matrix.shard }}"
+          python3 acc_competitive/nielsen_physical_atlas_cut_v1.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --atlas "$(find /tmp/atlas -name proof_atlas.sqlite | head -1)"             --snapshot-ac /tmp/freeze/snapshot_ac.json             --snapshot-stable /tmp/freeze/snapshot_stable_ac.json             --target-ids-file "/tmp/freeze/shard_${{ matrix.shard }}.json"             --out-dir "$OUT"             --budget 1000 | tee "$OUT.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number1-physical-shard-${{ matrix.shard }}
+          path: |
+            acc_competitive/number1_physical_shard_${{ matrix.shard }}/
+            acc_competitive/number1_physical_shard_${{ matrix.shard }}.log
+          retention-days: 90
+          if-no-files-found: warn
+
+  pool:
+    needs: search
+    if: always() && needs.search.result != 'cancelled'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-physical-atlas-cut-v1
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: acc-number1-physical-shard-*
+          path: /tmp/shards
+          merge-multiple: false
+      - name: Pool strict verified wins
+        run: |
+          set -euo pipefail
+          mkdir -p acc_competitive/number1_physical_pool
+          python3 - <<'PY'
+          import json,pathlib
+          root=pathlib.Path('/tmp/shards'); rows=[]; best={}
+          for p in root.rglob('results.json'): rows.extend(json.loads(p.read_text()))
+          for p in root.rglob('pending_submission.txt'):
+              for line in p.read_text().splitlines():
+                  if ':' not in line: continue
+                  cid,raw=line.split(':',1)
+                  try:moves=list(json.loads(raw.strip()))
+                  except Exception:continue
+                  if cid not in best or len(moves)<len(best[cid]):best[cid]=moves
+          out=pathlib.Path('acc_competitive/number1_physical_pool')
+          rows.sort(key=lambda x:x['challenge_id'])
+          (out/'results.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          (out/'pending_submission.txt').write_text('\n'.join(
+              f'{cid}: {json.dumps(m,separators=(",",":"))}' for cid,m in sorted(best.items())
+          )+('\n' if best else ''))
+          report={
+              'targets':len(rows),'mixed_solved':sum(bool(r.get('solved')) for r in rows),
+              'contact_targets':sum((r.get('atlas_contacts') or 0)>0 for r in rows),
+              'contacts':sum(r.get('atlas_contacts') or 0 for r in rows),
+              'strict_ac':sum(bool(r.get('strict_ac')) for r in rows),
+              'strict_stable':sum(bool(r.get('strict_stable')) for r in rows),
+              'pending_rows':len(best),'errors':sum('error' in r for r in rows)
+          }
+          (out/'report.json').write_text(json.dumps(report,indent=2,sort_keys=True)+'\n')
+          print('PHYSICAL_NUMBER1_POOL',json.dumps(report,sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: acc-number1-physical-pool
+          path: acc_competitive/number1_physical_pool/
+          retention-days: 90
+
+  publish:
+    needs: pool
+    if: always() && needs.pool.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SAIR_API_KEY: ${{ secrets.SAIR_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: acc-number1-physical-atlas-cut-v1
+      - uses: actions/download-artifact@v4
+        with:
+          name: acc-number1-physical-pool
+          path: /tmp/pool
+      - name: Fetch pinned official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+      - name: Fresh strict-only packed publication
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/pool/pending_submission.txt ]; then
+            echo "NO_STRICT_WIN"
+            exit 0
+          fi
+          mkdir -p acc_competitive/number1_physical_publish
+          cp /tmp/pool/pending_submission.txt acc_competitive/number1_physical_publish/candidates.txt
+          python3 andrews_curtis/continuous_aggregate_v5.py             --acc-root /tmp/acc             --glob 'acc_competitive/number1_physical_publish/candidates.txt'             --out-dir acc_competitive/number1_physical_publish/out             --cycle 0 | tee acc_competitive/number1_physical_publish/publish.log
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('acc_competitive/number1_physical_publish/out/report.json')
+          if not p.exists(): raise SystemExit('missing publication report')
+          r=json.loads(p.read_text())
+          if r.get('quota_reason') not in ('ok','daily_quota_exhausted'): raise SystemExit('unsafe quota authority')
+          if r.get('selected_scoring_ties',0): raise SystemExit('ties selected')
+          if r.get('selected_rows',0)!=r.get('selected_strict_improvements',0): raise SystemExit('non-strict selected')
+          print('PHYSICAL_NUMBER1_PUBLICATION',json.dumps({
+            'strict':r.get('selected_strict_improvements'),'submission_id':r.get('submission_id'),
+            'quota_used_pre':r.get('daily_submissions_used_pre'),
+            'quota_remaining_pre':r.get('daily_submissions_remaining_pre'),
+            'quota_blocked':r.get('quota_blocked')
+          },sort_keys=True))
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-number1-physical-publication
+          path: acc_competitive/number1_physical_publish/
+          retention-days: 90
+          if-no-files-found: warn
