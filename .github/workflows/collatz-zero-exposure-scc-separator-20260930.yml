@@ -47,10 +47,11 @@ jobs:
           b=json.load(open(base+'composition.json'))
           d=json.load(open(base+'defect-kill.json'))
           assert a['simultaneously_admissible'] is False
-          assert b['verdict']=='NO_SYMBOLIC_TWO_MAP_CYCLE'
-          assert b['cycle_class_count']==0
+          assert b['verdict']=='SYMBOLIC_CYCLE_RESIDUAL'
+          assert b['cycle_class_count']==1
           assert d['verdict']=='SOLE_SYMBOLIC_RECHARGE_SCC_NOT_INFINITELY_REPEATABLE'
-          print('ZERO_EXPOSURE_SCC_SYMBOLICALLY_KILLED')
+          print('ZERO_EXPOSURE_SCC_HAS_ONE_SYMBOLIC_CYCLE_CLASS')
+          print('ZERO_EXPOSURE_SCC_INFINITE_REPEAT_KILLED_BY_DEFECT')
           print('GLOBAL_COLLATZ_UNKNOWN')
           PY
       - uses: actions/upload-artifact@v4
