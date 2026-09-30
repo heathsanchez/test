@@ -1,0 +1,177 @@
+name: Nucleus Dogwood Live Events v2
+
+on:
+  push:
+    branches: [nucleus-dogwood-live-events-v2]
+    paths:
+      - ".github/workflows/nucleus-dogwood-live-events-v2.yml"
+      - "experiments/nucleus-dogwood-live-events-v2/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: nucleus-dogwood-live-events-v2
+  cancel-in-progress: true
+
+env:
+  BASE_SHA: d2bdeadceb1bb6d0695f15126fb23b50f732c4ce
+  CANDIDATE_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  QUAL_RUN: "36638427344"
+  QUAL_ARTIFACT: "11065775422"
+  QUAL_DIGEST: "sha256:2bdd0c6f94f014e698eb59dd4b53effc2f890a3e3628795e6033fcd15c4e2024"
+  ARENA_ARTIFACT: "10712869614"
+  DOGWOOD_SHA: 996d756de1013b7ae209a14f566a80375a59f2f0
+  TARGET_TEST: other/proj-of-prop
+  EXP: experiments/nucleus-dogwood-live-events-v2
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify and fetch exact real Nucleus qualification
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          run_json="$(gh api "repos/heathsanchez/test/actions/runs/$QUAL_RUN")"
+          test "$(jq -r .head_sha <<<"$run_json")" = "$CANDIDATE_SHA"
+          test "$(jq -r .conclusion <<<"$run_json")" = "success"
+
+          meta="$(gh api "repos/heathsanchez/test/actions/artifacts/$QUAL_ARTIFACT")"
+          test "$(jq -r .id <<<"$meta")" = "$QUAL_ARTIFACT"
+          test "$(jq -r .expired <<<"$meta")" = "false"
+          test "$(jq -r .digest <<<"$meta")" = "$QUAL_DIGEST"
+          test "$(jq -r '.workflow_run.head_sha' <<<"$meta")" = "$CANDIDATE_SHA"
+
+          rm -rf /tmp/qual /tmp/qual.zip
+          mkdir -p /tmp/qual
+          gh api "repos/heathsanchez/test/actions/artifacts/$QUAL_ARTIFACT/zip" > /tmp/qual.zip
+          unzip -q /tmp/qual.zip -d /tmp/qual
+          RESULT="$(find /tmp/qual -name result.json -print -quit)"
+          test -n "$RESULT"
+          cp "$RESULT" /tmp/real-result.json
+
+          jq -e --arg b "$BASE_SHA" --arg c "$CANDIDATE_SHA" --arg t "$TARGET_TEST" '
+            .base_sha == $b
+            and .candidate_sha == $c
+            and .base_residual == 31
+            and .candidate_residual == 30
+            and .native_accept == 103
+            and .native_reject == 60
+            and (.wrong | length) == 0
+            and (.regressions | length) == 0
+            and (.errors | length) == 0
+            and (.false_accepts | length) == 0
+            and (.false_rejects | length) == 0
+            and ([.changes[] | select(.test == $t and .base == 2 and .candidate == 1 and .expected == 1)] | length) == 1
+          ' /tmp/real-result.json
+
+      - name: Generate lifecycle histories from machine evidence
+        run: |
+          set -euo pipefail
+          mkdir -p "$EXP/evidence-out"
+          test ! -e "$EXP/valid.log"
+          test ! -e "$EXP/tampered.log"
+
+          python3 "$EXP/compile_events.py"             --result /tmp/real-result.json             --test "$TARGET_TEST"             --corpus "arena-193:$ARENA_ARTIFACT"             --evidence "$QUAL_ARTIFACT:${QUAL_DIGEST#sha256:}"             --out "$EXP/evidence-out/valid.log"             | tee "$EXP/evidence-out/valid-compiler.json"
+
+          python3 - <<'PY'
+          import json
+          p=json.load(open("/tmp/real-result.json"))
+          p["wrong"]=[{"test":"synthetic/wrong","candidate":0,"expected":1}]
+          json.dump(p,open("/tmp/tampered-result.json","w"),indent=2,sort_keys=True)
+          PY
+
+          python3 "$EXP/compile_events.py"             --result /tmp/tampered-result.json             --test "$TARGET_TEST"             --corpus "arena-193:$ARENA_ARTIFACT"             --evidence "$QUAL_ARTIFACT:${QUAL_DIGEST#sha256:}"             --out "$EXP/evidence-out/tampered.log"             | tee "$EXP/evidence-out/tampered-compiler.json"
+
+          grep -q 'FullReclosureGreen' "$EXP/evidence-out/valid.log"
+          ! grep -q 'CandidateRejected' "$EXP/evidence-out/valid.log"
+          grep -q 'CandidateRejected' "$EXP/evidence-out/tampered.log"
+          ! grep -q 'FullReclosureGreen' "$EXP/evidence-out/tampered.log"
+
+      - name: Build exact Dogwood
+        run: |
+          set -euo pipefail
+          git clone -q https://github.com/dogwood-policy/dogwood /tmp/dogwood
+          git -C /tmp/dogwood checkout -q "$DOGWOOD_SHA"
+          test "$(git -C /tmp/dogwood rev-parse HEAD)" = "$DOGWOOD_SHA"
+          cargo build --release --manifest-path /tmp/dogwood/Cargo.toml -p dogwood-cli
+
+      - name: Validate policy and replay generated histories
+        run: |
+          set -euo pipefail
+          DOGWOOD=/tmp/dogwood/target/release/dogwood
+          "$DOGWOOD" validate "$EXP/policy.dw" --policy-schema "$EXP/schema.cedarschema"
+
+          "$DOGWOOD" replay "$EXP/policy.dw"             --policy-schema "$EXP/schema.cedarschema"             --trace "$EXP/evidence-out/valid.log"             | tee "$EXP/evidence-out/valid-replay.out"
+
+          "$DOGWOOD" replay "$EXP/policy.dw"             --policy-schema "$EXP/schema.cedarschema"             --trace "$EXP/evidence-out/tampered.log"             | tee "$EXP/evidence-out/tampered-replay.out"
+
+          grep -E 'ALLOW|DENY' "$EXP/evidence-out/valid-replay.out" | tail -n 1 | grep -q 'ALLOW'
+          grep -E 'ALLOW|DENY' "$EXP/evidence-out/tampered-replay.out" | tail -n 1 | grep -q 'DENY'
+
+      - name: Seal evidence-to-event compiler result
+        run: |
+          set -euo pipefail
+          cp /tmp/real-result.json "$EXP/evidence-out/source-result.json"
+          cp /tmp/tampered-result.json "$EXP/evidence-out/tampered-result.json"
+          python3 - <<'PY'
+          import hashlib,json,os,pathlib,re
+          exp=pathlib.Path(os.environ["EXP"])
+          def sha(p): return hashlib.sha256(p.read_bytes()).hexdigest()
+          def final(p):
+              vs=re.findall(r"\b(ALLOW|DENY)\b",p.read_text())
+              assert vs
+              return vs[-1]
+          valid=final(exp/"evidence-out/valid-replay.out")
+          tampered=final(exp/"evidence-out/tampered-replay.out")
+          assert valid=="ALLOW"
+          assert tampered=="DENY"
+          out={
+            "schema":"nucleus-dogwood-live-events-v2",
+            "status":"WARRANTED_BOUNDED" if valid=="ALLOW" and tampered=="DENY" else "REJECTED",
+            "base_sha":os.environ["BASE_SHA"],
+            "candidate_sha":os.environ["CANDIDATE_SHA"],
+            "qualification_run":int(os.environ["QUAL_RUN"]),
+            "qualification_artifact":int(os.environ["QUAL_ARTIFACT"]),
+            "qualification_digest":os.environ["QUAL_DIGEST"],
+            "arena_artifact":int(os.environ["ARENA_ARTIFACT"]),
+            "dogwood_sha":os.environ["DOGWOOD_SHA"],
+            "target_test":os.environ["TARGET_TEST"],
+            "valid_final":valid,
+            "tampered_wrong_final":tampered,
+            "hashes":{
+              "compiler":sha(exp/"compile_events.py"),
+              "policy":sha(exp/"policy.dw"),
+              "schema":sha(exp/"schema.cedarschema"),
+              "source_result":sha(exp/"evidence-out/source-result.json"),
+              "valid_trace":sha(exp/"evidence-out/valid.log"),
+              "tampered_trace":sha(exp/"evidence-out/tampered.log"),
+            },
+            "claim":"Real Nucleus qualification evidence can be compiled automatically into Dogwood lifecycle events that authorize the clean 31-to-30 promotion and deny the same lineage when a wrong decision is injected.",
+            "boundary":[
+              "bounded to this Nucleus result schema and source-pinned lineage",
+              "GitHub artifact provenance is checked but external event authenticity is not proved by Dogwood",
+              "compiler correctness is tested, not formally verified",
+              "no new Lean-kernel semantic authority is created",
+            ],
+          }
+          (exp/"evidence-out/result.json").write_text(json.dumps(out,indent=2,sort_keys=True)+"\n")
+          print(json.dumps(out,sort_keys=True))
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-dogwood-live-events-${{ github.sha }}
+          path: experiments/nucleus-dogwood-live-events-v2/evidence-out
+          if-no-files-found: warn
