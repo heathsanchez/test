@@ -17,9 +17,11 @@ discovery only.
 from __future__ import annotations
 from collections import Counter, defaultdict
 from fractions import Fraction
-import hashlib, json
+from contextlib import redirect_stdout
+import hashlib, io, json
 
-import collatz_crystal_nonpositive_budget_kernel_v53 as v53
+with redirect_stdout(io.StringIO()):
+    import collatz_crystal_nonpositive_budget_kernel_v53 as v53
 
 def v2z(x:int):
     x=abs(x)
