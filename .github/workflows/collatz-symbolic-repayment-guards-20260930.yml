@@ -4,6 +4,8 @@ on:
     branches: [collatz-symbolic-repayment-guards-20260930]
     paths:
       - '.github/workflows/collatz-symbolic-repayment-guards-20260930.yml'
+      - 'formal/Collatz/ComposedReturnRepayment.lean'
+      - 'lakefile.lean'
   workflow_dispatch:
 permissions: {contents: read}
 jobs:
@@ -50,7 +52,7 @@ jobs:
           set -euo pipefail
           lake env lean --version | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/toolchain.txt
           lake build Collatz.ReturnFixedPointDescent
-          lake env lean -DautoImplicit=false -o formal/Collatz/ComposedReturnRepayment.olean formal/Collatz/ComposedReturnRepayment.lean | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/composition.log
+          lake env lean -DautoImplicit=false formal/Collatz/ComposedReturnRepayment.lean | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/composition.log
           lake build Collatz.ComposedReturnRepayment
           lake env lean -DautoImplicit=false formal/Collatz/GeneratedRepaymentGuards.lean | tee evidence/collatz-symbolic-repayment-guards-20260930/hosted/guards.log
           python - <<'PY'
