@@ -1,0 +1,212 @@
+name: Nucleus Stuck Recursor Projection Calibration V1
+
+on:
+  push:
+    branches: [nucleus-crystal-bool-whnf-stuck-recursor-projection-v1]
+    paths:
+      - ".github/workflows/nucleus-stuck-recursor-projection-calibration-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  AUTHORITY_SHA: 98f87d9e66fb97987427d68180f51a653d626fdb
+  CANDIDATE_CODE_SHA: cb4bbeca42a6ebe1a79be324d79ceca25b343ac4
+  FREEZE_REF: metalogiclabs/mathgraph:crystal-program-controller-live-calibration-v2@2c22e5cb33ac4514231fcd6a78480fac99af04f2
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify frozen candidate code
+        run: |
+          set -euo pipefail
+          git diff --exit-code "$CANDIDATE_CODE_SHA"..HEAD -- metatron-kernel/
+          git merge-base --is-ancestor "$AUTHORITY_SHA" "$CANDIDATE_CODE_SHA"
+
+      - name: Build candidate and authority
+        run: |
+          set -euo pipefail
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$AUTHORITY_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Full reclosure and frozen four-case residual contraction
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-stuck-recursor-projection-calibration-v1
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess,time
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          frozen=[
+            'perf/magma-list-deep-n21',
+            'perf/magma-list-deep-n36',
+            'perf/magma-list-pair-n21',
+            'perf/magma-list-pair-n7',
+          ]
+
+          def run(binary,p,trace=False):
+              env=os.environ.copy()
+              if trace:
+                  env.update({
+                    'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                    'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                    'NUCLEUS_TRACE_RESIDUAL':'1',
+                    'NUCLEUS_TRACE_BOOL_WHNF':'1',
+                    'NUCLEUS_TRACE_APP_FUNCTION_TYPE':'1',
+                    'NUCLEUS_TRACE_CONVERSION_EXPOSURE':'1',
+                    'NUCLEUS_TRACE_PROJECTION_MISMATCH':'1',
+                  })
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                    [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,timeout=180,env=env
+                  )
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          started=time.time()
+          diffs=[]
+          verdicts={}
+          for kind in ('good','bad'):
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/kind)).removesuffix('.ndjson')
+                  brc,_=run(base,p)
+                  crc,_=run(cand,p)
+                  verdicts[name]=(brc,crc)
+                  if brc!=crc:
+                      diffs.append({'test':name,'authority_rc':brc,'candidate_rc':crc})
+          assert len(verdicts)==193,len(verdicts)
+          assert not diffs,diffs[:20]
+
+          def classify(stderr,rc):
+              if rc in (0,1):
+                  return 'terminal-verdict',True
+              if 'NUCLEUS_PROJECTION_MISMATCH:' in stderr or 'projection-constructor-mismatch' in stderr:
+                  return 'projection-constructor-mismatch',False
+              neutrals=[
+                  x for x in stderr.splitlines()
+                  if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x
+              ]
+              if neutrals and any('Projection' in x for x in neutrals):
+                  return 'projection-involved-neutral-heads',True
+              conv=[
+                  x for x in stderr.splitlines()
+                  if 'NUCLEUS_CONVERSION_EXPOSURE:' in x
+              ]
+              for line in reversed(conv):
+                  reasons=re.findall(r'(?:left_status|right_status)=UNKNOWN:([^:]+)',line)
+                  specific=[r for r in reasons if r not in {
+                    'projection-constructor-mismatch','application-function-type',
+                    'unknown','untraced'
+                  }]
+                  if specific:
+                      return 'conversion-exposure:'+specific[0],True
+              residual=[
+                  x for x in stderr.splitlines()
+                  if 'NUCLEUS_RESIDUAL:' in x
+              ]
+              for line in reversed(residual):
+                  m=re.search(r'reason=([^:]+)',line)
+                  if m and m.group(1) not in {
+                    'projection-constructor-mismatch','application-function-type',
+                    'unknown','untraced'
+                  }:
+                      return 'typed-residual:'+m.group(1),True
+              return 'unknown-no-strict-refinement',False
+
+          atoms=[]
+          for name in frozen:
+              p=root/'good'/(name+'.ndjson')
+              assert p.exists(),name
+              brc,_=run(base,p,False)
+              crc,cerr=run(cand,p,True)
+              assert brc==crc,(name,brc,crc)
+              child,credited=classify(cerr,crc)
+              atoms.append({
+                'atom':name,
+                'parent_residual':'projection-constructor-mismatch',
+                'child_residual':child,
+                'credited':credited,
+                'candidate_rc':crc,
+                'projection_mismatch_count':sum(
+                  'NUCLEUS_PROJECTION_MISMATCH:' in x for x in cerr.splitlines()
+                ),
+                'trace_tail':cerr.splitlines()[-80:],
+              })
+
+          credited=sum(int(x['credited']) for x in atoms)
+          elapsed=time.time()-started
+          result={
+            'schema':'nucleus.stuck-recursor-projection-calibration.v1',
+            'authority_sha':os.environ['AUTHORITY_SHA'],
+            'candidate_code_sha':os.environ['CANDIDATE_CODE_SHA'],
+            'workflow_head_sha':os.environ['GITHUB_SHA'],
+            'freeze_ref':os.environ['FREEZE_REF'],
+            'full_corpus_cases':193,
+            'verdict_diffs':diffs,
+            'zero_wrong_reclosure':True,
+            'selected_residual':'projection-constructor-mismatch',
+            'occurrences_before':4,
+            'occurrences_after':4-credited,
+            'typed_residual_occurrences_contracted':credited,
+            'contraction_fraction':credited/4,
+            'atoms':atoms,
+            'scientific_elapsed_seconds':elapsed,
+            'status':'WARRANTED_BOUNDED_RESIDUAL_CONTRACTION' if credited else 'WARRANTED_NEGATIVE_NO_CONTRACTION',
+            'boundary':'Diagnostic residual refinement only; no ACCEPT/REJECT promotion because all 193 return codes must remain identical to the authority.'
+          }
+          out=pathlib.Path('evidence/nucleus-stuck-recursor-projection-calibration-v1/result.json')
+          out.write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            'credited':credited,'before':4,'after':4-credited,
+            'children':[x['child_residual'] for x in atoms],
+            'status':result['status'],
+          },sort_keys=True))
+          PY
+
+      - name: Assert calibration contract
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open('evidence/nucleus-stuck-recursor-projection-calibration-v1/result.json'))
+          assert p['full_corpus_cases']==193,p
+          assert p['verdict_diffs']==[],p
+          assert p['zero_wrong_reclosure'] is True,p
+          assert p['occurrences_before']==4,p
+          assert 0<=p['typed_residual_occurrences_contracted']<=4,p
+          assert p['occurrences_after']==4-p['typed_residual_occurrences_contracted'],p
+          print(
+            "NUCLEUS_STUCK_RECURSOR_PROJECTION_CALIBRATION",
+            p['typed_residual_occurrences_contracted'],"/4",p['status']
+          )
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-stuck-recursor-projection-calibration-v1
+          path: evidence/nucleus-stuck-recursor-projection-calibration-v1/result.json
+          if-no-files-found: error
