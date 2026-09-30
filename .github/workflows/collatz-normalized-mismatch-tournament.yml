@@ -1,0 +1,39 @@
+name: Collatz Normalized Mismatch Tournament
+on:
+  push:
+    branches: [collatz-normalized-mismatch-tournament-20260930]
+    paths:
+      - 'experiments/collatz_normalized_mismatch_tournament_20260930.py'
+      - '.github/workflows/collatz-normalized-mismatch-tournament.yml'
+permissions: {contents: read}
+jobs:
+  tournament:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Run normalized mismatch tournament
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-normalized-mismatch-tournament
+          PYTHONPATH=experiments python -u experiments/collatz_normalized_mismatch_tournament_20260930.py             | tee evidence/collatz-normalized-mismatch-tournament/result.json
+          python - <<'PY'
+          import json
+          d=json.load(open('evidence/collatz-normalized-mismatch-tournament/result.json'))
+          assert d['global_collatz']=='UNKNOWN'
+          print('VERDICT',d['verdict'])
+          print('SURVIVORS',d['survivors'])
+          for split in ('train','heldout'):
+              print(split,'SWITCHES',d[split]['switches'])
+              for k,v in d[split]['tests'].items():
+                  print(split,k,'PASS',v['pass'],'FAIL',v['fail'])
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-normalized-mismatch-tournament
+          path: evidence/collatz-normalized-mismatch-tournament
+          if-no-files-found: error
