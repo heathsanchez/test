@@ -1,0 +1,154 @@
+name: Nucleus Current Arena v4.34 Replay v1
+
+on:
+  push:
+    branches: [nucleus-current-arena-v434-replay-v1]
+    paths:
+      - ".github/workflows/nucleus-current-arena-v434-replay-v1.yml"
+      - "metatron-kernel/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nucleus-current-arena-v434-replay-v1-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  replay-current-small-suite:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      ARENA_SHA: 4c30c4ac4f14a3a899116beb3ea6131880e79a98
+      ARENA_RUN_ID: "36700836088"
+      ARENA_TEST_TARBALL_ARTIFACT: "11090525747"
+      FROZEN_NUCLEUS_SHA: 74f59b40763e8240914b72c7b4bfaa8d1ef35f1b
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+
+      - name: Verify frozen Nucleus source
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD^)" = "$FROZEN_NUCLEUS_SHA" || {
+            echo "Expected workflow-only child of frozen Nucleus authority $FROZEN_NUCLEUS_SHA"
+            git log --oneline -3
+            exit 1
+          }
+          cd metatron-kernel
+          cargo fmt --check
+          cargo clippy --all-targets -- -D warnings
+          cargo test --release
+          cargo build --release --locked
+
+      - name: Fetch exact current-Arena small-test artifact
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_TEST_TARBALL_ARTIFACT/zip > /tmp/current-tests.zip
+          mkdir -p /tmp/current-tests-artifact /tmp/current-tests
+          unzip -q /tmp/current-tests.zip -d /tmp/current-tests-artifact
+          tar -xzf /tmp/current-tests-artifact/lean-arena-tests.tar.gz -C /tmp/current-tests
+          printf 'arena_sha=%s\nrun_id=%s\nartifact=%s\n' "$ARENA_SHA" "$ARENA_RUN_ID" "$ARENA_TEST_TARBALL_ARTIFACT"
+          find /tmp/current-tests -type f -name '*.ndjson' | sort > /tmp/current-files.txt
+          wc -l /tmp/current-files.txt
+          grep -E 'proj-stuck-struct|magma-list-pair-n21' /tmp/current-files.txt || true
+
+      - name: Replay frozen independent Nucleus unchanged
+        run: |
+          set -euo pipefail
+          mkdir -p metatron-kernel/evidence-out/current-arena-v434
+          python - <<'PY'
+          import json, os, pathlib, subprocess, time
+
+          root = pathlib.Path('/tmp/current-tests')
+          nucleus = pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+
+          cases = []
+          for d, expected_rc in [('good',0),('bad',1)]:
+              base = root / d
+              if not base.exists():
+                  continue
+              for p in sorted(base.rglob('*.ndjson')):
+                  name = str(p.relative_to(base)).removesuffix('.ndjson')
+                  cases.append((name,d,expected_rc,p))
+
+          rows=[]
+          for name,d,expected,p in cases:
+              with p.open('rb') as f:
+                  t=time.perf_counter_ns()
+                  q=subprocess.run([str(nucleus)], stdin=f, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
+                  ns=time.perf_counter_ns()-t
+              rc=q.returncode
+              if rc in (0,1):
+                  verdict='accept' if rc==0 else 'reject'
+                  status='correct' if rc==expected else 'wrong'
+              elif rc in (2,3):
+                  verdict='unknown'
+                  status='residual'
+              else:
+                  verdict='error'
+                  status='error'
+              rows.append({
+                  'test':name,
+                  'expected':'accept' if expected==0 else 'reject',
+                  'rc':rc,
+                  'verdict':verdict,
+                  'status':status,
+                  'wall_ns':ns,
+                  'stderr_tail':q.stderr.decode('utf-8','replace')[-1000:],
+              })
+
+          wrong=[r for r in rows if r['status']=='wrong']
+          residual=[r for r in rows if r['status']=='residual']
+          errors=[r for r in rows if r['status']=='error']
+          correct=[r for r in rows if r['status']=='correct']
+          accepts=[r for r in correct if r['verdict']=='accept']
+          rejects=[r for r in correct if r['verdict']=='reject']
+
+          def pick(substr):
+              return [r for r in rows if substr in r['test']]
+
+          summary={
+              'schema':'nucleus-current-arena-v434-replay-v1',
+              'candidate_commit':os.environ['FROZEN_NUCLEUS_SHA'],
+              'arena_sha':os.environ['ARENA_SHA'],
+              'arena_run_id':os.environ['ARENA_RUN_ID'],
+              'arena_test_tarball_artifact':os.environ['ARENA_TEST_TARBALL_ARTIFACT'],
+              'scope':'current Arena downloadable small/fixed tests only; large >10MB corpora excluded by Arena tarball policy',
+              'cases':len(rows),
+              'correct':len(correct),
+              'accept_correct':len(accepts),
+              'reject_correct':len(rejects),
+              'residual':len(residual),
+              'wrong':len(wrong),
+              'errors':len(errors),
+              'proj_stuck_struct':pick('proj-stuck-struct'),
+              'magma_list_pair_n21':pick('magma-list-pair-n21'),
+              'wrong_rows':wrong,
+              'error_rows':errors,
+              'residual_tests':[r['test'] for r in residual],
+          }
+
+          out=pathlib.Path('metatron-kernel/evidence-out/current-arena-v434')
+          (out/'summary.json').write_text(json.dumps(summary,indent=2,sort_keys=True)+'\n')
+          (out/'rows.json').write_text(json.dumps(rows,indent=2,sort_keys=True)+'\n')
+          print(json.dumps(summary,sort_keys=True))
+          assert not wrong, wrong
+          assert not errors, errors
+          PY
+
+      - name: Upload current-Arena replay evidence
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-current-arena-v434-replay-${{ github.sha }}
+          path: metatron-kernel/evidence-out/current-arena-v434
+          if-no-files-found: error
