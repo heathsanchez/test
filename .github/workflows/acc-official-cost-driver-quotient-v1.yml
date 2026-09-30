@@ -1,0 +1,74 @@
+name: ACC Official Cost Driver Quotient V1
+
+on:
+  push:
+    branches: [acc-official-cost-driver-quotient-v1]
+    paths:
+      - "acc_competitive/official_cost_driver_calibration_v1.py"
+      - ".github/workflows/acc-official-cost-driver-quotient-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fetch exact frozen ACC pool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh api repos/heathsanchez/test/actions/artifacts/11069354331/zip > /tmp/pool.zip
+          echo "48b822a40924198728ef629fb90fe2a84d0a21b14cfda61bf1115f9ac6268fd2  /tmp/pool.zip" | sha256sum -c -
+          mkdir -p /tmp/pool
+          unzip -q /tmp/pool.zip -d /tmp/pool
+          test -f /tmp/pool/results.json
+
+      - name: Fetch pinned solver and official verifier
+        run: |
+          set -euo pipefail
+          git clone --quiet https://github.com/SAIRcompetition/Andrews-Curtis.git /tmp/acc
+          git -C /tmp/acc checkout --quiet 99a65377c5c4f412cd9af7b8d31c41464a855736
+          git clone --quiet https://github.com/Avi161/ACSolverX.git /tmp/acsolverx
+          git -C /tmp/acsolverx checkout --quiet 5ae1bd8eda6d80dfbea51680636f825da19fb802
+          python3 -m pip install --quiet numpy numba
+
+      - name: Replay hash-selected frozen atoms and classify exact cost drivers
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/acc-official-cost-driver-quotient-v1
+          python3 acc_competitive/official_cost_driver_calibration_v1.py             --acc-root /tmp/acc             --acsolverx-root /tmp/acsolverx             --pool-results /tmp/pool/results.json             --out-dir evidence/acc-official-cost-driver-quotient-v1             --budget 1000             --count 64
+
+      - name: Assert shared calibration boundary
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open("evidence/acc-official-cost-driver-quotient-v1/result.json"))
+          assert p["frozen_atoms"]==64,p
+          assert p["credited_atoms"]<=64,p
+          assert p["search_retuned"] is False,p
+          assert p["submission_attempted"] is False,p
+          assert set(p["child_counts"]) <= {
+              "public-route-unsolved",
+              "official-transport-invalid",
+              "swap-expansion-dominant",
+              "conjugation-dominant",
+              "multiply-dominant",
+              "invert-dominant",
+              "mixed-elementary-cost",
+          },p
+          print("ACC_SHARED_CALIBRATION",p["credited_atoms"],p["frozen_atoms"],p["child_counts"])
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: acc-official-cost-driver-quotient-v1
+          path: evidence/acc-official-cost-driver-quotient-v1/result.json
+          if-no-files-found: error
