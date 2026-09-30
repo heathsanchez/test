@@ -1,0 +1,102 @@
+{
+  "boundary": "Exact conditional affine guards, finite discovery and lifted raw-orbit checks. No universal macro availability, source admission, protected no-exit coverage, or origin-source transport theorem. Owner-cylinder lifts need not belong to the original source family.",
+  "certificate_sha256": "4beaa9b1a006de75774afcd4b0dd582786f556e6dcfaba28efbc069ee459e994",
+  "distinct_guards": 2081,
+  "distinct_guards_proved_by_existing_live_floor": 2081,
+  "distinct_whole_cylinder_guards": 2081,
+  "examples": [
+    {
+      "anchor": 2,
+      "end_owner": "178342968574554399957984345090352637",
+      "guard": {
+        "A": "282429536481",
+        "B": "592347247211",
+        "D": 40,
+        "P": "1099511627776",
+        "anchor": 2,
+        "floor": "1",
+        "min_admitted_owner": "348768298805",
+        "modulus": "2199023255552",
+        "observations": 1,
+        "rho": "348768298805",
+        "v45_floor_suffices": true,
+        "whole_cylinder": true,
+        "word": "1100111001111011111111011001101001000010"
+      },
+      "repayment_depth": 168,
+      "returns": 3,
+      "root_depth": 128,
+      "source": "236799618953942161733730430391156763",
+      "start_owner": "694297664908018493826755491137972021"
+    },
+    {
+      "anchor": 1,
+      "end_owner": "557227656225079925594401612084803121",
+      "guard": {
+        "A": "129140163",
+        "B": "228845825",
+        "D": 27,
+        "P": "134217728",
+        "anchor": 1,
+        "floor": "46",
+        "min_admitted_owner": "187992597",
+        "modulus": "268435456",
+        "observations": 1,
+        "rho": "187992597",
+        "v45_floor_suffices": true,
+        "whole_cylinder": true,
+        "word": "101111101001011110110111000"
+      },
+      "repayment_depth": 226,
+      "returns": 3,
+      "root_depth": 199,
+      "source": "236799618953942161733730430391156763",
+      "start_owner": "579136871596602245512804826594183701"
+    },
+    {
+      "anchor": 2,
+      "end_owner": "751311437670589685543299206739064655",
+      "guard": {
+        "A": "68630377364883",
+        "B": "179219975555889",
+        "D": 48,
+        "P": "281474976710656",
+        "anchor": 2,
+        "floor": "1",
+        "min_admitted_owner": "40516946973013",
+        "modulus": "562949953421312",
+        "observations": 1,
+        "rho": "40516946973013",
+        "v45_floor_suffices": true,
+        "whole_cylinder": true,
+        "word": "110011111111011010110001100010111011110111010000"
+      },
+      "repayment_depth": 167,
+      "returns": 4,
+      "root_depth": 119,
+      "source": "498786869979010674485156326901022747",
+      "start_owner": "3081366845710906264289436502941454677"
+    }
+  ],
+  "global_collatz": "UNKNOWN",
+  "guard_D_range": [
+    7,
+    193
+  ],
+  "max_observed_returns_to_repayment": 17,
+  "parent_certificate": "16bc1fafea228c441faa11cd5c19b14a82df7739dba89673fc18127dcfceaecc",
+  "schema": "COLLATZ_SYMBOLIC_REPAYMENT_GUARDS_20260930",
+  "stats": {
+    "macro_live_floor_repays": 2560,
+    "macro_repays": 2560,
+    "no_observed_same_anchor_repayment": 2927,
+    "overshoot_then_repays": 699,
+    "residual_starts": 5487,
+    "whole_positive_owner_cylinder_repays": 2560
+  },
+  "synthesis_holdout": {
+    "exact_guard_in_frozen_training_bank": 188,
+    "heldout_repaying_starts": 787
+  },
+  "training_distinct_guards": 1488
+}
