@@ -2,7 +2,11 @@ name: Collatz Switch Tournament Closeout
 on:
   push:
     branches: [collatz-switch-tournament-closeout-20260930]
-    paths: ['.github/workflows/collatz-switch-tournament-closeout.yml']
+    paths:
+      - '.github/workflows/collatz-switch-tournament-closeout.yml'
+      - 'formal/Collatz/GuardedDyadicSwitch.lean'
+      - 'formal/Collatz/SourceCylinderExit.lean'
+      - 'formal/Collatz/SourceSwitchWitness.lean'
 permissions: {contents: read}
 jobs:
   qualify:
