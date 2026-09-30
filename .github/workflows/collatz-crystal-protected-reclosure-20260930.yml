@@ -1,0 +1,77 @@
+name: Collatz Crystal Protected Reclosure 20260930
+on:
+  push:
+    branches: [collatz-crystal-protected-reclosure-20260930]
+    paths:
+      - '.github/workflows/collatz-crystal-protected-reclosure-20260930.yml'
+      - 'formal/Collatz/ProtectedFutureReclosure.lean'
+      - 'experiments/collatz_source_goal_transfer_20260930.py'
+      - 'experiments/collatz_crystal_protected_reclosure_20260930.py'
+      - 'evidence/collatz-crystal-protected-reclosure-20260930/**'
+  workflow_dispatch:
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: metalogiclabs/mathgraph
+          ref: 2c6a845f113ea902734b242b1a3c9795574e30ff
+          path: _crystal-foundation
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.11'}
+      - name: Install pinned Lean
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+      - name: Check full formal spine and conditional universal seam
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-crystal-protected-reclosure-20260930/hosted
+          lake env lean --version | tee evidence/collatz-crystal-protected-reclosure-20260930/hosted/toolchain.txt
+          lake build CollatzFinal | tee evidence/collatz-crystal-protected-reclosure-20260930/hosted/spine.log
+          lake env lean -DautoImplicit=false formal/Collatz/ProtectedFutureReclosure.lean | tee evidence/collatz-crystal-protected-reclosure-20260930/hosted/lean.log
+      - name: Fresh exact source replay with qualified Crystal primitives
+        shell: bash
+        run: |
+          set -euo pipefail
+          CRYSTAL_FOUNDATION_ROOT=_crystal-foundation/mathgraph PYTHONPATH=experiments python -u experiments/collatz_crystal_protected_reclosure_20260930.py | tee evidence/collatz-crystal-protected-reclosure-20260930/hosted/replay.log
+          python - <<'PY'
+          import json,re
+          from pathlib import Path
+          base=Path('evidence/collatz-crystal-protected-reclosure-20260930')
+          actual=json.load(open('controlled-reclosure-result.json'))
+          assert actual==json.load(open(base/'local-result.json'))
+          assert json.load(open('source-goal-result.json'))==json.load(open(base/'source-goal-result.json'))
+          edges=json.load(open('controlled-reclosure-layer-edges.json'))
+          assert edges==json.load(open(base/'layer-edges.json'))
+          lean=Path('formal/Collatz/ProtectedFutureReclosure.lean').read_text()
+          embedded=lean.split(':= [',1)[1].split(']',1)[0]
+          assert [[int(a),int(b)] for a,b in re.findall(r'\((\d+), (\d+)\)',embedded)]==edges
+          logs=(base/'hosted/lean.log').read_text()
+          assert 'sorryAx' not in logs and 'Lean.ofReduceBool' not in logs
+          assert 'protected_observed_layer_edges_decrease' in logs
+          assert 'collatz_of_universal_protected_future_simulation' in logs
+          assert actual['global_collatz']=='UNKNOWN' and not actual['qed_admitted']
+          assert actual['sources_independently_replayed']==4808
+          assert actual['return_rows_independently_replayed']==22019
+          assert actual['native_Crystal_recurrent_kernel_size']==0
+          print('SOURCE_BOUND_RECLOSURE_EXACT_REPLAY_CONFIRMED')
+          print('105_LAYER_EDGES_KERNEL_CHECKED; UNIVERSAL_COVERAGE_OPEN')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          cp controlled-reclosure-result.json controlled-reclosure-layer-edges.json source-goal-result.json formal/Collatz/ProtectedFutureReclosure.lean evidence/collatz-crystal-protected-reclosure-20260930/hosted/
+          git rev-parse HEAD > evidence/collatz-crystal-protected-reclosure-20260930/hosted/commit.txt
+          git -C _crystal-foundation rev-parse HEAD > evidence/collatz-crystal-protected-reclosure-20260930/hosted/crystal-commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-crystal-protected-reclosure-20260930
+          path: evidence/collatz-crystal-protected-reclosure-20260930/hosted
+          if-no-files-found: error
