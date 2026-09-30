@@ -27,7 +27,7 @@ jobs:
         run: |
           set -euo pipefail
           git fetch -q origin "$BASE_SHA" --depth=1
-          git diff --exit-code "$BASE_SHA" HEAD -- metatron-kernel/src |             grep -q 'NUCLEUS_TRACE_CONVERSION_EXPOSURE'
+          git diff "$BASE_SHA" HEAD -- metatron-kernel/src | grep -q 'NUCLEUS_TRACE_CONVERSION_EXPOSURE'
           ! grep -R "sokonanoda\|mathgraph-lean-kernel" metatron-kernel/Cargo.toml metatron-kernel/src/main.rs
           cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
 
