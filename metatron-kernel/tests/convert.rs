@@ -203,3 +203,50 @@ fn conversion_budget_exhaustion_preserves_unknown() {
             .is_unknown()
     );
 }
+
+fn application_congruence_fixture(expensive: bool, constant: bool) -> (Fixture, u64, u64) {
+    let mut fixture = Fixture::conversion();
+    let mut next = 20u64;
+    let mut insert = |expr| {
+        let id = ExprId(next);
+        next += 1;
+        fixture.expressions.insert(id, expr).unwrap();
+        id
+    };
+    let function_type = insert(Expr::Pi { domain: ExprId(7), body: ExprId(7) });
+    let identity = insert(Expr::Lam { domain: ExprId(7), body: ExprId(1) });
+    let beta_prop = insert(Expr::App { fun: identity, arg: ExprId(0) });
+    let mut body = if constant { ExprId(0) } else { ExprId(1) };
+    if expensive {
+        for _ in 0..40 {
+            body = insert(Expr::App { fun: identity, arg: body });
+        }
+    }
+    let definition = insert(Expr::Lam { domain: ExprId(7), body });
+    let function = insert(Expr::Const { name: NameId(30), levels: Vec::new() });
+    let left = insert(Expr::App { fun: function, arg: beta_prop });
+    let right_arg = if expensive { ExprId(0) } else { ExprId(5) };
+    let right = insert(Expr::App { fun: function, arg: right_arg });
+    fixture.environment = fixture.environment.extend(
+        NameId(30), ConstantDecl::definition(Vec::new(), function_type, definition, true)
+    ).unwrap();
+    (fixture, left.0, right.0)
+}
+
+#[test]
+fn equal_arguments_do_not_require_unfolding_a_shared_expensive_body() {
+    let (fixture, left, right) = application_congruence_fixture(true, false);
+    assert!(fixture.checker().convert(&Fixture::term(left), &Fixture::term(right), 24).is_proven());
+}
+
+#[test]
+fn unequal_arguments_do_not_prove_equal_applications() {
+    let (fixture, left, right) = application_congruence_fixture(false, false);
+    assert!(fixture.checker().convert(&Fixture::term(left), &Fixture::term(right), 128).is_refuted());
+}
+
+#[test]
+fn failed_congruence_still_reduces_a_function_that_ignores_its_argument() {
+    let (fixture, left, right) = application_congruence_fixture(false, true);
+    assert!(fixture.checker().convert(&Fixture::term(left), &Fixture::term(right), 128).is_proven());
+}
