@@ -18,7 +18,7 @@ theorem composed_affine_return_repayment
     calc
       (P₂ * P₁) * m₂ = P₁ * (P₂ * m₂) := by ac_rfl
       _ = P₁ * (A₂ * m₁ + B₂) := by rw [h₂]
-      _ = A₂ * (P₁ * m₁) + B₂ * P₁ := by ring
+      _ = A₂ * (P₁ * m₁) + B₂ * P₁ := by simp only [Nat.mul_add, Nat.mul_assoc, Nat.mul_comm, Nat.mul_left_comm, Nat.add_assoc]
       _ = A₂ * (A₁ * m + B₁) + B₂ * P₁ := by rw [h₁]
       _ = (A₂ * A₁) * m + (A₂ * B₁ + B₂ * P₁) := by ring
   exact affine_return_strict_descent_of_live_floor
