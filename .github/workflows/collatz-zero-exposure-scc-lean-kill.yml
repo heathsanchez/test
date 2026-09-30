@@ -1,0 +1,49 @@
+name: Collatz Zero-Exposure SCC Lean Kill
+on:
+  push:
+    branches: [collatz-zero-exposure-scc-lean-kill-20260930]
+    paths:
+      - 'formal/Collatz/ZeroExposureSccKill.lean'
+      - '.github/workflows/collatz-zero-exposure-scc-lean-kill.yml'
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Lean and build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          export PATH="$HOME/.elan/bin:$PATH"
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          lake build CollatzFinal
+          mkdir -p .lake/build/lib/lean/Collatz
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/GuardedDyadicSwitch.olean formal/Collatz/GuardedDyadicSwitch.lean
+      - name: Kernel-check recurrent SCC kill
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-zero-exposure-scc-lean-kill
+          lake env lean -DautoImplicit=false formal/Collatz/ZeroExposureSccKill.lean             | tee evidence/collatz-zero-exposure-scc-lean-kill/lean.log
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          p=Path('evidence/collatz-zero-exposure-scc-lean-kill/lean.log')
+          s=p.read_text()
+          assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
+          src=Path('formal/Collatz/ZeroExposureSccKill.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',src)
+          for n in ('zeroExposurePair_compose','zeroExposurePair_defect_ne_zero','zeroExposurePair_no_infinite_laps'):
+              assert n in s
+          print('ZERO_EXPOSURE_RECURRENT_SCC_KERNEL_KILLED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-zero-exposure-scc-lean-kill
+          path: evidence/collatz-zero-exposure-scc-lean-kill
+          if-no-files-found: error
