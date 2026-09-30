@@ -77,7 +77,7 @@ with open('GeneratedBackwardCover.lean','w') as f:
         else:
             assert 2*3**(q-1)<=2**k
             f.write(f'  have hx := ordinary_exit_of_source_cylinder_odd_merge (n := {n}) (k := {k}) (q := {q-1}) (y := {y}) (p := {p}) (by decide) (by decide) (by decide) (by decide) (by decide) (by decide) ({unit} * u)\n')
-        f.write('  simpa [familySource, Nat.mul_add, Nat.mul_assoc] using hx\n')
+        f.write(f'  have heq : familySource {r} {h} u = {n} + 2 ^ {k} * ({unit} * u) := by\n    unfold familySource\n    simp only [Nat.mul_add]\n    omega\n  rw [heq]\n  exact hx\n')
         f.write(f'#print axioms backward_cell_exit_{i}\n')
     residual_set=set(residual)
     closed_early=[c for c in closed if c['h']<=12]
