@@ -1,6 +1,6 @@
 import Collatz.ReturnFixedPointDescent
 
-/-- V57 rebased on the green V51 affine-budget authority. -/
+-- V57 rebased on the green V51 affine-budget authority.
 namespace CollatzFinal
 namespace SourceProduct
 
@@ -72,8 +72,13 @@ theorem owner110_no_chain_self_bound (m : Nat) :
   have hp :
       2 ^ (m + 1) ≤ 2 ^ (3 * (m + 1)) :=
     Nat.pow_le_pow_of_le (by decide) hexp
-  have hlt : m + 1 < 2 ^ (m + 1) :=
-    Nat.lt_two_pow_self (m + 1)
+  have hlt : m + 1 < 2 ^ (m + 1) := by
+    induction m with
+    | zero => decide
+    | succ m ih =>
+        rw [Nat.pow_succ]
+        have hp0 : 0 < 2 ^ (m + 1) := Nat.pow_pos (by decide)
+        omega
   omega
 
 #print axioms owner110_plus_one
