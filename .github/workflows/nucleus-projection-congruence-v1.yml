@@ -1,0 +1,251 @@
+name: Nucleus Projection Congruence V1
+
+on:
+  push:
+    branches: [nucleus-projection-congruence-v1]
+    paths:
+      - "metatron-kernel/src/convert.rs"
+      - ".github/workflows/nucleus-projection-congruence-v1.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PARENT_SHA: 6a129656ae84ef4448d52c0c4a164ccfe24e4ca4
+  FREEZE_SHA: cd22caeb9beeefd418276805df3e631cd026a4a5
+  ARENA_ARTIFACT: "10712869614"
+
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Verify prospective freeze and patch boundary
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          test "$(git diff --name-only "$PARENT_SHA"..HEAD -- metatron-kernel | tr '\n' ' ')" = "metatron-kernel/src/convert.rs "
+          gh api             repos/metalogiclabs/mathgraph/contents/experiments/crystal_program_controller_live_v2/nucleus_projection_congruence_freeze.json             -f ref="$FREEZE_SHA" --jq .content             | tr -d '\n' | base64 -d > /tmp/freeze.json
+          python3 - <<'PY'
+          import json
+          p=json.load(open('/tmp/freeze.json'))
+          assert p['candidate']['candidate_id']=='nucleus-projection-congruence-v1',p
+          assert p['candidate']['occurrences_before']==4,p
+          assert p['candidate']['status_at_freeze']=='PROSPECTIVE_UNRUN',p
+          print("PROSPECTIVE_FREEZE_OK",p['candidate']['frozen_occurrences'])
+          PY
+
+      - name: Build candidate and exact semantic parent
+        run: |
+          set -euo pipefail
+          cargo fmt --manifest-path metatron-kernel/Cargo.toml
+          cargo test --release --locked --manifest-path metatron-kernel/Cargo.toml
+          cargo build --release --locked --manifest-path metatron-kernel/Cargo.toml
+          git worktree add --detach /tmp/base "$PARENT_SHA"
+          cargo build --release --locked --manifest-path /tmp/base/metatron-kernel/Cargo.toml
+
+      - name: Fetch frozen 193-case corpus
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/art /tmp/tests /tmp/tests.zip
+          mkdir -p /tmp/art /tmp/tests
+          gh api repos/leanprover/lean-kernel-arena/actions/artifacts/$ARENA_ARTIFACT/zip > /tmp/tests.zip
+          unzip -q /tmp/tests.zip -d /tmp/art
+          tar -xzf /tmp/art/lean-arena-tests.tar.gz -C /tmp/tests
+          test "$(find /tmp/tests -type f -name '*.ndjson' | wc -l)" -eq 193
+
+      - name: Full differential reclosure and frozen residual contraction
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/nucleus-projection-congruence-v1
+          python3 - <<'PY'
+          import json,os,pathlib,re,subprocess,time
+
+          root=pathlib.Path('/tmp/tests')
+          base=pathlib.Path('/tmp/base/metatron-kernel/target/release/metatron-kernel')
+          cand=pathlib.Path('metatron-kernel/target/release/metatron-kernel').resolve()
+          freeze=json.load(open('/tmp/freeze.json'))
+          frozen=freeze['candidate']['frozen_occurrences']
+
+          def run(binary,p,trace=False):
+              env=os.environ.copy()
+              if trace:
+                  env.update({
+                    'NUCLEUS_TRACE_DOWNSTREAM':'1',
+                    'NUCLEUS_TRACE_NEUTRAL_HEADS':'1',
+                    'NUCLEUS_TRACE_RESIDUAL':'1',
+                    'NUCLEUS_TRACE_BOOL_WHNF':'1',
+                    'NUCLEUS_TRACE_APP_FUNCTION_TYPE':'1',
+                    'NUCLEUS_TRACE_CONVERSION_EXPOSURE':'1',
+                    'NUCLEUS_TRACE_PROJECTION_MISMATCH':'1',
+                  })
+              with p.open('rb') as f:
+                  q=subprocess.run(
+                    [str(binary)],stdin=f,stdout=subprocess.DEVNULL,
+                    stderr=subprocess.PIPE,timeout=180,env=env
+                  )
+              return q.returncode,q.stderr.decode(errors='replace')
+
+          started=time.time()
+          rows=[]
+          wrong=[]
+          regressions=[]
+          base_correct=0
+          cand_correct=0
+          for kind,expected in [('good',0),('bad',1)]:
+              for p in sorted((root/kind).rglob('*.ndjson')):
+                  name=str(p.relative_to(root/kind)).removesuffix('.ndjson')
+                  brc,_=run(base,p)
+                  crc,_=run(cand,p)
+                  if brc==expected:
+                      base_correct+=1
+                      if crc!=expected:
+                          regressions.append({
+                            'test':name,'expected':expected,'parent_rc':brc,'candidate_rc':crc
+                          })
+                  if crc==expected:
+                      cand_correct+=1
+                  elif crc in (0,1):
+                      wrong.append({
+                        'test':name,'expected':expected,'parent_rc':brc,'candidate_rc':crc
+                      })
+                  rows.append({
+                    'test':name,'kind':kind,'expected':expected,
+                    'parent_rc':brc,'candidate_rc':crc
+                  })
+
+          assert len(rows)==193,len(rows)
+          assert base_correct==163,base_correct
+          assert not wrong,wrong[:20]
+          assert not regressions,regressions[:20]
+
+          def parse_last_neutral(stderr):
+              lines=[
+                x for x in stderr.splitlines()
+                if 'NUCLEUS_NEUTRAL_HEAD_MISMATCH:' in x
+              ]
+              if not lines:
+                  return None
+              line=lines[-1].split('NUCLEUS_NEUTRAL_HEAD_MISMATCH:',1)[1]
+              left,rest=line.split(':left_spine=',1)
+              left=left.removeprefix('left=')
+              _,rest=rest.split(':right=',1)
+              right,_=rest.split(':right_spine=',1)
+              def kind(x):
+                  if x.startswith('Projection'): return 'projection'
+                  if x.startswith('Const'): return 'const'
+                  if x.startswith('Free'): return 'free'
+                  return 'other'
+              return {'left_kind':kind(left),'right_kind':kind(right),'raw':lines[-1]}
+
+          atoms=[]
+          for name in frozen:
+              p=root/'good'/(name+'.ndjson')
+              assert p.exists(),name
+              brc,_=run(base,p,False)
+              crc,cerr=run(cand,p,True)
+              assert brc in (2,3),(name,brc)
+              assert crc!=1,(name,'wrong-reject')
+              last=parse_last_neutral(cerr)
+              parent_projection_residual=(
+                last is not None
+                and last['left_kind']=='projection'
+                and last['right_kind']=='projection'
+              )
+              if crc==0:
+                  child='ACCEPT'
+                  credited=True
+              elif last is not None and not parent_projection_residual:
+                  child=f"neutral:{last['left_kind']}-vs-{last['right_kind']}"
+                  credited=True
+              else:
+                  downstream=[
+                    x for x in cerr.splitlines()
+                    if 'NUCLEUS_DOWNSTREAM:' in x or 'NUCLEUS_RESIDUAL:' in x
+                  ]
+                  child=downstream[-1] if downstream else 'UNKNOWN_UNTRACED'
+                  credited=not parent_projection_residual and child!='UNKNOWN_UNTRACED'
+              atoms.append({
+                'atom':name,
+                'parent_rc':brc,
+                'candidate_rc':crc,
+                'credited':credited,
+                'child_residual':child,
+                'last_neutral':last,
+                'trace_tail':cerr.splitlines()[-100:],
+              })
+
+          credited=sum(int(x['credited']) for x in atoms)
+          result={
+            'schema':'nucleus.projection-congruence.v1',
+            'parent_sha':os.environ['PARENT_SHA'],
+            'candidate_sha':os.environ['GITHUB_SHA'],
+            'freeze_sha':os.environ['FREEZE_SHA'],
+            'full_corpus_cases':193,
+            'parent_correct':base_correct,
+            'candidate_correct':cand_correct,
+            'earned_correct_delta':cand_correct-base_correct,
+            'wrong':wrong,
+            'regressions':regressions,
+            'selected_residual':'projection-involved-neutral-heads/environment-provenance',
+            'occurrences_before':4,
+            'typed_residual_occurrences_contracted':credited,
+            'occurrences_after':4-credited,
+            'contraction_fraction':credited/4,
+            'atoms':atoms,
+            'scientific_elapsed_seconds':time.time()-started,
+            'status':(
+              'WARRANTED_RESIDUAL_CONTRACTION'
+              if credited and not wrong and not regressions
+              else 'NO_PROMOTION'
+            ),
+            'boundary':'Projection congruence is admitted only through recursive existing conversion; EnvFrame identity is not globally erased. Full 193-case differential reclosure is the semantic authority.'
+          }
+          pathlib.Path(
+            'evidence/nucleus-projection-congruence-v1/result.json'
+          ).write_text(json.dumps(result,indent=2,sort_keys=True)+'\n')
+          print(json.dumps({
+            k:result[k] for k in [
+              'parent_correct','candidate_correct','earned_correct_delta',
+              'occurrences_before','typed_residual_occurrences_contracted',
+              'occurrences_after','contraction_fraction','status'
+            ]
+          },sort_keys=True))
+          print(json.dumps([
+            {'atom':x['atom'],'rc':x['candidate_rc'],'credited':x['credited'],'child':x['child_residual']}
+            for x in atoms
+          ],sort_keys=True))
+          PY
+
+      - name: Assert no authority regression
+        run: |
+          python3 - <<'PY'
+          import json
+          p=json.load(open('evidence/nucleus-projection-congruence-v1/result.json'))
+          assert p['full_corpus_cases']==193,p
+          assert p['parent_correct']==163,p
+          assert p['wrong']==[],p
+          assert p['regressions']==[],p
+          assert 0<=p['typed_residual_occurrences_contracted']<=4,p
+          print(
+            "NUCLEUS_PROJECTION_CONGRUENCE",
+            "correct",p['parent_correct'],"->",p['candidate_correct'],
+            "contracted",p['typed_residual_occurrences_contracted'],"/4",
+            p['status']
+          )
+          PY
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: nucleus-projection-congruence-v1
+          path: evidence/nucleus-projection-congruence-v1/result.json
+          if-no-files-found: error
