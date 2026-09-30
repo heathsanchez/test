@@ -1,0 +1,48 @@
+name: Collatz Forward Source Bridge
+on:
+  push:
+    branches: [collatz-forward-source-bridge-20261001]
+    paths: ['.github/workflows/collatz-forward-source-bridge.yml']
+permissions: {contents: read}
+jobs:
+  qualify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build pinned parent
+        run: |
+          set -euo pipefail
+          curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
+          echo "$HOME/.elan/bin" >> "$GITHUB_PATH"
+          export PATH="$HOME/.elan/bin:$PATH"
+          lake build CollatzFinal
+      - name: Qualify source obstruction and forward exit
+        run: |
+          set -euo pipefail
+          mkdir -p evidence/collatz-forward-source-bridge
+          lake env lean -DautoImplicit=false -o .lake/build/lib/lean/Collatz/SourceCylinderExit.olean formal/Collatz/SourceCylinderExit.lean > evidence/collatz-forward-source-bridge/parent.log
+          lake env lean -DautoImplicit=false formal/Collatz/ForwardSourceBridge.lean | tee evidence/collatz-forward-source-bridge/bridge.log
+          python experiments/collatz_forward_source_bridge_20261001.py > evidence/collatz-forward-source-bridge/audit.json
+          python - <<'PY'
+          from pathlib import Path
+          import json,re
+          root=Path('evidence/collatz-forward-source-bridge')
+          s=(root/'bridge.log').read_text()
+          assert 'sorryAx' not in s and 'Lean.ofReduceBool' not in s
+          for name in ('iter_multiple_three_preimage','hard_ray_has_no_smaller_start_preimage','hard_source_exit_cylinder','hard_ray_exit_subcylinder'):
+              assert name in s
+          r=json.loads((root/'audit.json').read_text())
+          assert r['certificate_sha256']=='d72c5c887dae4f72f55c8395e7582cb5930809d1c24bf04268b0be1e2e4a7fb1'
+          source=Path('formal/Collatz/ForwardSourceBridge.lean').read_text()
+          assert not re.search(r'\b(sorry|admit|axiom|unsafe)\b',source)
+          print('ALL_DEPTH_START_PREIMAGE_OBSTRUCTION_AND_EXACT_EXIT_SUBCYLINDER_QUALIFIED')
+          print('ALL_RAY_COVERAGE_UNPROVED')
+          print('GLOBAL_COLLATZ_UNKNOWN')
+          PY
+          git rev-parse HEAD > evidence/collatz-forward-source-bridge/commit.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: collatz-forward-source-bridge
+          path: evidence/collatz-forward-source-bridge
